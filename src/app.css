@@ -1,0 +1,112 @@
+:root {
+  --bg: #12151a;
+  --bg-panel: #1a1f27;
+  --bg-raised: #232a35;
+  --bg-hover: #2c3542;
+  --border: #303a48;
+  --text: #d7dee8;
+  --text-dim: #8b96a5;
+  --accent: #e8b84b;
+  --hp: #e05555;
+  --xp: #4caf7d;
+  --stamina: #5cbb6a; /* resource bar — physical exertion */
+  --stamina-winded: #3f7a4a; /* spent to the reserve floor — refilling before it pays out again */
+  --stamina-exhausted: #97a53a; /* bottomed out — sickly, slow, and dragging every action */
+  --mana: #5591e0;
+  --manaburn: #d648c8; /* mana in debt — burned past zero and counting */
+  --spirit: #a06fd6; /* resource bar — spiritual reserve */
+  /* Resource bar — the psionic pool. WARM on purpose: mana (blue), spirit
+     (violet) and stamina (green) already crowd the blue-to-cyan arc, and focus
+     sits directly under mana, so a cool colour here reads as "more mana" at a
+     glance. Amber is the only bar hue far from all three, and distinguishable
+     from HP's red by being plainly orange. */
+  --focus: #e07b39;
+  --danger: #ff6b6b;
+  --action: #f2d024; /* action bars — time until the next action fires */
+
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
+}
+
+h1, h2, h3, h4 {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.bar {
+  position: relative;
+  height: 14px;
+  background: #0d1014;
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.bar > .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 7px;
+  transition: width 0.12s linear;
+}
+
+.bar > .label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 80%);
+}
+
+.dim {
+  color: var(--text-dim);
+}
+
+.small {
+  font-size: 12.5px;
+}

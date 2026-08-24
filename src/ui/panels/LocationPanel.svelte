@@ -1,0 +1,503 @@
+<script lang="ts">
+  import { gs, game, view } from '../state.svelte';
+  import { getSpot, MATERIALS, RECIPES } from '../../core/registry';
+  import { locationBreadcrumb, visibleEdges } from '../../core/systems/locations';
+  import { spotCleared } from '../../core/systems/combat';
+  import {
+    activityCost,
+    activityFactorInfo,
+    activityFillRate,
+    activityOutputMult,
+    activitySpeedMult,
+    attrXpWeights,
+    currentActivity,
+    exploreProgress,
+    claimedFinds,
+  } from '../../core/systems/actions';
+  import type { ActivityDef } from '../../core/types';
+  import Tip from '../lib/Tip.svelte';
+  import {
+    canAfford,
+    recipeCostText,
+    recipeResultIcon,
+    recipeResultName,
+    recipeUnlocked,
+  } from '../../core/systems/crafting';
+  import { npcsAt, availableQuests, canTurnIn } from '../../core/systems/quests';
+  import { QUESTS } from '../../core/registry';
+  import { ticksToTime, condsText, factorLabel, attrSplitText } from '../lib/format';
+  import MapCard from '../MapCard.svelte';
+  import BenchPanel from './BenchPanel.svelte';
+  import SpellcraftPanel from './SpellcraftPanel.svelte';
+  import Modal from '../lib/Modal.svelte';
+  import { DISCIPLINES } from '../../core/data/disciplines.data';
+
+  /** Which workbench is open, if any. */
+  let openBench = $state<string | null>(null);
+
+  const spot = $derived(getSpot(gs.spot));
+  const edges = $derived(visibleEdges(gs, gs.spot));
+
+  /**
+   * Benches you can actually see. Furniture for a system you have never heard
+   * of is a spoiler rather than a discovery, so the culture bench stays out of
+   * the room while mutagens are locked — the same rule the bench itself
+   * enforces, just applied before it can be clicked.
+   *
+   * ⚠️ ALPHA: mutagens currently start OPEN (see freshMutagenState), so this is
+   * inert today. It is kept wired rather than deleted because it is exactly
+   * what the unlock quest will switch on, and re-deriving it later is how a
+   * gate quietly goes missing.
+   */
+  const visibleBenches = $derived(
+    (spot.benches ?? []).filter((id) => id !== 'mutagens' || gs.mutagens.unlocked),
+  );
+  const explorePct = $derived(exploreProgress(gs, spot));
+  // What the spot still owes you, and how much further to the next one. The
+  // finds themselves stay secret — the tick says "there is something here",
+  // not what it is.
+  const unclaimedFinds = $derived(
+    (spot.finds ?? []).filter((f) => !claimedFinds(gs, spot.id).includes(f.id)),
+  );
+  const foundCount = $derived((spot.finds ?? []).length - unclaimedFinds.length);
+  const nextFind = $derived(
+    [...unclaimedFinds].sort((a, b) => a.at - b.at).find((f) => f.at > explorePct),
+  );
+  const recipes = $derived((spot.recipes ?? []).map((rid) => RECIPES[rid]).filter(Boolean));
+  const npcs = $derived(npcsAt(gs.spot));
+
+  const stats = $derived(view.stats);
+  const activeAct = $derived(currentActivity(gs));
+  const actCost = $derived(activeAct ? activityCost(activeAct, stats) : 0);
+  const actEta = $derived(
+    activeAct && actCost > 0
+      ? Math.max(0, (actCost - gs.activityProgress) / activityFillRate(activeAct, stats, gs))
+      : 0,
+  );
+
+  function dialogueLine(lines: string[]): string {
+    return lines[Math.floor(gs.totalTicks / 300) % lines.length];
+  }
+
+  /** ETA of one completion cycle for any activity, in ticks (0 for cycle-less kinds). */
+  function activityEtaTicks(act: ActivityDef): number {
+    const cost = activityCost(act, stats);
+    return cost > 0 ? cost / activityFillRate(act, stats, gs) : 0;
+  }
+
+  /** This NPC's quests the player has active (for turn-in / progress hints). */
+  function activeFor(npcQuests: string[]) {
+    return npcQuests
+      .map((id) => QUESTS[id])
+      .filter((q) => q && gs.quests[q.id]?.status === 'active');
+  }
+</script>
+
+{#snippet actBtn(act: ActivityDef)}
+  <button
+    class:selected={gs.activity === act.id}
+    disabled={gs.recovering || !!gs.combat?.forced}
+    onclick={() => game.selectActivity(gs.activity === act.id ? null : act.id)}
+  >
+    {act.icon} {act.name}
+  </button>
+{/snippet}
+
+{#snippet activityTip(act: ActivityDef)}
+  {@const info = activityFactorInfo(act)}
+  {@const eta = activityEtaTicks(act)}
+  {@const trained = attrSplitText(attrXpWeights(act))}
+  <div class="tip-line tip-base">{act.icon} {act.name}</div>
+
+  <!-- What this task actually does. -->
+  {#if act.kind === 'train'}
+    <div class="tip-line">Trains {trained}</div>
+  {:else if act.kind === 'gather'}
+    <div class="tip-line">
+      Gathers {MATERIALS[act.material]?.icon ?? '📦'} {MATERIALS[act.material]?.name ?? act.material}
+    </div>
+  {:else if act.kind === 'job'}
+    <div class="tip-line">Pays {act.gold} gold per shift</div>
+  {:else if act.kind === 'craft'}
+    <div class="tip-line">
+      Crafts {recipeResultIcon(RECIPES[act.recipe])} {recipeResultName(RECIPES[act.recipe])}
+    </div>
+  {:else if act.kind === 'hunt'}
+    <div class="tip-line">Seeks out monsters to fight here</div>
+  {:else if act.kind === 'rest'}
+    <div class="tip-line">Recovers HP steadily</div>
+  {:else if act.kind === 'explore'}
+    <div class="tip-line">Searches the area, turning things up as you go</div>
+    {#if unclaimedFinds.length > 0}
+      <div class="tip-line">
+        🔎 {unclaimedFinds.length} still to find here{nextFind
+          ? `, next at ${Math.round(nextFind.at * 100)}%`
+          : ''}
+      </div>
+    {/if}
+    {#if (spot.connections ?? []).some((c) => c.hidden)}
+      <div class="tip-line">🚪 Hidden paths lead out of here</div>
+    {/if}
+  {/if}
+
+  {#if trained && act.kind !== 'train'}
+    <div class="tip-line">🏋️ Trains {trained}</div>
+  {/if}
+
+  {#if info.staticTime}
+    <div class="tip-line">⏱️ Fixed duration — your speed doesn't change it</div>
+  {:else if info.speed.length}
+    <div class="tip-line">
+      ⚡ Speed ×{activitySpeedMult(gs, stats, act).toFixed(2)} — {info.speed.map(factorLabel).join(', ')}
+    </div>
+  {/if}
+  {#if info.output.length}
+    <div class="tip-line">
+      🎁 Output ×{activityOutputMult(gs, stats, act).toFixed(2)} — {info.output.map(factorLabel).join(', ')}
+    </div>
+  {/if}
+  {#if eta > 0}
+    <div class="tip-line tip-total">≈ {ticksToTime(eta)} per cycle</div>
+  {/if}
+{/snippet}
+
+<MapCard />
+
+{#if gs.travel}
+  {@const dest = getSpot(gs.travel.to)}
+  <div class="panel" style="margin-top: 12px">
+    <h2>🥾 Traveling to {dest.icon} {dest.name}</h2>
+    <div class="bar" style="height: 18px">
+      <div
+        class="fill"
+        style="width: {((gs.travel.total - gs.travel.ticksLeft) / gs.travel.total) * 100}%; background: var(--mana)"
+      ></div>
+      <div class="label">{ticksToTime(gs.travel.ticksLeft)} remaining</div>
+    </div>
+  </div>
+{:else}
+  <div class="panel" style="margin-top: 12px">
+    <div class="dim small">{locationBreadcrumb(gs.spot)}</div>
+    <h2>{spot.icon} {spot.name}</h2>
+    <p class="dim">{spot.desc}</p>
+
+    <h3>Activities</h3>
+    <div class="btn-grid">
+      {#each spot.activities as act}
+        <Tip>
+          {@render actBtn(act)}
+          {#snippet tip()}{@render activityTip(act)}{/snippet}
+        </Tip>
+      {/each}
+    </div>
+
+    {#if activeAct && actCost > 0}
+      <div class="explore small" title="Fills at your Speed — rewards land when the bar completes">
+        <span class="dim">{activeAct.icon} Next:</span>
+        <div class="bar" style="flex: 1; height: 10px">
+          <div
+            class="fill action-fill"
+            style="width: {Math.min(100, (gs.activityProgress / actCost) * 100)}%; background: var(--action)"
+          ></div>
+        </div>
+        <span>{ticksToTime(actEta)}</span>
+      </div>
+    {/if}
+
+    {#if spot.exploreTicks}
+      <div class="explore small">
+        <span class="dim">Exploration:</span>
+        <div class="bar" style="flex: 1; height: 10px">
+          <div class="fill" style="width: {explorePct * 100}%; background: #7de0c3"></div>
+          <!--
+            Ticks for finds the spot still owes you. Claimed ones are dropped
+            rather than dimmed: a mark that never moves reads as a bug, and the
+            bar's job is to say how much further, not to keep a trophy shelf.
+          -->
+          {#each unclaimedFinds as f (f.id)}
+            <div class="find-tick" style="left: {f.at * 100}%" title="Something to find here"></div>
+          {/each}
+        </div>
+        <span>{Math.floor(explorePct * 100)}%</span>
+      </div>
+      {#if foundCount > 0 || unclaimedFinds.length > 0}
+        <div class="small dim" style="margin-top: 2px">
+          🔎 Found {foundCount} of {(spot.finds ?? []).length} here{nextFind
+            ? ` — next at ${Math.round(nextFind.at * 100)}%`
+            : ''}
+        </div>
+      {/if}
+    {/if}
+  </div>
+
+  {#if npcs.length > 0}
+    <div class="panel" style="margin-top: 12px">
+      <h3>People</h3>
+      {#each npcs as npc (npc.id)}
+        <div class="npc">
+          <div class="npc-head">
+            <span><b>{npc.icon} {npc.name}</b></span>
+            <span class="dim small">“{dialogueLine(npc.dialogue)}”</span>
+          </div>
+          {#each availableQuests(gs, npc) as quest (quest.id)}
+            <div class="quest-row">
+              <div>
+                <b>📜 {quest.name}</b>
+                <div class="dim small">{quest.desc}</div>
+              </div>
+              <button class="small" onclick={() => game.acceptQuest(quest.id)}>Accept</button>
+            </div>
+          {/each}
+          {#each activeFor(npc.quests) as quest (quest.id)}
+            <div class="quest-row">
+              <div>
+                <b>📜 {quest.name}</b>
+                <div class="dim small">{canTurnIn(gs, quest) ? 'Ready to turn in!' : 'In progress — see the Quests tab.'}</div>
+              </div>
+              <button class="small" disabled={!canTurnIn(gs, quest)} onclick={() => game.turnInQuest(quest.id)}>
+                Turn In
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  <!--
+    Modular crafting benches standing at this spot. They are furniture: you walk
+    up to one and it opens, rather than every bench in the room competing for
+    space on the page.
+  -->
+  {#if visibleBenches.length}
+    <div class="panel" style="margin-top: 12px">
+      <h3>🛠️ Workbenches</h3>
+      <div class="btn-grid">
+        {#each visibleBenches as benchId (benchId)}
+          {@const bench = DISCIPLINES[benchId]}
+          {#if benchId === 'spelltable'}
+            <!-- Not a discipline: one table, three schools (see SpellcraftPanel). -->
+            <button class="bench-open" onclick={() => (openBench = benchId)}>
+              <span class="bench-icon">🔮</span>
+              <span class="bench-label">
+                <b>Spellcrafting Table</b>
+                <span class="small dim">Arcane · Divine · Psionic</span>
+              </span>
+            </button>
+          {:else if bench}
+            <button class="bench-open" onclick={() => (openBench = benchId)}>
+              <span class="bench-icon">{bench.icon}</span>
+              <span class="bench-label">
+                <b>{bench.benchName ?? bench.name}</b>
+                <span class="small dim">{bench.name} · Lv {gs.skills[bench.skill]?.level ?? 0}</span>
+              </span>
+            </button>
+          {/if}
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  {#if openBench === 'spelltable'}
+    <Modal wide onclose={() => (openBench = null)}>
+      {#snippet title()}
+        <div class="win-title">🔮 Spellcrafting Table</div>
+        <div class="small dim">
+          Three schools of magic, one table. What you craft here is written into your grimoire.
+        </div>
+      {/snippet}
+      <SpellcraftPanel large />
+    </Modal>
+  {:else if openBench}
+    {@const bench = DISCIPLINES[openBench]}
+    <Modal wide onclose={() => (openBench = null)}>
+      {#snippet title()}
+        <div class="win-title">{bench.icon} {bench.benchName ?? bench.name}</div>
+        <div class="small dim">{bench.desc}</div>
+      {/snippet}
+      <BenchPanel disciplineId={openBench} large />
+    </Modal>
+  {/if}
+
+  {#if recipes.length > 0}
+    <div class="panel" style="margin-top: 12px">
+      <h3>⚒️ Crafting</h3>
+      <div class="recipes">
+        {#each recipes as recipe (recipe.id)}
+          {@const unlocked = recipeUnlocked(gs, recipe)}
+          {@const affordable = canAfford(gs, recipe)}
+          <button
+            class="recipe"
+            class:selected={gs.activity === `craft_${recipe.id}`}
+            disabled={!unlocked || gs.recovering || !!gs.combat?.forced}
+            title={unlocked ? '' : `Requires ${condsText(recipe.unlock)}`}
+            onclick={() =>
+              game.selectActivity(
+                gs.activity === `craft_${recipe.id}` ? null : `craft_${recipe.id}`,
+              )}
+          >
+            <span>
+              {unlocked ? recipeResultIcon(recipe) : '🔒'}
+              {recipeResultName(recipe)}
+            </span>
+            <span class="small cost" class:short={!affordable}>
+              {unlocked ? recipeCostText(gs, recipe) : `Requires ${condsText(recipe.unlock)}`}
+            </span>
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/if}
+
+  <div class="panel" style="margin-top: 12px">
+    <h3>Travel</h3>
+    <div class="routes">
+      {#each edges as edge}
+        {@const dest = getSpot(edge.to)}
+        {@const known = gs.discovered.includes(edge.to)}
+        {@const noExit = !!(edge.forced || dest.forced) && !spotCleared(gs, dest)}
+        <button class="route" onclick={() => game.travelTo(edge.to)} disabled={gs.recovering || !!gs.combat?.forced}>
+          <span class="route-name">
+            {known ? `${dest.icon} ${dest.name}` : '❓ Unknown place'}
+            {#if edge.oneWay}<span class="oneway" title="One-way — no coming back this way">⤵ one-way</span>{/if}
+            <!-- The warning the player gets BEFORE committing: this road ends
+                 in a fight that refuses to be fled. Shown even for an unknown
+                 destination — the danger must be knowable at the door. -->
+            {#if noExit}<span class="noexit" title="This way leads to a fight with no way out — you win it or you are carried off">⚔️ no retreat</span>{/if}
+          </span>
+          <span class="dim small">{edge.label ?? ''} · {ticksToTime(edge.ticks)}</span>
+        </button>
+      {/each}
+    </div>
+  </div>
+{/if}
+
+<style>
+  /* A bench reads as a piece of furniture in the room, not a menu item. */
+  .bench-open {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    text-align: left;
+    padding: 8px 12px;
+  }
+
+  .bench-icon {
+    font-size: 20px;
+  }
+
+  .bench-label {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+
+  .btn-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  /* Activity buttons wrapped in a Tip: let the wrapper size to the button, no text underline. */
+  .btn-grid > :global(.tip-target) {
+    display: inline-flex;
+    border-bottom: none;
+  }
+
+  .explore {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  /* A notch on the exploration bar where the spot still owes you something. */
+  .find-tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    margin-left: -1px;
+    background: #fbbf24;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  .action-fill {
+    transition: none; /* fills every tick; easing would lag behind the reset */
+  }
+
+  .routes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .route {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    text-align: left;
+  }
+
+  .oneway {
+    color: var(--danger);
+    font-size: 12px;
+    margin-left: 8px;
+  }
+
+  .noexit {
+    color: var(--danger);
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+
+  .recipes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+  }
+
+  .recipe {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    text-align: left;
+  }
+
+  .cost {
+    color: var(--text-dim);
+  }
+
+  .cost.short {
+    color: var(--danger);
+  }
+
+  .npc {
+    margin-bottom: 12px;
+  }
+
+  .npc-head {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+
+  .quest-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: 6px;
+  }
+</style>

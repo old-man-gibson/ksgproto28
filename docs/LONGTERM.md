@@ -1,0 +1,108 @@
+# Long-term plans — the shelf
+
+**Nothing in this file is owed.**
+
+That is the entire point of it, and the reason it is not part of
+[NEXT.md](NEXT.md). NEXT.md is a handoff: work that is designed, started, or
+promised, and a section leaves it by *shipping*. This file is the opposite —
+ideas that are cut from every release until further notice, kept because the
+thinking behind them was expensive and should not have to be redone, not
+because anyone intends to build them.
+
+A system with an entry here is still **complete**. An addition is not a gap.
+Read an item here as "here is what it would look like if the itch ever
+returns", never as an open item, a TODO, or a reason a doc cannot be closed.
+
+**The rule for moving something here:** it must be an *addition* to something
+that already works without it. Anything that leaves a shipped system broken,
+unreachable, or lying to the player belongs in NEXT.md instead — that is debt,
+and debt does not get to sit on a shelf.
+
+Other obvious candidates already sitting in NEXT.md's "Parked" sections
+(blueprint weaponsmithing, the aberrant god of arcane magic, the four subsystem
+seeds) have **not** been moved. Moving them is a separate decision.
+
+---
+
+## Arcane compound words (was ARCANE.md §12; shelved 2026-08-10)
+
+Combined words fuse clauses, and the conjunction flavors the fusion: "fire and
+earth" internalises as **magma**, "water but fire" as **scald** — same
+mechanism, different conjunction, different word. Acquisition would be
+diegetic, an arcane master offering an *insight* the player must then explore
+("Fire and earth already exists in nature as magma. I hope this is something to
+think about") — the psionic teacher pattern.
+
+**Why it was shelved.** It was carried for months as "the one remaining
+addition" and described in the doc as "a data addition", which hid what the
+data actually is: a bespoke identity per cell. Fourteen nouns is 91 unordered
+pairs; two conjunctions makes 182, each wanting a name, a rider neither parent
+owns, and balance numbers. That is a content pipeline, not a closing task —
+and the user's judgement on 2026-08-10 was that authoring it is *"absolutely
+ludicrous… prime 'v1.13 — The Arcane Synthesis Update' material"*. Cut for
+non-release versions, eligible for a future update, **under no obligation to
+ever be authored.**
+
+### The design, banked
+
+**Two variants only: `and` and `but`.** They do genuinely different chemistry.
+
+- **`and` → synthesis.** Two things become one thing. *magma* (fire and earth).
+- **`but` → substitution.** One thing wears another's nature. *scald* (water
+  but fire).
+
+**The authoring test — a compound must do something its parent sentence
+cannot.** "fire and earth" already yields one blow with two natures and both
+riders; what it cannot do is cost one slot, pay full power, and carry a rider
+neither parent owns. A compound that merely shortens its own sentence is an
+abbreviation, not a word.
+
+**If it is ever built, build it TOTAL.** The same ruling the user made for
+blueprint weaponsmithing (NEXT.md): every combination must yield *something*,
+or the feature collapses into hidden recipes — 182 cells where three are real
+and 179 silently are not. The shape that achieves this without a content
+pipeline:
+
+- **Every pair internalises**, and its payoff is **slot compression**, not new
+  power. Sentences cap at 8 words (`maxSentenceWords`), so `fire and earth`
+  spends three of them; the compound says it in one, at full efficiency instead
+  of `and`'s 85%. Slots are the scarcest resource in the grammar, so that is a
+  real reward with no bespoke content behind it.
+- **No name is required.** An underived compound can read as its parents
+  joined, which sidesteps naming 182 things — and the surface-form uniqueness
+  lint in `tests/content.test.ts` would otherwise have to police all of them.
+- **Named compounds are the small authored set on top.** Magma and scald earn a
+  real word *and* a native rider precisely because they are exceptions. Same
+  structure as weaponsmithing's "finishes are spice; souls are loot", and the
+  codebase's oldest pattern — store the combination, derive meaning on read.
+
+**Recommended, never ruled on — compounds do not fold.** `stacked` is optional,
+so it is reversible. Leaving it off keeps compounds out of the FOLDABLE
+denominator, so shipping one never moves yShicna's 80% bar and never un-offers
+the atomic state to a player who had already qualified (NEXT.md flags that
+drift as a hazard). It also reads right: a compound is already a folding of two
+words.
+
+**Never decided: what magma and scald actually do.** Suggestions on the table,
+neither adopted — magma as *molten*, softening armour rather than piercing it
+(no noun does that today, though earth owns `shardbound` and fire owns
+burning); scald as the word that cashes `wet`, turning water's own setup into
+damage, at the price of making water's contribution deliberately ambiguous.
+
+**Parked within the parked: `then` → reaction.** A third variant where one
+thing *becomes* another, landing as A and leaving B behind (`iron then acid` →
+rust: strikes piercing, leaves `corroded`). The only conjunction about time, so
+its compound would be the only substance with a timeline inside a single blow —
+`seed` is patience *in place*, which is different. **`or` and `if` are rejected
+outright:** `or`'s sentence form already rolls one alternative per cast, so its
+compound would be the sentence with fewer keystrokes; `if` would resolve to
+"hits harder against the already-afflicted", which is a damage multiplier
+behind a condition check rather than a word.
+
+### The one engineering note worth keeping
+
+`orType` lives on `SpellStrike`, not on `ArcaneWordDef`. The combat end is
+already done — [combat.ts](../src/core/systems/combat.ts) resolves a
+twin-natured strike against whichever type the target guards worse — so what
+was missing was one field on the word for the composer to copy across. Nothing
+in ARCANE.md §§2–11 would change.

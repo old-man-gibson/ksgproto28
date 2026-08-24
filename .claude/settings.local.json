@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm install)",
+      "PowerShell(& \"C:\\\\Program Files\\\\nodejs\\\\npm.cmd\" install)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npx vitest run 2>&1 | Out-String)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npx svelte-check --tsconfig ./tsconfig.json 2>&1 | Out-String)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npx svelte-check --tsconfig ./tsconfig.json 2>&1 | Out-String; npm run build 2>&1 | Select-Object -Last 15 | Out-String)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npx vitest run 2>&1 | Select-Object -Last 8 | Out-String; npx svelte-check --tsconfig ./tsconfig.json 2>&1 | Select-Object -Last 2 | Out-String)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npm run verify)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npm run check)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npx vitest run --reporter=dot 2>$null | Select-Object -Last 6)",
+      "Bash(awk '/<style>/,0' src/ui/panels/Sidebar.svelte)",
+      "Bash(awk '/^<style/,0' src/ui/panels/CombatPanel.svelte)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npm run check 2>&1 | Select-Object -Last 12)",
+      "Bash(python -)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npm run check 2>&1 | Select-Object -Last 4; Write-Output \"=== TESTS ===\"; npm test 2>&1 | Select-Object -Last 22)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npm run check 2>&1 | Select-Object -Last 2; Write-Output \"=== TESTS ===\"; npm test 2>&1 | Select-Object -Last 8)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;\" + $env:Path; npm run check 2>&1 | Select-Object -Last 2; Write-Output \"=== TESTS ===\"; npm test 2>&1 | Select-Object -Last 6)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; npm run verify 2>&1 | Select-Object -Last 35)",
+      "PowerShell($env:PATH = \"C:\\\\Program Files\\\\nodejs;$env:PATH\"; npm run check 2>&1 | Select-Object -Last 15)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npm run verify)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npx vitest run tests/combat.test.ts tests/save.test.ts)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npx vitest run tests/_debug.test.ts)",
+      "PowerShell(Remove-Item \"D:\\\\ksgproto28\\\\tests\\\\_debug.test.ts\" -Force -Confirm:$false)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npx vitest run tests/martial.test.ts tests/triggers.test.ts 2>&1 | Select-Object -Last 50)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npm run verify 2>&1 | Select-Object -Last 20)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npm run verify 2>&1 | Select-Object -Last 14)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npm run check 2>&1 | Select-Object -Last 6)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npm run check 2>&1 | Select-Object -Last 40)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npm run check 2>&1 | Select-Object -Last 30)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npm run verify 2>&1 | Select-Object -First 12)",
+      "PowerShell($env:Path = \"C:\\\\Program Files\\\\nodejs;$env:Path\"; npm run verify 2>&1 | Select-Object -Last 16)"
+    ]
+  }
+}
