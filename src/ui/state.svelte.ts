@@ -1,0 +1,222 @@
+import type { FightLedger, GameState } from '../core/types';
+import { createInitialState } from '../core/state';
+import { DEBUG_STARTING_SPOT } from '../core/registry';
+import { Game } from '../core/game';
+import { MS_PER_TICK } from '../core/engine/loop';
+import { getDerivedStats } from '../core/systems/derived';
+import {
+  clearStorage,
+  deserialize,
+  loadFromStorage,
+  saveToStorage,
+  serialize,
+} from '../core/save/save';
+import { OFFLINE_CAP_MS, runOfflineProgress, type OfflineSummary } from '../core/save/offline';
+import { dropFight, isKept, keepFight, NOTEBOOK_MAX } from '../core/systems/ledger';
+import { setSkipSettling } from '../core/systems/mutagens';
+import type { SortMode } from '../core/systems/inventory';
+
+/**
+ * Bridge between the pure core and Svelte. The game state is a deep-reactive
+ * $state proxy; the core mutates it directly and the UI updates automatically.
+ */
+const loaded = loadFromStorage();
+
+export const gs: GameState = $state(loaded.state ?? createInitialState());
+
+export const game = new Game(gs);
+
+if (loaded.corrupted) {
+  game.bus.emit({
+    type: 'log',
+    msg: '⚠️ Your previous save could not be read. A recovery copy was kept in browser storage — do NOT reset before reporting this.',
+    kind: 'danger',
+  });
+}
+
+if (loaded.healed) {
+  save(); // persist the healed state over the impostor immediately
+  game.bus.emit({
+    type: 'log',
+    msg: '🩹 Restored your progress from a recovery copy after an earlier failed load.',
+    kind: 'info',
+  });
+}
+
+export const ui = $state({
+  tab: 'location' as
+    | 'location'
+    | 'combat'
+    | 'skills'
+    | 'equipment'
+    | 'chromosome'
+    | 'music'
+    | 'wuxin'
+    | 'bestiary'
+    | 'quests'
+    | 'achievements',
+  offline: null as OfflineSummary | null,
+  /** The fight summary being read, if any. */
+  defeat: null as FightLedger | null,
+  /**
+   * `endedAt` of the last ledger already shown, so one knockout opens exactly
+   * one window. Seeded from the loaded save: a defeat you have already closed
+   * must not reopen every time you come back — the ledger is still there to
+   * read on demand, it just stops nagging.
+   */
+  defeatShown: gs.lastFight?.endedAt ?? -1,
+  mapOpen: true,
+  /** The position-graph planner section on the Combat tab (see MartialPlanner). */
+  plannerOpen: false,
+  /** Weapon families the planner is filtering by — a view, never equipment. */
+  plannerFamilies: [] as string[],
+  /** Inventory grid ordering — survives tab switches. */
+  invSort: 'newest' as SortMode,
+  invGroup: true,
+  /**
+   * What is unfolded in the Skills tab: skill ids (and `attr_<id>` rows), and
+   * technique ids separately. Kept here rather than in the panel so a glance at
+   * the Combat tab does not cost you the tree you had just arranged — the whole
+   * point of folding is that the arrangement STAYS.
+   */
+  skillsOpen: [] as string[],
+  techOpen: [] as string[],
+});
+
+/**
+ * The shared derived layer: computed once, read by every panel. Backed by the
+ * memoized getDerivedStats, so `view.stats` keeps the same object identity —
+ * and wakes no consumer — until a modifier source actually changes.
+ */
+class DerivedView {
+  stats = $derived(getDerivedStats(gs));
+}
+
+export const view = new DerivedView();
+
+/**
+ * Catch the world up after time away, DETACHED from the reactive proxy: the
+ * ticks run on a plain snapshot (measured ~16× faster — the proxy turns an
+ * 8-hour catch-up from seconds into minutes) and the result lands back on `gs`
+ * as one assignment. The worker Game re-registers the standard listeners
+ * against the snapshot, so counters, quests and titles advance exactly as they
+ * would have live.
+ *
+ * `quietSmallGaps` also simulates absences too short for a summary, logging
+ * normally as it goes — the hidden-tab path. Boot leaves those to the next
+ * frame, as it always has.
+ */
+function runCatchup(elapsedMs: number, quietSmallGaps: boolean): OfflineSummary | null {
+  if (gs.paused) return null;
+  const plain = $state.snapshot(gs) as GameState;
+  const worker = new Game(plain);
+  const before = plain.totalTicks;
+  const summary = runOfflineProgress(worker, elapsedMs);
+  if (!summary && quietSmallGaps) {
+    const ticks = Math.floor(Math.min(elapsedMs, OFFLINE_CAP_MS) / MS_PER_TICK);
+    for (let i = 0; i < ticks; i++) worker.tick();
+  }
+  if (plain.totalTicks === before) return summary; // nothing ran — leave gs untouched
+  Object.assign(gs, plain);
+  game.resyncAnnouncers();
+  return summary;
+}
+
+/** Offline catch-up for time since the last save. Call once on boot. */
+export function boot(): void {
+  ui.offline = runCatchup(Date.now() - gs.lastSaved, false);
+}
+
+/** Long-stall catch-up for the frame pump (laptop sleep, throttled tab). */
+export function catchUp(elapsedMs: number): OfflineSummary | null {
+  return runCatchup(elapsedMs, true);
+}
+
+export function save(): void {
+  saveToStorage(gs);
+}
+
+/**
+ * Keep the fight being read, or forget it if it is already kept. Eviction is
+ * announced in the log rather than happening quietly — a notebook that drops
+ * the fight you meant to study without saying so is worse than one that fills up.
+ */
+export function toggleKeep(ledger: FightLedger): void {
+  if (isKept(gs, ledger)) {
+    dropFight(gs, ledger.endedAt);
+    return;
+  }
+  const evicted = keepFight(gs, ledger, Date.now());
+  if (evicted) {
+    const who = evicted.ledger.foes[0]?.name ?? 'an old fight';
+    game.bus.emit({
+      type: 'log',
+      msg: `📓 Notebook full (${NOTEBOOK_MAX}) — dropped the oldest entry: ${who}.`,
+      kind: 'info',
+    });
+  }
+}
+
+// ---------- Pause & stepping ----------
+
+/**
+ * Hand-crank the world by `ticks`. Stepping always implies a frozen world —
+ * pressing step while the clock runs would otherwise be free extra time, which
+ * is exactly what the pause exists to prevent.
+ */
+export function stepTicks(ticks: number): void {
+  game.setPaused(true);
+  game.step(ticks);
+}
+
+/** Step to the fight's next line; returns the ticks it took to arrive. */
+export function stepEvent(): number {
+  game.setPaused(true);
+  return game.stepToEvent();
+}
+
+export function exportSave(): void {
+  const blob = new Blob([serialize(gs)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `frontier-idle-save-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function importSave(file: File): Promise<void> {
+  try {
+    const loaded = deserialize(await file.text());
+    Object.assign(gs, loaded);
+    game.resyncAnnouncers();
+    save();
+    game.bus.emit({ type: 'log', msg: '💾 Save imported.', kind: 'info' });
+  } catch {
+    game.bus.emit({ type: 'log', msg: '❌ Could not read that save file.', kind: 'danger' });
+  }
+}
+
+/** DebugPanel toggle: new games open at the classic dev start instead of home. */
+export const DEBUG_START_KEY = 'ksg-debug:start-square';
+
+/** DebugPanel toggle: the centromere never has to settle between swaps. */
+export const DEBUG_SETTLE_KEY = 'ksg-debug:skip-settling';
+// Pushed into the core HERE rather than when the debug panel opens, so the
+// toggle survives a reload without having to visit the panel first. Gated on
+// DEV for the same reason the panel is — a production build must not be able
+// to reach it however the key got into storage.
+setSkipSettling(import.meta.env.DEV && localStorage.getItem(DEBUG_SETTLE_KEY) === '1');
+
+export function hardReset(): void {
+  if (!confirm('Wipe ALL progress and start over?')) return;
+  clearStorage();
+  const classic = import.meta.env.DEV && localStorage.getItem(DEBUG_START_KEY) === '1';
+  Object.assign(gs, createInitialState(Date.now(), classic ? DEBUG_STARTING_SPOT : undefined));
+  game.resyncAnnouncers();
+  ui.offline = null;
+  ui.defeat = null;
+  ui.defeatShown = -1;
+}
+
+export { isKept, NOTEBOOK_MAX };

@@ -1,0 +1,1963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KSG Content Forge — Frontier Idle</title>
+<style>
+  :root {
+    --bg: #0f1219;
+    --bg2: #161b26;
+    --bg3: #1e2535;
+    --border: #2a3347;
+    --text: #e6eaf2;
+    --text-dim: #8b95a8;
+    --accent: #6c9eff;
+    --accent2: #a78bfa;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --monster: #f472b6;
+    --item: #60a5fa;
+    --quest: #fbbf24;
+    --location: #34d399;
+    --skill: #a78bfa;
+    --recipe: #fb923c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .logo {
+    padding: 18px 16px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo span { color: var(--accent); }
+  .nav {
+    flex: 1;
+    padding: 12px 8px;
+    overflow-y: auto;
+  }
+  .nav-section {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-dim);
+    padding: 12px 10px 6px;
+  }
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13.5px;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { background: var(--bg3); }
+  .nav-btn.active {
+    background: linear-gradient(90deg, rgba(108,158,255,0.18), transparent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .nav-btn .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .file-panel {
+    border-top: 1px solid var(--border);
+    padding: 12px;
+    font-size: 12px;
+  }
+  .file-status {
+    background: var(--bg3);
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    word-break: break-all;
+    color: var(--text-dim);
+  }
+  .file-status.open { color: var(--success); }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12.5px;
+    transition: all 0.15s;
+    width: 100%;
+    margin-bottom: 6px;
+  }
+  .btn:hover { border-color: var(--accent); background: #252d40; }
+  .btn.primary {
+    background: linear-gradient(135deg, #4f7cff, #6c9eff);
+    border: none;
+    color: white;
+    font-weight: 600;
+  }
+  .btn.primary:hover { filter: brightness(1.1); }
+  .btn.success {
+    background: linear-gradient(135deg, #059669, #34d399);
+    border: none;
+    color: white;
+  }
+  .btn.warning {
+    background: linear-gradient(135deg, #d97706, #fbbf24);
+    border: none;
+    color: #111;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Main */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .topbar {
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 16px;
+    background: var(--bg2);
+    flex-shrink: 0;
+  }
+  .topbar h1 {
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar .badge {
+    font-size: 11px;
+    background: var(--bg3);
+    padding: 2px 8px;
+    border-radius: 99px;
+    color: var(--text-dim);
+  }
+  .workspace {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 0;
+  }
+  .form-pane, .preview-pane {
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .form-pane { border-right: 1px solid var(--border); }
+  .preview-pane {
+    background: #0a0d13;
+    display: flex;
+    flex-direction: column;
+  }
+  .section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    color: var(--text-dim);
+    margin: 18px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title:first-child { margin-top: 0; }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .field {
+    margin-bottom: 12px;
+  }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .field input[type="text"],
+  .field input[type="number"],
+  .field select,
+  .field textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    outline: none;
+    transition: border 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent);
+  }
+  .field textarea { min-height: 70px; resize: vertical; font-family: inherit; }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .row3 { grid-template-columns: 1fr 1fr 1fr; }
+  .row4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .chip {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip.active {
+    background: rgba(108,158,255,0.2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .chip .x { margin-left: 4px; opacity: 0.6; }
+  .attrs-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .attr-box {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 6px;
+    text-align: center;
+  }
+  .attr-box .name { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; }
+  .attr-box input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    outline: none;
+  }
+  .loot-row {
+    display: grid;
+    grid-template-columns: 90px 1fr 70px 60px 32px;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .loot-row select, .loot-row input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 5px;
+    padding: 6px;
+    font-size: 12px;
+  }
+  .icon-btn {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text-dim);
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .icon-btn:hover { color: var(--danger); border-color: var(--danger); }
+  .add-btn {
+    font-size: 12px;
+    color: var(--accent);
+    background: none;
+    border: 1px dashed var(--border);
+    width: 100%;
+    padding: 7px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .add-btn:hover { border-color: var(--accent); background: rgba(108,158,255,0.08); }
+
+  /* Preview */
+  .preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+  .preview-header h2 { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .preview-actions { display: flex; gap: 8px; }
+  .preview-actions .btn { width: auto; margin: 0; padding: 6px 12px; }
+  pre {
+    flex: 1;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    overflow: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .num { color: #79c0ff; }
+  .key { color: #7ee787; }
+  .cmt { color: #8b949e; font-style: italic; }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #1a2332;
+    border: 1px solid var(--success);
+    color: var(--success);
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.2,0.8,0.2,1);
+    z-index: 100;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-dim);
+    text-align: center;
+    gap: 8px;
+  }
+  .empty-state .big { font-size: 42px; opacity: 0.3; }
+  .mod-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 70px 1fr 32px;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .mod-row select, .mod-row input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 5px;
+    padding: 6px;
+    font-size: 12px;
+  }
+  .hint {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .obj-row {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+  .obj-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">
+    <span>⚒️</span> KSG Content Forge
+  </div>
+  <div class="nav">
+    <div class="nav-section">Content Types</div>
+    <button class="nav-btn active" data-type="monster" onclick="switchType('monster')">
+      <span class="dot" style="background:var(--monster)"></span> Monsters
+    </button>
+    <button class="nav-btn" data-type="item" onclick="switchType('item')">
+      <span class="dot" style="background:var(--item)"></span> Items / Equipment
+    </button>
+    <button class="nav-btn" data-type="quest" onclick="switchType('quest')">
+      <span class="dot" style="background:var(--quest)"></span> Quests
+    </button>
+    <button class="nav-btn" data-type="location" onclick="switchType('location')">
+      <span class="dot" style="background:var(--location)"></span> Locations
+    </button>
+    <button class="nav-btn" data-type="skill" onclick="switchType('skill')">
+      <span class="dot" style="background:var(--skill)"></span> Skills
+    </button>
+    <button class="nav-btn" data-type="recipe" onclick="switchType('recipe')">
+      <span class="dot" style="background:var(--recipe)"></span> Recipes
+    </button>
+  </div>
+
+  <div class="file-panel">
+    <div class="file-status" id="fileStatus">No file opened</div>
+    <button class="btn" onclick="openFile()">📂 Open .data.ts</button>
+    <button class="btn success" id="appendBtn" onclick="appendToFile()" disabled>📥 Append Entry</button>
+    <button class="btn warning" onclick="saveAsFile()">💾 Save As…</button>
+    <button class="btn" id="downloadModifiedBtn" onclick="downloadModifiedFile()" disabled style="display:none">⬇ Download Modified File</button>
+    <div class="hint" id="fileHint" style="margin-top:8px;line-height:1.4">
+      Open a real <code>*.data.ts</code> file → Generate → Append.<br>
+      Or use Save As for a new snippet.
+    </div>
+    <!-- Hidden classic file input (fallback) -->
+    <input type="file" id="classicFileInput" accept=".ts,.txt,text/typescript,text/plain" style="display:none" onchange="handleClassicFile(event)" />
+  </div>
+</div>
+
+<div class="main">
+  <div class="topbar">
+    <h1 id="pageTitle">🐀 Monster Generator</h1>
+    <span class="badge" id="pageBadge">src/core/data/monsters.data.ts</span>
+    <div style="flex:1"></div>
+    <button class="btn primary" style="width:auto" onclick="generate()">⚡ Generate</button>
+  </div>
+
+  <div class="workspace">
+    <!-- FORM -->
+    <div class="form-pane" id="formPane">
+      <!-- dynamically filled -->
+    </div>
+
+    <!-- PREVIEW -->
+    <div class="preview-pane">
+      <div class="preview-header">
+        <h2>TypeScript Output</h2>
+        <div class="preview-actions">
+          <button class="btn" onclick="copyCode()">📋 Copy</button>
+          <button class="btn" onclick="downloadSnippet()">⬇ Download</button>
+        </div>
+      </div>
+      <pre id="preview"><span class="cmt">// Fill the form and click Generate</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+let currentType = 'monster';
+let fileHandle = null;       // modern FileSystemFileHandle (when available)
+let fileContent = '';
+let lastGenerated = '';
+let lastEntryId = '';
+let openedFileName = '';
+let hasWriteAccess = false;
+
+// ============================================================
+//  CONSTANTS from your types & guide
+// ============================================================
+const TIERS = ['basic','veteran','elite','ancient','legendary','mythic','divine'];
+const DAMAGE_TYPES = ['slashing','piercing','bludgeoning','heat','cold','poison','arcane'];
+const ATTRS = ['str','dex','con','int','wis','cha'];
+const SLOTS = ['weapon','offhand','head','chest','hands','legs','feet','back','accessory'];
+const STAT_KEYS = [
+  'maxHp','damage','attackSpeed','dodge','crit','armor','spellPower',
+  'skillXp','trainXp','loot','goldGain','travelSpeed','craftSpeed',
+  'critDamage','penetration',
+  'resSlashing','resPiercing','resBludgeoning','resHeat','resCold','resPoison','resArcane',
+  'str','dex','con','int','wis','cha'
+];
+const COMMON_TAGS = {
+  monster: ['beast','humanoid','undead','elemental','insect','plant','construct','dragon','small','large','flying','aquatic','boss'],
+  item: ['sword','dagger','axe','blunt','bow','staff','polearm','unarmed','metal','wood','leather','cloth','silk','trinket','magic','beast','ranged']
+};
+const DROP_KINDS = ['item','material','gold','nothing'];
+
+// ============================================================
+//  HELPERS
+// ============================================================
+function slugify(name) {
+  return name.toLowerCase()
+    .replace(/['']/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+function toast(msg, ms = 2200) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+function esc(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+
+function formatTS(obj, indent = 2) {
+  // Pretty-print a JS object as TypeScript literal
+  const sp = ' '.repeat(indent);
+  if (obj === null || obj === undefined) return 'null';
+  if (typeof obj === 'string') return `'${esc(obj)}'`;
+  if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) return '[]';
+    if (obj.every(x => typeof x !== 'object' || x === null)) {
+      return `[${obj.map(x => formatTS(x, indent)).join(', ')}]`;
+    }
+    return `[\n${obj.map(x => sp + '  ' + formatTS(x, indent + 2)).join(',\n')}\n${sp}]`;
+  }
+  // object
+  const keys = Object.keys(obj).filter(k => obj[k] !== undefined && obj[k] !== null && !(Array.isArray(obj[k]) && obj[k].length === 0) && !(typeof obj[k]==='object' && !Array.isArray(obj[k]) && Object.keys(obj[k]).length===0));
+  if (keys.length === 0) return '{}';
+  const lines = keys.map(k => {
+    const v = obj[k];
+    // special: omit empty optional objects
+    return `${sp}  ${k}: ${formatTS(v, indent + 2)}`;
+  });
+  return `{\n${lines.join(',\n')}\n${sp}}`;
+}
+
+function highlight(code) {
+  return code
+    .replace(/(\/\/.*)/g, '<span class="cmt">$1</span>')
+    .replace(/\b(true|false|null)\b/g, '<span class="kw">$1</span>')
+    .replace(/'([^']*)'/g, '<span class="str">\'$1\'</span>')
+    .replace(/\b(\d+\.?\d*)\b/g, '<span class="num">$1</span>')
+    .replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '<span class="key">$1</span>:');
+}
+
+// ============================================================
+//  FORM BUILDERS
+// ============================================================
+function buildMonsterForm() {
+  return `
+    <div class="section-title">Identity</div>
+    <div class="row">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="m_name" placeholder="Forest Rat" oninput="autoId('m')" />
+      </div>
+      <div class="field">
+        <label>ID (snake_case)</label>
+        <input type="text" id="m_id" placeholder="forest_rat" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Icon (emoji)</label>
+        <input type="text" id="m_icon" value="🐀" maxlength="4" style="font-size:20px;text-align:center" />
+      </div>
+      <div class="field">
+        <label>Tier</label>
+        <select id="m_tier">${TIERS.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tags (click to toggle)</label>
+      <div class="chips" id="m_tags">
+        ${COMMON_TAGS.monster.map(t=>`<span class="chip" data-tag="${t}" onclick="toggleChip(this)">${t}</span>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input type="text" id="m_tag_custom" placeholder="custom tag…" style="flex:1" />
+        <button class="btn" style="width:auto;margin:0" onclick="addCustomTag('m')">+</button>
+      </div>
+    </div>
+
+    <div class="section-title">Combat</div>
+    <div class="row">
+      <div class="field">
+        <label>Damage Type</label>
+        <select id="m_dmg">${DAMAGE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+      </div>
+      <div class="field">
+        <label>Base XP</label>
+        <input type="number" id="m_xp" value="8" min="1" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Gold Min</label>
+        <input type="number" id="m_goldmin" value="2" min="0" />
+      </div>
+      <div class="field">
+        <label>Gold Max</label>
+        <input type="number" id="m_goldmax" value="6" min="0" />
+      </div>
+    </div>
+
+    <div class="section-title">Attributes (level 1)</div>
+    <div class="attrs-grid">
+      ${ATTRS.map(a=>`
+        <div class="attr-box">
+          <div class="name">${a}</div>
+          <input type="number" id="m_attr_${a}" value="${a==='str'?5:a==='dex'?4:a==='con'?4:1}" min="0" step="0.5" />
+        </div>`).join('')}
+    </div>
+
+    <div class="section-title">Growth (per level)</div>
+    <div class="attrs-grid">
+      ${ATTRS.map(a=>`
+        <div class="attr-box">
+          <div class="name">${a}</div>
+          <input type="number" id="m_grow_${a}" value="${a==='str'||a==='dex'||a==='con'?1:0.3}" min="0" step="0.1" />
+        </div>`).join('')}
+    </div>
+
+    <div class="section-title">Resistances (optional, 0.5 = half damage, −0.5 = +50% dmg taken)</div>
+    <div class="row3">
+      ${DAMAGE_TYPES.map(t=>`
+        <div class="field">
+          <label>${t}</label>
+          <input type="number" id="m_res_${t}" step="0.05" placeholder="0" />
+        </div>`).join('')}
+    </div>
+
+    <div class="section-title">Loot Table</div>
+    <div class="field">
+      <label>Rolls</label>
+      <input type="number" id="m_loot_rolls" value="1" min="1" style="width:80px" />
+    </div>
+    <div id="m_loot_entries"></div>
+    <button class="add-btn" onclick="addLootRow()">+ Add Drop Entry</button>
+  `;
+}
+
+function buildItemForm() {
+  return `
+    <div class="section-title">Identity</div>
+    <div class="row">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="i_name" placeholder="Iron Sword" oninput="autoId('i')" />
+      </div>
+      <div class="field">
+        <label>ID</label>
+        <input type="text" id="i_id" placeholder="iron_sword" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Icon</label>
+        <input type="text" id="i_icon" value="⚔️" maxlength="4" style="font-size:20px;text-align:center" />
+      </div>
+      <div class="field">
+        <label>Slot</label>
+        <select id="i_slot">${SLOTS.map(s=>`<option value="${s}">${s}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Tags</label>
+      <div class="chips" id="i_tags">
+        ${COMMON_TAGS.item.map(t=>`<span class="chip" data-tag="${t}" onclick="toggleChip(this)">${t}</span>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <input type="text" id="i_tag_custom" placeholder="custom tag…" style="flex:1" />
+        <button class="btn" style="width:auto;margin:0" onclick="addCustomTag('i')">+</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Description (optional)</label>
+      <textarea id="i_desc" placeholder="A proper soldier’s blade."></textarea>
+    </div>
+    <div class="field">
+      <label>Value (gold)</label>
+      <input type="number" id="i_value" value="40" min="0" />
+    </div>
+
+    <div class="section-title">Modifiers</div>
+    <div id="i_mods"></div>
+    <button class="add-btn" onclick="addModRow()">+ Add Modifier</button>
+  `;
+}
+
+function buildQuestForm() {
+  return `
+    <div class="section-title">Identity</div>
+    <div class="row">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="q_name" placeholder="First Posting" oninput="autoId('q')" />
+      </div>
+      <div class="field">
+        <label>ID</label>
+        <input type="text" id="q_id" placeholder="first_posting" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="q_desc" placeholder="Prove your steadiness: thin out the goblins..."></textarea>
+    </div>
+    <div class="field">
+      <label>Giver (NPC id)</label>
+      <input type="text" id="q_giver" placeholder="captain_bren" />
+    </div>
+
+    <div class="section-title">Requirements (quest chain)</div>
+    <div class="field">
+      <label>Required previous quest id (optional)</label>
+      <input type="text" id="q_req" placeholder="first_posting" />
+    </div>
+
+    <div class="section-title">Objectives</div>
+    <div id="q_objectives"></div>
+    <button class="add-btn" onclick="addObjective()">+ Add Objective</button>
+
+    <div class="section-title">Rewards</div>
+    <div class="row">
+      <div class="field">
+        <label>Gold</label>
+        <input type="number" id="q_gold" value="100" min="0" />
+      </div>
+      <div class="field">
+        <label>Items (comma-separated ids)</label>
+        <input type="text" id="q_items" placeholder="iron_gauntlets, wolf_cloak" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Materials (id:qty, id:qty)</label>
+      <input type="text" id="q_mats" placeholder="iron_ingot:2, common_herb:5" />
+    </div>
+    <div class="field">
+      <label>Skill XP (id:xp, id:xp)</label>
+      <input type="text" id="q_skillxp" placeholder="fighting:30, scouting:15" />
+    </div>
+  `;
+}
+
+function buildLocationForm() {
+  return `
+    <div class="section-title">Identity</div>
+    <div class="row">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="l_name" placeholder="Deep Woods" oninput="autoId('l')" />
+      </div>
+      <div class="field">
+        <label>ID</label>
+        <input type="text" id="l_id" placeholder="deep_woods" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Icon</label>
+        <input type="text" id="l_icon" value="🌲" maxlength="4" style="font-size:20px;text-align:center" />
+      </div>
+      <div class="field">
+        <label>Area ID</label>
+        <input type="text" id="l_area" placeholder="whispering_woods" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="l_desc" placeholder="The canopy swallows the sky..."></textarea>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Map X (0–100)</label>
+        <input type="number" id="l_mapx" value="50" min="0" max="100" />
+      </div>
+      <div class="field">
+        <label>Map Y (0–100)</label>
+        <input type="number" id="l_mapy" value="50" min="0" max="100" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Explore Ticks (optional)</label>
+        <input type="number" id="l_explore" placeholder="120" min="0" />
+      </div>
+      <div class="field" style="display:flex;align-items:flex-end;padding-bottom:4px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="l_waypoint" /> Waypoint (fast travel)
+        </label>
+      </div>
+    </div>
+
+    <div class="section-title">Activities</div>
+    <div id="l_activities"></div>
+    <button class="add-btn" onclick="addActivityRow()">+ Add Activity</button>
+
+    <div class="section-title">Encounters (monster spawns)</div>
+    <div id="l_encounters"></div>
+    <button class="add-btn" onclick="addEncounterRow()">+ Add Encounter</button>
+
+    <div class="section-title">Recipes available here (comma-separated ids)</div>
+    <div class="field">
+      <input type="text" id="l_recipes" placeholder="iron_ingot, iron_sword" />
+    </div>
+
+    <div class="section-title">Connections</div>
+    <div id="l_connections"></div>
+    <button class="add-btn" onclick="addConnectionRow()">+ Add Connection</button>
+  `;
+}
+
+function buildSkillForm() {
+  return `
+    <div class="section-title">Identity</div>
+    <div class="row">
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="s_name" placeholder="Swordsmanship" oninput="autoId('s')" />
+      </div>
+      <div class="field">
+        <label>ID</label>
+        <input type="text" id="s_id" placeholder="swordsmanship" />
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Icon</label>
+        <input type="text" id="s_icon" value="🗡️" maxlength="4" style="font-size:20px;text-align:center" />
+      </div>
+      <div class="field">
+        <label>Kind</label>
+        <select id="s_kind" onchange="toggleActiveSection()">
+          <option value="passive">passive</option>
+          <option value="active">active</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="s_desc" placeholder="Formal blade technique..."></textarea>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Category</label>
+        <select id="s_category">
+          <option value="combat">combat</option>
+          <option value="magic">magic</option>
+          <option value="resistance">resistance</option>
+          <option value="craft">craft</option>
+          <option value="general">general</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Parent skill id (optional)</label>
+        <input type="text" id="s_parent" placeholder="fighting" />
+      </div>
+    </div>
+
+    <div class="section-title">Tags (discovery + XP)</div>
+    <div class="chips" id="s_tags">
+      ${['combat','sword','dagger','unarmed','magic','explore','travel','gather','craft','heat','cold','poison','arcane'].map(t=>
+        `<span class="chip" data-tag="${t}" onclick="toggleChip(this)">${t}</span>`).join('')}
+    </div>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <input type="text" id="s_tag_custom" placeholder="custom tag…" style="flex:1" />
+      <button class="btn" style="width:auto;margin:0" onclick="addCustomTag('s')">+</button>
+    </div>
+
+    <div class="section-title">Unlock Conditions</div>
+    <div id="s_unlocks"></div>
+    <button class="add-btn" onclick="addUnlockRow('s_unlocks')">+ Add Unlock Condition</button>
+
+    <div class="section-title">Passive Effects (kind = passive)</div>
+    <div id="s_effects"></div>
+    <button class="add-btn" onclick="addEffectRow()">+ Add Effect</button>
+
+    <div class="section-title" id="s_active_title" style="display:none">Active Spec (kind = active)</div>
+    <div id="s_active_section" style="display:none">
+      <div class="field">
+        <label>Active Type</label>
+        <select id="s_active_type" onchange="updateActiveFields()">
+          <option value="strike">strike</option>
+          <option value="spell">spell</option>
+          <option value="buff">buff</option>
+        </select>
+      </div>
+      <div class="row" id="s_active_fields">
+        <!-- filled dynamically -->
+      </div>
+    </div>
+
+    <div class="section-title">Tier Names (optional mastery titles)</div>
+    <div id="s_tiers"></div>
+    <button class="add-btn" onclick="addTierNameRow()">+ Add Tier Name</button>
+  `;
+}
+
+function buildRecipeForm() {
+  return `
+    <div class="section-title">Identity</div>
+    <div class="row">
+      <div class="field">
+        <label>Name (for reference)</label>
+        <input type="text" id="r_name" placeholder="Iron Sword" oninput="autoId('r')" />
+      </div>
+      <div class="field">
+        <label>ID</label>
+        <input type="text" id="r_id" placeholder="iron_sword" />
+      </div>
+    </div>
+
+    <div class="section-title">Result</div>
+    <div class="row">
+      <div class="field">
+        <label>Kind</label>
+        <select id="r_result_kind">
+          <option value="item">item</option>
+          <option value="material">material</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Result ID</label>
+        <input type="text" id="r_result_id" placeholder="iron_sword" />
+      </div>
+      <div class="field">
+        <label>Qty (default 1)</label>
+        <input type="number" id="r_result_qty" value="1" min="1" />
+      </div>
+    </div>
+
+    <div class="section-title">Cost Materials</div>
+    <div id="r_costs"></div>
+    <button class="add-btn" onclick="addCostRow()">+ Add Material Cost</button>
+
+    <div class="row" style="margin-top:14px">
+      <div class="field">
+        <label>Ticks (craft duration)</label>
+        <input type="number" id="r_ticks" value="300" min="1" />
+      </div>
+      <div class="field">
+        <label>Smithing XP</label>
+        <input type="number" id="r_xp" value="12" min="0" />
+      </div>
+    </div>
+
+    <div class="section-title">Unlock Conditions (optional)</div>
+    <div id="r_unlocks"></div>
+    <button class="add-btn" onclick="addUnlockRow('r_unlocks')">+ Add Unlock Condition</button>
+  `;
+}
+
+// ============================================================
+//  DYNAMIC ROWS
+// ============================================================
+function addLootRow(data = {kind:'nothing', id:'', weight:50}) {
+  const container = document.getElementById('m_loot_entries');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'loot-row';
+  div.innerHTML = `
+    <select class="l_kind" onchange="this.parentElement.querySelector('.l_id').style.visibility = this.value==='nothing'||this.value==='gold'?'hidden':'visible'">
+      ${DROP_KINDS.map(k=>`<option value="${k}" ${k===data.kind?'selected':''}>${k}</option>`).join('')}
+    </select>
+    <input class="l_id" type="text" placeholder="item or material id" value="${data.id||''}" style="visibility:${data.kind==='nothing'||data.kind==='gold'?'hidden':'visible'}" />
+    <input class="l_weight" type="number" value="${data.weight}" min="1" title="weight" />
+    <input class="l_qty" type="text" placeholder="1-1" title="qty range e.g. 1-3" value="${data.qty||''}" />
+    <button class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function addModRow(data = {stat:'damage', op:'add', value:3, requiresTag:''}) {
+  const container = document.getElementById('i_mods');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'mod-row';
+  div.innerHTML = `
+    <select class="mod_stat">
+      ${STAT_KEYS.map(s=>`<option value="${s}" ${s===data.stat?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <select class="mod_op">
+      <option value="add" ${data.op==='add'?'selected':''}>add</option>
+      <option value="mult" ${data.op==='mult'?'selected':''}>mult</option>
+    </select>
+    <input class="mod_val" type="number" step="0.01" value="${data.value}" />
+    <input class="mod_tag" type="text" placeholder="requiresTag (opt)" value="${data.requiresTag||''}" />
+    <button class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function addObjective(data = {type:'kill', monsterId:'', count:10, desc:''}) {
+  const container = document.getElementById('q_objectives');
+  if (!container) return;
+  const idx = container.children.length;
+  const div = document.createElement('div');
+  div.className = 'obj-row';
+  div.innerHTML = `
+    <div class="obj-header">
+      <span>Objective #${idx+1}</span>
+      <button class="icon-btn" style="width:24px;height:24px;font-size:11px" onclick="this.closest('.obj-row').remove()">✕</button>
+    </div>
+    <div class="row">
+      <div class="field" style="margin:0">
+        <label>Type</label>
+        <select class="o_type" onchange="updateObjFields(this)">
+          <option value="kill" ${data.type==='kill'?'selected':''}>kill</option>
+          <option value="craft" ${data.type==='craft'?'selected':''}>craft</option>
+          <option value="collect" ${data.type==='collect'?'selected':''}>collect</option>
+          <option value="reach" ${data.type==='reach'?'selected':''}>reach</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Count / Qty</label>
+        <input class="o_count" type="number" value="${data.count||1}" min="1" />
+      </div>
+    </div>
+    <div class="field" style="margin-top:8px">
+      <label class="o_target_label">Monster / Recipe / Material / Spot ID</label>
+      <input class="o_target" type="text" value="${data.monsterId || data.recipeId || data.materialId || data.spotId || ''}" />
+    </div>
+    <div class="field" style="margin-top:8px;margin-bottom:0">
+      <label>Description</label>
+      <input class="o_desc" type="text" value="${data.desc||''}" placeholder="Slay Goblins" />
+    </div>
+  `;
+  container.appendChild(div);
+}
+
+function updateObjFields(sel) {
+  // just for UX label
+  const label = sel.closest('.obj-row').querySelector('.o_target_label');
+  const map = {kill:'Monster ID', craft:'Recipe ID', collect:'Material ID', reach:'Spot ID'};
+  label.textContent = map[sel.value] || 'Target ID';
+}
+
+// ----- Location helpers -----
+function addActivityRow(data = {kind:'hunt', name:'Hunt', icon:'🏹'}) {
+  const container = document.getElementById('l_activities');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'obj-row';
+  div.innerHTML = `
+    <div class="obj-header">
+      <span>Activity</span>
+      <button class="icon-btn" style="width:24px;height:24px;font-size:11px" onclick="this.closest('.obj-row').remove()">✕</button>
+    </div>
+    <div class="row">
+      <div class="field" style="margin:0">
+        <label>Kind</label>
+        <select class="a_kind" onchange="updateActivityFields(this)">
+          <option value="train" ${data.kind==='train'?'selected':''}>train</option>
+          <option value="hunt" ${data.kind==='hunt'?'selected':''}>hunt</option>
+          <option value="rest" ${data.kind==='rest'?'selected':''}>rest</option>
+          <option value="explore" ${data.kind==='explore'?'selected':''}>explore</option>
+          <option value="gather" ${data.kind==='gather'?'selected':''}>gather</option>
+          <option value="job" ${data.kind==='job'?'selected':''}>job</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0">
+        <label>Name</label>
+        <input class="a_name" type="text" value="${data.name||''}" />
+      </div>
+      <div class="field" style="margin:0">
+        <label>Icon</label>
+        <input class="a_icon" type="text" value="${data.icon||'❓'}" style="text-align:center" />
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="field a_extra" style="margin:0">
+        <label class="a_extra_label">Attr / Material / Gold</label>
+        <input class="a_extra_val" type="text" value="${data.attr || data.material || data.gold || ''}" placeholder="str / common_herb / 5" />
+      </div>
+      <div class="field a_ticks" style="margin:0;${data.kind==='gather'||data.kind==='job'?'':'display:none'}">
+        <label>Ticks Per</label>
+        <input class="a_ticks_val" type="number" value="${data.ticksPer||60}" min="1" />
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+  updateActivityFields(div.querySelector('.a_kind'));
+}
+
+function updateActivityFields(sel) {
+  const row = sel.closest('.obj-row');
+  const kind = sel.value;
+  const extraLabel = row.querySelector('.a_extra_label');
+  const ticksDiv = row.querySelector('.a_ticks');
+  const map = {
+    train: 'Attribute (str/dex/con/int/wis/cha)',
+    hunt: '(none)',
+    rest: '(none)',
+    explore: '(none)',
+    gather: 'Material ID',
+    job: 'Gold per cycle'
+  };
+  extraLabel.textContent = map[kind] || 'Extra';
+  ticksDiv.style.display = (kind === 'gather' || kind === 'job') ? '' : 'none';
+}
+
+function addEncounterRow(data = {monsterId:'forest_rat', weight:50, levelMin:1, levelMax:3}) {
+  const container = document.getElementById('l_encounters');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'loot-row';
+  div.style.gridTemplateColumns = '1fr 70px 60px 60px 32px';
+  div.innerHTML = `
+    <input class="e_monster" type="text" placeholder="monster id" value="${data.monsterId||''}" />
+    <input class="e_weight" type="number" value="${data.weight||50}" min="1" title="weight" />
+    <input class="e_lvlmin" type="number" value="${data.levelMin||1}" min="1" title="level min" />
+    <input class="e_lvlmax" type="number" value="${data.levelMax||3}" min="1" title="level max" />
+    <button class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function addConnectionRow(data = {to:'', ticks:60, oneWay:false, hidden:false, label:''}) {
+  const container = document.getElementById('l_connections');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'obj-row';
+  div.innerHTML = `
+    <div class="obj-header">
+      <span>Connection</span>
+      <button class="icon-btn" style="width:24px;height:24px;font-size:11px" onclick="this.closest('.obj-row').remove()">✕</button>
+    </div>
+    <div class="row">
+      <div class="field" style="margin:0">
+        <label>To (spot id)</label>
+        <input class="c_to" type="text" value="${data.to||''}" placeholder="village_square" />
+      </div>
+      <div class="field" style="margin:0">
+        <label>Ticks</label>
+        <input class="c_ticks" type="number" value="${data.ticks||60}" min="1" />
+      </div>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div class="field" style="margin:0">
+        <label>Label (optional)</label>
+        <input class="c_label" type="text" value="${data.label||''}" placeholder="Old Road" />
+      </div>
+      <div class="field" style="margin:0;display:flex;align-items:center;gap:16px;padding-top:18px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+          <input type="checkbox" class="c_oneway" ${data.oneWay?'checked':''} /> One-way
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px">
+          <input type="checkbox" class="c_hidden" ${data.hidden?'checked':''} /> Hidden
+        </label>
+      </div>
+    </div>
+  `;
+  container.appendChild(div);
+}
+
+// ----- Skill helpers -----
+function addUnlockRow(containerId, data = {type:'skill', id:'', level:1}) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'mod-row';
+  div.style.gridTemplateColumns = '100px 1fr 70px 32px';
+  div.innerHTML = `
+    <select class="u_type" onchange="updateUnlockFields(this)">
+      <option value="skill" ${data.type==='skill'?'selected':''}>skill</option>
+      <option value="attr" ${data.type==='attr'?'selected':''}>attr</option>
+      <option value="equippedTag" ${data.type==='equippedTag'?'selected':''}>equippedTag</option>
+      <option value="quest" ${data.type==='quest'?'selected':''}>quest</option>
+    </select>
+    <input class="u_id" type="text" placeholder="id / tag / attr" value="${data.id || data.attr || data.tag || ''}" />
+    <input class="u_level" type="number" value="${data.level||1}" min="1" title="level" />
+    <button class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+  updateUnlockFields(div.querySelector('.u_type'));
+}
+
+function updateUnlockFields(sel) {
+  const row = sel.closest('.mod-row');
+  const levelInput = row.querySelector('.u_level');
+  const idInput = row.querySelector('.u_id');
+  if (sel.value === 'equippedTag' || sel.value === 'quest') {
+    levelInput.style.visibility = 'hidden';
+    idInput.placeholder = sel.value === 'equippedTag' ? 'tag (sword, unarmed…)' : 'quest id';
+  } else {
+    levelInput.style.visibility = 'visible';
+    idInput.placeholder = sel.value === 'attr' ? 'str / dex / …' : 'skill id';
+  }
+}
+
+function addEffectRow(data = {stat:'damage', op:'mult', value:0, perLevel:0.01}) {
+  const container = document.getElementById('s_effects');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'mod-row';
+  div.style.gridTemplateColumns = '1fr 70px 60px 70px 32px';
+  div.innerHTML = `
+    <select class="ef_stat">
+      ${STAT_KEYS.map(s=>`<option value="${s}" ${s===data.stat?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <select class="ef_op">
+      <option value="add" ${data.op==='add'?'selected':''}>add</option>
+      <option value="mult" ${data.op==='mult'?'selected':''}>mult</option>
+    </select>
+    <input class="ef_val" type="number" step="0.01" value="${data.value}" title="base value" />
+    <input class="ef_per" type="number" step="0.001" value="${data.perLevel||0}" title="perLevel" />
+    <button class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function addTierNameRow(data = {level:1, name:''}) {
+  const container = document.getElementById('s_tiers');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'loot-row';
+  div.style.gridTemplateColumns = '70px 1fr 32px';
+  div.innerHTML = `
+    <input class="t_level" type="number" value="${data.level||1}" min="1" />
+    <input class="t_name" type="text" value="${data.name||''}" placeholder="Master of Blades" />
+    <button class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+function toggleActiveSection() {
+  const kind = document.getElementById('s_kind')?.value;
+  const show = kind === 'active';
+  const title = document.getElementById('s_active_title');
+  const section = document.getElementById('s_active_section');
+  if (title) title.style.display = show ? '' : 'none';
+  if (section) section.style.display = show ? '' : 'none';
+  if (show) updateActiveFields();
+}
+
+function updateActiveFields() {
+  const type = document.getElementById('s_active_type')?.value || 'strike';
+  const container = document.getElementById('s_active_fields');
+  if (!container) return;
+  if (type === 'strike') {
+    container.innerHTML = `
+      <div class="field" style="margin:0"><label>Damage Mult</label><input id="s_a_dmg" type="number" step="0.1" value="2.2" /></div>
+      <div class="field" style="margin:0"><label>Cooldown (ticks)</label><input id="s_a_cd" type="number" value="80" /></div>
+    `;
+  } else if (type === 'spell') {
+    container.innerHTML = `
+      <div class="field" style="margin:0"><label>Power</label><input id="s_a_power" type="number" value="3" /></div>
+      <div class="field" style="margin:0"><label>Cooldown</label><input id="s_a_cd" type="number" value="100" /></div>
+      <div class="field" style="margin:0"><label>Damage Type</label>
+        <select id="s_a_dtype">${DAMAGE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('')}</select>
+      </div>
+    `;
+  } else {
+    container.innerHTML = `
+      <div class="field" style="margin:0"><label>Duration (ticks)</label><input id="s_a_dur" type="number" value="30" /></div>
+      <div class="field" style="margin:0"><label>Cooldown</label><input id="s_a_cd" type="number" value="120" /></div>
+      <div class="field" style="margin:0;grid-column:1/-1"><label>Buff mods (stat:op:value, …)</label>
+        <input id="s_a_mods" type="text" placeholder="dodge:add:0.4, damage:mult:0.2" />
+      </div>
+    `;
+  }
+}
+
+// ----- Recipe helpers -----
+function addCostRow(data = {id:'', qty:1}) {
+  const container = document.getElementById('r_costs');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'loot-row';
+  div.style.gridTemplateColumns = '1fr 70px 32px';
+  div.innerHTML = `
+    <input class="cost_id" type="text" placeholder="material id" value="${data.id||''}" />
+    <input class="cost_qty" type="number" value="${data.qty||1}" min="1" />
+    <button class="icon-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+// ============================================================
+//  CHIP / TAG HELPERS
+// ============================================================
+function toggleChip(el) {
+  el.classList.toggle('active');
+}
+function getActiveTags(prefix) {
+  return [...document.querySelectorAll(`#${prefix}_tags .chip.active`)].map(c => c.dataset.tag);
+}
+function addCustomTag(prefix) {
+  const input = document.getElementById(`${prefix}_tag_custom`);
+  const val = input.value.trim().toLowerCase().replace(/\s+/g,'_');
+  if (!val) return;
+  const container = document.getElementById(`${prefix}_tags`);
+  const span = document.createElement('span');
+  span.className = 'chip active';
+  span.dataset.tag = val;
+  span.onclick = () => toggleChip(span);
+  span.innerHTML = `${val}<span class="x" onclick="event.stopPropagation();this.parentElement.remove()">×</span>`;
+  container.appendChild(span);
+  input.value = '';
+}
+
+function autoId(prefix) {
+  const name = document.getElementById(`${prefix}_name`).value;
+  const idEl = document.getElementById(`${prefix}_id`);
+  if (!idEl.dataset.manual) idEl.value = slugify(name);
+}
+// mark manual edit
+document.addEventListener('input', e => {
+  if (e.target.id && e.target.id.endsWith('_id')) e.target.dataset.manual = '1';
+});
+
+// ============================================================
+//  GENERATE
+// ============================================================
+function generate() {
+  let code = '';
+  let id = '';
+
+  if (currentType === 'monster') {
+    id = document.getElementById('m_id').value.trim() || slugify(document.getElementById('m_name').value);
+    const name = document.getElementById('m_name').value.trim() || 'Unnamed';
+    const icon = document.getElementById('m_icon').value.trim() || '❓';
+    const tags = getActiveTags('m');
+    const tier = document.getElementById('m_tier').value;
+    const damageType = document.getElementById('m_dmg').value;
+    const xp = +document.getElementById('m_xp').value || 1;
+    const goldMin = +document.getElementById('m_goldmin').value || 0;
+    const goldMax = +document.getElementById('m_goldmax').value || goldMin;
+
+    const attrs = {};
+    const growth = {};
+    ATTRS.forEach(a => {
+      const av = +document.getElementById(`m_attr_${a}`).value;
+      const gv = +document.getElementById(`m_grow_${a}`).value;
+      if (av) attrs[a] = av;
+      if (gv) growth[a] = gv;
+    });
+
+    const resistances = {};
+    DAMAGE_TYPES.forEach(t => {
+      const v = document.getElementById(`m_res_${t}`).value;
+      if (v !== '' && !isNaN(+v)) resistances[t] = +v;
+    });
+
+    const entries = [];
+    document.querySelectorAll('#m_loot_entries .loot-row').forEach(row => {
+      const kind = row.querySelector('.l_kind').value;
+      const eid = row.querySelector('.l_id').value.trim();
+      const weight = +row.querySelector('.l_weight').value || 1;
+      const qtyStr = row.querySelector('.l_qty').value.trim();
+      const entry = { kind, weight };
+      if (kind === 'item' || kind === 'material') entry.id = eid || 'unknown';
+      if (qtyStr) {
+        const parts = qtyStr.split(/[-–]/).map(Number);
+        if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) entry.qty = parts;
+        else if (!isNaN(+qtyStr)) entry.qty = [+qtyStr, +qtyStr];
+      }
+      entries.push(entry);
+    });
+    if (entries.length === 0) {
+      entries.push({ kind: 'nothing', weight: 100 });
+    }
+
+    const mon = {
+      id, name, icon, tags, tier, damageType,
+      ...(Object.keys(resistances).length ? { resistances } : {}),
+      attrs, growth, xp,
+      gold: [goldMin, goldMax],
+      loot: {
+        rolls: +document.getElementById('m_loot_rolls').value || 1,
+        entries
+      }
+    };
+
+    code = `  ${id}: ${formatTS(mon, 2)},`;
+  }
+
+  else if (currentType === 'item') {
+    id = document.getElementById('i_id').value.trim() || slugify(document.getElementById('i_name').value);
+    const name = document.getElementById('i_name').value.trim() || 'Unnamed';
+    const icon = document.getElementById('i_icon').value.trim() || '❓';
+    const slot = document.getElementById('i_slot').value;
+    const tags = getActiveTags('i');
+    const desc = document.getElementById('i_desc').value.trim();
+    const value = +document.getElementById('i_value').value || 0;
+
+    const mods = [];
+    document.querySelectorAll('#i_mods .mod-row').forEach(row => {
+      const mod = {
+        stat: row.querySelector('.mod_stat').value,
+        op: row.querySelector('.mod_op').value,
+        value: +row.querySelector('.mod_val').value
+      };
+      const tag = row.querySelector('.mod_tag').value.trim();
+      if (tag) mod.requiresTag = tag;
+      mods.push(mod);
+    });
+
+    const item = { id, name, icon, slot, tags, mods, value };
+    if (desc) item.desc = desc;
+
+    code = `  ${id}: ${formatTS(item, 2)},`;
+  }
+
+  else if (currentType === 'quest') {
+    id = document.getElementById('q_id').value.trim() || slugify(document.getElementById('q_name').value);
+    const name = document.getElementById('q_name').value.trim() || 'Unnamed Quest';
+    const desc = document.getElementById('q_desc').value.trim() || '';
+    const giver = document.getElementById('q_giver').value.trim() || 'unknown_npc';
+    const reqId = document.getElementById('q_req').value.trim();
+
+    const objectives = [];
+    document.querySelectorAll('#q_objectives .obj-row').forEach(row => {
+      const type = row.querySelector('.o_type').value;
+      const count = +row.querySelector('.o_count').value || 1;
+      const target = row.querySelector('.o_target').value.trim();
+      const odesc = row.querySelector('.o_desc').value.trim() || 'Objective';
+      const obj = { type, count, desc: odesc };
+      if (type === 'kill') obj.monsterId = target;
+      if (type === 'craft') obj.recipeId = target;
+      if (type === 'collect') { obj.materialId = target; obj.qty = count; delete obj.count; }
+      if (type === 'reach') { obj.spotId = target; delete obj.count; }
+      objectives.push(obj);
+    });
+    if (objectives.length === 0) {
+      objectives.push({ type: 'kill', monsterId: 'goblin', count: 5, desc: 'Slay Goblins' });
+    }
+
+    const rewards = {};
+    const gold = +document.getElementById('q_gold').value;
+    if (gold) rewards.gold = gold;
+
+    const itemsStr = document.getElementById('q_items').value.trim();
+    if (itemsStr) rewards.items = itemsStr.split(',').map(s => s.trim()).filter(Boolean);
+
+    const matsStr = document.getElementById('q_mats').value.trim();
+    if (matsStr) {
+      rewards.materials = matsStr.split(',').map(s => {
+        const [mid, qty] = s.trim().split(':');
+        return { id: mid.trim(), qty: +(qty||1) };
+      });
+    }
+
+    const sxStr = document.getElementById('q_skillxp').value.trim();
+    if (sxStr) {
+      rewards.skillXp = sxStr.split(',').map(s => {
+        const [sid, xp] = s.trim().split(':');
+        return { id: sid.trim(), xp: +(xp||10) };
+      });
+    }
+
+    const quest = { id, name, desc, giver, objectives, rewards };
+    if (reqId) quest.requirements = [{ type: 'quest', id: reqId }];
+
+    code = `  ${id}: ${formatTS(quest, 2)},`;
+  }
+
+  else if (currentType === 'location') {
+    id = document.getElementById('l_id').value.trim() || slugify(document.getElementById('l_name').value);
+    const name = document.getElementById('l_name').value.trim() || 'Unnamed Spot';
+    const icon = document.getElementById('l_icon').value.trim() || '📍';
+    const areaId = document.getElementById('l_area').value.trim() || 'unknown_area';
+    const desc = document.getElementById('l_desc').value.trim() || '';
+    const mapX = +document.getElementById('l_mapx').value;
+    const mapY = +document.getElementById('l_mapy').value;
+    const exploreTicks = document.getElementById('l_explore').value;
+    const waypoint = document.getElementById('l_waypoint').checked;
+
+    // Activities
+    const activities = [];
+    document.querySelectorAll('#l_activities .obj-row').forEach((row, i) => {
+      const kind = row.querySelector('.a_kind').value;
+      const aname = row.querySelector('.a_name').value.trim() || kind;
+      const aicon = row.querySelector('.a_icon').value.trim() || '❓';
+      const extra = row.querySelector('.a_extra_val').value.trim();
+      const ticksPer = +row.querySelector('.a_ticks_val')?.value || 60;
+      const act = { id: `${kind}_${i}`, kind, name: aname, icon: aicon };
+      if (kind === 'train') act.attr = extra || 'str';
+      if (kind === 'gather') { act.material = extra || 'unknown'; act.ticksPer = ticksPer; }
+      if (kind === 'job') { act.gold = +extra || 5; act.ticksPer = ticksPer; }
+      activities.push(act);
+    });
+    if (activities.length === 0) {
+      activities.push({ id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '🏹' });
+    }
+
+    // Encounters
+    const encounters = [];
+    document.querySelectorAll('#l_encounters .loot-row').forEach(row => {
+      const monsterId = row.querySelector('.e_monster').value.trim();
+      if (!monsterId) return;
+      encounters.push({
+        monsterId,
+        weight: +row.querySelector('.e_weight').value || 50,
+        level: [+row.querySelector('.e_lvlmin').value || 1, +row.querySelector('.e_lvlmax').value || 3]
+      });
+    });
+
+    // Recipes
+    const recipesStr = document.getElementById('l_recipes').value.trim();
+    const recipes = recipesStr ? recipesStr.split(',').map(s => s.trim()).filter(Boolean) : undefined;
+
+    // Connections
+    const connections = [];
+    document.querySelectorAll('#l_connections .obj-row').forEach(row => {
+      const to = row.querySelector('.c_to').value.trim();
+      if (!to) return;
+      const conn = {
+        to,
+        ticks: +row.querySelector('.c_ticks').value || 60
+      };
+      const label = row.querySelector('.c_label').value.trim();
+      if (label) conn.label = label;
+      if (row.querySelector('.c_oneway').checked) conn.oneWay = true;
+      if (row.querySelector('.c_hidden').checked) conn.hidden = true;
+      connections.push(conn);
+    });
+
+    const spot = {
+      id, name, icon, areaId, desc,
+      activities,
+      connections
+    };
+    if (!isNaN(mapX) && !isNaN(mapY)) spot.map = { x: mapX, y: mapY };
+    if (waypoint) spot.waypoint = true;
+    if (exploreTicks !== '' && !isNaN(+exploreTicks)) spot.exploreTicks = +exploreTicks;
+    if (encounters.length) spot.encounters = encounters;
+    if (recipes && recipes.length) spot.recipes = recipes;
+
+    code = `  ${id}: ${formatTS(spot, 2)},`;
+  }
+
+  else if (currentType === 'skill') {
+    id = document.getElementById('s_id').value.trim() || slugify(document.getElementById('s_name').value);
+    const name = document.getElementById('s_name').value.trim() || 'Unnamed Skill';
+    const icon = document.getElementById('s_icon').value.trim() || '✨';
+    const desc = document.getElementById('s_desc').value.trim() || '';
+    const kind = document.getElementById('s_kind').value;
+    const category = document.getElementById('s_category').value;
+    const parent = document.getElementById('s_parent').value.trim();
+    const tags = getActiveTags('s');
+
+    // Unlocks
+    const unlock = [];
+    document.querySelectorAll('#s_unlocks .mod-row').forEach(row => {
+      const type = row.querySelector('.u_type').value;
+      const val = row.querySelector('.u_id').value.trim();
+      const level = +row.querySelector('.u_level').value || 1;
+      if (!val) return;
+      if (type === 'skill') unlock.push({ type: 'skill', id: val, level });
+      else if (type === 'attr') unlock.push({ type: 'attr', attr: val, level });
+      else if (type === 'equippedTag') unlock.push({ type: 'equippedTag', tag: val });
+      else if (type === 'quest') unlock.push({ type: 'quest', id: val });
+    });
+
+    // Effects
+    const effects = [];
+    document.querySelectorAll('#s_effects .mod-row').forEach(row => {
+      const mod = {
+        stat: row.querySelector('.ef_stat').value,
+        op: row.querySelector('.ef_op').value,
+        value: +row.querySelector('.ef_val').value
+      };
+      const per = +row.querySelector('.ef_per').value;
+      if (per) mod.perLevel = per;
+      effects.push(mod);
+    });
+
+    // Active
+    let active;
+    if (kind === 'active') {
+      const atype = document.getElementById('s_active_type')?.value || 'strike';
+      if (atype === 'strike') {
+        active = {
+          type: 'strike',
+          damageMult: +document.getElementById('s_a_dmg')?.value || 2,
+          cooldown: +document.getElementById('s_a_cd')?.value || 80
+        };
+      } else if (atype === 'spell') {
+        active = {
+          type: 'spell',
+          power: +document.getElementById('s_a_power')?.value || 3,
+          cooldown: +document.getElementById('s_a_cd')?.value || 100,
+          damageType: document.getElementById('s_a_dtype')?.value || 'arcane'
+        };
+      } else {
+        const modsStr = document.getElementById('s_a_mods')?.value || '';
+        const mods = modsStr.split(',').map(s => {
+          const [stat, op, val] = s.trim().split(':');
+          return { stat: stat?.trim(), op: op?.trim() || 'add', value: +val || 0 };
+        }).filter(m => m.stat);
+        active = {
+          type: 'buff',
+          mods: mods.length ? mods : [{ stat: 'dodge', op: 'add', value: 0.3 }],
+          duration: +document.getElementById('s_a_dur')?.value || 30,
+          cooldown: +document.getElementById('s_a_cd')?.value || 120
+        };
+      }
+    }
+
+    // Tier names
+    const tierNames = [];
+    document.querySelectorAll('#s_tiers .loot-row').forEach(row => {
+      const level = +row.querySelector('.t_level').value;
+      const tname = row.querySelector('.t_name').value.trim();
+      if (tname) tierNames.push({ level, name: tname });
+    });
+
+    const skill = {
+      id, name, icon, desc, kind, category, tags,
+      unlock: unlock.length ? unlock : []
+    };
+    if (parent) skill.parent = parent;
+    if (effects.length) skill.effects = effects;
+    if (active) skill.active = active;
+    if (tierNames.length) skill.tierNames = tierNames;
+
+    code = `  ${id}: ${formatTS(skill, 2)},`;
+  }
+
+  else if (currentType === 'recipe') {
+    id = document.getElementById('r_id').value.trim() || slugify(document.getElementById('r_name').value);
+    const resultKind = document.getElementById('r_result_kind').value;
+    const resultId = document.getElementById('r_result_id').value.trim() || id;
+    const resultQty = +document.getElementById('r_result_qty').value || 1;
+    const ticks = +document.getElementById('r_ticks').value || 100;
+    const xp = +document.getElementById('r_xp').value || 0;
+
+    const cost = [];
+    document.querySelectorAll('#r_costs .loot-row').forEach(row => {
+      const cid = row.querySelector('.cost_id').value.trim();
+      const qty = +row.querySelector('.cost_qty').value || 1;
+      if (cid) cost.push({ id: cid, qty });
+    });
+    if (cost.length === 0) cost.push({ id: 'iron_scrap', qty: 1 });
+
+    const unlock = [];
+    document.querySelectorAll('#r_unlocks .mod-row').forEach(row => {
+      const type = row.querySelector('.u_type').value;
+      const val = row.querySelector('.u_id').value.trim();
+      const level = +row.querySelector('.u_level').value || 1;
+      if (!val) return;
+      if (type === 'skill') unlock.push({ type: 'skill', id: val, level });
+      else if (type === 'attr') unlock.push({ type: 'attr', attr: val, level });
+      else if (type === 'equippedTag') unlock.push({ type: 'equippedTag', tag: val });
+      else if (type === 'quest') unlock.push({ type: 'quest', id: val });
+    });
+
+    const recipe = {
+      id,
+      result: { kind: resultKind, id: resultId, ...(resultQty > 1 ? { qty: resultQty } : {}) },
+      cost,
+      ticks,
+      xp
+    };
+    if (unlock.length) recipe.unlock = unlock;
+
+    code = `  ${id}: ${formatTS(recipe, 2)},`;
+  }
+
+  lastGenerated = code;
+  lastEntryId = id;
+  document.getElementById('preview').innerHTML = highlight(code);
+  toast('Generated ✓');
+}
+
+// ============================================================
+//  FILE HANDLING (modern API + universal fallback)
+// ============================================================
+function updateFileUI() {
+  const status = document.getElementById('fileStatus');
+  const appendBtn = document.getElementById('appendBtn');
+  const dlModBtn = document.getElementById('downloadModifiedBtn');
+  const hint = document.getElementById('fileHint');
+
+  if (openedFileName) {
+    status.textContent = `📂 ${openedFileName}${hasWriteAccess ? ' (live write)' : ' (in memory)'}`;
+    status.classList.add('open');
+    appendBtn.disabled = false;
+    appendBtn.textContent = hasWriteAccess ? '📥 Append & Save' : '📥 Append (then download)';
+    dlModBtn.style.display = hasWriteAccess ? 'none' : 'block';
+    dlModBtn.disabled = false;
+    hint.innerHTML = hasWriteAccess
+      ? 'Modern API active — Append will write directly into the file.'
+      : 'File loaded in memory. After Append, use <b>Download Modified File</b> and replace the original.';
+  } else {
+    status.textContent = 'No file opened';
+    status.classList.remove('open');
+    appendBtn.disabled = true;
+    appendBtn.textContent = '📥 Append Entry';
+    dlModBtn.style.display = 'none';
+    hint.innerHTML = 'Open a real <code>*.data.ts</code> file → Generate → Append.<br>Or use Save As for a new snippet.';
+  }
+}
+
+async function openFile() {
+  // Prefer modern File System Access API (Chrome, Edge, Brave, Opera)
+  if (window.showOpenFilePicker) {
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{
+          description: 'TypeScript data files',
+          accept: { 'text/typescript': ['.ts'], 'text/plain': ['.ts', '.txt'] }
+        }],
+        multiple: false
+      });
+      fileHandle = handle;
+      const file = await handle.getFile();
+      fileContent = await file.text();
+      openedFileName = handle.name;
+      hasWriteAccess = true;
+      updateFileUI();
+      toast(`Opened ${handle.name} (live write enabled)`);
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      // fall through to classic method
+      console.warn('showOpenFilePicker failed, falling back', e);
+    }
+  }
+
+  // Universal fallback — classic <input type="file">
+  document.getElementById('classicFileInput').click();
+}
+
+function handleClassicFile(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    fileContent = reader.result;
+    openedFileName = file.name;
+    fileHandle = null;
+    hasWriteAccess = false;
+    updateFileUI();
+    toast(`Loaded ${file.name} (use Download Modified File after appending)`);
+  };
+  reader.onerror = () => toast('Failed to read file');
+  reader.readAsText(file);
+
+  // reset so the same file can be re-selected later
+  event.target.value = '';
+}
+
+function smartAppend(content, snippet) {
+  // Insert the new entry just before the final "};" of the main Record
+  const lastClose = content.lastIndexOf('};');
+  if (lastClose === -1) {
+    return content.trimEnd() + '\n\n' + snippet + '\n';
+  }
+  const before = content.slice(0, lastClose).trimEnd();
+  const needsComma = !before.endsWith(',') && !before.endsWith('{');
+  const insert = (needsComma ? ',\n' : '\n') + snippet + '\n';
+  return content.slice(0, lastClose) + insert + content.slice(lastClose);
+}
+
+async function appendToFile() {
+  if (!openedFileName || !lastGenerated) {
+    toast('Generate first, then open a file');
+    return;
+  }
+
+  const newContent = smartAppend(fileContent, lastGenerated);
+
+  if (hasWriteAccess && fileHandle) {
+    // True in-place write (Chrome/Edge)
+    try {
+      const writable = await fileHandle.createWritable();
+      await writable.write(newContent);
+      await writable.close();
+      fileContent = newContent;
+      toast(`Appended "${lastEntryId}" directly into ${openedFileName} ✓`);
+    } catch (e) {
+      toast('Write failed: ' + e.message, 4000);
+      console.error(e);
+      // fall back to in-memory so user can still download
+      fileContent = newContent;
+      hasWriteAccess = false;
+      updateFileUI();
+      toast('Direct write failed — use Download Modified File instead', 4000);
+    }
+  } else {
+    // In-memory only — prepare for download
+    fileContent = newContent;
+    toast(`Appended "${lastEntryId}" in memory. Now click "Download Modified File".`);
+    document.getElementById('downloadModifiedBtn').style.display = 'block';
+  }
+}
+
+function downloadModifiedFile() {
+  if (!fileContent || !openedFileName) {
+    toast('No modified file ready');
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([fileContent], { type: 'text/plain' }));
+  a.download = openedFileName;          // same name so user can overwrite easily
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast(`Downloaded ${openedFileName} — replace the original with this file`);
+}
+
+async function saveAsFile() {
+  if (!lastGenerated) {
+    toast('Generate something first');
+    return;
+  }
+  const filename = `${lastEntryId || 'new_entry'}.snippet.ts`;
+  const blobContent = `// Generated by KSG Content Forge\n// Paste into the appropriate *.data.ts file\n\n${lastGenerated}\n`;
+
+  // Prefer modern save picker
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: 'TypeScript', accept: { 'text/typescript': ['.ts'] } }]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blobContent);
+      await writable.close();
+      toast(`Saved as ${handle.name}`);
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      // fall through
+    }
+  }
+
+  // Universal fallback
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([blobContent], { type: 'text/plain' }));
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Downloaded snippet');
+}
+
+function downloadSnippet() {
+  if (!lastGenerated) { toast('Generate first'); return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lastGenerated + '\n'], { type: 'text/plain' }));
+  a.download = `${lastEntryId || 'entry'}.snippet.ts`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Downloaded');
+}
+
+function copyCode() {
+  if (!lastGenerated) { toast('Generate first'); return; }
+  navigator.clipboard.writeText(lastGenerated).then(() => toast('Copied to clipboard ✓'))
+    .catch(() => {
+      // very old browser fallback
+      const ta = document.createElement('textarea');
+      ta.value = lastGenerated;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      toast('Copied (fallback)');
+    });
+}
+
+// ============================================================
+//  NAV
+// ============================================================
+function switchType(type) {
+  currentType = type;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+
+  const titles = {
+    monster:  ['🐀 Monster Generator', 'src/core/data/monsters.data.ts'],
+    item:     ['⚔️ Item / Equipment Generator', 'src/core/data/items.data.ts'],
+    quest:    ['📜 Quest Generator', 'src/core/data/quests.data.ts'],
+    location: ['📍 Location / Spot Generator', 'src/core/data/locations.data.ts'],
+    skill:    ['✨ Skill Generator', 'src/core/data/skills.data.ts'],
+    recipe:   ['⚒️ Recipe Generator', 'src/core/data/recipes.data.ts'],
+  };
+  document.getElementById('pageTitle').textContent = titles[type][0];
+  document.getElementById('pageBadge').textContent = titles[type][1];
+
+  const pane = document.getElementById('formPane');
+  if (type === 'monster') {
+    pane.innerHTML = buildMonsterForm();
+    setTimeout(() => {
+      addLootRow({kind:'item', id:'cloth_tunic', weight:5});
+      addLootRow({kind:'nothing', weight:95});
+    }, 0);
+  } else if (type === 'item') {
+    pane.innerHTML = buildItemForm();
+    setTimeout(() => {
+      addModRow({stat:'damage', op:'add', value:7});
+      addModRow({stat:'crit', op:'add', value:0.02});
+    }, 0);
+  } else if (type === 'quest') {
+    pane.innerHTML = buildQuestForm();
+    setTimeout(() => addObjective({type:'kill', monsterId:'goblin', count:10, desc:'Slay Goblins'}), 0);
+  } else if (type === 'location') {
+    pane.innerHTML = buildLocationForm();
+    setTimeout(() => {
+      addActivityRow({kind:'hunt', name:'Hunt', icon:'🏹'});
+      addActivityRow({kind:'explore', name:'Explore', icon:'🧭'});
+      addEncounterRow({monsterId:'forest_rat', weight:60, levelMin:1, levelMax:3});
+      addConnectionRow({to:'village_square', ticks:80});
+    }, 0);
+  } else if (type === 'skill') {
+    pane.innerHTML = buildSkillForm();
+    setTimeout(() => {
+      // pre-select combat tag
+      document.querySelectorAll('#s_tags .chip').forEach(c => {
+        if (c.dataset.tag === 'combat') c.classList.add('active');
+      });
+      addUnlockRow('s_unlocks', {type:'skill', id:'fighting', level:10});
+      addEffectRow({stat:'damage', op:'mult', value:0, perLevel:0.015});
+    }, 0);
+  } else if (type === 'recipe') {
+    pane.innerHTML = buildRecipeForm();
+    setTimeout(() => {
+      addCostRow({id:'iron_ingot', qty:2});
+      addCostRow({id:'hardwood', qty:1});
+      addUnlockRow('r_unlocks', {type:'skill', id:'smithing', level:3});
+    }, 0);
+  }
+
+  document.getElementById('preview').innerHTML = '<span class="cmt">// Fill the form and click Generate</span>';
+  lastGenerated = '';
+}
+
+// boot
+switchType('monster');
+</script>
+</body>
+</html>

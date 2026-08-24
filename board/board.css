@@ -1,0 +1,124 @@
+/* The pinboard's shell. Same palette as the forge on purpose — they are two
+   windows onto one workshop, and a second visual language would be a lie about
+   how related they are. The forge edits what the game IS; the board tracks what
+   it is BECOMING. */
+
+:root {
+  --bg: #0f1219;
+  --bg2: #161b26;
+  --bg3: #1e2535;
+  --bg4: #252d40;
+  --border: #2a3347;
+  --border-bright: #3b4761;
+  --text: #e6eaf2;
+  --dim: #8b95a8;
+  --dimmer: #626d80;
+  --accent: #6c9eff;
+  --accent2: #a78bfa;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --bad: #f87171;
+  --mono: 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+  /* One hue per column, cold → warm as work moves right. The two columns the
+     human owns outright (todo, review) are the two that read as ACTION; the
+     ones Claude works in are cooler on purpose. */
+  --col-todo: #7dd3fc;
+  --col-planning: #a78bfa;
+  --col-draft: #6c9eff;
+  --col-execution: #34d399;
+  --col-review: #fbbf24;
+  --col-complete: #4b5568;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13.5px;
+  overflow: hidden;
+}
+
+#board {
+  height: 100vh;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  border-radius: 6px;
+  padding: 6px 11px;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+button:hover:not(:disabled) {
+  background: var(--bg4);
+  border-color: var(--border-bright);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #0b1020;
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  background: #86b0ff;
+  border-color: #86b0ff;
+}
+
+input,
+select {
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 9px;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg4);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-bright);
+}

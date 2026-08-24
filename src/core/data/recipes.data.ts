@@ -1,0 +1,255 @@
+import type { RecipeDef } from '../types';
+
+/**
+ * Crafting recipes (ported/adapted from proto26 craftingRequirements).
+ * Crafting runs as an idle activity at spots listing the recipe; costs are
+ * consumed per completed craft and Smithing XP is granted.
+ */
+export const RECIPES: Record<string, RecipeDef> = {
+  iron_ingot: {
+    id: 'iron_ingot',
+    tags: ['smithing'],
+    result: { kind: 'material', id: 'iron_ingot' },
+    cost: [{ id: 'iron_scrap', qty: 3 }],
+    ticks: 120,
+    xp: 4,
+  },
+  iron_dagger: {
+    id: 'iron_dagger',
+    tags: ['smithing'],
+    result: { kind: 'item', id: 'iron_dagger' },
+    cost: [
+      { id: 'iron_ingot', qty: 1 },
+      { id: 'hardwood', qty: 1 },
+    ],
+    ticks: 220,
+    xp: 8,
+  },
+  iron_sword: {
+    id: 'iron_sword',
+    tags: ['smithing'],
+    result: { kind: 'item', id: 'iron_sword' },
+    cost: [
+      { id: 'iron_ingot', qty: 2 },
+      { id: 'hardwood', qty: 1 },
+    ],
+    ticks: 300,
+    xp: 12,
+    unlock: [{ type: 'skill', id: 'smithing', level: 3 }],
+  },
+  iron_breastplate: {
+    id: 'iron_breastplate',
+    tags: ['smithing'],
+    result: { kind: 'item', id: 'iron_breastplate' },
+    cost: [{ id: 'iron_ingot', qty: 4 }],
+    ticks: 500,
+    xp: 25,
+    unlock: [{ type: 'skill', id: 'smithing', level: 8 }],
+  },
+  leather_cap: {
+    id: 'leather_cap',
+    tags: ['leatherwork'],
+    result: { kind: 'item', id: 'leather_cap' },
+    cost: [{ id: 'ruined_fur', qty: 4 }],
+    ticks: 150,
+    xp: 4,
+  },
+  leather_vest: {
+    id: 'leather_vest',
+    tags: ['leatherwork'],
+    result: { kind: 'item', id: 'leather_vest' },
+    cost: [
+      { id: 'torn_fur', qty: 4 },
+      { id: 'ruined_fur', qty: 2 },
+    ],
+    ticks: 250,
+    xp: 8,
+  },
+  leather_boots: {
+    id: 'leather_boots',
+    tags: ['leatherwork'],
+    result: { kind: 'item', id: 'leather_boots' },
+    cost: [{ id: 'torn_fur', qty: 3 }],
+    ticks: 200,
+    xp: 6,
+  },
+  hunting_bow: {
+    id: 'hunting_bow',
+    tags: ['leatherwork'],
+    result: { kind: 'item', id: 'hunting_bow' },
+    cost: [
+      { id: 'hardwood', qty: 2 },
+      { id: 'torn_fur', qty: 1 },
+    ],
+    ticks: 250,
+    xp: 8,
+  },
+  herbal_charm: {
+    id: 'herbal_charm',
+    tags: ['alchemy'],
+    result: { kind: 'item', id: 'herbal_charm' },
+    cost: [
+      { id: 'common_herb', qty: 8 },
+      { id: 'torn_fur', qty: 1 },
+    ],
+    ticks: 300,
+    xp: 10,
+  },
+  rapier: {
+    id: 'rapier',
+    tags: ['smithing'],
+    result: { kind: 'item', id: 'rapier' },
+    cost: [
+      { id: 'iron_ingot', qty: 3 },
+      { id: 'hardwood', qty: 1 },
+    ],
+    ticks: 400,
+    xp: 18,
+    unlock: [{ type: 'skill', id: 'smithing', level: 8 }],
+  },
+  parrying_dagger: {
+    id: 'parrying_dagger',
+    tags: ['smithing'],
+    result: { kind: 'item', id: 'parrying_dagger' },
+    cost: [
+      { id: 'iron_ingot', qty: 2 },
+      { id: 'hardwood', qty: 1 },
+    ],
+    ticks: 340,
+    xp: 15,
+    unlock: [{ type: 'skill', id: 'smithing', level: 8 }],
+  },
+  uchigatana: {
+    id: 'uchigatana',
+    tags: ['smithing'],
+    result: { kind: 'item', id: 'uchigatana' },
+    cost: [
+      { id: 'iron_ingot', qty: 3 },
+      { id: 'hardwood', qty: 1 },
+      { id: 'pristine_fur', qty: 1 },
+    ],
+    ticks: 450,
+    xp: 20,
+    unlock: [{ type: 'skill', id: 'smithing', level: 10 }],
+  },
+  katana: {
+    id: 'katana',
+    tags: ['smithing'],
+    result: { kind: 'item', id: 'katana' },
+    cost: [
+      { id: 'iron_ingot', qty: 2 },
+      { id: 'hardwood', qty: 1 },
+    ],
+    ticks: 200,
+    xp: 10,
+    unlock: [{ type: 'skill', id: 'smithing', level: 6 }],
+  },
+  wolf_cloak: {
+    id: 'wolf_cloak',
+    tags: ['leatherwork'],
+    result: { kind: 'item', id: 'wolf_cloak' },
+    cost: [
+      { id: 'pristine_fur', qty: 2 },
+      { id: 'torn_fur', qty: 3 },
+    ],
+    ticks: 400,
+    xp: 15,
+    // Two pristine hides and three torn ones, and not a scrap of metal — it was
+    // gated on Smithing, which was invisible while every craft levelled every
+    // trade at once.
+    unlock: [{ type: 'skill', id: 'leathercrafting', level: 5 }],
+  },
+  copper_ingot: {
+    id: 'copper_ingot',
+    name: 'Copper Ingot',
+    ticks: 100,
+    xp: 3,
+    cost: [
+      { id: 'copper_ore', qty: 3 },
+    ],
+    tags: ['smithing'],
+    result: { id: 'copper_ingot', kind: 'material' },
+  },
+  tin_ingot: {
+    id: 'tin_ingot',
+    name: 'Tin Ingot',
+    ticks: 60,
+    xp: 0,
+    cost: [
+      { id: 'tin_ore', qty: 3 },
+    ],
+    tags: ['smithing'],
+    result: { id: 'tin_ingot', kind: 'material' },
+  },
+  bronze_ingot: {
+    id: 'bronze_ingot',
+    name: 'Bronze Ingot',
+    ticks: 140,
+    xp: 4,
+    cost: [
+      { id: 'copper_ingot', qty: 4 },
+      { id: 'tin_ingot', qty: 1 },
+    ],
+    tags: ['smithing'],
+    result: { id: 'bronze_ingot', kind: 'material' },
+  },
+  bronze_dagger: {
+    id: 'bronze_dagger',
+    name: 'Bronze Dagger',
+    ticks: 220,
+    xp: 8,
+    cost: [
+      { id: 'bronze_ingot', qty: 1 },
+      { id: 'leather', qty: 1 },
+    ],
+    tags: ['smithing'],
+    result: { id: 'iron_dagger', kind: 'item' },
+  },
+  /**
+   * Four routes to the same hide. Order is preference: the junk goes first, so
+   * an idle run burns ruined fur while it lasts and only reaches for the
+   * pristine pelt when nothing worse is left — and that pelt pays double,
+   * which is the reason to have saved it.
+   */
+  leather: {
+    id: 'leather',
+    name: 'Leather',
+    ticks: 90,
+    xp: 2,
+    cost: [{ id: 'ruined_fur', qty: 4 }],
+    alts: [
+      { id: 'torn', cost: [{ id: 'torn_fur', qty: 3 }] },
+      { id: 'pristine', cost: [{ id: 'pristine_fur', qty: 1 }], qty: 2 },
+    ],
+    // Names the work, which does two jobs: Leathercrafting manifests and levels
+    // from it, and its `craftSpeed:leatherwork` bonus knows to apply here.
+    tags: ['leatherwork'],
+    result: { id: 'leather', kind: 'material' },
+  },
+  /**
+   * Histones: what a new connection is built out of.
+   *
+   * Deliberately a RECIPE rather than a discipline. Every discipline owns an
+   * identity (sum / when / order / topology) and inventing a fifth for this
+   * would muddy the table for something that has no interesting decision in it
+   * — you are converting bulk into bulk. `alts` is what makes it "various
+   * materials": whatever you happen to be farming has a route, and the craft
+   * takes the first one it can afford, so the cheapest listed goes first.
+   *
+   * It is meant to be a grind. That is the brake on chromosome expansion.
+   */
+  histone: {
+    id: 'histone',
+    name: 'Spool Histones',
+    result: { id: 'histone', kind: 'material' },
+    cost: [{ id: 'biomatter', qty: 4 }],
+    alts: [
+      { id: 'gel', cost: [{ id: 'slime_gel', qty: 6 }] },
+      { id: 'bone', cost: [{ id: 'bone_dust', qty: 3 }] },
+      { id: 'rich', cost: [{ id: 'biomatter', qty: 10 }], qty: 3 },
+    ],
+    tags: ['geneshaping'],
+    ticks: 200,
+    xp: 6,
+  },
+};

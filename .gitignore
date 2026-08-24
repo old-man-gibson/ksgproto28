@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.local
+.forge-backups/
+
+# Third-party enemy art: Librarium battlers by Ækashics (akashics.moe), used
+# under http://www.akashics.moe/terms-of-use/. Licensed for game development,
+# but redistribution of the raw files is not permitted, so the 2,169 PNGs stay
+# out of version control. See docs/AUTHORSHIP.md §9.
+src/assets/enemies/

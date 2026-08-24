@@ -1,0 +1,1007 @@
+/**
+ * A live mirror of `tests/content.test.ts`, run against the staged working copy.
+ *
+ * The test suite stays the authority — the ✅ Verify button runs it for real.
+ * This exists so a broken reference shows up the instant you make it, on the
+ * node that made it, instead of after a save and a 10-second test run.
+ */
+
+import type { store as Store } from './store.svelte';
+import type { Connection, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, QuestDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
+import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
+import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
+import { MUSIC_AXES } from '../../src/core/data/music.data';
+
+/**
+ * Benches that are furniture rather than disciplines. The spellcrafting table
+ * is one table serving three schools, so `LocationPanel.svelte` renders it by
+ * hand instead of from DISCIPLINES — a real id that resolves nowhere.
+ */
+const SPECIAL_BENCHES = new Set(['spelltable']);
+
+export type Severity = 'error' | 'warn';
+
+export interface Issue {
+  severity: Severity;
+  /** What it is about — used to light up the offending node on the map. */
+  subject: { kind: string; id: string };
+  message: string;
+  /** Optional deep link into the entry, e.g. ['finds', '#id=mossy_chute']. */
+  path?: (string | number)[];
+}
+
+/**
+ * A gene the forge scaffolded for a species that had none.
+ *
+ * `genus` and `tier` ARE the gene — tier fixes both flatBase and ceiling, and
+ * genus decides what one tier step is worth — so leaving them unset is the
+ * honest way to say "drafted, not decided". Stubs stage as freely as anything
+ * else; `store.apply` is where they are stopped, because that is the moment a
+ * draft would become content.
+ */
+export function isGeneStub(def: { genus?: string; tier?: number } | undefined): boolean {
+  if (!def) return false;
+  return !def.genus || typeof def.tier !== 'number' || def.tier < 0;
+}
+
+type S = typeof Store;
+
+/** The shape every registry id follows: lowercase snake_case, letter first. */
+export const ID_SHAPE = /^[a-z][a-z0-9_]*$/;
+
+/**
+ * Why `next` cannot become an id in `kind`, or null if it can. This is the
+ * gate the rename fields (browser header, spot inspector) run on every
+ * keystroke; the shape half is mirrored by 'registry ids are lowercase
+ * snake_case' in tests/content.test.ts.
+ */
+export function idProblem(store: S, kind: string, next: string): string | null {
+  if (!next) return 'an id cannot be empty';
+  if (!ID_SHAPE.test(next)) {
+    return `'${next}' is not a usable id — lowercase snake_case: a letter first, then letters, digits and _`;
+  }
+  if (store.get(kind, next) !== undefined) return `${kind} '${next}' already exists`;
+  return null;
+}
+
+export function validate(store: S): Issue[] {
+  const issues: Issue[] = [];
+  const spots = store.all<SpotDef>('spot');
+  const areas = store.all<{ id: string; regionId: string }>('area');
+  const regions = store.all<{ id: string }>('region');
+  const npcs = store.all<NpcDef>('npc');
+  const materials = store.all('material');
+  const items = store.all('item');
+  const runes = store.all('rune');
+  const monsters = store.all('monster');
+  const recipes = store.all('recipe');
+  const quests = store.all<{ id: string; giver?: string }>('quest');
+  const skills = store.all<{ id: string; tags?: string[] }>('skill');
+  const disciplines = store.all('discipline');
+  const statuses = store.all<StatusDef>('status');
+  const towers = store.all<{ id: string; hubSpot: string }>('tower');
+  const bands = store.all<{ id: string; towerId: string; index: number; clearsToAdvance: number }>('band');
+  const floors = store.all<{
+    id: string;
+    towerId: string;
+    bandId?: string;
+    areaId: string;
+    gate?: { type: string }[];
+    personal?: boolean;
+  }>('floor');
+
+  const err = (kind: string, id: string, message: string, path?: (string | number)[]) =>
+    issues.push({ severity: 'error', subject: { kind, id }, message, path });
+  const warn = (kind: string, id: string, message: string, path?: (string | number)[]) =>
+    issues.push({ severity: 'warn', subject: { kind, id }, message, path });
+
+  const claimedTags = new Set<string>();
+  for (const s of Object.values(skills)) for (const t of s.tags ?? []) claimedTags.add(t);
+
+  // ---------- Areas & regions ----------
+  for (const area of Object.values(areas)) {
+    if (!regions[area.regionId]) err('area', area.id, `region '${area.regionId}' does not exist`);
+  }
+  const terrains = (store.meta.terrains ?? []) as string[];
+  for (const region of Object.values(regions) as { id: string; terrain?: string }[]) {
+    if (region.terrain && terrains.length > 0 && !terrains.includes(region.terrain)) {
+      err('region', region.id, `terrain '${region.terrain}' is not in TERRAIN_PROFILES`, ['terrain']);
+    }
+  }
+  // Place tags at every level of the chain — a spot's effective set is the
+  // union region ∪ area ∪ spot, so all three speak the same vocabulary.
+  const placeTagged: [string, { id: string; tags?: string[] }[]][] = [
+    ['region', Object.values(regions) as { id: string; tags?: string[] }[]],
+    ['area', Object.values(areas) as { id: string; tags?: string[] }[]],
+    ['spot', Object.values(spots)],
+  ];
+  for (const [kind, defs] of placeTagged) {
+    for (const def of defs) {
+      for (const tag of def.tags ?? []) {
+        if (!ELEMENT_TAGS.has(tag) && !PLACE_TAGS.has(tag)) {
+          err(kind, def.id, `tag '${tag}' is neither an element nor a place tag (exposure.ts)`, ['tags']);
+        }
+      }
+    }
+  }
+  // The resistances are one family: same curve as poison, whatever the element.
+  const reference = store.get<{ progression?: unknown; effects?: { levelCurve?: string }[] }>(
+    'skill',
+    'poison_resistance',
+  );
+  if (reference) {
+    for (const s of Object.values(skills) as {
+      id: string;
+      category?: string;
+      progression?: unknown;
+      effects?: { levelCurve?: string }[];
+    }[]) {
+      if (s.category !== 'resistance') continue;
+      if (JSON.stringify(s.progression) !== JSON.stringify(reference.progression)) {
+        err('skill', s.id, `progression differs from poison_resistance — the family moves together`, ['progression']);
+      }
+      if (s.effects?.[0]?.levelCurve !== reference.effects?.[0]?.levelCurve) {
+        err('skill', s.id, `effect levelCurve differs from poison_resistance`, ['effects']);
+      }
+    }
+  }
+
+  // ---------- Towers, bands & floors ----------
+  // Live mirror of the 'towers, bands & floors' block in tests/content.test.ts,
+  // which is the authority. Two agreed rules are deliberately absent from both
+  // layers — 'hidden access is never on a critical path' and 'every lateral
+  // edge is legal to delete' need a defined critical path, which needs floors
+  // actually placed on the ladder.
+  for (const tower of Object.values(towers)) {
+    if (!spots[tower.hubSpot]) err('tower', tower.id, `hubSpot '${tower.hubSpot}' does not exist`);
+  }
+  for (const band of Object.values(bands)) {
+    if (!towers[band.towerId]) err('band', band.id, `tower '${band.towerId}' does not exist`);
+    if (!(band.index > 0)) err('band', band.id, 'index is 1-based, so it must be at least 1');
+  }
+  // A gap in the ladder is a band that can never be reached — Invariant A's
+  // terminal state wearing a number.
+  for (const tower of Object.values(towers)) {
+    const idx = Object.values(bands)
+      .filter((b) => b.towerId === tower.id)
+      .map((b) => b.index)
+      .sort((a, b) => a - b);
+    if (idx.length && idx.some((n, i) => n !== i + 1)) {
+      err('tower', tower.id, `band indexes must run 1..n with no gaps (got ${idx.join(', ')})`);
+    }
+  }
+  const floorByArea = new Map<string, string>();
+  for (const floor of Object.values(floors)) {
+    if (!towers[floor.towerId]) err('floor', floor.id, `tower '${floor.towerId}' does not exist`);
+    if (!areas[floor.areaId]) err('floor', floor.id, `area '${floor.areaId}' does not exist`);
+    if (floor.bandId !== undefined) {
+      const band = bands[floor.bandId];
+      if (!band) err('floor', floor.id, `band '${floor.bandId}' does not exist`);
+      else if (band.towerId !== floor.towerId) {
+        err('floor', floor.id, `band '${floor.bandId}' belongs to another tower`);
+      }
+    }
+    // A personal floor can never be a rung everyone has to climb: that would
+    // put the critical path through content only one player can enter.
+    if (floor.personal && floor.bandId !== undefined) {
+      err('floor', floor.id, 'a personal floor may not sit in a band');
+    }
+    const prior = floorByArea.get(floor.areaId);
+    if (prior) err('floor', floor.id, `area '${floor.areaId}' is already claimed by '${prior}'`);
+    else floorByArea.set(floor.areaId, floor.id);
+  }
+  for (const band of Object.values(bands)) {
+    const inBand = Object.values(floors).filter((f) => f.bandId === band.id);
+    // Empty bands are exempt: they are routinely declared before their floors
+    // are authored, and failing that blocks scaffolding rather than catching
+    // a mistake.
+    if (!inBand.length) continue;
+    if (band.clearsToAdvance < 1) err('band', band.id, 'clearsToAdvance must be at least 1');
+    else if (band.clearsToAdvance > inBand.length) {
+      err(
+        'band',
+        band.id,
+        `wants ${band.clearsToAdvance} clears but holds ${inBand.length} floor(s)`,
+      );
+    }
+    // The band is the disjunction: a floor naming a discipline is a shortcut
+    // for the specialist only while a sibling names none.
+    if (!inBand.some((f) => !(f.gate ?? []).some((c) => c.type === 'skill'))) {
+      err(
+        'band',
+        band.id,
+        'every floor names a skill, so that discipline is mandatory — give the band one floor gated on accumulation',
+      );
+    }
+  }
+
+  // ---------- Spots ----------
+  for (const spot of Object.values(spots)) {
+    if (!areas[spot.areaId]) err('spot', spot.id, `area '${spot.areaId}' does not exist`, ['areaId']);
+    if (!spot.map) err('spot', spot.id, 'no map coordinates', ['map']);
+    else {
+      if (spot.map.x < 0 || spot.map.x > 100) err('spot', spot.id, `map.x ${spot.map.x} is outside 0–100`, ['map']);
+      if (spot.map.y < 0 || spot.map.y > 75) err('spot', spot.id, `map.y ${spot.map.y} is outside 0–75`, ['map']);
+    }
+    if (!spot.icon) warn('spot', spot.id, 'no icon');
+    if (!spot.desc) warn('spot', spot.id, 'no description');
+    if (!spot.activities?.length) warn('spot', spot.id, 'nothing to do here');
+
+    for (const c of spot.connections ?? []) {
+      if (!spots[c.to]) err('spot', spot.id, `connects to unknown spot '${c.to}'`, ['connections', `#to=${c.to}`]);
+      if (c.returnLabel && c.oneWay) {
+        err('spot', spot.id, `connection to '${c.to}': returnLabel on a one-way edge — there is no mirror to wear it`, ['connections', `#to=${c.to}`]);
+      }
+      if (c.returnLabel && !c.label) {
+        err('spot', spot.id, `connection to '${c.to}': returnLabel without an outbound label`, ['connections', `#to=${c.to}`]);
+      }
+      // typeof first: '120' > 0 coerces to true, so a string travel time would
+      // sail through the range check and only surface in the typecheck.
+      if (typeof c.ticks !== 'number') {
+        err('spot', spot.id, `connection to '${c.to}': ticks is ${JSON.stringify(c.ticks)} — a ${typeof c.ticks}, not a number`, ['connections', `#to=${c.to}`]);
+      } else if (!(c.ticks > 0)) {
+        err('spot', spot.id, `connection to '${c.to}' has no travel time`, ['connections', `#to=${c.to}`]);
+      }
+      // A forced edge promises a fight the far end must be able to supply.
+      if (c.forced && spots[c.to] && !spots[c.to].encounters?.length) {
+        err('spot', spot.id, `forced edge into '${c.to}', but nothing lives there — the fight has no one to start it`, ['connections', `#to=${c.to}`]);
+      }
+      // An approach is an opening for the FIRST fight at the far end: it needs
+      // real statuses to lay, on somebody who can actually show up.
+      if (c.approach) {
+        const at = ['connections', `#to=${c.to}`] as (string | number)[];
+        const apps = [...(c.approach.enemies ?? []), ...(c.approach.self ?? [])];
+        if (apps.length === 0) {
+          warn('spot', spot.id, `approach into '${c.to}' lays no statuses — it does nothing`, at);
+        }
+        for (const app of apps) {
+          if (!statuses[app.id]) err('spot', spot.id, `approach into '${c.to}' applies unknown status '${app.id}'`, at);
+        }
+        if (c.approach.enemies?.length && spots[c.to] && !spots[c.to].encounters?.length) {
+          warn('spot', spot.id, `approach into '${c.to}' surprises enemies, but nothing lives there`, at);
+        }
+      }
+    }
+
+    if (spot.forced && !spot.encounters?.length) {
+      err('spot', spot.id, 'forced, but nothing lives here — the fight has no one to start it', ['forced']);
+    }
+    if (spot.fightLimit !== undefined && (typeof spot.fightLimit !== 'number' || !(spot.fightLimit > 0))) {
+      err('spot', spot.id, `fightLimit is ${JSON.stringify(spot.fightLimit)} — it must be a positive number`, ['fightLimit']);
+    }
+    if (spot.fightLimit && !spot.encounters?.length) {
+      err('spot', spot.id, 'a fight budget with no fights — fightLimit needs encounters', ['fightLimit']);
+    }
+    // Retreats land on havens without re-triggering, so this cannot loop —
+    // but a camp that ambushes its guests still reads as a mistake.
+    if (spot.forced && (spot.activities ?? []).some((a) => a.kind === 'rest')) {
+      warn('spot', spot.id, 'forced AND a rest spot — an ambush that offers its victims a bed is probably one flag too many', ['forced']);
+    }
+
+    for (const act of spot.activities ?? []) {
+      if (act.kind === 'gather' && !materials[act.material]) {
+        err('spot', spot.id, `gathers unknown material '${act.material}'`, ['activities', `#id=${act.id}`]);
+      }
+      if (act.kind === 'train' && !act.attr && !act.attrXp) {
+        err('spot', spot.id, `activity '${act.id}' trains nothing (needs attr or attrXp)`, ['activities', `#id=${act.id}`]);
+      }
+    }
+    for (const rid of spot.recipes ?? []) {
+      if (!recipes[rid]) err('spot', spot.id, `unknown recipe '${rid}'`, ['recipes']);
+    }
+    for (const bid of spot.benches ?? []) {
+      if (!disciplines[bid] && !SPECIAL_BENCHES.has(bid)) {
+        err('spot', spot.id, `unknown bench '${bid}'`, ['benches']);
+      }
+    }
+    for (const e of spot.encounters ?? []) {
+      if (!monsters[e.monsterId]) err('spot', spot.id, `spawns unknown monster '${e.monsterId}'`, ['encounters']);
+      if (e.level?.[0] > e.level?.[1]) err('spot', spot.id, `encounter '${e.monsterId}' has an inverted level range`, ['encounters']);
+    }
+
+    validateFinds(spot, { materials, items, runes, spots, claimedTags }, err, warn);
+
+    // A hidden edge nobody can ever reveal.
+    const canComb = (spot.activities ?? []).some((a) => a.kind === 'explore');
+    for (const c of spot.connections ?? []) {
+      if (!c.hidden) continue;
+      const opener = (spot.finds ?? []).some((f) => f.path === c.to);
+      if (!canComb && !opener) {
+        err('spot', spot.id, `hidden path to '${c.to}' can never be revealed — add an Explore activity or a path find`, ['connections', `#to=${c.to}`]);
+      }
+    }
+    if ((spot.finds ?? []).length > 0 && !spot.exploreTicks) {
+      err('spot', spot.id, 'has finds but no exploreTicks to measure them against', ['exploreTicks']);
+    }
+    if ((spot.finds ?? []).length > 0 && !canComb) {
+      err('spot', spot.id, 'has finds but no Explore activity to find them with', ['activities']);
+    }
+  }
+
+  // ---------- Reachability ----------
+  const adjacency = buildAdjacency(spots);
+  const start = (store.meta.startingSpot as string) ?? 'village_square';
+  if (spots[start]) {
+    const seen = new Set([start]);
+    const queue = [start];
+    while (queue.length) {
+      for (const e of adjacency.get(queue.pop()!) ?? []) {
+        if (!seen.has(e.to)) {
+          seen.add(e.to);
+          queue.push(e.to);
+        }
+      }
+    }
+    for (const id of Object.keys(spots)) {
+      if (!seen.has(id)) err('spot', id, `unreachable from ${start}`);
+    }
+  }
+
+  // A spot you can walk into but never walk out of, ignoring hidden edges.
+  for (const id of Object.keys(spots)) {
+    const out = (adjacency.get(id) ?? []).filter((e) => !e.hidden);
+    if (out.length === 0 && (adjacency.get(id) ?? []).length > 0) {
+      warn('spot', id, 'one-way trap: every exit is hidden until explored');
+    } else if (out.length === 0) {
+      err('spot', id, 'dead end: no way out at all');
+    }
+  }
+
+  // Having an exit is not the same as having a way home: a ring of one-way
+  // edges gives every spot an exit and still keeps the player forever.
+  // COMPLETABILITY (docs/COMPLETABILITY.md, Invariant A) — mirrors
+  // 'every spot can get home' in tests/content.test.ts, which is the authority.
+  const waypoints = Object.values(spots)
+    .filter((s) => s.waypoint)
+    .map((s) => s.id);
+  if (waypoints.length > 0) {
+    const inbound = new Map<string, string[]>();
+    for (const [from, edges] of adjacency) {
+      for (const e of edges) {
+        const list = inbound.get(e.to);
+        if (list) list.push(from);
+        else inbound.set(e.to, [from]);
+      }
+    }
+    const canGetHome = new Set(waypoints);
+    const queue = [...waypoints];
+    while (queue.length) {
+      for (const from of inbound.get(queue.pop()!) ?? []) {
+        if (!canGetHome.has(from)) {
+          canGetHome.add(from);
+          queue.push(from);
+        }
+      }
+    }
+    for (const id of Object.keys(spots)) {
+      if (!canGetHome.has(id)) {
+        err('spot', id, 'no route back to any waypoint — whoever walks in stays there');
+      }
+    }
+  }
+
+  // ---------- NPCs ----------
+  for (const npc of Object.values(npcs)) {
+    if (!spots[npc.spotId]) err('npc', npc.id, `stands at unknown spot '${npc.spotId}'`, ['spotId']);
+    if (!npc.dialogue?.length) warn('npc', npc.id, 'has nothing to say');
+    for (const qid of npc.quests ?? []) {
+      const quest = quests[qid];
+      if (!quest) err('npc', npc.id, `offers unknown quest '${qid}'`, ['quests']);
+      else if (quest.giver && quest.giver !== npc.id) {
+        err('npc', npc.id, `offers '${qid}', but that quest's giver is '${quest.giver}'`, ['quests']);
+      }
+    }
+  }
+  for (const quest of Object.values(quests)) {
+    if (!quest.giver) continue;
+    const npc = npcs[quest.giver];
+    if (!npc) err('quest', quest.id, `giver '${quest.giver}' does not exist`, ['giver']);
+    else if (!(npc.quests ?? []).includes(quest.id)) {
+      err('quest', quest.id, `giver '${quest.giver}' does not list this quest`, ['giver']);
+    }
+  }
+
+  // An objective whose every source can be used up is a quest the player can
+  // shut behind themselves — `once` encounters and `fightLimit` both spend a
+  // spawn for good, and only a find writing the counter back down restocks it.
+  // COMPLETABILITY (docs/COMPLETABILITY.md, Invariant A) — mirrors
+  // 'no quest objective rests on a source that can run out' in
+  // tests/content.test.ts, which is the authority.
+  {
+    const questDefs = store.all<QuestDef>('quest');
+    const monsterDefs = store.all<MonsterDef>('monster');
+    const resets = new Set<string>();
+    for (const spot of Object.values(spots)) {
+      for (const find of spot.finds ?? []) {
+        if (find.stat?.set !== undefined) resets.add(find.stat.key);
+      }
+    }
+    const endlesslyKillable = (monsterId: string) =>
+      Object.values(spots).some((spot) => {
+        if (!spot.encounters?.some((e) => e.monsterId === monsterId)) return false;
+        if (spot.encounters.find((e) => e.monsterId === monsterId)?.once) {
+          return resets.has(`slain:${spot.id}:${monsterId}`);
+        }
+        if (spot.fightLimit !== undefined) return resets.has(`fights:${spot.id}`);
+        return true;
+      });
+
+    for (const quest of Object.values(questDefs)) {
+      for (const [i, o] of (quest.objectives ?? []).entries()) {
+        if (o.type === 'kill' && o.monsterId && !endlesslyKillable(o.monsterId)) {
+          err(
+            'quest',
+            quest.id,
+            `every source of '${o.monsterId}' can be used up, and no find restocks it`,
+            ['objectives', i],
+          );
+        }
+        if (o.type === 'collect') {
+          const gathered = Object.values(spots).some((spot) =>
+            spot.activities.some((a) => a.kind === 'gather' && a.material === o.materialId),
+          );
+          const dropped = Object.values(monsterDefs).some(
+            (m) =>
+              m.loot?.entries?.some((d) => d.kind === 'material' && d.id === o.materialId) &&
+              endlesslyKillable(m.id),
+          );
+          if (!gathered && !dropped) {
+            err(
+              'quest',
+              quest.id,
+              `'${o.materialId}' has no repeatable source — a find pays once and never again`,
+              ['objectives', i],
+            );
+          }
+        }
+      }
+    }
+  }
+
+  // ---------- Modifier targets ----------
+  //
+  // A scoped stat (`craftSpeed:leatherwork`) is only as good as the stat in
+  // front of the colon: misspell it and the modifier is not an error, it is
+  // simply a bonus that can never match anything.
+  const statNames = (store.meta.statNames ?? {}) as Record<string, string>;
+  const attrIds = new Set(
+    ((store.meta.attributes ?? []) as { id: string }[]).map((a) => a.id),
+  );
+  if (Object.keys(statNames).length > 0) {
+    const targetOk = (target: string): boolean => {
+      const [stat, ...rest] = target.split(':');
+      if (rest.length > 1) return false;
+      return (stat in statNames || attrIds.has(stat)) && (rest.length === 0 || rest[0].length > 0);
+    };
+    const MOD_FIELDS = ['mods', 'effects', 'passive', 'equipped', 'bonus'];
+    for (const cat of store.catalog) {
+      for (const [id, def] of Object.entries(store.all<Record<string, unknown>>(cat.kind))) {
+        const walk = (v: unknown, depth: number): void => {
+          if (!v || typeof v !== 'object' || depth > 4) return;
+          if (Array.isArray(v)) {
+            for (const e of v) walk(e, depth + 1);
+            return;
+          }
+          for (const [key, child] of Object.entries(v)) {
+            if (MOD_FIELDS.includes(key) && Array.isArray(child)) {
+              for (const m of child as { stat?: unknown }[]) {
+                if (typeof m?.stat === 'string' && !targetOk(m.stat)) {
+                  err(cat.kind, id, `modifier targets unknown stat '${m.stat}'`, [key]);
+                }
+              }
+            }
+            walk(child, depth + 1);
+          }
+        };
+        walk(def, 0);
+      }
+    }
+  }
+
+  // ---------- Drop tables ----------
+  //
+  // Mirrors tests/content.test.ts. Drought protection keys a drop's counter on
+  // kind+id (engine/mercy.ts), so one drop on two lines escalates twice per
+  // kill and quietly outruns its authored share. Widen `qty` instead.
+  for (const [id, def] of Object.entries(store.all<MonsterDef>('monster'))) {
+    const seen = new Set<string>();
+    for (const [i, e] of (def?.loot?.entries ?? []).entries()) {
+      if (e.kind === 'nothing') continue;
+      const key = `${e.kind}:${e.id ?? ''}`;
+      if (seen.has(key)) {
+        err('monster', id, `drop table lists '${key}' twice — merge the lines and widen qty`, [
+          'loot',
+          'entries',
+          i,
+        ]);
+      }
+      seen.add(key);
+    }
+  }
+
+  // ---------- Monster tags ----------
+  //
+  // Mirrors the linter in tests/content.test.ts. Worth duplicating because an
+  // untagged monster fails in three unrelated places at once — the bestiary
+  // shelf, the material-tag count and the taxon count — and none of those
+  // messages says "you left tags empty".
+  const tagDefs = (store.meta.monsterTags ?? {}) as Record<string, { category?: string; name?: string }>;
+  if (Object.keys(tagDefs).length > 0) {
+    for (const [id, def] of Object.entries(store.all<{ tags?: string[] }>('monster'))) {
+      const tags = def?.tags ?? [];
+      const byCategory = (c: string) => tags.filter((t) => tagDefs[t]?.category === c);
+      for (const t of tags) {
+        if (!tagDefs[t]) {
+          err('monster', id, `tag '${t}' is not registered in MONSTER_TAGS`, ['tags']);
+        } else if (tagDefs[t].category === 'tier') {
+          err('monster', id, `tag '${t}' is derived from \`tier\` — don't declare it by hand`, ['tags']);
+        }
+      }
+      const material = byCategory('material').length;
+      if (material !== 1) {
+        err('monster', id, `needs exactly one material tag (living / inorganic / incorporeal) — has ${material}`, ['tags']);
+      }
+      if (byCategory('taxon').length === 0) {
+        err('monster', id, 'needs at least one taxon tag (slime, beast, humanoid…) — it sets the bestiary shelf', ['tags']);
+      }
+
+      // Innate resistances compose by taking the STRONGEST opinion among the
+      // tags, which only means anything while they agree on the direction. Two
+      // that disagree make the result depend on which happens to be larger —
+      // an arithmetic accident, not a decision. Mirrors tests/content.test.ts.
+      const said: Record<string, { tag: string; sign: number }> = {};
+      for (const t of tags) {
+        for (const [type, rule] of Object.entries(TAG_RESISTANCES[t] ?? {})) {
+          const sign = Math.sign(rule!.base);
+          if (sign === 0) continue;
+          const seen = said[type];
+          if (seen && seen.sign !== sign) {
+            err(
+              'monster',
+              id,
+              `tags '${seen.tag}' and '${t}' disagree about ${type} resistance — one resists it, the other is weak to it`,
+              ['tags'],
+            );
+          } else if (!seen) {
+            said[type] = { tag: t, sign };
+          }
+        }
+      }
+    }
+
+    // ---------- Mutagen sources ----------
+    //
+    // A mutagen keys on a monster TAG and a main gene keys on a SPECIES. Both
+    // fail the same silent way: an id nothing carries means the thing simply
+    // never drops, forever, with no error anywhere. Nothing else catches this,
+    // which is exactly why it is worth a rule.
+    const carried = new Set<string>();
+    for (const def of Object.values(store.all<{ tags?: string[] }>('monster'))) {
+      for (const t of def?.tags ?? []) carried.add(t);
+    }
+    // Severity splits on whether it is a mistake or a plan: a typo'd tag is
+    // broken, while a real tag nothing carries yet is content authored ahead of
+    // its monsters, which is a legitimate way to work.
+    for (const [id, def] of Object.entries(store.all<{ from?: string }>('mutagen'))) {
+      if (!def?.from) {
+        err('mutagen', id, 'has no `from` tag, so nothing will ever drop it', ['from']);
+      } else if (!tagDefs[def.from]) {
+        err('mutagen', id, `'${def.from}' is not a registered monster tag`, ['from']);
+      } else if (!carried.has(def.from)) {
+        warn('mutagen', id, `no monster carries '${def.from}' yet, so it cannot drop`, ['from']);
+      }
+    }
+    const species = store.all<unknown>('monster');
+    const genes = store.all<{ from?: string; genus?: string; tier?: number }>('maingene');
+    for (const [id, def] of Object.entries(genes)) {
+      // A stub says nothing useful about its species yet, so the source checks
+      // below would only pile a second complaint onto the same unfinished entry.
+      if (isGeneStub(def)) {
+        // Read the genera off their own registry rather than off what the
+        // existing genes happen to use — a genus with no gene in it yet is
+        // still a legitimate answer here.
+        const options = Object.keys(store.all('genus')).join(', ');
+        err(
+          'maingene',
+          id,
+          `a stub — set a genus (${options}) and a tier; it will not be written until you do`,
+          ['genus'],
+        );
+        continue;
+      }
+      // Bare is manufactured rather than harvested, so it names no species.
+      if (!def?.from || def.genus === 'bare') continue;
+      if (!species[def.from]) {
+        warn('maingene', id, `'${def.from}' is not a monster yet — this gene is inert until it exists`, ['from']);
+      }
+    }
+  }
+
+  // ---------- Ways out of a condition ----------
+  //
+  // Mirrors tests/content.test.ts: a condition with `duration: null` has no
+  // clock, so something else has to end it. The subtle half is WHERE that
+  // something fires — `barFill` and `barDeplete` only ever come from
+  // tickCombat, so a condition whose exits are all bar events survives a
+  // knockout and rides into the next fight.
+  const COMBAT_ONLY_EVENTS = new Set(['barFill', 'barDeplete']);
+  for (const st of Object.values(statuses)) {
+    if (st.duration !== null) continue;
+    const otherExit =
+      st.ceilingDecay !== undefined ||
+      st.detonate !== undefined ||
+      st.drains !== undefined ||
+      st.surplus?.decayShare !== undefined;
+    const removals = st.removal ?? [];
+    if (!removals.length && !otherExit) {
+      err('status', st.id, 'no duration and no removal — it would last forever', ['removal']);
+      continue;
+    }
+    if (removals.length && !otherExit && removals.every((r) => COMBAT_ONLY_EVENTS.has(r.on))) {
+      err(
+        'status',
+        st.id,
+        `every removal is combat-only (${removals.map((r) => r.on).join(', ')}) — ` +
+          `add { on: 'combatEnd' } or it outlives the fight`,
+        ['removal'],
+      );
+    }
+  }
+
+  // ---------- Chance-based escalation ----------
+  //
+  // Mirrors tests/content.test.ts. `escalateFrom` is where escalation starts
+  // being POSSIBLE and `cap` where it becomes certain, so the gap between them
+  // is the whole mechanic: no gap and it is a deterministic escalation written
+  // the long way.
+  for (const st of Object.values(statuses)) {
+    const from = st.stacking?.escalateFrom;
+    if (from === undefined) continue;
+    const path = ['stacking', 'escalateFrom'];
+    if (st.stacking.onCap !== 'escalate') {
+      err('status', st.id, "escalateFrom needs onCap: 'escalate'", path);
+    }
+    if (!st.escalatesTo) {
+      err('status', st.id, 'escalateFrom but it escalates into nothing', path);
+    }
+    if (from < 0) {
+      err('status', st.id, `escalateFrom must not be negative (got ${from})`, path);
+    }
+    if (st.stacking.cap === undefined || st.stacking.cap <= from) {
+      err(
+        'status',
+        st.id,
+        `escalateFrom ${from} leaves no room below cap ${st.stacking.cap ?? '(none)'}`,
+        path,
+      );
+    }
+  }
+
+  // ---------- A pierced dot ----------
+  //
+  // Mirrors tests/content.test.ts. `dot.pierce` is the share of a tick that
+  // ignores resistance and immunity alike. statuses.ts clamps it so a bad
+  // value can never invert a tick, but a silent clamp is not feedback: above 1
+  // the author meant something the field cannot express, and 0 is an omission
+  // written the long way.
+  for (const st of Object.values(statuses)) {
+    const pierce = st.dot?.pierce;
+    if (pierce === undefined) continue;
+    if (pierce <= 0) {
+      err('status', st.id, 'dot.pierce: 0 is the default — omit it instead', ['dot', 'pierce']);
+    } else if (pierce > 1) {
+      err('status', st.id, `dot.pierce is a share of the tick, so at most 1 (got ${pierce})`, ['dot', 'pierce']);
+    }
+  }
+
+  // ---------- Blank values in closed vocabularies ----------
+  //
+  // `slot: ''`, `tier: ''`, `damageType: ''` are string UNIONS in the types, so
+  // an empty scaffold value is a build error the moment it is written — but
+  // nothing at the data level says which fields are unions. The corpus does:
+  // a field where a few values repeat across many entries is an enum, and an
+  // empty string is not one of them.
+  for (const cat of store.catalog) {
+    const defs = Object.values(store.all<Record<string, unknown>>(cat.kind));
+    if (defs.length < 4) continue;
+    const vocab = new Map<string, Map<string, number>>();
+    for (const def of defs) {
+      for (const [key, value] of Object.entries(def ?? {})) {
+        if (typeof value !== 'string' || !value) continue;
+        const counts = vocab.get(key) ?? new Map<string, number>();
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+        vocab.set(key, counts);
+      }
+    }
+    const closed = new Set(
+      [...vocab]
+        .filter(([, counts]) => {
+          const total = [...counts.values()].reduce((a, b) => a + b, 0);
+          return counts.size <= 12 && total >= 4 && counts.size <= total / 2;
+        })
+        .map(([key]) => key),
+    );
+    for (const [id, def] of Object.entries(store.all<Record<string, unknown>>(cat.kind))) {
+      // A gene stub already carries one error naming both fields it is missing.
+      // Repeating the genus half here would double the count without adding
+      // anything — 44 drafts should read as 44 things to finish, not 88.
+      if (cat.kind === 'maingene' && isGeneStub(def as { genus?: string; tier?: number })) continue;
+      for (const key of closed) {
+        const value = def?.[key];
+        if (typeof value !== 'string') continue;
+        const known = vocab.get(key)!;
+        const options = [...known.keys()].slice(0, 8).join(', ');
+        if (value === '') {
+          err(cat.kind, id, `${key} is blank — expected one of: ${options}`, [key]);
+        } else if (!known.has(value)) {
+          // A warning, not an error: being the FIRST entry to use a legitimate
+          // value looks identical to a typo from here. The typecheck settles
+          // it either way, but this is the cheap early hint.
+          warn(cat.kind, id, `${key} is '${value}', which no other ${cat.kind} uses — expected one of: ${options}`, [key]);
+        }
+      }
+    }
+  }
+
+  // ---------- Numbers written as text ----------
+  // The same class of bug the `ticks` check above guards one field against, swept
+  // across the whole corpus: '0.5' sails through arithmetic ('0.5' * 2 is 1) but
+  // fails typecheck and reads as a number in every UI, so it hides. Easy to
+  // produce — the forge's new-field box defaults to text, so a numeric field
+  // added without switching the type lands its value quoted.
+  //
+  // Ids are exempt: a bare-digit id ('1', tier-keyed groups) is legitimately a
+  // string, and so is anything the corpus itself keys by.
+  const NUMERIC_TEXT_EXEMPT = new Set(['id', 'name', 'icon', 'desc', 'color', 'label']);
+  const findNumericText = (
+    node: unknown,
+    kindId: { kind: string; id: string },
+    path: (string | number)[],
+  ): void => {
+    if (typeof node === 'string') {
+      const key = path[path.length - 1];
+      if (typeof key === 'string' && NUMERIC_TEXT_EXEMPT.has(key)) return;
+      if (node.trim() !== '' && Number.isFinite(Number(node))) {
+        err(
+          kindId.kind,
+          kindId.id,
+          `${path.join('.')} is the string '${node}' — write it as a number (${Number(node)}), not text`,
+          path,
+        );
+      }
+      return;
+    }
+    if (Array.isArray(node)) {
+      node.forEach((v, i) => findNumericText(v, kindId, [...path, i]));
+      return;
+    }
+    if (node && typeof node === 'object') {
+      for (const [k, v] of Object.entries(node)) findNumericText(v, kindId, [...path, k]);
+    }
+  };
+  for (const cat of store.catalog) {
+    for (const [id, def] of Object.entries(store.all<Record<string, unknown>>(cat.kind))) {
+      if (def) findNumericText(def, { kind: cat.kind, id }, []);
+    }
+  }
+
+  // ---------- Music ----------
+  // Mirrors 'music content' in tests/content.test.ts. Archetype targets are
+  // coordinates in the unit cube — a target outside 0–1 is unreachable, so the
+  // archetype could never win honestly; a scale that skips 0 has no tonic row.
+  const MUSIC_CONTOURS = new Set(['rising', 'falling', 'arch', 'valley', 'level', 'undulating']);
+  const MUSIC_CADENCES = new Set(['closed', 'open', 'deceptive', 'wandering', 'silent']);
+  const axisSet = new Set<string>(MUSIC_AXES);
+  for (const [id, arch] of Object.entries(store.all<MusicArchetypeDef>('musicArchetype'))) {
+    for (const [axis, v] of Object.entries(arch.target ?? {})) {
+      if (!axisSet.has(axis)) err('musicArchetype', id, `target axis '${axis}' is not a classifier output`, ['target']);
+      if (typeof v !== 'number' || v < 0 || v > 1) err('musicArchetype', id, `target.${axis} must be within 0–1`, ['target']);
+    }
+    for (const [axis, w] of Object.entries(arch.weights ?? {})) {
+      if (!axisSet.has(axis)) err('musicArchetype', id, `weight axis '${axis}' is not a classifier output`, ['weights']);
+      if (typeof w !== 'number' || w <= 0) err('musicArchetype', id, `weights.${axis} must be positive`, ['weights']);
+      if (arch.target?.[axis as keyof typeof arch.target] === undefined) {
+        err('musicArchetype', id, `weights.${axis} has no matching target — a weight with nothing to pull toward`, ['weights']);
+      }
+    }
+    if (Object.keys(arch.target ?? {}).length === 0) {
+      err('musicArchetype', id, 'an archetype with no target axes matches everything equally');
+    }
+    // Calibration. Random sheets sit at syncopation ~0.333, rhythmEntropy
+    // ~0.808 and motif ~0.157; written music at ~0.000, ~0.20 and ~0.70.
+    // Those three axes are the only reliable deliberateness detectors, so an
+    // archetype silent about them gets won by dice rather than by composing.
+    for (const axis of ['motif', 'rhythmEntropy', 'syncopation'] as const) {
+      if (arch.target?.[axis] === undefined) {
+        err('musicArchetype', id, `declares no ${axis} — dice will reach this archetype as easily as a composer`, ['target']);
+      }
+    }
+    if ((arch.target?.syncopation ?? 0) > 0.15) {
+      err('musicArchetype', id, 'syncopation target sits in the noise cloud (random median 0.333; the most syncopated writable sheet measures 0.267)', ['target']);
+    }
+    if ((arch.target?.rhythmEntropy ?? 0) > 0.6) {
+      err('musicArchetype', id, 'rhythmEntropy target is unreachable — the duration palette tops out near 0.65', ['target']);
+    }
+    if ((arch.contours ?? []).includes('undulating')) {
+      err('musicArchetype', id, 'claims `undulating`, which 99% of random sheets read as — that is a flat purity bonus handed to dice, not a hint about shape', ['contours']);
+    }
+    for (const c of arch.contours ?? []) {
+      if (!MUSIC_CONTOURS.has(c)) err('musicArchetype', id, `contour '${c}' is not one the classifier can produce`, ['contours']);
+    }
+    for (const c of arch.cadences ?? []) {
+      if (!MUSIC_CADENCES.has(c)) err('musicArchetype', id, `cadence '${c}' is not one the classifier can produce`, ['cadences']);
+    }
+    if (arch.confers) {
+      if (!statuses[arch.confers.status]) {
+        err('musicArchetype', id, `confers unknown status '${arch.confers.status}'`, ['confers']);
+      }
+      if (!(arch.confers.perPower > 0)) {
+        err('musicArchetype', id, 'confers.perPower must be positive', ['confers']);
+      }
+      if (arch.confers.duration !== undefined && !(arch.confers.duration > 0)) {
+        err('musicArchetype', id, 'confers.duration must be positive', ['confers']);
+      }
+    }
+  }
+  for (const [id, scale] of Object.entries(store.all<MusicScaleDef>('musicScale'))) {
+    if (scale.mode !== undefined && scale.mode !== 'major' && scale.mode !== 'minor') {
+      err('musicScale', id, `mode '${scale.mode}' is neither major nor minor — omit it if the scale is genuinely ambiguous`, ['mode']);
+    }
+    const degrees = scale.degrees ?? [];
+    if (degrees[0] !== 0) err('musicScale', id, 'degrees must start at 0 — every scale opens on its tonic', ['degrees']);
+    for (let i = 0; i < degrees.length; i++) {
+      const d = degrees[i];
+      if (!Number.isInteger(d) || d < 0 || d > 11) err('musicScale', id, `degree ${d} is outside 0–11`, ['degrees']);
+      if (i > 0 && d <= degrees[i - 1]) err('musicScale', id, 'degrees must ascend strictly', ['degrees']);
+    }
+  }
+  for (const [id, meter] of Object.entries(store.all<MusicMeterDef>('musicMeter'))) {
+    if (!Number.isInteger(meter.beats) || meter.beats < 1) {
+      err('musicMeter', id, 'beats must be a positive whole number', ['beats']);
+    }
+    if (!Number.isInteger(meter.beatUnits) || meter.beatUnits < 1) {
+      err('musicMeter', id, 'beatUnits must be a positive whole number of grid units', ['beatUnits']);
+    }
+    const cap = (meter.beats ?? 0) * (meter.beatUnits ?? 0);
+    for (const a of meter.accents ?? []) {
+      if (a <= 0 || a >= cap) err('musicMeter', id, `accent ${a} falls outside the bar (0–${cap})`, ['accents']);
+      if (meter.beatUnits && a % meter.beatUnits !== 0) {
+        err('musicMeter', id, `accent ${a} is not on a beat — accents sit on beat boundaries`, ['accents']);
+      }
+    }
+    if (!(meter.unlockLevel >= 0)) err('musicMeter', id, 'unlockLevel must be 0 or higher', ['unlockLevel']);
+  }
+
+  // ---------- Duplicate ids ----------
+  for (const cat of store.catalog) {
+    for (const [key, def] of Object.entries(store.all<{ id?: string }>(cat.kind))) {
+      if (def?.id && def.id !== key) {
+        err(cat.kind, key, `registry key '${key}' does not match its id '${def.id}'`);
+      }
+    }
+  }
+
+  // ---------- Id shape ----------
+  // The same rule the rename gate enforces (`idProblem` above), swept across
+  // what is already on disk — an id gets typed into counter keys, save files
+  // and cross-references, so one casing everywhere is not a style preference.
+  for (const cat of store.catalog) {
+    for (const key of Object.keys(store.all(cat.kind))) {
+      if (!ID_SHAPE.test(key)) {
+        warn(cat.kind, key, `id '${key}' is not lowercase snake_case — rename it before anything else points here`);
+      }
+    }
+  }
+
+  return issues;
+}
+
+function validateFinds(
+  spot: SpotDef,
+  refs: {
+    materials: Record<string, unknown>;
+    items: Record<string, unknown>;
+    runes: Record<string, unknown>;
+    spots: Record<string, SpotDef>;
+    claimedTags: Set<string>;
+  },
+  err: (kind: string, id: string, message: string, path?: (string | number)[]) => void,
+  warn: (kind: string, id: string, message: string, path?: (string | number)[]) => void,
+): void {
+  const seen = new Set<string>();
+  for (const f of spot.finds ?? []) {
+    const at = ['finds', `#id=${f.id}`];
+    if (!f.id) {
+      err('spot', spot.id, 'a find has no id', ['finds']);
+      continue;
+    }
+    if (seen.has(f.id)) err('spot', spot.id, `duplicate find id '${f.id}'`, at);
+    seen.add(f.id);
+
+    if (typeof f.at !== 'number') {
+      err('spot', spot.id, `find '${f.id}': at is ${JSON.stringify(f.at)} — a ${typeof f.at}, not a number`, at);
+    } else {
+      if (!(f.at > 0)) err('spot', spot.id, `find '${f.id}': at must be greater than 0`, at);
+      if (f.at > 1) err('spot', spot.id, `find '${f.id}': at must be 1 or less`, at);
+    }
+
+    if (!payloadOf(f)) err('spot', spot.id, `find '${f.id}' yields nothing at all`, at);
+
+    if (f.material) {
+      if (!refs.materials[f.material.id]) err('spot', spot.id, `find '${f.id}': unknown material '${f.material.id}'`, at);
+      if ((f.material.qty ?? 1) <= 0) err('spot', spot.id, `find '${f.id}': material qty must be positive`, at);
+    }
+    if (f.item && !refs.items[f.item]) err('spot', spot.id, `find '${f.id}': unknown item '${f.item}'`, at);
+    if (f.rune && !refs.runes[f.rune]) err('spot', spot.id, `find '${f.id}': unknown rune '${f.rune}'`, at);
+    if (f.gold && (f.gold[0] < 0 || f.gold[0] > f.gold[1])) {
+      err('spot', spot.id, `find '${f.id}': gold range is inverted or negative`, at);
+    }
+    if (f.spot && !refs.spots[f.spot]) err('spot', spot.id, `find '${f.id}': rumors unknown spot '${f.spot}'`, at);
+    if (f.path) {
+      const edge = (spot.connections ?? []).find((c: Connection) => c.to === f.path);
+      if (!edge) err('spot', spot.id, `find '${f.id}': opens a path to '${f.path}' that isn't declared here`, at);
+      else if (!edge.hidden) err('spot', spot.id, `find '${f.id}': path to '${f.path}' isn't hidden, so nothing opens`, at);
+    }
+    if (f.skillXp) {
+      if (!f.skillXp.tags?.length) err('spot', spot.id, `find '${f.id}': skillXp needs at least one tag`, at);
+      if (!(f.skillXp.xp > 0)) err('spot', spot.id, `find '${f.id}': skillXp xp must be positive`, at);
+      for (const tag of f.skillXp.tags ?? []) {
+        if (!refs.claimedTags.has(tag)) {
+          err('spot', spot.id, `find '${f.id}': tag '${tag}' is claimed by no skill, so it trains nothing`, at);
+        }
+      }
+    }
+    // The cross-room wire touches ONLY its own namespace — bumping `kills` or
+    // `gather:` counters from a find would quietly corrupt achievements. The
+    // one exception: `set` may target `slain:`/`fights:` counters, which is
+    // exactly how content resets a once-boss or a spent fight budget.
+    if (f.stat) {
+      const key = f.stat.key ?? '';
+      if (f.stat.amount !== undefined && f.stat.set !== undefined) {
+        err('spot', spot.id, `find '${f.id}': stat has both amount and set — pick one`, at);
+      }
+      const resettable = key.startsWith('slain:') || key.startsWith('fights:');
+      if (!key.startsWith('flag:') && !(f.stat.set !== undefined && resettable)) {
+        err('spot', spot.id, `find '${f.id}': stat key '${key}' must be flag:* (or slain:*/fights:* with set, for resets)`, at);
+      }
+    }
+    if (!f.desc) warn('spot', spot.id, `find '${f.id}' has no description — the log line will be generic`, at);
+  }
+
+  // Two finds at the same depth is legal but almost never intended: they land
+  // on consecutive ticks and read as one event stuttering.
+  const byAt = new Map<number, string[]>();
+  for (const f of spot.finds ?? []) {
+    byAt.set(f.at, [...(byAt.get(f.at) ?? []), f.id]);
+  }
+  for (const [at, ids] of byAt) {
+    if (ids.length > 1) warn('spot', spot.id, `finds ${ids.join(', ')} all sit at ${Math.round(at * 100)}%`, ['finds']);
+  }
+}
+
+function payloadOf(f: SpotFind): boolean {
+  return !!(f.material || f.item || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc);
+}
+
+export interface Edge extends Connection {
+  from: string;
+}
+
+/** The same mirroring rule as `registry.ts`: two-way unless `oneWay`. */
+export function buildAdjacency(spots: Record<string, SpotDef>): Map<string, Edge[]> {
+  const adj = new Map<string, Edge[]>();
+  const add = (from: string, c: Connection) => {
+    const list = adj.get(from) ?? [];
+    if (!list.some((e) => e.to === c.to)) list.push({ ...c, from });
+    adj.set(from, list);
+  };
+  for (const spot of Object.values(spots)) {
+    for (const c of spot.connections ?? []) {
+      add(spot.id, c);
+      // The mirror deliberately drops `hidden`: reaching a spot through a
+      // hidden edge doesn't make the way back a secret.
+      if (!c.oneWay) add(c.to, { to: spot.id, ticks: c.ticks, label: c.label });
+    }
+  }
+  return adj;
+}
