@@ -430,26 +430,39 @@ Two things worth keeping in mind:
      that and stop worrying about which release the files came from.
    - Prohibited: NFT-related use, and anything illegal where you are.
 
-   **One clause needs a decision before this repo goes public.** Redistribution
-   of Librarium content — original *or* edited, and specifically including
-   "Game Template" formats — is **not allowed**. Shipping the built game is
-   fine; that is game-development use, which is exactly what the licence is for.
-   But `src/assets/` is not in `.gitignore`, and this project is not yet a git
-   repository. The moment it becomes one and is pushed publicly, those 2,054 PNGs
-   are published as individually downloadable asset files — which reads as
-   redistribution, not as shipping a game. Your stated goal of "an outward
-   interface that would allow for others to write their own expansions" points
-   at exactly that collision, and an open, moddable framework shipping with the
-   battler set included is close enough to "Game Template" to be worth asking
-   about rather than assuming.
+   **One clause needed a decision before this repo went public, and now it has
+   one.** Redistribution of Librarium content — original *or* edited, and
+   specifically including "Game Template" formats — is **not allowed**. Shipping
+   the built game is fine; that is game-development use, which is exactly what
+   the licence is for. But pushing the folder to a public repo publishes those
+   PNGs (2,169 of them as of this writing) as individually downloadable asset
+   files, which reads as redistribution rather than as shipping a game. Your
+   stated goal of "an outward interface that would allow for others to write
+   their own expansions" points at exactly that collision: an open, moddable
+   framework shipping with the battler set included is close enough to "Game
+   Template" to be worth asking about rather than assuming.
 
-   Three ways out, in ascending order of effort: add `src/assets/enemies/` to
-   `.gitignore` and have contributors fetch the pack from akashics.moe
-   themselves; keep the repo private and distribute only builds; or just ask
-   Ækashics — the terms invite that twice ("feel free to contact me"), and a
-   direct yes is worth more than a careful reading. None of this touches the
-   authorship question. It is a packaging decision, and it is much cheaper to
-   make now than after a first push.
+   **Settled 2026-08-24.** The project became a git repository and was pushed to
+   <https://github.com/old-man-gibson/ksgproto28>. The decision was the first of
+   the three ways out — `src/assets/enemies/` is in `.gitignore` and has never
+   been committed — with the second kept as a free second layer, since the repo
+   is private. What that combination buys is reversibility: because the PNGs
+   were excluded from the *first* commit rather than deleted in a later one, the
+   history is clean, and making the repo public is a settings toggle rather than
+   a `git filter-repo` rewrite. Everything else went up — 541 files, 9 MB at
+   that push — and `README.md` now tells a fresh clone that enemy portraits
+   resolve to missing images until the Librarium pack is restored by hand.
+
+   Two things to hold on to. Never `git add -f` that folder and never delete the
+   `.gitignore` entry; either one puts the art into history permanently, and
+   history is the part you cannot quietly undo. If you want the art backed up,
+   use a separate private repo or a copy outside git. And the third way out is
+   still open and still the strongest: ask Ækashics. The terms invite it twice
+   ("feel free to contact me"), and a direct yes is worth more than a careful
+   reading — particularly if the modding interface ever ships, because that is
+   the scenario an exclusion does not fully answer. None of this touches the
+   authorship question. It was a packaging decision, and it was much cheaper to
+   make at the first push than it would have been after.
 
 You asked, back on 2026-07-23, whether you were "a hack fraud for developing my
 game using your code environment while simply providing the data driven
@@ -475,4 +488,5 @@ argument. It is the evidence.
 repository at `D:\ksgproto28`. The transcripts are the primary source and remain
 auditable. First compiled 2026-07-28 over 26 sessions; recompiled 2026-08-05 over
 37, by re-running the same extraction rather than amending the earlier figures
-from memory.*
+from memory. §9 amended 2026-08-24 to record the packaging decision it called
+for.*
