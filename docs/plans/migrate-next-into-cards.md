@@ -25,10 +25,14 @@ truth, and that is not a resting state.
 
 ## Why it was not done in one go
 
-⚠️ **This repo has no git.** A bad shred of a 763-line handoff document is
-unrecoverable, and NEXT.md is the single most valuable file in `docs/` for the
-stated survivability goal. The conversion is mechanical but it is not reversible,
-so it wanted a look first.
+⚠️ **This repo had no git when the board was built.** A bad shred of a 763-line
+handoff document was unrecoverable, and NEXT.md is the single most valuable file
+in `docs/` for the stated survivability goal, so a mechanical-but-irreversible
+conversion wanted a look first.
+
+Git landed **2026-08-24**, and that blocker is gone: a bad shred is now one
+`git checkout` away from undone. What is left here is the decision below, not
+the risk.
 
 ## The split, once decided
 

@@ -12,6 +12,7 @@
    * is one line with no arrows, a one-way drop is one line with an arrow, and
    * two separately-declared directions bow apart so both stay clickable.
    */
+  import { tick } from 'svelte';
   import { store } from '../lib/store.svelte';
   import { validate, type Issue } from '../lib/validate';
   import type { Selection } from '../lib/selection';
@@ -51,6 +52,42 @@
     over: string | null;
     mode: 'drag' | 'click';
   } | null>(null);
+  /**
+   * A region tab being dragged along the strip.
+   *
+   * Region order in the world map IS key order in the data file — there is no
+   * rank field to set — so this drag writes source, staging a reorder op the
+   * same way dragging a node stages its coordinates.
+   */
+  let tabDrag = $state<{ id: string; over: string | null; before: boolean } | null>(null);
+
+  function onTabOver(ev: DragEvent, target: string): void {
+    if (!tabDrag || tabDrag.id === target) return;
+    ev.preventDefault(); // without this the drop never fires
+    const box = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+    tabDrag = { ...tabDrag, over: target, before: ev.clientX < box.left + box.width / 2 };
+  }
+
+  function onTabDrop(ev: DragEvent): void {
+    ev.preventDefault();
+    if (tabDrag?.over) store.reorder('region', tabDrag.id, tabDrag.over, tabDrag.before);
+    tabDrag = null;
+  }
+
+  /** Alt+←/→ moves the focused tab, so the strip is not drag-only. */
+  function onTabKey(ev: KeyboardEvent, id: string): void {
+    if (!ev.altKey || (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight')) return;
+    const order = regions.map((r) => r.id);
+    const to = order.indexOf(id) + (ev.key === 'ArrowLeft' ? -1 : 1);
+    if (to < 0 || to >= order.length) return;
+    ev.preventDefault();
+    const el = ev.currentTarget as HTMLElement;
+    store.reorder('region', id, order[to], ev.key === 'ArrowLeft');
+    // A keyed `{#each}` MOVES this node rather than rebuilding it, and a moved
+    // node loses focus; hand it back once the strip has redrawn.
+    tick().then(() => el.focus());
+  }
+
   let menu = $state<{ x: number; y: number; title: string; items: MenuItem[] } | null>(null);
 
   const regions = $derived(store.list<{ id: string; name: string }>('region'));
@@ -647,7 +684,21 @@
   <div class="toolbar">
     <div class="regions">
       {#each regions as r (r.id)}
-        <button class="tiny" class:on={region === r.id} onclick={() => (regionId = r.id)}>
+        <button
+          class="tiny"
+          class:on={region === r.id}
+          class:dragging={tabDrag !== null && tabDrag.id === r.id}
+          class:drop-before={tabDrag !== null && tabDrag.over === r.id && tabDrag.before}
+          class:drop-after={tabDrag !== null && tabDrag.over === r.id && !tabDrag.before}
+          draggable="true"
+          title="Drag to reorder — tab order is the order this region is written in the data file. Alt+← / Alt+→ moves it from the keyboard."
+          onclick={() => (regionId = r.id)}
+          ondragstart={() => (tabDrag = { id: r.id, over: null, before: false })}
+          ondragover={(ev) => onTabOver(ev, r.id)}
+          ondrop={onTabDrop}
+          ondragend={() => (tabDrag = null)}
+          onkeydown={(ev) => onTabKey(ev, r.id)}
+        >
           {r.name}
         </button>
       {/each}
@@ -877,6 +928,35 @@
   .regions {
     display: flex;
     gap: 4px;
+  }
+
+  .regions button {
+    position: relative;
+    cursor: grab;
+  }
+
+  .regions button.dragging {
+    opacity: 0.45;
+  }
+
+  /* The line the tab will land on, drawn against the neighbour it lands beside. */
+  .regions button.drop-before::before,
+  .regions button.drop-after::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+
+  .regions button.drop-before::before {
+    left: -3px;
+  }
+
+  .regions button.drop-after::after {
+    right: -3px;
   }
 
   .regions button.on {

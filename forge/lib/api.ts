@@ -20,6 +20,7 @@ export type PatchOp =
   | { op: 'delete'; kind: string; path: PathStep[] }
   | { op: 'add'; kind: string; key: string; value: unknown }
   | { op: 'rename'; kind: string; from: string; to: string }
+  | { op: 'reorder'; kind: string; key: string; anchor: string; before: boolean }
   | { op: 'note'; kind: string; key: string; marker: NoteMarker; text: string | null };
 
 export interface DiffLine {
