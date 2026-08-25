@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { addEntry, deleteAt, notesOf, renameEntry, setAt, setNoteAt, sourceOf } from '../forge/server/edit';
+import {
+  addEntry,
+  deleteAt,
+  notesOf,
+  renameEntry,
+  reorderEntry,
+  setAt,
+  setNoteAt,
+  sourceOf,
+} from '../forge/server/edit';
 import { printValue } from '../forge/server/print';
 import { diffLines, diffStat } from '../forge/server/diff';
 import { findReferences } from '../forge/lib/refs';
 
 /**
- * The forge writes to the real content files, and this repo has no git. These
- * tests exist for one promise above all others: **an edit changes the thing it
+ * The forge writes to the real content files. These tests exist for one
+ * promise above all others: **an edit changes the thing it
  * was asked to change and nothing else** — in particular, never a comment.
  */
 
@@ -491,6 +500,122 @@ describe('renaming an entry', () => {
     const after = renameEntry('t.ts', odd, 'SPOTS', 'ravine_floor', 'ravine_bottom').text;
     expect(after).toContain('  ravine_bottom: {');
     expect(after).toContain("    id: 'something_else',");
+  });
+});
+
+const REGIONS = `import type { RegionDef } from '../types';
+
+export const REGIONS: Record<string, RegionDef> = {
+  // The starting country. Everything else is measured from here.
+  oakrest: {
+    id: 'oakrest',
+    name: 'Oakrest',
+    terrain: 'temperate',
+  },
+  whispering_woods: {
+    id: 'whispering_woods',
+    name: 'Whispering Woods',
+    terrain: 'forest',
+  },
+  // Authored last, drawn last — the tab this op exists to be able to move.
+  frostmarch: {
+    id: 'frostmarch',
+    name: 'The Frostmarch',
+    terrain: 'tundra',
+  },
+};
+`;
+
+/** Top-level entry keys, in the order the file declares them. */
+function entryOrder(text: string): string[] {
+  return [...text.matchAll(/^  (\w+): \{$/gm)].map((m) => m[1]);
+}
+
+/** Every line in the file, order thrown away. */
+function lineBag(text: string): string[] {
+  return text
+    .split('\n')
+    .map((l) => l.trimEnd())
+    .sort();
+}
+
+describe('reordering entries — region tab order IS key order', () => {
+  it('moves an entry before a sibling', () => {
+    const { text } = reorderEntry(FILE, REGIONS, 'REGIONS', 'frostmarch', 'oakrest', true);
+    expect(entryOrder(text)).toEqual(['frostmarch', 'oakrest', 'whispering_woods']);
+  });
+
+  it('moves an entry after a sibling', () => {
+    const { text } = reorderEntry(FILE, REGIONS, 'REGIONS', 'oakrest', 'whispering_woods', false);
+    expect(entryOrder(text)).toEqual(['whispering_woods', 'oakrest', 'frostmarch']);
+  });
+
+  it('relocates lines instead of reprinting them', () => {
+    const { text } = reorderEntry(FILE, REGIONS, 'REGIONS', 'frostmarch', 'oakrest', true);
+    expect(text).not.toBe(REGIONS);
+    // Every line still present, none rewritten. A reorder that reprinted the
+    // registry would pass an eyeball and fail here — this test doing its job.
+    expect(lineBag(text)).toEqual(lineBag(REGIONS));
+  });
+
+  it('carries the comment above an entry along with it', () => {
+    const { text } = reorderEntry(FILE, REGIONS, 'REGIONS', 'frostmarch', 'oakrest', true);
+    const lines = text.split('\n');
+    const moved = lines.findIndex((l) => l.includes('Authored last, drawn last'));
+    expect(lines[moved + 1]).toContain('frostmarch: {');
+    // And the comment it displaced stayed with the entry it was written above.
+    const stayed = lines.findIndex((l) => l.includes('The starting country'));
+    expect(lines[stayed + 1]).toContain('oakrest: {');
+  });
+
+  it('keeps every comment when a commented spot moves', () => {
+    const { text } = reorderEntry(FILE, SAMPLE, 'SPOTS', 'deep_woods', 'village_square', true);
+    expectCommentsIntact(text);
+    expect(entryOrder(text)).toEqual(['deep_woods', 'village_square']);
+    expect(lineBag(text)).toEqual(lineBag(SAMPLE));
+  });
+
+  it('gives the last entry the comma it never had before moving it inward', () => {
+    const noTrailing = REGIONS.replace('  },\n};', '  }\n};');
+    const { text } = reorderEntry(FILE, noTrailing, 'REGIONS', 'frostmarch', 'oakrest', true);
+    expect(entryOrder(text)).toEqual(['frostmarch', 'oakrest', 'whispering_woods']);
+    // Without it that closing brace runs straight into the comment above
+    // oakrest, and the registry stops parsing.
+    expect(text).toContain('  },\n  // The starting country');
+  });
+
+  it('treats a drop where the entry already sits as a no-op', () => {
+    const cases: [string, string, boolean][] = [
+      ['whispering_woods', 'oakrest', false],
+      ['whispering_woods', 'frostmarch', true],
+      ['oakrest', 'oakrest', true],
+    ];
+    for (const [key, anchor, before] of cases) {
+      const { text } = reorderEntry(FILE, REGIONS, 'REGIONS', key, anchor, before);
+      expect(text, key + (before ? ' before ' : ' after ') + anchor).toBe(REGIONS);
+    }
+  });
+
+  it('refuses to move something that is not there', () => {
+    expect(() => reorderEntry(FILE, REGIONS, 'REGIONS', 'nowhere', 'oakrest', true)).toThrow(
+      /no entry/,
+    );
+    expect(() => reorderEntry(FILE, REGIONS, 'REGIONS', 'oakrest', 'nowhere', true)).toThrow(
+      /no entry/,
+    );
+  });
+
+  it('preserves CRLF files', () => {
+    const crlf = REGIONS.replace(/\n/g, '\r\n');
+    const { text } = reorderEntry(FILE, crlf, 'REGIONS', 'frostmarch', 'oakrest', true);
+    // Splicing source carries the endings with it. There is no printer in this
+    // path to get it wrong, and this is the test that says so.
+    expect(text).not.toMatch(/[^\r]\n/);
+    expect(entryOrder(text.replace(/\r\n/g, '\n'))).toEqual([
+      'frostmarch',
+      'oakrest',
+      'whispering_woods',
+    ]);
   });
 });
 

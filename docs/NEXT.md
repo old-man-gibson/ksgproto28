@@ -15,6 +15,16 @@ the drought ledger).
 
 ## Shipped recently (context, not TODO)
 
+- **Region tabs reorder by drag** (`reorderEntry`, `forge/server/edit.ts`; no
+  save version — this writes source, not state). Region order in the world map
+  IS key order in `locations.data.ts`, so the tab strip drags the *entry*: the
+  op cuts its exact character range, `getFullStart()` included so the
+  hand-written comment block above it travels along, and splices it in beside
+  its new neighbour. Nothing is reprinted — moving Threshold to the front is 5
+  lines added and the same 5 removed. `Alt`+`←`/`Alt`+`→` does it from the
+  keyboard, so the strip is not drag-only. This was **§1** of this file, which
+  is why the sections below start at 2; the gesture lives in **FORGE.md** now.
+
 - **Droughts are over** (`engine/mercy.ts`, save v46). Any roll under 15% —
   drop-table entries, rare encounter lines, monster modifier, monster rarity,
   and the gene/mutagen/nuclease harvest — climbs with every miss and resets on
@@ -192,17 +202,6 @@ a library is not a contradiction; it is a tower.
   unchanged so nothing shifted silently — TODO on the region entry.
 - **Names are placeholders.** Threshold, The Ascent, and all eight district
   names rename cleanly in the forge (id rename rewrites every reference).
-
----
-
-## 1. Region drag-and-drop reorder (forge)  ← was start here
-
-Region order in the world map is *key order in the data file*, so this needs a
-**reorder-entries AST op** in `forge/server/edit.ts` (move a property before or
-after a sibling, in place, comments intact) plus a patch op and drag handles on
-the region tabs. Pure tooling, no game change. (Not to be confused with the
-World Atlas, which shipped — that places regions in space, this orders their
-tabs.)
 
 ---
 
