@@ -1,4 +1,6 @@
 import type { PrestigeBoonDef, PrestigeSourceDef, PrestigeState, UnlockCondition } from '../types';
+import { prose } from '../text/prose';
+import { PRESTIGE_BOONS_TEXT } from '../text/prestige.text';
 
 /**
  * Prestige: the harvest re-climb (docs/PRESTIGE.md). Numbers here are first
@@ -43,7 +45,7 @@ export const PRESTIGE_SOURCES: Record<string, PrestigeSourceDef> = {
  * here touches the derived-stats fingerprint. The three ceilings are the
  * first consumers of the cap-raise lane WEATHER.md left unwired.
  */
-export const PRESTIGE_BOONS: Record<string, PrestigeBoonDef> = {
+export const PRESTIGE_BOONS = prose<PrestigeBoonDef>('PRESTIGE_BOONS', PRESTIGE_BOONS_TEXT, {
   // Rank 1 arrives with the first prestige, unasked (`auto`). The product
   // rank × peak × prestiges is what the user asked for (2026-09-12): it can
   // only grow with prestiges performed, sits at a fraction of a percent for
@@ -55,7 +57,6 @@ export const PRESTIGE_BOONS: Record<string, PrestigeBoonDef> = {
     id: 'talent',
     name: 'Talent',
     icon: '✨',
-    desc: 'Every skill’s effects grow by 0.01% × rank × the skill’s highest level at any past prestige × prestiges performed.',
     cost: [0, 2, 3, 4, 5],
     effect: { kind: 'talent', rate: 0.0001 },
     auto: true,
@@ -67,7 +68,6 @@ export const PRESTIGE_BOONS: Record<string, PrestigeBoonDef> = {
     id: 'endowment',
     name: 'Endowment',
     icon: '💪',
-    desc: 'Every attribute grows by 0.01% × rank × its highest trained level at any past prestige × prestiges performed.',
     cost: [0, 2, 3, 4, 5],
     effect: { kind: 'endowment', rate: 0.0001 },
     auto: true,
@@ -76,7 +76,6 @@ export const PRESTIGE_BOONS: Record<string, PrestigeBoonDef> = {
     id: 'provisions',
     name: 'Provisions',
     icon: '💰',
-    desc: '+50 gold at the start of every run, per rank.',
     cost: [1, 1, 2, 2, 3],
     effect: { kind: 'startGold', amount: 50 },
   },
@@ -84,7 +83,6 @@ export const PRESTIGE_BOONS: Record<string, PrestigeBoonDef> = {
     id: 'grimoire_page',
     name: 'Grimoire page',
     icon: '📕',
-    desc: '+1 prepared spell, per rank.',
     cost: [2, 3],
     effect: { kind: 'preparedPages', pages: 1 },
   },
@@ -92,7 +90,6 @@ export const PRESTIGE_BOONS: Record<string, PrestigeBoonDef> = {
     id: 'chronosense_ceiling',
     name: 'Chronosense ceiling',
     icon: '🕰️',
-    desc: 'Chronosense can reach 5 levels higher, per rank.',
     cost: [1, 2, 2, 3],
     effect: { kind: 'skillCap', skill: 'chronosense', by: 5 },
   },
@@ -100,7 +97,6 @@ export const PRESTIGE_BOONS: Record<string, PrestigeBoonDef> = {
     id: 'weathersense_ceiling',
     name: 'Weathersense ceiling',
     icon: '🌦️',
-    desc: 'Weathersense can reach 5 levels higher, per rank.',
     cost: [1, 2, 2, 3],
     effect: { kind: 'skillCap', skill: 'weathersense', by: 5 },
   },
@@ -108,11 +104,10 @@ export const PRESTIGE_BOONS: Record<string, PrestigeBoonDef> = {
     id: 'darkvision_ceiling',
     name: 'Darkvision ceiling',
     icon: '🌑',
-    desc: 'Darkvision can reach 10 levels higher, per rank.',
     cost: [1, 2, 3],
     effect: { kind: 'skillCap', skill: 'darkvision', by: 10 },
   },
-};
+});
 
 /** A save that has never prestiged. */
 export function freshPrestigeState(): PrestigeState {

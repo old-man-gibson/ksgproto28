@@ -21,17 +21,14 @@ import path from 'node:path';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
 import { CATALOG, catalogFor, WRITABLE } from './catalog';
 import {
-  addEntry,
-  deleteAt,
   notesOf,
-  renameEntry,
-  setAt,
   setNoteAt,
   sourceOf,
   type NoteMarker,
   type PathStep,
 } from './edit';
 import { diffLines, diffStat } from './diff';
+import { routeOp, textFileFor } from './prose';
 
 const API = '/__forge/api';
 
@@ -142,6 +139,7 @@ export function forge(): Plugin {
             const progression = await server.ssrLoadModule('/src/core/data/progression.data.ts');
             const deities = await server.ssrLoadModule('/src/core/data/deities.data.ts');
             const climate = await server.ssrLoadModule('/src/core/data/climate.data.ts');
+            const proseMod = await server.ssrLoadModule('/src/core/text/prose.ts');
             const exposure = await server.ssrLoadModule('/src/core/systems/exposure.ts');
 
             // The TODO/SPEC comment lines above each entry — these live in the
@@ -176,6 +174,8 @@ export function forge(): Plugin {
               // Extras the editors need but that aren't editable registries.
               meta: toJson({
                 startingSpot: locations.STARTING_SPOT,
+                // Text-table keys that named no entry (src/core/text/prose.ts).
+                proseOrphans: proseMod.PROSE_ORPHANS,
                 attributes: attributes.ATTRIBUTE_LIST,
                 statNames: types.STAT_NAMES,
                 skillCategories: types.SKILL_CATEGORIES,
@@ -237,32 +237,38 @@ export function forge(): Plugin {
             const working = new Map<string, string>();
             const notes: string[] = [];
 
+            const load = async (file: string): Promise<string> => {
+              if (!originals.has(file)) {
+                const text = await readData(file);
+                originals.set(file, text);
+                working.set(file, text);
+              }
+              return working.get(file)!;
+            };
+
             for (const op of ops) {
               const entry = catalogFor(op.kind);
               if (!WRITABLE.has(entry.file)) {
                 return send(res, 400, { error: `Not writable: ${entry.file}` });
               }
-              if (!originals.has(entry.file)) {
-                const text = await readData(entry.file);
-                originals.set(entry.file, text);
-                working.set(entry.file, text);
+              const current = await load(entry.file);
+              if (op.op === 'note') {
+                if (op.marker !== 'TODO' && op.marker !== 'SPEC') {
+                  return send(res, 400, { error: `Unknown note marker: ${String(op.marker)}` });
+                }
+                const result = setNoteAt(entry.file, current, entry.root, op.key, op.marker, op.text);
+                working.set(entry.file, result.text);
+                notes.push(result.note);
+                continue;
               }
-              if (op.op === 'note' && op.marker !== 'TODO' && op.marker !== 'SPEC') {
-                return send(res, 400, { error: `Unknown note marker: ${String(op.marker)}` });
+              // Prose fields live in the text file next door; one client op
+              // may become a data edit plus several text edits (prose.ts).
+              const textText = await load(textFileFor(entry.file));
+              for (const edit of routeOp(op, entry, current, textText)) {
+                const result = edit.apply(working.get(edit.file)!);
+                working.set(edit.file, result.text);
+                notes.push(result.note);
               }
-              const current = working.get(entry.file)!;
-              const result =
-                op.op === 'add'
-                  ? addEntry(entry.file, current, entry.root, op.key, op.value, entry.keyOrder)
-                  : op.op === 'delete'
-                    ? deleteAt(entry.file, current, entry.root, op.path)
-                    : op.op === 'rename'
-                      ? renameEntry(entry.file, current, entry.root, op.from, op.to)
-                      : op.op === 'note'
-                        ? setNoteAt(entry.file, current, entry.root, op.key, op.marker, op.text)
-                        : setAt(entry.file, current, entry.root, op.path, op.value, entry.keyOrder);
-              working.set(entry.file, result.text);
-              notes.push(result.note);
             }
 
             const changes = [...working].map(([file, after]) => {

@@ -1,4 +1,6 @@
 import type { AttributeId, Milestone, Modifier } from '../types';
+import { prose } from '../text/prose';
+import { ATTRIBUTE_TRAINING_TEXT } from '../text/attributes.text';
 
 // Attribute content: display metadata and the training-rank tables.
 // The AttributeId union itself stays in types.ts (it's structural, not content).
@@ -57,13 +59,9 @@ export function standardMilestones(attr: AttributeId, cap = 100): TrainingMilest
  * the EFFECTIVE value and can never re-trigger its own threshold). Both lists
  * must stay sorted by level.
  */
-export const ATTRIBUTE_TRAINING: Record<
-  AttributeId,
-  { name: string; desc: string; tierNames: TrainingRank[]; milestones?: TrainingMilestone[] }
-> = {
+export const ATTRIBUTE_TRAINING = prose<{ name: string; desc: string; tierNames: TrainingRank[]; milestones?: TrainingMilestone[] }, AttributeId>('ATTRIBUTE_TRAINING', ATTRIBUTE_TRAINING_TEXT, {
   str: {
     name: 'Strength Training',
-    desc: 'Grow stronger with each passing day.',
     tierNames: [
       { level: 1, name: 'Strength Training — Beginner' },
       {
@@ -100,7 +98,6 @@ export const ATTRIBUTE_TRAINING: Record<
   },
   dex: {
     name: 'Dexterity Training',
-    desc: 'Sprints, hurdles, and drills to hone reflex and precision.',
     tierNames: [
       { level: 1, name: 'Dexterity Training — Beginner' },
       {
@@ -138,7 +135,6 @@ export const ATTRIBUTE_TRAINING: Record<
   },
   con: {
     name: 'Constitution Training',
-    desc: 'Endure more than yesterday. Then more than that.',
     tierNames: [
       { level: 1, name: 'Constitution Training — Beginner' },
       {
@@ -175,7 +171,6 @@ export const ATTRIBUTE_TRAINING: Record<
   },
   int: {
     name: 'Intelligence Study',
-    desc: 'Study poems, plays, and treatises to sharpen intellect.',
     tierNames: [
       { level: 1, name: 'Intelligence Study — Beginner' },
       {
@@ -229,7 +224,6 @@ export const ATTRIBUTE_TRAINING: Record<
   },
   wis: {
     name: 'Wisdom Contemplation',
-    desc: 'Observe, listen, and glean what others miss.',
     tierNames: [
       { level: 1, name: 'Wisdom Contemplation — Beginner' },
       {
@@ -260,7 +254,6 @@ export const ATTRIBUTE_TRAINING: Record<
   },
   cha: {
     name: 'Charisma Practice',
-    desc: 'Practice rhetoric, presence, and persuasive argument.',
     tierNames: [
       { level: 1, name: 'Charisma Practice — Beginner' },
       {
@@ -289,4 +282,4 @@ export const ATTRIBUTE_TRAINING: Record<
     ],
     milestones: standardMilestones('cha'),
   },
-};
+});

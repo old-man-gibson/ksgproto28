@@ -7,6 +7,9 @@ This is the one layer of Frontier Idle that lived nowhere but in chat logs.
 holds register. It exists for two readers: a drafter writing prose in your
 voice, and **you, mid-sentence, losing faith.** S6 is the part for that.
 
+The words themselves live in `src/core/text/*.text.ts`, one file per data file
+(see `CONTENT_GUIDE.md` §3). That is the only place to edit them.
+
 ---
 
 ## 1. The generator: panels

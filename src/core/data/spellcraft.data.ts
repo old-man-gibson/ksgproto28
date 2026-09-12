@@ -7,6 +7,8 @@ import type {
   PsionicAxisDef,
   PsionicRecognitionDef,
 } from '../types';
+import { prose } from '../text/prose';
+import { ARCANE_WORDS_TEXT, MIRACLES_TEXT, PSI_AXES_TEXT, PSI_QUANTITIES_TEXT, PSI_RECOGNITIONS_TEXT } from '../text/spellcraft.text';
 
 /**
  * Spellcraft content: the arcane lexicon, the divine litanies, and the psionic
@@ -19,7 +21,7 @@ import type {
  * deterministic — two mages who speak the same sentence get the same spell.
  */
 
-export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
+export const ARCANE_WORDS = prose<ArcaneWordDef>('ARCANE_WORDS', ARCANE_WORDS_TEXT, {
   // ----- Nouns: the substance spoken into being -----
   fire: {
     id: 'fire',
@@ -27,7 +29,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['flame', 'blaze'],
     kind: 'noun',
     icon: '🔥',
-    desc: 'The first word most mages learn, and the last thing many say.',
     mana: 2,
     element: 'heat',
     power: 1.0,
@@ -39,7 +40,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['frost', 'glacier'],
     kind: 'noun',
     icon: '❄️',
-    desc: 'Cold given a shape. It bites, and what it bites, it slows.',
     mana: 2,
     element: 'cold',
     power: 0.9,
@@ -51,7 +51,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['arc', 'bolt'],
     kind: 'noun',
     icon: '⚡',
-    desc: 'A held breath of lightning. Quick to speak, quicker to land.',
     minLevel: 3,
     mana: 2,
     element: 'lightning',
@@ -64,7 +63,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['torrent', 'deluge'],
     kind: 'noun',
     icon: '💧',
-    desc: 'Gentle as words go. What it soaks, other words find easier to freeze.',
     minLevel: 4,
     mana: 2,
     element: 'water',
@@ -77,7 +75,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['boulder', 'mountain'],
     kind: 'noun',
     icon: '🪨',
-    desc: 'A heavy word. What it hits, it leaves full of splinters.',
     minLevel: 5,
     mana: 3,
     element: 'earth',
@@ -90,7 +87,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['wind', 'storm'],
     kind: 'noun',
     icon: '💨',
-    desc: 'A light word. can reach far and quickly. What it hits keeps losing its footing.',
     minLevel: 4,
     mana: 2,
     element: 'wind',
@@ -103,7 +99,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['bramble', 'wildwood'],
     kind: 'noun',
     icon: '🌱',
-    desc: 'A patient word. It does almost nothing, and then it does not stop.',
     minLevel: 5,
     mana: 2,
     // Poison-typed the way iron's magnetism is piercing-typed: a noun may own a
@@ -118,7 +113,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['steel', 'adamant'],
     kind: 'noun',
     icon: '📌',
-    desc: 'A point, spoken. It goes in, and the hole it leaves stays open.',
     minLevel: 11,
     mana: 2,
     element: 'piercing',
@@ -131,7 +125,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['toxin', 'plague'],
     kind: 'noun',
     icon: '🐍',
-    desc: 'Weak on arrival. It does its arguing afterwards.',
     minLevel: 6,
     mana: 2,
     element: 'poison',
@@ -144,7 +137,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['corrosion', 'liquefaction'],
     kind: 'noun',
     icon: '🧪',
-    desc: 'Every hit slowly strips away what makes hard targets so intimidating.',
     minLevel: 6,
     mana: 2,
     element: 'acid',
@@ -157,7 +149,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['radiance', 'sun'],
     kind: 'noun',
     icon: '☀️',
-    desc: 'Spoken plainly it illuminates. Spoken sharply it blinds.',
     minLevel: 8,
     mana: 3,
     element: 'light',
@@ -170,7 +161,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['dusk', 'abyss'],
     kind: 'noun',
     icon: '🌑',
-    desc: 'The dark that saps will, prolonged exposure corrupts.',
     minLevel: 8,
     mana: 3,
     element: 'dark',
@@ -183,9 +173,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['naught', 'null'],
     kind: 'noun',
     icon: '⭕',
-    desc:
-      'The word for nothing, sharpened. It is not fire and not iron and not anything — ' +
-      'so nothing resists it, and nothing suffers it especially. The raw number lands.',
     minLevel: 10,
     mana: 2,
     element: 'arcane',
@@ -198,9 +185,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['eldritch', 'anathema'],
     kind: 'noun',
     icon: '🔮',
-    desc:
-      'The stuff magic is made of, spoken at somebody. It frays whatever in them touches ' +
-      'mana — and what frays far enough begins to burn.',
     minLevel: 13,
     mana: 3,
     element: 'arcane',
@@ -231,7 +215,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['gash', 'sunder'],
     kind: 'verb',
     icon: '🔪',
-    desc: 'An edge. Whatever it carries, it carries INTO them — what it opens keeps working after the word has ended.',
     minLevel: 9,
     mana: 2,
     verb: {
@@ -248,7 +231,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['crumple', 'implode'],
     kind: 'verb',
     icon: '🔨',
-    desc: 'Weight, brought down. The heaviest blow the grammar has — and the substance is mostly wasted in the impact.',
     minLevel: 9,
     mana: 2,
     verb: {
@@ -265,7 +247,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['impale', 'skewer'],
     kind: 'verb',
     icon: '🎯',
-    desc: 'Narrows the working to a point. Armor and wards mean less to it — and so does whatever it was carrying.',
     mana: 1,
     verb: {
       powerMult: 0.95,
@@ -282,7 +263,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['dart', 'blink'],
     kind: 'verb',
     icon: '🕊️',
-    desc: 'Sends the working out fast and often. Haste costs a little weight.',
     mana: 1,
     verb: { powerMult: 0.9, barePower: 0.4, cooldownMult: 0.75 },
   },
@@ -292,7 +272,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['engulf', 'everything'],
     kind: 'verb',
     icon: '💥',
-    desc: 'Tells the working to be bigger than its target. The spill is the point.',
     minLevel: 4,
     mana: 2,
     verb: { powerMult: 0.85, barePower: 0.4, splash: 0.5 },
@@ -303,7 +282,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['erupt', 'detonate'],
     kind: 'verb',
     icon: '🎆',
-    desc: 'Detonate the word for greater power at the cost of a long wind-down.',
     minLevel: 6,
     mana: 2,
     verb: { powerMult: 1.35, barePower: 0.6, cooldownMult: 1.3 },
@@ -314,7 +292,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['clutch', 'strangle'],
     kind: 'verb',
     icon: '🫳',
-    desc: 'The working holds rather than harms. What the noun does lingers doubled.',
     minLevel: 8,
     mana: 2,
     verb: { powerMult: 0.6, barePower: 0.3, gripMult: 2.0 },
@@ -325,7 +302,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['bulwark', 'sanctum'],
     kind: 'verb',
     icon: '🛡️',
-    desc: 'Turns the substance into a coat worn against its own element. Always lands on the speaker.',
     minLevel: 5,
     mana: 2,
     verb: { ward: { amount: 0.15, duration: 300 } },
@@ -336,7 +312,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['knit', 'renew'],
     kind: 'verb',
     icon: '💚',
-    desc: 'Asks the substance to close a wound instead of opening one. Always lands on the speaker.',
     minLevel: 7,
     mana: 3,
     verb: { restore: 1.0 },
@@ -349,7 +324,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['dragging', 'glacial'],
     kind: 'adverb',
     icon: '🐢',
-    desc: 'Every syllable given its full weight. Heavier, and much less often.',
     mana: 1,
     adverb: {
       powerMult: 1.4,
@@ -366,7 +340,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['flashing', 'instant'],
     kind: 'adverb',
     icon: '🐇',
-    desc: 'Clipped short. Lighter, and much more often.',
     mana: 1,
     adverb: {
       powerMult: 0.75,
@@ -383,10 +356,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['faintly', 'barely'],
     kind: 'adverb',
     icon: '🕊️',
-    desc:
-      'Spoken with the edge taken off. The substance still takes hold exactly as deeply — ' +
-      'it simply arrives without the force behind it. The word for putting something ON ' +
-      'someone (yourself included) rather than doing something TO them.',
     minLevel: 7,
     mana: 1,
     /*
@@ -412,9 +381,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['savagely', 'murderously'],
     kind: 'adverb',
     icon: '🩸',
-    desc:
-      'Spoken looking for the seam. Every syllable hunts the vital spot, and the working ' +
-      'demands a great deal more to be said that way.',
     minLevel: 13,
     mana: 2,
     // Crit ADDS per tier (chance is a probability, severity a multiplier)
@@ -431,10 +397,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['fiercely', 'overwhelmingly'],
     kind: 'adverb',
     icon: '🔆',
-    desc:
-      'Spoken with everything behind the substance rather than the blow. Whatever it leaves ' +
-      'in them bites far deeper — and spoken LAST it is concentrated rather than merely ' +
-      'strong, burning hotter for less long.',
     minLevel: 10,
     mana: 2,
     // The pushing costs; the concentration trades length for depth.
@@ -450,10 +412,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['thinly', 'scarcely'],
     kind: 'adverb',
     icon: '🔅',
-    desc:
-      'Spoken with the substance held back. What it leaves barely takes — but it is never ' +
-      'nothing, and spoken LAST it is diluted rather than merely weak, lingering far longer ' +
-      'for how little it is.',
     minLevel: 8,
     mana: 1,
     adverb: {
@@ -468,7 +426,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     stacked: ['thrice', 'fourfold'],
     kind: 'adverb',
     icon: '✌️',
-    desc: 'Said again before the echo of the first has finished landing.',
     minLevel: 6,
     mana: 2,
     adverb: { hits: 2, manaMult: 1.8 },
@@ -480,9 +437,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     word: 'then',
     kind: 'conjunction',
     icon: '⏭️',
-    desc:
-      'Sequence, spoken. The clause that follows strikes through the opening the one before ' +
-      'it made — and strikes harder if that opening was actually made.',
     minLevel: 12,
     mana: 1,
     conjunction: { inheritPenetration: true, followThrough: 1.3 },
@@ -492,9 +446,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     word: 'and',
     kind: 'conjunction',
     icon: '🤝',
-    desc:
-      'Simultaneity, spoken. Two clauses fuse into one blow with two natures — it lands as ' +
-      'whichever the target guards worse, and carries both riders.',
     minLevel: 14,
     mana: 2,
     conjunction: { fuse: 0.85 },
@@ -504,10 +455,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     word: 'but',
     kind: 'conjunction',
     icon: '🔀',
-    desc:
-      'Contradiction, spoken. The clause that follows does not strike — it transmutes, its ' +
-      'riders replacing those of the blow before it. Spoken with a riderless word, it strips ' +
-      'the blow clean instead.',
     minLevel: 16,
     mana: 2,
     conjunction: { transmute: true },
@@ -517,9 +464,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     word: 'or',
     kind: 'conjunction',
     icon: '🎲',
-    desc:
-      'Chance, spoken. The linked clauses become alternatives — one is rolled each cast, and ' +
-      'each pays only half its mana. Thrift, at the price of knowing.',
     minLevel: 15,
     mana: 1,
     conjunction: { alternate: 0.5 },
@@ -529,9 +473,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     word: 'if',
     kind: 'conjunction',
     icon: '❓',
-    desc:
-      'Condition, spoken. The clause that follows does not strike — its noun names an ' +
-      'affliction, and the blow before it fires only while the target bears it.',
     minLevel: 18,
     mana: 1,
     conjunction: { condition: true },
@@ -543,7 +484,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     word: 'one',
     kind: 'target',
     icon: '👤',
-    desc: 'The single foe before you. The default address of every spell.',
     mana: 0,
     target: 'one',
   },
@@ -552,7 +492,6 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     word: 'others',
     kind: 'target',
     icon: '👥',
-    desc: 'Everyone on the wrong side of the argument. Spreading a word thins it.',
     minLevel: 5,
     mana: 2,
     target: 'others',
@@ -562,12 +501,11 @@ export const ARCANE_WORDS: Record<string, ArcaneWordDef> = {
     word: 'me',
     kind: 'target',
     icon: '🙋',
-    desc: 'The speaker. The grammar does not care whether that was wise.',
     minLevel: 2,
     mana: 0,
     target: 'self',
   },
-};
+});
 
 export const ARCANE_WORD_LIST: ArcaneWordDef[] = Object.values(ARCANE_WORDS);
 
@@ -592,19 +530,17 @@ export function maxSentenceWords(level: number): number {
  * The three `litany_*` ids predate the pantheon and keep their ids for old
  * grimoires; they have been claimed by the deities they always belonged to.
  */
-export const MIRACLES: Record<string, MiracleDef> = {
+export const MIRACLES = prose<MiracleDef>('MIRACLES', MIRACLES_TEXT, {
   // ----- Ik'Thel'the, the Infinity between Zero and One -----
   unfold_geometry: {
     id: 'unfold_geometry',
     deity: 'ikthelthe',
     name: 'Unfold Geometry',
     icon: '📐',
-    desc: 'The target is briefly persuaded it has one face fewer than it needs.',
     favorCost: 4,
     spec: {
       name: 'Unfold Geometry',
       icon: '📐',
-      desc: 'Breaks the target’s shape; what remains defends poorly.',
       target: 'one',
       strikes: [
         { type: 'arcane', power: 0.4, inflicts: [{ id: 'unfolded', intensity: 1 }] },
@@ -618,13 +554,11 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'ikthelthe',
     name: 'Fractal Lance',
     icon: '🔱',
-    desc: 'One thrust, containing two smaller thrusts, containing…',
     favorCost: 5,
     minLevel: 5,
     spec: {
       name: 'Fractal Lance',
       icon: '🔱',
-      desc: 'Strikes at every scale at once, each half the last.',
       target: 'one',
       strikes: [
         { type: 'arcane', power: 1.4 },
@@ -640,7 +574,6 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'ikthelthe',
     name: 'Fold Space',
     icon: '📄',
-    desc: 'Defensive without being restorative: where you were is not where you are.',
     favorCost: 4,
     spec: {
       name: 'Fold Space',
@@ -659,12 +592,10 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'xima',
     name: 'Rite of Mending',
     icon: '🙏',
-    desc: 'The oldest prayer there is: please, not yet.',
     favorCost: 3,
     spec: {
       name: 'Rite of Mending',
       icon: '🙏',
-      desc: 'Closes wounds by asking nicely, firmly.',
       target: 'self',
       strikes: [],
       heal: 2.0,
@@ -677,13 +608,11 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'xima',
     name: 'Rite of the Aegis',
     icon: '🛡️',
-    desc: 'A borrowed shield, on the understanding that it is returned dented.',
     favorCost: 8,
     minLevel: 10,
     spec: {
       name: 'Rite of the Aegis',
       icon: '🛡️',
-      desc: 'The Cold Sun stands a little in front of you for a while.',
       target: 'self',
       strikes: [],
       buff: {
@@ -703,7 +632,6 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'xima',
     name: 'Rime of the Cold Sun',
     icon: '❄️',
-    desc: 'Slow to speak and slower to fade — a shield against the elements themselves.',
     favorCost: 6,
     spec: {
       name: 'Rime of the Cold Sun',
@@ -721,13 +649,11 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'xima',
     name: 'Blood Communion',
     icon: '🩸',
-    desc: 'Open your own veins; what spills is channelled back as his protection.',
     favorCost: 8,
     minLevel: 5,
     spec: {
       name: 'Blood Communion',
       icon: '🩸',
-      desc: 'You bleed, and the bleeding feeds you.',
       target: 'self',
       strikes: [],
       grants: [
@@ -745,13 +671,11 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'denjalle',
     name: 'Writ of Retribution',
     icon: '⚖️',
-    desc: 'A grievance, formally filed. The light does the rest.',
     favorCost: 5,
     minLevel: 5,
     spec: {
       name: 'Writ of Retribution',
       icon: '⚖️',
-      desc: 'Judgement, delivered as light.',
       target: 'one',
       strikes: [
         { type: 'light', power: 2.2, inflicts: [{ id: 'dazzled', intensity: 1, chance: 0.4 }] },
@@ -765,12 +689,10 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'denjalle',
     name: 'Holy Fire',
     icon: '🔥',
-    desc: 'Fire that is also light: it burns along whichever the target guards worse.',
     favorCost: 6,
     spec: {
       name: 'Holy Fire',
       icon: '🔥',
-      desc: 'Lands as fire or as light — whichever finds the gap.',
       target: 'one',
       strikes: [
         { type: 'heat', orType: 'light', power: 2.0, inflicts: [{ id: 'on_fire', intensity: 1, chance: 0.3 }] },
@@ -784,7 +706,6 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'denjalle',
     name: 'Honorable Duel',
     icon: '⚔️',
-    desc: 'The terms are declared, and the terms are enforced: one against one.',
     favorCost: 7,
     minLevel: 5,
     spec: {
@@ -802,7 +723,6 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'denjalle',
     name: 'Perfect Lunge',
     icon: '🤺',
-    desc: 'Strike true. Struck with a rapier in hand, strike truer.',
     favorCost: 5,
     spec: {
       name: 'Perfect Lunge',
@@ -830,7 +750,6 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'usvylgr',
     name: "Artisan's Cunning",
     icon: '🔨',
-    desc: 'Worn to the bench: surer hands, finer results, and a knack for finding the good stock.',
     favorCost: 5,
     spec: {
       name: "Artisan's Cunning",
@@ -847,7 +766,6 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'usvylgr',
     name: 'Veil of Misdirection',
     icon: '🎭',
-    desc: 'The enemy is not prevented from striking you. They are prevented from finding you.',
     favorCost: 6,
     spec: {
       name: 'Veil of Misdirection',
@@ -866,12 +784,10 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'kenese_paea',
     name: 'Venom Feast',
     icon: '🐍',
-    desc: 'Swallow your own poison whole and spit it, sharpened, at somebody who earned it.',
     favorCost: 6,
     spec: {
       name: 'Venom Feast',
       icon: '🐍',
-      desc: 'Strips your own poison and rot and delivers it, with interest.',
       target: 'one',
       strikes: [
         { type: 'poison', power: 0.5, inflicts: [{ id: 'poison', intensity: 1, chance: 0.4 }] },
@@ -887,13 +803,11 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'kenese_paea',
     name: 'Redouble Venom',
     icon: '🐍',
-    desc: 'A venom already at work is asked to work twice as hard — paid for in her adherent’s breath.',
     favorCost: 8,
     minLevel: 5,
     spec: {
       name: 'Redouble Venom',
       icon: '🐍',
-      desc: 'Doubles and refreshes the target’s poison and rot.',
       target: 'one',
       strikes: [{ type: 'dark', power: 0.4 }],
       amplify: { statuses: ['poison', 'rotting'], mult: 2 },
@@ -907,7 +821,6 @@ export const MIRACLES: Record<string, MiracleDef> = {
     deity: 'kenese_paea',
     name: 'Night Shroud',
     icon: '🌑',
-    desc: 'Walk shrouded; let their blows find only dark.',
     favorCost: 5,
     spec: {
       name: 'Night Shroud',
@@ -926,9 +839,8 @@ export const MIRACLES: Record<string, MiracleDef> = {
     name: 'Sproutbringer',
     deity: 'tuigamala',
     icon: '📦',
-    desc: '',
     favorCost: 0,
-    spec: { name: 'Sproutbringer', icon: '', desc: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
+    spec: { name: 'Sproutbringer', icon: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
   },
   // SPEC: enhances wooden weapons, causing them to penetrate armor and deal bonus bludgeoning damage based on the weapon's quality/tier
   tuigamalas_mighty_stick: {
@@ -936,9 +848,8 @@ export const MIRACLES: Record<string, MiracleDef> = {
     name: 'Tuigamala\'s Mighty Stick',
     deity: 'tuigamala',
     icon: '📦',
-    desc: '',
     favorCost: 0,
-    spec: { name: '', icon: '', desc: '', target: 'one', strikes: [], manaCost: 0, cooldown: 0 },
+    spec: { name: '', icon: '', target: 'one', strikes: [], manaCost: 0, cooldown: 0 },
   },
   // SPEC: grant a bonus attack (alternating between piercing and slashing damage, analogous to the target being bitten and slashed) that happens at fixed intervals, hitting a random target and cause a mini-stun that stops enemy attack gauge for 0.2s
   spear_and_fang: {
@@ -946,9 +857,8 @@ export const MIRACLES: Record<string, MiracleDef> = {
     name: 'Spear And Fang',
     deity: 'cuixtli',
     icon: '📦',
-    desc: '',
     favorCost: 0,
-    spec: { name: '', icon: '', desc: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
+    spec: { name: '', icon: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
   },
 
   // ----- yShicna', Logic Purified -----
@@ -977,9 +887,8 @@ export const MIRACLES: Record<string, MiracleDef> = {
     name: 'The Atomic State of Words',
     deity: 'yshicna',
     icon: '📦',
-    desc: '',
     favorCost: 0,
-    spec: { name: '', icon: '', desc: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
+    spec: { name: '', icon: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
   },
   // SPEC: PASSIVE, no spell. The PERMISSION to trade a word for its fourth
   // utterance. Each trade is a transaction under it: the word is consumed and
@@ -991,9 +900,8 @@ export const MIRACLES: Record<string, MiracleDef> = {
     name: 'The Sound of Words',
     deity: 'yshicna',
     icon: '📦',
-    desc: '',
     favorCost: 0,
-    spec: { name: '', icon: '', desc: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
+    spec: { name: '', icon: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
   },
 
   // --- Fourth utterances (one per word; NOT on the stack curve) ---
@@ -1007,9 +915,8 @@ export const MIRACLES: Record<string, MiracleDef> = {
     name: 'Fire, Fourfold',
     deity: 'yshicna',
     icon: '📦',
-    desc: '',
     favorCost: 0,
-    spec: { name: '', icon: '', desc: '', target: 'one', strikes: [], manaCost: 0, cooldown: 0 },
+    spec: { name: '', icon: '', target: 'one', strikes: [], manaCost: 0, cooldown: 0 },
   },
   // SPEC: twice x4 — repeated casting that begins hitting every fighter
   // indiscriminately and intermittently, the player included, over time
@@ -1021,9 +928,8 @@ export const MIRACLES: Record<string, MiracleDef> = {
     name: 'Twice, Fourfold',
     deity: 'yshicna',
     icon: '📦',
-    desc: '',
     favorCost: 0,
-    spec: { name: '', icon: '', desc: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
+    spec: { name: '', icon: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
   },
   // SPEC: crush x4 — everyone takes damage on taking any action, slowly
   // incurring `concussed`; armor is crushed inward, dropping into the
@@ -1035,11 +941,10 @@ export const MIRACLES: Record<string, MiracleDef> = {
     name: 'Crush, Fourfold',
     deity: 'yshicna',
     icon: '📦',
-    desc: '',
     favorCost: 0,
-    spec: { name: '', icon: '', desc: '', target: 'one', strikes: [], manaCost: 0, cooldown: 0 },
+    spec: { name: '', icon: '', target: 'one', strikes: [], manaCost: 0, cooldown: 0 },
   },
-};
+});
 
 export const MIRACLE_LIST: MiracleDef[] = Object.values(MIRACLES);
 
@@ -1197,16 +1102,16 @@ export const PSIONIC = {
   cooldown: 110,
 } as const;
 
-export const PSI_AXES: Record<PsiAxisId, PsionicAxisDef> = {
-  force: { id: 'force', name: 'Force', icon: '👊', color: '#e05555', desc: 'How hard the will lands. Bludgeoning, from nowhere.' },
-  reach: { id: 'reach', name: 'Reach', icon: '🌊', color: '#5cbb6a', desc: 'How widely it lands. Enough reach touches everyone at once.' },
-  grip: { id: 'grip', name: 'Grip', icon: '🫳', color: '#c98a3c', desc: 'How firmly it holds a mind. Dazes.' },
-  speed: { id: 'speed', name: 'Speed', icon: '💨', color: '#f2d024', desc: 'How quickly the visualisation completes. Shortens the working’s cycle.' },
-  clairvoyance: { id: 'clairvoyance', name: 'Clairvoyance', icon: '👁️', color: '#8f7ad8', desc: 'Seeing where things WILL be. Precognition now; telepathy in time.' },
-  space: { id: 'space', name: 'Space', icon: '🌀', color: '#5591e0', desc: 'Where the working exists. Structure for other axes to key on.' },
-  mass: { id: 'mass', name: 'Mass', icon: '🪨', color: '#9aa4b0', desc: 'How much the working weighs. Walls are made of this.' },
-  vitality: { id: 'vitality', name: 'Vitality', icon: '💚', color: '#4caf7d', desc: 'The will turned inward: the body asked, firmly, to be whole.' },
-};
+export const PSI_AXES = prose<PsionicAxisDef, PsiAxisId>('PSI_AXES', PSI_AXES_TEXT, {
+  force: { id: 'force', name: 'Force', icon: '👊', color: '#e05555', },
+  reach: { id: 'reach', name: 'Reach', icon: '🌊', color: '#5cbb6a', },
+  grip: { id: 'grip', name: 'Grip', icon: '🫳', color: '#c98a3c', },
+  speed: { id: 'speed', name: 'Speed', icon: '💨', color: '#f2d024', },
+  clairvoyance: { id: 'clairvoyance', name: 'Clairvoyance', icon: '👁️', color: '#8f7ad8', },
+  space: { id: 'space', name: 'Space', icon: '🌀', color: '#5591e0', },
+  mass: { id: 'mass', name: 'Mass', icon: '🪨', color: '#9aa4b0', },
+  vitality: { id: 'vitality', name: 'Vitality', icon: '💚', color: '#4caf7d', },
+});
 
 export const PSI_AXIS_LIST: PsionicAxisDef[] = Object.values(PSI_AXES);
 
@@ -1222,13 +1127,12 @@ export const PSI_STARTING_AXES: PsiAxisId[] = ['force', 'reach'];
  * flavour: it is the literal arithmetic in systems/psionic.ts `deriveShape`,
  * and a player who reads it can predict the working without casting it.
  */
-export const PSI_QUANTITIES: Record<PsiQuantityId, PsiQuantityDef> = {
+export const PSI_QUANTITIES = prose<PsiQuantityDef, PsiQuantityId>('PSI_QUANTITIES', PSI_QUANTITIES_TEXT, {
   pressure: {
     id: 'pressure',
     name: 'Pressure',
     icon: '💢',
     formula: 'force + grip',
-    desc: 'How much is being imposed at all. What the blow is made of, and what a will turned inward has to overcome.',
     decimals: 0,
   },
   momentum: {
@@ -1236,7 +1140,6 @@ export const PSI_QUANTITIES: Record<PsiQuantityId, PsiQuantityDef> = {
     name: 'Momentum',
     icon: '🔨',
     formula: 'mass × speed',
-    desc: 'Mass in motion. Weight that is going somewhere hits like a hammer and rattles what it hits.',
     decimals: 0,
   },
   inertia: {
@@ -1244,7 +1147,6 @@ export const PSI_QUANTITIES: Record<PsiQuantityId, PsiQuantityDef> = {
     name: 'Inertia',
     icon: '🪨',
     formula: 'mass − speed',
-    desc: 'Mass that is going nowhere. Held still it is a wall; every point of speed takes some of the wall away.',
     decimals: 0,
   },
   acuity: {
@@ -1252,7 +1154,6 @@ export const PSI_QUANTITIES: Record<PsiQuantityId, PsiQuantityDef> = {
     name: 'Acuity',
     icon: '📍',
     formula: 'clairvoyance ÷ (reach + √momentum)',
-    desc: 'Sight per unit of what it must cover — ground, and motion. Concentrated, it punctures and cannot miss. A shape is a needle or a hammer; it cannot be both.',
     decimals: 2,
   },
   awareness: {
@@ -1260,7 +1161,6 @@ export const PSI_QUANTITIES: Record<PsiQuantityId, PsiQuantityDef> = {
     name: 'Awareness',
     icon: '👁️',
     formula: 'clairvoyance × reach',
-    desc: 'Sight spanning the field. Seeing where everyone is carries the working to them.',
     decimals: 0,
   },
   coherence: {
@@ -1268,7 +1168,6 @@ export const PSI_QUANTITIES: Record<PsiQuantityId, PsiQuantityDef> = {
     name: 'Coherence',
     icon: '🌀',
     formula: 'space ÷ (force + mass)',
-    desc: 'Structure against what wants to burst out of it. A coherent shape keeps some of itself back and leaves something standing.',
     decimals: 2,
   },
   purchase: {
@@ -1276,7 +1175,6 @@ export const PSI_QUANTITIES: Record<PsiQuantityId, PsiQuantityDef> = {
     name: 'Purchase',
     icon: '🫳',
     formula: 'grip ÷ (1 + speed)',
-    desc: 'How well the working holds what it caught. A grab made at speed does not hold: everything still lands, but with no purchase nothing stays. Zero grip is slippery, not empty.',
     decimals: 2,
   },
   inward: {
@@ -1284,10 +1182,9 @@ export const PSI_QUANTITIES: Record<PsiQuantityId, PsiQuantityDef> = {
     name: 'Inward',
     icon: '💚',
     formula: 'vitality ÷ (vitality + pressure)',
-    desc: 'Which way the whole working faces. Every quantity above has an outward face and an inward one — momentum thrown is a hammer, momentum worn is speed — and this is the share going each way. Nothing is ever discarded; it is only aimed.',
     decimals: 2,
   },
-};
+});
 
 export const PSI_QUANTITY_LIST: PsiQuantityDef[] = Object.values(PSI_QUANTITIES);
 
@@ -1305,12 +1202,11 @@ export const PSI_QUANTITY_LIST: PsiQuantityDef[] = Object.values(PSI_QUANTITIES)
  * nobody enumerated. Adding a name here is pure content — it can never add
  * depth, which is exactly the point. Depth belongs in the quantities.
  */
-export const PSI_RECOGNITIONS: Record<string, PsionicRecognitionDef> = {
+export const PSI_RECOGNITIONS = prose<PsionicRecognitionDef>('PSI_RECOGNITIONS', PSI_RECOGNITIONS_TEXT, {
   unerring_needle: {
     id: 'unerring_needle',
     name: 'Unerring Needle',
     icon: '📍',
-    desc: 'Sight narrowed past the point where a target can be anywhere else, and enough will behind it to arrive. Nothing in motion — a hammer is a different thought.',
     region: {
       acuity: { min: 2 },
       pressure: { min: 4 },
@@ -1325,7 +1221,6 @@ export const PSI_RECOGNITIONS: Record<string, PsionicRecognitionDef> = {
     id: 'kinetic_bulwark',
     name: 'Kinetic Bulwark',
     icon: '🛡️',
-    desc: 'Mass that is going nowhere, held across structured space: a standing wall that stops anything thrown, shot or spat — light passes through, being in no hurry to be matter.',
     region: {
       inertia: { min: 3 },
       coherence: { min: 0.4 },
@@ -1338,7 +1233,6 @@ export const PSI_RECOGNITIONS: Record<string, PsionicRecognitionDef> = {
     id: 'still_mind',
     name: 'Still Mind',
     icon: '🧘',
-    desc: 'Everything turned inward and nothing turned out — and nothing carried in with it. The body is asked to mend, and does.',
     region: {
       inward: { min: 0.9 },
       vitality: { min: 3 },
@@ -1359,7 +1253,6 @@ export const PSI_RECOGNITIONS: Record<string, PsionicRecognitionDef> = {
     id: 'kinetic_rush',
     name: 'Kinetic Rush',
     icon: '💨',
-    desc: 'Mass and motion, and the mass is you. Nothing is thrown, nothing is struck — you are simply somewhere else, sooner, for as long as you can hold the thought.',
     region: {
       momentum: { min: 36 },
       inward: { min: 0.8 },
@@ -1370,7 +1263,6 @@ export const PSI_RECOGNITIONS: Record<string, PsionicRecognitionDef> = {
     id: 'immovable',
     name: 'Immovable',
     icon: '🌱',
-    desc: 'Weight set inward and told to stay. What tries to move you — a blow, a shove, a mind — finds nothing anywhere in you that consents to be moved.',
     region: {
       inertia: { min: 5 },
       inward: { min: 0.8 },
@@ -1381,7 +1273,6 @@ export const PSI_RECOGNITIONS: Record<string, PsionicRecognitionDef> = {
     id: 'second_sight',
     name: 'Second Sight',
     icon: '🔮',
-    desc: 'Sight narrowed to a point and turned around: not where they are, but where their blow means to be, half a second before they have decided it.',
     region: {
       acuity: { min: 3 },
       inward: { min: 0.8 },
@@ -1392,7 +1283,6 @@ export const PSI_RECOGNITIONS: Record<string, PsionicRecognitionDef> = {
     id: 'psionic_obliteration',
     name: 'Obliteration',
     icon: '💥',
-    desc: 'Every term of the shape at once — the whole imposition thrown, at weight, at speed. There is no technique left in it. There is no need for any.',
     region: {
       pressure: { min: 10 },
       momentum: { min: 48 },
@@ -1401,6 +1291,6 @@ export const PSI_RECOGNITIONS: Record<string, PsionicRecognitionDef> = {
     },
     tier: 8,
   },
-};
+});
 
 export const PSI_RECOGNITION_LIST: PsionicRecognitionDef[] = Object.values(PSI_RECOGNITIONS);

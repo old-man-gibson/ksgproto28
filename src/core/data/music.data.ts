@@ -1,4 +1,6 @@
 import type { MusicArchetypeDef, MusicAxis, MusicMeterDef, MusicScaleDef, NoteDurId } from '../types';
+import { prose } from '../text/prose';
+import { MUSIC_METERS_TEXT, MUSIC_SCALES_TEXT, MUSIC_ARCHETYPES_TEXT } from '../text/music.text';
 
 /**
  * Music content: the notation the sheet offers, the scales it can be ruled
@@ -121,12 +123,11 @@ export const NOTE_DURATIONS: Record<NoteDurId, NoteDurationDef> = {
  * ACCENT pattern metricWeight reads. Note 6/8 vs 3/4: identical capacity,
  * different heartbeat — that is the whole lesson of meter in two rows.
  */
-export const MUSIC_METERS: Record<string, MusicMeterDef> = {
+export const MUSIC_METERS = prose<MusicMeterDef>('MUSIC_METERS', MUSIC_METERS_TEXT, {
   common: {
     id: 'common',
     name: '4/4 — Common time',
     icon: '🥁',
-    desc: 'Four square beats, the world\'s default pulse. What every sheet assumes until told otherwise.',
     beats: 4,
     beatUnits: UNITS_PER_QUARTER,
     accents: [2 * UNITS_PER_QUARTER],
@@ -136,7 +137,6 @@ export const MUSIC_METERS: Record<string, MusicMeterDef> = {
     id: 'waltz',
     name: '3/4 — Waltz time',
     icon: '💃',
-    desc: 'Three beats and one accent: OOM-pah-pah. Shorter bars, and nothing as long as a whole note fits in them.',
     beats: 3,
     beatUnits: UNITS_PER_QUARTER,
     accents: [],
@@ -146,7 +146,6 @@ export const MUSIC_METERS: Record<string, MusicMeterDef> = {
     id: 'compound',
     name: '6/8 — Compound time',
     icon: '⛵',
-    desc: 'The same length of bar as a waltz, swung entirely differently: two big pulses, each split in three. Sea shanties live here.',
     beats: 6,
     beatUnits: UNITS_PER_QUARTER / 2,
     accents: [3 * (UNITS_PER_QUARTER / 2)],
@@ -156,13 +155,12 @@ export const MUSIC_METERS: Record<string, MusicMeterDef> = {
     id: 'quintuple',
     name: '5/4 — Quintuple time',
     icon: '🦯',
-    desc: 'Five beats limping as three-then-two. The elegant stumble — dancers count it, marchers dread it.',
     beats: 5,
     beatUnits: UNITS_PER_QUARTER,
     accents: [3 * UNITS_PER_QUARTER],
     unlockLevel: 25,
   },
-};
+});
 
 /** The ruling every sheet starts under. */
 export const DEFAULT_METER = 'common';
@@ -177,66 +175,58 @@ export const TONIC_NAMES = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G�
  * is offered. Degrees are semitones above the tonic; the octave is implied as
  * a final row, so a scale of n degrees rules the staff in n+1 rows.
  */
-export const MUSIC_SCALES: Record<string, MusicScaleDef> = {
+export const MUSIC_SCALES = prose<MusicScaleDef>('MUSIC_SCALES', MUSIC_SCALES_TEXT, {
   major: {
     id: 'major',
     name: 'Major',
-    desc: 'The plain daylight of music — the scale every ear grew up assuming.',
     degrees: [0, 2, 4, 5, 7, 9, 11],
     mode: 'major',
   },
   minor: {
     id: 'minor',
     name: 'Minor',
-    desc: 'The same seven steps with the light taken out of three of them.',
     degrees: [0, 2, 3, 5, 7, 8, 10],
     mode: 'minor',
   },
   harmonic_minor: {
     id: 'harmonic_minor',
     name: 'Harmonic minor',
-    desc: 'A minor with its seventh raised — the step home stretched into a lunge.',
     degrees: [0, 2, 3, 5, 7, 8, 11],
     mode: 'minor',
   },
   dorian: {
     id: 'dorian',
     name: 'Dorian',
-    desc: 'Minor with a straight back. Sad music that refuses to slouch.',
     degrees: [0, 2, 3, 5, 7, 9, 10],
     mode: 'minor',
   },
   mixolydian: {
     id: 'mixolydian',
     name: 'Mixolydian',
-    desc: 'Major with its collar loosened — the drinking-song mode.',
     degrees: [0, 2, 4, 5, 7, 9, 10],
     mode: 'major',
   },
   pentatonic: {
     id: 'pentatonic',
     name: 'Pentatonic',
-    desc: 'Five notes with the arguments removed. Hard to play anything wrong in.',
     degrees: [0, 2, 4, 7, 9],
     mode: 'major',
   },
   minor_pentatonic: {
     id: 'minor_pentatonic',
     name: 'Minor pentatonic',
-    desc: 'Five notes that have seen some things.',
     degrees: [0, 3, 5, 7, 10],
     mode: 'minor',
   },
   greater_harmonic: {
     id: 'greater_harmonic',
     name: 'Greater Harmonic',
-    desc: 'Every step there is. Nothing is out of key because there is no key to be out of.',
     degrees: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
     // NO mode, deliberately. All twelve degrees means the staff asserts
     // nothing, so this is the one ruling that still has to be guessed at —
     // `keyIn` steps aside and `findKey` searches, which is correct here.
   },
-};
+});
 
 // ---------- Archetypes ----------
 
@@ -290,12 +280,11 @@ export const CADENCE_AFFINITY = 0.05;
  * all. After it, noise sits at 0.642 and every fixture clears it.
  * tests/music-identity.test.ts is what keeps that true.
  */
-export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
+export const MUSIC_ARCHETYPES = prose<MusicArchetypeDef>('MUSIC_ARCHETYPES', MUSIC_ARCHETYPES_TEXT, {
   lullaby: {
     id: 'lullaby',
     name: 'Lullaby',
     icon: '🌙',
-    desc: 'Soft, stepwise, consonant, unhurried. Music for lowering someone gently out of the day.',
     target: {
       pace: 0.18,
       mode: 1,
@@ -322,7 +311,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'dirge',
     name: 'Dirge',
     icon: '🕯️',
-    desc: 'Slow, minor and low to the ground — grief given a walking pace.',
     target: {
       pace: 0.1,
       mode: 0,
@@ -342,7 +330,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'march',
     name: 'March',
     icon: '🥁',
-    desc: 'Square on the beat and even as boots. The rhythm does the commanding.',
     target: {
       pace: 0.45,
       mode: 1,
@@ -360,7 +347,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'reel',
     name: 'Reel',
     icon: '💃',
-    desc: 'Quick, bright and tumbling — dance music that does not wait for you.',
     target: {
       pace: 0.65,
       mode: 1,
@@ -386,7 +372,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'anthem',
     name: 'Anthem',
     icon: '🎺',
-    desc: 'Broad, major and sure of itself, built to be sung upward.',
     target: {
       pace: 0.3,
       mode: 1,
@@ -413,7 +398,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'incantation',
     name: 'Incantation',
     icon: '🕸️',
-    desc: 'Narrow, circling, insistent — melody worn down to a murmured formula.',
     target: {
       pace: 0.31,
       mode: 0,
@@ -436,7 +420,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'rhapsody',
     name: 'Rhapsody',
     icon: '🌀',
-    desc: 'Leaping, restless, overfull — music holding more ideas than manners.',
     // Deliberate restlessness still restates SOMETHING — hence motif 0.45
     // rather than 0.15, which was asking for dice. `rhythmEntropy: 0.70` was
     // simply unreachable: the shipped duration palette tops out near 0.65.
@@ -458,7 +441,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'drone',
     name: 'Drone',
     icon: '🐝',
-    desc: 'One long sound standing very still. Less a tune than a place to put one.',
     target: {
       pace: 0.06,
       density: 0.04,
@@ -475,7 +457,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'ostinato',
     name: 'Ostinato',
     icon: '🔩',
-    desc: 'A figure that will not let go — the same handful of notes hammered flat, often over a tone that never moves.',
     target: {
       density: 0.8,
       restRatio: 0.04,
@@ -498,7 +479,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'perpetuum',
     name: 'Perpetuum',
     icon: '🌪️',
-    desc: 'Notes with no gap between them, taken faster than the ear can count. It stops only because the page does.',
     target: {
       pace: 0.82,
       density: 0.85,
@@ -515,7 +495,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'patter',
     name: 'Patter',
     icon: '🐦',
-    desc: 'More air than note — quick scraps thrown out and let fall. Half of it is the silence afterwards.',
     target: {
       restRatio: 0.5,
       density: 0.18,
@@ -531,7 +510,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'keening',
     name: 'Keening',
     icon: '🪦',
-    desc: 'Intervals that refuse to agree, in a key that cannot quite be found. Grief past the point of tune.',
     // Declares NO mode, on purpose: chromatic music has no honest mode, and
     // `mode` is binary — a wrong reading costs a full 1.0 on one axis, the
     // largest single error term this classifier can produce.
@@ -556,7 +534,6 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     id: 'knell',
     name: 'Knell',
     icon: '🔔',
-    desc: 'One note struck, and then a long time. Everything that happens, happens in what follows it.',
     target: {
       restRatio: 0.55,
       density: 0.07,
@@ -569,7 +546,7 @@ export const MUSIC_ARCHETYPES: Record<string, MusicArchetypeDef> = {
     },
     contours: ['level'],
   },
-};
+});
 
 // ---------- Performance pacing ----------
 

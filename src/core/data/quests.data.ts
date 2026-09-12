@@ -1,11 +1,13 @@
 import type { QuestDef } from '../types';
+import { prose } from '../text/prose';
+import { QUESTS_TEXT } from '../text/quests.text';
 
 /**
  * Quests (adapted from proto26's firstPosting/hammerAndAnvil + new bridge
  * content). Chains are expressed with { type: 'quest' } requirements.
  * Turn-in requires standing at the giver's spot.
  */
-export const QUESTS: Record<string, QuestDef> = {
+export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
   // ---------- The Warden of the Foot (the user's first quest list, 2026-09-06) ----------
   //
   // Quest 1: meet the nine trades before trying the tower (talk objectives
@@ -17,17 +19,16 @@ export const QUESTS: Record<string, QuestDef> = {
   faces_of_threshold: {
     id: 'faces_of_threshold',
     name: 'The Faces of Threshold',
-    desc: 'The Warden holds the door and vouches for nobody. Get known instead — a stranger pays full price at every counter in this city.',
     giver: 'warden_of_the_foot',
     objectives: [
-      { type: 'talk', npcId: 'master_smith', desc: 'Meet the smith at the Forges' },
-      { type: 'talk', npcId: 'lectory_wizard', desc: 'Meet the docent in the Reading Hall' },
-      { type: 'talk', npcId: 'chapel_priest', desc: 'Meet the prior at the Nine Chapels' },
-      { type: 'talk', npcId: 'militia_captain', desc: 'Meet the captain at the Muster Gate' },
-      { type: 'talk', npcId: 'head_chef', desc: 'Meet the chef in the Granary Kitchens' },
-      { type: 'talk', npcId: 'row_alchemist', desc: 'Meet the alchemist at the Alembics' },
-      { type: 'talk', npcId: 'psionic_shaper', desc: 'Meet the one who sits in the incense' },
-      { type: 'talk', npcId: 'dojo_master', desc: 'Meet the master on the Sand' },
+      { type: 'talk', npcId: 'master_smith', },
+      { type: 'talk', npcId: 'lectory_wizard', },
+      { type: 'talk', npcId: 'chapel_priest', },
+      { type: 'talk', npcId: 'militia_captain', },
+      { type: 'talk', npcId: 'head_chef', },
+      { type: 'talk', npcId: 'row_alchemist', },
+      { type: 'talk', npcId: 'psionic_shaper', },
+      { type: 'talk', npcId: 'dojo_master', },
     ],
     rewards: {
       gold: 60,
@@ -48,29 +49,27 @@ export const QUESTS: Record<string, QuestDef> = {
   a_taste_of_everything: {
     id: 'a_taste_of_everything',
     name: 'A Taste of Everything',
-    desc: 'Every craft in this city feeds the climb somehow. Try each one while the materials are somebody else’s.',
     giver: 'warden_of_the_foot',
     requirements: [{ type: 'quest', id: 'faces_of_threshold' }],
     objectives: [
-      { type: 'craft', recipeId: 'iron_ingot', count: 1, desc: 'Smelt iron at the Forges' },
-      { type: 'craft', discipline: 'cooking', count: 1, desc: 'Cook a dish in the Granary Kitchens' },
-      { type: 'craft', discipline: 'alchemy', count: 1, desc: 'Bottle a brew at the Alembics' },
-      { type: 'stat', key: 'bestiary:entries', value: 3, desc: 'Add three species to your bestiary (the Cages)' },
-      { type: 'stat', key: 'kills', value: 5, desc: 'Win a handful of fights' },
-      { type: 'stat', key: 'spells:inscribed', value: 1, desc: 'Inscribe a working at the Reading Hall' },
-      { type: 'stat', key: 'miracles:learned', value: 1, desc: 'Receive a miracle at the Nine Chapels' },
+      { type: 'craft', recipeId: 'iron_ingot', count: 1, },
+      { type: 'craft', discipline: 'cooking', count: 1, },
+      { type: 'craft', discipline: 'alchemy', count: 1, },
+      { type: 'stat', key: 'bestiary:entries', value: 3, },
+      { type: 'stat', key: 'kills', value: 5, },
+      { type: 'stat', key: 'spells:inscribed', value: 1, },
+      { type: 'stat', key: 'miracles:learned', value: 1, },
     ],
     rewards: { gold: 250 },
   },
   the_first_ascent: {
     id: 'the_first_ascent',
     name: 'The First Ascent',
-    desc: 'The Warden wants the toll level quiet. Something keeps the far arch — put it down, whichever hour keeps it — and mind how far you stray from the lit stores.',
     giver: 'warden_of_the_foot',
     requirements: [{ type: 'quest', id: 'a_taste_of_everything' }],
     // The same latch the floor's clear reads: any keeper pays it — the day
     // hobgoblin, the night slime, or the ambush the player planned into.
-    objectives: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1, desc: 'Defeat the keeper of the Toll Hall' }],
+    objectives: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1, }],
     rewards: { gold: 350, favor: 1 },
   },
 
@@ -81,4 +80,4 @@ export const QUESTS: Record<string, QuestDef> = {
 
 
    */
-};
+});

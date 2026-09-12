@@ -1,4 +1,6 @@
 import type { DeityDef, DeityTagDef, PantheonDef } from '../types';
+import { prose } from '../text/prose';
+import { DEITIES_TEXT } from '../text/deities.text';
 
 /**
  * The pantheon. A deity is content three ways at once: its TAGS are the
@@ -17,16 +19,12 @@ import type { DeityDef, DeityTagDef, PantheonDef } from '../types';
  * deity here carries them, which is exactly how dispositions toward gods not
  * yet written should work.
  */
-export const DEITIES: Record<string, DeityDef> = {
+export const DEITIES = prose<DeityDef>('DEITIES', DEITIES_TEXT, {
   ikthelthe: {
     id: 'ikthelthe',
     name: "Ik'Thel'the",
     epithet: 'the Infinity between Zero and One',
     icon: '🌀',
-    desc:
-      'Primarily mathematical, geometrical and topological miracles. Finds life odd and wants ' +
-      'to learn more about it. Its workings have a fractal nature — harmful by breaking enemy ' +
-      'geometry, defensive without being restorative by altering space.',
     tags: ['aberrant', 'zero', 'curious', 'warping', 'outer'],
     // No synergies, but no hostilities: the Infinity is merely watching.
   },
@@ -35,10 +33,6 @@ export const DEITIES: Record<string, DeityDef> = {
     name: "D'Enjalle",
     epithet: 'the Shining Rapier',
     icon: '🤺',
-    desc:
-      'Miracles of combat and fire, with especial regard for adherents who fight with rapier ' +
-      'and parrying dagger. His workings prevent outside sabotage, help strike true, and ' +
-      'magnify the power of single combat.',
     tags: ['humanoid', 'honorable', 'fire', 'organized'],
     synergies: [
       { anyOf: ['organized', 'honorable'] },
@@ -51,10 +45,6 @@ export const DEITIES: Record<string, DeityDef> = {
     name: 'Usvýlgr',
     epithet: 'the Crafty Hammer',
     icon: '🔨',
-    desc:
-      'Miracles of crafting and trickery. Most can be worn to the bench, imparting surer hands ' +
-      'and finer results; his combat workings rely on deception and on enemies simply failing ' +
-      'to find their target.',
     tags: ['gigantoid', 'earth', 'crafting', 'trickster', 'organized'],
     synergies: [{ anyOf: ['crafting', 'earth'] }],
     // Disagrees with tricksters that don't share any of his synergy tags.
@@ -65,10 +55,6 @@ export const DEITIES: Record<string, DeityDef> = {
     name: 'Xima',
     epithet: 'the Cold Sun',
     icon: '🩸',
-    desc:
-        'Primarily ritualistic, cold and blood-related miracles; he protects his followers by ' +
-        'channeling his power through their spilled blood. His workings last long but are slow ' +
-        'to cast, shield against the elements, and turn bleeding to his adherents’ benefit.',
     tags: ['bestial', 'cold', 'honorable', 'sacrificial', 'tribal', 'yolixoch pantheon'],
     synergies: [{ anyOf: ['bestial', 'tribal', 'yolixoch pantheon'], unless: ['fire', 'poison'] }],
   },
@@ -77,7 +63,6 @@ export const DEITIES: Record<string, DeityDef> = {
     name: 'Cuixtli and Ilhuitonal',
     epithet: 'the First Hunter',
     icon: '🩸',
-    desc: 'A pair of gods born from the first partnership between a jaguar and man whose union created the concept of the hunt - a thunderous spear and fangs as quick as the wind. Their miracles improve the power of spears as well as the strength of hunting newly encountered opponents.',
     tags: [ 'bestial', 'honorable', 'tribal', 'humanoid', 'lightning', 'wind', 'yolixoch pantheon', ],
     synergies: [
       { anyOf: ['bestial', 'tribal', 'honorable', 'yolixoch pantheon'], unless: ['poison', 'evil', 'aberrant'] },
@@ -88,11 +73,6 @@ export const DEITIES: Record<string, DeityDef> = {
     name: 'Kenese Paea',
     epithet: 'the Doubled Viper',
     icon: '🐍',
-    desc:
-        'Miracles shrouded in darkness, relying on the presence and use of poisons. Her workings ' +
-        'gain power while anyone in the fight is poisoned or rotting; her adherents may burn ' +
-        'their own poison to envenom their enemies, redouble a venom already at work, and walk ' +
-        'shrouded so that blows aimed at them find only dark.',
     tags: ['humanoid', 'poison', 'dark', 'sacrificial', 'tribal', 'foai pantheon'],
     synergies: [{ anyOf: ['bestial', 'evil', 'poison', 'sacrificial'] }],
     hostilities: [{ anyOf: ['honorable', 'light'] }],
@@ -102,7 +82,6 @@ export const DEITIES: Record<string, DeityDef> = {
     name: 'Tuigamala',
     epithet: 'the Treebreaker',
     icon: '🌿',
-    desc: 'Tuigamala was the first god to plant trees in the world. His miracles primarily strengthen wood and grow plants on command.',
     tags: ['humanoid', 'tribal', 'nature', 'honorable', 'unaligned', 'foai pantheon'],
     synergies: [
       { anyOf: ['honorable', 'nature', 'foai pantheon'], unless: ['evil', 'poison', 'fire'] },
@@ -116,10 +95,6 @@ export const DEITIES: Record<string, DeityDef> = {
     name: "yShicna'",
     epithet: 'Logic Purified',
     icon: '⚛️',
-    desc:
-      'An aberrant god fascinated with the weight of words. It has no form and yet its words ' +
-      'are spoken absolute. It offers the return of Meaning to its basic state but also desires ' +
-      'to elevate the Sound of words that have become integral to one’s soul.',
     tags: ['aberrant', 'atomic', 'arcane', 'curious', 'warping', 'outer'],
     // Neutral to everything, like Ik'Thel'the: the outer gods do not interface
     // with other gods, so they declare nothing in either direction. Cuixtli's
@@ -127,7 +102,7 @@ export const DEITIES: Record<string, DeityDef> = {
     // mortal-facing pantheons need. See docs/NEXT.md — when that changes it
     // will be authored on THEIR side; deityRelation reads both ways.
   },
-};
+});
 
 export const DEITY_LIST: DeityDef[] = Object.values(DEITIES);
 

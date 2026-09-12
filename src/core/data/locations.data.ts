@@ -1,4 +1,6 @@
 import type { AreaDef, RegionDef, SpotDef } from '../types';
+import { prose } from '../text/prose';
+import { SPOTS_TEXT } from '../text/locations.text';
 export const REGIONS: Record<string, RegionDef> = {
   // The stack itself: everything on the far side of the tower door. Floors
   // live here; the door and the city around it stay in `threshold`.
@@ -66,7 +68,7 @@ export const AREAS: Record<string, AreaDef> = {
  * ranges, the swamps) was SHELVED on 2026-09-12: shelved/locations.shelved.ts
  * holds it verbatim and docs/LONGTERM.md holds the why.
  */
-export const SPOTS: Record<string, SpotDef> = {
+export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   base_entrance: {
     id: 'base_entrance',
     name: 'Player Base Entrance',
@@ -74,7 +76,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'player_base_v1_area',
     map: { x: 48, y: 68 },
     waypoint: true,
-    desc: 'A gate that started life as a garden fence and has ambitions. Everything you are building lies through it.',
     activities: [],
     connections: [
       { to: 'base_main_hall', ticks: 60 },
@@ -86,7 +87,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🎒',
     areaId: 'player_base_v1_area',
     map: { x: 30, y: 52.5 },
-    desc: 'Racks, pegs and chests for gear between outings. Mostly empty, which is either a problem or an invitation.',
     activities: [],
     connections: [
       { to: 'base_main_hall', ticks: 75 },
@@ -99,7 +99,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🏛️',
     areaId: 'player_base_v1_area',
     map: { x: 48, y: 40 },
-    desc: 'The crossroads of the whole place. Every wing opens off it, and every plan crosses it sooner or later.',
     activities: [],
     connections: [
       { to: 'base_research_hallway', ticks: 60 },
@@ -112,7 +111,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🏆',
     areaId: 'player_base_v1_area',
     map: { x: 48, y: 27 },
-    desc: 'Bare plinths and empty mounts, spaced with great confidence. The walk to the throne is meant to be earned.',
     activities: [],
     connections: [
       { to: 'base_throneroom', ticks: 40 },
@@ -124,7 +122,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '📚',
     areaId: 'player_base_v1_area',
     map: { x: 75, y: 26 },
-    desc: 'Shelves that will one day groan. For now: a good desk, a better chair, and room to be wrong in private.',
     activities: [
       { id: 'study_stacks', kind: 'train', attr: 'int', name: 'Study the Stacks', icon: '📖' },
     ],
@@ -142,7 +139,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🧪',
     areaId: 'player_base_v1_area',
     map: { x: 75, y: 40 },
-    desc: 'A corridor of doors with increasingly specific warnings on them. The smell changes every few steps.',
     activities: [],
     connections: [
       { to: 'base_alchemy_lab', ticks: 60 },
@@ -156,7 +152,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '⚗️',
     areaId: 'player_base_v1_area',
     map: { x: 75, y: 60 },
-    desc: 'Glassware in ranks, a drain in the floor, and scorch marks with dates next to them. A proper place to argue with solvents.',
     activities: [
       { id: 'train_skill', kind: 'train', attr: 'int', name: 'Study Alchemical ', icon: '🛠️', tags: ['alchemy'], attrXp: { str: 0, dex: 0, con: 0, int: 0.33, wis: 0, cha: 0 } },
     ],
@@ -171,7 +166,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🧬',
     areaId: 'player_base_v1_area',
     map: { x: 90, y: 46.5 },
-    desc: 'Cleaner than the basement, better lit, and the wobbling is kept behind glass now. Genes come here to be argued into shape.',
     activities: [],
     // Same culture bench as the basement — the lab is where the work moves
     // once the base exists; the basement keeps its copy for the slimes.
@@ -187,7 +181,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🧫',
     areaId: 'player_base_v1_area',
     map: { x: 90, y: 60 },
-    desc: 'Great glass vessels, plumbed and ready, holding nothing but faintly luminous fluid. They seem to be waiting.',
     activities: [],
     connections: [],
   },
@@ -197,7 +190,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🧠',
     areaId: 'player_base_v1_area',
     map: { x: 90, y: 32 },
-    desc: 'A bare room, deliberately. Nothing in it to move, so anything that moves is you.',
     activities: [
       { id: 'meditate_will', kind: 'train', attr: 'cha', name: 'Meditate on the Will', icon: '🧘' },
     ],
@@ -209,7 +201,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🍽️',
     areaId: 'player_base_v1_area',
     map: { x: 30, y: 40 },
-    desc: 'One long table with far more chairs than the household currently justifies. Optimism, in furniture form.',
     activities: [],
     connections: [
       { to: 'base_main_hall', ticks: 60 },
@@ -223,7 +214,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '⛪',
     areaId: 'player_base_v1_area',
     map: { x: 34.5, y: 7 },
-    desc: 'Quiet, candlelit, and pointedly unconsecrated to anyone in particular. The pedestals stand empty for now.',
     activities: [
       { id: 'keep_vigil', kind: 'train', attr: 'wis', name: 'Keep a Vigil', icon: '🕯️' },
     ],
@@ -237,7 +227,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🌾',
     areaId: 'player_base_v1_area',
     map: { x: 10, y: 20 },
-    desc: 'Vegetable rows, a henhouse, and herb beds staked out with more hope than order. Staple ground — the table it feeds is meant to grow.',
     activities: [
       {
         id: 'tend_rows',
@@ -292,7 +281,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🍳',
     areaId: 'player_base_v1_area',
     map: { x: 15, y: 40 },
-    desc: 'The full battery: board, counter, stove, oven and grill, arranged by someone who has burned things and learned. Built to feed more mouths than it currently has.',
     activities: [],
     // The whole cooking line — the base's working copies of the my_home set.
     benches: [
@@ -314,7 +302,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🛖',
     areaId: 'player_base_v1_area',
     map: { x: 9.5, y: 52.5 },
-    desc: 'Rows of neat, empty bunks and pegs with no coats on them. Whoever ends up living here has not been made yet.',
     activities: [],
     connections: [
       { to: 'base_equipment_depot', ticks: 65 },
@@ -327,7 +314,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🕯️',
     areaId: 'player_base_v1_area',
     map: { x: 22.5, y: 10 },
-    desc: 'Vestments, candle stores, and room for whatever the chapel grows into needing. Smells of wax and patience.',
     activities: [],
     connections: [],
   },
@@ -337,7 +323,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🛏️',
     areaId: 'player_base_v1_area',
     map: { x: 60, y: 5 },
-    desc: 'Your own bed, at last, in a room with a bar on the door and a window that catches the morning. The best sleep in the world is up these stairs.',
     activities: [
       { id: 'sleep_own_bed', kind: 'rest', name: 'Sleep in Your Own Bed', icon: '🛏️' },
     ],
@@ -351,7 +336,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '👑',
     areaId: 'player_base_v1_area',
     map: { x: 48, y: 14 },
-    desc: 'A big chair in a bigger room. Sitting in it is faintly ridiculous with nobody here yet, and you do it anyway.',
     activities: [
       { id: 'hold_court', kind: 'train', attr: 'cha', name: 'Hold Court', icon: '👑' },
     ],
@@ -367,7 +351,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🗺️',
     areaId: 'player_base_v1_area',
     map: { x: 60.5, y: 23.5 },
-    desc: 'Maps on every surface, weighted down with whatever was to hand. The pins mark places that owe you nothing yet.',
     activities: [
       { id: 'draw_campaigns', kind: 'train', attr: 'int', name: 'Draw Up Campaigns', icon: '🗺️' },
     ],
@@ -382,7 +365,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🫙',
     areaId: 'player_base_v1_area',
     map: { x: 5.5, y: 40 },
-    desc: 'Cool, dark shelving with room for far more jars than exist. One day something down here will be fermenting on purpose.',
     activities: [],
     connections: [
       { to: 'base_kitchen', ticks: 30 },
@@ -394,7 +376,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '📖',
     areaId: 'player_base_v1_area',
     map: { x: 70, y: 14 },
-    desc: 'The quiet overflow room — margins to annotate, thoughts to finish. The library proper is for finding; this is for keeping.',
     activities: [
       { id: 'annotate_margins', kind: 'train', attr: 'wis', name: 'Annotate the Margins', icon: '✒️' },
     ],
@@ -406,7 +387,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🎯',
     areaId: 'player_base_v1_area',
     map: { x: 30, y: 64 },
-    desc: 'A packed-earth yard with your own rank of dummies, set where the noise bothers nobody. The infirmary is deliberately close.',
     activities: [
       { id: 'drill_forms', kind: 'train', attr: 'str', name: 'Drill Forms', icon: '🤺', tags: ['combat'] },
       { id: 'hunt', kind: 'hunt', name: 'Work the Dummies', icon: '🎯' },
@@ -423,7 +403,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🩹',
     areaId: 'player_base_v1_area',
     map: { x: 15.5, y: 64 },
-    desc: 'Clean cots, boiled linen, and a cabinet of salves arranged by how much they sting. Built close to the training yard for honest reasons.',
     activities: [
       { id: 'convalesce', kind: 'rest', name: 'Convalesce', icon: '🛌' },
     ],
@@ -438,7 +417,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🛠️',
     areaId: 'player_base_v1_area',
     map: { x: 62, y: 50.5 },
-    desc: 'Benches, vices, and tool-shadows painted on the wall so everything has a home. The trades that will build this place start here.',
     activities: [],
     benches: ['runecarving'],
     connections: [
@@ -452,7 +430,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '📦',
     areaId: 'player_base_v1_area',
     map: { x: 62, y: 62.5 },
-    desc: 'Deep shelves, labelled bins, and a ledger nobody has written in yet. Storage worth paying for, eventually.',
     activities: [],
     connections: [],
   },
@@ -477,7 +454,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'ascent_foot_area',
     map: { x: 50, y: 37.5 },
     waypoint: true,
-    desc: 'Eight roads end here at one door. The stone above it has been rubbed smooth by people touching it on the way past, which is not a custom anyone will admit to starting.',
     // The hub is the haven: resting here is what makes the whole city the
     // place a lost fight returns you to.
     activities: [
@@ -505,7 +481,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '📐',
     areaId: 'scholars_quarter',
     map: { x: 50, y: 17.5 },
-    desc: 'Wide shallow steps that students sit on to argue. The arguing is most of the curriculum.',
     activities: [
       { id: 'train_int_steps', kind: 'train', attr: 'int', name: 'Argue on the Steps', icon: '💬' },
     ],
@@ -523,7 +498,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'scholars_quarter',
     map: { x: 38, y: 5 },
     tags: ['indoor'],
-    desc: 'Long tables, low lamps, and a rule about silence that is enforced by glare rather than by anybody official.',
     activities: [
       { id: 'train_int_hall', kind: 'train', attr: 'int', name: 'Read Until It Sticks', icon: '📚' },
       { id: 'train_wis_hall', kind: 'train', attr: 'wis', name: 'Sit With a Hard Passage', icon: '🧘', tags: ['magic'] },
@@ -537,7 +511,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🔠',
     areaId: 'scholars_quarter',
     map: { x: 62, y: 5 },
-    desc: 'A flagged courtyard covered corner to corner in half-erased working. Nobody washes it down; the good lines are load-bearing.',
     exploreTicks: 420,
     activities: [
       { id: 'explore_chalk', kind: 'explore', name: 'Read the Old Working', icon: '🔍' },
@@ -553,7 +526,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🪜',
     areaId: 'temple_rise',
     map: { x: 68.4, y: 23.4 },
-    desc: 'The shallow end of a very long climb. Vendors at the bottom sell water to people who have not yet realised they will want it.',
     activities: [
       { id: 'train_con_stair', kind: 'train', attr: 'con', name: 'Walk the Stair', icon: '🚶' },
     ],
@@ -571,7 +543,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'temple_rise',
     map: { x: 80, y: 10 },
     tags: ['indoor'],
-    desc: 'Nine doors off one cloister. Two of them are kept locked, and the city has agreed not to discuss which gods those belonged to.',
     activities: [
       { id: 'train_wis_chapels', kind: 'train', attr: 'wis', name: 'Keep a Vigil', icon: '🕯️', tags: ['magic'] },
     ],
@@ -583,7 +554,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🪔',
     areaId: 'temple_rise',
     map: { x: 90, y: 20 },
-    desc: 'A colonnade thick enough with incense that the far end is a rumour. Good for talking to people who would rather not be seen talking to you.',
     activities: [
       { id: 'train_cha_censer', kind: 'train', attr: 'cha', name: 'Work the Colonnade', icon: '🎭' },
     ],
@@ -597,7 +567,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🛡️',
     areaId: 'the_ironyard',
     map: { x: 76, y: 37.5 },
-    desc: 'Where the companies form up when there is anything to form up for. Mostly it is a very large empty square with excellent acoustics.',
     activities: [
       { id: 'train_str_muster', kind: 'train', attr: 'str', name: 'Drill in Formation', icon: '🪖' },
     ],
@@ -615,7 +584,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🪤',
     areaId: 'the_ironyard',
     map: { x: 84, y: 18 },
-    desc: 'A row of stout cages the militia restocks from the tower’s lower floors. Recruits pay in bruises; the book learns on a schedule.',
     // A menagerie (SpotDef.caged): staged one-at-a-time fights, no rolled
     // champions, and every bestiary fact lands exactly at its minKills.
     caged: true,
@@ -635,7 +603,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🤺',
     areaId: 'the_ironyard',
     map: { x: 93, y: 28 },
-    desc: 'Raked every morning so the footwork shows. Everyone claims not to check their own prints afterwards.',
     activities: [
       { id: 'train_dex_sand', kind: 'train', attr: 'dex', name: 'Footwork on the Sand', icon: '👣' },
       { id: 'spar_sand', kind: 'train', attr: 'str', name: 'Spar', icon: '⚔️', tags: ['combat'] },
@@ -649,7 +616,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'the_ironyard',
     map: { x: 93, y: 47 },
     tags: ['indoor'],
-    desc: 'A shooting gallery long enough that the far butts are lit separately. The roof is a recent addition and the city is very proud of it.',
     activities: [
       { id: 'train_dex_gallery', kind: 'train', attr: 'dex', name: 'Shoot the Long Butts', icon: '🎯' },
       { id: 'train_con_gallery', kind: 'train', attr: 'con', name: 'Draw Until It Hurts', icon: '💪' },
@@ -664,7 +630,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '⚗️',
     areaId: 'alembic_row',
     map: { x: 68.4, y: 51.6 },
-    desc: 'The wind decides what Alembic Row smells like on any given day, and the gate is where you find out.',
     activities: [],
     connections: [
       { to: 'ascent_foot', ticks: 60, label: 'the Retort Road' },
@@ -680,7 +645,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'alembic_row',
     map: { x: 90, y: 55 },
     tags: ['indoor', 'heat'],
-    desc: 'Glass, condensate, and a great deal of waiting. The waiting is the craft; the glass is just where it happens.',
     activities: [],
     benches: ['alchemy', 'preparing'],
     connections: [],
@@ -692,7 +656,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'alembic_row',
     map: { x: 80, y: 65 },
     tags: ['indoor'],
-    desc: 'Warm, humid, and full of things in tanks that are doing better than expected. The keepers speak of their charges in the third person and with some caution.',
     activities: [],
     benches: ['mutagens'],
     connections: [],
@@ -705,7 +668,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🏛️',
     areaId: 'the_chancery',
     map: { x: 50, y: 57.5 },
-    desc: 'Every writ in Threshold passes under this arch, which is why there is always a queue and never an emergency.',
     activities: [],
     connections: [
       { to: 'ascent_foot', ticks: 60, label: 'the Chancery Road' },
@@ -721,7 +683,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'the_chancery',
     map: { x: 62, y: 70 },
     tags: ['indoor'],
-    desc: 'The city’s memory, stored in tubes, indexed by a system that four people understand and none of them agree on.',
     activities: [
       { id: 'job_copying', kind: 'job', gold: 12, ticksPer: 220, name: 'Copy Out Writs', icon: '🖋️', staticTime: true },
       { id: 'train_int_rolls', kind: 'train', attr: 'int', name: 'Read the Indexes', icon: '🗂️' },
@@ -735,7 +696,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'the_chancery',
     map: { x: 38, y: 70 },
     tags: ['indoor'],
-    desc: 'Wax, presses, and a clerk whose entire authority rests on knowing which of forty stamps a document actually needs.',
     activities: [
       { id: 'train_wis_seals', kind: 'train', attr: 'wis', name: 'Learn Which Stamp', icon: '🧠' },
     ],
@@ -749,7 +709,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '⚖️',
     areaId: 'the_assize',
     map: { x: 31.6, y: 51.6 },
-    desc: 'Open to anyone, which is the whole design, and consequently never quiet.',
     activities: [
       { id: 'train_cha_assize', kind: 'train', attr: 'cha', name: 'Watch a Case Argued', icon: '👂' },
     ],
@@ -767,7 +726,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'the_assize',
     map: { x: 20, y: 65 },
     tags: ['indoor'],
-    desc: 'Deliberately uncomfortable seating for everyone including the judges, on the theory that it shortens proceedings. It does not.',
     activities: [
       { id: 'train_cha_bench', kind: 'train', attr: 'cha', name: 'Plead a Small Matter', icon: '🗣️' },
       { id: 'train_wis_bench', kind: 'train', attr: 'wis', name: 'Weigh Both Sides', icon: '⚖️' },
@@ -781,7 +739,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'the_assize',
     map: { x: 10, y: 55 },
     tags: ['indoor'],
-    desc: 'Six cells, rarely more than two in use, and a duty roster nobody volunteers for twice.',
     activities: [
       { id: 'job_watch', kind: 'job', gold: 14, ticksPer: 260, name: 'Stand the Night Watch', icon: '🌙', staticTime: true },
     ],
@@ -795,7 +752,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '⚒️',
     areaId: 'wrights_ward',
     map: { x: 24, y: 37.5 },
-    desc: 'You hear this district before you reach it, and on a still day you hear it from the tower steps.',
     activities: [],
     connections: [
       { to: 'ascent_foot', ticks: 60, label: 'the Wrights’ Road' },
@@ -811,7 +767,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'wrights_ward',
     map: { x: 7, y: 47 },
     tags: ['heat'],
-    desc: 'A row of them under one long roof, sharing a chimney that was somebody’s clever idea and remains, on balance, a clever idea.',
     activities: [
       { id: 'job_bellows_threshold', kind: 'job', gold: 14, ticksPer: 250, name: 'Work the Bellows', icon: '🔥' },
       { id: 'train_str_forges', kind: 'train', attr: 'str', name: 'Swing the Sledge', icon: '🔨', tags: ['blunt'] },
@@ -829,7 +784,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'wrights_ward',
     map: { x: 7, y: 28 },
     tags: ['indoor'],
-    desc: 'Fine work, done sitting down, by people who resent being called smiths and are technically correct.',
     activities: [],
     benches: ['runecarving'],
     connections: [],
@@ -842,7 +796,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🌾',
     areaId: 'the_granaries',
     map: { x: 31.6, y: 23.4 },
-    desc: 'Carts in, carts out, and a tally clerk who has never once been wrong in a way anyone could prove.',
     activities: [],
     connections: [
       { to: 'ascent_foot', ticks: 60, label: 'the Granary Road' },
@@ -859,7 +812,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'the_granaries',
     map: { x: 30, y: 8 },
     tags: ['indoor', 'heat'],
-    desc: 'Feeds every crew in the district from one room. The stove never fully cools, which the winter shift considers the whole point of the posting.',
     activities: [
       { id: 'job_pans', kind: 'job', gold: 10, ticksPer: 200, name: 'Scrub the Pans', icon: '🍳' },
     ],
@@ -872,7 +824,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '⚓',
     areaId: 'the_granaries',
     map: { x: 10, y: 20 },
-    desc: 'Everything entering Threshold is weighed here, including, once, a visiting dignitary who insisted.',
     activities: [
       { id: 'job_hauling', kind: 'job', gold: 11, ticksPer: 180, name: 'Haul and Stack', icon: '📦' },
       { id: 'train_str_haul', kind: 'train', attr: 'str', name: 'Shift the Heavy Lots', icon: '🪨' },
@@ -890,7 +841,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'the_granaries',
     map: { x: 20, y: 10 },
     tags: ['indoor'],
-    desc: 'Cool vaulted cellars running further under the district than the maps admit. The stores at the front are catalogued. The stores at the back are not.',
     exploreTicks: 520,
     activities: [
       { id: 'explore_undercrofts', kind: 'explore', name: 'Go Through the Back Stores', icon: '🔍' },
@@ -914,7 +864,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🪜',
     areaId: 'ascent_f1_area',
     map: { x: 18, y: 68 },
-    desc: 'Wide enough for carts, worn enough to prove they came. The tower starts meaning it here.',
     // Every landing is a camp: a haven on the floor itself, so a knockout
     // above returns you here rather than all the way down to the Foot
     // (systems/safety.ts records the last haven stood in).
@@ -930,7 +879,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '📦',
     areaId: 'ascent_f1_area',
     map: { x: 8, y: 62 },
-    desc: 'Crates nobody ever came back for, stacked by people who assumed somebody would.',
     exploreTicks: 360,
     activities: [
       { id: 'explore_f1', kind: 'explore', name: 'Go Through the Crates', icon: '🔍' },
@@ -944,13 +892,11 @@ export const SPOTS: Record<string, SpotDef> = {
       {
         id: 'f1_manifest_coin',
         at: 0.35,
-        desc: '💰 A strongbox under a rotted manifest, never collected.',
         gold: [30, 50],
       },
       {
         id: 'f1_dried_herbs',
         at: 0.7,
-        desc: '🌿 Bundles of herbs, dried straight but still good.',
         material: { id: 'common_herb', qty: 4 },
         skillXp: { tags: ['herbalism'], xp: 12 },
       },
@@ -968,7 +914,6 @@ export const SPOTS: Record<string, SpotDef> = {
     areaId: 'ascent_f1_area',
     map: { x: 4, y: 70 },
     tags: ['dark'],
-    desc: 'The stores behind the stores. The manifests stop at the door, and so does the lamplight.',
     activities: [
       { id: 'hunt', kind: 'hunt', name: 'Go In Anyway', icon: '⚔️' },
       { id: 'explore_f1_deep', kind: 'explore', name: 'Search Past the Manifests', icon: '🔍' },
@@ -982,7 +927,6 @@ export const SPOTS: Record<string, SpotDef> = {
       {
         id: 'f1_deep_strongroom',
         at: 0.8,
-        desc: '💰 A strongroom whose bond was paid a lifetime ago. No one is left to argue.',
         gold: [180, 260],
       },
     ],
@@ -994,7 +938,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🪙',
     areaId: 'ascent_f1_area',
     map: { x: 26, y: 74 },
-    desc: 'A counting floor with the counters long gone. Whatever takes payment at the far arch changes with the light.',
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt the Hall', icon: '⚔️' }],
     // Quest 3's design (plans/alpha-threshold-quests.md): the KEEPER changes
     // with the clock — hobgoblin by day, an advanced slime by night — and the
@@ -1022,7 +965,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🪜',
     areaId: 'ascent_f2_area',
     map: { x: 18, y: 15 },
-    desc: 'The steps go on below the water, visibly, for a while. Nobody has counted how far.',
     activities: [{ id: 'camp_f2', kind: 'rest', name: 'Camp on the Landing', icon: '🏕️' }],
     connections: [
       { to: 'f2_sluice', ticks: 40 },
@@ -1037,7 +979,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🚰',
     areaId: 'ascent_f2_area',
     map: { x: 8, y: 8 },
-    desc: 'Channels and gates built to move water with great precision, all of them now moving it wrong.',
     exploreTicks: 420,
     activities: [
       { id: 'explore_f2', kind: 'explore', name: 'Trace the Channels', icon: '🔍' },
@@ -1047,7 +988,6 @@ export const SPOTS: Record<string, SpotDef> = {
       {
         id: 'f2_drowned_purse',
         at: 0.45,
-        desc: '💰 A purse wedged in a sluice gate, its owner long past minding.',
         gold: [70, 110],
       },
     ],
@@ -1059,7 +999,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '💧',
     areaId: 'ascent_f2_area',
     map: { x: 26, y: 22 },
-    desc: 'Black water to the walls, and ripples that start without wind. Whatever lives here resents the door.',
     // Arrival is an ambush by ANY route, and the fight budget is the floor's
     // clear: fightLimit here and ascent_f2.clear name the same number (linted
     // to agree). At the limit the cistern is CLEARED — it stops forcing, the
@@ -1081,7 +1020,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🪜',
     areaId: 'ascent_f3_area',
     map: { x: 86, y: 68 },
-    desc: 'The dust lies in drifts and the silence is load-bearing. Every footstep feels borrowed.',
     activities: [{ id: 'camp_f3', kind: 'rest', name: 'Camp on the Landing', icon: '🏕️' }],
     connections: [
       { to: 'f3_web_gallery', ticks: 40 },
@@ -1094,7 +1032,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🕸️',
     areaId: 'ascent_f3_area',
     map: { x: 78, y: 62 },
-    desc: 'Whatever this hall displayed, the webs display it still — wrapped, hung, and catalogued by appetite.',
     exploreTicks: 480,
     activities: [
       { id: 'explore_f3', kind: 'explore', name: 'Cut Through the Webs', icon: '🔍' },
@@ -1108,7 +1045,6 @@ export const SPOTS: Record<string, SpotDef> = {
       {
         id: 'f3_wrapped_valuables',
         at: 0.5,
-        desc: '💰 A cocooned satchel, its owner elsewhere. The coin kept better than they did.',
         gold: [120, 180],
       },
     ],
@@ -1120,7 +1056,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🕷️',
     areaId: 'ascent_f3_area',
     map: { x: 94, y: 74 },
-    desc: 'The webs stop being decoration and start being architecture. Something at the centre keeps house.',
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Go to the Centre', icon: '⚔️' }],
     encounters: [
       { monsterId: 'cave_spider', weight: 70, level: [8, 11] },
@@ -1129,7 +1064,7 @@ export const SPOTS: Record<string, SpotDef> = {
     ],
     connections: [],
   },
-};
+});
 /**
  * A new life opens at the foot of the tower, in the city that grew around it.
  * The Foot is the right root for three reasons rather than one: it is the

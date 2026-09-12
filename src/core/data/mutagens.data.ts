@@ -11,6 +11,8 @@ import type {
 } from '../types';
 import { DAMAGE_TYPE_NAMES, RES_STAT_BY_TYPE } from '../types';
 import { STATUSES } from './statuses.data';
+import { prose } from '../text/prose';
+import { MAIN_GENES_TEXT, NUCLEASES_TEXT } from '../text/mutagens.text';
 
 /**
  * Mutagen content: the chromosome layouts, the genera and their genes, and the
@@ -297,7 +299,7 @@ export const GENERA: Record<string, GenusDef> = {
  * line points at species that exist today; gigantoid, draconoid and asuroid are
  * authored ahead of their monsters and are inert until those are written.
  */
-export const MAIN_GENES: Record<string, MainGeneDef> = {
+export const MAIN_GENES = prose<MainGeneDef>('MAIN_GENES', MAIN_GENES_TEXT, {
   /**
    * Normal is a gene you manufacture, not an empty socket. No tier, no quality,
    * and it writes ATTRIBUTES rather than derived stats — the spill across
@@ -373,11 +375,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'slime_base_basic',
     flatBase: 60,
     ceiling: 1.5,
-    desc:
-      'Special: takes less damage from critical hits. Active: Slime Bounce — crash into an enemy for ' +
-      'a flat crash plus your armor, all of it carried by how fast you move, with a mini-stun ' +
-      'costing them two ticks of action bar. ' +
-      'Attacks: techniques shed a little cooldown when they miss.',
     // Damage read off ARMOUR: the harder you are, the more it hurts to be hit
     // by you. The mini-stun is ticks taken off their swing, not a condition —
     // nothing to resist, nothing to cure, they simply lose the time.
@@ -414,7 +411,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'slime_base_advanced',
     flatBase: 125,
     ceiling: 1.9,
-    desc: 'As the slime, further along. Same three tricks, more of each.',
     // Damage read off ARMOUR: the harder you are, the more it hurts to be hit
     // by you. The mini-stun is ticks taken off their swing, not a condition —
     // nothing to resist, nothing to cure, they simply lose the time.
@@ -447,7 +443,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'slime_base_elite',
     flatBase: 255,
     ceiling: 2.3,
-    desc: 'The plain line at its limit — and the first rung that stops a point as well as an edge.',
     // Damage read off ARMOUR: the harder you are, the more it hurts to be hit
     // by you. The mini-stun is ticks taken off their swing, not a condition —
     // nothing to resist, nothing to cure, they simply lose the time.
@@ -485,10 +480,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'boss_slime_guardian',
     flatBase: 430,
     ceiling: 2.7,
-    desc:
-      'Special: takes less damage from everything, a little less from crits, and doubled ' +
-      '(diminishing) against ranged attacks. Active: Slime Shield — raise armor and gain a flat ' +
-      'shield applied AFTER resistances. Attacks: cooldown shed on miss, and off-balance hurts less.',
     // The one gene whose tool is defensive rather than offensive: it fires off
     // the buff slot, not the action bar, so raising it costs no swing. The
     // ward is flat and lands after resistances, which is why a guardian is at
@@ -538,11 +529,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'slime_golem',
     flatBase: 430,
     ceiling: 2.7,
-    desc:
-      'Special: takes far less damage from everything, moderately less from crits. Active: Slime ' +
-      'Crash — hit for damage scaled by armor, spilling onto the flanks, and lose ten ticks of ' +
-      'your own build-up. Attacks: techniques deal bonus damage, and that bonus still lands as ' +
-      'a graze on a miss.',
     // A whole body thrown at something: it hits everything nearby and leaves
     // you gathering yourself. The ten ticks are spent AFTER the blow rather
     // than before — same throughput, and no queued-action machinery needed to
@@ -589,11 +575,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'slime_king',
     flatBase: 700,
     ceiling: 3.1,
-    desc:
-      'Special: a slime bodyguard with no armor of its own steps in front of attacks, and comes ' +
-      'back ten seconds after it dies. Active: Suislime — detonate the bodyguard for damage to ' +
-      'every enemy scaled by its remaining HP, usable at any time and off the attack gauge ' +
-      'entirely. Attacks: bonus technique damage, half again while the bodyguard lives.',
     // ⚠️ No `ability` yet. Suislime detonates the bodyguard for damage scaled
     // by ITS remaining health — it needs a persistent summoned entity, which
     // nothing in the game has. The whole gene waits on that one feature, and
@@ -621,11 +602,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'slime_fire',
     flatBase: 60,
     ceiling: 1.5,
-    desc:
-      'Special: less damage from crits, and your blows carry fire. Active: Flaming Bounce — the ' +
-      'slime bounce as a flame, carried by how fast you move and amplified by your own fire ' +
-      'resistance. Attacks: technique damage rises with your fire resistance, so defence against ' +
-      'heat IS the offence here.',
     // The loop closed twice over: heat resistance is this line's damage stat,
     // and its ability reads the same number again. As a MULTIPLIER, though —
     // a resistance is bounded and must never be priced per point.
@@ -664,7 +640,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'slime_fire_advanced',
     flatBase: 125,
     ceiling: 1.9,
-    desc: 'The fire line, further along. The same loop, wound tighter.',
     // The loop closed twice over: heat resistance is this line's damage stat,
     // and its ability reads the same number again. As a MULTIPLIER, though —
     // a resistance is bounded and must never be priced per point.
@@ -699,7 +674,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'slime_fire_elite',
     flatBase: 255,
     ceiling: 2.3,
-    desc: 'The fire line at its limit. Heat resistance has become a damage stat.',
     // The loop closed twice over: heat resistance is this line's damage stat,
     // and its ability reads the same number again. As a MULTIPLIER, though —
     // a resistance is bounded and must never be priced per point.
@@ -752,11 +726,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     size: 'large',
     flatBase: 100,
     ceiling: 1.6,
-    desc:
-      'Special: you knit yourself back together — until something burns or dissolves you, which ' +
-      'stops it dead. Active: Troll Bite — piercing damage that opens a wound and leaves it open. ' +
-      'Attacks: your hide is your fist, and bone in your hands is worth more. Defenses: hard to ' +
-      'cut and hard to puncture, and dangerously soft to fire.',
     ability: {
       name: 'Troll Bite',
       icon: '🦷',
@@ -831,10 +800,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     size: 'large',
     flatBase: 100,
     ceiling: 1.6,
-    desc:
-      'Special: more health, and less of what small things can do to you. Active: Rock Throw — a ' +
-      'flat lump of damage that grows against anything beneath your size. Attacks: two-handed ' +
-      'stone and wood. Defenses: bludgeoning and earth.',
     // A thrown rock is worth what the arm behind it is, plus what the species
     // is worth on its own. The "% more against smaller targets" half needs
     // nothing here — `vsSmaller` is on the gene and multiplies everything.
@@ -873,10 +838,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     size: 'huge',
     flatBase: 200,
     ceiling: 2,
-    desc:
-      'The rock giant, one size up and one rock heavier. Special: more health, and less of what ' +
-      'small things can do to you. Active: Boulder Throw. Attacks: two-handed stone and wood. ' +
-      'Defenses: bludgeoning and earth.',
     ability: {
       name: 'Boulder Throw',
       icon: '🪨',
@@ -913,10 +874,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     // written in the speed line below — the hill giant's twin only REDUCES the
     // weight penalty where a jötunn erases it.
     grants: ['onehand:*'],
-    desc:
-      'Special: more health, and any two-handed weapon sits in one hand — at a reduced rather ' +
-      'than erased speed cost. Active: Tree Throw — the throw, and something takes root in what ' +
-      'it hits. Attacks: two-handed wood and bone. Defenses: bludgeoning and poison.',
     ability: {
       name: 'Tree Throw',
       icon: '🌲',
@@ -961,11 +918,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     // rather than a number, so it is never scaled or capped: a cheap jötunn
     // gene opens the same hand a refined one does. docs/MUTAGENS.md §7.
     grants: ['onehand:blunt', 'onehand:tower shield'],
-    desc:
-      'Special: much more health, and hammers and tower shields sit in one hand with their weight ' +
-      'erased. Active: Mountain Crusher — the ground goes out from under every enemy at once, in ' +
-      'earth and ice, and leaves them chilled. Attacks: two-handed hammers, enormously. Defenses: ' +
-      'bludgeoning, ice and wind, and little things cannot reach you.',
     ability: {
       name: 'Mountain Crusher',
       icon: '🏔️',
@@ -1017,11 +969,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     flatBase: 400,
     ceiling: 2.5,
     grants: ['onehand:spear', 'onehand:tower shield'],
-    desc:
-      'Special: much more health, and spears and tower shields sit in one hand with their weight ' +
-      'erased. Active: Deep Thrust — one target, run through, and the wound burns. Attacks: ' +
-      'two-handed spears, with something dark riding the point. Defenses: bludgeoning, water and ' +
-      'dark, and little things cannot reach you.',
     ability: {
       name: 'Deep Thrust',
       icon: '🔱',
@@ -1066,11 +1013,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     flatBase: 800,
     ceiling: 3,
     grants: ['onehand:greatsword', 'onehand:blunt', 'onehand:tower shield'],
-    desc:
-      'Special: enormous health, and greatswords, hammers and tower shields all sit in one hand ' +
-      'weightlessly. Active: Mountain Throw — the flat throw, doubling for every two sizes the ' +
-      'target is beneath you. Attacks: two-handed wood and stone. Defenses: bludgeoning, wind ' +
-      'and lightning.',
     ability: {
       name: 'Mountain Throw',
       icon: '🌋',
@@ -1117,11 +1059,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     ceiling: 4.4,
     // Identical to the fomorian's, because that is what a unique variant IS.
     grants: ['onehand:spear', 'onehand:tower shield'],
-    desc:
-      'Special: enormous health, and spears and tower shields sit in one hand weightlessly. ' +
-      'Active: Eye of Balor — piercing gloom that finishes anything already failing. Attacks: ' +
-      'two-handed spears, heavily shadowed. Defenses: bludgeoning, water and dark, and little ' +
-      'things cannot reach you.',
     // ⚠️ Half an ability. The eye is meant to STACK — each opening widening the
     // next, splashing from three stacks on and killing outright at seven — and
     // a per-fight counter the ability reads and writes is a mechanism nothing
@@ -1174,11 +1111,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     flatBase: 1600,
     ceiling: 5.6,
     grants: ['onehand:greatsword'],
-    desc:
-      'Special: enormous health, and a greatsword in one hand is FASTER than in two. Active: ' +
-      'Ragnarök — fire on everything, fatal to whatever was already failing, and the survivors ' +
-      'keep burning. Defenses: fire, slashing and earth, a higher ceiling on resistance than ' +
-      'anything else can reach, and burning creatures cannot reach you.',
     ability: {
       name: 'Ragnarök',
       icon: '🔥',
@@ -1318,10 +1250,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'asurendra_tarunavak',
     flatBase: 1400,
     ceiling: 4.8,
-    desc:
-      'Special: two more arms, and a mouth that will not stop — one word of the sixteen at a ' +
-      'time, spoken for free, each saying itself louder than the last. Active: tears every ' +
-      'affliction out of the air at once and spends them on whoever is standing.',
     grants: ['arms:+2'],
     /*
      * SIXTEEN, literally — thirteen nouns and the three physical verbs, which
@@ -1365,12 +1293,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'asurendra_vashkara',
     flatBase: 1400,
     ceiling: 4.8,
-    desc:
-      'Special: six grips, and not one of them a hand. Everything you carry hangs in the air ' +
-      'and fights on its own — no guard, no footwork, no answering a parry, just an edge that ' +
-      'keeps finding its mark while you spend your own turn on something else. And nothing to ' +
-      'punch with if you have not got anything else to spend it on. ' +
-      'Active: every blade turns at once.',
     // Six grips, all of them telekinetic — `telekinetic` is counted against
     // `arms` (wield.ts), so this is "six, none of which are hands".
     grants: ['arms:+4', 'telekinetic:6'],
@@ -1417,13 +1339,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'asurendra_anupama',
     flatBase: 1400,
     ceiling: 4.8,
-    desc:
-      'Special: it does not reach for what is in front of it — the plain blow is gone, and ' +
-      'everything deliberate remains. Anyone who attacks or casts, you included, takes on a ' +
-      'hunger that never fills and that half of no resistance will answer. ' +
-      'Arms: no damage at all, and regeneration in its place; armour and a dulling of ' +
-      'afflictions that grows with every appetite loose in the fight. ' +
-      'Active: everything in the room is made to carry what it has taken.',
     // The Special itself. A condition and not a flag, because the monster half
     // of this body has to be able to say the same thing through
     // `MonsterDef.wears` — see the card.
@@ -1477,10 +1392,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'asurendra_niraksha',
     flatBase: 1400,
     ceiling: 4.8,
-    desc:
-      'Special: four more arms, and no eyes to lose — the dark costs it nothing and nothing can ' +
-      'blind what is already blind. What it does open, it opens for good. Active: a long, ' +
-      'slowing incantation that ends in a blow which cannot fail to find the seam.',
     grants: ['arms:+4'],
     // Six arms in total, which the six HAND_SLOTS already exist to hold.
     confers: [{ id: 'eyeless', intensity: 1 }],
@@ -1518,10 +1429,6 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     from: 'asurendra_kritavya',
     flatBase: 1400,
     ceiling: 4.8,
-    desc:
-      'Special: every working spoken in its hearing is argued with — yours as readily as theirs — ' +
-      'and the speaker pays for the argument. Say the same thing twice in front of it and it may ' +
-      'stop being sayable at all. Active: holds a refusal in front of you that answers what strikes it.',
     grants: ['arms:+2'],
     /*
      * ⚠️ It refuses YOUR castings too, and that is the gene rather than a
@@ -1544,7 +1451,7 @@ export const MAIN_GENES: Record<string, MainGeneDef> = {
     },
     base: { attacks: [{ stat: 'extraSwings', op: 'add', value: 0.35 }] },
   },
-};
+});
 
 // ---------- Mutagens ----------
 
@@ -1883,7 +1790,7 @@ export interface NucleaseDef {
   desc: string;
 }
 
-export const NUCLEASES: Record<string, NucleaseDef> = {
+export const NUCLEASES = prose<NucleaseDef>('NUCLEASES', NUCLEASES_TEXT, {
   vuln: {
     id: 'vuln',
     name: 'Vulnerability Nuclease',
@@ -1894,9 +1801,8 @@ export const NUCLEASES: Record<string, NucleaseDef> = {
     // this undroppable and silent — the trap §9 warns about, and the one the
     // gigantoid line is still sitting in.
     from: 'undead',
-    desc: 'Rewrites what a body cannot bear. The wound stays the same size; it simply answers to something else.',
   },
-};
+});
 
 /**
  * The element a mutation speaks for, whichever leg of the tripartition it is.

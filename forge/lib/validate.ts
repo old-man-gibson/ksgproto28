@@ -99,6 +99,14 @@ export function validate(store: S): Issue[] {
   const warn = (kind: string, id: string, message: string, path?: (string | number)[]) =>
     issues.push({ severity: 'warn', subject: { kind, id }, message, path });
 
+  // Text-table keys that named nothing (src/core/text/prose.ts). A typo in a
+  // text file, or an entry renamed without its prose, shows up here rather
+  // than as a silently missing description.
+  const orphans = (store.meta.proseOrphans ?? []) as { table: string; key: string; reason: string }[];
+  for (const o of orphans) {
+    warn('text', o.table, `text key '${o.key}' in ${o.table}_TEXT: ${o.reason}`);
+  }
+
   const claimedTags = new Set<string>();
   for (const s of Object.values(skills)) for (const t of s.tags ?? []) claimedTags.add(t);
 

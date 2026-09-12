@@ -1,4 +1,6 @@
 import type { SuperAttributeDef } from '../types';
+import { prose } from '../text/prose';
+import { SUPERATTRS_TEXT } from '../text/superattrs.text';
 
 /**
  * Super-attribute fusion definitions. Unlock conditions here are PROVISIONAL —
@@ -6,12 +8,11 @@ import type { SuperAttributeDef } from '../types';
  * paths are far more convoluted (quest chains, hidden triggers) and will
  * replace these entries without touching system code.
  */
-export const SUPERATTRS: Record<string, SuperAttributeDef> = {
+export const SUPERATTRS = prose<SuperAttributeDef>('SUPERATTRS', SUPERATTRS_TEXT, {
   dominion: {
     id: 'dominion',
     name: 'Dominion',
     icon: '👑',
-    desc: 'Might and presence fuse into something that commands the world outright.',
     components: ['str', 'cha'],
     unlock: [
       { type: 'attr', attr: 'str', level: 60 },
@@ -24,7 +25,6 @@ export const SUPERATTRS: Record<string, SuperAttributeDef> = {
     id: 'force',
     name: 'Force',
     icon: '🌀',
-    desc: 'A mind sharp enough to grasp the world and a body dense enough to withstand it become one lever.',
     components: ['int', 'con'],
     unlock: [
       { type: 'attr', attr: 'int', level: 60 },
@@ -36,7 +36,6 @@ export const SUPERATTRS: Record<string, SuperAttributeDef> = {
     id: 'martial_prowess',
     name: 'Martial Prowess',
     icon: '🥋',
-    desc: 'When insight and reflex stop being separate things, technique stops being technique.',
     components: ['dex', 'wis'],
     unlock: [
       { type: 'attr', attr: 'dex', level: 60 },
@@ -44,4 +43,4 @@ export const SUPERATTRS: Record<string, SuperAttributeDef> = {
       { type: 'skill', id: 'school_ittou_ryu', level: 10 },
     ],
   },
-};
+});

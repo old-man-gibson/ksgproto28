@@ -1,4 +1,6 @@
 import type { StatusDef } from '../types';
+import { prose } from '../text/prose';
+import { STATUSES_TEXT } from '../text/statuses.text';
 
 /**
  * Negative status conditions.
@@ -20,7 +22,7 @@ import type { StatusDef } from '../types';
 
 const SECOND = 10;
 
-export const STATUSES: Record<string, StatusDef> = {
+export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
   /*
    * EYELESS — nothing to put out.
    *
@@ -34,7 +36,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'eyeless',
     name: 'Eyeless',
     icon: '🕳️',
-    desc: 'There is nothing there to dazzle, and nothing to take.',
     hidden: true,
     stacking: { mode: 'highest', cap: 1 },
     duration: null,
@@ -58,7 +59,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'refutation',
     name: 'Refutation',
     icon: '🚫',
-    desc: 'A refusal held in front of you. What strikes it is answered in kind.',
     stacking: { mode: 'highest', cap: 1 },
     duration: 15 * SECOND,
     mods: [
@@ -92,7 +92,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'knitting',
     name: 'Knitting',
     icon: '🩹',
-    desc: 'The wound is closing on its own. Something would have to interrupt it.',
     hidden: true,
     stacking: { mode: 'highest', cap: 1 },
     duration: null,
@@ -111,7 +110,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'doused',
     name: 'Doused',
     icon: '💢',
-    desc: 'Something is burning or eating you faster than you can knit. Nothing is closing until it stops.',
     // No element of its own: what douses a regenerating body is the FACT of
     // heat or acid arriving, not any particular source of it.
     stacking: { mode: 'highest', cap: 1 },
@@ -136,7 +134,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'corroded',
     name: 'Corroded',
     icon: '🧪',
-    desc: 'Your harness is going soft and pitted. Every layer it had is worth a little less.',
     element: 'acid',
     escalatesTo: 'melting',
     // Doses ADD, because corrosion is cumulative in a way venom is not — a
@@ -153,7 +150,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'melting',
     name: 'Melting',
     icon: '🫗',
-    desc: 'Whatever you were wearing has stopped being a barrier. What is under it is exposed to heat, cold and anything blunt.',
     element: 'acid',
     baseForm: 'corroded',
     stacking: { mode: 'highest', cap: 4 },
@@ -177,7 +173,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'poison',
     name: 'Poisoned',
     icon: '🤢',
-    desc: 'A slow, low burn of venom that also leaves you short of breath.',
     element: 'poison',
     escalatesTo: 'rotting',
     // A second bite of the same venom teaches the body nothing new — only a
@@ -192,7 +187,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'rotting',
     name: 'Rotting',
     icon: '🦠',
-    desc: 'The wound is septic. It feeds on every effort you make, and the strength does not come straight back.',
     element: 'poison',
     baseForm: 'poison',
     stacking: { mode: 'highest' },
@@ -209,7 +203,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'rot_recovery',
     name: 'Wasted',
     icon: '🩹',
-    desc: 'What the rot took is coming back, slowly.',
     stacking: { mode: 'highest' },
     duration: null, // ends when the debt has been paid back
     ceilingDecay: 0.0008, // ~20s to recover a 60% loss
@@ -222,7 +215,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'on_fire',
     name: 'On Fire',
     icon: '🔥',
-    desc: 'Burning hard and briefly. More fire makes the blaze fiercer, not longer.',
     element: 'heat',
     escalatesTo: 'blazing',
     // Half of each new flame feeds the existing one; the clock is untouched.
@@ -235,7 +227,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'blazing',
     name: 'Blazing',
     icon: '🔥',
-    desc: 'Burning fiercely enough that the damage does not simply mend — half of what it took needs real treatment.',
     element: 'heat',
     baseForm: 'on_fire',
     stacking: { mode: 'absorb', absorb: 0.25 },
@@ -251,7 +242,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'blaze_burn',
     name: 'Seared',
     icon: '🩸',
-    desc: 'A deep burn. Ordinary recovery will not close it — rest properly, apply a salve, or have it mended.',
     element: 'heat',
     stacking: { mode: 'highest' },
     duration: null,
@@ -266,7 +256,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'chilled',
     name: 'Chilled',
     icon: '🥶',
-    desc: 'Slowing, and stiffening your hands around whatever you are holding.',
     element: 'cold',
     escalatesTo: 'frozen',
     // Chill accumulates plainly. At full depth it stops being a chill.
@@ -283,7 +272,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'frozen',
     name: 'Frozen',
     icon: '🧊',
-    desc: 'Locked in place, and brittle — blunt force does far more to you like this. Any blow shatters it.',
     element: 'cold',
     baseForm: 'chilled',
     stacking: { mode: 'highest' },
@@ -304,7 +292,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'bleeding',
     name: 'Bleeding',
     icon: '🩸',
-    desc: 'An open wound. It costs more the more of you there is to lose, and it does not close on its own.',
     element: 'slashing',
     escalatesTo: 'lacerated',
     // Every fresh cut is its own wound.
@@ -331,7 +318,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'lacerated',
     name: 'Lacerated',
     icon: '🔪',
-    desc: 'Torn open. There is less of you to work with until it is closed, and closing it takes more than one pass.',
     element: 'slashing',
     baseForm: 'bleeding',
     stacking: { mode: 'count', cap: 5 },
@@ -348,7 +334,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'concussed',
     name: 'Concussed',
     icon: '💫',
-    desc: 'Your head is ringing. Spellwork will not hold together, and half your blows go wide.',
     element: 'bludgeoning',
     escalatesTo: 'dazed',
     stacking: { mode: 'highest', cap: 3, onCap: 'escalate' },
@@ -363,7 +348,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'dazed',
     name: 'Dazed',
     icon: '😵',
-    desc: 'Not there at all. Each daze costs you one action, and wears off as you spend them.',
     element: 'bludgeoning',
     baseForm: 'concussed',
     stacking: { mode: 'count', cap: 4 },
@@ -385,7 +369,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'punctured',
     name: 'Punctured',
     icon: '🕳️',
-    desc: 'A deep hole that keeps opening. Effort costs more, and there is less of you to spend.',
     element: 'piercing',
     escalatesTo: 'perforated',
     stacking: { mode: 'sum', cap: 3, onCap: 'escalate' },
@@ -401,7 +384,6 @@ export const STATUSES: Record<string, StatusDef> = {
     // The blade emoji belongs to the condition that has an actual blade in it
     // (weapon_impalement); this one is what is left AFTER things came out.
     icon: '🫗',
-    desc: 'Holed through in too many places to count. You hold whatever form you can, and nothing comes back on its own.',
     element: 'piercing',
     // The colour the stance grid wears while this is dictating your footing.
     color: '#c2504f',
@@ -420,7 +402,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'jolted',
     name: 'Jolted',
     icon: '⚡',
-    desc: 'Charge riding your nerves. It discharges the moment you commit to an action — and a hard enough jolt loses you your grip.',
     element: 'lightning',
     escalatesTo: 'shocked',
     /*
@@ -454,7 +435,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'shocked',
     name: 'Shocked',
     icon: '🌩️',
-    desc: 'Locked rigid. Your action bar runs backwards, and when it empties the charge goes off all at once.',
     element: 'lightning',
     baseForm: 'jolted',
     stacking: { mode: 'absorb', absorb: 1 },
@@ -476,7 +456,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'shardbound',
     name: 'Shardbound',
     icon: '🪨',
-    desc: 'Stone growing through you. It bites every time you swing, and every time something reaches you.',
     element: 'earth',
     escalatesTo: 'shardbloom',
     stacking: { mode: 'sum', cap: 4, onCap: 'escalate' },
@@ -488,7 +467,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'shardbloom',
     name: 'Shardbloom',
     icon: '💎',
-    desc: 'The stone has flowered. It cuts less on its own, but every movement opens you afresh.',
     element: 'earth',
     baseForm: 'shardbound',
     stacking: { mode: 'sum', cap: 6 },
@@ -507,7 +485,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'shard_bleed',
     name: 'Shard Cut',
     icon: '🩸',
-    desc: 'A fresh cut from the stone — brief, and deep.',
     element: 'slashing',
     // Stacks like an ordinary bleed, but it is not on the road to anything.
     stacking: { mode: 'count', cap: 8 },
@@ -521,7 +498,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'wet',
     name: 'Wet',
     icon: '💧',
-    desc: 'Soaked through. Fire has less to catch, but cold, lightning and venom all find you easier.',
     element: 'water',
     escalatesTo: 'soaked',
     stacking: { mode: 'sum', cap: 5, onCap: 'escalate' },
@@ -540,7 +516,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'soaked',
     name: 'Soaked',
     icon: '🌊',
-    desc: 'Drenched to the bone. Fire barely takes — everything else it conducts straight into you.',
     element: 'water',
     baseForm: 'wet',
     stacking: { mode: 'highest' },
@@ -590,7 +565,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'buffeted',
     name: 'Buffeted',
     icon: '🍃',
-    desc: 'The air keeps taking their footing. Motions that meant to end somewhere useful keep ending badly instead.',
     element: 'wind',
     color: '#8fc8b0',
     escalatesTo: 'unfooted',
@@ -606,7 +580,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'unfooted',
     name: 'Unfooted',
     icon: '💨',
-    desc: 'Every motion ends badly now. They can still swing — they simply cannot arrive anywhere worth following up from.',
     element: 'wind',
     color: '#5fa88c',
     baseForm: 'buffeted',
@@ -639,7 +612,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'seeded',
     name: 'Seeded',
     icon: '🌱',
-    desc: 'Something has taken in them. It is not doing anything yet — and it is getting bigger while nobody sees to it.',
     element: 'poison',
     color: '#7fa650',
     escalatesTo: 'rootbound',
@@ -671,7 +643,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'rootbound',
     name: 'Rootbound',
     icon: '🌳',
-    desc: 'It has network now, and a hold on them. Whatever is wrong with them is spreading to everything standing nearby.',
     element: 'poison',
     color: '#4d7a2e',
     baseForm: 'seeded',
@@ -715,7 +686,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'overgrowth',
     name: 'Overgrown',
     icon: '🌿',
-    desc: 'Life is overgrowing inside them. The body swells — slower on its feet, and much harder to miss.',
     escalatesTo: 'proliferating',
     stacking: { mode: 'highest' },
     // No clock of its own: the LEDGER is the clock. A swelling lasts exactly
@@ -736,7 +706,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'proliferating',
     name: 'Proliferating',
     icon: '🧬',
-    desc: 'The growth has a will of its own now. Feed it much more and the body will not hold it.',
     baseForm: 'overgrowth',
     stacking: { mode: 'highest' },
     // Like its milder form, it lasts exactly as long as the ledger does.
@@ -769,7 +738,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'magnetized',
     name: 'Magnetized',
     icon: '🧲',
-    desc: 'Iron in the flesh, and everything aimed their way is being helped along. Lightning cannot miss them at all.',
     element: 'piercing',
     color: '#7ab0d8',
     escalatesTo: 'magnet_lock',
@@ -791,7 +759,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'magnet_lock',
     name: 'Magnet-Locked',
     icon: '🧲',
-    desc: 'The pull has closed on them. Nothing they do avoids anything — and the charge is waiting for the next real blow.',
     element: 'piercing',
     color: '#5591e0',
     baseForm: 'magnetized',
@@ -816,7 +783,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'dazzled',
     name: 'Dazzled',
     icon: '😑',
-    desc: 'Seeing spots. A little harder to land a blow, and a little harder to avoid one.',
     element: 'light',
     escalatesTo: 'blinded',
     // A second flash does not dazzle you worse — it dazzles you for longer.
@@ -832,7 +798,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'blinded',
     name: 'Blinded',
     icon: '🙈',
-    desc: 'Nothing but glare. You swing at where things were, and never see what is coming.',
     element: 'light',
     color: '#e8e3c0',
     baseForm: 'dazzled',
@@ -850,7 +815,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'tainted',
     name: 'Tainted',
     icon: '🌑',
-    desc: 'Something is eating at your defences — all of them, and what wards light and dark worst of all.',
     element: 'dark',
     color: '#7a5c9e',
     escalatesTo: 'corrupted',
@@ -885,7 +849,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'corrupted',
     name: 'Corrupted',
     icon: '👁️',
-    desc: 'It has stopped eating your defences and started on you. What it takes of your spirit, it takes of everything else.',
     element: 'dark',
     color: '#5b3a8c',
     baseForm: 'tainted',
@@ -923,7 +886,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'manaburn',
     name: 'Manaburn',
     icon: '🔯',
-    desc: 'Burning through your reserves and past them. When it has taken more than you had, what is left over comes back as fire.',
     element: 'arcane',
     color: '#d648c8',
     stacking: { mode: 'absorb', absorb: 1, cap: 8 },
@@ -952,7 +914,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'well_fed',
     name: 'Well Fed',
     icon: '🍲',
-    desc: 'A proper meal, still doing its work.',
     color: '#c98a3c',
     stacking: { mode: 'highest' },
     duration: 600 * SECOND,
@@ -968,7 +929,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'steady_hand',
     name: 'Steady Hand',
     icon: '🍢',
-    desc: 'Fed, warm, and not shaking.',
     color: '#7ab0d8',
     stacking: { mode: 'highest' },
     duration: 480 * SECOND,
@@ -982,7 +942,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'clear_headed',
     name: 'Clear-Headed',
     icon: '🍵',
-    desc: 'The fog has lifted. Spellwork comes easier.',
     color: '#8f7ad8',
     stacking: { mode: 'highest' },
     duration: 480 * SECOND,
@@ -997,7 +956,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'queasy',
     name: 'Queasy',
     icon: '🤮',
-    desc: 'That should not have been eaten. Your stomach agrees.',
     color: '#6f8a3c',
     stacking: { mode: 'highest' },
     duration: 90 * SECOND,
@@ -1017,7 +975,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'unfolded',
     name: 'Unfolded',
     icon: '📐',
-    desc: 'Its geometry has been argued with, and lost. What remains defends poorly.',
     color: '#8f7ad8',
     stacking: { mode: 'highest' },
     duration: 15 * SECOND,
@@ -1034,7 +991,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'folded_space',
     name: 'Folded Space',
     icon: '📄',
-    desc: 'Where you were is not where you are. Blows keep arriving at the former.',
     color: '#8f7ad8',
     stacking: { mode: 'highest' },
     duration: 40 * SECOND,
@@ -1045,7 +1001,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'ximas_rime',
     name: "Xima's Rime",
     icon: '❄️',
-    desc: 'A rime of the Cold Sun, worn against the elements. Slow to fade, as his gifts are.',
     color: '#7ab0d8',
     stacking: { mode: 'highest' },
     duration: 60 * SECOND,
@@ -1060,7 +1015,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'blood_communion',
     name: 'Blood Communion',
     icon: '🩸',
-    desc: 'Your spilled blood is his channel: the bleeding feeds you instead of draining you.',
     color: '#c94f4f',
     stacking: { mode: 'highest' },
     duration: 60 * SECOND,
@@ -1074,7 +1028,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'honor_bound',
     name: 'Honor Bound',
     icon: '⚔️',
-    desc: 'The terms are declared: one against one. The rest can only watch.',
     color: '#e8b84b',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1086,7 +1039,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'veiled',
     name: 'Veiled',
     icon: '🎭',
-    desc: 'They are not prevented from striking you. They are prevented from finding you.',
     color: '#9aa4b0',
     stacking: { mode: 'highest' },
     duration: 30 * SECOND,
@@ -1097,7 +1049,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'night_shroud',
     name: 'Night Shroud',
     icon: '🌑',
-    desc: 'Shrouded in her dark; blows aimed at you find only night.',
     color: '#5b4a6e',
     stacking: { mode: 'highest' },
     duration: 30 * SECOND,
@@ -1108,10 +1059,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'unravelling',
     name: 'Unravelling',
     icon: '🧵',
-    desc:
-      'Whatever in you touches mana is fraying at the edges. Fray far enough and it catches — ' +
-      'a mage feels this as approaching catastrophe; everyone else, as their guard against ' +
-      'the arcane coming loose.',
     element: 'arcane',
     color: '#8f7ad8',
     /*
@@ -1137,7 +1084,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'kinetic_bulwark',
     name: 'Kinetic Bulwark',
     icon: '🛡️',
-    desc: 'A standing wall of held mass. Nothing thrown, shot or spat gets through — light does.',
     color: '#9aa4b0',
     stacking: { mode: 'highest' },
     duration: 25 * SECOND,
@@ -1160,7 +1106,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'psionic_haste',
     name: 'Kinetic Haste',
     icon: '💨',
-    desc: 'Mass in motion, and the mass is you. Everything simply happens sooner — blows, work, and the road.',
     color: '#f2d024',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1182,7 +1127,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'psionic_bracing',
     name: 'Braced',
     icon: '💢',
-    desc: 'The push, turned around: what would have landed on them holds you together instead.',
     color: '#e05555',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1193,7 +1137,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'psionic_root',
     name: 'Rooted',
     icon: '🪨',
-    desc: 'Weight that is going nowhere, and it is yours. Whatever tries to move you finds nothing to push against.',
     color: '#9aa4b0',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1215,7 +1158,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'psionic_foresight',
     name: 'Foresight',
     icon: '📍',
-    desc: 'You are reading where the blow means to go, and declining to be there when it arrives.',
     color: '#8f7ad8',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1231,7 +1173,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'psionic_compression',
     name: 'Compressed',
     icon: '🌀',
-    desc: 'The space you are standing in has been argued into a smaller shape, and you are still inside it. Everything takes longer than you meant it to.',
     color: '#5591e0',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1245,7 +1186,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'psionic_read',
     name: 'Read',
     icon: '🔍',
-    desc: 'Every intention arrives a moment before you act on it. There is nowhere left to go that has not already been looked at.',
     color: '#8f7ad8',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1259,7 +1199,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'psionic_wide_sight',
     name: 'Wide Sight',
     icon: '👁️',
-    desc: 'Every mind in the room at once. You are already turning with the blow before it is thrown.',
     color: '#5591e0',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1275,7 +1214,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'artisans_cunning',
     name: "Artisan's Cunning",
     icon: '🔨',
-    desc: 'The Crafty Hammer guides your hands: surer work, and a knack for the good stock.',
     color: '#c98a3c',
     stacking: { mode: 'highest' },
     duration: 120 * SECOND,
@@ -1300,7 +1238,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'flat_footed',
     name: 'Flat-Footed',
     icon: '😦',
-    desc: 'Caught out of position — worn and conjured defences are no help until you recover.',
     color: '#c9a13c',
     stacking: { mode: 'highest' },
     // A long backstop; the removal rule below is what actually ends it.
@@ -1326,7 +1263,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'surprised',
     name: 'Surprised',
     icon: '😲',
-    desc: 'Has not registered the fight yet — the next blow to land bites deeper.',
     color: '#e0a855',
     stacking: { mode: 'highest' },
     duration: 60 * SECOND,
@@ -1348,7 +1284,6 @@ export const STATUSES: Record<string, StatusDef> = {
     // The blade emoji, freed by Punctured's escalation becoming Perforated:
     // this is the condition that literally has one in it.
     icon: '🗡️',
-    desc: 'A weapon is buried in your body. Moving around it is its own problem.',
     element: 'piercing',
     color: '#c2504f',
     // One blade at a time — a second impalement replaces rather than stacks.
@@ -1386,7 +1321,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'fasting',
     name: 'Fasting',
     icon: '🕳️',
-    desc: 'It does not reach for what is in front of it.',
     hidden: true,
     stacking: { mode: 'highest', cap: 1 },
     duration: null,
@@ -1413,7 +1347,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'hunger_anupama',
     name: 'Hunger',
     icon: '🕳️',
-    desc: 'An appetite that is not yours. Everything you do feeds it, and it has no full.',
     element: 'dark',
     stacking: { mode: 'sum' },
     // It fades if you stop acting, which is the counterplay: the fast is only
@@ -1436,7 +1369,6 @@ export const STATUSES: Record<string, StatusDef> = {
     id: 'weight_of_hunger',
     name: 'The Weight of Hunger',
     icon: '⚖️',
-    desc: 'Bowed under everything you have taken. The next action comes slowly — and then the weight is gone.',
     element: 'dark',
     stacking: { mode: 'highest' },
     duration: 3 * SECOND,
@@ -1449,7 +1381,7 @@ export const STATUSES: Record<string, StatusDef> = {
       { on: 'combatEnd', effect: 'remove' },
     ],
   },
-};
+});
 
 /**
  * Intensity of `hunger_anupama` per application, per point of the IMPARTER's

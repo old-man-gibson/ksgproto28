@@ -38,6 +38,17 @@ immediately), and **Review & Apply** (`Ctrl+S`) shows the diff per file before a
 lands. This repo has no git, so a timestamped copy of every touched file goes to
 `.forge-backups/` first — that directory *is* the undo history.
 
+**Words go to the text file.** `desc`, `dialogue` and `hint` are not stored in the
+data files; they live in `src/core/text/<name>.text.ts` next door, keyed by dotted
+path (`master_smith.desc`, `f1_storerooms.finds.strongbox.desc`), and
+`src/core/text/prose.ts` stitches them onto the entries at load. The forge client
+never notices — it edits `spot.desc` on the loaded object like any field — and
+`forge/server/prose.ts` splits each patch op into its data-file part and its
+text-file part. Editing a description touches only the text file; adding an entry
+writes the numbers to one file and the words to the other; renaming or deleting an
+entry carries its text keys along. A text key that names nothing shows up in the
+validator as a `text` warning.
+
 ---
 
 ## The world map

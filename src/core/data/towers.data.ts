@@ -1,4 +1,6 @@
 import type { BandDef, FloorDef, TowerDef } from '../types';
+import { prose } from '../text/prose';
+import { TOWERS_TEXT, BANDS_TEXT, FLOORS_TEXT } from '../text/towers.text';
 
 /**
  * Vertical content: stacks of floors hanging off a hub spot.
@@ -24,7 +26,7 @@ import type { BandDef, FloorDef, TowerDef } from '../types';
  * COMPLETABILITY.md §3 needs, derived rather than bolted on.
  */
 
-export const TOWERS: Record<string, TowerDef> = {
+export const TOWERS = prose<TowerDef>('TOWERS', TOWERS_TEXT, {
   // The first stack. `foreknown` is what makes it read as a tower rather than
   // a dungeon: you can see the ladder above you and plan toward its gates.
   // A descent would set it false and reveal bands only as they open.
@@ -35,9 +37,8 @@ export const TOWERS: Record<string, TowerDef> = {
     hubSpot: 'ascent_foot',
     direction: 'up',
     foreknown: true,
-    desc: 'It was here before Threshold was, and the city grew around its foot the way a town grows around a river crossing. Eight roads reach it. All eight arrive at the same door.',
   },
-};
+});
 
 /**
  * REVISED 2026-09-06 (plans/alpha-band-one.md): the ascent is SEQUENTIAL —
@@ -53,14 +54,13 @@ export const TOWERS: Record<string, TowerDef> = {
  * and with every rung mandatory there is no sibling floor to hide a
  * discipline gate behind.
  */
-export const BANDS: Record<string, BandDef> = {
+export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
   ascent_lower: {
     id: 'ascent_lower',
     name: 'The Lower Reaches',
     towerId: 'the_ascent',
     index: 1,
     clearsToAdvance: 2,
-    desc: 'Floors the city still uses. Storerooms, a flooded stair, the old toll level nobody collects on any more.',
   },
   ascent_middle: {
     id: 'ascent_middle',
@@ -68,7 +68,6 @@ export const BANDS: Record<string, BandDef> = {
     towerId: 'the_ascent',
     index: 2,
     clearsToAdvance: 2,
-    desc: 'Above the last floor anyone has a key to.',
   },
   ascent_upper: {
     id: 'ascent_upper',
@@ -76,9 +75,8 @@ export const BANDS: Record<string, BandDef> = {
     towerId: 'the_ascent',
     index: 3,
     clearsToAdvance: 2,
-    desc: 'Visible from every district, and from nowhere else.',
   },
-};
+});
 
 /**
  * A floor IS an area: `areaId` names the AreaDef whose spots make it up, so
@@ -91,7 +89,7 @@ export const BANDS: Record<string, BandDef> = {
  * hold was the first such floor; on 2026-09-12 it left the tower for a map of
  * its own, behind the first prestige — see the `the_hold` region.)
  */
-export const FLOORS: Record<string, FloorDef> = {
+export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
   // ---- Band 1: the Lower Reaches. Names are placeholders (forge-renameable);
   // levels and gate numbers are first guesses, tuned in review. Every clear
   // reads a counter that already persists — nothing here added save state.
@@ -109,7 +107,6 @@ export const FLOORS: Record<string, FloorDef> = {
     // every variant pays the same `boss:` latch, so the clear never needs an
     // OR. See the hall's encounter table.
     clear: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }],
-    desc: 'The city used to pay to pass. The vermin never stopped collecting.',
   },
   ascent_f2: {
     id: 'ascent_f2',
@@ -125,7 +122,6 @@ export const FLOORS: Record<string, FloorDef> = {
     // The clear is a spent fight budget: the cistern's fightLimit and this
     // number are the same dial and are linted to agree.
     clear: [{ type: 'stat', key: 'fights:f2_cistern', value: 8 }],
-    desc: 'Somewhere above, water gets in. It has had a very long time to argue with the stonework.',
   },
   ascent_f3: {
     id: 'ascent_f3',
@@ -138,6 +134,5 @@ export const FLOORS: Record<string, FloorDef> = {
     gate: [{ type: 'stat', key: 'gold:earned', value: 600 }],
     // A named kill again — the brood den's `once` queen.
     clear: [{ type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 }],
-    desc: 'Nobody remembers what this floor was for. The webs go back further than the records do.',
   },
-};
+});

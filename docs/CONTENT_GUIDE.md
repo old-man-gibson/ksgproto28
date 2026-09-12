@@ -165,7 +165,39 @@ for all the "magic strings".
 
 ## 3. The workflow
 
-1. Edit a file in `src/core/data/`.
+**Where the words live.** The data files hold mechanics. Every player-facing
+string — `desc`, `dialogue`, `hint` — lives in `src/core/text/<name>.text.ts`,
+one text file per data file, as a flat table keyed by dotted path:
+
+```ts
+// src/core/text/npcs.text.ts
+export const NPCS_TEXT: ProseTable = {
+  'master_smith.desc': 'Runs the third forge from the chimney end.',
+  'master_smith.dialogue': [
+    'Scrap costs nothing and teaches everything. Start there.',
+  ],
+  // nested prose: array elements by id when they have one, else by index
+  'f1_storerooms.finds.strongbox.desc': 'A strongbox. Uncollected.',
+  'faces_of_threshold.objectives.0.desc': 'Meet the smith at the Forges',
+};
+```
+
+The data file declares its registry through `prose()`, which stitches the
+table onto the entries at load time, so `entry.desc` still reads the same
+everywhere:
+
+```ts
+export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, { master_smith: { id: ..., } });
+```
+
+The examples below still show `desc:` inline for brevity. When you add the
+entry, the `desc` goes in the text file under `'<id>.desc'`; the typecheck will
+not stop you from writing it inline (the field is optional in the literal), but
+the forge only ever writes it to the text file. `tests/prose.test.ts` fails on
+a text key that names no entry and on a registry that lost a description.
+Register rules for the words themselves are in `VOICE.md` §3.
+
+1. Edit a file in `src/core/data/` (numbers) or `src/core/text/` (words).
 2. `npm run verify` — fix anything red.
    - *Typecheck errors* point at the exact file:line (wrong field name, bad
      enum value, duplicate key).

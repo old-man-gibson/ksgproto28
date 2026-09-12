@@ -1,4 +1,6 @@
 import type { BrewForm, BrewFormulaDef, ReagentDef } from '../types';
+import { prose, proseList } from '../text/prose';
+import { REAGENTS_TEXT, BREW_FORMS_TEXT, BREW_FORMULAS_TEXT } from '../text/alchemy.text';
 
 const SECOND = 10;
 
@@ -19,7 +21,7 @@ const SECOND = 10;
  *  - an OPERATOR acts on the brew it finds, so it can only ever work on what
  *    was already added before it.
  */
-export const REAGENTS: Record<string, ReagentDef> = {
+export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
   // ---------- Menstruums: what the brew is raised in ----------
   //
   // The first solvent in decides the FORM the brew will take, whatever else
@@ -30,21 +32,18 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'spring_water',
     name: 'Spring Water',
     icon: '💧',
-    desc: 'Raises a brew you can drink. Holds a great deal and asks for nothing.',
     menstruum: { medium: 'water', body: 8 },
   },
   pressed_oil: {
     id: 'pressed_oil',
     name: 'Pressed Oil',
     icon: '🫙',
-    desc: 'Raises a brew for the skin rather than the throat — it works where it is put.',
     menstruum: { medium: 'oil', body: 6 },
   },
   grain_spirit: {
     id: 'grain_spirit',
     name: 'Grain Spirit',
     icon: '🍶',
-    desc: 'Raises a brew that wants out of the bottle. Holds little, and holds it badly.',
     minLevel: 4,
     menstruum: { medium: 'spirit', body: 5 },
     // Spirits are already halfway to going off — raising a brew in them starts
@@ -58,7 +57,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'emberbloom',
     name: 'Emberbloom',
     icon: '🌺',
-    desc: 'Holds the heat of the day it was picked. Nothing good comes of drinking it.',
     essence: {
       id: 'ember',
       name: 'Ember',
@@ -71,7 +69,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'frostmoss',
     name: 'Frostmoss',
     icon: '🧊',
-    desc: 'Cold to the touch hours after it leaves the shade.',
     essence: {
       id: 'rime',
       name: 'Rime',
@@ -85,7 +82,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'nightcap',
     name: 'Nightcap',
     icon: '🍄',
-    desc: 'Every part of it is poison. That is the useful bit.',
     minLevel: 3,
     essence: {
       id: 'venom',
@@ -99,7 +95,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'gloomcap',
     name: 'Gloomcap',
     icon: '🌚',
-    desc: 'Grown in the dark, and it takes some of the dark with it.',
     minLevel: 6,
     essence: {
       id: 'gloom',
@@ -116,7 +111,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'mendroot',
     name: 'Mendroot',
     icon: '🌱',
-    desc: 'The root everyone knows. Closes what it is put on and settles what it is drunk for.',
     essence: {
       id: 'mending',
       name: 'Mending',
@@ -130,7 +124,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'bloodwort',
     name: 'Bloodwort',
     icon: '🌡️',
-    desc: 'Drives the blood. Steadies nothing.',
     minLevel: 5,
     essence: {
       id: 'vigor',
@@ -144,7 +137,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'thunderbloom',
     name: 'Thunderbloom',
     icon: '⚡',
-    desc: 'Picked in storm season, and it never quite stopped.',
     minLevel: 9,
     essence: {
       id: 'storm',
@@ -167,7 +159,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'quicksilver',
     name: 'Quicksilver',
     icon: '🪙',
-    desc: 'Will not sit still, and will not let anything else sit still either.',
     minLevel: 2,
     act: { kind: 'agitate', amount: 1.3 },
   },
@@ -175,16 +166,12 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'fixing_salt',
     name: 'Fixing Salt',
     icon: '🧂',
-    desc:
-      'Settles a brew — and the harder it was running when you settle it, the ' +
-      'longer what is left will last.',
     act: { kind: 'fix' },
   },
   brimstone: {
     id: 'brimstone',
     name: 'Brimstone',
     icon: '🟡',
-    desc: 'Takes hold in a brew already running hot. In a calm one it is only grit.',
     minLevel: 7,
     act: { kind: 'ignite', needs: 1.2, mult: 1.55 },
   },
@@ -192,7 +179,6 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'bone_ash',
     name: 'Bone Ash',
     icon: '🦴',
-    desc: 'Takes the weakest thing in the pot out of the pot. What is left reads louder.',
     minLevel: 4,
     act: { kind: 'clarify', mult: 1.5 },
   },
@@ -200,11 +186,10 @@ export const REAGENTS: Record<string, ReagentDef> = {
     id: 'green_vitriol',
     name: 'Green Vitriol',
     icon: '🧪',
-    desc: 'Eats into whatever it is added to — and into whatever the brew is thrown at.',
     minLevel: 11,
     act: { kind: 'corrode', penetration: 0.22, mult: 1.25, purity: 0.88 },
   },
-};
+});
 
 export const REAGENT_LIST: ReagentDef[] = Object.values(REAGENTS);
 
@@ -218,17 +203,13 @@ export function reagent(id: string): ReagentDef | undefined {
  * What each form is called and how it is delivered. `thrown` forms need a
  * fight; the rest are used on yourself, wherever you are standing.
  */
-export const BREW_FORMS: Record<
-  BrewForm,
-  { name: string; icon: string; verb: string; thrown: boolean; sustained: boolean; desc: string }
-> = {
+export const BREW_FORMS = prose<{ name: string; icon: string; verb: string; thrown: boolean; sustained: boolean; desc: string }, BrewForm>('BREW_FORMS', BREW_FORMS_TEXT, {
   elixir: {
     name: 'Elixir',
     icon: '🧴',
     verb: 'Drink',
     thrown: false,
     sustained: true,
-    desc: 'Settled in water. Works on you, and keeps working for a while.',
   },
   draught: {
     name: 'Draught',
@@ -236,7 +217,6 @@ export const BREW_FORMS: Record<
     verb: 'Drink',
     thrown: false,
     sustained: false,
-    desc: 'Water that will not keep still. Everything it has, the moment it goes down.',
   },
   salve: {
     name: 'Salve',
@@ -244,7 +224,6 @@ export const BREW_FORMS: Record<
     verb: 'Apply',
     thrown: false,
     sustained: false,
-    desc: 'Settled oil, worked into skin. The form that clears what ails you.',
   },
   oil: {
     name: 'Oil',
@@ -252,9 +231,6 @@ export const BREW_FORMS: Record<
     verb: 'Coat',
     thrown: false,
     sustained: false,
-    desc:
-      'Oil that never settled. It goes on the blade instead of the wound, and ' +
-      'every blow carries it until the edge wipes clean.',
   },
   bomb: {
     name: 'Flask',
@@ -262,7 +238,6 @@ export const BREW_FORMS: Record<
     verb: 'Throw',
     thrown: true,
     sustained: false,
-    desc: 'Spirit raised past holding. It goes off on whatever it meets.',
   },
   fume: {
     name: 'Fume',
@@ -270,7 +245,6 @@ export const BREW_FORMS: Record<
     verb: 'Throw',
     thrown: true,
     sustained: true,
-    desc: 'Spirit that never caught. It does not break so much as spread.',
   },
   residue: {
     name: 'Residue',
@@ -278,9 +252,8 @@ export const BREW_FORMS: Record<
     verb: 'Discard',
     thrown: false,
     sustained: false,
-    desc: 'Nothing raised it, so nothing came of it. Worth what the jar is worth.',
   },
-};
+});
 
 // ---------- The formulary ----------
 
@@ -292,36 +265,32 @@ export const BREW_FORMS: Record<
  * The mirror of NAMED_RUNES: recognition only, no mechanical bonus. What the
  * brew does is what its sequence says it does, named or not.
  */
-export const BREW_FORMULAS: BrewFormulaDef[] = [
+export const BREW_FORMULAS = proseList<BrewFormulaDef>('BREW_FORMULAS', BREW_FORMULAS_TEXT, [
   {
     id: 'smoulder_flask',
     name: "Smoulderer's Flask",
     icon: '💥',
-    desc: 'Spirit, roused, fed to a bloom, and lit. The first thing every alchemist blows up.',
     sequence: ['grain_spirit', 'quicksilver', 'emberbloom', 'brimstone'],
   },
   {
     id: 'thief_draught',
     name: "Thief's Measure",
     icon: '🎭',
-    desc: 'Gloom taken last, so none of it dissolves — all character, no strength.',
     sequence: ['spring_water', 'gloomcap', 'fixing_salt'],
   },
   {
     id: 'field_salve',
     name: 'Field Salve',
     icon: '🩹',
-    desc: 'What a company medic carries. Root steeped first, then bound in oil.',
     sequence: ['pressed_oil', 'mendroot', 'mendroot', 'fixing_salt'],
   },
   {
     id: 'chokedamp',
     name: 'Chokedamp',
     icon: '☠️',
-    desc: 'Never allowed to catch. It arrives as weather rather than as an explosion.',
     sequence: ['grain_spirit', 'nightcap', 'fixing_salt'],
   },
-];
+]);
 
 /** The formula this exact sequence is, if it is one. */
 export function formulaFor(sequence: string[]): BrewFormulaDef | undefined {
