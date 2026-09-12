@@ -388,6 +388,8 @@ export function cook(
       noveltyKeys(disc, placement),
     );
     const made = MATERIALS[id];
+    // Quest familiarization hears bench work the same way it hears recipes.
+    bus.emit({ type: 'craft', discipline: disc.id });
     // Groupable: a batch run folds into one tallied line instead of a page.
     logRepeat(bus, {
       group: `bench:${disc.id}`,
@@ -421,6 +423,7 @@ export function cook(
   );
 
   const dish = MATERIALS[result.id];
+  bus.emit({ type: 'craft', discipline: disc.id });
   logRepeat(bus, {
     group: `bench:${disc.id}`,
     prefix: `${dish?.icon ?? '🍽️'} Cooked:`,

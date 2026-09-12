@@ -1,3 +1,5 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { ITEMS, MAIN_GENES, MONSTERS, SPOTS, STATUSES, TITLES } from '../src/core/registry';
 import { HUNGER_SLOW_CEILING } from '../src/core/data/statuses.data';

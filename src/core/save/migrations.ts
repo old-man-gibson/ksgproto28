@@ -1,13 +1,15 @@
 import type { GameState, ItemInstance } from '../types';
-import { ITEMS, SKILLS, SPOTS, STYLES } from '../registry';
+import { ITEMS, QUESTS, SKILLS, SPOTS, STARTING_SPOT, STYLES } from '../registry';
 import { runeClassOf } from '../systems/runes';
 import { getDerivedStats } from '../systems/derived';
 import { settleLevels } from '../systems/progression';
 import { skillProgression } from '../systems/skills';
 import { ATTRIBUTE_PROGRESSION } from '../data/progression.data';
 import { DEITIES } from '../data/deities.data';
+import { ARCANE_WORDS } from '../data/spellcraft.data';
 import { TECHNIQUE_LIST } from '../data/martial.data';
 import { freshMutagenState, startingKit } from '../data/mutagens.data';
+import { freshPrestigeState } from '../data/prestige.data';
 import { conditionsMet } from '../systems/conditions';
 
 /**
@@ -447,6 +449,102 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
   45: (raw) => {
     raw.mercy = raw.mercy ?? {};
     raw.version = 46;
+  },
+  // v46 → v47: subsystem shutters (systems/unlocks.ts). Five systems now
+  // render only once their `flag:unlock_*` counter lifts. A save from before
+  // the shutters has seen all five — hiding a tab that holds the player's own
+  // compositions would be confiscation, not a lock — so it keeps them all.
+  // New games start with the flags unset and earn them from content.
+  46: (raw) => {
+    const stats = (raw.stats as Record<string, number> | undefined) ?? {};
+    raw.stats = stats;
+    for (const id of ['runecarving', 'music', 'genes', 'psionics', 'wuxin']) {
+      stats[`flag:unlock_${id}`] = stats[`flag:unlock_${id}`] ?? 1;
+    }
+    raw.version = 47;
+  },
+  // v47 → v48: the starter lexicon and the known gods (systems/unlocks.ts).
+  // Words and deities now render only when unlocked/known; a pre-48 save has
+  // spoken and worshipped freely, so it keeps the whole lexicon and pantheon.
+  // New games open with eleven words and two gods.
+  47: (raw) => {
+    const stats = (raw.stats as Record<string, number> | undefined) ?? {};
+    raw.stats = stats;
+    for (const id of Object.keys(ARCANE_WORDS)) {
+      stats[`flag:word:${id}`] = stats[`flag:word:${id}`] ?? 1;
+    }
+    for (const id of Object.keys(DEITIES)) {
+      stats[`met:deity:${id}`] = stats[`met:deity:${id}`] ?? 1;
+    }
+    raw.version = 48;
+  },
+  // v48 → v49: the countryside outside Threshold is SHELVED (data/shelved/),
+  // and the hold left the tower for a map of its own behind the first
+  // prestige. A save standing on a place that no longer exists wakes at the
+  // Foot with its journey cancelled; every list that names spots or quests is
+  // pruned to what the registry still knows. Content-agnostic on purpose: it
+  // reads the registry, so any future removal is covered by the same rule.
+  // Counters keyed by old spot ids (`fights:*`, `explored`) are left alone —
+  // they are inert, and a revived map would want them back.
+  48: (raw) => {
+    const known = (id: unknown): id is string => typeof id === 'string' && id in SPOTS;
+    const spotLost = !known(raw.spot);
+    if (spotLost) {
+      raw.spot = STARTING_SPOT;
+      raw.activity = null;
+      raw.pendingApproach = null;
+    }
+    const travel = raw.travel as { from?: unknown; to?: unknown } | null | undefined;
+    if (travel && (!known(travel.from) || !known(travel.to))) raw.travel = null;
+    const plan = Array.isArray(raw.travelPlan) ? (raw.travelPlan as unknown[]) : [];
+    if (spotLost || raw.travel === null || !plan.every(known)) raw.travelPlan = [];
+    const discovered = Array.isArray(raw.discovered) ? (raw.discovered as unknown[]) : [];
+    const kept = discovered.filter(known);
+    if (!kept.includes(raw.spot as string)) kept.push(raw.spot as string);
+    raw.discovered = kept;
+    const safe = raw.safeSpots as { nearest?: unknown; unconditional?: unknown } | undefined;
+    if (safe) {
+      if (!known(safe.nearest)) safe.nearest = null;
+      if (!known(safe.unconditional)) safe.unconditional = null;
+    }
+    const quests = (raw.quests as Record<string, unknown> | undefined) ?? {};
+    for (const id of Object.keys(quests)) if (!(id in QUESTS)) delete quests[id];
+    raw.quests = quests;
+    raw.version = 49;
+  },
+  // v49 → v50: prestige (systems/prestige.ts). The legacy block starts
+  // empty: an old save has never prestiged, whatever it has cleared. If it
+  // stands past band 1 already, the tab simply appears on load.
+  49: (raw) => {
+    raw.prestige = raw.prestige ?? freshPrestigeState();
+    raw.version = 50;
+  },
+  // v50 → v51: talent (the auto prestige boon) needs each skill's peak level
+  // from past runs. A v50 save (the day's sandbox only) recorded none; it
+  // starts remembering from its next prestige.
+  50: (raw) => {
+    const prestige =
+      (raw.prestige as { count?: number; purchases?: Record<string, number>; peakLevels?: unknown } | undefined) ??
+      freshPrestigeState();
+    prestige.peakLevels = prestige.peakLevels ?? {};
+    // Talent's free rank comes with the first prestige; a save that already
+    // has one gets it here, the way `prestigeNow` would have given it.
+    prestige.purchases = prestige.purchases ?? {};
+    if ((prestige.count ?? 0) > 0 && !(prestige.purchases.talent > 0)) prestige.purchases.talent = 1;
+    raw.prestige = prestige;
+    raw.version = 51;
+  },
+  // v51 → v52: endowment, talent's twin for attributes — peak trained attribute
+  // levels, and the free rank for any save that has already prestiged.
+  51: (raw) => {
+    const prestige =
+      (raw.prestige as { count?: number; purchases?: Record<string, number>; peakAttrs?: unknown } | undefined) ??
+      freshPrestigeState();
+    prestige.peakAttrs = prestige.peakAttrs ?? {};
+    prestige.purchases = prestige.purchases ?? {};
+    if ((prestige.count ?? 0) > 0 && !(prestige.purchases.endowment > 0)) prestige.purchases.endowment = 1;
+    raw.prestige = prestige;
+    raw.version = 52;
   },
 };
 

@@ -8,7 +8,6 @@ import {
 } from '../src/core/systems/clock';
 import { DAYS_PER_YEAR, HOLY_DAYS, TICKS_PER_GAME_MINUTE } from '../src/core/data/climate.data';
 import { createInitialState } from '../src/core/state';
-import { DEBUG_STARTING_SPOT } from '../src/core/registry';
 
 /** Ticks at day `d` (0-based absolute), hour `h`, minute `m`. */
 const at = (d: number, h = 0, m = 0) => (d * 1440 + h * 60 + m) * TICKS_PER_GAME_MINUTE;
@@ -84,11 +83,8 @@ describe('the world clock', () => {
     const fresh = createInitialState(1);
     const opening = clockOf(fresh.totalTicks);
     expect([opening.hour, opening.minute, opening.dayOfYear]).toEqual([9, 0, 0]);
-    // The story now starts in Threshold, at the door all eight districts
-    // reach. `my_home` is still authored and still walkable — it is simply no
-    // longer the root, so an existing save standing there is untouched.
+    // The story starts in Threshold, at the door all eight districts reach.
     expect(fresh.spot).toBe('ascent_foot');
     expect(fresh.discovered).toEqual(['ascent_foot']);
-    expect(createInitialState(1, DEBUG_STARTING_SPOT).spot).toBe('village_square');
   });
 });

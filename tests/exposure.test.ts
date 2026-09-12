@@ -1,3 +1,5 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { EventBus } from '../src/core/engine/events';

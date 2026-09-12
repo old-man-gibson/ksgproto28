@@ -1,7 +1,7 @@
 
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
-import { npcsAt, availableQuests, canTurnIn, questComplete } from '../src/core/systems/quests';
+import { npcsAt, availableQuests, canTurnIn, hasMet, questComplete } from '../src/core/systems/quests';
 import { visibleEdges } from '../src/core/systems/locations';
 import { spotActivities } from '../src/core/systems/actions';
 import { getSpot, NPCS, QUESTS, STYLES } from '../src/core/registry';
@@ -125,6 +125,12 @@ export function runGoldfish(seed: number, ticks: number, attention = 60): Goldfi
     const accepts = npcsAt(state.spot)
       .flatMap((npc) => availableQuests(state, npc))
       .map((q) => () => game.acceptQuest(q.id));
+    // Greeting whoever is standing there is the least sophisticated social
+    // act there is, so the goldfish does it readily — which is also what
+    // makes talk-objective quests honest to test against it.
+    const talks = npcsAt(state.spot)
+      .filter((npc) => !hasMet(state, npc.id))
+      .map((npc) => () => game.talkTo(npc.id));
     const turnIns = Object.entries(state.quests)
       .filter(([id, q]) => q.status === 'active' && QUESTS[id] && canTurnIn(state, QUESTS[id]))
       .map(([id]) => () => game.turnInQuest(id));
@@ -177,6 +183,7 @@ export function runGoldfish(seed: number, ticks: number, attention = 60): Goldfi
     const menu: { weight: number; options: (() => void)[] }[] = [
       { weight: 100, options: turnIns },
       { weight: 40, options: deliveries },
+      { weight: 30, options: talks },
       { weight: 25, options: accepts },
       { weight: 30, options: activities },
       { weight: 10, options: travels },

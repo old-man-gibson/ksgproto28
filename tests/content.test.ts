@@ -1,3 +1,5 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import {
   ACHIEVEMENTS,
@@ -40,6 +42,7 @@ import {
   TOWERS,
   BANDS,
   FLOORS,
+  STARTING_SPOT,
 } from '../src/core/registry';
 import { RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/types';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
@@ -50,6 +53,7 @@ import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../src/core/systems/monsterStats';
 import { monsterTags } from '../src/core/systems/bestiary';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
+import { askingPrice, lineValue } from '../src/core/systems/shops';
 import { wordTag } from '../src/core/data/wordskills.data';
 import { attrXpWeights } from '../src/core/systems/actions';
 import { recipeRoutes, routeYield } from '../src/core/systems/crafting';
@@ -77,6 +81,10 @@ function statCounterValid(key: string): boolean {
     'skill:levels',
     'weapon:families',
     'miracles:learned',
+    'spells:inscribed', // spellcraft.ts inscribeArcane
+    'bestiary:entries', // bestiary.ts recordKill, first of a species
+    'gold:spent', // shops.ts buy
+    'shop:buys', // shops.ts buy
   ]);
   if (staticKeys.has(key)) return true;
   // What the fight itself counts, for conditions that learn from doing
@@ -85,12 +93,18 @@ function statCounterValid(key: string): boolean {
   if (key.startsWith('combat:')) return COMBAT_COUNTERS.has(key.slice(7));
   // `used:<family>` is flagged the first time you swing that weapon family.
   if (key.startsWith('used:')) return key.slice(5).length > 0;
+  // Per-vendor tallies: shops.ts stamps shop:buys:<npcId> on every purchase.
+  if (key.startsWith('shop:buys:')) return key.slice(10).length > 0;
   // Tag tallies are bumped for every tag a killed monster carried, including
   // the derived ones (tier, swarm, non_elemental), so check against tags in use
   // rather than the hand-written registry alone.
   if (key.startsWith('kills:tag:')) {
     const tag = key.slice(10);
     return Object.values(MONSTERS).some((m) => monsterTags(m).includes(tag));
+  }
+  // `boss:<spot>` is bumped when a boss-flagged spawn dies there (combat.ts).
+  if (key.startsWith('boss:')) {
+    return !!SPOTS[key.slice(5)]?.encounters?.some((e) => e.boss);
   }
   if (key.startsWith('kills:')) return key.slice(6) in MONSTERS;
   if (key.startsWith('gather:')) return key.slice(7) in MATERIALS;
@@ -306,14 +320,40 @@ describe('world graph', () => {
     expect(ADJACENCY.get('ravine_floor')!.map((e) => e.to)).not.toContain('deep_woods');
   });
 
+  /**
+   * The ladder is a road that owns no edges: `climbTo` (systems/towers.ts)
+   * moves between a tower's hub and any unlocked floor's landing directly.
+   * Both graph walks here ride the same pseudo-edges, or every banded floor
+   * would read as unreachable/trapped the moment it was authored correctly
+   * (banded floor areas are CLOSED — see the towers suite).
+   */
+  const ladderEdges = (): Map<string, string[]> => {
+    const extra = new Map<string, string[]>();
+    const add = (from: string, to: string) => extra.set(from, [...(extra.get(from) ?? []), to]);
+    for (const tower of Object.values(TOWERS)) {
+      for (const floor of Object.values(FLOORS)) {
+        if (floor.towerId !== tower.id || floor.bandId === undefined || !floor.landing) continue;
+        add(tower.hubSpot, floor.landing);
+        add(floor.landing, tower.hubSpot);
+      }
+    }
+    return extra;
+  };
+
   it('every spot is reachable from the starting spot', () => {
-    const seen = new Set<string>(['village_square']);
-    const queue = ['village_square'];
+    const ladder = ladderEdges();
+    const seen = new Set<string>([STARTING_SPOT]);
+    const queue = [STARTING_SPOT];
     while (queue.length) {
-      for (const edge of ADJACENCY.get(queue.pop()!) ?? []) {
-        if (!seen.has(edge.to)) {
-          seen.add(edge.to);
-          queue.push(edge.to);
+      const at = queue.pop()!;
+      const next = [
+        ...(ADJACENCY.get(at) ?? []).map((e) => e.to),
+        ...(ladder.get(at) ?? []),
+      ];
+      for (const to of next) {
+        if (!seen.has(to)) {
+          seen.add(to);
+          queue.push(to);
         }
       }
     }
@@ -339,12 +379,17 @@ describe('world graph', () => {
     expect(waypoints.length, 'no waypoints, so there is nowhere to get home to').toBeGreaterThan(0);
 
     const inbound = new Map<string, string[]>();
+    const noteInbound = (from: string, to: string) => {
+      const list = inbound.get(to);
+      if (list) list.push(from);
+      else inbound.set(to, [from]);
+    };
     for (const [from, edges] of ADJACENCY) {
-      for (const edge of edges) {
-        const list = inbound.get(edge.to);
-        if (list) list.push(from);
-        else inbound.set(edge.to, [from]);
-      }
+      for (const edge of edges) noteInbound(from, edge.to);
+    }
+    // The ladder gets everyone home too: a landing always reaches its hub.
+    for (const [from, tos] of ladderEdges()) {
+      for (const to of tos) noteInbound(from, to);
     }
 
     const canGetHome = new Set<string>(waypoints);
@@ -537,6 +582,38 @@ describe('world graph', () => {
           spot.encounters?.length ?? 0,
           `${spot.id}: a fight budget with no fights — fightLimit needs encounters`,
         ).toBeGreaterThan(0);
+      }
+      if (spot.caged) {
+        // A menagerie with nothing in the cages teaches nothing; and a caged
+        // fight budget would empty the cages for good, which is the opposite
+        // of a syllabus.
+        expect(
+          spot.encounters?.length ?? 0,
+          `${spot.id}: caged with no encounters — empty cages teach nothing`,
+        ).toBeGreaterThan(0);
+        expect(
+          spot.fightLimit,
+          `${spot.id}: caged spots must not carry a fightLimit — the cages restock`,
+        ).toBeUndefined();
+      }
+      // Ambush windows and the boss latch (SpotEncounter.window / .boss).
+      for (const e of spot.encounters ?? []) {
+        if (!e.window) continue;
+        expect(e.window.min, `${spot.id}/${e.monsterId}: window.min must be > 0`).toBeGreaterThan(0);
+        expect(
+          e.window.max,
+          `${spot.id}/${e.monsterId}: window needs min < max`,
+        ).toBeGreaterThan(e.window.min);
+      }
+      const bosses = (spot.encounters ?? []).filter((e) => e.boss);
+      if (bosses.length) {
+        // COMPLETABILITY: the clock is not a wall (time passes on its own),
+        // but a power window is — a player outside every window could never
+        // latch boss:<spot>, and anything cleared on it would seal for good.
+        expect(
+          bosses.some((e) => !e.window),
+          `${spot.id}: every boss hides behind a power window — keep one windowless keeper`,
+        ).toBe(true);
       }
     }
   });
@@ -948,6 +1025,25 @@ describe('npcs & quests', () => {
       expect(npc.dialogue.length, `${npc.id} has dialogue`).toBeGreaterThan(0);
       for (const q of npc.quests) expect(QUESTS[q], `${npc.id} quest ${q}`).toBeDefined();
     }
+    for (const npc of Object.values(NPCS)) {
+      // A counter sells things that exist, at grades that exist, for prices
+      // that clear the ware's worth — the runtime no-arbitrage floor
+      // (buyPrice) covers charisma; this catches an authored bargain.
+      if (!npc.shop) continue;
+      expect(npc.shop.name, `${npc.id} shop name`).toBeTruthy();
+      expect(npc.shop.lines.length, `${npc.id} shop has lines`).toBeGreaterThan(0);
+      for (const line of npc.shop.lines) {
+        const where = `${npc.id} sells ${line.kind} ${line.id}`;
+        if (line.kind === 'item') expect(ITEMS[line.id], where).toBeDefined();
+        else {
+          expect(MATERIALS[line.id], where).toBeDefined();
+          if (line.quality) expect(MATERIALS[line.id]?.graded, `${where}: quality on an ungraded ware`).toBe(true);
+        }
+        if (line.price !== undefined) expect(line.price, `${where}: price`).toBeGreaterThan(0);
+        checkConditions(where, line.requires);
+        expect(askingPrice(line, true), `${where}: asking price under value`).toBeGreaterThan(lineValue(line));
+      }
+    }
     for (const q of Object.values(QUESTS)) {
       expect(NPCS[q.giver], `${q.id} giver`).toBeDefined();
       expect(NPCS[q.giver].quests, `${q.id} listed by its giver`).toContain(q.id);
@@ -957,9 +1053,19 @@ describe('npcs & quests', () => {
           expect(MONSTERS[o.monsterId], `${q.id} kill ${o.monsterId}`).toBeDefined();
         if (o.type === 'craft' && o.recipeId)
           expect(RECIPES[o.recipeId], `${q.id} craft ${o.recipeId}`).toBeDefined();
+        if (o.type === 'craft' && o.discipline)
+          expect(DISCIPLINES[o.discipline], `${q.id} craft discipline ${o.discipline}`).toBeDefined();
         if (o.type === 'collect')
           expect(MATERIALS[o.materialId], `${q.id} collect ${o.materialId}`).toBeDefined();
         if (o.type === 'reach') expect(SPOTS[o.spotId], `${q.id} reach ${o.spotId}`).toBeDefined();
+        if (o.type === 'talk') expect(NPCS[o.npcId], `${q.id} talk ${o.npcId}`).toBeDefined();
+        if (o.type === 'stat') {
+          expect(o.value, `${q.id} stat ${o.key}: the bar must be positive`).toBeGreaterThan(0);
+          expect(
+            statCounterValid(o.key),
+            `${q.id}: stat counter '${o.key}' is never bumped`,
+          ).toBe(true);
+        }
       }
       for (const item of q.rewards.items ?? [])
         expect(ITEMS[item], `${q.id} reward item ${item}`).toBeDefined();
@@ -1564,19 +1670,16 @@ describe('arcane lexicon', () => {
 /**
  * COMPLETABILITY (docs/COMPLETABILITY.md §6) — the vertical structure.
  *
- * Two of the rules agreed for this system cannot be written yet, and saying so
- * here is more useful than a vacuous green test:
- *
- * - **Hidden access is never on a critical path** and **every lateral edge is
- *   legal to delete** both need a defined critical path, which needs floors
- *   actually placed on the ladder. FLOORS currently holds one OFF-ladder floor
- *   (the player's hold), so both rules would pass over an empty set today and
- *   would keep passing after someone broke them. They land with the first
- *   banded floor.
- *
- * What IS checkable today is referential integrity and the band's own
- * arithmetic — which is most of what goes wrong when authoring a stack by
- * hand, and all of it fails loudly the moment an id is fat-fingered.
+ * REVISED 2026-09-06 with the first banded floors (plans/alpha-band-one.md):
+ * the ascent is SEQUENTIAL (clear every rung to pass it, `FloorDef.clear`),
+ * floors have no authored stairs (`climbTo` is the only door), and the two
+ * once-unwritable closure rules landed in their sequential form —
+ * "hidden access is never on a critical path" is now **banded floor areas are
+ * closed**: with no authored edge crossing a rung's boundary, its one door is
+ * the ladder, which is always visible and always states its terms. Lateral
+ * edges onto the ladder do not exist to delete; fixed transition spots are
+ * reserved for future hidden/special floors, which are BANDLESS and therefore
+ * off the critical path by construction.
  */
 describe('towers, bands & floors', () => {
   it('every tower opens on a real spot', () => {
@@ -1661,22 +1764,130 @@ describe('towers, bands & floors', () => {
   });
 
   /**
-   * **The band is the disjunction.** `conditionsMet` is a pure AND with no
-   * `any`, so a floor naming a discipline is only safe when a sibling in the
-   * same band names none — that turns the named gate into a shortcut for the
-   * specialist instead of a wall for John Idle. A band whose every floor wants
-   * a skill has quietly made that discipline mandatory.
+   * Under the SEQUENTIAL ascent every rung is mandatory, so the old band-level
+   * disjunction ("one sibling names no skill") tightened to the floor: a rung
+   * whose gate or clear names a skill makes that discipline mandatory for the
+   * whole game above it — a wall for John Idle, not a shortcut for the
+   * specialist. Accumulation gates (gold, kills at the floor's own dens,
+   * quest counts) and quest clears stay legal; the quests themselves answer
+   * to their own completability lints.
    */
-  it('no band is entirely gated on named disciplines', () => {
-    for (const band of Object.values(BANDS)) {
-      const floors = Object.values(FLOORS).filter((f) => f.bandId === band.id);
-      if (!floors.length) continue;
-      const open = floors.filter((f) => !(f.gate ?? []).some((c) => c.type === 'skill'));
+  it('no rung is gated or cleared on a named discipline', () => {
+    for (const floor of Object.values(FLOORS)) {
+      if (floor.bandId === undefined) continue;
+      for (const cond of [...(floor.gate ?? []), ...(floor.clear ?? [])]) {
+        expect(
+          cond.type,
+          `${floor.id}: a skill condition on a mandatory rung makes that discipline mandatory`,
+        ).not.toBe('skill');
+      }
+    }
+  });
+
+  /**
+   * A banded floor without a landing cannot be climbed to, and one without a
+   * clear can never be finished — either way everything above it is sealed
+   * for good, which is Invariant A's terminal state wearing a ladder.
+   */
+  it('every banded floor declares a landing in its own area and a non-empty clear', () => {
+    for (const floor of Object.values(FLOORS)) {
+      if (floor.bandId === undefined) continue;
+      expect(floor.landing, `${floor.id}: a rung needs a landing`).toBeTruthy();
+      const landing = SPOTS[floor.landing!];
+      expect(landing, `${floor.id}: landing '${floor.landing}' does not exist`).toBeTruthy();
       expect(
-        open.length,
-        `${band.id}: every floor names a skill, so that discipline is mandatory. ` +
-          `Give the band one floor gated on accumulation instead.`,
-      ).toBeGreaterThan(0);
+        landing?.areaId,
+        `${floor.id}: landing '${floor.landing}' is not on the floor it lands on`,
+      ).toBe(floor.areaId);
+      expect(floor.clear?.length ?? 0, `${floor.id}: a rung needs a clear`).toBeGreaterThan(0);
+    }
+  });
+
+  it('banded floor indexes are unique and contiguous within a tower', () => {
+    for (const tower of Object.values(TOWERS)) {
+      const idx = Object.values(FLOORS)
+        .filter((f) => f.towerId === tower.id && f.bandId !== undefined)
+        .map((f) => f.index)
+        .sort((a, b) => a - b);
+      if (!idx.length) continue;
+      // A gap is a rung nobody can clear, so nobody passes it: sequential
+      // ascent turns a numbering typo into a terminal state.
+      expect(idx, `${tower.id}: banded floor indexes must run 1..n with no gaps`).toEqual(
+        idx.map((_, i) => i + 1),
+      );
+    }
+  });
+
+  /**
+   * A clear is a promise about counters, so the counters must be real: a
+   * `slain:` clear needs that spot to hold that monster as a `once` spawn (or
+   * the counter never latches), and a `fights:` clear needs the spot's
+   * fightLimit to reach the number it asks for (or the budget runs out below
+   * the bar and the floor is unfinishable — terminal again).
+   */
+  it('clear counters point at spawns that can actually pay them', () => {
+    for (const floor of Object.values(FLOORS)) {
+      for (const cond of floor.clear ?? []) {
+        if (cond.type !== 'stat') continue;
+        const slain = cond.key.match(/^slain:([^:]+):(.+)$/);
+        if (slain) {
+          const spot = SPOTS[slain[1]];
+          expect(spot, `${floor.id}: clear names unknown spot '${slain[1]}'`).toBeTruthy();
+          expect(
+            spot?.encounters?.some((e) => e.monsterId === slain[2] && e.once),
+            `${floor.id}: clear wants slain:${slain[1]}:${slain[2]} but that spot has no such 'once' spawn`,
+          ).toBe(true);
+        }
+        const fights = cond.key.match(/^fights:(.+)$/);
+        if (fights) {
+          const spot = SPOTS[fights[1]];
+          expect(spot, `${floor.id}: clear names unknown spot '${fights[1]}'`).toBeTruthy();
+          expect(
+            spot?.fightLimit ?? 0,
+            `${floor.id}: clear wants ${cond.value} fights at ${fights[1]} but its fightLimit stops short`,
+          ).toBeGreaterThanOrEqual(cond.value);
+        }
+        const boss = cond.key.match(/^boss:(.+)$/);
+        if (boss) {
+          const spot = SPOTS[boss[1]];
+          expect(spot, `${floor.id}: clear names unknown spot '${boss[1]}'`).toBeTruthy();
+          expect(
+            spot?.encounters?.some((e) => e.boss),
+            `${floor.id}: clear wants boss:${boss[1]} but no encounter there is boss-flagged`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  /**
+   * **Banded floor areas are closed.** The ladder is the only door on or off
+   * a rung, so every gate is read at one visible place and no authored road
+   * can smuggle a player past a seal (the registry MIRRORS edges — a single
+   * floor→city edge would open city→floor for free). This is the sequential
+   * form of "hidden access is never on a critical path". Future hidden/
+   * special floors hang off fixed transition spots instead, and those floors
+   * are BANDLESS — revisit this lint's exemption then, not before.
+   */
+  it('no authored edge crosses a banded floor boundary', () => {
+    const bandedAreas = new Set(
+      Object.values(FLOORS)
+        .filter((f) => f.bandId !== undefined)
+        .map((f) => f.areaId),
+    );
+    for (const spot of Object.values(SPOTS)) {
+      for (const c of spot.connections) {
+        const toArea = SPOTS[c.to]?.areaId;
+        if (!toArea) continue; // unknown targets fail the referential lint instead
+        const fromBanded = bandedAreas.has(spot.areaId);
+        const toBanded = bandedAreas.has(toArea);
+        if (fromBanded || toBanded) {
+          expect(
+            spot.areaId,
+            `${spot.id} -> ${c.to} crosses a banded floor boundary — the ladder is the only door`,
+          ).toBe(toArea);
+        }
+      }
     }
   });
 });

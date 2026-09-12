@@ -32,6 +32,24 @@
   import { POSITIONS } from '../../core/registry';
   import { TRIGGER_EVENTS } from '../../core/systems/triggers';
   import { describeMod, condText, modCondition, techniqueMoveText, ticksToTime, sumMods } from '../lib/format';
+  import { endowmentBonus, talentBonus } from '../../core/systems/legacy';
+
+  /**
+   * Talent's bar under the XP bar (PRESTIGE.md §4). One lap of the bar is
+   * 100% of bonus; each lap wears the next colour, starting yellow, so the
+   * fill reads as "how far into this hundred" and the colour as "which
+   * hundred". Wraps around the palette past the last colour.
+   */
+  const TALENT_LAP_COLORS = ['#e6c84a', '#f0883e', '#e5534b', '#d65db1', '#9b6ef3', '#4c8ff0', '#3fc9d6', '#57c46b', '#f2f2f2'];
+  function talentBar(bonus: number): { width: number; color: string } {
+    const pct = bonus * 100;
+    const lap = Math.max(0, Math.ceil(pct / 100) - 1);
+    return { width: pct - lap * 100, color: TALENT_LAP_COLORS[lap % TALENT_LAP_COLORS.length] };
+  }
+  function talentPct(bonus: number): string {
+    const pct = bonus * 100;
+    return pct < 1 ? pct.toFixed(2) : pct < 100 ? pct.toFixed(1) : pct.toFixed(0);
+  }
 
   const sections = $derived(skillTreeByCategory(gs));
   const eff = $derived(effectiveAttrs(gs));
@@ -241,6 +259,8 @@
       {@const tier = skillTierName(def.id, s.level)}
       {@const nodeOpen = isOpen(def.id)}
       {@const folded = foldedSummary(node)}
+      {@const talent = talentBonus(gs, def.id)}
+      {@const tbar = talentBar(talent)}
       <div class="skill-block">
         <!-- The glow clears itself when it finishes rather than on a timer, so
              a steady trickle of XP is a slow repeating pulse and a quiet skill
@@ -268,6 +288,11 @@
             <span class="lvl">Lv {s.level}</span>
             <span class="xp maxed" title="At its ceiling — further experience is lost. Some rewards raise it.">
               MAX
+              {#if talent > 0}
+                <span class="bar talent" style="height: 3px" title="Talent: +{talentPct(talent)}% gain">
+                  <span class="fill" style="width: {tbar.width}%; background: {tbar.color}"></span>
+                </span>
+              {/if}
             </span>
           {:else}
             <span class="lvl">Lv {s.level}</span>
@@ -278,6 +303,14 @@
                   style="width: {(s.xp / skillXpNeeded(def.id, s.level)) * 100}%; background: #b58fe0"
                 ></span>
               </span>
+              <!-- Talent under XP: one lap per 100% of bonus, a new colour
+                   each lap (yellow first). Absent until a past run carried
+                   the skill through a prestige. -->
+              {#if talent > 0}
+                <span class="bar talent" style="height: 3px" title="Talent: +{talentPct(talent)}% gain">
+                  <span class="fill" style="width: {tbar.width}%; background: {tbar.color}"></span>
+                </span>
+              {/if}
             </span>
           {/if}
         </button>
@@ -286,7 +319,14 @@
              one you are not currently thinking about. -->
         {#if nodeOpen}
           <div class="detail small">
-            <div class="dim">{def.desc}</div>
+            <div class="byline">
+              <span class="dim">{def.desc}</span>
+              {#if gs.prestige.count > 0}
+                <span class="talent-line" style="color: {talentBar(talentBonus(gs, def.id)).color}">
+                  Talent: +{talentPct(talentBonus(gs, def.id))}% gain
+                </span>
+              {/if}
+            </div>
             {#if def.effects?.length}
               <div class="effects">
                 {#each def.effects as mod}
@@ -448,6 +488,8 @@
       {@const tier = trainingTier(attr.id, a.level)}
       {@const attrOpen = isOpen(`attr_${attr.id}`)}
       {@const effVal = Math.round(eff[attr.id])}
+      {@const endowment = endowmentBonus(gs, attr.id)}
+      {@const ebar = talentBar(endowment)}
       <div class="skill-block">
         <button class="row" onclick={() => toggle(`attr_${attr.id}`)}>
           <span class="chev dim">{attrOpen ? '▾' : '▸'}</span>
@@ -463,11 +505,24 @@
                 style="width: {(a.xp / attrXpNeeded(a.level)) * 100}%; background: var(--xp)"
               ></span>
             </span>
+            <!-- Endowment under XP, talent's twin: same laps, same colours. -->
+            {#if endowment > 0}
+              <span class="bar talent" style="height: 3px" title="Endowment: +{talentPct(endowment)}% gain">
+                <span class="fill" style="width: {ebar.width}%; background: {ebar.color}"></span>
+              </span>
+            {/if}
           </span>
         </button>
         {#if attrOpen}
           <div class="detail small">
-            <div class="dim">{training.desc}</div>
+            <div class="byline">
+              <span class="dim">{training.desc}</span>
+              {#if gs.prestige.count > 0}
+                <span class="talent-line" style="color: {ebar.color}">
+                  Endowment: +{talentPct(endowment)}% gain
+                </span>
+              {/if}
+            </div>
             <div class="effects">
               <span>
                 Effective {attr.name}: {effVal}{effVal !== a.level ? ` (trained ${a.level})` : ''}
@@ -682,6 +737,22 @@
     display: block;
     height: 100%;
     border-radius: 3px;
+  }
+
+  .xp .bar.talent {
+    margin-top: 2px;
+  }
+
+  .byline {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+  }
+
+  .talent-line {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .xp.maxed {

@@ -63,6 +63,15 @@ export function maxRuneSlots(def: ItemDef): number {
   return 0;
 }
 
+/**
+ * The slots a fresh item CAN roll, lowest to highest — what a counter can
+ * honestly promise before the roll happens.
+ */
+export function runeSlotRange(def: ItemDef): [number, number] {
+  const weights = SLOT_WEIGHTS[runeClassOf(def)];
+  const min = weights.findIndex((w) => w > 0);
+  return [Math.max(0, min), maxRuneSlots(def)];
+}
 /** Roll how many rune slots a freshly generated item gets (0–4). */
 export function rollRuneSlots(state: GameState, def: ItemDef): number {
   const weights = SLOT_WEIGHTS[runeClassOf(def)];

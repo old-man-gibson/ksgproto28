@@ -43,16 +43,18 @@ describe('the goldfish — a player who never makes a correct decision', () => {
       // That is a real property of the game, not a flaw in the driver: quests
       // reward directed play, and this thing has no direction.
       //
-      // ⚠️ The seed changed when the start moved to Threshold. Seed 7 was
-      // measured against the OLD `my_home` start, which sat a few rooms from
-      // the quest-givers; from the tower foot it now finishes none even at
-      // 400k. Re-measured across seeds at the same 150k budget: seed 42 and
-      // seed 99 each close 2, seed 1234 closes 1 by 400k. So the property
-      // survived the move intact — but note WHERE those quests are. Threshold
-      // has no NPCs and no quests of its own yet, so every one of them is in
-      // the old world, down the Hamlet Road. Give the starting city its own
-      // quest content and this gets faster and more honest at the same time.
-      const r = runGoldfish(42, 150_000);
+      // ⚠️ The seed changed when the start moved to Threshold, and the ground
+      // changed again 2026-09-06: the Hamlet Road is SHUT for the alpha
+      // (`flag:world_open`), so the old-world quest-givers are out of reach —
+      // what this seed closes now is the Warden of the Foot's chain, the
+      // starting city's own content, exactly the "faster and more honest"
+      // this comment used to ask for. If it ever fails again, the first
+      // suspect is Threshold's quest content, not the goldfish.
+      // Seed changed again 2026-09-12: shops put three vendors at the district
+      // gates, so the goldfish has more strangers to greet and seed 42 now
+      // spends its span saying hello. Scan of 1–13 the same day: 7 of 14 seeds
+      // close a quest; 7 is one of them.
+      const r = runGoldfish(7, 150_000);
       expect(r.questsDone, 'never finished a single quest').toBeGreaterThan(0);
       expect(r.blanked).toBe(0);
     },

@@ -1,6 +1,6 @@
 import type { ActivityDef, GameState, SpotDef } from '../types';
 import type { EventBus } from '../engine/events';
-import { getSpot, SPOTS } from '../registry';
+import { getSpot, SPOTS, STARTING_SPOT } from '../registry';
 import { conditionsMet } from './conditions';
 
 /**
@@ -56,9 +56,13 @@ export function retreatSpot(state: GameState): string {
   const fallback = state.safeSpots.unconditional;
   if (fallback && SPOTS[fallback]) return fallback;
 
-  // Never nowhere: the first unconditional haven in the world, else the start.
+  // Never nowhere: the start if it is a haven (the Foot is), else the first
+  // unconditional haven in the world, else the start regardless. Data order
+  // must not decide this — before the start was checked first, a fresh save
+  // knocked out on its first hunt woke in the hold's bedroom.
+  if (isUnconditionalHaven(getSpot(STARTING_SPOT))) return STARTING_SPOT;
   const anyHaven = Object.values(SPOTS).find((s) => isUnconditionalHaven(s));
-  return anyHaven?.id ?? Object.keys(SPOTS)[0];
+  return anyHaven?.id ?? STARTING_SPOT;
 }
 
 /**

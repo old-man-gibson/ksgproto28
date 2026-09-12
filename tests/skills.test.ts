@@ -1,3 +1,5 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import type { ProgressionBand } from '../src/core/types';
 import { settleLevels } from '../src/core/systems/progression';

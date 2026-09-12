@@ -13,6 +13,7 @@ import { ARCANE_WORDS, maxSentenceWords } from '../data/spellcraft.data';
 import { STATUSES } from '../data/statuses.data';
 import { WORD_POWER_PER_LEVEL, wordSkillId, wordTag } from '../data/wordskills.data';
 import { checkDiscovery, grantSkillXpDirect } from './skills';
+import { wordUnlocked } from './unlocks';
 
 /**
  * The conditions a noun's signature affliction can be RECOGNISED as: the
@@ -789,6 +790,13 @@ export function checkSentence(state: GameState, wordIds: string[]): SentenceChec
     const { id, tier } = splitWordId(raw);
     const w = ARCANE_WORDS[id];
     if (!w) return { ok: false, reason: `No such word: ${raw}` };
+    // The starter-lexicon shutter (systems/unlocks.ts): a locked word is not
+    // merely too advanced, it is not yours at all — and the refusal says so
+    // without naming what would unlock it. LEGALITY only: composeArcane never
+    // hears about it, so monsters and the bench's pure reading are untouched.
+    if (!wordUnlocked(state, id)) {
+      return { ok: false, reason: `You do not know the word "${w.word}"` };
+    }
     if ((w.minLevel ?? 0) > level) {
       return { ok: false, reason: `"${w.word}" needs Arcana ${w.minLevel}` };
     }

@@ -427,6 +427,69 @@ export const MONSTERS: Record<string, MonsterDef> = {
       ],
     },
   },
+  // The toll level's daylight keeper (quest 3). Names/levels are first
+  // guesses for review, like everything else on band 1.
+  hobgoblin: {
+    id: 'hobgoblin',
+    name: 'Hobgoblin',
+    icon: '👺',
+    tags: ['living', 'goblin', 'humanoid'],
+    desc: 'A goblin that ate its way up the pecking order and kept the appetite. It collects tolls nobody levies.',
+    tier: 'veteran',
+    damageType: 'slashing',
+    inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.2 }],
+    resistances: { poison: 0.15 },
+    attrs: { str: 10, dex: 8, con: 9, int: 4, wis: 4, cha: 4 },
+    growth: { str: 1.1, dex: 1.0, con: 1.0, int: 0.5, wis: 0.5, cha: 0.5 },
+    xp: 24,
+    gold: [6, 14],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'torn_fur', weight: 25 },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [1, 2] },
+        { kind: 'material', id: 'pristine_fur', weight: 6 },
+        { kind: 'rune', id: 'minor_rune_might', weight: 3 },
+        { kind: 'nothing', weight: 46 },
+      ],
+    },
+  },
+  /**
+   * The ambush (quest 3): spawns only inside the power window (see
+   * SpotEncounter.window), so meeting one is something a player PLANNED. The
+   * loot answers the planning — this table is deliberately rich for its
+   * floor, because the window cannot be farmed from above.
+   */
+  hobgoblin_champion: {
+    id: 'hobgoblin_champion',
+    name: 'Hobgoblin Champion',
+    icon: '👹',
+    tags: ['living', 'goblin', 'humanoid', 'large'],
+    desc: 'It fights the way tolls are collected: everything owed, in full, up front. The scars say everyone before you paid.',
+    tier: 'legendary',
+    damageType: 'slashing',
+    group: { min: 3, max: 3 },
+    escorts: ['hobgoblin'],
+    inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.25 }],
+    resistances: { poison: 0.3, slashing: 0.2 },
+    attrs: { str: 16, dex: 11, con: 15, int: 6, wis: 6, cha: 7 },
+    growth: { str: 1.5, dex: 1.1, con: 1.5, int: 0.6, wis: 1.6, cha: 1.6 },
+    xp: 120,
+    gold: [35, 80],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 15 },
+        { kind: 'material', id: 'pristine_fur', weight: 15, qty: [1, 2] },
+        { kind: 'material', id: 'iron_scrap', weight: 15, qty: [2, 4] },
+        { kind: 'item', id: 'iron_gauntlets', weight: 8 },
+        { kind: 'item', id: 'moonlit_katana', weight: 4 },
+        { kind: 'gold', weight: 18, qty: [40, 90] },
+        { kind: 'rune', id: 'greater_rune_might', weight: 6 },
+        { kind: 'nothing', weight: 19 },
+      ],
+    },
+  },
   slime_golem: {
     id: 'slime_golem',
     name: 'Slime Golem',
@@ -1367,7 +1430,7 @@ export const MONSTERS: Record<string, MonsterDef> = {
     tier: 'legendary',
     tags: ['living', 'vermin', 'toxic', 'huge'],
     damageType: 'poison',
-    attrs: { str: 56, dex: 64, con: 15700, int: 3, wis: 4, cha: 3 },
+    attrs: { str: 16, dex: 18, con: 15, int: 3, wis: 4, cha: 3 },
     growth: { str: 1.3, dex: 1.5, con: 1.1, int: 0.3, wis: 0.4, cha: 0.25 },
     resistances: { poison: 0.5, earth: 0.35, heat: -0.4, cold: -0.2, slashing: 0.67, bludgeoning: 0.35, piercing: -0.67 },
     xp: 200,

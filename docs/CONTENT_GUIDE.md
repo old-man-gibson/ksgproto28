@@ -533,7 +533,9 @@ guardian_hollow: {
 
 Winning frees you where you stand. Losing is a knockout that throws you to a
 haven — the `safeSpots` machinery above, which is much of the reason it
-exists. The player is warned at the door: the world map draws the road red
+exists. Since 2026-09-12 EVERY knockout retreats, forced fight or not: you
+come round at the last camp you stood in (each tower landing is one), never
+where you fell. The player is warned at the door: the world map draws the road red
 with a ⚔️ badge, and the travel button says *no retreat* (even toward an
 undiscovered `❓` destination — the danger is knowable before the first step,
 which is the point). The auto-router never paths THROUGH a forced spot,
@@ -671,6 +673,46 @@ the_source_of_winter: {
 ```
 Progress tracks automatically via events. Turn-in requires standing at the
 giver's spot. Completing bumps the `quests:completed` counter.
+
+### Shop (a `shop` on an `NpcDef`)
+
+A vendor is an NPC with wares. Nothing about a shop is saved: stock is
+data, prices are derived, the discount is a counter that already exists.
+
+```ts
+master_smith: {
+  ..., quests: [],
+  shop: {
+    name: 'The Scrap Bin',                       // the counter's heading in the panel
+    lines: [
+      { kind: 'material', id: 'iron_scrap' },    // price = value × BUY_MARKUP (2)
+      { kind: 'material', id: 'healing_salve', quality: 'b' },  // graded wares sell at ONE grade (default 'c')
+      { kind: 'item', id: 'iron_sword' },        // minted through createItem — rune slots roll on purchase
+      { kind: 'item', id: 'rapier', price: 300 }, // flat asking price (still floored — see below)
+      { kind: 'item', id: 'iron_breastplate',    // off the shelf until the counter is stamped
+        requires: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }] },
+    ],
+  },
+},
+```
+
+Rules the engine holds (`systems/shops.ts`, locked by `tests/shops.test.ts`):
+
+- **No arbitrage.** The price paid is `max(asking, best possible resale + 1)`,
+  at any charisma. `goldGain` raises what selling pays and never lowers what
+  buying costs; an item is floored at its best rune-slot roll. A `price`
+  override is floored the same way — a bargain is never a mint.
+- **The hello is the discount.** A stranger pays `STRANGER_MARKUP` (×1.5) on
+  top; `talkTo` stamps `met:<npcId>` and the markup drops. No other state.
+- **Bench NPCs sell INPUTS, gate NPCs sell PRODUCTS.** The smith stocks
+  scrap, never blades; the outfitter at the district gate stocks the blades.
+  Keeps the bench worth using — see "home refines, the world supplies".
+- Unlimited stock, no restock timer, by design. Gate scarcity with
+  `requires`, not counts.
+- Buying bumps `gold:spent`, `shop:buys` and `shop:buys:<npcId>` — all
+  targetable by `stat` conditions and quest objectives.
+- Both linters check every line: the id resolves, `quality` only on a
+  graded ware, `price` positive, asking price above the ware's `value`.
 
 ### Skill (`skills.data.ts`)
 

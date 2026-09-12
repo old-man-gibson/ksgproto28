@@ -13,6 +13,7 @@ import { DEFAULT_PROGRESSION } from '../data/progression.data';
 import { bandedXpNeeded, settleLevels } from './progression';
 import { getDerivedStats } from './derived';
 import { conditionsMet } from './conditions';
+import { legacyCapRaise } from './legacy';
 
 /** The curve a skill levels on — its own bands, or the default shape. */
 export function skillProgression(skillId: string): ProgressionBand[] {
@@ -96,7 +97,9 @@ export function checkDiscovery(state: GameState, bus: EventBus, tags: string[]):
 export function skillCap(state: GameState, id: string): number {
   const def = SKILLS[id];
   if (!def?.maxLevel) return Infinity;
-  return def.maxLevel + (state.skills[id]?.capRaised ?? 0);
+  // Two lanes: raises this run earned (`capRaised`, quests/events) and
+  // raises the legacy bought (prestige boons), which hold across runs.
+  return def.maxLevel + (state.skills[id]?.capRaised ?? 0) + legacyCapRaise(state, id);
 }
 
 /**

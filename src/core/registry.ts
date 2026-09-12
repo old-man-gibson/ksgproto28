@@ -15,7 +15,7 @@ import { MATERIALS } from './data/materials.data';
 import { RECIPES } from './data/recipes.data';
 import { NPCS } from './data/npcs.data';
 import { QUESTS } from './data/quests.data';
-import { DEBUG_STARTING_SPOT, REGIONS, AREAS, SPOTS, STARTING_SPOT } from './data/locations.data';
+import { REGIONS, AREAS, SPOTS, STARTING_SPOT } from './data/locations.data';
 import { ACHIEVEMENTS } from './data/achievements.data';
 import { SUPERATTRS } from './data/superattrs.data';
 import { TITLES } from './data/titles.data';
@@ -31,6 +31,7 @@ import { DEITIES } from './data/deities.data';
 import { MIRACLES } from './data/spellcraft.data';
 import { MUSIC_ARCHETYPES, MUSIC_METERS, MUSIC_SCALES } from './data/music.data';
 import { BANDS, FLOORS, TOWERS } from './data/towers.data';
+import { PRESTIGE_BOONS, PRESTIGE_SOURCES, PRESTIGE_UNLOCK } from './data/prestige.data';
 
 export {
   SKILLS,
@@ -54,7 +55,6 @@ export {
   AREAS,
   SPOTS,
   STARTING_SPOT,
-  DEBUG_STARTING_SPOT,
   ACHIEVEMENTS,
   SUPERATTRS,
   TITLES,
@@ -87,6 +87,9 @@ export {
   TOWERS,
   BANDS,
   FLOORS,
+  PRESTIGE_UNLOCK,
+  PRESTIGE_SOURCES,
+  PRESTIGE_BOONS,
 };
 
 export interface Edge extends Connection {
@@ -96,27 +99,44 @@ export interface Edge extends Connection {
 /**
  * Directed adjacency built from spot connection declarations.
  * Bidirectional edges are declared once and mirrored here; oneWay edges are not.
+ *
+ * `into` lets a caller extend an existing map — the test fixture that mounts
+ * the shelved countryside (tests/fixtures/shelved-world.ts) is the one user.
  */
-export const ADJACENCY: Map<string, Edge[]> = (() => {
-  const adj = new Map<string, Edge[]>();
+export function buildAdjacency(
+  connections: Iterable<{ from: string; connection: Connection }>,
+  into: Map<string, Edge[]> = new Map(),
+): Map<string, Edge[]> {
+  const adj = into;
   const add = (from: string, c: Connection) => {
     const list = adj.get(from) ?? [];
     // Don't duplicate if the reverse direction was also declared explicitly.
     if (!list.some((e) => e.to === c.to)) list.push({ ...c, from });
     adj.set(from, list);
   };
-  for (const spot of Object.values(SPOTS)) {
-    for (const c of spot.connections) {
-      add(spot.id, c);
-      // The mirror wears `returnLabel` when the way back is its own act, and
-      // falls back to `label` for a road that reads the same both ways. It
-      // never carries `forced` — that flag means "arriving at THIS edge's far
-      // end starts an unfleeable fight", and the mirror's far end is home.
-      if (!c.oneWay) add(c.to, { to: spot.id, ticks: c.ticks, label: c.returnLabel ?? c.label });
-    }
+  for (const { from, connection: c } of connections) {
+    add(from, c);
+    // The mirror wears `returnLabel` when the way back is its own act, and
+    // falls back to `label` for a road that reads the same both ways. It
+    // never carries `forced` — that flag means "arriving at THIS edge's far
+    // end starts an unfleeable fight", and the mirror's far end is home.
+    // `requires` stays off it for the same reason: a lock on the way out
+    // must never bar the way back in.
+    if (!c.oneWay) add(c.to, { to: from, ticks: c.ticks, label: c.returnLabel ?? c.label });
   }
   return adj;
-})();
+}
+
+/** Every declared connection of a spot table, tagged with its source spot. */
+export function declaredConnections(
+  spots: Record<string, SpotDef>,
+): { from: string; connection: Connection }[] {
+  return Object.values(spots).flatMap((spot) =>
+    spot.connections.map((connection) => ({ from: spot.id, connection })),
+  );
+}
+
+export const ADJACENCY: Map<string, Edge[]> = buildAdjacency(declaredConnections(SPOTS));
 
 export function getSpot(id: string): SpotDef {
   const spot = SPOTS[id];

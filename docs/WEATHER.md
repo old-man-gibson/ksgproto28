@@ -140,10 +140,9 @@ capped 50). Night fighting carries real penalties — a flat miss chance and a
 dodge tax (`DARK_MISS_CHANCE`, `DARK_DODGE_PENALTY`), scaled by
 `darknessFactor(state)` and eroded linearly to ZERO at Darkvision 50.
 Monsters are of the dark and pay nothing. Because night is a mechanic, a new
-save now opens at **09:00, at home** (`STARTING_SPOT = 'my_home'`), not tick
-zero's midnight square. The old square start survives as the DebugPanel's
-"classic dev start" toggle (`DEBUG_STARTING_SPOT`), applied on the next hard
-reset.
+save opens at **09:00** (at the Foot of the Ascent, `STARTING_SPOT`), not tick
+zero's midnight. (The old "classic dev start" toggle went with the village it
+started in when the countryside was shelved, 2026-09-12.)
 
 - **Weathersense** (`systems/weathersense.ts`, skill `weathersense`,
   environmental, capped 30, very slow `esoteric` curve) reads the sky

@@ -155,8 +155,12 @@ hand-written ones:
   skill automatically** — never hand-write one.
 
 **Earning it.** `grantWordXp` pays every *distinct* word a sentence spoke,
-once each, on inscription (`INSCRIBE_WORD_XP` weight) and on every cast. The
-payout scales with what the working **cost**:
+once each, on every **cast** — and only a cast. Inscribing pays Arcana (the
+grammar) and counts toward mastery; it does not practise the words, because
+nothing was said. (Until 2026-09-12 inscription paid three casts' worth of
+practice, which trained a vocabulary at the bench without a single spell
+going off — the user called it cheese, and it was.) The payout scales with
+what the working **cost**:
 
 ```
 xp = WORD_XP_BASE(2) × weight × (1 + log2(1 + manaCost))

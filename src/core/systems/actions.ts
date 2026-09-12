@@ -509,7 +509,11 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       state.resources.hp = 1;
       state.recovering = true;
       // Going down DURING a forced fight is losing it, whatever did the deed.
-      if (wasForced) retreatToSafety(state, bus, 'There was no fleeing that fight, and it finished you.');
+      retreatToSafety(
+      state,
+      bus,
+      wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
+    );
       return true;
     }
   }
@@ -545,7 +549,11 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
     state.resources.hp = 1;
     state.recovering = true;
     // Going down DURING a forced fight is losing it, whatever did the deed.
-    if (wasForced) retreatToSafety(state, bus, 'There was no fleeing that fight, and it finished you.');
+    retreatToSafety(
+      state,
+      bus,
+      wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
+    );
     return true;
   }
 
@@ -582,7 +590,11 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       state.resources.hp = 1;
       state.recovering = true;
       // Going down DURING a forced fight is losing it, whatever did the deed.
-      if (wasForced) retreatToSafety(state, bus, 'There was no fleeing that fight, and it finished you.');
+      retreatToSafety(
+      state,
+      bus,
+      wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
+    );
       return true;
     }
   }

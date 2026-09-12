@@ -6,6 +6,7 @@ import { checkDiscovery, grantDiscoveryXp, grantSkillXp, grantSkillXpDirect } fr
 import { createItem } from './runes';
 import { bumpStat } from './achievements';
 import { grantFavorAll } from './divine';
+import { grantMaterial } from './disciplines';
 
 /** Tags an exchange with an NPC trains (see the `speechcraft` skill). */
 const SOCIAL_TAGS = ['social'];
@@ -21,6 +22,35 @@ const QUEST_COMPLETE_WEIGHT = 4;
 
 export function npcsAt(spotId: string): NpcDef[] {
   return Object.values(NPCS).filter((n) => n.spotId === spotId);
+}
+
+// ---------- Meeting people ----------
+
+/** Where the game remembers a first greeting. Engine-written, like `slain:*`. */
+export const metKey = (npcId: string): string => `met:${npcId}`;
+
+export function hasMet(state: GameState, npcId: string): boolean {
+  return (state.stats[metKey(npcId)] ?? 0) >= 1;
+}
+
+/**
+ * A first greeting: stamps `met:<npcId>` for talk objectives (and anything
+ * else that ever wants "have you met X" — the deities-must-be-met design is
+ * waiting on exactly this shape). Idempotent; a person already met returns
+ * false and costs nothing. Pays the same social lesson taking work does,
+ * against the same per-person novelty — a stranger teaches, a fifth hello
+ * does not.
+ */
+export function talkTo(state: GameState, bus: EventBus, npcId: string): boolean {
+  const npc = NPCS[npcId];
+  if (!npc || state.spot !== npc.spotId) return false;
+  if (hasMet(state, npcId)) return false;
+  bumpStat(state, bus, metKey(npcId));
+  checkDiscovery(state, bus, SOCIAL_TAGS);
+  grantSkillXp(state, bus, SOCIAL_TAGS, QUEST_ACCEPT_XP, npcId);
+  bus.emit({ type: 'talk', npcId });
+  bus.emit({ type: 'log', msg: `🤝 You make the acquaintance of ${npc.name}.`, kind: 'quest' });
+  return true;
 }
 
 /** Quests this NPC can offer right now: never accepted + requirements met. */
@@ -77,6 +107,15 @@ export function objectiveProgress(
         current: Math.min(state.materials[objective.materialId] ?? 0, objective.qty),
         target: objective.qty,
       };
+    // Live like collect: greetings and counters are facts about the save, so
+    // one made before the quest was accepted still counts.
+    case 'talk':
+      return { current: hasMet(state, objective.npcId) ? 1 : 0, target: 1 };
+    case 'stat':
+      return {
+        current: Math.min(state.stats[objective.key] ?? 0, objective.value),
+        target: objective.value,
+      };
   }
 }
 
@@ -113,7 +152,10 @@ export function turnInQuest(state: GameState, bus: EventBus, questId: string): b
     parts.push(`${r.gold} gold`);
   }
   for (const m of r.materials ?? []) {
-    state.materials[m.id] = (state.materials[m.id] ?? 0) + m.qty;
+    // Through grantMaterial like every other source, so a GRADED reward lands
+    // in stock where the benches read it (paying `state.materials` directly
+    // put herbs where no alembic could find them).
+    grantMaterial(state, m.id, m.qty);
     parts.push(`${MATERIALS[m.id]?.name ?? m.id} ×${m.qty}`);
   }
   for (const itemId of r.items ?? []) {
@@ -132,8 +174,9 @@ export function turnInQuest(state: GameState, bus: EventBus, questId: string): b
   grantDiscoveryXp(state, bus, 'dialogue', QUEST_COMPLETE_WEIGHT);
   // A deed done for somebody is a deed done, as far as the pantheon is
   // concerned. Today this is favor's only source; deity-aligned deeds and
-  // altars will join it.
-  grantFavorAll(state, bus, 1);
+  // altars will join it. A quest may pay extra favor on top (r.favor) — the
+  // introduction lever that makes a first miracle reachable.
+  grantFavorAll(state, bus, 1 + (r.favor ?? 0));
   bus.emit({ type: 'quest:complete', id: questId });
   bus.emit({
     type: 'log',
@@ -153,9 +196,11 @@ function advanceObjectives(
     let changed = false;
     quest.objectives.forEach((o, i) => {
       if (!matches(o)) return;
+      // Live objectives store nothing (collect reads materials, talk reads
+      // met:*, stat reads its counter) — no listener ever matches them.
+      if (o.type === 'collect' || o.type === 'talk' || o.type === 'stat') return;
       const qs = state.quests[quest.id];
-      const target = o.type === 'reach' ? 1 : o.type === 'collect' ? 0 : o.count;
-      if (o.type === 'collect') return; // live from materials
+      const target = o.type === 'reach' ? 1 : o.count;
       const next = set !== undefined ? set : qs.progress[i] + 1;
       if (qs.progress[i] < target && next !== qs.progress[i]) {
         qs.progress[i] = Math.min(target, next);
@@ -179,7 +224,14 @@ export function registerQuestListeners(state: GameState, bus: EventBus): void {
     advanceObjectives(state, bus, (o) => o.type === 'kill' && (!o.monsterId || o.monsterId === ev.monster.defId)),
   );
   bus.on('craft', (ev) =>
-    advanceObjectives(state, bus, (o) => o.type === 'craft' && (!o.recipeId || o.recipeId === ev.recipe)),
+    advanceObjectives(
+      state,
+      bus,
+      (o) =>
+        o.type === 'craft' &&
+        (!o.recipeId || o.recipeId === ev.recipe) &&
+        (!o.discipline || o.discipline === ev.discipline),
+    ),
   );
   bus.on('arrive', (ev) =>
     advanceObjectives(state, bus, (o) => o.type === 'reach' && o.spotId === ev.spot, 1),

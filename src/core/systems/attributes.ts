@@ -25,6 +25,7 @@ import { ATTRIBUTE_PROGRESSION } from '../data/progression.data';
 import { bandedXpNeeded, settleLevels } from './progression';
 import type { EventBus } from '../engine/events';
 import { ACHIEVEMENTS, ITEMS, SKILLS, SUPERATTRS, TITLES } from '../registry';
+import { endowmentBonus, talentBonus } from './legacy';
 
 // ---------- Training (the skill-like base layer) ----------
 
@@ -234,7 +235,12 @@ export function collectBaseMods(
   for (const [id, s] of Object.entries(state.skills)) {
     const def = SKILLS[id];
     if (!def) continue;
-    for (const m of def.effects ?? []) push(m, `${def.name} Lv ${s.level}`, SKILL, s.level);
+    // Talent (prestige boon): a skill a past run carried far has its effects
+    // scaled up — the one legacy that touches the stat block, so it also
+    // sits in modFingerprint (derived.ts).
+    const talent = talentBonus(state, id);
+    const label = talent > 0 ? `${def.name} Lv ${s.level} (talent +${(talent * 100).toFixed(2)}%)` : `${def.name} Lv ${s.level}`;
+    for (const m of def.effects ?? []) push(m, label, SKILL, s.level, 1 + talent);
     // Milestones are unscaled and cumulative, exactly like the training ones
     // below; the list is sorted, so the first unreached level ends the run.
     for (const milestone of def.milestones ?? []) {
@@ -319,6 +325,10 @@ export function effectiveAttrsFrom(
   for (const m of mods) {
     if (m.op === 'mult' && isAttrTarget(m.stat)) eff[m.stat] *= 1 + m.value;
   }
+  // Endowment (prestige boon, talent's twin): the last pass, over everything
+  // the run has added — a legacy that scales the whole attribute, the way
+  // talent scales the whole of a skill's effects. In modFingerprint too.
+  for (const a of ATTRIBUTE_LIST) eff[a.id] *= 1 + endowmentBonus(state, a.id);
   for (const a of ATTRIBUTE_LIST) eff[a.id] = Math.max(1, eff[a.id]);
   return eff;
 }
@@ -393,6 +403,8 @@ export interface AttrBreakdown {
   trained: number;
   lines: BreakdownLine[];
   effective: number;
+  /** Endowment's multiplier as a fraction (0.05 = ×1.05), when any applies. */
+  endowment?: number;
   /** Present when this attribute is a fused super-attribute component. */
   fusion?: { name: string; partner: AttributeId; partnerValue: number; total: number };
 }
@@ -407,6 +419,8 @@ export function attrBreakdown(state: GameState, attr: AttributeId): AttrBreakdow
     lines,
     effective: eff[attr],
   };
+  const endowment = endowmentBonus(state, attr);
+  if (endowment > 0) result.endowment = endowment;
   const sup = superFor(attr);
   if (sup && isFused(state, sup.id)) {
     const partner = sup.components[0] === attr ? sup.components[1] : sup.components[0];

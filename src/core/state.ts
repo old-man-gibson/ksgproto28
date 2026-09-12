@@ -1,8 +1,9 @@
 import type { AttributeId, AttrState, GameState } from './types';
 import { STARTING_SPOT } from './data/locations.data';
 import { freshMutagenState } from './data/mutagens.data';
+import { freshPrestigeState } from './data/prestige.data';
 
-export const SAVE_VERSION = 46;
+export const SAVE_VERSION = 52;
 
 
 function freshAttrs(): Record<AttributeId, AttrState> {
@@ -94,6 +95,7 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
 
     quests: {},
     achievements: {},
+    prestige: freshPrestigeState(),
     titles: [],
     title: null,
     stats: {},

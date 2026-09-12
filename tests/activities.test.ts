@@ -1,3 +1,5 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { RECIPES, SPOTS } from '../src/core/registry';
 import { canAfford, chooseRoute, consumeCost, routeYield } from '../src/core/systems/crafting';

@@ -16,10 +16,12 @@ import { checkShape, psiBiasFrom, psiTier, recogniseShape, shapeSpec } from './p
 import { DEITIES } from '../data/deities.data';
 import { TITLES } from '../data/titles.data';
 import { STATUSES } from '../registry';
+import { legacyPreparedPages } from './legacy';
 import { applyStatus } from './statuses';
 import { getDerivedStats } from './derived';
 import { heal } from './health';
 import { resourceValue, spendResource } from './resources';
+import { bumpStat } from './achievements';
 
 /**
  * The grimoire: one book, three schools.
@@ -52,7 +54,7 @@ export const PREPARED_PER_LEVELS = 20;
 export const PREPARED_SCHOOLS = ['arcana', 'psionics', 'devotion'] as const;
 
 export function preparedCap(state: GameState): number {
-  let cap = BASE_PREPARED;
+  let cap = BASE_PREPARED + legacyPreparedPages(state);
   for (const id of PREPARED_SCHOOLS) {
     cap += Math.floor((state.skills[id]?.level ?? 0) / PREPARED_PER_LEVELS);
   }
@@ -381,6 +383,9 @@ export function inscribeArcane(state: GameState, bus: EventBus, words: string[])
   const key = spellKey(source);
   const firstEver = !(state.novelty.arcana?.[key]);
   const spell = addSpell(state, source);
+  // The counter quest familiarization reads ({ type: 'stat' } objectives) —
+  // the divine twin is `miracles:learned`, bumped where miracles arrive.
+  bumpStat(state, bus, 'spells:inscribed');
 
   grantSkillXp(
     state,
@@ -394,16 +399,15 @@ export function inscribeArcane(state: GameState, bus: EventBus, words: string[])
     [key, ...[...new Set(words.map((w) => splitWordId(w).id))].map((w) => `arcane:word:${w}`)],
   );
   if (firstEver && state.skills.arcana) grantDiscoveryXp(state, bus, 'arcana');
-  // Writing a sentence out is deliberate study, so it teaches its words more
-  // than merely saying one does.
-  grantWordXp(state, bus, words, check.spec.manaCost, INSCRIBE_WORD_XP);
+  // Writing a sentence out teaches the GRAMMAR (Arcana, above) and counts
+  // toward mastery (the novelty keys). It does not practise the words: that
+  // is speaking them, and only a cast speaks (`grantCastWordXp`). Inscribing
+  // used to pay three casts' worth of practice — a bench that trained words
+  // nobody ever said (user, 2026-09-12).
 
   bus.emit({ type: 'log', msg: `${check.spec.icon} Inscribed: ${check.spec.name}`, kind: 'item' });
   return spell;
 }
-
-/** Study is worth this many castings — inscribing is the slower, surer road. */
-const INSCRIBE_WORD_XP = 3;
 
 /**
  * Pay the vocabulary for a casting.

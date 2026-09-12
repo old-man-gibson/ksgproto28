@@ -511,6 +511,8 @@ export function brew(
   // run that made one formula and one ordinary flask must not describe both as
   // known work. The 📜 rides the ENTRY instead.
   const spec = check.spec;
+  // Quest familiarization hears bench work the same way it hears recipes.
+  bus.emit({ type: 'craft', discipline: disc.id });
   logRepeat(bus, {
     group: `bench:${disc.id}`,
     prefix: '⚗️ Brewed:',

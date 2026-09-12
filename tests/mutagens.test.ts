@@ -1,3 +1,5 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import type { Chromosome, GameState, GeneInstance, QualityTier } from '../src/core/types';
 import {

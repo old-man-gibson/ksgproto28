@@ -221,7 +221,10 @@ export const STAT_NAMES: Record<StatKey, string> = {
   armor: 'Armor',
   spellPower: 'Spell Power',
   skillXp: 'Skill XP',
-  trainXp: 'Training XP',
+  // Attribute XP, not "training" XP: it multiplies what STR/DEX/CON/INT/WIS/CHA
+  // earn from training, jobs and crafting, and nothing a skill earns. The two
+  // read alike in the sidebar until the name said which pool (2026-09-12).
+  trainXp: 'Attribute XP',
   loot: 'Loot Luck',
   goldGain: 'Gold Gain',
   travelSpeed: 'Travel Speed',
@@ -3709,6 +3712,14 @@ export interface Connection {
    * is not itself an ambush.
    */
   forced?: boolean;
+  /**
+   * The road is visible but SHUT until these hold. Checked when travel is
+   * attempted and shown, locked with its terms, at the door — advertised-but-
+   * locked, the same shape as a gated floor, never a hidden wall. DIRECTIONAL
+   * like `forced`: the registry mirror never carries it, so locking the way
+   * out leaves the way back open.
+   */
+  requires?: UnlockCondition[];
   /** The opening this way in buys or costs (see ApproachSpec). Never mirrored. */
   approach?: ApproachSpec;
   /** Hidden until the source spot has been fully explored. */
@@ -3878,6 +3889,31 @@ export interface SpotEncounter {
   /** Rolled only while these hold — a boss that appears once the seal breaks. */
   requires?: UnlockCondition[];
   /**
+   * Rolled only during this half of the day, on the darkness system's own
+   * boundary (night = dusk through dawn, `naturalDarkness` ≥ 0.5). A floor
+   * whose keeper changes with the clock is authored as two entries.
+   */
+  daypart?: 'day' | 'night';
+  /**
+   * This entry is the SPOT'S BOSS: killing it bumps `boss:<spotId>` (an
+   * engine counter, `slain:*`'s sibling — announced on the first kill only).
+   * Several variant bosses share the one latch, which is how a floor clear
+   * reads "the keeper is down, whichever keeper it was" without the AND-only
+   * condition language growing an OR.
+   */
+  boss?: boolean;
+  /**
+   * The ambush window (plans/alpha-threshold-quests.md, quest 3): rolled only
+   * while the player's power sits inside [min, max] of this spawn's own —
+   * power being damage × max HP on both sides, the spawn priced at its level
+   * band's midpoint and its tier's mid roll (`encounterPowerRatio`). An
+   * overtuned foe that appears exactly when it would be tough-but-possible,
+   * and stops appearing once outgrown — unfarmable from above by
+   * construction. Both validation layers demand 0 < min < max, and that a
+   * boss-cleared spot keeps at least one windowless boss.
+   */
+  window?: { min: number; max: number };
+  /**
    * Slain once, gone: the kill is recorded under `slain:<spotId>:<monsterId>`
    * in `state.stats`, and the entry stops rolling while that counter is ≥ 1.
    * Content resurrects it by resetting the counter (see `SpotFind.stat`).
@@ -3901,6 +3937,13 @@ export interface SpotDef {
    * counter (see `SpotFind.stat`).
    */
   fightLimit?: number;
+  /**
+   * A menagerie: the fights here are staged, and so is the learning. Kills at
+   * a caged spot skip the bestiary's insight roll — every fact unlocks
+   * OUTRIGHT the moment its `minKills` is reached, so the book fills at
+   * defined rates instead of rolled ones. The fights themselves are ordinary.
+   */
+  caged?: boolean;
   /** Spawn weights for rolled modifier tiers (demiboss/boss/aberrant). */
   modifierWeights?: Partial<Record<ModifierTierId, number>>;
   /** Area group-size distribution, e.g. { 1: 20, 3: 40, 5: 40 } for a swarm zone. */
@@ -3992,7 +4035,15 @@ export interface BandDef {
   towerId: string;
   /** Position along the stack, 1-based, counting away from the hub. */
   index: number;
-  /** How many of this band's floors must be cleared before the next opens. */
+  /**
+   * How many of this band's floors must be cleared before the next opens.
+   *
+   * ⚠️ Currently UNREAD. The ascent went strictly sequential (2026-09-06,
+   * plans/alpha-band-one.md): every rung below must be cleared, so a partial
+   * band can never open the next one and this number does no work. Kept while
+   * the field's fate is decided — the disjunction it encoded now has to live
+   * in each floor's `clear` being reachable by the floor build instead.
+   */
   clearsToAdvance: number;
   desc?: string;
 }
@@ -4027,15 +4078,38 @@ export interface FloorDef {
    */
   gate?: UnlockCondition[];
   /**
+   * The spot the ladder delivers you to — the floor's own front step. Floors
+   * have no authored stairs: movement between rungs is `climbTo`
+   * (systems/towers.ts), and this is where it lands. Required on every banded
+   * floor (both validation layers enforce it); optional off the ladder, where
+   * an authored edge does the job (the hold's door).
+   */
+  landing?: string;
+  /**
+   * What FINISHES the floor, AND-ed like every other `UnlockCondition[]`.
+   * The ascent is sequential — the floor above refuses entry until every rung
+   * below is cleared — so this is the tower's whole pacing. Clearing is
+   * derived state: the conditions read counters that already persist
+   * (`slain:<spot>:<monster>` for a named `once` foe, `fights:<spot>` for a
+   * den's fightLimit, quest turn-ins for bespoke work), so it costs no save
+   * field and survives every migration by construction. A banded floor MUST
+   * declare one — a floor with no clear seals everything above it, and both
+   * validation layers reject the shape.
+   */
+  clear?: UnlockCondition[];
+  /**
    * Only the owner may enter. Flavour today, since the game is single-player,
    * but it is the field content should read rather than hardcoding the base's
    * id in half a dozen places.
    */
   personal?: boolean;
   /**
-   * Survives prestige/transcendence — the one part of the tower a reset does
-   * not take. Kept separate from `personal` on purpose: they coincide on the
-   * player's base and needn't anywhere else.
+   * Survives prestige/transcendence — a part of the tower a reset does not
+   * take. Kept separate from `personal` on purpose: they coincide on a
+   * player-owned floor and needn't anywhere else. (The hold was the first
+   * such floor; since 2026-09-12 it is a region of its own behind the door
+   * at the Foot, gated on `prestige:count` — the same system these two
+   * fields wait for.)
    *
    * ⚠️ **Declaration only.** Prestige is unbuilt and nothing reads this yet.
    * When it lands this is the field it must honour, and COMPLETABILITY.md §7
@@ -4044,6 +4118,112 @@ export interface FloorDef {
    */
   persists?: boolean;
   desc: string;
+}
+
+// ---------- Prestige (systems/prestige.ts, docs/PRESTIGE.md) ----------
+
+/**
+ * One axis the harvest measures. `per` units of the measure pay one point;
+ * the preview and the harvest read the SAME function, so a preview can never
+ * disagree with what it previews (house rule, docs/PRESTIGE.md §2).
+ */
+export interface PrestigeSourceDef {
+  id: string;
+  name: string;
+  icon: string;
+  /**
+   * What is counted: a `state.stats` counter (`key`), cleared ladder floors
+   * across every tower, the sum of all skill levels, or achievement tiers
+   * claimed.
+   */
+  measure: 'stat' | 'floors' | 'skillLevels' | 'achievements';
+  key?: string;
+  /**
+   * Units per point (linear), or with `growth` the FIRST threshold: point n
+   * costs `per × growth^(n−1)` units in total, so each successive point is
+   * `growth` times further than the last. Whole points only; the remainder
+   * is the forecast.
+   */
+  per: number;
+  /** Geometric thresholds: the factor between successive points. Omitted = linear. */
+  growth?: number;
+  /** Singular unit noun for the readout: "3 quests", "1 floor". */
+  unit: string;
+}
+
+/** What a boon does. Every kind is a one-shot grant or a read at the use site — never a modifier, so the derived-stats cache is not involved. */
+export type PrestigeBoonEffect =
+  /** Gold on the first tick of every run (and at purchase, for the run in progress). */
+  | { kind: 'startGold'; amount: number }
+  /** A capped skill's ceiling, read by `skillCap`. Manifested or not. */
+  | { kind: 'skillCap'; skill: string; by: number }
+  /** Prepared-spell pages, read by `preparedCap`. */
+  | { kind: 'preparedPages'; pages: number }
+  /**
+   * Talent: every skill's effects scale by
+   * `1 + rate × rank × peakLevel(skill) × prestige.count`, where the peak is
+   * the skill's highest level recorded at any prestige (`peakLevels`).
+   * Constant within a run; read by `collectBaseMods` (attributes.ts).
+   */
+  | { kind: 'talent'; rate: number }
+  /**
+   * Endowment: talent's twin for attributes. Every effective attribute
+   * scales by `1 + rate × rank × peakAttr(attr) × prestige.count`, the peak
+   * being the trained level recorded at any prestige (`peakAttrs`). Applied
+   * as the last pass of `effectiveAttrsFrom` (attributes.ts).
+   */
+  | { kind: 'endowment'; rate: number };
+
+/** Something prestige points buy. Rank r (1-based) costs `cost[r-1]`; `cost.length` is the max rank. */
+export interface PrestigeBoonDef {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  cost: number[];
+  effect: PrestigeBoonEffect;
+  /** Rank 1 is granted on the first prestige, unasked. Its `cost[0]` must be 0. */
+  auto?: boolean;
+}
+
+export interface HarvestLine {
+  id: string;
+  name: string;
+  icon: string;
+  points: number;
+  /** The measure at harvest, e.g. "7 quests (2 per point)". */
+  detail: string;
+}
+
+export interface HarvestReport {
+  /** Which prestige this was (1 = the first). */
+  ordinal: number;
+  total: number;
+  lines: HarvestLine[];
+}
+
+/** The legacy block: the one part of a save a prestige carries into the next run. */
+export interface PrestigeState {
+  /** Prestiges completed. Mirrored to `stats['prestige:count']`, which content gates read. */
+  count: number;
+  /** Unspent points. */
+  points: number;
+  /** Boon id → rank bought (absent = 0). */
+  purchases: Record<string, number>;
+  /**
+   * Skill id → the highest level that skill reached in any run that ended in
+   * a prestige. Written by `prestigeNow`, never lowered; the talent boon's
+   * lever. A skill the current run has but no past run carried is absent.
+   */
+  peakLevels: Record<string, number>;
+  /** Attribute id → the highest TRAINED level reached in any run that ended in a prestige. Endowment's lever. */
+  peakAttrs: Partial<Record<AttributeId, number>>;
+  /** The most recent harvest, shown on the post-prestige overlay. */
+  lastHarvest: HarvestReport | null;
+  /** The post-prestige overlay is owed: it survives a reload and closes only through `leaveReview`. */
+  review: boolean;
+  /** Points spent since the overlay opened — one is enough to leave without confirming. */
+  spentThisReview: number;
 }
 
 // ---------- NPCs & quests ----------
@@ -4058,11 +4238,64 @@ export interface NpcDef {
   dialogue: string[];
   /** Quest ids this NPC gives, in intended order. */
   quests: string[];
+  /**
+   * What this person sells, if anything. A vendor is just an NPC with wares:
+   * the smith stocks scrap beside the forge she already stands at, and the
+   * general vendors (outfitter, apothecary, provisioner) are NPCs whose only
+   * job is the counter. Stock is unlimited and lives in data — nothing about a
+   * shop is saved. See systems/shops.ts.
+   */
+  shop?: ShopDef;
 }
+
+/**
+ * A counter. Prices derive from the ware's own `value` (the same number
+ * selling reads) times a markup, so authoring a line is naming the ware; a
+ * `price` override exists for the deliberate bargain or gouge.
+ */
+export interface ShopDef {
+  /** The counter's name as the panel shows it — 'Wares', 'The Scrap Bin'. */
+  name: string;
+  lines: ShopLine[];
+}
+
+export type ShopLine =
+  | {
+      kind: 'material';
+      id: string;
+      /**
+       * Graded wares are sold at ONE grade, this one (default 'c'). A vendor
+       * sells what a vendor sells; the better dish is the one you cook.
+       */
+      quality?: QualityTier;
+      /** Flat asking price per unit; replaces the derived one (the no-arbitrage floor still applies). */
+      price?: number;
+      /** Off the shelf until met — a line a boss's fall or a quest puts out. */
+      requires?: UnlockCondition[];
+    }
+  | { kind: 'item'; id: string; price?: number; requires?: UnlockCondition[] };
 
 export type QuestObjective =
   | { type: 'kill'; monsterId?: string; count: number; desc: string }
-  | { type: 'craft'; recipeId?: string; count: number; desc: string }
+  /**
+   * Crafts of any kind. `recipeId` names one recipe; `discipline` instead
+   * matches bench work by discipline id (cooking, alchemy…) — bench crafts
+   * emit the same 'craft' event with their discipline on it. Neither field
+   * set counts every craft.
+   */
+  | { type: 'craft'; recipeId?: string; discipline?: string; count: number; desc: string }
+  /**
+   * Meet someone. Read LIVE from the `met:<npcId>` counter (stamped by the
+   * first greeting, `talkTo`), so a stranger greeted before the quest was
+   * accepted still counts — meeting people is not un-meetable.
+   */
+  | { type: 'talk'; npcId: string; desc: string }
+  /**
+   * Any persistent counter reaching a bar — the quest twin of the `stat`
+   * UnlockCondition, read LIVE. This is how a quest asks for things no other
+   * verb can see: bestiary entries, spells inscribed, miracles received.
+   */
+  | { type: 'stat'; key: string; value: number; desc: string }
   /** Possession-based: progress reads live materials; consumed on turn-in. */
   | { type: 'collect'; materialId: string; qty: number; desc: string }
   | { type: 'reach'; spotId: string; desc: string };
@@ -4072,6 +4305,12 @@ export interface QuestRewards {
   materials?: { id: string; qty: number }[];
   items?: string[];
   skillXp?: { id: string; xp: number }[];
+  /**
+   * Favor with every KNOWN deity, on top of the 1 every turn-in already pays.
+   * The lever that makes a first miracle reachable without grinding five
+   * errands — an introduction to the gods is worth more than a delivery.
+   */
+  favor?: number;
 }
 
 export interface QuestDef {
@@ -4634,6 +4873,8 @@ export interface GameState {
   quests: Record<string, QuestState>;
   /** Number of tiers claimed per achievement id. */
   achievements: Record<string, number>;
+  /** Legacy-scoped: the only field a prestige carries forward (systems/prestige.ts). */
+  prestige: PrestigeState;
   /** Earned title ids (permanent). */
   titles: string[];
   /** Worn title id (at most one at a time). */
@@ -5283,7 +5524,10 @@ export type GameEvent =
   | { type: 'achievement'; id: string; tier: number }
   | { type: 'title:unlock'; id: string }
   | { type: 'arrive'; spot: string }
-  | { type: 'craft'; recipe: string }
+  /** A finished craft: recipe crafts name the recipe, bench work its discipline. */
+  | { type: 'craft'; recipe?: string; discipline?: string }
+  /** A first greeting — `talkTo` stamped `met:<npcId>` just now. */
+  | { type: 'talk'; npcId: string }
   | { type: 'quest:accept'; id: string }
   | { type: 'quest:complete'; id: string }
   | { type: 'bestiary:entry'; monsterId: string }

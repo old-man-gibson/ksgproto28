@@ -6,6 +6,7 @@ import { checkDiscovery, grantSkillXp } from './skills';
 import { grantFavor as addFavor, favorWith, spendFavor } from './deities';
 import { bumpStat } from './achievements';
 import { addSpell, hasDivine } from './spellcraft';
+import { deityKnown } from './unlocks';
 
 /**
  * Divine magic: worship, favor, miracles.
@@ -25,13 +26,17 @@ export function devotionLevel(state: GameState): number {
 export { favorWith };
 
 /**
- * The whole pantheon takes note of a deed. Today this is favor's only
- * source; deity-specific deeds (aligned with their aspects) will bias it.
+ * Every KNOWN god takes note of a deed. Deities the player has not met
+ * (systems/unlocks.ts — the alpha-light form of deities-must-be-met) accrue
+ * nothing: standing with a god you have never heard of was exactly the smell
+ * that design exists to fix. Deity-specific deeds will bias this later.
  */
 export function grantFavorAll(state: GameState, bus: EventBus, amount: number): void {
   if (amount <= 0) return;
-  for (const deity of DEITY_LIST) addFavor(state, deity.id, amount);
-  bus.emit({ type: 'log', msg: `🕊️ The pantheon takes note. (+${amount} favor)`, kind: 'skill' });
+  for (const deity of DEITY_LIST) {
+    if (deityKnown(state, deity.id)) addFavor(state, deity.id, amount);
+  }
+  bus.emit({ type: 'log', msg: `🕊️ The gods you know take note. (+${amount} favor)`, kind: 'skill' });
 }
 
 export interface MiracleCheck {

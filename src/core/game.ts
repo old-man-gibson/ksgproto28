@@ -4,7 +4,8 @@ import { EventBus } from './engine/events';
 import { TPS } from './engine/loop';
 import { registerAchievementListeners } from './systems/achievements';
 import { registerSuperAttrListeners } from './systems/superattrs';
-import { acceptQuest, registerQuestListeners, turnInQuest } from './systems/quests';
+import { acceptQuest, registerQuestListeners, talkTo, turnInQuest } from './systems/quests';
+import { buy } from './systems/shops';
 import { registerTitleListeners, setTitle } from './systems/titles';
 import { registerBestiaryListeners } from './systems/bestiary';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
@@ -54,6 +55,7 @@ import {
   cancelTravelPlan,
   fastTravelTo,
 } from './systems/locations';
+import { climbTo } from './systems/towers';
 import {
   canEquip,
   equipItem,
@@ -72,6 +74,7 @@ import { STYLES } from './registry';
 import { appendLog } from './systems/log';
 import { RESOURCE_LIST } from './data/resources.data';
 import { resourceLock } from './systems/resources';
+import { buyBoon, leaveReview, prestigeNow } from './systems/prestige';
 import type { PsionicShape, QualityTier, ResourceId, ResourceLock, SlotId } from './types';
 
 /**
@@ -280,6 +283,11 @@ export class Game {
     return fastTravelTo(this.state, this.bus, spotId);
   }
 
+  /** Ride a tower's ladder to a floor — or, with null, back down to its hub. */
+  climbTo(floorId: string | null): boolean {
+    return climbTo(this.state, this.bus, floorId);
+  }
+
   /** Equip an item; `slot` forces a hand (off-hand sword, main-hand buckler). */
   equip(uid: number, slot?: SlotId): void {
     equipItem(this.state, this.bus, uid, slot);
@@ -344,6 +352,16 @@ export class Game {
 
   acceptQuest(questId: string): void {
     acceptQuest(this.state, this.bus, questId);
+  }
+
+  /** A first greeting with whoever is standing here (see systems/quests.ts). */
+  talkTo(npcId: string): boolean {
+    return talkTo(this.state, this.bus, npcId);
+  }
+
+  /** Buy from a vendor's shelf; see systems/shops.ts. Returns how many were bought. */
+  buy(npcId: string, index: number, qty = 1): number {
+    return buy(this.state, this.bus, npcId, index, qty);
   }
 
   turnInQuest(questId: string): void {
@@ -656,5 +674,33 @@ export class Game {
   /** Sheathe the wielded dagger (concealed carry) or draw it back by hand. */
   toggleSheathe(): void {
     toggleSheathe(this.state);
+  }
+
+  // ---- Prestige (systems/prestige.ts) ----
+
+  /**
+   * End the run. The next run's state is assigned INTO the state object so
+   * every listener registered against it keeps working — the same move
+   * `hardReset` makes. False if the run cannot prestige yet.
+   */
+  prestige(now = Date.now()): boolean {
+    const next = prestigeNow(this.state, now);
+    if (!next) return false;
+    Object.assign(this.state, next);
+    this.resyncAnnouncers();
+    this.bus.emit({
+      type: 'log',
+      msg: `♻️ Prestige ${next.prestige.count}: ${next.prestige.lastHarvest?.total ?? 0} points harvested.`,
+      kind: 'info',
+    });
+    return true;
+  }
+
+  buyBoon(boonId: string): boolean {
+    return buyBoon(this.state, this.bus, boonId);
+  }
+
+  leavePrestigeReview(): void {
+    leaveReview(this.state);
   }
 }

@@ -1,3 +1,5 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
@@ -55,6 +57,7 @@ import {
   canCastUtility,
   castUtility,
   forgetSpell,
+  grantCastWordXp,
   isUtilityWorking,
   utilityCooldown,
   inscribeArcane,
@@ -94,6 +97,11 @@ function mage(g: Game, level = 12) {
   g.state.skills.arcana = { level, xp: 0 };
   g.state.attrs.int.level = 20;
   g.state.attrs.wis.level = 20;
+  // The whole lexicon, not the starter eleven — the shutter (unlocks.ts) is
+  // onboarding.test.ts's subject, and everything here tests what lies past it.
+  for (const id of Object.keys(ARCANE_WORDS)) {
+    g.state.stats[`flag:word:${id}`] = 1;
+  }
 }
 
 // ---------- The grammar ----------
@@ -684,6 +692,10 @@ describe('arcane syntax', () => {
     // Level 0: three words at most, and no high words.
     expect(maxSentenceWords(0)).toBe(3);
     expect(checkSentence(g.state, ['fire', 'pierce', 'ice', 'fly']).reason).toMatch(/3 words/);
+    // An unlearned word reads as UNKNOWN before any level talk — the starter
+    // lexicon (unlocks.ts) sits in front of the minLevel gate on purpose.
+    expect(checkSentence(g.state, ['zero']).reason).toMatch(/do not know/);
+    g.state.stats['flag:word:zero'] = 1;
     expect(checkSentence(g.state, ['zero']).reason).toMatch(/Arcana 10/);
     expect(checkSentence(g.state, ['fire', 'pierce']).ok).toBe(true);
     mage(g);
@@ -2284,6 +2296,20 @@ describe('word skills', () => {
     expect(resolveSpell(spell).strikes[0].power).toBeCloseTo(bare, 5);
     // …while the speaker's own reading counts what they know.
     expect(resolveSpellFor(g.state, spell).strikes[0].power).toBeGreaterThan(bare);
+  });
+
+  it('inscribing practises nothing; only a cast wears a word in', () => {
+    const g = fresh();
+    mage(g);
+    const before = { ...g.state.skills };
+    const spell = inscribeArcane(g.state, g.bus, ['fire', 'crush'])!;
+    // The grammar learned something; the words did not — nobody spoke them.
+    expect(g.state.skills[wordSkillId('fire')]).toBeUndefined();
+    expect(g.state.skills[wordSkillId('crush')]).toBeUndefined();
+    expect(g.state.skills.arcana?.xp ?? 0).toBeGreaterThanOrEqual(before.arcana?.xp ?? 0);
+    grantCastWordXp(g.state, g.bus, spell.uid);
+    expect(g.state.skills[wordSkillId('fire')]?.xp ?? 0).toBeGreaterThan(0);
+    expect(g.state.skills[wordSkillId('crush')]?.xp ?? 0).toBeGreaterThan(0);
   });
 
   it('a costly sentence teaches more, but logarithmically', () => {

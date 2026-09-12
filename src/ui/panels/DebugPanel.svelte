@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DEBUG_SETTLE_KEY, DEBUG_START_KEY, gs, game } from '../state.svelte';
+  import { DEBUG_SETTLE_KEY, gs, game } from '../state.svelte';
   import { AFFIXES, ITEMS, MATERIALS, RUNES, SKILLS } from '../../core/registry';
   import { QUALITY_ORDER, QUALITY_TIERS } from '../../core/data/quality.data';
   import { createItem, grantRune } from '../../core/systems/runes';
@@ -66,17 +66,6 @@
 
   let note = $state('');
   const say = (msg: string) => (note = msg);
-
-  // ---- Classic start ----
-  // The story now opens at home; the square remains the dev springboard.
-  // Persisted outside the save on purpose: it configures the NEXT reset.
-  let classicStart = $state(localStorage.getItem(DEBUG_START_KEY) === '1');
-  function toggleClassicStart() {
-    classicStart = !classicStart;
-    if (classicStart) localStorage.setItem(DEBUG_START_KEY, '1');
-    else localStorage.removeItem(DEBUG_START_KEY);
-    say(classicStart ? 'New games will start at Village Square' : 'New games will start at home');
-  }
 
   function giveItem(defId: string, qty = 1, affix?: number, slots?: number) {
     for (let i = 0; i < qty; i++) {
@@ -295,8 +284,8 @@
   /**
    * The centromere's settling period, switched off.
    *
-   * Persisted outside the save like the classic-start toggle, because it
-   * configures the RULES rather than the character — a real save must never
+   * Persisted outside the save, because it configures the RULES rather than
+   * the character — a real save must never
    * carry it. state.svelte.ts pushes the stored value into the core at boot,
    * so it survives a reload without opening this panel.
    */
@@ -342,13 +331,6 @@
   <div class="row">
     <button onclick={giveAllItems}>One of every item</button>
     <button onclick={giveAllItemsLoaded}>…affixed &amp; 4-socketed</button>
-  </div>
-
-  <div class="row">
-    <label class="small" title="Applies to the NEXT hard reset — the story start is home at 09:00">
-      <input type="checkbox" checked={classicStart} onchange={toggleClassicStart} />
-      New games start at Village Square (classic dev start)
-    </label>
   </div>
 
   <div class="section">
@@ -523,7 +505,7 @@
       <button onclick={fuseEverything}>Fuse all pairings</button>
     </div>
     <div class="row">
-      <label class="small" title="Survives a reload — stored outside the save, like the classic start">
+      <label class="small" title="Survives a reload — stored outside the save">
         <input type="checkbox" checked={skipSettle} onchange={toggleSkipSettle} />
         Centromere swaps settle instantly
       </label>

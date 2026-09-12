@@ -35,6 +35,12 @@ export function startTravel(state: GameState, bus: EventBus, to: string, opts: T
   }
   const edge = visibleEdges(state, state.spot).find((e) => e.to === to);
   if (!edge) return false;
+  // A shut road is visible with its terms on it (advertised-but-locked, same
+  // shape as a gated floor) — the check lives here, not in visibility.
+  if (edge.requires && !conditionsMet(state, edge.requires)) {
+    bus.emit({ type: 'log', msg: '🔒 The way is shut.', kind: 'travel' });
+    return false;
+  }
 
   if (state.combat) {
     abandonCombat(state);
@@ -153,6 +159,9 @@ export function findPath(state: GameState, from: string, to: string): string[] |
     if (current === to) break;
     for (const edge of visibleEdges(state, current!)) {
       if (!state.discovered.includes(edge.to)) continue;
+      // A shut road neither routes through nor to: unlike a forced door,
+      // clicking a locked destination is not a choice the player can make.
+      if (edge.requires && !conditionsMet(state, edge.requires)) continue;
       // Never route THROUGH an unfleeable fight: walking into one is a choice
       // made at the door, not by the pathfinder. As the destination it is
       // allowed — that click was the choice. A CLEARED spot forces nothing

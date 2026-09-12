@@ -40,14 +40,18 @@ export const TOWERS: Record<string, TowerDef> = {
 };
 
 /**
- * Bands open as a unit, and that is deliberate: `conditionsMet` is a pure AND
- * with no `any`, so the OR a player needs lives in the topology instead of the
- * predicate language. Several floors per band, each with a flat gate, and
- * `clearsToAdvance` of them opens the next band.
+ * REVISED 2026-09-06 (plans/alpha-band-one.md): the ascent is SEQUENTIAL —
+ * every rung must be cleared to pass it (`FloorDef.clear`), floors have no
+ * fixed stairs (`climbTo` moves freely between the hub and unlocked floors),
+ * and `clearsToAdvance` is currently unread. Bands remain as chapters: shared
+ * theming, and the natural seam for future checkpoint behaviour.
  *
- * Keep at least one floor per band gated on pure accumulation — gold, quest
- * counts, discovery counts. Those accrue from acting at all, which is what
- * carries a player who engages with no subsystem on its own terms.
+ * The completability duty the old band-disjunction carried now sits on each
+ * floor's `clear` and `gate` directly: prefer accumulation — gold, kills at
+ * the floor's own dens, quest counts. Those accrue from acting at all, which
+ * is what carries a player who engages with no subsystem on its own terms,
+ * and with every rung mandatory there is no sibling floor to hide a
+ * discipline gate behind.
  */
 export const BANDS: Record<string, BandDef> = {
   ascent_lower: {
@@ -82,21 +86,58 @@ export const BANDS: Record<string, BandDef> = {
  * existing world lint work on floors with no new machinery.
  *
  * A floor with no `bandId` is **off the ladder** — it advances nothing and
- * gates nothing. That is what makes the player's own base optional content by
- * construction rather than by an author remembering to say so.
+ * gates nothing. That is what makes hidden/special floors optional content by
+ * construction rather than by an author remembering to say so. (The player's
+ * hold was the first such floor; on 2026-09-12 it left the tower for a map of
+ * its own, behind the first prestige — see the `the_hold` region.)
  */
 export const FLOORS: Record<string, FloorDef> = {
-  // The one floor that is yours. It sits at hub level, opens off the city like
-  // any district does, and is the single thing a prestige does not take —
-  // see `persists`, which is a declaration only until prestige exists.
-  ascent_hold: {
-    id: 'ascent_hold',
-    name: 'Your Hold',
+  // ---- Band 1: the Lower Reaches. Names are placeholders (forge-renameable);
+  // levels and gate numbers are first guesses, tuned in review. Every clear
+  // reads a counter that already persists — nothing here added save state.
+  ascent_f1: {
+    id: 'ascent_f1',
+    name: 'The Old Toll Level',
     towerId: 'the_ascent',
-    index: 0,
-    areaId: 'player_base_v1_area',
-    personal: true,
-    persists: true,
-    desc: 'A floor the tower was not using. It is yours now, in the sense that nobody has come to argue about it.',
+    bandId: 'ascent_lower',
+    index: 1,
+    areaId: 'ascent_f1_area',
+    landing: 'f1_landing',
+    // No gate: the first rung is the tutorial floor, open from tick one.
+    // The clear latches on the toll hall's BOSS counter — the keeper changes
+    // with the clock (and the ambush window may swap in a champion), but
+    // every variant pays the same `boss:` latch, so the clear never needs an
+    // OR. See the hall's encounter table.
+    clear: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }],
+    desc: 'The city used to pay to pass. The vermin never stopped collecting.',
+  },
+  ascent_f2: {
+    id: 'ascent_f2',
+    name: 'The Flooded Stair',
+    towerId: 'the_ascent',
+    bandId: 'ascent_lower',
+    index: 2,
+    areaId: 'ascent_f2_area',
+    landing: 'f2_landing',
+    // Pure accumulation: ~a dozen shifts at a Threshold job, or floor 1's
+    // fights. Accrues from acting at all.
+    gate: [{ type: 'stat', key: 'gold:earned', value: 150 }],
+    // The clear is a spent fight budget: the cistern's fightLimit and this
+    // number are the same dial and are linted to agree.
+    clear: [{ type: 'stat', key: 'fights:f2_cistern', value: 8 }],
+    desc: 'Somewhere above, water gets in. It has had a very long time to argue with the stonework.',
+  },
+  ascent_f3: {
+    id: 'ascent_f3',
+    name: 'The Silk Gallery',
+    towerId: 'the_ascent',
+    bandId: 'ascent_lower',
+    index: 3,
+    areaId: 'ascent_f3_area',
+    landing: 'f3_landing',
+    gate: [{ type: 'stat', key: 'gold:earned', value: 600 }],
+    // A named kill again — the brood den's `once` queen.
+    clear: [{ type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 }],
+    desc: 'Nobody remembers what this floor was for. The webs go back further than the records do.',
   },
 };
