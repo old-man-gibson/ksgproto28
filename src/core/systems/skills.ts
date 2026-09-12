@@ -12,8 +12,8 @@ import { SKILLS } from '../registry';
 import { DEFAULT_PROGRESSION } from '../data/progression.data';
 import { bandedXpNeeded, settleLevels } from './progression';
 import { getDerivedStats } from './derived';
-import { conditionsMet } from './conditions';
-import { legacyCapRaise } from './legacy';
+import { conditionsMet, conditionsProgress } from './conditions';
+import { hasForesight, legacyCapRaise } from './legacy';
 import { text } from '../text/log';
 
 /** The curve a skill levels on — its own bands, or the default shape. */
@@ -254,9 +254,23 @@ export function grantSkillXpDirect(state: GameState, bus: EventBus, skillId: str
  * Locked skills worth hinting at in the UI: children of a skill the player
  * already knows. Returns ids.
  */
+/**
+ * How close every threshold in a skill's unlock list must be before the
+ * locked skill is shown at all. Below this the player sees nothing; at or
+ * above it the ??? row appears with its requirements. The Foresight boon
+ * (prestige) lifts the rule.
+ */
+export const REVEAL_FRACTION = 0.9;
+
+/** Whether a locked skill may be shown: parent known, and close enough (or Foresight). */
+export function skillRevealed(state: GameState, def: SkillDef): boolean {
+  if (!def.parent || !isUnlocked(state, def.parent)) return false;
+  return hasForesight(state) || conditionsProgress(state, def.unlock) >= REVEAL_FRACTION;
+}
+
 export function hintedSkills(state: GameState): string[] {
   return Object.values(SKILLS)
-    .filter((def) => !isUnlocked(state, def.id) && def.parent && isUnlocked(state, def.parent))
+    .filter((def) => !isUnlocked(state, def.id) && skillRevealed(state, def))
     .map((d) => d.id);
 }
 
@@ -276,9 +290,10 @@ function buildNode(state: GameState, def: SkillDef): SkillTreeNode | null {
       .filter((n): n is SkillTreeNode => n !== null);
     return { def, state: 'unlocked', children };
   }
-  // Locked skills are hinted only when their parent is known; their own
-  // subtree stays invisible (mystery preserved).
-  if (def.parent && isUnlocked(state, def.parent)) {
+  // Locked skills are hinted only when their parent is known and every
+  // threshold is within reach (REVEAL_FRACTION) or Foresight is bought;
+  // their own subtree stays invisible (mystery preserved).
+  if (skillRevealed(state, def)) {
     return { def, state: 'hinted', children: [] };
   }
   return null;

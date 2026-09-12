@@ -780,7 +780,12 @@ herbalism: {
   Both lists must stay sorted by level.
 - **Discovery** = doing something that trains the skill (own tags + the whole
   parent chain, see §1) while `unlock` holds. Locked skills are invisible unless
-  their `parent` is known ("???" hint).
+  their `parent` is known AND every threshold in `unlock` (skill level,
+  attribute level, counter) is at 90% or better — `REVEAL_FRACTION` in
+  skills.ts — at which point the "???" hint appears with its requirements.
+  Quest, equipped-tag and counter-ceiling conditions are not thresholds and
+  never hide a skill on their own. The same 90% rule hides the *next milestone*
+  line in the Skills panel. The Foresight prestige boon lifts both.
 - Actives: `active: { type: 'strike', damageMult: 2.2, cooldown: 80 }` or
   `{ type: 'spell', power: 3, cooldown: 100, damageType: 'heat' }` or
   `{ type: 'buff', mods: [...], duration: 30, cooldown: 120 }` — fired by the

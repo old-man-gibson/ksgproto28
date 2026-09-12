@@ -4172,7 +4172,15 @@ export type PrestigeBoonEffect =
    * being the trained level recorded at any prestige (`peakAttrs`). Applied
    * as the last pass of `effectiveAttrsFrom` (attributes.ts).
    */
-  | { kind: 'endowment'; rate: number };
+  | { kind: 'endowment'; rate: number }
+  /**
+   * Foresight: locked skills and upcoming milestones are shown regardless of
+   * progress. Without it a locked skill is hinted only once every threshold
+   * in its `unlock` list is at 90% (`REVEAL_FRACTION`, skills.ts), and the
+   * next milestone only once the level is at 90% of it. Read by
+   * `skillTreeByCategory` and the Skills panel.
+   */
+  | { kind: 'foresight' };
 
 /** Something prestige points buy. Rank r (1-based) costs `cost[r-1]`; `cost.length` is the max rank. */
 export interface PrestigeBoonDef {

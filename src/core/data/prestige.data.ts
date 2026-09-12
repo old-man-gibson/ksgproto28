@@ -107,6 +107,16 @@ export const PRESTIGE_BOONS = prose<PrestigeBoonDef>('PRESTIGE_BOONS', PRESTIGE_
     cost: [1, 2, 3],
     effect: { kind: 'skillCap', skill: 'darkvision', by: 10 },
   },
+  // Knowledge of what is coming is itself the purchase (user, 2026-09-12):
+  // a first run sees a locked skill or a milestone only when it is 90% of
+  // the way there; a prestiged run can buy the whole map back.
+  foresight: {
+    id: 'foresight',
+    name: 'Foresight',
+    icon: '🔭',
+    cost: [3],
+    effect: { kind: 'foresight' },
+  },
 });
 
 /** A save that has never prestiged. */

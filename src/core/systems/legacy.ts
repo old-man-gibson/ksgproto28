@@ -20,6 +20,11 @@ export function boughtBoons(state: GameState): { def: PrestigeBoonDef; rank: num
     .filter((b) => b.rank > 0);
 }
 
+/** Whether locked skills and upcoming milestones show at any progress (the Foresight boon). */
+export function hasForesight(state: GameState): boolean {
+  return boughtBoons(state).some(({ def }) => def.effect.kind === 'foresight');
+}
+
 /** Cap levels a skill's ceiling gains from prestige. Manifested or not. */
 export function legacyCapRaise(state: GameState, skillId: string): number {
   let by = 0;

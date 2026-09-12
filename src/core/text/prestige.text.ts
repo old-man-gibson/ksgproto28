@@ -18,4 +18,6 @@ export const PRESTIGE_BOONS_TEXT: ProseTable = {
   'weathersense_ceiling.desc': 'Weathersense can reach 5 levels higher, per rank.',
 
   'darkvision_ceiling.desc': 'Darkvision can reach 10 levels higher, per rank.',
+
+  'foresight.desc': 'Locked skills and upcoming milestones are shown with their requirements at any progress. Without it they appear only at 90% of the requirement.',
 };

@@ -6,6 +6,7 @@
   import { ATTRIBUTE_LIST, ATTRIBUTE_TRAINING } from '../../core/data/attributes.data';
   import { attrXpNeeded, effectiveAttrs } from '../../core/systems/attributes';
   import {
+    REVEAL_FRACTION,
     skillCap,
     skillXpNeeded,
     skillTierName,
@@ -32,7 +33,7 @@
   import { POSITIONS } from '../../core/registry';
   import { TRIGGER_EVENTS } from '../../core/systems/triggers';
   import { describeMod, condText, modCondition, techniqueMoveText, ticksToTime, sumMods } from '../lib/format';
-  import { endowmentBonus, talentBonus } from '../../core/systems/legacy';
+  import { endowmentBonus, hasForesight, talentBonus } from '../../core/systems/legacy';
 
   /**
    * Talent's bar under the XP bar (PRESTIGE.md §4). One lap of the bar is
@@ -244,7 +245,10 @@
   <!-- Shared by attribute training and regular skills: both read the same level-gated list. -->
   {#snippet milestoneLine(list: Milestone[], level: number)}
     {@const reached = list.filter((m) => level >= m.level)}
-    {@const next = list.find((m) => level < m.level)}
+    {@const upcoming = list.find((m) => level < m.level)}
+    <!-- The next milestone is news only once it is close: 90% of its level,
+         or any distance once Foresight is bought. -->
+    {@const next = upcoming && (hasForesight(gs) || level >= upcoming.level * REVEAL_FRACTION) ? upcoming : null}
     <div class="milestones">
       Milestones ({reached.length}/{list.length}):
       {milestoneTotal(reached)}
