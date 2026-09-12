@@ -641,6 +641,7 @@ export const TECHNIQUES = prose<TechniqueDef>('TECHNIQUES', TECHNIQUES_TEXT, {
     forks: ['split', 'flowing'],
     family: 'unarmed',
   },
+  // TODO: intended: inflicts Taunted (target loses dodge and armor for a few seconds, but its next attack deals +20% damage). No such status exists yet; the desc states only what the data does.
   taunt: {
     id: 'taunt',
     name: 'Taunt',

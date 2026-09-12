@@ -110,6 +110,7 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     icon: '🧱',
     value: 8,
   },
+  // TODO: intended: a vendor or quest that trades for boss tokens. Nothing consumes them yet; dropped from the desc.
   boss_token: {
     id: 'boss_token',
     name: 'Boss Token',

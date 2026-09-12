@@ -826,6 +826,7 @@ const HAND_WRITTEN = prose<SkillDef>('HAND_WRITTEN', HAND_WRITTEN_TEXT, {
     ],
   },
   
+  // TODO: intended: a better cook gets more output from the same ingredients (yield scaling with level). Only the craft-speed bonus exists yet.
   cooking: {
     id: 'cooking',
     name: 'Cooking',

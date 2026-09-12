@@ -566,6 +566,7 @@ export const MAIN_GENES = prose<MainGeneDef>('MAIN_GENES', MAIN_GENES_TEXT, {
       ],
     },
   },
+  // TODO: intended: the slime bodyguard and Suislime need a summoned entity that does not exist yet; only the stat modifiers work. The desc still describes the full design.
   slime_king_gene: {
     id: 'slime_king_gene',
     name: 'Slime King Gene',
@@ -593,6 +594,7 @@ export const MAIN_GENES = prose<MainGeneDef>('MAIN_GENES', MAIN_GENES_TEXT, {
   },
 
   /* The elemental branch: rungs zero to two again, traded sideways into fire. */
+  // TODO: intended: the wearer's ordinary blows carry fire (retype or add heat to plain hits). Not implemented; dropped from the desc.
   fire_slime_gene: {
     id: 'fire_slime_gene',
     name: 'Fire Slime Gene',
@@ -1097,6 +1099,7 @@ export const MAIN_GENES = prose<MainGeneDef>('MAIN_GENES', MAIN_GENES_TEXT, {
       ],
     },
   },
+  // TODO: intended: burning creatures cannot reach you (Burning enemies fail to attack the wearer). Not implemented; dropped from the desc.
   surtr: {
     id: 'surtr',
     name: 'Surtr Gene',
