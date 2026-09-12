@@ -7,7 +7,7 @@ import type { ProseTable } from './prose';
 export const NPCS_TEXT: ProseTable = {
   'warden_of_the_foot.desc': 'Stands at the Foot of the Ascent. Gives the three starting quests: The Faces of Threshold, A Taste of Everything and The First Ascent.',
   'warden_of_the_foot.dialogue': [
-    'Eight roads leave this door, one to each district gate. Each is 60 ticks.',
+    'Eight roads leave this door, one to each district gate. Each is 6 s.',
     'Talk to the eight trades before you climb. A vendor charges you half again the price until you have spoken to them.',
     'The tower door is open now. Floor 1 has no gate; floor 2 needs 150 gold earned in total.',
   ],
@@ -33,7 +33,7 @@ export const NPCS_TEXT: ProseTable = {
     'Two of the nine doors are locked. Nothing behind them can be learned yet.',
   ],
 
-  'militia_captain.desc': 'Captain at the Muster Gate. Sells nothing and gives no quests. The gate leads to the Cages, the Sand and the Long Gallery, 40 ticks each.',
+  'militia_captain.desc': 'Captain at the Muster Gate. Sells nothing and gives no quests. The gate leads to the Cages, the Sand and the Long Gallery, 4 s each.',
   'militia_captain.dialogue': [
     'Talking to me counts toward the Warden’s first quest. I sell nothing.',
     'The Cages stage one fight at a time: rats, slimes and goblins, levels 1 to 3. The Sand trains footwork and sparring. Then the tower.',
@@ -44,7 +44,7 @@ export const NPCS_TEXT: ProseTable = {
   'head_chef.dialogue': [
     'Raw ingredients only at my door. Cooked dishes are on Orrin Tallow’s cart at the Granary Gate.',
     'The stove and the preparing bench are behind me. One dish cooked here counts for the Warden’s second quest.',
-    'Scrub the Pans pays 10 gold per 200 ticks if you need coin.',
+    'Scrub the Pans pays 10 gold per 20 s if you need coin.',
   ],
 
   'row_alchemist.desc': 'Alchemist at the Alembics. Sells reagents at the Reagent Shelf: spring water, pressed oil, grain spirit, common herb, mendroot, bloodwort, fixing salt, bone ash and brimstone. The alchemy bench here brews by ordered sequence.',
@@ -65,7 +65,7 @@ export const NPCS_TEXT: ProseTable = {
   'dojo_master.dialogue': [
     'Footwork on the Sand trains Dexterity.',
     'Spar trains Strength and pays combat skill XP.',
-    'Neither activity rolls a fight. For fights, use the Cages, 40 ticks back through the Muster Gate.',
+    'Neither activity rolls a fight. For fights, use the Cages, 4 s back through the Muster Gate.',
   ],
 
   'ward_outfitter.desc': 'Vendor at the Wrights’ Gate. The Rack sells cloth and leather armour, iron gauntlets, a wooden shield, and starter weapons. Four more lines (leather jerkin, iron breastplate, soldier greaves, rapier) unlock once the Toll Hall keeper is defeated.',
@@ -78,14 +78,14 @@ export const NPCS_TEXT: ProseTable = {
   'row_apothecary.desc': 'Vendor at the Retort Gate. The Dispensary Hatch sells healing salve, mushroom broth, mendroot and spring water.',
   'row_apothecary.dialogue': [
     'I sell healing salve, mushroom broth, mendroot and spring water.',
-    'The Alembics are 40 ticks up the row. The alchemy bench and Odri Venn’s reagent shelf are there.',
+    'The Alembics are 4 s up the row. The alchemy bench and Odri Venn’s reagent shelf are there.',
     'Buy before the climb. No vendor stands on any floor of the tower.',
   ],
 
   'granary_provisioner.desc': 'Vendor at the Granary Gate. The Cart sells cooked food: traveler’s ration, rustic loaf, charred roots, skewered fish, hearty stew, hearty sandwich and seared steak.',
   'granary_provisioner.dialogue': [
     'Rations, loaves, roots, fish, stew, sandwiches and steak. All cooked, all ready to eat.',
-    'Bryva Coll sells the raw ingredients in the Granary Kitchens, 40 ticks from here. Her stove cooks what my cart sells.',
+    'Bryva Coll sells the raw ingredients in the Granary Kitchens, 4 s from here. Her stove cooks what my cart sells.',
     'A stranger pays half again the price. Speaking to me once removes that.',
   ],
 };
