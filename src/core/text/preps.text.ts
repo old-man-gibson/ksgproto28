@@ -5,9 +5,9 @@ import type { ProseTable } from './prose';
 
 // ---------- PREPS ----------
 export const PREPS_TEXT: ProseTable = {
-  'sliced.desc': 'Broad and even. Lies flat, stacks well — built for the cold counter.',
+  'sliced.desc': 'Knife technique. Sliced ingredients fit the Cold Counter; a basket of fitted cuts comes out about a grade better than the same basket whole.',
 
-  'diced.desc': 'Small and uniform. Surrenders everything to a long simmer — the stove approves.',
+  'diced.desc': 'Knife technique, Cooking 4. Diced ingredients fit the Cooking Stove; a basket of fitted cuts comes out about a grade better than the same basket whole.',
 
-  'julienned.desc': 'Matchstick-fine. Cooks in moments, which is all the grill ever gives anything.',
+  'julienned.desc': 'Knife technique, Cooking 10. Julienned ingredients fit the Open Grill; a basket of fitted cuts comes out about a grade better than the same basket whole.',
 };

@@ -5,125 +5,125 @@ import type { ProseTable } from './prose';
 
 // ---------- ARCANE_WORDS ----------
 export const ARCANE_WORDS_TEXT: ProseTable = {
-  'fire.desc': 'The first word most mages learn, and the last thing many say.',
+  'fire.desc': 'Heat noun. 2 mana, 1.0 power. 35% chance to set the target On Fire; further fire deepens the burn rather than extending it.',
 
-  'ice.desc': 'Cold given a shape. It bites, and what it bites, it slows.',
+  'ice.desc': 'Cold noun. 2 mana, 0.9 power. 40% chance to Chill the target: -40% speed.',
 
-  'spark.desc': 'A held breath of lightning. Quick to speak, quicker to land.',
+  'spark.desc': 'Lightning noun. 2 mana, 0.85 power. 30% chance to Jolt the target; the charge discharges when it next acts.',
 
-  'water.desc': 'Gentle as words go. What it soaks, other words find easier to freeze.',
+  'water.desc': 'Water noun. 2 mana, 0.8 power. 50% chance to make the target Wet: cold, lightning and poison resistance drop, heat resistance rises.',
 
-  'stone.desc': 'A heavy word. What it hits, it leaves full of splinters.',
+  'stone.desc': 'Earth noun. 3 mana, 1.15 power. 30% chance to Shardbind the target: it takes piercing damage whenever it attacks or is hit.',
 
-  'gust.desc': 'A light word. can reach far and quickly. What it hits keeps losing its footing.',
+  'gust.desc': 'Wind noun. 2 mana, 0.85 power. 25% chance to Buffet the target: each point gives a 12% chance that a technique ends Off Balance instead of at its declared position.',
 
-  'seed.desc': 'A patient word. It does almost nothing, and then it does not stop.',
+  'seed.desc': 'Poison noun. 2 mana, 0.7 power. 50% chance to Seed the target. Seeded does nothing on arrival, grows +0.15 per second while the target is not hit, and records every other condition landed; matured to Rootbound it spreads that record to the other enemies.',
 
-  'iron.desc': 'A point, spoken. It goes in, and the hole it leaves stays open.',
+  'iron.desc': 'Piercing noun. 2 mana, 0.9 power. 35% chance to Magnetize the target: each point ignores 10% of its dodge and adds 5% crit chance against it, and lightning cannot miss it.',
 
-  'venom.desc': 'Weak on arrival. It does its arguing afterwards.',
+  'venom.desc': 'Poison noun. 2 mana, 0.7 power. 60% chance to Poison the target: poison damage over time and -20% stamina regeneration. Only a stronger dose deepens it.',
 
-  'acid.desc': 'Every hit slowly strips away what makes hard targets so intimidating.',
+  'acid.desc': 'Acid noun. 2 mana, 0.7 power. Always Corrodes the target: -12% armor per point, stacking to 6.',
 
-  'light.desc': 'Spoken plainly it illuminates. Spoken sharply it blinds.',
+  'light.desc': 'Light noun. 3 mana, 0.9 power. 30% chance to Dazzle the target: 8% miss chance and -5% dodge; repeat hits extend the duration.',
 
-  'gloom.desc': 'The dark that saps will, prolonged exposure corrupts.',
+  'gloom.desc': 'Dark noun. 3 mana, 1.0 power. 15% chance to Taint the target: every resistance drops, light and dark resistance most; at 5 stacks it escalates to Corrupted.',
 
-  'zero.desc': 'The word for nothing, sharpened. It is not fire and not iron and not anything — so nothing resists it, and nothing suffers it especially. The raw number lands.',
+  'zero.desc': 'Untyped noun. 2 mana, 1.0 power. No element and no condition: no resistance reduces it and no weakness increases it.',
 
-  'arcane.desc': 'The stuff magic is made of, spoken at somebody. It frays whatever in them touches mana — and what frays far enough begins to burn.',
+  'arcane.desc': 'Arcane noun. 3 mana, 0.9 power. 50% chance to inflict Unravelling: lowers arcane resistance; at 3 stacks it escalates to Manaburn.',
 
-  'cut.desc': 'An edge. Whatever it carries, it carries INTO them — what it opens keeps working after the word has ended.',
+  'cut.desc': 'Verb, slashing delivery. 2 mana. Damage x0.8; the noun’s condition applies at 2.2x the usual rate. Spoken with no noun: 0.55 slashing power, 40% chance to Bleed.',
 
-  'crush.desc': 'Weight, brought down. The heaviest blow the grammar has — and the substance is mostly wasted in the impact.',
+  'crush.desc': 'Verb, bludgeoning delivery. 2 mana. Damage x1.3; the noun’s condition applies at 0.45x the usual rate. Spoken with no noun: 0.7 bludgeoning power, 40% chance to Concuss.',
 
-  'pierce.desc': 'Narrows the working to a point. Armor and wards mean less to it — and so does whatever it was carrying.',
+  'pierce.desc': 'Verb, piercing delivery. 1 mana. Damage x0.95, ignores 35% of armor; the noun’s condition applies at 0.6x the usual rate. Spoken with no noun: 0.5 piercing power, 40% chance to Puncture.',
 
-  'fly.desc': 'Sends the working out fast and often. Haste costs a little weight.',
+  'fly.desc': 'Verb. 1 mana. Cooldown x0.75, damage x0.9. Spoken with no noun: 0.4 power.',
 
-  'expand.desc': 'Tells the working to be bigger than its target. The spill is the point.',
+  'expand.desc': 'Verb. 2 mana. Damage x0.85; 50% of the main target’s raw damage spills onto one random flanker. Enough accumulated spill (1.5 raw) makes the spell hit every enemy. Spoken with no noun: 0.4 power.',
 
-  'burst.desc': 'Detonate the word for greater power at the cost of a long wind-down.',
+  'burst.desc': 'Verb. 2 mana. Damage x1.35, cooldown x1.3. Spoken with no noun: 0.6 power.',
 
-  'grasp.desc': 'The working holds rather than harms. What the noun does lingers doubled.',
+  'grasp.desc': 'Verb. 2 mana. Damage x0.6; the noun’s condition lasts twice as long. Spoken with no noun: 0.3 power.',
 
-  'ward.desc': 'Turns the substance into a coat worn against its own element. Always lands on the speaker.',
+  'ward.desc': 'Verb. 2 mana. Always lands on the speaker: +15% resistance to the noun’s element for 30 seconds. Spoken with no noun: +3 armor instead. Leading words lengthen it, trailing words thicken it.',
 
-  'mend.desc': 'Asks the substance to close a wound instead of opening one. Always lands on the speaker.',
+  'mend.desc': 'Verb. 3 mana. Heals for 1.0 spell power. Lands on the speaker unless another target is spoken; addressed at an enemy, it heals the enemy.',
 
-  'slowly.desc': 'Every syllable given its full weight. Heavier, and much less often.',
+  'slowly.desc': 'Adverb. 1 mana, spell mana x1.2. Damage x1.4, cooldown x1.5. Leading: conditions last 2x as long at full rate. Trailing: 3x as long at a third of the rate.',
 
-  'quickly.desc': 'Clipped short. Lighter, and much more often.',
+  'quickly.desc': 'Adverb. 1 mana. Damage x0.75, cooldown x0.65. Leading: conditions run in a quarter of the time at 3x rate. Trailing: half the time at 2x rate.',
 
-  'gently.desc': 'Spoken with the edge taken off. The substance still takes hold exactly as deeply — it simply arrives without the force behind it. The word for putting something ON someone (yourself included) rather than doing something TO them.',
+  'gently.desc': 'Adverb. 1 mana, spell mana x0.85. Damage x0.5 per tier; condition intensity is unchanged. Leading: -5% crit chance. Trailing: -20% crit damage. Use it to apply a condition, to an enemy or to yourself, at low cost.',
 
-  'viciously.desc': 'Spoken looking for the seam. Every syllable hunts the vital spot, and the working demands a great deal more to be said that way.',
+  'viciously.desc': 'Adverb. 2 mana, spell mana x1.4. Leading: +7% crit chance per tier. Trailing: +25% crit damage per tier.',
 
-  'intensely.desc': 'Spoken with everything behind the substance rather than the blow. Whatever it leaves in them bites far deeper — and spoken LAST it is concentrated rather than merely strong, burning hotter for less long.',
+  'intensely.desc': 'Adverb. 2 mana, spell mana x1.3. Condition intensity x1.6. Trailing: condition duration x0.6 as well.',
 
-  'dimly.desc': 'Spoken with the substance held back. What it leaves barely takes — but it is never nothing, and spoken LAST it is diluted rather than merely weak, lingering far longer for how little it is.',
+  'dimly.desc': 'Adverb. 1 mana, spell mana x0.9. Condition intensity x0.6, never below 15% of the condition’s base. Trailing: condition duration x1.6 as well.',
 
-  'twice.desc': 'Said again before the echo of the first has finished landing.',
+  'twice.desc': 'Adverb. 2 mana, spell mana x1.8. Leading: two separate landings, each rolling its own crit and conditions. Trailing: one landing at double weight.',
 
-  'then.desc': 'Sequence, spoken. The clause that follows strikes through the opening the one before it made — and strikes harder if that opening was actually made.',
+  'then.desc': 'Conjunction. 1 mana. The next clause takes the better armor penetration of the two clauses and deals x1.3 damage, but only if the previous strike landed on that target.',
 
-  'and.desc': 'Simultaneity, spoken. Two clauses fuse into one blow with two natures — it lands as whichever the target guards worse, and carries both riders.',
+  'and.desc': 'Conjunction. 2 mana. Fuses the next clause into the previous blow: its weight is added at 85%, the blow deals whichever of the two damage types the target resists less, and both conditions apply.',
 
-  'but.desc': 'Contradiction, spoken. The clause that follows does not strike — it transmutes, its riders replacing those of the blow before it. Spoken with a riderless word, it strips the blow clean instead.',
+  'but.desc': 'Conjunction. 2 mana. The next clause does not strike; its condition replaces the previous blow’s condition. A word with no condition removes the blow’s condition instead.',
 
-  'or.desc': 'Chance, spoken. The linked clauses become alternatives — one is rolled each cast, and each pays only half its mana. Thrift, at the price of knowing.',
+  'or.desc': 'Conjunction. 1 mana. The linked clauses become alternatives: one is rolled per cast, and each linked clause pays half its mana.',
 
-  'if.desc': 'Condition, spoken. The clause that follows does not strike — its noun names an affliction, and the blow before it fires only while the target bears it.',
+  'if.desc': 'Conjunction. 1 mana. The next clause does not strike; its noun names a condition, and the previous blow fires only while the target has that condition or one it escalates into.',
 
-  'one.desc': 'The single foe before you. The default address of every spell.',
+  'one.desc': 'Target word: the front enemy. 0 mana. The default when no target is spoken.',
 
-  'others.desc': 'Everyone on the wrong side of the argument. Spreading a word thins it.',
+  'others.desc': 'Target word: every enemy. 2 mana, and the spell’s mana x1.5. Each enemy takes 50% power.',
 
-  'me.desc': 'The speaker. The grammar does not care whether that was wise.',
+  'me.desc': 'Target word: the speaker. 0 mana. Damage and conditions land on you.',
 };
 
 // ---------- MIRACLES ----------
 export const MIRACLES_TEXT: ProseTable = {
-  'unfold_geometry.desc': 'The target is briefly persuaded it has one face fewer than it needs.',
-  'unfold_geometry.spec.desc': 'Breaks the target’s shape; what remains defends poorly.',
+  'unfold_geometry.desc': 'Ik’Thel’the. 4 favor, 5 mana, 16 second cooldown. One 0.4 arcane strike that inflicts Unfolded for 15 seconds: -12% slashing, piercing and bludgeoning resistance, -15% arcane resistance.',
+  'unfold_geometry.spec.desc': '0.4 arcane strike; inflicts Unfolded, lowering physical and arcane resistance for 15 seconds.',
 
-  'fractal_lance.desc': 'One thrust, containing two smaller thrusts, containing…',
-  'fractal_lance.spec.desc': 'Strikes at every scale at once, each half the last.',
+  'fractal_lance.desc': 'Ik’Thel’the. 5 favor, 6 mana, 13 second cooldown. Three arcane strikes on one target at 1.4, 0.7 and 0.35 power.',
+  'fractal_lance.spec.desc': 'Three arcane strikes, each half the power of the one before.',
 
-  'fold_space.desc': 'Defensive without being restorative: where you were is not where you are.',
+  'fold_space.desc': 'Ik’Thel’the. 4 favor, 4 mana, 45 second cooldown. Self: +12% dodge for 40 seconds. No healing.',
 
-  'litany_mending.desc': 'The oldest prayer there is: please, not yet.',
-  'litany_mending.spec.desc': 'Closes wounds by asking nicely, firmly.',
+  'litany_mending.desc': 'Xima. 3 favor, 4 mana, 15 second cooldown. Self: heals for 2.0 spell power.',
+  'litany_mending.spec.desc': 'Heals the caster for 2.0 spell power.',
 
-  'litany_aegis.desc': 'A borrowed shield, on the understanding that it is returned dented.',
-  'litany_aegis.spec.desc': 'The Cold Sun stands a little in front of you for a while.',
+  'litany_aegis.desc': 'Xima. 8 favor, 6 mana, 40 second cooldown. Self: +6 armor and +10% dark resistance for 30 seconds.',
+  'litany_aegis.spec.desc': '+6 armor and +10% dark resistance on the caster for 30 seconds.',
 
-  'rime_of_the_cold_sun.desc': 'Slow to speak and slower to fade — a shield against the elements themselves.',
+  'rime_of_the_cold_sun.desc': 'Xima. 6 favor, 6 mana, 60 second cooldown. Self: +12% heat, cold and lightning resistance for 60 seconds.',
 
-  'blood_communion.desc': 'Open your own veins; what spills is channelled back as his protection.',
-  'blood_communion.spec.desc': 'You bleed, and the bleeding feeds you.',
+  'blood_communion.desc': 'Xima. 8 favor, 5 mana, 70 second cooldown. Self: applies Bleeding at intensity 2, plus Blood Communion for 60 seconds, under which bleed damage heals you instead and you deal +8% damage.',
+  'blood_communion.spec.desc': 'You bleed; while Blood Communion holds, the bleed heals you instead of harming you.',
 
-  'litany_retribution.desc': 'A grievance, formally filed. The light does the rest.',
-  'litany_retribution.spec.desc': 'Judgement, delivered as light.',
+  'litany_retribution.desc': 'D’Enjalle. 5 favor, 5 mana, 12 second cooldown. One 2.2 light strike with a 40% chance to Dazzle.',
+  'litany_retribution.spec.desc': '2.2 light strike, 40% chance to Dazzle.',
 
-  'holy_fire.desc': 'Fire that is also light: it burns along whichever the target guards worse.',
-  'holy_fire.spec.desc': 'Lands as fire or as light — whichever finds the gap.',
+  'holy_fire.desc': 'D’Enjalle. 6 favor, 6 mana, 14 second cooldown. One 2.0 strike dealt as heat or light, whichever the target resists less; 30% chance to set it On Fire.',
+  'holy_fire.spec.desc': '2.0 strike as heat or light, whichever the target resists less.',
 
-  'honorable_duel.desc': 'The terms are declared, and the terms are enforced: one against one.',
+  'honorable_duel.desc': 'D’Enjalle. 7 favor, 5 mana, 50 second cooldown. Self: Honor Bound for 20 seconds: flanking enemies do not attack, and you deal +10% damage.',
 
-  'perfect_lunge.desc': 'Strike true. Struck with a rapier in hand, strike truer.',
+  'perfect_lunge.desc': 'D’Enjalle. 5 favor, 5 mana, 35 second cooldown. Self for 30 seconds: +8% crit chance, +20% crit damage, and +15% damage while a rapier is equipped.',
 
-  'artisans_cunning.desc': 'Worn to the bench: surer hands, finer results, and a knack for finding the good stock.',
+  'artisans_cunning.desc': 'Usvýlgr. 5 favor, 5 mana, 120 second cooldown. Self for 120 seconds: +15% craft speed and +8% loot.',
 
-  'veil_of_misdirection.desc': 'The enemy is not prevented from striking you. They are prevented from finding you.',
+  'veil_of_misdirection.desc': 'Usvýlgr. 6 favor, 5 mana, 40 second cooldown. Self: Veiled for 30 seconds: incoming attacks have a 12% chance to miss.',
 
-  'venom_feast.desc': 'Swallow your own poison whole and spit it, sharpened, at somebody who earned it.',
-  'venom_feast.spec.desc': 'Strips your own poison and rot and delivers it, with interest.',
+  'venom_feast.desc': 'Kenese Paea. 6 favor, 5 mana, 15 second cooldown. One 0.5 poison strike with a 40% chance to Poison. Removes Poisoned and Rotting from you and applies them to the target at 1.2x intensity. Deals 1.5x if anyone in the fight is Poisoned or Rotting.',
+  'venom_feast.spec.desc': 'Moves your Poisoned and Rotting onto the target at 1.2x intensity; 1.5x damage if anyone is Poisoned or Rotting.',
 
-  'redouble_venom.desc': 'A venom already at work is asked to work twice as hard — paid for in her adherent’s breath.',
-  'redouble_venom.spec.desc': 'Doubles and refreshes the target’s poison and rot.',
+  'redouble_venom.desc': 'Kenese Paea. 8 favor, 4 mana, 15 stamina, 20 second cooldown. One 0.4 dark strike; doubles the intensity of the target’s Poisoned and Rotting and refreshes their duration.',
+  'redouble_venom.spec.desc': 'Doubles and refreshes the target’s Poisoned and Rotting.',
 
-  'night_shroud.desc': 'Walk shrouded; let their blows find only dark.',
+  'night_shroud.desc': 'Kenese Paea. 5 favor, 5 mana, 45 second cooldown. Self: Night Shroud for 30 seconds: incoming attacks have a 12% chance to miss.',
 
   'sproutbringer.desc': '',
   'sproutbringer.spec.desc': '',
@@ -152,55 +152,55 @@ export const MIRACLES_TEXT: ProseTable = {
 
 // ---------- PSI_AXES ----------
 export const PSI_AXES_TEXT: ProseTable = {
-  'force.desc': 'How hard the will lands. Bludgeoning, from nowhere.',
+  'force.desc': 'Raw imposition. Feeds Pressure (force + grip). Bare force lands as bludgeoning damage, 0.7 per curved point.',
 
-  'reach.desc': 'How widely it lands. Enough reach touches everyone at once.',
+  'reach.desc': 'Spread. Feeds Awareness (clairvoyance x reach) and lowers Acuity. Each point splashes 20% of the strike onto flankers; at 4 spread the working hits every enemy. Delivery only: reach with nothing to deliver does nothing.',
 
-  'grip.desc': 'How firmly it holds a mind. Dazes.',
+  'grip.desc': 'Hold. Feeds Pressure and Purchase (grip / (1 + speed)). 18% daze chance per point, 0.25 damage per curved point, and Purchase sets how long afflictions stay on the target.',
 
-  'speed.desc': 'How quickly the visualisation completes. Shortens the working’s cycle.',
+  'speed.desc': 'Cycle rate. Cooldown x0.93 per point. Multiplies mass into Momentum, subtracts from Inertia, and divides Purchase. Delivery only: speed with nothing to deliver does nothing.',
 
-  'clairvoyance.desc': 'Seeing where things WILL be. Precognition now; telepathy in time.',
+  'clairvoyance.desc': 'Sight. Feeds Acuity (concentrated: piercing, cannot miss, armor penetration) and Awareness (spread: reaches every enemy). Aimed inward, it becomes Foresight: enemy blows miss.',
 
-  'space.desc': 'Where the working exists. Structure for other axes to key on.',
+  'space.desc': 'Structure. Feeds Coherence (space / (force + mass)), which withholds part of the strike, carries acuity as armor penetration, and sets how long every inward effect lasts.',
 
-  'mass.desc': 'How much the working weighs. Walls are made of this.',
+  'mass.desc': 'Weight. With speed it becomes Momentum (a strike, 0.85 per curved point, and concussion); without speed it becomes Inertia (a standing wall outward, blunt resistance inward).',
 
-  'vitality.desc': 'The will turned inward: the body asked, firmly, to be whole.',
+  'vitality.desc': 'The aim dial. Sets Inward (vitality / (vitality + pressure)): the share of every quantity applied to you instead of the target. Vitality alone heals, 0.35 per curved point.',
 };
 
 // ---------- PSI_QUANTITIES ----------
 export const PSI_QUANTITIES_TEXT: ProseTable = {
-  'pressure.desc': 'How much is being imposed at all. What the blow is made of, and what a will turned inward has to overcome.',
+  'pressure.desc': 'force + grip. Outward: the blow. Inward: Braced, extra armor. Also the denominator of Inward, so more pressure means less of the working goes to you.',
 
-  'momentum.desc': 'Mass in motion. Weight that is going somewhere hits like a hammer and rattles what it hits.',
+  'momentum.desc': 'mass x speed. Outward: bludgeoning strike power and a 9% concussion chance per point. Inward: Kinetic Haste, faster actions. Its square root also lowers Acuity.',
 
-  'inertia.desc': 'Mass that is going nowhere. Held still it is a wall; every point of speed takes some of the wall away.',
+  'inertia.desc': 'mass minus speed, floored at 0. Outward at 3 or more: Kinetic Bulwark, a wall that stops thrown, shot and spat attacks. Inward at 2 or more: Rooted, blunt resistance and dazes at half strength.',
 
-  'acuity.desc': 'Sight per unit of what it must cover — ground, and motion. Concentrated, it punctures and cannot miss. A shape is a needle or a hammer; it cannot be both.',
+  'acuity.desc': 'clairvoyance / (reach + square root of momentum). At 2 or more the strike is piercing and cannot miss; each unit through coherent space ignores 9% armor. Outward: Read, lowers the target’s dodge and parry. Inward: Foresight, enemy blows miss. Momentum spoils it, so a shape is a needle or a hammer, not both.',
 
-  'awareness.desc': 'Sight spanning the field. Seeing where everyone is carries the working to them.',
+  'awareness.desc': 'clairvoyance x reach. Outward: spread, so the working splashes and then hits every enemy, afflictions included. Inward: Wide Sight, physical resistances.',
 
-  'coherence.desc': 'Structure against what wants to burst out of it. A coherent shape keeps some of itself back and leaves something standing.',
+  'coherence.desc': 'space / (force + mass). Withholds up to 40% of the strike and returns half of that as a standing effect. Outward: Compressed, the target loses time. Inward: sets duration of every inward effect, 20 seconds bare, over 3 minutes fully structured.',
 
-  'purchase.desc': 'How well the working holds what it caught. A grab made at speed does not hold: everything still lands, but with no purchase nothing stays. Zero grip is slippery, not empty.',
+  'purchase.desc': 'grip / (1 + speed). Sets how long afflictions stay on the target: 10 seconds at 0, about 50 seconds at full grip with no speed. Nothing is gated on it; everything still lands.',
 
-  'inward.desc': 'Which way the whole working faces. Every quantity above has an outward face and an inward one — momentum thrown is a hammer, momentum worn is speed — and this is the share going each way. Nothing is ever discarded; it is only aimed.',
+  'inward.desc': 'vitality / (vitality + pressure). The share of every quantity applied to you rather than the target; the rest goes outward. Momentum outward is a strike, inward is action speed. Nothing is discarded.',
 };
 
 // ---------- PSI_RECOGNITIONS ----------
 export const PSI_RECOGNITIONS_TEXT: ProseTable = {
-  'unerring_needle.desc': 'Sight narrowed past the point where a target can be anywhere else, and enough will behind it to arrive. Nothing in motion — a hammer is a different thought.',
+  'unerring_needle.desc': 'Acuity 2 or more, Pressure 4 or more, Coherence 0.4 or more, Momentum 0, Inward at most 0.5. A piercing strike that cannot miss. Recognition bonus x1.12.',
 
-  'kinetic_bulwark.desc': 'Mass that is going nowhere, held across structured space: a standing wall that stops anything thrown, shot or spat — light passes through, being in no hurry to be matter.',
+  'kinetic_bulwark.desc': 'Inertia 3 or more, Coherence 0.4 or more, Inward at most 0.4. A standing wall that stops thrown, shot and spat attacks; light passes through. Recognition bonus x1.12.',
 
-  'still_mind.desc': 'Everything turned inward and nothing turned out — and nothing carried in with it. The body is asked to mend, and does.',
+  'still_mind.desc': 'Inward 0.9 or more, Vitality 3 or more, with Momentum, Inertia, Acuity and Awareness at 0 and Coherence at most 0.5. Pure healing: the whole working goes to mending you. Recognition bonus x1.12.',
 
-  'kinetic_rush.desc': 'Mass and motion, and the mass is you. Nothing is thrown, nothing is struck — you are simply somewhere else, sooner, for as long as you can hold the thought.',
+  'kinetic_rush.desc': 'Momentum 36 or more, Inward 0.8 or more. The momentum is worn instead of thrown: Kinetic Haste, faster actions for as long as coherence sustains it. Recognition bonus x1.12.',
 
-  'immovable.desc': 'Weight set inward and told to stay. What tries to move you — a blow, a shove, a mind — finds nothing anywhere in you that consents to be moved.',
+  'immovable.desc': 'Inertia 5 or more, Inward 0.8 or more. Rooted: blunt resistance, and dazes land at half strength. Recognition bonus x1.12.',
 
-  'second_sight.desc': 'Sight narrowed to a point and turned around: not where they are, but where their blow means to be, half a second before they have decided it.',
+  'second_sight.desc': 'Acuity 3 or more, Inward 0.8 or more. Foresight: enemy blows miss outright. Recognition bonus x1.12.',
 
-  'psionic_obliteration.desc': 'Every term of the shape at once — the whole imposition thrown, at weight, at speed. There is no technique left in it. There is no need for any.',
+  'psionic_obliteration.desc': 'Pressure 10 or more, Momentum 48 or more, Inward at most 0.25. Maximum outward strike: pressure and momentum thrown together with almost nothing kept for you. Recognition bonus x1.12.',
 };

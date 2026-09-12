@@ -5,19 +5,19 @@ import type { ProseTable } from './prose';
 
 // ---------- DEITIES ----------
 export const DEITIES_TEXT: ProseTable = {
-  'ikthelthe.desc': 'Primarily mathematical, geometrical and topological miracles. Finds life odd and wants to learn more about it. Its workings have a fractal nature — harmful by breaking enemy geometry, defensive without being restorative by altering space.',
+  'ikthelthe.desc': 'Aspects: aberrant, zero, curious, warping, outer. Miracles are geometric and spatial: they damage by breaking enemy geometry and defend by altering space, and none of them heal. No synergies or hostilities with any other deity.',
 
-  'denjalle.desc': 'Miracles of combat and fire, with especial regard for adherents who fight with rapier and parrying dagger. His workings prevent outside sabotage, help strike true, and magnify the power of single combat.',
+  'denjalle.desc': 'Aspects: humanoid, honorable, fire, organized. Miracles deal fire damage, retaliate against attackers, improve accuracy and strengthen single combat, with extra effect for a rapier and parrying dagger. Shares a page with organized or honorable deities, and with humanoid ones unless they are evil or trickster (honorable waives that).',
 
-  'usvylgr.desc': 'Miracles of crafting and trickery. Most can be worn to the bench, imparting surer hands and finer results; his combat workings rely on deception and on enemies simply failing to find their target.',
+  'usvylgr.desc': 'Aspects: gigantoid, earth, crafting, trickster, organized. Miracles raise crafting results at the bench and make enemies miss in combat. Shares a page with crafting or earth deities; refuses tricksters who are neither.',
 
-  'xima.desc': 'Primarily ritualistic, cold and blood-related miracles; he protects his followers by channeling his power through their spilled blood. His workings last long but are slow to cast, shield against the elements, and turn bleeding to his adherents’ benefit.',
+  'xima.desc': 'Aspects: bestial, cold, honorable, sacrificial, tribal, Yolixoch pantheon. Miracles have long durations and long cooldowns: mending, elemental shielding, cold damage, and effects that turn the caster\'s own bleeding into a benefit. Shares a page with bestial, tribal or Yolixoch deities unless they are fire or poison.',
 
-  'cuixtli.desc': 'A pair of gods born from the first partnership between a jaguar and man whose union created the concept of the hunt - a thunderous spear and fangs as quick as the wind. Their miracles improve the power of spears as well as the strength of hunting newly encountered opponents.',
+  'cuixtli.desc': 'A paired deity. Aspects: bestial, honorable, tribal, humanoid, lightning, wind, Yolixoch pantheon. Miracles strengthen spears, grant periodic bonus attacks, and improve hunting against newly encountered opponents. Shares a page with bestial, tribal, honorable or Yolixoch deities unless they are poison, evil or aberrant.',
 
-  'kenese_paea.desc': 'Miracles shrouded in darkness, relying on the presence and use of poisons. Her workings gain power while anyone in the fight is poisoned or rotting; her adherents may burn their own poison to envenom their enemies, redouble a venom already at work, and walk shrouded so that blows aimed at them find only dark.',
+  'kenese_paea.desc': 'Aspects: humanoid, poison, dark, sacrificial, tribal, Foai pantheon. Miracles gain power while anyone in the fight is poisoned or rotting: they spend the caster\'s own poison to envenom enemies, intensify a venom already applied, and shroud the caster so attacks miss. Shares a page with bestial, evil, poison or sacrificial deities; refuses honorable and light ones.',
 
-  'tuigamala.desc': 'Tuigamala was the first god to plant trees in the world. His miracles primarily strengthen wood and grow plants on command.',
+  'tuigamala.desc': 'Aspects: humanoid, tribal, nature, honorable, unaligned, Foai pantheon. Miracles strengthen wooden weapons and grow plants. Shares a page with honorable, nature or Foai deities; refuses evil, poison and fire ones.',
 
-  'yshicna.desc': 'An aberrant god fascinated with the weight of words. It has no form and yet its words are spoken absolute. It offers the return of Meaning to its basic state but also desires to elevate the Sound of words that have become integral to one’s soul.',
+  'yshicna.desc': 'Aspects: aberrant, atomic, arcane, curious, warping, outer. Miracles act on arcane words: one returns a word\'s Meaning to its basic state, another raises the Sound of a word the caster has uttered many times. No synergies or hostilities with any other deity.',
 };

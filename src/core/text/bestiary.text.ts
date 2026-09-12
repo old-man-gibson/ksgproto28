@@ -5,44 +5,44 @@ import type { ProseTable } from './prose';
 
 // ---------- MONSTER_TAGS ----------
 export const MONSTER_TAGS_TEXT: ProseTable = {
-  'living.desc': 'Flesh, blood, and the usual mortal weaknesses.',
+  'living.desc': 'Material tag: a flesh body. Adds no innate armour or resistance.',
 
-  'inorganic.desc': 'Matter without metabolism — gel, stone, metal.',
+  'inorganic.desc': 'Material tag: gel, stone or metal. Gives 3 innate armour unless the species declares its own.',
 
-  'incorporeal.desc': 'Has no body worth cutting.',
+  'incorporeal.desc': 'Material tag: no solid body. Attaches no armour or resistance rule of its own.',
 
-  'eldritch.desc': 'Wrong in a way the eye reports late.',
+  'eldritch.desc': 'Taxon tag for eldritch creatures. Attaches no mechanical rule.',
 
-  'non_elemental.desc': 'Bound to no element. Derived when a monster claims none.',
+  'non_elemental.desc': 'Element tag assigned when a monster claims no element. No elemental resistance or weakness follows from it.',
 
-  'ranged.desc': 'Attacks from the back rank. Derived from the monster’s reach.',
+  'ranged.desc': 'Derived from the monster reach: it attacks from the back rank. Ranged resistance applies to its hits.',
 
-  'swarm.desc': 'Comes in numbers, or not at all.',
+  'swarm.desc': 'Derived from its group rule: spawns in groups of two or more.',
 
-  'solitary.desc': 'Never seen with company. Derived from its group rule.',
+  'solitary.desc': 'Derived from its group rule: always spawns alone.',
 
-  'leader.desc': 'Brings an escort. Derived from its escort list.',
+  'leader.desc': 'Derived from its escort list: spawns with escorts of the listed species.',
 
-  'unique.desc': 'There is only one, and it knows it.',
+  'unique.desc': 'Trait tag: one individual of this species exists.',
 
-  'splitter.desc': 'Cut it and there is simply more of it.',
+  'splitter.desc': 'Trait tag: splits into more units when damaged.',
 };
 
 // ---------- BESTIARY_FACTS ----------
 export const BESTIARY_FACTS_TEXT: ProseTable = {
-  'lore.hint': 'You have seen it die. You have not yet understood it.',
+  'lore.hint': 'Reveals the field notes for this species. Can unlock from 1 kill; guaranteed at 10.',
 
-  'rewards.hint': 'You would have to keep count to know what one is worth.',
+  'rewards.hint': 'Reveals experience and coin per kill. Can unlock from 2 kills; guaranteed at 20.',
 
-  'vitals.hint': 'How much punishment it soaks is still guesswork.',
+  'vitals.hint': 'Reveals health and evasion. Can unlock from 3 kills; guaranteed at 30.',
 
-  'offense.hint': 'You know it hurts. You could not say how much, or with what.',
+  'offense.hint': 'Reveals damage, damage type, attack interval and reach. Can unlock from 3 kills; guaranteed at 30.',
 
-  'behavior.hint': 'Its habits — packs, escorts, tactics — remain unread.',
+  'behavior.hint': 'Reveals group size, escorts and rank behaviour. Can unlock from 5 kills; guaranteed at 45.',
 
-  'defenses.hint': 'Which blows it shrugs off, and which it fears, is unknown.',
+  'defenses.hint': 'Reveals resistances and weaknesses. Can unlock from 8 kills; guaranteed at 70.',
 
-  'loot_common.hint': 'You have not butchered enough to know what they carry.',
+  'loot_common.hint': 'Reveals the common drop table with chances. Can unlock from 5 kills; guaranteed at 45.',
 
-  'loot_rare.hint': 'Rumours of rarer prizes. Nothing you could put odds on.',
+  'loot_rare.hint': 'Reveals the rare drop table with chances. Can unlock from 15 kills; guaranteed at 150.',
 };

@@ -5,15 +5,15 @@ import type { ProseTable } from './prose';
 
 // ---------- TITLES ----------
 export const TITLES_TEXT: ProseTable = {
-  'iconoclast.desc': 'Receive ten miracles. The gods call it devotion; you call it a collection — and worn, this title lets hostile powers share a grimoire page whether they like it or not.',
+  'iconoclast.desc': 'Learn ten miracles. Passive: +5 maximum spirit. Worn: +5% spell power, and miracles of hostile deities may be prepared together.',
 
-  'wanderer.desc': 'Complete 50 journeys between spots. The road knows your name.',
+  'wanderer.desc': 'Complete 50 journeys between spots. Passive: +5% travel speed. Worn: +10% travel speed and +10% loot.',
 
-  'slayer.desc': 'Fell 100 creatures. They flinch before you swing.',
+  'slayer.desc': 'Kill 100 creatures. Passive: +2% damage. Worn: +5% damage and +2% crit.',
 
-  'titan_incarnate.desc': 'Reach Strength 100. Mountains politely step aside.',
+  'titan_incarnate.desc': 'Reach Strength 100. Passive: +10 damage. Worn: +10% damage and +5% maximum health.',
 
-  'first_blade.desc': 'Defeat the Goblin Warchief having never raised any weapon family but your first.',
+  'first_blade.desc': 'Defeat the Goblin Warchief having attacked with only one weapon family. Passive: +3% damage. Worn: +8% damage and +5% speed.',
 
-  'untouchable.desc': 'Defeat the Goblin Warchief without ever having been knocked out.',
+  'untouchable.desc': 'Defeat the Goblin Warchief without ever having been knocked out. Passive: +2% dodge. Worn: +3% dodge and a 3% shorter action bar.',
 };

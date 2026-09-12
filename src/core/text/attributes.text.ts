@@ -5,15 +5,15 @@ import type { ProseTable } from './prose';
 
 // ---------- ATTRIBUTE_TRAINING ----------
 export const ATTRIBUTE_TRAINING_TEXT: ProseTable = {
-  'str.desc': 'Grow stronger with each passing day.',
+  'str.desc': 'Trains Strength: +1 every 5 levels, +1% every 10. Ranks at 21, 41, 61 and 81 add flat and percentage damage.',
 
-  'dex.desc': 'Sprints, hurdles, and drills to hone reflex and precision.',
+  'dex.desc': 'Trains Dexterity: +1 every 5 levels, +1% every 10. Ranks at 21, 41, 61 and 81 add speed; rank 81 also shortens the action bar by 8%.',
 
-  'con.desc': 'Endure more than yesterday. Then more than that.',
+  'con.desc': 'Trains Constitution: +1 every 5 levels, +1% every 10. Ranks at 21, 41, 61 and 81 add maximum health; rank 61 also adds 2 armour.',
 
-  'int.desc': 'Study poems, plays, and treatises to sharpen intellect.',
+  'int.desc': 'Trains Intelligence. Ranks at 21, 41, 61 and 81 add spell power and skill experience; milestones at 5, 7 and 10 add skill experience, Intelligence and maximum mana.',
 
-  'wis.desc': 'Observe, listen, and glean what others miss.',
+  'wis.desc': 'Trains Wisdom: +1 every 5 levels, +1% every 10. Ranks at 21, 41, 61 and 81 add training experience and loot.',
 
-  'cha.desc': 'Practice rhetoric, presence, and persuasive argument.',
+  'cha.desc': 'Trains Charisma: +1 every 5 levels, +1% every 10. Ranks at 21, 41, 61 and 81 add gold gain.',
 };

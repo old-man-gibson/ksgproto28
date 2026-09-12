@@ -5,137 +5,137 @@ import type { ProseTable } from './prose';
 
 // ---------- STATUSES ----------
 export const STATUSES_TEXT: ProseTable = {
-  'eyeless.desc': 'There is nothing there to dazzle, and nothing to take.',
+  'eyeless.desc': 'Cannot be Dazzled or Blinded. No other effect.',
 
-  'refutation.desc': 'A refusal held in front of you. What strikes it is answered in kind.',
+  'refutation.desc': 'Ward absorbs a flat 40 damage from each hit after resistances, plus 1.5 per point of spell power, for 15 seconds. Anything that strikes you in melee takes 6 piercing damage and is Punctured.',
 
-  'knitting.desc': 'The wound is closing on its own. Something would have to interrupt it.',
+  'knitting.desc': 'Health regenerates. Heat or acid damage removes it and applies Doused for 4 seconds.',
 
-  'doused.desc': 'Something is burning or eating you faster than you can knit. Nothing is closing until it stops.',
+  'doused.desc': 'Health regeneration is zero for 4 seconds. Knitting cannot return until it ends.',
 
-  'corroded.desc': 'Your harness is going soft and pitted. Every layer it had is worth a little less.',
+  'corroded.desc': 'Armour is reduced by 12% per point of corrosion for 25 seconds. Doses add; at 6 it escalates to Melting.',
 
-  'melting.desc': 'Whatever you were wearing has stopped being a barrier. What is under it is exposed to heat, cold and anything blunt.',
+  'melting.desc': 'Armour gives nothing for 15 seconds. Bludgeoning, heat and cold resistance each drop by 12%.',
 
-  'poison.desc': 'A slow, low burn of venom that also leaves you short of breath.',
+  'poison.desc': 'Deals 0.05 poison damage per tick per intensity for 30 seconds and cuts stamina regeneration by 20%. Only a stronger dose replaces it; at intensity 4 it escalates to Rotting.',
 
-  'rotting.desc': 'The wound is septic. It feeds on every effort you make, and the strength does not come straight back.',
+  'rotting.desc': 'Deals 0.12 poison damage per tick for 45 seconds and cuts stamina regeneration by 35%. Half of every stamina spend is also removed from maximum stamina, up to 60%. When it ends the lost maximum returns slowly (Wasted).',
 
-  'rot_recovery.desc': 'What the rot took is coming back, slowly.',
+  'rot_recovery.desc': 'Maximum stamina removed by Rotting returns over time, about 20 seconds for a full 60% loss.',
 
-  'on_fire.desc': 'Burning hard and briefly. More fire makes the blaze fiercer, not longer.',
+  'on_fire.desc': 'Deals 0.4 heat damage per tick for 8 seconds. A new flame adds half its intensity to the existing one without resetting the timer. At intensity 5 it escalates to Blazing.',
 
-  'blazing.desc': 'Burning fiercely enough that the damage does not simply mend — half of what it took needs real treatment.',
+  'blazing.desc': 'Deals 0.9 heat damage per tick for 4 seconds. Healing can restore at most half of what it burns. When it ends it becomes Seared.',
 
-  'blaze_burn.desc': 'A deep burn. Ordinary recovery will not close it — rest properly, apply a salve, or have it mended.',
+  'blaze_burn.desc': 'Healing can restore at most half of what the blaze burned. No timer. Removed by rest, a salve, or a healing spell.',
 
-  'chilled.desc': 'Slowing, and stiffening your hands around whatever you are holding.',
+  'chilled.desc': 'Speed is reduced by 40% and weapon bonuses by 50% per intensity (up to 60%) for 20 seconds. Doses add; past intensity 1 it escalates to Frozen.',
 
-  'frozen.desc': 'Locked in place, and brittle — blunt force does far more to you like this. Any blow shatters it.',
+  'frozen.desc': 'Speed is reduced by 95% and bludgeoning resistance by 50% for 3 seconds. Any damage taken removes it.',
 
-  'bleeding.desc': 'An open wound. It costs more the more of you there is to lose, and it does not close on its own.',
+  'bleeding.desc': 'Deals 0.08 slashing damage per tick plus 0.15% of current health, at 30% rate out of combat. No timer. Each cut is its own stack; at 5 it escalates to Lacerated. Removed only by rest, a salve, or a healing spell.',
 
-  'lacerated.desc': 'Torn open. There is less of you to work with until it is closed, and closing it takes more than one pass.',
+  'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and seals off 4% of maximum health per stack, up to 30%. No timer. Rest, a salve, or a healing spell reduces it to Bleeding; a second treatment closes that.',
 
-  'concussed.desc': 'Your head is ringing. Spellwork will not hold together, and half your blows go wide.',
+  'concussed.desc': 'Spells cannot be cast and attacks have a 12% miss chance per intensity, for 25 seconds. Rest, a salve, or a healing spell reduces intensity by 0.4. At intensity 3 it escalates to Dazed.',
 
-  'dazed.desc': 'Not there at all. Each daze costs you one action, and wears off as you spend them.',
+  'dazed.desc': 'Spells and attacks cannot be taken. Each stack skips one completed action and is spent by it. Ends with the fight.',
 
-  'punctured.desc': 'A deep hole that keeps opening. Effort costs more, and there is less of you to spend.',
+  'punctured.desc': 'Stamina costs rise by 25% per point (up to double) and maximum stamina is sealed off a little each tick while it is held, up to 5%. Lasts 40 seconds. Doses add; at 3 it escalates to Perforated.',
 
-  'perforated.desc': 'Holed through in too many places to count. You hold whatever form you can, and nothing comes back on its own.',
+  'perforated.desc': 'Stamina does not regenerate, 5% of maximum stamina per stack is sealed off (up to 40%), and the stance is forced to Balanced. Lasts 60 seconds.',
 
-  'jolted.desc': 'Charge riding your nerves. It discharges the moment you commit to an action — and a hard enough jolt loses you your grip.',
+  'jolted.desc': 'Deals 1.2 lightning damage each time your action bar fills, for 20 seconds. Below 50% health you drop your weapon. Taking damage removes half the charge. Past intensity 2 each new dose may escalate it to Shocked; at 6 it does.',
 
-  'shocked.desc': 'Locked rigid. Your action bar runs backwards, and when it empties the charge goes off all at once.',
+  'shocked.desc': 'The action bar drains instead of filling. When it empties, 2.5 lightning damage per intensity lands and the charge is spent. Ends with the fight.',
 
-  'shardbound.desc': 'Stone growing through you. It bites every time you swing, and every time something reaches you.',
+  'shardbound.desc': 'Deals 0.8 piercing damage to the bearer each time they attack or are struck in melee, for 30 seconds. Doses add; at 4 it escalates to Shardbloom.',
 
-  'shardbloom.desc': 'The stone has flowered. It cuts less on its own, but every movement opens you afresh.',
+  'shardbloom.desc': 'Deals 0.4 piercing damage to the bearer each time they attack or are struck in melee, and applies a Shard Cut each time. Lasts 25 seconds.',
 
-  'shard_bleed.desc': 'A fresh cut from the stone — brief, and deep.',
+  'shard_bleed.desc': 'Deals 0.3 slashing damage per tick plus 0.1% of current health, for 4 seconds. Stacks up to 8 and never escalates.',
 
-  'wet.desc': 'Soaked through. Fire has less to catch, but cold, lightning and venom all find you easier.',
+  'wet.desc': 'Heat resistance +8%; lightning and cold resistance -6%; poison resistance -4%. Lasts 30 seconds. Doses add; at 5 it escalates to Soaked. Heat damage removes one stack.',
 
-  'soaked.desc': 'Drenched to the bone. Fire barely takes — everything else it conducts straight into you.',
+  'soaked.desc': 'Heat resistance is set to 80% (+10% if already higher). Lightning, cold and poison resistance are set to -50%. Chill lands at triple intensity, held Poison becomes Rotting, and Jolted escalates at 3. Lasts 60 seconds or until 3 hits of heat, poison, lightning or cold.',
 
-  'buffeted.desc': 'The air keeps taking their footing. Motions that meant to end somewhere useful keep ending badly instead.',
+  'buffeted.desc': 'Each point gives a 12% chance that a technique ends off balance instead of at its exit position, fading as the 12-second timer runs down. Doses add; at 5 it escalates to Unfooted. A plain swing still resets to neutral.',
 
-  'unfooted.desc': 'Every motion ends badly now. They can still swing — they simply cannot arrive anywhere worth following up from.',
+  'unfooted.desc': 'Every technique ends off balance instead of at its exit position, for 20 seconds. A plain swing still resets to neutral.',
 
-  'seeded.desc': 'Something has taken in them. It is not doing anything yet — and it is getting bigger while nobody sees to it.',
+  'seeded.desc': 'No effect on landing. Grows 0.15 per second while untouched and becomes Rootbound at 6. Each hit prunes 0.5 (piercing prunes double); water damage feeds it 1. Records every other condition that lands on the bearer. Heat damage removes it and deals 4 heat per intensity.',
 
-  'rootbound.desc': 'It has network now, and a hold on them. Whatever is wrong with them is spreading to everything standing nearby.',
+  'rootbound.desc': 'Speed -20%, dodge -8%. Every 3 seconds a quarter of the recorded conditions is spread to every other enemy in the fight. Grows 0.08 per second; each hit prunes 0.25. Lasts 45 seconds. Heat damage removes it and deals 7 heat per intensity.',
 
-  'overgrowth.desc': 'Life is overgrowing inside them. The body swells — slower on its feet, and much harder to miss.',
+  'overgrowth.desc': 'Applied by healing a body past full health; the surplus is the ledger. Speed -15%, dodge -5%. The surplus fades 0.2% per second. At half of maximum health in surplus it escalates to Proliferating.',
 
-  'proliferating.desc': 'The growth has a will of its own now. Feed it much more and the body will not hold it.',
+  'proliferating.desc': 'Speed -30%, dodge -10%. The surplus fades 0.1% per second. At a full maximum health of surplus it bursts: the bearer takes the whole surplus as damage, and every enemy beside it takes half as poison.',
 
-  'magnetized.desc': 'Iron in the flesh, and everything aimed their way is being helped along. Lightning cannot miss them at all.',
+  'magnetized.desc': 'Each point ignores 10% of their dodge, and dodge is reduced by 3%. Lightning attacks cannot miss them. Piercing attacks gain 5% crit chance per point. Lasts 10 seconds. Doses add; at 6 it escalates to Magnet-Locked.',
 
-  'magnet_lock.desc': 'The pull has closed on them. Nothing they do avoids anything — and the charge is waiting for the next real blow.',
+  'magnet_lock.desc': 'Dodge does not apply at all. Lightning attacks cannot miss them. Piercing attacks gain 5% crit chance per stack, and the next critical hit deals +35% damage per stack. Lasts 15 seconds.',
 
-  'dazzled.desc': 'Seeing spots. A little harder to land a blow, and a little harder to avoid one.',
+  'dazzled.desc': 'Attacks have an 8% miss chance per intensity and dodge is reduced by 5%. Lasts 6 seconds; a second flash extends the timer. At 4 it escalates to Blinded.',
 
-  'blinded.desc': 'Nothing but glare. You swing at where things were, and never see what is coming.',
+  'blinded.desc': 'Every attack rolls to hit twice and keeps the worse result. Dodge is reduced by 25%. Lasts 25 seconds.',
 
-  'tainted.desc': 'Something is eating at your defences — all of them, and what wards light and dark worst of all.',
+  'tainted.desc': 'All resistances are reduced by 5% per stack, light and dark by 10%. The total reduction is capped at 25% plus 5% per stack. Weakens as the 45-second timer runs down. Doses add; at 5 it escalates to Corrupted.',
 
-  'corrupted.desc': 'It has stopped eating your defences and started on you. What it takes of your spirit, it takes of everything else.',
+  'corrupted.desc': 'Each stack seals off 10% of maximum spirit and 5% of maximum health, stamina and mana (up to 60%), to 10 stacks. No timer; only a cleansing removes it. If spirit reaches zero you are defeated and wake with half of it.',
 
-  'manaburn.desc': 'Burning through your reserves and past them. When it has taken more than you had, what is left over comes back as fire.',
+  'manaburn.desc': 'Drains 1% of maximum mana per tick until the total intensity has been taken. Mana can go negative by a quarter of the pool per stack. When the debt bottoms out it deals arcane damage equal to the debt, ignoring 80% of arcane resistance. No timer.',
 
-  'well_fed.desc': 'A proper meal, still doing its work.',
+  'well_fed.desc': 'Restores 0.06% of maximum health per tick, +8 maximum health and +10% stamina regeneration for 10 minutes.',
 
-  'steady_hand.desc': 'Fed, warm, and not shaking.',
+  'steady_hand.desc': '+3% crit and +2% parry for 8 minutes.',
 
-  'clear_headed.desc': 'The fog has lifted. Spellwork comes easier.',
+  'clear_headed.desc': 'Restores 0.1% of maximum mana per tick, +8% spell power and +5% skill experience for 8 minutes.',
 
-  'queasy.desc': 'That should not have been eaten. Your stomach agrees.',
+  'queasy.desc': 'Deals 0.03 poison damage per tick and cuts stamina regeneration by 25% for 90 seconds. Rest removes it.',
 
-  'unfolded.desc': 'Its geometry has been argued with, and lost. What remains defends poorly.',
+  'unfolded.desc': 'Slashing, piercing and bludgeoning resistance -12%; arcane resistance -15%. Lasts 15 seconds.',
 
-  'folded_space.desc': 'Where you were is not where you are. Blows keep arriving at the former.',
+  'folded_space.desc': '+12% dodge for 40 seconds.',
 
-  'ximas_rime.desc': 'A rime of the Cold Sun, worn against the elements. Slow to fade, as his gifts are.',
+  'ximas_rime.desc': '+12% heat, cold and lightning resistance for 60 seconds. Granted by Xima.',
 
-  'blood_communion.desc': 'Your spilled blood is his channel: the bleeding feeds you instead of draining you.',
+  'blood_communion.desc': 'Bleeding and Lacerated ticks heal you instead of damaging you. +8% damage. Lasts 60 seconds.',
 
-  'honor_bound.desc': 'The terms are declared: one against one. The rest can only watch.',
+  'honor_bound.desc': 'Enemies other than your target do not attack. +10% damage. Lasts 20 seconds.',
 
-  'veiled.desc': 'They are not prevented from striking you. They are prevented from finding you.',
+  'veiled.desc': 'Attacks against you have a 12% chance to miss, for 30 seconds.',
 
-  'night_shroud.desc': 'Shrouded in her dark; blows aimed at you find only night.',
+  'night_shroud.desc': 'Attacks against you have a 12% chance to miss, for 30 seconds.',
 
-  'unravelling.desc': 'Whatever in you touches mana is fraying at the edges. Fray far enough and it catches — a mage feels this as approaching catastrophe; everyone else, as their guard against the arcane coming loose.',
+  'unravelling.desc': 'Arcane resistance -8%, spell power -5% and mana regeneration -15% per stack, for 20 seconds. At 3 stacks it becomes Manaburn at 8 times the intensity.',
 
-  'kinetic_bulwark.desc': 'A standing wall of held mass. Nothing thrown, shot or spat gets through — light does.',
+  'kinetic_bulwark.desc': 'Blocks all ranged attacks except light, for 25 seconds.',
 
-  'psionic_haste.desc': 'Mass in motion, and the mass is you. Everything simply happens sooner — blows, work, and the road.',
+  'psionic_haste.desc': '+3% speed and +3% travel speed per unit, for 20 seconds. Speed covers attacks, crafting and every activity.',
 
-  'psionic_bracing.desc': 'The push, turned around: what would have landed on them holds you together instead.',
+  'psionic_bracing.desc': '+1 armour per unit, for 20 seconds.',
 
-  'psionic_root.desc': 'Weight that is going nowhere, and it is yours. Whatever tries to move you finds nothing to push against.',
+  'psionic_root.desc': '+2% bludgeoning resistance per unit, for 20 seconds. Dazed and Concussed land at half intensity.',
 
-  'psionic_foresight.desc': 'You are reading where the blow means to go, and declining to be there when it arrives.',
+  'psionic_foresight.desc': 'Attacks against you have a 3% chance to miss per unit, for 20 seconds.',
 
-  'psionic_compression.desc': 'The space you are standing in has been argued into a smaller shape, and you are still inside it. Everything takes longer than you meant it to.',
+  'psionic_compression.desc': 'Speed -2% per unit, for 20 seconds.',
 
-  'psionic_read.desc': 'Every intention arrives a moment before you act on it. There is nowhere left to go that has not already been looked at.',
+  'psionic_read.desc': 'Dodge -2% and parry -2% per unit, for 20 seconds.',
 
-  'psionic_wide_sight.desc': 'Every mind in the room at once. You are already turning with the blow before it is thrown.',
+  'psionic_wide_sight.desc': '+1.2% slashing, piercing and bludgeoning resistance per unit, for 20 seconds.',
 
-  'artisans_cunning.desc': 'The Crafty Hammer guides your hands: surer work, and a knack for the good stock.',
+  'artisans_cunning.desc': '+15% craft speed and +8% loot for 120 seconds.',
 
-  'flat_footed.desc': 'Caught out of position — worn and conjured defences are no help until you recover.',
+  'flat_footed.desc': 'Dodge and parry from gear, affixes, runes, hand bonuses, buffs and conditions do not apply; skill and title bonuses still do. Ends after your next two completed actions.',
 
-  'surprised.desc': 'Has not registered the fight yet — the next blow to land bites deeper.',
+  'surprised.desc': 'The next hit to land deals 30% more damage per intensity, then the surprise is spent. A fight opening on surprised enemies starts your action bar nearly full. Fades after two of their actions.',
 
-  'skewered.desc': 'A weapon is buried in your body. Moving around it is its own problem.',
+  'skewered.desc': 'Speed -5% and dodge -15% for 10 seconds. If the timer runs out, the blade works loose for 12 piercing damage; torn out early, it deals nothing.',
 
-  'fasting.desc': 'It does not reach for what is in front of it.',
+  'fasting.desc': 'Plain weapon swings cannot be taken. Workings, techniques and abilities still can. Ends with the fight.',
 
-  'hunger_anupama.desc': 'An appetite that is not yours. Everything you do feeds it, and it has no full.',
+  'hunger_anupama.desc': 'Deals 0.05 dark damage per tick per intensity; half of it ignores resistance. No cap on stacks. Each application refreshes the 15-second timer. Ends with the fight.',
 
-  'weight_of_hunger.desc': 'Bowed under everything you have taken. The next action comes slowly — and then the weight is gone.',
+  'weight_of_hunger.desc': 'Speed is reduced by intensity, to at most 3 times slower. Ends when your action bar fills, or after 3 seconds.',
 };

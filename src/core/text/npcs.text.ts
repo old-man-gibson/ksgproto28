@@ -5,87 +5,87 @@ import type { ProseTable } from './prose';
 
 // ---------- NPCS ----------
 export const NPCS_TEXT: ProseTable = {
-  'warden_of_the_foot.desc': 'Holds the door for everyone and vouches for no one. The keyring is ornamental; the memory is not.',
+  'warden_of_the_foot.desc': 'Stands at the Foot of the Ascent. Gives the three starting quests: The Faces of Threshold, A Taste of Everything and The First Ascent.',
   'warden_of_the_foot.dialogue': [
-    'Eight roads, one door. You will learn both ends of all of them.',
-    'The tower was here first. The city is just how people wait near it.',
-    'Climb whenever you like. The floor does not care whether you were ready.',
+    'Eight roads leave this door, one to each district gate. Each is 60 ticks.',
+    'Talk to the eight trades before you climb. A vendor charges you half again the price until you have spoken to them.',
+    'The tower door is open now. Floor 1 has no gate; floor 2 needs 150 gold earned in total.',
   ],
 
-  'master_smith.desc': 'Runs the third forge from the chimney end. Everything about her is measured in heats, including patience.',
+  'master_smith.desc': 'Smith at the Forges. Sells iron scrap, copper ore, tin ore, hardwood, leather and iron ingots at the Scrap Bin. The Forges hold the iron ingot, iron dagger and iron sword recipes.',
   'master_smith.dialogue': [
-    'Scrap costs nothing and teaches everything. Start there.',
-    'Two heats to an ingot. Three if you talk while you work.',
-    'The tower eats blades. Good news, if you sell them.',
+    'I sell scrap, copper ore, tin ore, hardwood, leather and finished iron ingots.',
+    'The forge here makes iron ingots, iron daggers and iron swords. One ingot smelted counts for the Warden’s second quest.',
+    'I sell no weapons. Pell Marrow at the Wrights’ Gate has the rack.',
   ],
 
-  'lectory_wizard.desc': 'Keeps the quiet in the Reading Hall by outlasting everyone who breaks it.',
+  'lectory_wizard.desc': 'Docent in the Reading Hall, beside the Spell Table where spells are inscribed. Sells nothing and gives no quests.',
   'lectory_wizard.dialogue': [
-    'A word is a tool — an instrument, rather. Say it like you mean to use it.',
-    'The table takes no fee. The words charge you themselves — bill you, I should say.',
-    'Start with fire. Everyone starts with fire. There are reasons — precedents, rather.',
+    'The Spell Table is behind me. One spell inscribed there counts for the Warden’s second quest.',
+    'The table takes no fee. A spell costs mana each time you cast it.',
+    'Read Until It Sticks trains Intelligence here. Sit With a Hard Passage trains Wisdom and pays magic skill XP.',
   ],
 
-  'chapel_priest.desc': 'Keeps all nine doors, including the two nobody discusses. Counts devotion the way a clerk counts grain.',
+  'chapel_priest.desc': 'Prior of the Nine Chapels. Miracles are learned here for favor. Sells nothing and gives no quests.',
   'chapel_priest.dialogue': [
-    'Favor is a ledger. Deeds go in, miracles come out.',
-    'D’Enjalle answers the honest and the theatrical alike. Usvýlgr prefers you bring tools.',
-    'The locked doors stay locked. The gods behind them are not owed introductions.',
+    'Favor pays for miracles. Quest turn-ins earn it; learning a miracle spends it.',
+    'D’Enjalle, the Shining Rapier, is a god of honor, fire and order. Usvýlgr, the Crafty Hammer, is a god of crafting and earth.',
+    'Two of the nine doors are locked. Nothing behind them can be learned yet.',
   ],
 
-  'militia_captain.desc': 'Third generation at the Muster Gate. Squares up paperwork the way others square up recruits.',
+  'militia_captain.desc': 'Captain at the Muster Gate. Sells nothing and gives no quests. The gate leads to the Cages, the Sand and the Long Gallery, 40 ticks each.',
   'militia_captain.dialogue': [
-    'New face. Good. Roads stay safe when strangers stay busy.',
-    'Cages first. Sand second. Tower last, if you must.',
-    'Lost fights come home through my gate. Try to walk in.',
+    'Talking to me counts toward the Warden’s first quest. I sell nothing.',
+    'The Cages stage one fight at a time: rats, slimes and goblins, levels 1 to 3. The Sand trains footwork and sparring. Then the tower.',
+    'A lost fight returns you to the last haven you stood in: the Doorstep Inn at the Foot, or a tower landing.',
   ],
 
-  'head_chef.desc': 'Feeds the granary crews from a kitchen the size of a barn. Her forearms carry scars from two different careers.',
+  'head_chef.desc': 'Cook in the Granary Kitchens. Sells raw ingredients at the Larder Door: meat, fish, onion, mushroom, salt, flour, egg, berries and honey. The kitchen holds a Cooking Stove and a preparing bench.',
   'head_chef.dialogue': [
-    'You have until the next bell. Everything here is measured in bells.',
-    'Meat, herb, heat. The stove forgives one mistake a meal.',
-    'Climbers eat first in this city. It is not a courtesy — full stomachs come back down.',
+    'Raw ingredients only at my door. Cooked dishes are on Orrin Tallow’s cart at the Granary Gate.',
+    'The stove and the preparing bench are behind me. One dish cooked here counts for the Warden’s second quest.',
+    'Scrub the Pans pays 10 gold per 200 ticks if you need coin.',
   ],
 
-  'row_alchemist.desc': 'Owns the cleanest glass on the Row and never names a substance if a behaviour will do.',
+  'row_alchemist.desc': 'Alchemist at the Alembics. Sells reagents at the Reagent Shelf: spring water, pressed oil, grain spirit, common herb, mendroot, bloodwort, fixing salt, bone ash and brimstone. The alchemy bench here brews by ordered sequence.',
   'row_alchemist.dialogue': [
-    'The one that settles goes in first. Then the one that argues.',
-    'Order is the recipe. The Row learned that expensively.',
-    'What you bottle is what the sequence spells. Not what you hoped.',
+    'Reagents go into the alembic one at a time. The order you add them is the recipe.',
+    'The same reagents in a different order make a different brew.',
+    'I sell water, oil, spirit, herbs and salts. Brews you make yourself at the bench behind me; one bottled counts for the Warden’s second quest.',
   ],
 
-  'psionic_shaper.desc': 'Sits where the incense is thickest, facing no particular direction. People find they have already been noticed.',
+  'psionic_shaper.desc': 'Stands on Censer Walk. Teaches nothing and sells nothing at present; the psionic system is closed. Talking counts toward The Faces of Threshold.',
   'psionic_shaper.dialogue': [
-    'No, the tower does not think. You were going to ask.',
-    'The mind is a grip. Most people never close the hand.',
-    'Come back when the word psionics means something here again.',
+    'I teach nothing at present. Psionics is closed in this city.',
+    'Talking to me counts toward the Warden’s first quest.',
+    'Work the Colonnade, here on the walk, trains Charisma.',
   ],
 
-  'dojo_master.desc': 'Rakes the Sand personally every morning, then spends the day reading footprints like a ledger.',
+  'dojo_master.desc': 'Master of the Sand. Footwork on the Sand trains Dexterity; Spar trains Strength and pays combat skill XP. Sells nothing and gives no quests.',
   'dojo_master.dialogue': [
-    'Footwork. Everything else is decoration on footwork.',
-    'The Sand shows what you did. Not what you meant.',
-    'Spar until the prints stop apologising.',
+    'Footwork on the Sand trains Dexterity.',
+    'Spar trains Strength and pays combat skill XP.',
+    'Neither activity rolls a fight. For fights, use the Cages, 40 ticks back through the Muster Gate.',
   ],
 
-  'ward_outfitter.desc': 'Keeps a rack under the gate arch and a second rack he does not show strangers. Every piece on both has been worn once by somebody who came back.',
+  'ward_outfitter.desc': 'Vendor at the Wrights’ Gate. The Rack sells cloth and leather armour, iron gauntlets, a wooden shield, and starter weapons. Four more lines (leather jerkin, iron breastplate, soldier greaves, rapier) unlock once the Toll Hall keeper is defeated.',
   'ward_outfitter.dialogue': [
-    'Plain steel. Plain leather. It all comes back down the stairs eventually — I just resell it.',
-    'Sizes are approximate. The tower does not measure you either.',
-    'Clear the first floor and I will show you the other rack.',
+    'Plain armour and starter weapons. Prices come off the item’s value, plus half again until we have spoken.',
+    'Armour: cloth tunic, leather cap, vest and boots, iron gauntlets, wooden shield. Weapons: oak club, iron dagger, old spear, iron sword, hunting bow, oak staff.',
+    'Defeat the keeper of the Toll Hall and four more lines come out: leather jerkin, iron breastplate, soldier greaves, rapier.',
   ],
 
-  'row_apothecary.desc': 'Runs the dispensary hatch in the gate wall, where the wind cannot reach the shelves. Labels everything twice.',
+  'row_apothecary.desc': 'Vendor at the Retort Gate. The Dispensary Hatch sells healing salve, mushroom broth, mendroot and spring water.',
   'row_apothecary.dialogue': [
-    'Salve for cuts, broth for the rest. Read the label; I wrote it for you.',
-    'The Row makes it. I make sure it does what the jar says.',
-    'Buy before the climb. Nobody has ever wished they had less.',
+    'I sell healing salve, mushroom broth, mendroot and spring water.',
+    'The Alembics are 40 ticks up the row. The alchemy bench and Odri Venn’s reagent shelf are there.',
+    'Buy before the climb. No vendor stands on any floor of the tower.',
   ],
 
-  'granary_provisioner.desc': 'Sells from the back of a cart that has not moved in eleven years. The wheels are painted on.',
+  'granary_provisioner.desc': 'Vendor at the Granary Gate. The Cart sells cooked food: traveler’s ration, rustic loaf, charred roots, skewered fish, hearty stew, hearty sandwich and seared steak.',
   'granary_provisioner.dialogue': [
-    'Rations keep. Stew does not. Buy the one you will eat before the stairs.',
-    'The kitchens cook it, I carry it forty paces. That is the whole margin.',
-    'Bells are for the crews. You eat when you are hungry.',
+    'Rations, loaves, roots, fish, stew, sandwiches and steak. All cooked, all ready to eat.',
+    'Bryva Coll sells the raw ingredients in the Granary Kitchens, 40 ticks from here. Her stove cooks what my cart sells.',
+    'A stranger pays half again the price. Speaking to me once removes that.',
   ],
 };

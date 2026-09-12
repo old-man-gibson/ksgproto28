@@ -5,113 +5,113 @@ import type { ProseTable } from './prose';
 
 // ---------- MONSTERS ----------
 export const MONSTERS_TEXT: ProseTable = {
-  'forest_rat.desc': 'Bold for its size, and never alone for long. Where one crosses the path, a nest is within a stone’s throw.',
+  'forest_rat.desc': 'Small basic beast. Bites for piercing damage. Appears in The Cages and The Undercrofts. Rare drop: Cloth Tunic.',
 
-  'young_wolf.desc': 'Driven from the pack or not yet trusted by it. All the teeth, none of the patience.',
+  'young_wolf.desc': 'Basic beast. Bites for piercing damage with a 20% chance to inflict Punctured. Drops fur and raw meat.',
 
-  'wolf.desc': 'It circles before it commits. Everything it does is a question about your footing.',
+  'wolf.desc': 'Veteran beast. Bites for piercing damage with a 20% chance to inflict Bleeding. Drops fur and raw meat; rare drops include the Wolf Fang Blade and a Rune of Swiftness.',
 
-  'boar.desc': 'A hillside with tusks. It does not swerve, and it does not tire, and it holds a grudge.',
+  'boar.desc': 'Large veteran beast. Bludgeoning charge with a 15% chance to inflict Concussed. Drops raw meat.',
 
-  'cliff_hawk.desc': 'It does not hunt so much as audit — one pass to price you, one to collect.',
+  'cliff_hawk.desc': 'Veteran flying beast, wind element. Attacks from range for slashing damage with a 25% chance to inflict Bleeding. Rare drop: Hawk Feather Band.',
 
-  'cave_spider.desc': 'Patient past the point of cruelty. The web is the fight; the bite is only bookkeeping.',
+  'cave_spider.desc': 'Veteran vermin. Poison bite with a 35% chance to inflict Poison. Takes 50% less poison damage. Appears in The Undercrofts.',
 
-  'stone_golem.desc': 'Someone bound a purpose into rock and then died without rescinding it. It is still doing the job.',
+  'stone_golem.desc': 'Large elite construct, earth element. Always met alone. Bludgeoning blows with a 25% chance to inflict Concussed. Takes 60% less slashing and piercing damage, 50% more bludgeoning and arcane damage. Two loot rolls; drops iron scrap and gold.',
 
-  'slime_base_basic.desc': 'The first thing everyone kills. Wobbles toward warmth with no discernible opinion about the outcome.',
+  'slime_base_basic.desc': 'Small basic slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in The Cages and The Undercrofts. Drops Slime Gel.',
 
-  'slime_base_advanced.desc': 'A slime that has eaten enough to be a shape rather than a puddle. It has learned the trick of leaning.',
+  'slime_base_advanced.desc': 'Veteran slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in The Undercrofts. Drops Slime Gel.',
 
-  'slime_base_elite.desc': 'Old, dense, and slow to forgive a boot. Cores of smaller slimes hang suspended in it like plums in aspic.',
+  'slime_base_elite.desc': 'Large elite slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage, 30% less poison, 20% less cold, and 25% more bludgeoning damage. Two loot rolls of Slime Gel.',
 
-  'slime_ice_basic.desc': 'Cold enough to ache through boot leather. It travels by freezing the ground ahead and sliding.',
+  'slime_ice_basic.desc': 'Basic slime, ice element. Cold attacks with a 40% chance to inflict Chilled. Takes 50% less cold and 25% more heat damage; 50% less slashing and piercing, 25% more bludgeoning.',
 
-  'slime_fire.desc': 'Burns without fuel and cannot explain how. Lobs a gob of itself and grows it back on the walk over.',
+  'slime_fire.desc': 'Basic slime, fire element. Attacks from range for heat damage with a 30% chance to inflict On Fire. Takes 50% less heat and 50% more cold damage; 50% less slashing and piercing, 25% more bludgeoning. Drops Warm Slime Gel.',
 
-  'slime_fire_advanced.desc': 'The ground under it stays hot for an hour. Shepherds read those scorch marks like a calendar.',
+  'slime_fire_advanced.desc': 'Veteran slime, fire element. Attacks from range for heat damage with a 35% chance to inflict On Fire. Takes 60% less heat and 60% more cold damage; 50% less slashing and piercing, 25% more bludgeoning. Drops Warm Slime Gel.',
 
-  'slime_fire_elite.desc': 'It has burned long enough to have a shape it prefers. Rain hisses off it in a ring three paces wide.',
+  'slime_fire_elite.desc': 'Large elite slime, fire element. Attacks from range for heat damage with a 40% chance to inflict On Fire. Takes 70% less heat and 70% more cold damage; 50% less slashing and piercing, 25% more bludgeoning. Two loot rolls; drops Warm Slime Gel and gold.',
 
-  'goblin.desc': 'Cowardly alone, arithmetic in groups. It counts your friends before it decides who you are.',
+  'goblin.desc': 'Small basic goblin. Piercing attacks with a 15% chance to inflict Bleeding. Takes 10% less poison damage. Appears in The Cages and The Undercrofts. Drops fur and iron scrap.',
 
-  'goblin_boss.desc': 'It got big by eating well, and it eats well by being obeyed. The squad is the weapon; the goblin is the grip.',
+  'goblin_boss.desc': 'Legendary goblin. Slashing attacks. Always spawns in a group of five with Goblin escorts. Takes 25% less poison damage. Two loot rolls; drops include a Boss Token, Iron Gauntlets, the Moonlit Katana and greater runes.',
 
-  'hobgoblin.desc': 'A goblin that ate its way up the pecking order and kept the appetite. It collects tolls nobody levies.',
+  'hobgoblin.desc': 'Veteran goblin. Slashing attacks with a 20% chance to inflict Bleeding. Takes 15% less poison damage. Appears in The Undercrofts. Drops fur and iron scrap.',
 
-  'hobgoblin_champion.desc': 'It fights the way tolls are collected: everything owed, in full, up front. The scars say everyone before you paid.',
+  'hobgoblin_champion.desc': 'Large legendary goblin. Slashing attacks with a 25% chance to inflict heavy Bleeding. Spawns in a group of three with Hobgoblin escorts. Takes 30% less poison and 20% less slashing damage. Appears in The Undercrofts. Three loot rolls; drops include a Boss Token, gold, Iron Gauntlets and the Moonlit Katana.',
 
-  'slime_golem.desc': 'Gel packed around a scaffold of swallowed stone. Every slime on the mountain gave something to build it, and none of them will say why.',
+  'slime_golem.desc': 'Gargantuan ancient slime construct, earth element. Bludgeoning attacks. Takes 75% less slashing and piercing damage, 70% less heat and cold, 75% more bludgeoning and double arcane damage. Three loot rolls; drops Warm Slime Gel, gold and a Boss Token.',
 
-  'slime_water.desc': 'Almost invisible in the shallows until it stands up. Children throw stones at it; the stones come back.',
+  'slime_water.desc': 'Basic slime, water element. Bludgeoning attacks with a 40% chance to inflict Wet. Takes 60% less slashing and piercing, 40% less heat, 25% more bludgeoning and 60% more lightning damage. Appears in The Undercrofts. Drops Slime Gel and Chilled Slime Gel.',
 
-  'slime_nature.desc': 'More pond than predator. Herbalists follow them around, since a slime that has eaten well is standing on good soil.',
+  'slime_nature.desc': 'Basic slime, nature element. Poison attacks with a 30% chance to inflict Poison. Takes 60% less poison, 40% more heat; 50% less slashing and piercing, 25% more bludgeoning. Drops Slime Gel and Common Herb.',
 
-  'slime_honey.desc': 'Sweet, and therefore popular with things that are not sweet. Whatever it touches keeps hold of it for a while.',
+  'slime_honey.desc': 'Small basic slime, nature element. Bludgeoning attacks. Takes 50% less slashing and piercing, 35% less bludgeoning, and 50% more cold damage. Drops Slime Gel and Common Herb; rare drop: Herbal Charm.',
 
-  'slime_earth.desc': 'Grit suspended in gel, packed hard. Miners call them the mountain’s way of clearing its throat.',
+  'slime_earth.desc': 'Basic slime, earth element. Bludgeoning attacks with a 30% chance to inflict Shardbound. Takes 60% less slashing and piercing, 50% less lightning, 20% less cold, and 30% more bludgeoning damage. Drops Slime Gel and iron scrap.',
 
-  'slime_wind.desc': 'Thin enough to skate on a gust. It fights by flinging edges of itself and letting the wind aim.',
+  'slime_wind.desc': 'Small basic slime, wind element. Attacks from range for wind damage with a 25% chance to inflict Dazzled. Takes 70% less piercing, 30% less slashing, 20% less bludgeoning, and 40% more lightning damage. Rare drop: Rune of Swiftness.',
 
-  'slime_thunder.desc': 'Hums. Approaching one wearing mail is a decision you make exactly once.',
+  'slime_thunder.desc': 'Small basic slime, lightning element. Attacks from range for lightning damage with a 35% chance to inflict Jolted. Takes 70% less lightning; 50% less slashing and piercing, 25% more bludgeoning. Drops Charged Slime Gel.',
 
-  'slime_water_advanced.desc': 'It has learned to move with the current instead of against it, and now arrives faster than the water it came with.',
+  'slime_water_advanced.desc': 'Veteran slime, water element. Bludgeoning attacks. Takes 60% less slashing and piercing, 50% less heat, 25% more bludgeoning and 70% more lightning damage. Drops Chilled Slime Gel and Slime Gel.',
 
-  'slime_ice_advanced.desc': 'Freezes the puddle it is standing in and skates on it. The cold arrives before the slime does.',
+  'slime_ice_advanced.desc': 'Veteran slime, ice element. Cold attacks with a 45% chance to inflict Chilled. Takes 60% less cold and 40% more heat damage; 50% less slashing and piercing, 25% more bludgeoning. Drops Chilled Slime Gel; rare drop: Minor Rune of Frost.',
 
-  'slime_earth_advanced.desc': 'Rolls downhill and calls it strategy. Half the rockfalls on the pass are one of these changing its mind.',
+  'slime_earth_advanced.desc': 'Large veteran slime, earth element. Bludgeoning attacks. Takes 70% less slashing and piercing, 60% less lightning, 25% less cold, and 40% more bludgeoning damage. Drops iron scrap and Slime Gel.',
 
-  'slime_wind_advanced.desc': 'Spends most of a fight airborne. Hitting one is less about aim than about waiting for it to want something.',
+  'slime_wind_advanced.desc': 'Veteran slime, wind element. Attacks from range for wind damage. High DEX. Takes 75% less piercing, 30% less slashing, 30% less bludgeoning, and 50% more lightning damage. Rare drops: Hawk Feather Band, Rune of Swiftness.',
 
-  'slime_thunder_advanced.desc': 'Drags a small, private weather system around with it. Nothing metal within ten paces is safe or quiet.',
+  'slime_thunder_advanced.desc': 'Veteran slime, lightning element. Attacks from range for lightning damage. Takes 80% less lightning; 50% less slashing and piercing, 25% more bludgeoning. Drops Charged Slime Gel; rare drop: Minor Rune of Thunder.',
 
-  'slime_zombie.desc': 'A slime that ate something dead and kept the habit rather than the meal. Bits of the previous owner still surface now and then.',
+  'slime_zombie.desc': 'Veteran undead slime, toxic element. Poison attacks. Takes 80% less poison, 60% less piercing, 50% less slashing, and 25% more bludgeoning damage. Drops Slime Gel, ruined fur and iron scrap.',
 
-  'slime_spider.desc': 'Somewhere a spider drowned in a slime and neither of them accepted it. They come in numbers, from directions that had no spiders a moment ago.',
+  'slime_spider.desc': 'Small veteran slime vermin, toxic element. Poison attacks. Spawns in packs of 2 to 5. Takes 60% less poison, 50% less piercing, 40% less slashing, and 25% more bludgeoning damage. Appears in The Undercrofts. Rare drop: Spider Silk Garb.',
 
-  'slime_coin.desc': 'Swallows metal and never digests it, so it walks around wearing a fortune. It knows exactly what that makes it, and it is quick.',
+  'slime_coin.desc': 'Medium veteran slime. Bludgeoning attacks. Always met alone. Higher DEX than other slimes. Takes 60% less slashing and piercing, 30% less arcane, 25% more bludgeoning and 40% more heat damage. Appears in The Undercrofts. Carries 20 to 60 gold and drops more; rare drop: Lucky Charm.',
 
-  'slime_soldier_spear.desc': 'It holds a spear because the King holds a court, and a court requires a line. Nobody has established where the spears come from.',
+  'slime_soldier_spear.desc': 'Veteran humanoid slime. Piercing attacks. Escort of the Slime King. Takes 50% less slashing and piercing, 25% more bludgeoning and 20% more arcane damage. Drops Slime Gel, iron scrap and Old Spear; rare drop: Wooden Shield.',
 
-  'slime_soldier_bow.desc': 'Draws a bowstring with an arm it grows for the purpose and lets it go again afterwards. The arrows are the only part it bothers to keep.',
+  'slime_soldier_bow.desc': 'Veteran humanoid slime. Attacks from range for piercing damage. Escort of the Slime King. Takes 50% less slashing and piercing and 25% more bludgeoning damage. Drops Slime Gel; rare drop: Hunting Bow.',
 
-  'slime_ice_elite.desc': 'Old ice with something moving inside it. It has been on this slope longer than the pass has had a name.',
+  'slime_ice_elite.desc': 'Large elite slime, ice element. Cold attacks. Takes 80% less cold, 55% less slashing and piercing, 60% more heat and 25% more bludgeoning damage. Two loot rolls; drops Chilled Slime Gel; rare drops: Slime Core, Minor Rune of Frost.',
 
-  'slime_earth_elite.desc': 'Cooled volcanic glass held in suspension. Every blow it takes chips an edge onto it, which it then uses.',
+  'slime_earth_elite.desc': 'Large elite slime, earth element. Slashing attacks. Takes 75% less piercing, 70% less lightning, 40% less slashing, 40% less heat, and 40% more bludgeoning damage. Two loot rolls; drops iron scrap; rare drops: Slime Core, Steel Greatsword.',
 
-  'slime_thunder_elite.desc': 'Stands in the open above the treeline and waits to be struck, because that is how it eats.',
+  'slime_thunder_elite.desc': 'Elite slime, lightning element. Attacks from range for lightning damage. Takes 90% less lightning, 20% less arcane; 50% less slashing and piercing, 25% more bludgeoning. Two loot rolls; drops Charged Slime Gel; rare drops: Slime Core, Greater Rune of Thunder.',
 
-  'slime_arcane.desc': 'Grew up in a spill of spent magic and absorbed the grammar of it without the meaning. It casts, badly, constantly, and that is enough.',
+  'slime_arcane.desc': 'Elite slime, arcane element. Attacks from range for arcane damage. Takes 70% less arcane, 20% less lightning; 50% less slashing and piercing, 25% more bludgeoning. Two loot rolls; drops Luminous Slime Gel; rare drops: Slime Core, Apprentice Ring, Oak Staff.',
 
-  'slime_holy.desc': 'Found where shrines have gone unattended. It is warm, it is bright, and it is entirely uninterested in what you have done.',
+  'slime_holy.desc': 'Elite slime, light element. Arcane damage attacks. Takes 50% less arcane, 40% less heat; 50% less slashing and piercing, 25% more bludgeoning. Two loot rolls; drops Luminous Slime Gel; rare drops: Slime Core, Pilgrim Amulet, Greater Rune of Vitality.',
 
-  'slime_dark.desc': 'Barely there. A weapon passes through most of it and finds the one part that was not bluffing.',
+  'slime_dark.desc': 'Elite incorporeal slime, dark element. Arcane damage attacks. Takes 85% less slashing and piercing, 50% less bludgeoning, and 50% more arcane damage. Two loot rolls; drops Void Slime Gel; rare drops: Slime Core, Spellwoven Cloak.',
 
-  'slime_metal.desc': 'Almost nothing gets through the shell, and it knows it — which is why it spends the whole fight leaving. Worth a season of ordinary hunting to whoever is quick enough.',
+  'slime_metal.desc': 'Small elite slime construct. Bludgeoning attacks. Always met alone. Highest DEX in the slime family. Takes 90% less slashing and piercing, 60% less bludgeoning, 50% less heat and cold, and 60% more lightning damage. Appears in The Undercrofts. 120 XP, 40 to 90 gold; drops iron ingots, gold and Slime Cores.',
 
-  'boss_slime_guardian.desc': 'It stands at the top of the switchbacks and lets everything else past. Whatever it was set to guard, it is still up there, and it is still guarded.',
+  'boss_slime_guardian.desc': 'Colossal ancient slime construct. Bludgeoning attacks. Always met alone. Takes 80% less slashing and piercing, 50% less heat and cold, 50% more bludgeoning and 60% more arcane damage. Three loot rolls; drops Slime Cores, iron ingots, a Boss Token, Iron Breastplate and Greater Rune of Vitality.',
 
-  'slime_king.desc': 'Somewhere in the ascent, slimes learned to arrange themselves. This one is what they arranged themselves around, and it has never once been seen alone.',
+  'slime_king.desc': 'Large legendary slime, unique. Bludgeoning attacks. Spawns in a group of 3 to 5 with Slime Legionary and Slime Skirmisher escorts. Takes 65% less slashing and piercing, 40% less heat and cold, 30% more bludgeoning and 30% more arcane damage. Appears in The Undercrofts. Three loot rolls; drops Slime Cores, Luminous Slime Gel, a Boss Token, the Moonlit Katana, Iron Gauntlets and Greater Rune of Might.',
 
-  'training_dummy.desc': 'Straw, banded oak and a plate breastplate that has been dented back into shape more times than anyone kept count of. It sways when struck, which the militia insist is the whole point.',
+  'training_dummy.desc': 'Passive target at the Training Area; it never attacks. Spawns in groups of one, three or five so splash and flank behaviour can be tested. About 2,500 HP and 15% evasion. Takes 30% less slashing, piercing and bludgeoning damage; no elemental resistance. Dies and respawns; no loot.',
 
-  'benchmark_dummy.desc': 'A single oak post sunk deep enough to argue with. Generations of recruits have failed to make an impression on it, and it has kept every one of their scores.',
+  'benchmark_dummy.desc': 'Passive post with about one million HP: it does not die within a session, so sustained damage can be read off it. No armour, 15% evasion, takes 30% less slashing, piercing and bludgeoning damage. Never attacks; no loot.',
 
-  'reinforced_post.desc': 'The same post, banded in iron. Flat armour of exactly 100: every blow arrives 100 lighter, and one that never had 100 in it lands for the floor of 1. Penetration does nothing here — that answers resistances, not plate.',
+  'reinforced_post.desc': 'Passive post with flat armour of exactly 100 and no resistances: every blow is reduced by 100, and a blow with less than 100 in it lands for the floor of 1. Penetration does nothing here; it answers resistances, not armour. About one million HP.',
 
-  'swaying_post.desc': 'Mounted on a spring, and never quite where it was. Dodges 35% of everything — the hard ceiling on the stat, so this is as evasive as anything in the world gets. Roughly one swing in three finds nothing but air.',
+  'swaying_post.desc': 'Passive post with evasion fixed at 35%, the hard cap on the stat: about one swing in three misses. No armour, no resistances. About one million HP.',
 
-  'flopping_post.desc': 'Weighted so it swings back. The only post that hits you — about 23.5 a swing before your defences, quickly and forever — so the whole incoming side can be read: armour, resistances, dodge, parry, wards, crit reduction and being smaller than the thing hitting you. It also evades 35%, since the speed that makes it a good metronome is the same stat that makes it slippery; that costs you nothing here, because you are not trying to kill it.',
+  'flopping_post.desc': 'The only post that attacks: about 23.5 damage a swing before your defences, at high speed, so the incoming side can be read: armour, resistances, dodge, parry, wards, crit reduction and size penalties. It also evades 35%, since the same DEX that sets its speed sets its dodge. No armour, about one million HP; you are not expected to kill it.',
 
-  'warded_post.desc': 'Chalked over in every ward somebody could remember. Resists all ten elements at exactly 75% and nothing physical at all — so the gap between your sword and your spell is the whole reading, and penetration is measurable against a known wall.',
+  'warded_post.desc': 'Passive post that resists every elemental damage type at exactly 75% and no physical type at all. Compare a weapon hit with a spell hit to read the gap, and measure penetration against the 75% wall. No armour, about one million HP.',
 
-  'mending_post.desc': 'Green wood, still growing, and it closes over what you open. Knits back 0.1% of its health every tick — about 1,000 a tick, or 10,000 a second — which is a damage floor you have to clear before your total moves at all. Set it on fire or dissolve it and the knitting stops.',
+  'mending_post.desc': 'Passive post that regenerates 0.1% of its health every tick, about 1,000 a tick or 10,000 a second; your damage must exceed that before its total moves. Heat or acid damage stops the regeneration. No armour, about one million HP.',
 
-  'psionic_slime.desc': 'These slimes have developed a brain and become devastatingly adept at using it offensively.',
+  'psionic_slime.desc': 'Large elite slime, fire element. Casts psionic workings from range for heat damage: a piercing single-target shape that cannot miss, then a wide multi-target sweep. Takes 80% less heat damage; no physical resistances. Carries 120 to 250 gold; no other loot yet.',
 
-  'death_knight.desc': 'The death knight is not an actual entity but rather a horrific curse inhabiting a body and animating it, spreading hatred through its blade.',
+  'death_knight.desc': 'Medium veteran armoured humanoid, dark element. Fights with a sword first (Gather, then Heavy Blow) and casts dark arcane sentences when off balance. Immune to poison; takes 80% less dark and 75% less cold damage; takes double light damage and 40% more heat and earth damage. No loot yet.',
 
   'paladin_x.desc': '',
 
-  'giant_spider_queen.desc': 'Patient past the point of cruelty. The web is the fight; the bite is only bookkeeping.',
+  'giant_spider_queen.desc': 'Huge legendary vermin, toxic element. Poison bite with an 85% chance to inflict heavy Poison. Takes 67% less slashing, 50% less poison, 35% less bludgeoning and earth; takes 67% more piercing, 40% more heat and 20% more cold damage. Appears in The Undercrofts. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
 };

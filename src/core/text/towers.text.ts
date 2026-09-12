@@ -5,23 +5,23 @@ import type { ProseTable } from './prose';
 
 // ---------- TOWERS ----------
 export const TOWERS_TEXT: ProseTable = {
-  'the_ascent.desc': 'It was here before Threshold was, and the city grew around its foot the way a town grows around a river crossing. Eight roads reach it. All eight arrive at the same door.',
+  'the_ascent.desc': 'A stack of floors entered through the door at the Foot of the Ascent. Floors are cleared in order; every floor and its gate are visible from the start.',
 };
 
 // ---------- BANDS ----------
 export const BANDS_TEXT: ProseTable = {
-  'ascent_lower.desc': 'Floors the city still uses. Storerooms, a flooded stair, the old toll level nobody collects on any more.',
+  'ascent_lower.desc': 'Floors 1 to 3: the Old Toll Level, the Flooded Stair and the Silk Gallery. Each floor must be cleared before the next opens.',
 
-  'ascent_middle.desc': 'Above the last floor anyone has a key to.',
+  'ascent_middle.desc': 'Band 2 of the Ascent, above the Lower Reaches. No floors yet.',
 
-  'ascent_upper.desc': 'Visible from every district, and from nowhere else.',
+  'ascent_upper.desc': 'Band 3 of the Ascent, the top of the stack. No floors yet.',
 };
 
 // ---------- FLOORS ----------
 export const FLOORS_TEXT: ProseTable = {
-  'ascent_f1.desc': 'The city used to pay to pass. The vermin never stopped collecting.',
+  'ascent_f1.desc': 'Floor 1. No gate. Cleared by defeating the keeper of the Toll Hall: a Hobgoblin by day or a Slimer by night.',
 
-  'ascent_f2.desc': 'Somewhere above, water gets in. It has had a very long time to argue with the stonework.',
+  'ascent_f2.desc': 'Floor 2. Gate: 150 gold earned in total. Cleared by winning 8 fights in the Broken Cistern, which forces a fight on arrival.',
 
-  'ascent_f3.desc': 'Nobody remembers what this floor was for. The webs go back further than the records do.',
+  'ascent_f3.desc': 'Floor 3. Gate: 600 gold earned in total. Cleared by killing the Giant Spider Queen in the Brood Den.',
 };
