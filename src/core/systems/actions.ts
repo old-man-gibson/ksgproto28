@@ -46,6 +46,7 @@ import {
   recipeResultName,
   recipeUnlocked,
 } from './crafting';
+import { text } from '../text/log';
 
 /** All activities available at a spot, including synthesized craft activities. */
 export function spotActivities(spot: SpotDef): ActivityDef[] {
@@ -75,13 +76,13 @@ export function selectActivity(state: GameState, bus: EventBus, activityId: stri
   // Switching work is one of the two ways out of a fight, and a forced fight
   // closes both doors (travel is the other — see locations.ts).
   if (inForcedFight(state)) {
-    bus.emit({ type: 'log', msg: '⛔ There is no leaving this fight.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('common.no_leaving_fight'), kind: 'danger' });
     return;
   }
   if (activityId) {
     const act = spotActivities(getSpot(state.spot)).find((a) => a.id === activityId);
     if (act?.kind === 'craft' && !recipeUnlocked(state, RECIPES[act.recipe])) {
-      bus.emit({ type: 'log', msg: `🔒 You lack the skill to craft that.`, kind: 'danger' });
+      bus.emit({ type: 'log', msg: text('actions.craft_locked'), kind: 'danger' });
       return;
     }
   }
@@ -93,7 +94,7 @@ export function selectActivity(state: GameState, bus: EventBus, activityId: stri
   state.performance = null; // and off any stage
 
   const act = currentActivity(state);
-  if (act) bus.emit({ type: 'log', msg: `▶️ ${act.name}`, kind: 'action' });
+  if (act) bus.emit({ type: 'log', msg: text('actions.started', { name: act.name }), kind: 'action' });
 }
 
 const RECOVER_THRESHOLD = 0.6;
@@ -251,7 +252,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
     regen(state, stats, RECOVERY_MULT.rest, 'rest');
     if (hpFraction(state, stats) >= RECOVER_THRESHOLD) {
       state.recovering = false;
-      bus.emit({ type: 'log', msg: '💪 You feel steady enough to continue.', kind: 'action' });
+      bus.emit({ type: 'log', msg: text('actions.recovered'), kind: 'action' });
     }
     return;
   }
@@ -370,7 +371,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
       if (!recipe) break;
       // Starved at the start of a cycle: stop instead of grinding a dead cycle.
       if (state.activityProgress === 0 && !canAfford(state, recipe)) {
-        bus.emit({ type: 'log', msg: `📭 Out of materials for ${act.name}.`, kind: 'action' });
+        bus.emit({ type: 'log', msg: text('actions.out_of_materials', { name: act.name }), kind: 'action' });
         state.activity = null;
         break;
       }
@@ -381,7 +382,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
         // Reset (not carry) so the start-of-cycle affordability guard holds.
         state.activityProgress = 0;
         if (!canAfford(state, recipe)) {
-          bus.emit({ type: 'log', msg: `📭 Out of materials for ${act.name}.`, kind: 'action' });
+          bus.emit({ type: 'log', msg: text('actions.out_of_materials', { name: act.name }), kind: 'action' });
           state.activity = null;
           break;
         }
@@ -489,7 +490,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
     });
     bus.emit({
       type: 'log',
-      msg: `${boom.icon} ${boom.name} detonates for ${dealt} ${boom.type}!`,
+      msg: text('actions.condition_detonates', { icon: boom.icon, name: boom.name, dealt, type: boom.type }),
       kind: 'danger',
     });
     // A detonation is perfectly capable of finishing you, and must put you
@@ -498,7 +499,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       if (stillOnTheFloor(state)) continue;
       bus.emit({
         type: 'log',
-        msg: `💀 ${boom.name} finishes you. You crawl away to recover...`,
+        msg: text('actions.condition_knocks_out', { name: boom.name }),
         kind: 'danger',
       });
       // Before abandonCombat, which drops the tally on the floor — walking away
@@ -521,7 +522,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
   for (const id of result.expired) {
     const def = STATUSES[id];
     if (def && !def.hidden) {
-      bus.emit({ type: 'log', msg: `${def.icon} ${def.name} has passed.`, kind: 'combat' });
+      bus.emit({ type: 'log', msg: text('actions.condition_passed', { icon: def.icon, name: def.name }), kind: 'combat' });
     }
   }
 
@@ -536,7 +537,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
     const held = state.statuses.find((h) => h.id === result.fatal!.id);
     bus.emit({
       type: 'log',
-      msg: `${result.fatal.icon} ${result.fatal.name} takes you. You wake weakened.`,
+      msg: text('actions.condition_fatal', { icon: result.fatal.icon, name: result.fatal.name }),
       kind: 'danger',
     });
     if (held) {
@@ -579,7 +580,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       const worst = result.hits[0];
       bus.emit({
         type: 'log',
-        msg: `💀 ${worst.name} finishes you. You crawl away to recover...`,
+        msg: text('actions.condition_knocks_out', { name: worst.name }),
         kind: 'danger',
       });
       // Before abandonCombat, which drops the tally on the floor — walking away
@@ -749,7 +750,7 @@ function grantFind(state: GameState, bus: EventBus, spot: SpotDef, find: SpotFin
     else bumpStat(state, bus, find.stat.key, find.stat.amount ?? 1);
   }
 
-  const headline = find.desc ?? `🔎 Something turns up at ${spot.name}.`;
+  const headline = find.desc ?? text('actions.find_generic', { spot: spot.name });
   bus.emit({ type: 'log', msg: headline, kind: 'explore' });
   if (tally.length > 0) {
     logRepeat(bus, { group: `find:${spot.id}:${find.id}`, prefix: '🎁 Found:', tally, kind: 'loot' });
@@ -759,13 +760,13 @@ function grantFind(state: GameState, bus: EventBus, spot: SpotDef, find: SpotFin
   if (find.spot && !state.discovered.includes(find.spot)) {
     state.discovered.push(find.spot);
     const target = getSpot(find.spot);
-    bus.emit({ type: 'log', msg: `📍 Marked on your map: ${target.icon} ${target.name}`, kind: 'explore' });
+    bus.emit({ type: 'log', msg: text('actions.find_marks_spot', { icon: target.icon, name: target.name }), kind: 'explore' });
   }
   if (find.path) {
     const edge = spot.connections.find((c) => c.to === find.path);
     bus.emit({
       type: 'log',
-      msg: `🚪 A way opens from ${spot.name}: ${edge?.label ?? getSpot(find.path).name}.`,
+      msg: text('actions.find_opens_path', { spot: spot.name, label: edge?.label ?? getSpot(find.path).name }),
       kind: 'explore',
     });
   }
@@ -790,7 +791,7 @@ function tickExplore(
   if (gate) {
     logRepeat(bus, {
       group: `gate:${spot.id}:${gate.at}`,
-      prefix: gate.desc ?? `⛔ The search stalls at ${Math.round(gate.at * 100)}% — you are not equipped to go further.`,
+      prefix: gate.desc ?? text('actions.gate_generic', { percent: Math.round(gate.at * 100) }),
       tally: [],
       kind: 'explore',
     });
@@ -812,10 +813,8 @@ function tickExplore(
       type: 'log',
       msg:
         hidden.length > 0
-          ? `🗺️ You know ${spot.name} like your pocket now. New path found: ${hidden
-              .map((c) => c.label ?? c.to)
-              .join(', ')}!`
-          : `🗺️ You have fully explored ${spot.name}.`,
+          ? text('actions.explored_paths', { spot: spot.name, paths: hidden.map((c) => c.label ?? c.to).join(', ') })
+          : text('actions.explored', { spot: spot.name }),
       kind: 'explore',
     });
     return;

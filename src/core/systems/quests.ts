@@ -7,6 +7,7 @@ import { createItem } from './runes';
 import { bumpStat } from './achievements';
 import { grantFavorAll } from './divine';
 import { grantMaterial } from './disciplines';
+import { text } from '../text/log';
 
 /** Tags an exchange with an NPC trains (see the `speechcraft` skill). */
 const SOCIAL_TAGS = ['social'];
@@ -49,7 +50,7 @@ export function talkTo(state: GameState, bus: EventBus, npcId: string): boolean 
   checkDiscovery(state, bus, SOCIAL_TAGS);
   grantSkillXp(state, bus, SOCIAL_TAGS, QUEST_ACCEPT_XP, npcId);
   bus.emit({ type: 'talk', npcId });
-  bus.emit({ type: 'log', msg: `🤝 You make the acquaintance of ${npc.name}.`, kind: 'quest' });
+  bus.emit({ type: 'log', msg: text('quests.npc_met', { name: npc.name }), kind: 'quest' });
   return true;
 }
 
@@ -84,7 +85,7 @@ export function acceptQuest(state: GameState, bus: EventBus, questId: string): b
   grantSkillXp(state, bus, SOCIAL_TAGS, QUEST_ACCEPT_XP, quest.giver);
 
   bus.emit({ type: 'quest:accept', id: questId });
-  bus.emit({ type: 'log', msg: `📜 Quest accepted: ${quest.name}`, kind: 'quest' });
+  bus.emit({ type: 'log', msg: text('quests.accepted', { name: quest.name }), kind: 'quest' });
   return true;
 }
 
@@ -180,7 +181,10 @@ export function turnInQuest(state: GameState, bus: EventBus, questId: string): b
   bus.emit({ type: 'quest:complete', id: questId });
   bus.emit({
     type: 'log',
-    msg: `🎉 Quest complete: ${quest.name}${parts.length ? ` — ${parts.join(', ')}` : ''}`,
+    msg: text('quests.completed', {
+      name: quest.name,
+      rewards: parts.length ? text('quests.rewards', { list: parts.join(', ') }) : '',
+    }),
     kind: 'quest',
   });
   return true;
@@ -211,7 +215,7 @@ function advanceObjectives(
       const giver = NPCS[quest.giver];
       bus.emit({
         type: 'log',
-        msg: `📜 "${quest.name}" is ready — return to ${giver?.name} at ${SPOTS[giver?.spotId ?? '']?.name ?? '?'}.`,
+        msg: text('quests.ready', { name: quest.name, giver: giver?.name, spot: SPOTS[giver?.spotId ?? '']?.name ?? '?' }),
         kind: 'quest',
       });
     }

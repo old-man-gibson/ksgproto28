@@ -2,6 +2,7 @@ import type { ActivityDef, GameState, SpotDef } from '../types';
 import type { EventBus } from '../engine/events';
 import { getSpot, SPOTS, STARTING_SPOT } from '../registry';
 import { conditionsMet } from './conditions';
+import { text } from '../text/log';
 
 /**
  * Where you get thrown when a fight you could not flee goes badly.
@@ -81,7 +82,7 @@ export function retreatToSafety(state: GameState, bus: EventBus, reason: string)
   const dest = getSpot(to);
   bus.emit({
     type: 'log',
-    msg: `${reason} You come to at ${dest.icon} ${dest.name}.`,
+    msg: text('safety.wake', { reason, icon: dest.icon, spot: dest.name }),
     kind: 'danger',
   });
   bus.emit({ type: 'arrive', spot: to });

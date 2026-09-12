@@ -197,6 +197,14 @@ the forge only ever writes it to the text file. `tests/prose.test.ts` fails on
 a text key that names no entry and on a registry that lost a description.
 Register rules for the words themselves are in `VOICE.md` §3.
 
+Runtime lines — what the log prints when something happens, and the refusal
+text a bench or spell hands back — live in `src/core/text/log.text.ts`, keyed
+by the system that fires them (`combat.appears`, `alchemy.reason.no_target`).
+`{name}`-style placeholders are filled by the call site through `text()` in
+`src/core/text/log.ts`; a placeholder the code never supplies prints as
+written, so it is visible. `tests/logtext.test.ts` fails on a template nothing
+fires and on a call site that passes a parameter the template does not print.
+
 1. Edit a file in `src/core/data/` (numbers) or `src/core/text/` (words).
 2. `npm run verify` — fix anything red.
    - *Typecheck errors* point at the exact file:line (wrong field name, bad

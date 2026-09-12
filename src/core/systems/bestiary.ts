@@ -14,6 +14,7 @@ import { attackIntervalOf, innateArmor, scaledMonsterAttrs, statsFromAttrs } fro
 import { attrValue } from './attributes';
 import { grantDiscoveryXp } from './skills';
 import { bumpStat } from './achievements';
+import { text } from '../text/log';
 
 /**
  * The bestiary: what the player has learned about each monster.
@@ -199,7 +200,7 @@ export function recordKill(state: GameState, bus: EventBus, monsterId: string): 
     bus.emit({ type: 'bestiary:entry', monsterId });
     bus.emit({
       type: 'log',
-      msg: `📖 Bestiary: ${def.icon} ${def.name} added to your records.`,
+      msg: text('bestiary.species_added', { icon: def.icon, name: def.name }),
       kind: 'bestiary',
     });
   }
@@ -218,7 +219,7 @@ export function recordKill(state: GameState, bus: EventBus, monsterId: string): 
     bus.emit({ type: 'bestiary:fact', monsterId, factId: fact.id });
     bus.emit({
       type: 'log',
-      msg: `📖 ${fact.icon} ${fact.name} — you now understand this about the ${def.name}.`,
+      msg: text('bestiary.fact_learned', { icon: fact.icon, name: fact.name, monster: def.name }),
       kind: 'bestiary',
     });
   }
@@ -239,7 +240,7 @@ function checkHabitats(state: GameState, bus: EventBus, monsterId: string): void
     bus.emit({ type: 'bestiary:habitat', monsterId, spot: spotId });
     bus.emit({
       type: 'log',
-      msg: `📖 🗺️ You have learned where ${MONSTERS[monsterId].name}s den up: ${spot?.name ?? spotId}.`,
+      msg: text('bestiary.den_learned', { monster: MONSTERS[monsterId].name, spot: spot?.name ?? spotId }),
       kind: 'bestiary',
     });
   }

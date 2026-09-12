@@ -4,6 +4,7 @@ import { FLOORS, FLOOR_BY_AREA, TOWERS, getSpot } from '../registry';
 import { conditionsMet } from './conditions';
 import { getDerivedStats } from './derived';
 import { abandonCombat, inForcedFight } from './combat';
+import { text } from '../text/log';
 
 /**
  * The tower runtime: what `FloorDef.gate` / `FloorDef.clear` actually mean.
@@ -93,7 +94,7 @@ export function rungStatus(state: GameState, floor: FloorDef): RungStatus {
 export function climbTo(state: GameState, bus: EventBus, floorId: string | null): boolean {
   if (state.travel || state.recovering) return false;
   if (inForcedFight(state)) {
-    bus.emit({ type: 'log', msg: '⛔ There is no leaving this fight.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('common.no_leaving_fight'), kind: 'danger' });
     return false;
   }
   const tower = towerAt(state);
@@ -116,7 +117,7 @@ export function climbTo(state: GameState, bus: EventBus, floorId: string | null)
 
   if (state.combat) {
     abandonCombat(state);
-    bus.emit({ type: 'log', msg: 'You disengage and slip away.', kind: 'combat' });
+    bus.emit({ type: 'log', msg: text('common.disengage'), kind: 'combat' });
   }
   state.activity = null;
   state.travelPlan = [];
@@ -131,6 +132,6 @@ export function climbTo(state: GameState, bus: EventBus, floorId: string | null)
   // index is a descent.
   const rising = toIndex > fromIndex;
   const verb = (tower.direction === 'down') === rising ? 'Descending' : 'Climbing';
-  bus.emit({ type: 'log', msg: `🗼 ${verb} to ${dest.icon} ${dest.name}...`, kind: 'travel' });
+  bus.emit({ type: 'log', msg: text('towers.moving', { verb, icon: dest.icon, name: dest.name }), kind: 'travel' });
   return true;
 }

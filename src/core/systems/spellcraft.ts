@@ -22,6 +22,7 @@ import { getDerivedStats } from './derived';
 import { heal } from './health';
 import { resourceValue, spendResource } from './resources';
 import { bumpStat } from './achievements';
+import { text } from '../text/log';
 
 /**
  * The grimoire: one book, three schools.
@@ -216,20 +217,20 @@ export interface UtilityCheck {
 
 export function canCastUtility(state: GameState, uid: number): UtilityCheck {
   const spell = findSpell(state, uid);
-  if (!spell) return { ok: false, reason: 'No such working' };
+  if (!spell) return { ok: false, reason: text('spellcraft.reason.no_such_working') };
   const spec = resolveSpellFor(state, spell);
   if (!isUtilityWorking(spec)) {
-    return { ok: false, reason: `${spec.name} has nothing to do without a target` };
+    return { ok: false, reason: text('spellcraft.reason.needs_target', { name: spec.name }) };
   }
-  if (state.combat) return { ok: false, reason: 'Already fighting — prepare it instead' };
-  if (utilityCooldown(state, uid) > 0) return { ok: false, reason: `${spec.name} is not ready yet` };
+  if (state.combat) return { ok: false, reason: text('spellcraft.reason.in_combat') };
+  if (utilityCooldown(state, uid) > 0) return { ok: false, reason: text('spellcraft.reason.cooldown', { name: spec.name }) };
 
   const stats = getDerivedStats(state);
   if (resourceValue(state, 'mana') < spec.manaCost * stats.manaEff) {
-    return { ok: false, reason: 'Not enough mana' };
+    return { ok: false, reason: text('spellcraft.reason.not_enough_mana') };
   }
   if (spec.focusCost && resourceValue(state, 'focus') < spec.focusCost) {
-    return { ok: false, reason: 'Not enough focus' };
+    return { ok: false, reason: text('spellcraft.reason.not_enough_focus') };
   }
   return { ok: true };
 }
@@ -243,7 +244,7 @@ export function canCastUtility(state: GameState, uid: number): UtilityCheck {
 export function castUtility(state: GameState, bus: EventBus, uid: number): boolean {
   const check = canCastUtility(state, uid);
   if (!check.ok) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return false;
   }
   const spell = findSpell(state, uid)!;
@@ -272,7 +273,11 @@ export function castUtility(state: GameState, bus: EventBus, uid: number): boole
   ];
   bus.emit({
     type: 'log',
-    msg: `${spec.icon} ${spec.name}${did.length ? ` — ${did.join('; ')}` : ''}.`,
+    msg: text('spellcraft.utility_cast', {
+      icon: spec.icon,
+      name: spec.name,
+      effects: did.length ? text('spellcraft.effects', { list: did.join('; ') }) : '',
+    }),
     kind: 'info',
   });
 
@@ -337,7 +342,7 @@ export function setPrepared(state: GameState, bus: EventBus, uid: number, prepar
   if (prepared && !spell.prepared && preparedSpells(state).length >= cap) {
     bus.emit({
       type: 'log',
-      msg: `🔒 You can hold ${cap} spells ready at once.`,
+      msg: text('spellcraft.prepared_cap', { cap }),
       kind: 'danger',
     });
     return false;
@@ -345,7 +350,7 @@ export function setPrepared(state: GameState, bus: EventBus, uid: number, prepar
   if (prepared) {
     const conflict = deityConflict(state, spell);
     if (conflict) {
-      bus.emit({ type: 'log', msg: `⚡ ${conflict}`, kind: 'danger' });
+      bus.emit({ type: 'log', msg: text('spellcraft.prepare_conflict', { conflict }), kind: 'danger' });
       return false;
     }
   }
@@ -366,12 +371,12 @@ export function setPrepared(state: GameState, bus: EventBus, uid: number, prepar
 export function inscribeArcane(state: GameState, bus: EventBus, words: string[]): CraftedSpell | null {
   const check = checkSentence(state, words);
   if (!check.ok || !check.spec) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   const source: SpellSource = { school: 'arcane', words: [...words] };
   if (hasSpell(state, source)) {
-    bus.emit({ type: 'log', msg: '🔒 That sentence is already in your grimoire.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('spellcraft.already_inscribed'), kind: 'danger' });
     return null;
   }
 
@@ -405,7 +410,7 @@ export function inscribeArcane(state: GameState, bus: EventBus, words: string[])
   // used to pay three casts' worth of practice — a bench that trained words
   // nobody ever said (user, 2026-09-12).
 
-  bus.emit({ type: 'log', msg: `${check.spec.icon} Inscribed: ${check.spec.name}`, kind: 'item' });
+  bus.emit({ type: 'log', msg: text('spellcraft.inscribed', { icon: check.spec.icon, name: check.spec.name }), kind: 'item' });
   return spell;
 }
 
@@ -427,12 +432,12 @@ export function grantCastWordXp(state: GameState, bus: EventBus, uid: number): v
 export function shapePsionic(state: GameState, bus: EventBus, shape: PsionicShape): CraftedSpell | null {
   const check = checkShape(state, shape);
   if (!check.ok) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   const source: SpellSource = { school: 'psionic', shape: { ...shape } };
   if (hasSpell(state, source)) {
-    bus.emit({ type: 'log', msg: '🔒 You already hold that exact shape.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('spellcraft.already_shaped'), kind: 'danger' });
     return null;
   }
 
@@ -447,7 +452,7 @@ export function shapePsionic(state: GameState, bus: EventBus, shape: PsionicShap
   if (recognition && (recognition.tier ?? 0) > psiTier(state)) {
     bus.emit({
       type: 'log',
-      msg: `🔒 The shape settles toward ${recognition.name} and slips away — you need a teacher for it.`,
+      msg: text('spellcraft.recognition_locked', { recognition: recognition.name }),
       kind: 'danger',
     });
     return null;
@@ -457,6 +462,6 @@ export function shapePsionic(state: GameState, bus: EventBus, shape: PsionicShap
   const spell = addSpell(state, source);
   const spec = resolveSpell(spell);
   grantSkillXp(state, bus, ['spellcraft', 'magic', 'psionic'], 16, [spellKey(source)]);
-  bus.emit({ type: 'log', msg: `${spec.icon} Shaped: ${spec.name}`, kind: 'item' });
+  bus.emit({ type: 'log', msg: text('spellcraft.shaped', { icon: spec.icon, name: spec.name }), kind: 'item' });
   return spell;
 }

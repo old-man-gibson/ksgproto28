@@ -16,6 +16,7 @@ import {
   slotPicks,
   type Placement,
 } from './disciplines';
+import { text } from '../text/log';
 
 /**
  * Runecarving: the first discipline built on the modular framework.
@@ -132,13 +133,13 @@ export function previewCarve(state: GameState, placement: Placement): CarveCheck
     const chosen = placement[slot.id];
     if (!chosen) continue;
     const pattern = RUNE_PATTERNS[chosen.id];
-    if (!pattern) return { ok: false, reason: 'No such pattern' };
+    if (!pattern) return { ok: false, reason: text('runecarving.reason.no_such_pattern') };
     if ((pattern.minLevel ?? 0) > level) {
-      return { ok: false, reason: `${pattern.name} needs Runecarving ${pattern.minLevel}` };
+      return { ok: false, reason: text('runecarving.reason.pattern_level', { name: pattern.name, level: pattern.minLevel }) };
     }
     patterns.push(chosen.id);
   }
-  if (patterns.length === 0) return { ok: false, reason: 'No rune chosen to carve' };
+  if (patterns.length === 0) return { ok: false, reason: text('runecarving.reason.nothing_chosen') };
 
   // Repeating a cut concentrates the rune, and needs a slab that can hold it.
   const slab = placement.slab;
@@ -146,12 +147,12 @@ export function previewCarve(state: GameState, placement: Placement): CarveCheck
     if (copies < 2) continue;
     const needed = REPEAT_MIN_QUALITY[copies];
     if (!needed) {
-      return { ok: false, reason: `No slab can hold ${copies} of one rune` };
+      return { ok: false, reason: text('runecarving.reason.too_many_copies', { copies }) };
     }
     if (!slab || !qualityAtLeast(slab.quality, needed)) {
       return {
         ok: false,
-        reason: `${copies}× ${RUNE_PATTERNS[id].name} needs a ${QUALITY_TIERS[needed].name} slab or better`,
+        reason: text('runecarving.reason.slab_grade', { copies, name: RUNE_PATTERNS[id].name, grade: QUALITY_TIERS[needed].name }),
       };
     }
   }
@@ -160,7 +161,7 @@ export function previewCarve(state: GameState, placement: Placement): CarveCheck
   if (!check.ok) return { ok: false, reason: check.reason };
 
   const stone = placement.slab;
-  if (!stone) return { ok: false, reason: 'No slab on the bench' };
+  if (!stone) return { ok: false, reason: text('runecarving.reason.no_slab') };
 
   return {
     ok: true,
@@ -188,7 +189,7 @@ export function carveRune(
 ): CarveResult | null {
   const check = previewCarve(state, placement);
   if (!check.ok || !check.preview) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   if (!consumePlacement(state, RUNECARVING, placement)) return null;
@@ -203,7 +204,7 @@ export function carveRune(
     grantSkillXp(state, bus, tags, RUNECARVING.xp * 0.4, keys);
     bus.emit({
       type: 'log',
-      msg: '💥 The slab splits under the tool. The work is lost.',
+      msg: text('runecarving.slab_split'),
       kind: 'danger',
     });
     return { failed: true };
@@ -226,8 +227,8 @@ export function carveRune(
   bus.emit({
     type: 'log',
     msg: named
-      ? `${rune.icon} You have carved a ${rune.name} — a known work!`
-      : `${rune.icon} Carved: ${rune.name}${upgraded ? ' — the cut came out clean' : ''}`,
+      ? text('runecarving.carved_named', { icon: rune.icon, name: rune.name })
+      : text('runecarving.carved', { icon: rune.icon, name: rune.name, clean: upgraded ? text('runecarving.clean_cut') : '' }),
     kind: 'item',
   });
   return { carved: carving, upgraded };

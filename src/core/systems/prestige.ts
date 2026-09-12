@@ -5,6 +5,7 @@ import { createInitialState } from '../state';
 import { conditionsMet } from './conditions';
 import { floorCleared, ladderFloors } from './towers';
 import { boonRank } from './legacy';
+import { text } from '../text/log';
 
 /**
  * Prestige — the harvest re-climb (docs/PRESTIGE.md).
@@ -139,7 +140,13 @@ export function buyBoon(state: GameState, bus: EventBus, boonId: string): boolea
   if (def.effect.kind === 'startGold') state.gold += def.effect.amount;
   bus.emit({
     type: 'log',
-    msg: `♻️ ${def.icon} ${def.name} rank ${boonRank(state, boonId)} — ${cost} point${cost === 1 ? '' : 's'} spent.`,
+    msg: text('prestige.boon_bought', {
+      icon: def.icon,
+      name: def.name,
+      rank: boonRank(state, boonId),
+      cost,
+      plural: cost === 1 ? '' : 's',
+    }),
     kind: 'info',
   });
   return true;

@@ -36,6 +36,7 @@ import { checkDiscovery, grantSkillXp } from './skills';
 import { bumpStat } from './achievements';
 import { applyStatuses } from './statuses';
 import { STATUSES } from '../registry';
+import { text } from '../text/log';
 
 /**
  * Magical music. Two halves, cut on arcana's seam:
@@ -1453,16 +1454,16 @@ export function startPerformance(state: GameState, bus: EventBus, compositionId:
   const comp = state.compositions.find((c) => c.id === compositionId);
   if (!comp) return false;
   if (state.travel) {
-    bus.emit({ type: 'log', msg: '🔒 No performing on the road.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('music.reason.travelling'), kind: 'danger' });
     return false;
   }
   if (state.combat) {
-    bus.emit({ type: 'log', msg: '🔒 This is no moment for music.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('music.reason.no_moment'), kind: 'danger' });
     return false;
   }
   const problems = checkComposition(state, comp);
   if (problems.length > 0) {
-    bus.emit({ type: 'log', msg: `🔒 ${problems[0]}`, kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('music.reason.problem', { problem: problems[0] }), kind: 'danger' });
     return false;
   }
 
@@ -1474,14 +1475,14 @@ export function startPerformance(state: GameState, bus: EventBus, compositionId:
 
   const ticksTotal = performanceTicks(comp);
   state.performance = { compositionId, spot: state.spot, ticksLeft: ticksTotal, ticksTotal };
-  bus.emit({ type: 'log', msg: `🎵 You take up ${comp.name}.`, kind: 'action' });
+  bus.emit({ type: 'log', msg: text('music.started', { name: comp.name }), kind: 'action' });
   return true;
 }
 
 export function stopPerformance(state: GameState, bus: EventBus, reason?: string): void {
   if (!state.performance) return;
   state.performance = null;
-  bus.emit({ type: 'log', msg: `⏹️ The music stops${reason ? ` — ${reason}` : ''}.`, kind: 'action' });
+  bus.emit({ type: 'log', msg: text('music.stopped', { reason: reason ? text('music.stop_reason', { reason }) : '' }), kind: 'action' });
 }
 
 /**
@@ -1522,7 +1523,7 @@ export function tickPerformance(state: GameState, bus: EventBus): void {
   bumpStat(state, bus, `music:performed:${reading.theme.archetype.id}`);
   bus.emit({
     type: 'log',
-    msg: `${reading.theme.archetype.icon} ${comp.name} rings out — ${describeReading(reading)}.`,
+    msg: text('music.classified', { icon: reading.theme.archetype.icon, name: comp.name, reading: describeReading(reading) }),
     kind: 'action',
   });
   // The music does what its kind of music does: archetype-conferred
@@ -1539,6 +1540,6 @@ export function tickPerformance(state: GameState, bus: EventBus): void {
       const def = STATUSES[i.id];
       return `${def?.icon ?? '🎶'} ${def?.name ?? i.id}`;
     });
-    bus.emit({ type: 'log', msg: `🎶 The music lingers: ${names.join(', ')}.`, kind: 'action' });
+    bus.emit({ type: 'log', msg: text('music.lingers', { names: names.join(', ') }), kind: 'action' });
   }
 }

@@ -8,6 +8,7 @@ import { bearerGrants } from './mutagens';
 import { bumpStat } from './achievements';
 import { stockOf, takeGraded } from './disciplines';
 import { QUALITY_TIERS, qualityMult } from '../data/quality.data';
+import { text } from '../text/log';
 
 // The wield rules live in their own module (no system dependencies, so the
 // modifier pipeline can read them too); re-exported here for equipment callers.
@@ -89,7 +90,7 @@ export function equipItem(state: GameState, bus: EventBus, uid: number, slot?: S
   if (!canEquip(state, item)) {
     bus.emit({
       type: 'log',
-      msg: `You don't meet the requirements to wield ${def.icon} ${itemName(item)}.`,
+      msg: text('equipment.requirements_unmet', { icon: def.icon, item: itemName(item) }),
       kind: 'danger',
     });
     return false;
@@ -98,7 +99,7 @@ export function equipItem(state: GameState, bus: EventBus, uid: number, slot?: S
   if (wieldScale(def, target) <= 0) {
     bus.emit({
       type: 'log',
-      msg: `${def.icon} ${itemName(item)} cannot be held there.`,
+      msg: text('equipment.wrong_slot', { icon: def.icon, item: itemName(item) }),
       kind: 'danger',
     });
     return false;
@@ -134,7 +135,11 @@ export function equipItem(state: GameState, bus: EventBus, uid: number, slot?: S
   const note = wieldNote(def, target);
   bus.emit({
     type: 'log',
-    msg: `Equipped ${def.icon} ${itemName(item)}${note ? ` — ${note}` : ''}.`,
+    msg: text('equipment.equipped', {
+      icon: def.icon,
+      item: itemName(item),
+      note: note ? text('equipment.equip_note', { note }) : '',
+    }),
     kind: 'item',
   });
   return true;
@@ -154,10 +159,11 @@ export function unequipSlot(state: GameState, slot: keyof GameState['equipment']
  */
 function saleMessage(sold: ItemInstance[], total: number): string {
   const first = sold[0];
-  if (sold.length === 1) return `Sold ${itemName(first)} for ${total} gold.`;
+  if (sold.length === 1) return text('equipment.sold_one', { item: itemName(first), total });
   const uniform = sold.every((i) => itemName(i) === itemName(first));
-  const what = uniform ? `${itemName(first)} ×${sold.length}` : `${sold.length} items`;
-  return `Sold ${what} for ${total} gold.`;
+  return uniform
+    ? text('equipment.sold_uniform', { item: itemName(first), count: sold.length, total })
+    : text('equipment.sold_mixed', { count: sold.length, total });
 }
 
 /** Sell any number of inventory items as a single transaction. Returns the take. */
@@ -261,7 +267,7 @@ export function sellStackable(
   const def = MATERIALS[id];
   bus.emit({
     type: 'log',
-    msg: `Sold ${def?.icon ?? ''} ${gradeLabel(id, quality)}${def?.name ?? id} ×${removed} for ${price} gold.`,
+    msg: text('equipment.sold_stack', { icon: def?.icon ?? '', grade: gradeLabel(id, quality), name: def?.name ?? id, qty: removed, price }),
     kind: 'item',
   });
   return price;
@@ -280,7 +286,7 @@ export function discardStackable(
   const def = MATERIALS[id];
   bus.emit({
     type: 'log',
-    msg: `Discarded ${def?.icon ?? ''} ${gradeLabel(id, quality)}${def?.name ?? id} ×${removed}.`,
+    msg: text('equipment.discarded_stack', { icon: def?.icon ?? '', grade: gradeLabel(id, quality), name: def?.name ?? id, qty: removed }),
     kind: 'info',
   });
   return removed;
@@ -318,7 +324,7 @@ export function sellStackablesBatch(
   bumpStat(state, bus, 'gold:earned', total);
   bus.emit({
     type: 'log',
-    msg: `Sold ${units} ${noun}${units === 1 ? '' : 's'} for ${total} gold.`,
+    msg: text('equipment.sold_units', { units, noun, plural: units === 1 ? '' : 's', total }),
     kind: 'item',
   });
   return total;
@@ -339,7 +345,7 @@ export function discardStackablesBatch(
   if (units === 0) return 0;
   bus.emit({
     type: 'log',
-    msg: `Discarded ${units} ${noun}${units === 1 ? '' : 's'}.`,
+    msg: text('equipment.discarded_units', { units, noun, plural: units === 1 ? '' : 's' }),
     kind: 'info',
   });
   return units;
@@ -356,7 +362,7 @@ export function sellMaterial(state: GameState, bus: EventBus, materialId: string
   const def = MATERIALS[materialId];
   bus.emit({
     type: 'log',
-    msg: `Sold ${def?.icon ?? ''} ${def?.name ?? materialId} ×${qty} for ${price} gold.`,
+    msg: text('equipment.sold_material', { icon: def?.icon ?? '', name: def?.name ?? materialId, qty, price }),
     kind: 'item',
   });
 }

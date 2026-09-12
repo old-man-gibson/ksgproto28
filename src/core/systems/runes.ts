@@ -21,6 +21,7 @@ import { QUALITY_TIERS, qualityAtLeast, qualityMult } from '../data/quality.data
 import { nextUid } from './equipment';
 import { getDerivedStats } from './derived';
 import { bumpStat } from './achievements';
+import { text } from '../text/log';
 
 export const MAX_RUNE_SLOTS = 4;
 
@@ -341,7 +342,7 @@ export function socketRune(state: GameState, bus: EventBus, uid: number, ref: st
   const def = ITEMS[item.defId];
   bus.emit({
     type: 'log',
-    msg: `${rune.icon} Socketed ${rune.name} into ${def?.icon ?? ''} ${def?.name ?? item.defId}.`,
+    msg: text('runes.socketed', { icon: rune.icon, name: rune.name, itemIcon: def?.icon ?? '', item: def?.name ?? item.defId }),
     kind: 'item',
   });
   return true;
@@ -412,7 +413,7 @@ export function sellRune(state: GameState, bus: EventBus, ref: string): number {
   bumpStat(state, bus, 'gold:earned', price);
   bus.emit({
     type: 'log',
-    msg: `Sold ${held.rune.icon} ${held.rune.name} for ${price} gold.`,
+    msg: text('runes.sold', { icon: held.rune.icon, name: held.rune.name, price }),
     kind: 'item',
   });
   return price;
@@ -423,7 +424,7 @@ export function discardRune(state: GameState, bus: EventBus, ref: string): boole
   const held = heldRune(state, ref);
   if (!held) return false;
   held.take();
-  bus.emit({ type: 'log', msg: `Discarded ${held.rune.icon} ${held.rune.name}.`, kind: 'info' });
+  bus.emit({ type: 'log', msg: text('runes.discarded', { icon: held.rune.icon, name: held.rune.name }), kind: 'info' });
   return true;
 }
 
@@ -475,7 +476,7 @@ export function sellRunesBatch(state: GameState, bus: EventBus, refs: string[]):
   bumpStat(state, bus, 'gold:earned', price);
   bus.emit({
     type: 'log',
-    msg: `Sold ${plan.count} rune${plan.count === 1 ? '' : 's'} for ${price} gold.`,
+    msg: text('runes.sold_many', { count: plan.count, plural: plan.count === 1 ? '' : 's', price }),
     kind: 'item',
   });
   return price;
@@ -488,7 +489,7 @@ export function discardRunesBatch(state: GameState, bus: EventBus, refs: string[
   applyRuneBatch(state, plan);
   bus.emit({
     type: 'log',
-    msg: `Discarded ${plan.count} rune${plan.count === 1 ? '' : 's'}.`,
+    msg: text('runes.discarded_many', { count: plan.count, plural: plan.count === 1 ? '' : 's' }),
     kind: 'info',
   });
   return plan.count;
@@ -501,7 +502,11 @@ export function grantRune(state: GameState, bus: EventBus, runeId: string, qty =
     const rune = RUNES[runeId];
     bus.emit({
       type: 'log',
-      msg: `${rune?.icon ?? '🔮'} Rune found: ${rune?.name ?? runeId}${qty > 1 ? ` ×${qty}` : ''}`,
+      msg: text('runes.found', {
+        icon: rune?.icon ?? '🔮',
+        name: rune?.name ?? runeId,
+        qty: qty > 1 ? text('common.times', { qty }) : '',
+      }),
       kind: 'loot',
     });
   }

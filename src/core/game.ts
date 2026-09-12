@@ -76,6 +76,7 @@ import { RESOURCE_LIST } from './data/resources.data';
 import { resourceLock } from './systems/resources';
 import { buyBoon, leaveReview, prestigeNow } from './systems/prestige';
 import type { PsionicShape, QualityTier, ResourceId, ResourceLock, SlotId } from './types';
+import { text } from './text/log';
 
 /**
  * Copy the trigger overlays for `ids`, deeply. Both directions of a loadout
@@ -255,8 +256,8 @@ export class Game {
     const was = STYLES[this.lastEffectiveStyle];
     this.lastEffectiveStyle = id;
     const msg = STYLES[id].replaces
-      ? `${STYLES[id].icon} Your ${was.name} flows into ${STYLES[id].name}.`
-      : `Your ${was.name} settles back into ${STYLES[id].name}.`;
+      ? text('game.school_engaged', { icon: STYLES[id].icon, was: was.name, now: STYLES[id].name })
+      : text('game.school_released', { was: was.name, now: STYLES[id].name });
     this.bus.emit({ type: 'log', msg, kind: 'combat' });
   }
 
@@ -491,7 +492,7 @@ export class Game {
     this.state.style = stanceId;
     this.lastEffectiveStyle = effectiveStyleId(this.state);
     const active = STYLES[this.lastEffectiveStyle];
-    this.bus.emit({ type: 'log', msg: `Combat style: ${active.name}`, kind: 'combat' });
+    this.bus.emit({ type: 'log', msg: text('game.style_changed', { name: active.name }), kind: 'combat' });
   }
 
   /**
@@ -504,8 +505,8 @@ export class Game {
     this.bus.emit({
       type: 'log',
       msg: on
-        ? `🔥 Exerting — your ${STYLES[effectiveStyleId(this.state)].name} now spends stamina for everything it can buy.`
-        : `🍃 Holding back — you fight your stance plainly, and stamina only trickles.`,
+        ? text('game.exerting_on', { style: STYLES[effectiveStyleId(this.state)].name })
+        : text('game.exerting_off'),
       kind: 'combat',
     });
   }
@@ -652,7 +653,7 @@ export class Game {
       if (owned && canEquip(this.state, owned)) this.equip(uid, slot);
     }
 
-    this.bus.emit({ type: 'log', msg: `⚔️ Loadout applied: ${loadout.name}`, kind: 'combat' });
+    this.bus.emit({ type: 'log', msg: text('game.loadout_applied', { name: loadout.name }), kind: 'combat' });
   }
 
   deleteLoadout(name: string): void {
@@ -690,7 +691,7 @@ export class Game {
     this.resyncAnnouncers();
     this.bus.emit({
       type: 'log',
-      msg: `♻️ Prestige ${next.prestige.count}: ${next.prestige.lastHarvest?.total ?? 0} points harvested.`,
+      msg: text('game.prestiged', { count: next.prestige.count, points: next.prestige.lastHarvest?.total ?? 0 }),
       kind: 'info',
     });
     return true;

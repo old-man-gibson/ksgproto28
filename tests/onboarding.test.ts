@@ -12,6 +12,7 @@ import { BESTIARY_FACTS } from '../src/core/data/bestiary.data';
 import { DEITY_LIST } from '../src/core/data/deities.data';
 import { MIGRATIONS } from '../src/core/save/migrations';
 import type { GameState } from '../src/core/types';
+import { text } from '../src/core/text/log';
 
 const fresh = (): GameState => createInitialState(0);
 const bus = () => new EventBus();
@@ -81,7 +82,7 @@ describe('the starter lexicon', () => {
     const state = fresh();
     const check = checkSentence(state, ['stone']);
     expect(check.ok).toBe(false);
-    expect(check.reason).toContain('do not know the word');
+    expect(check.reason).toBe(text('arcane.reason.unknown_word', { word: 'stone' }));
     // Lift the latch and the refusal changes character (or disappears).
     state.stats['flag:word:stone'] = 1;
     const again = checkSentence(state, ['stone']);

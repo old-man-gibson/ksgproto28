@@ -9,6 +9,7 @@ import { gradedUnitPrice, materialSellPrice, sellPrice } from './equipment';
 import { getDerivedStats } from './derived';
 import { hasMet } from './quests';
 import { qualityMult } from '../data/quality.data';
+import { text } from '../text/log';
 
 /**
  * Shops — buying, the other half of the counter.
@@ -130,7 +131,12 @@ export function buy(state: GameState, bus: EventBus, npcId: string, index: numbe
   bumpStat(state, bus, `shop:buys:${npcId}`, count);
   bus.emit({
     type: 'log',
-    msg: `Bought ${lineIcon(line)} ${lineName(line)}${count > 1 ? ` ×${count}` : ''} for ${total} gold.`,
+    msg: text('shops.bought', {
+      icon: lineIcon(line),
+      name: lineName(line),
+      qty: count > 1 ? text('common.times', { qty: count }) : '',
+      total,
+    }),
     kind: 'item',
   });
   return count;

@@ -11,6 +11,7 @@ import { MATERIALS } from '../data/materials.data';
 import { DISCIPLINES } from '../data/disciplines.data';
 import { QUALITY_ORDER, qualityAtLeast, qualityMult, qualityRank } from '../data/quality.data';
 import { weightedPick } from '../engine/rng';
+import { text } from '../text/log';
 
 /**
  * Modular crafting.
@@ -279,27 +280,27 @@ export function checkCraft(
     const put = placement[slot.id];
     if (!put) {
       if (slot.optional) continue;
-      return { ok: false, reason: `${slot.name} is empty` };
+      return { ok: false, reason: text('disciplines.reason.slot_empty', { slot: slot.name }) };
     }
     // Designs and tools are validated by whoever owns their catalogue; only
     // materials are checked against tags and stock here.
     if (slotPicks(slot) !== 'material') continue;
     if (!slotAccepts(slot, put.id)) {
-      return { ok: false, reason: `${MATERIALS[put.id]?.name ?? put.id} does not belong in ${slot.name}` };
+      return { ok: false, reason: text('disciplines.reason.wrong_slot', { name: MATERIALS[put.id]?.name ?? put.id, slot: slot.name }) };
     }
     if (stockOf(state, put.id, put.quality) < 1) {
-      return { ok: false, reason: `You have no ${MATERIALS[put.id]?.name ?? put.id} of that grade` };
+      return { ok: false, reason: text('disciplines.reason.no_stock_at_grade', { name: MATERIALS[put.id]?.name ?? put.id }) };
     }
   }
   // Anything placed in a slot that isn't open yet is not a legal layout.
   for (const id of Object.keys(placement)) {
     if (placement[id] && !open.some((s) => s.id === id)) {
-      return { ok: false, reason: 'That slot is not open yet' };
+      return { ok: false, reason: text('disciplines.reason.slot_locked') };
     }
   }
 
   const outcome = matchOutcome(state, disc, placement);
-  if (!outcome) return { ok: false, reason: 'Nothing comes of this combination' };
+  if (!outcome) return { ok: false, reason: text('disciplines.reason.no_outcome') };
   return { ok: true, outcome };
 }
 

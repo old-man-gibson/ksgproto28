@@ -89,6 +89,7 @@ import { grantWordXp } from '../src/core/systems/arcane';
 import { skillXpNeeded } from '../src/core/systems/skills';
 import { statusTipLines } from '../src/ui/lib/format';
 import type { GameState, SpellSource } from '../src/core/types';
+import { text } from '../src/core/text/log';
 
 const fresh = (seed = 1) => new Game(createInitialState(seed));
 
@@ -691,10 +692,10 @@ describe('arcane syntax', () => {
     const g = fresh();
     // Level 0: three words at most, and no high words.
     expect(maxSentenceWords(0)).toBe(3);
-    expect(checkSentence(g.state, ['fire', 'pierce', 'ice', 'fly']).reason).toMatch(/3 words/);
+    expect(checkSentence(g.state, ['fire', 'pierce', 'ice', 'fly']).reason).toBe(text('arcane.reason.too_many_words', { max: 3, level: 0 }));
     // An unlearned word reads as UNKNOWN before any level talk — the starter
     // lexicon (unlocks.ts) sits in front of the minLevel gate on purpose.
-    expect(checkSentence(g.state, ['zero']).reason).toMatch(/do not know/);
+    expect(checkSentence(g.state, ['zero']).reason).toBe(text('arcane.reason.unknown_word', { word: 'zero' }));
     g.state.stats['flag:word:zero'] = 1;
     expect(checkSentence(g.state, ['zero']).reason).toMatch(/Arcana 10/);
     expect(checkSentence(g.state, ['fire', 'pierce']).ok).toBe(true);
@@ -806,8 +807,10 @@ describe('browsing the powers', () => {
   it('search reads names, epithets and what the god is like', () => {
     expect(queryDeities({ search: 'rapier' }).map((d) => d.id)).toEqual(['denjalle']);
     expect(queryDeities({ search: 'cold sun' }).map((d) => d.id)).toEqual(['xima']);
-    // And it composes with tags rather than replacing them.
-    expect(queryDeities({ search: 'poison', tags: ['honorable'] })).toEqual([]);
+    // And it composes with tags rather than replacing them. (Descriptions
+    // may name poison as something an honorable god refuses, so the probe is
+    // an epithet word no honorable god carries.)
+    expect(queryDeities({ search: 'viper', tags: ['honorable'] })).toEqual([]);
   });
 
   it('a membership tag is the pantheon claim', () => {
@@ -1436,7 +1439,7 @@ describe('psionic shaping', () => {
     // hand with nothing in front of it.
     const spike = shapePsionic(g.state, g.bus, { force: 3 })!;
     expect(isUtilityWorking(resolveSpell(spike))).toBe(false);
-    expect(canCastUtility(g.state, spike.uid).reason).toMatch(/without a target/);
+    expect(canCastUtility(g.state, spike.uid).reason).toBe(text('spellcraft.reason.needs_target', { name: 'Mind Spike' }));
     expect(castUtility(g.state, g.bus, spike.uid)).toBe(false);
     expect(resourceValue(g.state, 'focus')).toBe(getDerivedStats(g.state).maxFocus);
   });

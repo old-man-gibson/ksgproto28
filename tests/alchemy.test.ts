@@ -22,6 +22,7 @@ import { noveltyKeys } from '../src/core/systems/disciplines';
 import { hasStatus } from '../src/core/systems/statuses';
 import { DISCIPLINES } from '../src/core/data/disciplines.data';
 import type { GradedStack, QualityTier } from '../src/core/types';
+import { text } from '../src/core/text/log';
 
 const fresh = (seed = 1) => new Game(createInitialState(seed));
 const at = (id: string, quality: QualityTier = 'c'): GradedStack => ({ id, quality });
@@ -266,7 +267,7 @@ describe('using what came out', () => {
     brew(g.state, g.bus, lay('grain_spirit', 'quicksilver', 'emberbloom', 'brimstone'));
     const check = canUseFlask(g.state, 0);
     expect(check.ok).toBe(false);
-    expect(check.reason).toContain('throw it at');
+    expect(check.reason).toBe(text('alchemy.reason.no_target'));
   });
 
   it('puts every flask on one clock, so a satchel is not an action bar', () => {
@@ -303,7 +304,7 @@ describe('using what came out', () => {
     brew(g.state, g.bus, lay('pressed_oil', 'quicksilver', 'emberbloom'));
     const check = canUseFlask(g.state, 0);
     expect(check.ok).toBe(false);
-    expect(check.reason).toContain('hands');
+    expect(check.reason).toBe(text('alchemy.reason.no_weapon'));
   });
 
   it('leaves the oil on the blade it was worked into, not on the next one', () => {

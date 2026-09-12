@@ -8,6 +8,7 @@ import { foundPaths, isExplored } from './actions';
 import { checkDiscovery, grantSkillXp } from './skills';
 import { noteTravelSkies } from './weathersense';
 import { noteSafeSpot } from './safety';
+import { text } from '../text/log';
 
 /**
  * Edges the player can currently see/use from a spot. A hidden edge opens
@@ -30,7 +31,7 @@ export function startTravel(state: GameState, bus: EventBus, to: string, opts: T
   // Travel is one of the two ways out of a fight, and a forced fight closes
   // both doors (activity switching is the other — see actions.ts).
   if (inForcedFight(state)) {
-    bus.emit({ type: 'log', msg: '⛔ There is no leaving this fight.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('common.no_leaving_fight'), kind: 'danger' });
     return false;
   }
   const edge = visibleEdges(state, state.spot).find((e) => e.to === to);
@@ -38,13 +39,13 @@ export function startTravel(state: GameState, bus: EventBus, to: string, opts: T
   // A shut road is visible with its terms on it (advertised-but-locked, same
   // shape as a gated floor) — the check lives here, not in visibility.
   if (edge.requires && !conditionsMet(state, edge.requires)) {
-    bus.emit({ type: 'log', msg: '🔒 The way is shut.', kind: 'travel' });
+    bus.emit({ type: 'log', msg: text('locations.blocked'), kind: 'travel' });
     return false;
   }
 
   if (state.combat) {
     abandonCombat(state);
-    bus.emit({ type: 'log', msg: 'You disengage and slip away.', kind: 'combat' });
+    bus.emit({ type: 'log', msg: text('common.disengage'), kind: 'combat' });
   }
   state.activity = null;
   if (!opts.planned) state.travelPlan = [];
@@ -56,7 +57,10 @@ export function startTravel(state: GameState, bus: EventBus, to: string, opts: T
     const dest = getSpot(to);
     bus.emit({
       type: 'log',
-      msg: `🥾 Heading to ${dest.name}${edge.label ? ` via ${edge.label}` : ''}...`,
+      msg: text('locations.heading', {
+        name: dest.name,
+        via: edge.label ? text('locations.via', { label: edge.label }) : '',
+      }),
       kind: 'travel',
     });
   }
@@ -84,9 +88,9 @@ export function tickTravel(state: GameState, bus: EventBus): void {
   if (!state.discovered.includes(t.to)) {
     state.discovered.push(t.to);
     const spot = getSpot(t.to);
-    bus.emit({ type: 'log', msg: `📍 Discovered: ${spot.icon} ${spot.name}`, kind: 'travel' });
+    bus.emit({ type: 'log', msg: text('locations.discovered', { icon: spot.icon, name: spot.name }), kind: 'travel' });
   } else if (!morePlanned) {
-    bus.emit({ type: 'log', msg: `You arrive at ${getSpot(t.to).name}.`, kind: 'travel' });
+    bus.emit({ type: 'log', msg: text('locations.arrived', { name: getSpot(t.to).name }), kind: 'travel' });
   }
   // The spot — or the particular road just walked — may declare a fight that
   // starts the moment you arrive and cannot be fled.
@@ -125,7 +129,7 @@ export function tickTravel(state: GameState, bus: EventBus): void {
     const next = state.travelPlan.shift()!;
     if (!startTravel(state, bus, next, { planned: true })) {
       state.travelPlan = [];
-      bus.emit({ type: 'log', msg: 'The way ahead is blocked; you stop here.', kind: 'travel' });
+      bus.emit({ type: 'log', msg: text('locations.route_blocked'), kind: 'travel' });
     }
   }
 }
@@ -211,7 +215,11 @@ export function travelPlanTo(state: GameState, bus: EventBus, to: string): boole
   const dest = getSpot(to);
   bus.emit({
     type: 'log',
-    msg: `🗺️ Setting out for ${dest.icon} ${dest.name}${path.length > 1 ? ` (${path.length} legs)` : ''}...`,
+    msg: text('locations.setting_out', {
+      icon: dest.icon,
+      name: dest.name,
+      legs: path.length > 1 ? text('locations.legs', { legs: path.length }) : '',
+    }),
     kind: 'travel',
   });
   return true;
@@ -221,7 +229,7 @@ export function travelPlanTo(state: GameState, bus: EventBus, to: string): boole
 export function cancelTravelPlan(state: GameState, bus: EventBus): void {
   if (state.travelPlan.length === 0) return;
   state.travelPlan = [];
-  bus.emit({ type: 'log', msg: 'You decide to stop at the next halt.', kind: 'travel' });
+  bus.emit({ type: 'log', msg: text('locations.stop_requested'), kind: 'travel' });
 }
 
 // ---------- Fast travel ----------
@@ -248,12 +256,12 @@ export function canFastTravel(state: GameState, to: string): boolean {
 export function fastTravelTo(state: GameState, bus: EventBus, to: string): boolean {
   if (!canFastTravel(state, to)) return false;
   if (inForcedFight(state)) {
-    bus.emit({ type: 'log', msg: '⛔ There is no leaving this fight.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('common.no_leaving_fight'), kind: 'danger' });
     return false;
   }
   const cost = fastTravelCost(state, to);
   if (state.gold < cost) {
-    bus.emit({ type: 'log', msg: `You can't afford the ${cost} gold caravan fee.`, kind: 'travel' });
+    bus.emit({ type: 'log', msg: text('locations.caravan_unaffordable', { cost }), kind: 'travel' });
     return false;
   }
 
@@ -265,7 +273,7 @@ export function fastTravelTo(state: GameState, bus: EventBus, to: string): boole
   // The caravan is nobody's quiet tunnel: riding in wipes any stamped opening.
   state.pendingApproach = null;
   const dest = getSpot(to);
-  bus.emit({ type: 'log', msg: `⚡ Fast traveled to ${dest.icon} ${dest.name} — −${cost} gold.`, kind: 'travel' });
+  bus.emit({ type: 'log', msg: text('locations.fast_traveled', { icon: dest.icon, name: dest.name, cost }), kind: 'travel' });
   // Same order as tickTravel: an ambushed arrival is not a peaceful visit,
   // so it never records the ambush site as a haven. Cleared spots are past
   // ambushing anybody.

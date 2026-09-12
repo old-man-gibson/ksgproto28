@@ -14,6 +14,7 @@ import { bandedXpNeeded, settleLevels } from './progression';
 import { getDerivedStats } from './derived';
 import { conditionsMet } from './conditions';
 import { legacyCapRaise } from './legacy';
+import { text } from '../text/log';
 
 /** The curve a skill levels on — its own bands, or the default shape. */
 export function skillProgression(skillId: string): ProgressionBand[] {
@@ -85,7 +86,7 @@ export function checkDiscovery(state: GameState, bus: EventBus, tags: string[]):
     if (!conditionsMet(state, def.unlock)) continue;
     state.skills[def.id] = { level: 1, xp: 0 };
     bus.emit({ type: 'skill:unlock', id: def.id });
-    bus.emit({ type: 'log', msg: `✨ Skill manifested: ${def.icon} ${def.name}!`, kind: 'skill' });
+    bus.emit({ type: 'log', msg: text('skills.manifested', { icon: def.icon, name: def.name }), kind: 'skill' });
   }
 }
 
@@ -114,7 +115,7 @@ export function raiseSkillCap(state: GameState, bus: EventBus, id: string, by = 
   s.capRaised = (s.capRaised ?? 0) + by;
   bus.emit({
     type: 'log',
-    msg: `⏫ ${def.icon} ${def.name}'s ceiling rises — Lv ${skillCap(state, id)} is within reach.`,
+    msg: text('skills.cap_raised', { icon: def.icon, name: def.name, cap: skillCap(state, id) }),
     kind: 'skill',
   });
 }

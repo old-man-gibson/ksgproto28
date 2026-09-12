@@ -7,6 +7,7 @@ import { availableMax, resourceValue, restoreResource } from './resources';
 import { heal } from './health';
 import { applyStatus, fireStatusEvent, statusesOf } from './statuses';
 import { gradesHeld, stockOf } from './disciplines';
+import { text } from '../text/log';
 
 /**
  * Using things: food, potions, salves.
@@ -69,13 +70,13 @@ export interface UseCheck {
 
 export function canUse(state: GameState, id: string, quality: QualityTier): UseCheck {
   const spec = consumableSpec(id);
-  if (!spec) return { ok: false, reason: 'Not something you can use' };
+  if (!spec) return { ok: false, reason: text('consumables.reason.not_usable') };
   const held = MATERIALS[id]?.graded
     ? stockOf(state, id, quality)
     : (state.materials[id] ?? 0);
-  if (held < 1) return { ok: false, reason: 'You have none of those' };
+  if (held < 1) return { ok: false, reason: text('consumables.reason.none_held') };
   const left = cooldownLeft(state, id);
-  if (left > 0) return { ok: false, reason: `Not ready for another ${(left / 10).toFixed(1)}s` };
+  if (left > 0) return { ok: false, reason: text('consumables.reason.cooldown', { seconds: (left / 10).toFixed(1) }) };
   return { ok: true };
 }
 
@@ -123,7 +124,7 @@ export function useConsumable(
 ): UseResult | null {
   const check = canUse(state, id, quality);
   if (!check.ok) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   const spec = consumableSpec(id)!;
@@ -191,7 +192,7 @@ export function useConsumable(
   const verb = spec.useVerb ?? 'Used';
   bus.emit({
     type: 'log',
-    msg: `${def.icon} ${verb} ${grade.name} ${def.name}.`,
+    msg: text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name }),
     kind: scale < 0 ? 'danger' : 'action',
   });
   return result;

@@ -658,6 +658,7 @@ import {
   noteOutgoing,
   noteParry,
 } from './ledger';
+import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
 
@@ -1043,7 +1044,7 @@ function startEncounter(state: GameState, bus: EventBus, spot: SpotDef, forced =
   const notable = group.some((m) => m.modifier !== 'normal' || m.rarity !== 'common');
   if (notable || group.length > 1) {
     const what = group.length > 1 ? `${lead.name} and ${group.length - 1} more` : lead.name;
-    bus.emit({ type: 'log', msg: `⚠️ ${what} (Lv ${lead.level}) appears!`, kind: 'combat' });
+    bus.emit({ type: 'log', msg: text('combat.appears', { what, level: lead.level }), kind: 'combat' });
   }
   feed(
     state,
@@ -1069,7 +1070,7 @@ export function startForcedFight(state: GameState, bus: EventBus, spot: SpotDef)
   // nobody yet. Either way arrival is just arrival.
   if (state.combat || spotCleared(state, spot) || !eligibleEncounters(state, spot).length) return;
   startEncounter(state, bus, spot, true);
-  bus.emit({ type: 'log', msg: `⚔️ You are set upon — there is no way out of this fight!`, kind: 'danger' });
+  bus.emit({ type: 'log', msg: text('combat.ambushed'), kind: 'danger' });
   feed(state, `⚔️ No retreat — this fight ends on its feet or on yours.`);
 }
 
@@ -1421,7 +1422,7 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         const gold = Math.round(qty * monster.level * getDerivedStats(state).goldGain);
         state.gold += gold;
         bumpStat(state, bus, 'gold:earned', gold);
-        bus.emit({ type: 'log', msg: `🪙 Scavenged ${gold} gold.`, kind: 'loot' });
+        bus.emit({ type: 'log', msg: text('combat.scavenged_gold', { gold }), kind: 'loot' });
         break;
       }
       case 'material': {
@@ -1431,7 +1432,7 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         const grade = got.quality ? ` (${QUALITY_TIERS[got.quality].name})` : '';
         bus.emit({
           type: 'log',
-          msg: `📦 ${mat?.icon ?? ''} ${mat?.name ?? pick.id}${grade} ×${qty}`,
+          msg: text('combat.loot_material', { icon: mat?.icon ?? '', name: mat?.name ?? pick.id, grade, qty }),
           kind: 'loot',
         });
         break;
@@ -1457,7 +1458,7 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         bus.emit({ type: 'loot', item });
         bus.emit({
           type: 'log',
-          msg: `📦 Loot: ${ITEMS[pick.id!]?.icon ?? ''} ${itemName(item)}`,
+          msg: text('combat.loot_item', { icon: ITEMS[pick.id!]?.icon ?? '', item: itemName(item) }),
           kind: 'loot',
         });
         break;
@@ -1476,7 +1477,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   // the end of the fight, so a knockout after the deed still keeps the deed.
   if (spot?.encounters?.some((e) => e.once && e.monsterId === monster.defId)) {
     bumpStat(state, bus, slainKey(spot.id, monster.defId));
-    bus.emit({ type: 'log', msg: `🏆 The ${monster.name} will not be seen here again.`, kind: 'combat' });
+    bus.emit({ type: 'log', msg: text('combat.unique_slain', { name: monster.name }), kind: 'combat' });
   }
   // A BOSS kill latches the spot's boss counter the same eager way. Announced
   // only the first time — variant keepers keep spawning, and a hunter farming
@@ -1485,7 +1486,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
     const first = (state.stats[bossKey(spot.id)] ?? 0) === 0;
     bumpStat(state, bus, bossKey(spot.id));
     if (first) {
-      bus.emit({ type: 'log', msg: `👑 The keeper of ${spot.name} is down.`, kind: 'combat' });
+      bus.emit({ type: 'log', msg: text('combat.keeper_slain', { spot: spot.name }), kind: 'combat' });
     }
   }
 
@@ -1499,7 +1500,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   bus.emit({ type: 'kill', monster });
   bus.emit({
     type: 'log',
-    msg: `☠️ Defeated ${monster.name} (Lv ${monster.level}) — +${gold} gold`,
+    msg: text('combat.defeated', { name: monster.name, level: monster.level, gold }),
     kind: 'combat',
   });
 
@@ -1515,7 +1516,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
     if (spot?.fightLimit) {
       bumpStat(state, bus, fightsKey(spot.id));
       if (spotCleared(state, spot)) {
-        bus.emit({ type: 'log', msg: `🏞️ ${spot.name} is cleared — nothing left here wants to fight.`, kind: 'combat' });
+        bus.emit({ type: 'log', msg: text('combat.spot_cleared', { spot: spot.name }), kind: 'combat' });
       }
     }
     closeCombat(state);
@@ -1547,8 +1548,8 @@ function onDefeat(state: GameState, bus: EventBus): void {
   bus.emit({
     type: 'log',
     msg: forced
-      ? `💫 The ${monster.name} beats you senseless.`
-      : `💫 The ${monster.name} knocks you out. You crawl away to recover...`,
+      ? text('combat.knocked_out_forced', { name: monster.name })
+      : text('combat.knocked_out', { name: monster.name }),
     kind: 'danger',
   });
   closeCombat(state);
@@ -2711,7 +2712,7 @@ function applyBarDamage(state: GameState, bus: EventBus, when: 'onFill' | 'onDep
     ) {
       const name = ITEMS[state.equipment.weapon.defId]?.name ?? 'your weapon';
       unequipSlot(state, 'weapon');
-      bus.emit({ type: 'log', msg: `⚡ Your grip fails — you drop ${name}!`, kind: 'danger' });
+      bus.emit({ type: 'log', msg: text('combat.weapon_dropped', { name }), kind: 'danger' });
       feed(state, `⚡ You drop ${name}!`);
     }
   }
