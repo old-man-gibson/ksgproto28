@@ -54,8 +54,11 @@ import {
   travelPlanTo,
   cancelTravelPlan,
   fastTravelTo,
+  goAndDo,
+  setJourneyIntent,
 } from './systems/locations';
 import { climbTo } from './systems/towers';
+import { accrueBonusTime, setBonusSpending, spendsBonusTick } from './systems/bonustime';
 import {
   canEquip,
   equipItem,
@@ -146,6 +149,12 @@ export class Game {
   tick(): void {
     if (this.state.paused) return;
     this.advance();
+    // Banked idle time, spent as a second tick. A whole extra advance, clock
+    // included: double speed means the world runs double, not just the bar.
+    if (spendsBonusTick(this.state)) {
+      this.state.bonusTime.banked -= 1;
+      this.advance();
+    }
   }
 
   /**
@@ -163,6 +172,9 @@ export class Game {
   /** One tick, unconditionally. The pause check lives in `tick()`. */
   private advance(): void {
     this.state.totalTicks += 1;
+    // Idleness is judged before anything moves, so the tick that starts or
+    // ends work is not banked as time spent doing nothing.
+    accrueBonusTime(this.state);
     // What the body simply WEARS, kept in step with what the body currently is
     // — before anything ticks, so a gene slotted this tick is already knitting.
     // Outside the travel branch's else, because a poison does not care whether
@@ -278,6 +290,21 @@ export class Game {
 
   cancelTravelPlan(): void {
     cancelTravelPlan(this.state, this.bus);
+  }
+
+  /** Walk to a spot and start an activity on arrival (or now, if already there). */
+  goAndDo(spotId: string, activityId: string): boolean {
+    return goAndDo(this.state, this.bus, spotId, activityId);
+  }
+
+  /** Set (or with null, clear) the activity the journey in progress ends in. */
+  setJourneyIntent(activityId: string | null): boolean {
+    return setJourneyIntent(this.state, activityId);
+  }
+
+  /** Spend banked idle time as double speed, or stop spending it. */
+  setBonusSpending(on: boolean): void {
+    setBonusSpending(this.state, on);
   }
 
   fastTravelTo(spotId: string): boolean {

@@ -3,7 +3,7 @@ import { STARTING_SPOT } from './data/locations.data';
 import { freshMutagenState } from './data/mutagens.data';
 import { freshPrestigeState } from './data/prestige.data';
 
-export const SAVE_VERSION = 52;
+export const SAVE_VERSION = 53;
 
 
 function freshAttrs(): Record<AttributeId, AttrState> {
@@ -68,6 +68,9 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     spot,
     travel: null,
     travelPlan: [],
+    travelIntent: null,
+    resumeActivity: {},
+    bonusTime: { banked: 0, spending: false },
     discovered: [spot],
     explored: {},
     finds: {},

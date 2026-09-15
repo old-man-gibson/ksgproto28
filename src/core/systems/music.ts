@@ -1472,6 +1472,7 @@ export function startPerformance(state: GameState, bus: EventBus, compositionId:
   state.activityProgress = 0;
   state.benchWork = null;
   state.travelPlan = [];
+  state.travelIntent = null;
 
   const ticksTotal = performanceTicks(comp);
   state.performance = { compositionId, spot: state.spot, ticksLeft: ticksTotal, ticksTotal };

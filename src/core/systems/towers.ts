@@ -121,6 +121,7 @@ export function climbTo(state: GameState, bus: EventBus, floorId: string | null)
   }
   state.activity = null;
   state.travelPlan = [];
+  state.travelIntent = null;
 
   const rungs = Math.max(1, Math.abs(toIndex - fromIndex));
   const speed = getDerivedStats(state).travelSpeed;

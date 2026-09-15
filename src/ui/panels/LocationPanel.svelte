@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { gs, game, view } from '../state.svelte';
+  import { gs, game, ui, view } from '../state.svelte';
   import { getSpot, MATERIALS, RECIPES } from '../../core/registry';
-  import { locationBreadcrumb, visibleEdges } from '../../core/systems/locations';
-  import { spotCleared } from '../../core/systems/combat';
+  import { locationBreadcrumb } from '../../core/systems/locations';
   import {
     activityCost,
     activityFactorInfo,
@@ -39,6 +38,8 @@
   import { QUESTS } from '../../core/registry';
   import { ticksToTime, condsText, factorLabel, attrSplitText } from '../lib/format';
   import MapCard from '../MapCard.svelte';
+  import DestinationPreview from './DestinationPreview.svelte';
+  import { visibleBenches } from '../lib/navigation';
   import BenchPanel from './BenchPanel.svelte';
   import SpellcraftPanel from './SpellcraftPanel.svelte';
   import AscentPanel from './AscentPanel.svelte';
@@ -63,26 +64,17 @@
   }
 
   const spot = $derived(getSpot(gs.spot));
-  const edges = $derived(visibleEdges(gs, gs.spot));
 
-  /**
-   * Benches you can actually see. Furniture for a system you have never heard
-   * of is a spoiler rather than a discovery, so the culture bench stays out of
-   * the room while mutagens are locked — the same rule the bench itself
-   * enforces, just applied before it can be clicked.
-   *
-   * ⚠️ ALPHA: mutagens currently start OPEN (see freshMutagenState), so this is
-   * inert today. It is kept wired rather than deleted because it is exactly
-   * what the unlock quest will switch on, and re-deriving it later is how a
-   * gate quietly goes missing.
-   */
-  const visibleBenches = $derived(
-    (spot.benches ?? []).filter((id) => {
-      if (id === 'mutagens') return gs.mutagens.unlocked && subsystemUnlocked(gs, 'genes');
-      if (id === 'runecarving') return subsystemUnlocked(gs, 'runecarving');
-      return true;
-    }),
-  );
+  const visibleBenchIds = $derived(visibleBenches(gs, spot));
+
+  // "Go & open" from the map: open the bench once standing at its spot. Any
+  // other stop (a cancelled or redirected journey) drops the request.
+  $effect(() => {
+    const want = ui.benchOnArrival;
+    if (!want || gs.travel) return;
+    if (want.spot === gs.spot) openBench = want.bench;
+    ui.benchOnArrival = null;
+  });
   const explorePct = $derived(exploreProgress(gs, spot));
   // What the spot still owes you, and how much further to the next one. The
   // finds themselves stay secret — the tick says "there is something here",
@@ -226,7 +218,9 @@
 {#if gs.travel}
   {@const dest = getSpot(gs.travel.to)}
   <div class="panel" style="margin-top: 12px">
-    <h2>🥾 Traveling to {dest.icon} {dest.name}</h2>
+    <h2>
+      🥾 Traveling to {gs.discovered.includes(dest.id) ? `${dest.icon} ${dest.name}` : '❓ an unknown place'}
+    </h2>
     <div class="bar" style="height: 18px">
       <div
         class="fill"
@@ -235,6 +229,8 @@
       <div class="label">{ticksToTime(gs.travel.ticksLeft)} remaining</div>
     </div>
   </div>
+  <!-- Where the journey ends, read ahead: plan the arrival while walking. -->
+  <DestinationPreview />
 {:else}
   <div class="panel" style="margin-top: 12px">
     <div class="dim small">{locationBreadcrumb(gs.spot)}</div>
@@ -393,11 +389,11 @@
     up to one and it opens, rather than every bench in the room competing for
     space on the page.
   -->
-  {#if visibleBenches.length}
+  {#if visibleBenchIds.length}
     <div class="panel" style="margin-top: 12px">
       <h3>🛠️ Workbenches</h3>
       <div class="btn-grid">
-        {#each visibleBenches as benchId (benchId)}
+        {#each visibleBenchIds as benchId (benchId)}
           {@const bench = DISCIPLINES[benchId]}
           {#if benchId === 'spelltable'}
             <!-- Not a discipline: one table, three schools (see SpellcraftPanel). -->
@@ -564,36 +560,6 @@
 
   <!-- The ladder, wherever a stack is reachable: the hub spot or any floor. -->
   <AscentPanel />
-
-  <div class="panel" style="margin-top: 12px">
-    <h3>Travel</h3>
-    <div class="routes">
-      {#each edges as edge}
-        {@const dest = getSpot(edge.to)}
-        {@const known = gs.discovered.includes(edge.to)}
-        {@const noExit = !!(edge.forced || dest.forced) && !spotCleared(gs, dest)}
-        {@const shut = !!edge.requires && !conditionsMet(gs, edge.requires)}
-        <button
-          class="route"
-          onclick={() => game.travelTo(edge.to)}
-          disabled={shut || gs.recovering || !!gs.combat?.forced}
-        >
-          <span class="route-name">
-            {known ? `${dest.icon} ${dest.name}` : '❓ Unknown place'}
-            {#if edge.oneWay}<span class="oneway" title="One-way — no coming back this way">⤵ one-way</span>{/if}
-            <!-- The warning the player gets BEFORE committing: this road ends
-                 in a fight that refuses to be fled. Shown even for an unknown
-                 destination — the danger must be knowable at the door. -->
-            {#if noExit}<span class="noexit" title="This way leads to a fight with no way out — you win it or you are carried off">⚔️ no retreat</span>{/if}
-            <!-- A shut road stays on the sign with its terms: advertised-but-
-                 locked, never a hidden wall. -->
-            {#if shut}<span class="shut" title="This way is shut — the terms name what opens it">🔒 {condsText(edge.requires)}</span>{/if}
-          </span>
-          <span class="dim small">{edge.label ?? ''} · {ticksToTime(edge.ticks)}</span>
-        </button>
-      {/each}
-    </div>
-  </div>
 {/if}
 
 <style>
@@ -650,39 +616,6 @@
 
   .action-fill {
     transition: none; /* fills every tick; easing would lag behind the reset */
-  }
-
-  .routes {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .route {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 10px;
-    text-align: left;
-  }
-
-  .oneway {
-    color: var(--danger);
-    font-size: 12px;
-    margin-left: 8px;
-  }
-
-  .noexit {
-    color: var(--danger);
-    font-size: 12px;
-    font-weight: 600;
-    margin-left: 8px;
-  }
-
-  .shut {
-    color: var(--text-dim);
-    font-size: 12px;
-    margin-left: 8px;
   }
 
   .recipes {

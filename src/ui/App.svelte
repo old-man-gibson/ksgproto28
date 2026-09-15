@@ -3,6 +3,7 @@
   import { isKept } from '../core/systems/ledger';
   import { currentActivity } from '../core/systems/actions';
   import { TPS } from '../core/engine/loop';
+  import { BONUS_CAP_TICKS } from '../core/systems/bonustime';
   import Sidebar from './panels/Sidebar.svelte';
   import LocationPanel from './panels/LocationPanel.svelte';
   import CombatPanel from './panels/CombatPanel.svelte';
@@ -215,6 +216,11 @@
     }
   }
 
+  function toggleBonus(ev: MouseEvent) {
+    game.setBonusSpending(!gs.bonusTime.spending);
+    (ev.currentTarget as HTMLButtonElement).blur();
+  }
+
   /** Give the focus back after a click so Space keeps toggling the pause. */
   function togglePause(ev: MouseEvent) {
     game.togglePause();
@@ -252,6 +258,16 @@
         title="Advance until the fight's next line — one thing happening, not one tick (N)"
       >
         ⏭ Next
+      </button>
+      <!-- Banked idle time: filled by doing nothing, spent as double speed
+           only while switched on (systems/bonustime.ts). -->
+      <button
+        class="bonus"
+        class:on={gs.bonusTime.spending}
+        onclick={toggleBonus}
+        title="Bonus time: banked 1:1 while nothing runs (no activity, travel, bench, performance, fight), cap {msToTime((BONUS_CAP_TICKS / TPS) * 1000)}. While on, every working tick runs twice and spends one banked tick."
+      >
+        ⏩ {gs.bonusTime.spending ? '2× ' : ''}{msToTime((gs.bonusTime.banked / TPS) * 1000)}
       </button>
       {#if gs.paused}
         <span class="tickno" title="Ticks elapsed since this save began">t{gs.totalTicks}</span>
@@ -460,6 +476,12 @@
     color: var(--text-dim);
   }
 
+  .clock .bonus {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .clock .bonus.on,
   .clock .pause.on {
     border-color: var(--accent);
     color: var(--accent);

@@ -12,10 +12,10 @@ import type {
 import type { EventBus } from '../engine/events';
 import { TPS } from '../engine/loop';
 import { chance, randInt } from '../engine/rng';
-import { getSpot, ITEMS, MATERIALS, RECIPES, RUNES } from '../registry';
+import { getSpot, ITEMS, MATERIALS, RECIPES, RUNES, SKILLS, SPOTS } from '../registry';
 import { BASE_ACTION_BAR, BASE_SPEED, getDerivedStats, scopedMult } from './derived';
 import { attrValue, grantAttrXpSplit } from './attributes';
-import { checkDiscovery, grantSkillXp } from './skills';
+import { checkDiscovery, grantSkillXp, skillTrainedBy } from './skills';
 import { grantActivityExposure } from './exposure';
 import { conditionsMet } from './conditions';
 import { tickCombat, abandonCombat, inForcedFight } from './combat';
@@ -90,11 +90,45 @@ export function selectActivity(state: GameState, bus: EventBus, activityId: stri
   state.activity = activityId;
   state.activityProgress = 0;
   state.travelPlan = []; // picking work overrides any pending journey
+  state.travelIntent = null; // and whatever that journey was for
   state.benchWork = null; // and steps away from any bench run
   state.performance = null; // and off any stage
+  // Remember the choice for the next visit — and forget it when the player
+  // stops by hand, so a spot left idle on purpose stays idle.
+  if (activityId) state.resumeActivity[state.spot] = activityId;
+  else delete state.resumeActivity[state.spot];
 
   const act = currentActivity(state);
   if (act) bus.emit({ type: 'log', msg: text('actions.started', { name: act.name }), kind: 'action' });
+}
+
+/**
+ * Whether an activity id can be started here and now: it exists at the spot,
+ * and a craft is unlocked and affordable (a starved craft would only log its
+ * own stop on the next tick).
+ */
+export function canStartActivity(state: GameState, spotId: string, activityId: string): boolean {
+  const act = spotActivities(getSpot(spotId)).find((a) => a.id === activityId);
+  if (!act) return false;
+  if (act.kind === 'craft') {
+    const recipe = RECIPES[act.recipe];
+    return !!recipe && recipeUnlocked(state, recipe) && canAfford(state, recipe);
+  }
+  return true;
+}
+
+/**
+ * The end of a journey, peacefully reached: start what the journey was for,
+ * else pick up whatever the player last did here. Called by every arrival
+ * path AFTER its ambush check — a forced fight owns the arrival instead.
+ */
+export function settleArrival(state: GameState, bus: EventBus): void {
+  const intent = state.travelIntent;
+  state.travelIntent = null;
+  if (state.travel || state.travelPlan.length > 0 || state.recovering || state.combat) return;
+  const wanted =
+    intent && intent.spot === state.spot ? intent.activity : state.resumeActivity[state.spot];
+  if (wanted && canStartActivity(state, state.spot, wanted)) selectActivity(state, bus, wanted);
 }
 
 const RECOVER_THRESHOLD = 0.6;
@@ -114,6 +148,59 @@ const RECOVER_THRESHOLD = 0.6;
  * are knocked out the instant they land.
  */
 const UNCONSCIOUS_CLOCK_RATE = 5;
+
+/**
+ * The tags an activity's cycle grants skill XP under — how an activity reaches
+ * a skill (skillTrainedBy). The tick branches read it, and so does
+ * `trainingSpots`, so "where does this train" cannot drift from what training
+ * actually pays. Hunting lists only its built-ins: the fight adds weapon and
+ * style tags from the loadout (combat.ts), which no spot can promise.
+ */
+export function activityXpTags(act: ActivityDef): string[] {
+  switch (act.kind) {
+    case 'train':
+      return ['training', ...Object.keys(attrXpWeights(act)), ...(act.tags ?? [])];
+    case 'gather':
+      return ['explore', 'gather', ...(act.tags ?? [])];
+    case 'job':
+      return ['job', ...(act.tags ?? [])];
+    case 'craft':
+      return ['craft', ...(act.tags ?? [])];
+    case 'explore':
+      return ['explore', ...(act.tags ?? [])];
+    case 'hunt':
+      return ['combat', 'hunt'];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Discovered spots with an activity that trains a skill or an attribute, as
+ * go-and-do targets. Unlocked crafts only; a spot's activities in their own
+ * order. An attribute is trained by a `train` activity that weights it.
+ */
+export function trainingSpots(
+  state: GameState,
+  target: { skill: string } | { attr: AttributeId },
+): { spot: string; activity: string }[] {
+  const def = 'skill' in target ? SKILLS[target.skill] : null;
+  if ('skill' in target && !def) return [];
+  const trains = (act: ActivityDef) =>
+    def
+      ? skillTrainedBy(def, activityXpTags(act))
+      : act.kind === 'train' && 'attr' in target && (attrXpWeights(act)[target.attr] ?? 0) > 0;
+  const out: { spot: string; activity: string }[] = [];
+  for (const spotId of state.discovered) {
+    const spot = SPOTS[spotId];
+    if (!spot) continue;
+    for (const act of spotActivities(spot)) {
+      if (act.kind === 'craft' && !recipeUnlocked(state, RECIPES[act.recipe])) continue;
+      if (trains(act)) out.push({ spot: spotId, activity: act.id });
+    }
+  }
+  return out;
+}
 
 /** Baseline ticks per training rep — one chunked XP payout per completed rep. */
 export const TRAIN_REP_TICKS = 20;
@@ -279,7 +366,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
       // Every trained attribute is a tag, so a split trains (and can manifest)
       // skills tagged for any of them, not just a nominated primary.
       const weights = attrXpWeights(act);
-      const tags = ['training', ...Object.keys(weights), ...(act.tags ?? [])];
+      const tags = activityXpTags(act);
       checkDiscovery(state, bus, tags);
       state.activityProgress += activityFillRate(act, stats, state);
       const cost = activityCost(act, stats);
@@ -310,7 +397,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
       break;
     }
     case 'gather': {
-      const tags = ['explore', 'gather', ...(act.tags ?? [])];
+      const tags = activityXpTags(act);
       checkDiscovery(state, bus, tags);
       state.activityProgress += activityFillRate(act, stats, state);
       const cost = activityCost(act, stats);
@@ -341,7 +428,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
       // that happens to come with wages. Same hook as gather/train/craft —
       // `tags` is how an activity reaches a skill — with 'job' as the built-in
       // so a future "day labour" skill can claim every shift at once.
-      const tags = ['job', ...(act.tags ?? [])];
+      const tags = activityXpTags(act);
       checkDiscovery(state, bus, tags);
       state.activityProgress += activityFillRate(act, stats, state);
       const cost = activityCost(act, stats);
@@ -375,7 +462,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
         state.activity = null;
         break;
       }
-      const tags = ['craft', ...(act.tags ?? [])];
+      const tags = activityXpTags(act);
       checkDiscovery(state, bus, tags);
       state.activityProgress += activityFillRate(act, stats, state);
       if (state.activityProgress >= activityCost(act, stats)) {

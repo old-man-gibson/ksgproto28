@@ -25,6 +25,11 @@ export function hasForesight(state: GameState): boolean {
   return boughtBoons(state).some(({ def }) => def.effect.kind === 'foresight');
 }
 
+/** Whether the Quests and Skills tabs carry go links (the Wayfinding boon). */
+export function hasWayfinding(state: GameState): boolean {
+  return boughtBoons(state).some(({ def }) => def.effect.kind === 'wayfinding');
+}
+
 /** Cap levels a skill's ceiling gains from prestige. Manifested or not. */
 export function legacyCapRaise(state: GameState, skillId: string): number {
   let by = 0;

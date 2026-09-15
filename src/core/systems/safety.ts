@@ -77,6 +77,7 @@ export function retreatToSafety(state: GameState, bus: EventBus, reason: string)
   state.activity = null;
   state.travel = null;
   state.travelPlan = [];
+  state.travelIntent = null;
   if (!state.discovered.includes(to)) state.discovered.push(to);
 
   const dest = getSpot(to);

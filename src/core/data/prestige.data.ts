@@ -117,6 +117,15 @@ export const PRESTIGE_BOONS = prose<PrestigeBoonDef>('PRESTIGE_BOONS', PRESTIGE_
     cost: [3],
     effect: { kind: 'foresight' },
   },
+  // The map's "go and do" reaches every tab (user, 2026-09-13): the first run
+  // learns where things are by walking; a prestiged run can buy the links.
+  wayfinding: {
+    id: 'wayfinding',
+    name: 'Wayfinding',
+    icon: '🧭',
+    cost: [2],
+    effect: { kind: 'wayfinding' },
+  },
 });
 
 /** A save that has never prestiged. */

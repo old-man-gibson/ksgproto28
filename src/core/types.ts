@@ -4180,7 +4180,15 @@ export type PrestigeBoonEffect =
    * next milestone only once the level is at 90% of it. Read by
    * `skillTreeByCategory` and the Skills panel.
    */
-  | { kind: 'foresight' };
+  | { kind: 'foresight' }
+  /**
+   * Wayfinding: "go" links outside the map. Active quests link to where
+   * their giver and `talk`/`reach` objectives stand; skills link to the
+   * spots whose activities train them. Each link is the map's go-and-do
+   * (systems/locations.ts `goAndDo` / `travelPlanTo`). Read by the Quests
+   * and Skills panels.
+   */
+  | { kind: 'wayfinding' };
 
 /** Something prestige points buy. Rank r (1-based) costs `cost[r-1]`; `cost.length` is the max rank. */
 export interface PrestigeBoonDef {
@@ -4815,6 +4823,25 @@ export interface GameState {
   travel: TravelState | null;
   /** Remaining hops of a multi-leg journey (after the current travel leg). */
   travelPlan: string[];
+  /**
+   * What the journey is for: on the final peaceful arrival at `spot`, start
+   * `activity`. Set by "go and do" (the map's feature list, the destination
+   * preview); cleared by anything that changes the plan. Wins over
+   * `resumeActivity`. See systems/actions.ts `settleArrival`.
+   */
+  travelIntent: { spot: string; activity: string } | null;
+  /**
+   * The last activity chosen at each spot, keyed by spot id. A peaceful
+   * arrival with no intent restarts it; deselecting an activity by hand
+   * forgets the entry, so a spot left idle on purpose stays idle.
+   */
+  resumeActivity: Record<string, string>;
+  /**
+   * Banked idle time, in ticks. Doing nothing (see `isIdle`,
+   * systems/bonustime.ts) banks one tick per tick up to a cap; while
+   * `spending` is on, every non-idle tick runs twice and costs one.
+   */
+  bonusTime: { banked: number; spending: boolean };
   discovered: string[];
   /** Explore progress (ticks) per spot id. */
   explored: Record<string, number>;

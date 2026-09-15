@@ -139,6 +139,7 @@ export const LOG_TEXT = {
   'locations.via': ' via {label}',
   'locations.setting_out': '🗺️ Setting out for {icon} {name}{legs}...',
   'locations.legs': ' ({legs} legs)',
+  'locations.unknown_place': 'Unknown place',
   'locations.blocked': '🔒 Path locked.',
   'locations.discovered': '📍 Discovered: {icon} {name}',
   'locations.arrived': 'You arrive at {name}.',

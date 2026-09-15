@@ -4,7 +4,7 @@ import { AREAS, REGIONS, SPOTS, edgesFrom, getSpot, type Edge } from '../registr
 import { getDerivedStats } from './derived';
 import { abandonCombat, inForcedFight, spotCleared, startForcedFight } from './combat';
 import { conditionsMet } from './conditions';
-import { foundPaths, isExplored } from './actions';
+import { canStartActivity, foundPaths, isExplored, selectActivity, settleArrival, spotActivities } from './actions';
 import { checkDiscovery, grantSkillXp } from './skills';
 import { noteTravelSkies } from './weathersense';
 import { noteSafeSpot } from './safety';
@@ -48,7 +48,10 @@ export function startTravel(state: GameState, bus: EventBus, to: string, opts: T
     bus.emit({ type: 'log', msg: text('common.disengage'), kind: 'combat' });
   }
   state.activity = null;
-  if (!opts.planned) state.travelPlan = [];
+  if (!opts.planned) {
+    state.travelPlan = [];
+    state.travelIntent = null;
+  }
 
   const speed = getDerivedStats(state).travelSpeed;
   const ticks = Math.max(1, Math.round(edge.ticks / speed));
@@ -58,7 +61,7 @@ export function startTravel(state: GameState, bus: EventBus, to: string, opts: T
     bus.emit({
       type: 'log',
       msg: text('locations.heading', {
-        name: dest.name,
+        name: state.discovered.includes(to) ? dest.name : text('locations.unknown_place'),
         via: edge.label ? text('locations.via', { label: edge.label }) : '',
       }),
       kind: 'travel',
@@ -120,6 +123,7 @@ export function tickTravel(state: GameState, bus: EventBus): void {
   if (ambushed) {
     // Any remaining legs of a journey are forfeit: the fight has you now.
     state.travelPlan = [];
+    state.travelIntent = null;
     startForcedFight(state, bus, dest);
     return;
   }
@@ -129,9 +133,12 @@ export function tickTravel(state: GameState, bus: EventBus): void {
     const next = state.travelPlan.shift()!;
     if (!startTravel(state, bus, next, { planned: true })) {
       state.travelPlan = [];
+      state.travelIntent = null;
       bus.emit({ type: 'log', msg: text('locations.route_blocked'), kind: 'travel' });
     }
+    return;
   }
+  settleArrival(state, bus);
 }
 
 // ---------- Routing ----------
@@ -140,10 +147,19 @@ export function tickTravel(state: GameState, bus: EventBus): void {
  * Shortest path (by ticks) from `from` to `to`, walking only DISCOVERED spots
  * through currently visible edges. Returns the hop list excluding `from`,
  * or null if unreachable.
+ *
+ * `unknownDest` lets the destination itself be undiscovered — the map's "?"
+ * places, one visible road past known ground. Only the last hop may be
+ * unknown; everything in between is still walked ground.
  */
-export function findPath(state: GameState, from: string, to: string): string[] | null {
+export function findPath(
+  state: GameState,
+  from: string,
+  to: string,
+  opts: { unknownDest?: boolean } = {},
+): string[] | null {
   if (from === to) return [];
-  if (!state.discovered.includes(to)) return null;
+  if (!opts.unknownDest && !state.discovered.includes(to)) return null;
 
   const dist = new Map<string, number>([[from, 0]]);
   const prev = new Map<string, string>();
@@ -162,7 +178,7 @@ export function findPath(state: GameState, from: string, to: string): string[] |
     queue.delete(current!);
     if (current === to) break;
     for (const edge of visibleEdges(state, current!)) {
-      if (!state.discovered.includes(edge.to)) continue;
+      if (!state.discovered.includes(edge.to) && edge.to !== to) continue;
       // A shut road neither routes through nor to: unlike a forced door,
       // clicking a locked destination is not a choice the player can make.
       if (edge.requires && !conditionsMet(state, edge.requires)) continue;
@@ -201,10 +217,13 @@ export function pathTicks(from: string, path: string[]): number {
   return total;
 }
 
-/** Walk to any discovered spot via auto-routing (multi-leg journey). */
+/**
+ * Walk to any discovered spot via auto-routing (multi-leg journey) — or to an
+ * unknown place one visible road past known ground.
+ */
 export function travelPlanTo(state: GameState, bus: EventBus, to: string): boolean {
   if (state.travel || state.recovering || to === state.spot) return false;
-  const path = findPath(state, state.spot, to);
+  const path = findPath(state, state.spot, to, { unknownDest: true });
   if (!path || path.length === 0) return false;
 
   state.travelPlan = path.slice(1);
@@ -212,12 +231,15 @@ export function travelPlanTo(state: GameState, bus: EventBus, to: string): boole
     state.travelPlan = [];
     return false;
   }
+  // A plain walk is for nothing in particular; goAndDo sets the intent after.
+  state.travelIntent = null;
   const dest = getSpot(to);
+  const known = state.discovered.includes(to);
   bus.emit({
     type: 'log',
     msg: text('locations.setting_out', {
-      icon: dest.icon,
-      name: dest.name,
+      icon: known ? dest.icon : '❓',
+      name: known ? dest.name : text('locations.unknown_place'),
       legs: path.length > 1 ? text('locations.legs', { legs: path.length }) : '',
     }),
     kind: 'travel',
@@ -225,10 +247,51 @@ export function travelPlanTo(state: GameState, bus: EventBus, to: string): boole
   return true;
 }
 
+/** Where the journey in progress ends, or null when standing still. */
+export function journeyEnd(state: GameState): string | null {
+  if (!state.travel) return null;
+  return state.travelPlan.length > 0 ? state.travelPlan[state.travelPlan.length - 1] : state.travel.to;
+}
+
+/**
+ * "Go and do": walk to a spot and start an activity on arrival. Standing
+ * there already, it simply starts. The activity is checked for existence
+ * now and for affordability on arrival (settleArrival) — a craft planned
+ * while the materials are still on their way is a fair plan.
+ */
+export function goAndDo(state: GameState, bus: EventBus, spotId: string, activityId: string): boolean {
+  if (!spotActivities(getSpot(spotId)).some((a) => a.id === activityId)) return false;
+  if (spotId === state.spot && !state.travel) {
+    if (!canStartActivity(state, spotId, activityId)) return false;
+    selectActivity(state, bus, activityId);
+    return state.activity === activityId;
+  }
+  if (!travelPlanTo(state, bus, spotId)) return false;
+  state.travelIntent = { spot: spotId, activity: activityId };
+  return true;
+}
+
+/**
+ * Change what the journey in progress is for: an activity at its end, or
+ * nothing (null — arrival then falls back to resume-on-return).
+ */
+export function setJourneyIntent(state: GameState, activityId: string | null): boolean {
+  const end = journeyEnd(state);
+  if (!end) return false;
+  if (activityId === null) {
+    state.travelIntent = null;
+    return true;
+  }
+  if (!spotActivities(getSpot(end)).some((a) => a.id === activityId)) return false;
+  state.travelIntent = { spot: end, activity: activityId };
+  return true;
+}
+
 /** Abandon the remaining legs of a journey (the current leg still completes). */
 export function cancelTravelPlan(state: GameState, bus: EventBus): void {
   if (state.travelPlan.length === 0) return;
   state.travelPlan = [];
+  state.travelIntent = null;
   bus.emit({ type: 'log', msg: text('locations.stop_requested'), kind: 'travel' });
 }
 
@@ -269,6 +332,7 @@ export function fastTravelTo(state: GameState, bus: EventBus, to: string): boole
   if (state.combat) abandonCombat(state);
   state.activity = null;
   state.travelPlan = [];
+  state.travelIntent = null;
   state.spot = to;
   // The caravan is nobody's quiet tunnel: riding in wipes any stamped opening.
   state.pendingApproach = null;
@@ -283,6 +347,7 @@ export function fastTravelTo(state: GameState, bus: EventBus, to: string): boole
   // Arriving is arriving, however you did it — a forced waypoint (a strange
   // thing to author, but a legal one) ambushes the caravan too.
   if (ambushed) startForcedFight(state, bus, dest);
+  else settleArrival(state, bus);
   return true;
 }
 

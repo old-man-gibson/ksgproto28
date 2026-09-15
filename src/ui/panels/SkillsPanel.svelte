@@ -30,10 +30,13 @@
   } from '../../core/systems/martial';
   import { ANY_POSITION_COLOR } from '../../core/data/martial.data';
   import type { ForkArchetypeDef, TechniqueForm } from '../../core/types';
-  import { POSITIONS } from '../../core/registry';
+  import { POSITIONS, SPOTS } from '../../core/registry';
   import { TRIGGER_EVENTS } from '../../core/systems/triggers';
   import { describeMod, condText, modCondition, techniqueMoveText, ticksToTime, sumMods } from '../lib/format';
-  import { endowmentBonus, hasForesight, talentBonus } from '../../core/systems/legacy';
+  import { endowmentBonus, hasForesight, hasWayfinding, talentBonus } from '../../core/systems/legacy';
+  import { trainingSpots } from '../../core/systems/actions';
+  import { activityName } from '../lib/navigation';
+  import GoButton from '../lib/GoButton.svelte';
 
   /**
    * Talent's bar under the XP bar (PRESTIGE.md §4). One lap of the bar is
@@ -256,6 +259,26 @@
     </div>
   {/snippet}
 
+  <!-- Where to train it, with go links (the Wayfinding boon). Known ground
+       only: the list grows as the map does. -->
+  {#snippet trainsAt(target: { skill: string } | { attr: AttributeId })}
+    {#if hasWayfinding(gs)}
+      {@const spots = trainingSpots(gs, target)}
+      {#if spots.length}
+        <div class="trains-at">
+          <span class="dim">Trains at:</span>
+          {#each spots.slice(0, 6) as t (t.spot + ':' + t.activity)}
+            <span class="where">
+              {activityName(t.spot, t.activity)} <span class="dim">· {SPOTS[t.spot].name}</span>
+              <GoButton spot={t.spot} activity={t.activity} />
+            </span>
+          {/each}
+          {#if spots.length > 6}<span class="dim">+{spots.length - 6} more</span>{/if}
+        </div>
+      {/if}
+    {/if}
+  {/snippet}
+
   {#snippet skillNode(node: SkillTreeNode)}
     {@const def = node.def}
     {#if node.state === 'unlocked'}
@@ -346,6 +369,7 @@
             {#if def.active}
               <div class="active-info">⚡ {activeSummary(def.active)} — fired automatically by style priority.</div>
             {/if}
+            {@render trainsAt({ skill: def.id })}
           </div>
         <!-- Learned techniques that call this skill home: the roster. Toggling
              one benches it — it leaves the combat rotation but keeps its reps.
@@ -535,6 +559,7 @@
             {#if training.milestones?.length}
               {@render milestoneLine(training.milestones, a.level)}
             {/if}
+            {@render trainsAt({ attr: attr.id })}
             <div class="ranks">
               {#each training.tierNames as rank (rank.level)}
                 {@const reached = a.level >= rank.level}
@@ -787,6 +812,19 @@
   .active-info {
     margin-top: 4px;
     color: var(--accent);
+  }
+
+  .trains-at {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 4px;
+  }
+
+  .trains-at .where {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .milestones {

@@ -546,6 +546,15 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     raw.prestige = prestige;
     raw.version = 52;
   },
+  // v52 → v53: navigation — journey intents, resume-on-return, banked idle
+  // time. All start empty; an old save's journey in flight simply arrives
+  // with nothing queued.
+  52: (raw) => {
+    raw.travelIntent = raw.travelIntent ?? null;
+    raw.resumeActivity = raw.resumeActivity ?? {};
+    raw.bonusTime = raw.bonusTime ?? { banked: 0, spending: false };
+    raw.version = 53;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {

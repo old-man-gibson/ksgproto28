@@ -20,4 +20,6 @@ export const PRESTIGE_BOONS_TEXT: ProseTable = {
   'darkvision_ceiling.desc': 'Darkvision can reach 10 levels higher, per rank.',
 
   'foresight.desc': 'Locked skills and upcoming milestones are shown with their requirements at any progress. Without it they appear only at 90% of the requirement.',
+
+  'wayfinding.desc': 'Quests and skills get Go buttons: walk to a quest giver or objective, or to a spot that trains the skill and start that activity on arrival.',
 };

@@ -73,6 +73,12 @@ export const ui = $state({
    */
   defeatShown: gs.lastFight?.endedAt ?? -1,
   mapOpen: true,
+  /**
+   * A bench to open once standing at `spot` — the map card's "go and open".
+   * UI-only on purpose: a window is not game state, and a reload mid-walk
+   * losing it costs one click.
+   */
+  benchOnArrival: null as { spot: string; bench: string } | null,
   /** The position-graph planner section on the Combat tab (see MartialPlanner). */
   plannerOpen: false,
   /** Weapon families the planner is filtering by — a view, never equipment. */
