@@ -22,6 +22,9 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 import { CATALOG, catalogFor, WRITABLE } from './catalog';
 import {
   notesOf,
+  renameEntry,
+  reorderEntry,
+  setAt,
   setNoteAt,
   sourceOf,
   type NoteMarker,
@@ -37,6 +40,7 @@ export type PatchOp =
   | { op: 'delete'; kind: string; path: PathStep[] }
   | { op: 'add'; kind: string; key: string; value: unknown }
   | { op: 'rename'; kind: string; from: string; to: string }
+  | { op: 'reorder'; kind: string; key: string; anchor: string; before: boolean }
   | { op: 'note'; kind: string; key: string; marker: NoteMarker; text: string | null };
 
 interface PatchRequest {
@@ -269,6 +273,21 @@ export function forge(): Plugin {
                 working.set(edit.file, result.text);
                 notes.push(result.note);
               }
+              const current = working.get(entry.file)!;
+              const result =
+                op.op === 'add'
+                  ? addEntry(entry.file, current, entry.root, op.key, op.value, entry.keyOrder)
+                  : op.op === 'delete'
+                    ? deleteAt(entry.file, current, entry.root, op.path)
+                    : op.op === 'rename'
+                      ? renameEntry(entry.file, current, entry.root, op.from, op.to)
+                      : op.op === 'reorder'
+                        ? reorderEntry(entry.file, current, entry.root, op.key, op.anchor, op.before)
+                        : op.op === 'note'
+                          ? setNoteAt(entry.file, current, entry.root, op.key, op.marker, op.text)
+                          : setAt(entry.file, current, entry.root, op.path, op.value, entry.keyOrder);
+              working.set(entry.file, result.text);
+              notes.push(result.note);
             }
 
             const changes = [...working].map(([file, after]) => {

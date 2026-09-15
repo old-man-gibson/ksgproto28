@@ -243,17 +243,6 @@ a library is not a contradiction; it is a tower.
 
 ---
 
-## 1. Region drag-and-drop reorder (forge)  ← was start here
-
-Region order in the world map is *key order in the data file*, so this needs a
-**reorder-entries AST op** in `forge/server/edit.ts` (move a property before or
-after a sibling, in place, comments intact) plus a patch op and drag handles on
-the region tabs. Pure tooling, no game change. (Not to be confused with the
-World Atlas, which shipped — that places regions in space, this orders their
-tabs.)
-
----
-
 ## 2. Time & weather (steps 1–3 SHIPPED; events/UI remain)
 
 **Shipped 2026-08-04** — see **docs/WEATHER.md** for the full spec of what

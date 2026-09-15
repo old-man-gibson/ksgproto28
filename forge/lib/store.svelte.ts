@@ -118,6 +118,16 @@ class Store {
       const book = this.meta.notes as NoteBook | undefined;
       if (book?.[kind]) delete book[kind][String(path[0])];
       this.ops = this.ops.filter((o) => !(o.op === 'note' && o.kind === kind && o.key === path[0]));
+      // A reorder naming the entry in EITHER slot now addresses nothing, and
+      // one staged op pointing at a missing id fails the whole batch.
+      this.ops = this.ops.filter(
+        (o) =>
+          !(
+            o.op === 'reorder' &&
+            o.kind === kind &&
+            (o.key === path[0] || o.anchor === path[0])
+          ),
+      );
 
       const staged = this.ops.some((o) => o.op === 'add' && o.kind === kind && o.key === path[0]);
       if (staged) {
@@ -131,6 +141,31 @@ class Store {
   add(kind: string, key: string, value: Record<string, unknown>): void {
     this.data[kind] = { ...(this.data[kind] ?? {}), [key]: value };
     this.pushOp({ op: 'add', kind, key, value });
+  }
+
+  /**
+   * Move an entry so it sits beside a sibling.
+   *
+   * Registry order is key order in the data file, and key order is the order
+   * the world map's region tabs come out in — there is no rank field to set,
+   * so the working copy has to be rebuilt in the new order to redraw.
+   */
+  reorder(kind: string, key: string, anchor: string, before: boolean): void {
+    if (key === anchor) return;
+    const current = this.data[kind];
+    if (!current?.[key] || !current[anchor]) return;
+
+    const keys = Object.keys(current).filter((k) => k !== key);
+    keys.splice(keys.indexOf(anchor) + (before ? 0 : 1), 0, key);
+    this.data[kind] = Object.fromEntries(keys.map((k) => [k, current[k]]));
+
+    // Dragging a tab past four others is four drops; only the last says where
+    // it landed, and where it landed is all the file needs to be told.
+    const last = this.ops[this.ops.length - 1];
+    if (last?.op === 'reorder' && last.kind === kind && last.key === key) {
+      this.ops = this.ops.slice(0, -1);
+    }
+    this.ops = [...this.ops, { op: 'reorder', kind, key, anchor, before }];
   }
 
   /** Everywhere `id` is pointed at, so a rename can be shown before it happens. */
@@ -188,7 +223,9 @@ class Store {
         ? { ...o, path: [to, ...o.path.slice(1)] }
         : o.op === 'note' && o.kind === kind && o.key === from
           ? { ...o, key: to }
-          : o,
+          : o.op === 'reorder' && o.kind === kind && (o.key === from || o.anchor === from)
+            ? { ...o, key: o.key === from ? to : o.key, anchor: o.anchor === from ? to : o.anchor }
+            : o,
     );
     const book = this.meta.notes as NoteBook | undefined;
     if (book?.[kind]?.[from]) {
@@ -230,7 +267,7 @@ class Store {
     const touched = new Set<string>();
     for (const op of this.ops) {
       if (op.kind !== 'maingene') continue;
-      if (op.op === 'add' || op.op === 'note') touched.add(op.key);
+      if (op.op === 'add' || op.op === 'note' || op.op === 'reorder') touched.add(op.key);
       else if (op.op === 'rename') touched.add(op.to);
       else touched.add(String(op.path[0]));
     }

@@ -608,6 +608,75 @@ export function renameEntry(
   return { text: out, note: `rename ${rootName}.${from} → ${to}` };
 }
 
+/**
+ * Move a registry entry so it sits immediately before or after a sibling.
+ *
+ * Region order in the world map IS key order in the data file, so reordering
+ * the tabs means moving a property — which the printer must never be asked to
+ * do, since reprinting a registry to reorder it would eat every comment in it.
+ * So the entry is CUT as source text and spliced back in beside its new
+ * neighbour: the only bytes that move are the ones the author wrote.
+ *
+ * `getFullStart()` is what makes that honest. It reaches back past the entry's
+ * blank lines and `//` lines to the previous entry's comma, so a commented
+ * entry travels with its commentary instead of leaving it stranded above
+ * whatever moved up into its place.
+ */
+export function reorderEntry(
+  fileName: string,
+  text: string,
+  rootName: string,
+  key: string,
+  anchor: string,
+  before: boolean,
+): EditResult {
+  const sf = parse(fileName, text);
+  const root = findRoot(sf, rootName);
+  if (!root) throw new Error(`No exported const named ${rootName} in ${fileName}`);
+  if (!ts.isObjectLiteralExpression(root)) throw new Error(`${rootName} is not an object literal`);
+
+  const prop = propOf(root, key);
+  if (!prop) throw new Error(`${rootName} has no entry '${key}'`);
+  const anchorProp = propOf(root, anchor);
+  if (!anchorProp) throw new Error(`${rootName} has no entry '${anchor}'`);
+  if (key === anchor) return { text, note: `reorder ${rootName}.${key} (already there)` };
+
+  // A registry written on one line has no tab strip to drag and no comments to
+  // protect, and the splice below assumes entries own whole lines. Say so
+  // rather than quietly turning `{ a: 1, b: 2 }` into `{ b: 2, a: 1, }`.
+  if (!isMultiline(sf, root, text)) {
+    throw new Error(`${rootName} is written on one line; reorder needs one entry per line`);
+  }
+
+  const from = prop.getFullStart();
+  const to = endWithComma(text, prop.getEnd());
+  const at = before ? anchorProp.getFullStart() : endWithComma(text, anchorProp.getEnd());
+
+  // Dropping an entry back where it already sits: no edit, and no empty hunk
+  // in the diff for the user to squint at.
+  if (at === from || at === to) {
+    return { text, note: `reorder ${rootName}.${key} (already there)` };
+  }
+
+  // The last entry in a registry may have been written without a trailing
+  // comma; moving it inward would weld it to its new neighbour.
+  let block = text.slice(from, to);
+  if (!block.trimEnd().endsWith(',')) block += ',';
+
+  const cut = text.slice(0, from) + text.slice(to);
+  const insertAt = at > from ? at - (to - from) : at;
+  const head = cut.slice(0, insertAt);
+  const tail = cut.slice(insertAt);
+  // Whatever now precedes the insertion point has to be able to take another
+  // entry after it — the entry that used to be last can have lost its comma to
+  // the cut above.
+  const prev = head.trimEnd().slice(-1);
+  return {
+    text: head + (prev === ',' || prev === '{' ? '' : ',') + block + tail,
+    note: `reorder ${rootName}.${key} ${before ? 'before' : 'after'} ${anchor}`,
+  };
+}
+
 // ---------- Entry notes: forge-managed `// TODO:` / `// SPEC:` lines ----------
 
 export type NoteMarker = 'TODO' | 'SPEC';

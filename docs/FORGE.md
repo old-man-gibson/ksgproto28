@@ -35,8 +35,9 @@ every edit test asserts the sample file's comments are still there afterwards.
 
 **Nothing is written until you say so.** Edits stage locally (the map redraws
 immediately), and **Review & Apply** (`Ctrl+S`) shows the diff per file before anything
-lands. This repo has no git, so a timestamped copy of every touched file goes to
-`.forge-backups/` first — that directory *is* the undo history.
+lands. A timestamped copy of every touched file goes to `.forge-backups/` first —
+finer grained than a commit, and it catches the state *between* commits, which is where
+content work actually lives.
 
 **Words go to the text file.** `desc`, `dialogue` and `hint` are not stored in the
 data files; they live in `src/core/text/<name>.text.ts` next door, keyed by dotted
@@ -60,6 +61,8 @@ can edit.
 | gesture | does |
 |---|---|
 | drag a node | sets `map: { x, y }` (snapped to ½ by default) |
+| drag a **region tab** | moves that region's entry in the data file — tab order *is* key order |
+| `Alt`+`←` / `Alt`+`→` on a region tab | the same move, from the keyboard |
 | **shift**-drag from a node | draws a new connection to whatever you drop on |
 | **right-click** anything | actions for that spot, edge, NPC, or the canvas |
 | click an edge | opens it in the inspector |
@@ -297,7 +300,18 @@ The client never names a file. It names a *kind* and a *path*:
 store.set('spot', ['woods_edge', 'finds', '#id=lost_purse', 'gold'], [15, 40])
 store.del('spot', ['deep_woods', 'connections', '#to=ravine_floor'])
 store.add('npc', 'old_pell', { id: 'old_pell', name: 'Old Pell', /* … */ })
+store.reorder('region', 'threshold', 'verdant_frontier', true)   // ...and put it before
 ```
+
+`reorder` is the odd one out: it changes no value, only where an entry sits among its
+siblings. Registry order **is** key order in the data file, which is the order the world
+map draws its region tabs in, so there is no rank field to set — the op cuts the entry's
+exact character range and splices it back beside its new neighbour. `getFullStart()` is
+what makes that safe: it reaches back past the entry's blank lines and `//` lines, so a
+commented entry takes its commentary with it instead of leaving it stranded above
+whatever moved up. Nothing is reprinted, so the diff is the same lines removed and
+re-added — moving Threshold to the front of `REGIONS` is 5 added, 5 removed, four of
+them its comment block.
 
 `#key=value` addresses an array element by a field rather than an index, so a find or a
 connection keeps its identity when the list is reordered. Setting a `#` path that doesn't
