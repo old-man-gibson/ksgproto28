@@ -1,7 +1,8 @@
 import type { ActivityDef, GameState, SpotDef } from '../types';
 import type { EventBus } from '../engine/events';
-import { getSpot, SPOTS } from '../registry';
+import { getSpot, SPOTS, STARTING_SPOT } from '../registry';
 import { conditionsMet } from './conditions';
+import { text } from '../text/log';
 
 /**
  * Where you get thrown when a fight you could not flee goes badly.
@@ -56,9 +57,13 @@ export function retreatSpot(state: GameState): string {
   const fallback = state.safeSpots.unconditional;
   if (fallback && SPOTS[fallback]) return fallback;
 
-  // Never nowhere: the first unconditional haven in the world, else the start.
+  // Never nowhere: the start if it is a haven (the Foot is), else the first
+  // unconditional haven in the world, else the start regardless. Data order
+  // must not decide this — before the start was checked first, a fresh save
+  // knocked out on its first hunt woke in the hold's bedroom.
+  if (isUnconditionalHaven(getSpot(STARTING_SPOT))) return STARTING_SPOT;
   const anyHaven = Object.values(SPOTS).find((s) => isUnconditionalHaven(s));
-  return anyHaven?.id ?? Object.keys(SPOTS)[0];
+  return anyHaven?.id ?? STARTING_SPOT;
 }
 
 /**
@@ -72,12 +77,13 @@ export function retreatToSafety(state: GameState, bus: EventBus, reason: string)
   state.activity = null;
   state.travel = null;
   state.travelPlan = [];
+  state.travelIntent = null;
   if (!state.discovered.includes(to)) state.discovered.push(to);
 
   const dest = getSpot(to);
   bus.emit({
     type: 'log',
-    msg: `${reason} You come to at ${dest.icon} ${dest.name}.`,
+    msg: text('safety.wake', { reason, icon: dest.icon, spot: dest.name }),
     kind: 'danger',
   });
   bus.emit({ type: 'arrive', spot: to });

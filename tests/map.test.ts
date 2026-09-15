@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { SHELVED_START } from './fixtures/shelved-world';
 import { createInitialState, SAVE_VERSION } from '../src/core/state';
-import { DEBUG_STARTING_SPOT } from '../src/core/registry';
 import { Game } from '../src/core/game';
 import { deserialize } from '../src/core/save/save';
 import {
@@ -16,9 +16,10 @@ function discovered(g: Game, ...spots: string[]): void {
   for (const s of spots) if (!g.state.discovered.includes(s)) g.state.discovered.push(s);
 }
 
-// These journeys are all written from the square — the classic dev start the
-// DebugPanel toggle preserves. The STORY now starts at home (my_home, 09:00).
-const classicState = (seed: number) => createInitialState(seed, DEBUG_STARTING_SPOT);
+// These journeys are all written from the square of the SHELVED countryside
+// (tests/fixtures/shelved-world.ts). The story starts at the Foot of the
+// Ascent; the shelf is mounted here because its roads are the fixture.
+const classicState = (seed: number) => createInitialState(seed, SHELVED_START);
 
 describe('pathfinding', () => {
   it('finds the shortest route by ticks through discovered spots', () => {

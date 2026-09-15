@@ -1,4 +1,6 @@
 import type { NamedRuneDef, RuneDef } from '../types';
+import { prose, proseList } from '../text/prose';
+import { RUNES_TEXT, RUNE_PATTERNS_TEXT, NAMED_RUNES_TEXT } from '../text/runes.text';
 
 /**
  * Runes: stackable socketables for equipment rune slots. Each rune's effects
@@ -7,12 +9,11 @@ import type { NamedRuneDef, RuneDef } from '../types';
  * without an entry are inert (the rune can still be slotted there, it just
  * does nothing — the UI warns).
  */
-export const RUNES: Record<string, RuneDef> = {
+export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
   minor_rune_might: {
     id: 'minor_rune_might',
     name: 'Minor Rune of Might',
     icon: '🔺',
-    desc: 'A rough-cut stone humming with strength.',
     value: 25,
     effects: {
       weapon: { mods: [{ stat: 'damage', op: 'add', value: 4 }] },
@@ -24,7 +25,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'greater_rune_might',
     name: 'Greater Rune of Might',
     icon: '🔻',
-    desc: 'Cut by a master hand; it pulls at nearby iron.',
     value: 90,
     effects: {
       weapon: {
@@ -41,7 +41,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'minor_rune_vitality',
     name: 'Minor Rune of Vitality',
     icon: '🟢',
-    desc: 'Warm to the touch, like a heartbeat.',
     value: 25,
     effects: {
       weapon: { mods: [{ stat: 'maxHp', op: 'add', value: 10 }] },
@@ -53,7 +52,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'greater_rune_vitality',
     name: 'Greater Rune of Vitality',
     icon: '💚',
-    desc: 'Moss grows on whatever pouch you keep it in.',
     value: 90,
     effects: {
       weapon: { mods: [{ stat: 'maxHp', op: 'add', value: 25 }] },
@@ -80,7 +78,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'gale_rune',
     name: 'Gale Rune',
     icon: '🌬️',
-    desc: 'Wind lives in the stone. Footwork it touches barely touches the ground.',
     value: 120,
     effects: {
       // Tempo surgery: Sidestep answers again far sooner, wearing a new name.
@@ -95,7 +92,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'earthbind_rune',
     name: 'Earthbind Rune',
     icon: '⛰️',
-    desc: 'The stone remembers standing still. Motion it touches ends rooted, not reaching.',
     value: 130,
     effects: {
       // Exit surgery: the thrust recovers into a load-bearing crouch instead
@@ -111,7 +107,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'umbral_rune',
     name: 'Umbral Rune',
     icon: '🌑',
-    desc: 'A sliver of dark that widens what a blade believes it may become.',
     value: 140,
     effects: {
       // Choice surgery: the riposte hits harder AND its Honed fork offers
@@ -128,7 +123,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'minor_rune_thunder',
     name: 'Minor Rune of Thunder',
     icon: '⚡',
-    desc: 'Your hair stands up when you hold it.',
     value: 40,
     effects: {
       weapon: { bonusDamage: { type: 'lightning', value: 3 } },
@@ -140,7 +134,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'greater_rune_thunder',
     name: 'Greater Rune of Thunder',
     icon: '🌩️',
-    desc: 'It rumbles faintly before storms.',
     value: 140,
     effects: {
       weapon: { bonusDamagePct: { type: 'lightning', value: 0.12 } },
@@ -152,7 +145,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'minor_rune_frost',
     name: 'Minor Rune of Frost',
     icon: '❄️',
-    desc: 'It never warms, no matter the season.',
     value: 40,
     effects: {
       weapon: { bonusDamage: { type: 'cold', value: 3 } },
@@ -164,7 +156,6 @@ export const RUNES: Record<string, RuneDef> = {
     id: 'rune_swiftness',
     name: 'Rune of Swiftness',
     icon: '🌀',
-    desc: 'Light as a held breath.',
     value: 60,
     effects: {
       weapon: { mods: [{ stat: 'attackSpeed', op: 'mult', value: 0.04 }] },
@@ -172,7 +163,7 @@ export const RUNES: Record<string, RuneDef> = {
       accessory: { mods: [{ stat: 'speed', op: 'mult', value: 0.03 }] },
     },
   },
-};
+});
 
 // ---------- Carving: patterns, adornments, and named works ----------
 
@@ -192,12 +183,11 @@ export interface RunePatternDef {
   effects: RuneDef['effects'];
 }
 
-export const RUNE_PATTERNS: Record<string, RunePatternDef> = {
+export const RUNE_PATTERNS = prose<RunePatternDef>('RUNE_PATTERNS', RUNE_PATTERNS_TEXT, {
   pattern_might: {
     id: 'pattern_might',
     name: 'Rune of Might',
     icon: '🔺',
-    desc: 'Three strokes and a heavy downstroke. The first thing any carver learns.',
     effects: {
       weapon: { mods: [{ stat: 'damage', op: 'add', value: 4 }] },
       armor: { mods: [{ stat: 'armor', op: 'add', value: 2 }] },
@@ -208,7 +198,6 @@ export const RUNE_PATTERNS: Record<string, RunePatternDef> = {
     id: 'pattern_warding',
     name: 'Rune of Warding',
     icon: '🛡️',
-    desc: 'A closed figure. Nothing gets in that the carver did not let in.',
     effects: {
       weapon: { mods: [{ stat: 'parry', op: 'add', value: 0.02 }] },
       armor: { mods: [{ stat: 'armor', op: 'add', value: 4 }] },
@@ -219,7 +208,6 @@ export const RUNE_PATTERNS: Record<string, RunePatternDef> = {
     id: 'pattern_swiftness',
     name: 'Rune of Swiftness',
     icon: '🌀',
-    desc: 'An open spiral, cut in one motion or not at all.',
     minLevel: 5,
     effects: {
       weapon: { mods: [{ stat: 'attackSpeed', op: 'mult', value: 0.04 }] },
@@ -231,7 +219,6 @@ export const RUNE_PATTERNS: Record<string, RunePatternDef> = {
     id: 'pattern_edge',
     name: 'Rune of the Edge',
     icon: '🗡️',
-    desc: 'Hairline work. Rewards a steady hand and punishes everything else.',
     minLevel: 12,
     effects: {
       weapon: {
@@ -243,7 +230,7 @@ export const RUNE_PATTERNS: Record<string, RunePatternDef> = {
       accessory: { mods: [{ stat: 'crit', op: 'add', value: 0.02 }] },
     },
   },
-};
+});
 
 /**
  * What a stone is painted, inlaid and adorned with. These are ordinary
@@ -347,12 +334,11 @@ export const RUNE_ADORNMENTS: Record<string, RuneAdornmentDef> = {
  * flagging, no per-save bookkeeping, and anybody handed the rune can see what
  * it is.
  */
-export const NAMED_RUNES: NamedRuneDef[] = [
+export const NAMED_RUNES = proseList<NamedRuneDef>('NAMED_RUNES', NAMED_RUNES_TEXT, [
   {
     id: 'stormbrand',
     name: 'Stormbrand',
     icon: '🌩️',
-    desc: 'Sapphire drinks the charge and gives it back all at once. A duellist’s rune.',
     patterns: ['pattern_edge'],
     // One inlay and one gem — the bench has a station for each. Two inlays
     // would make this recipe unbuildable; the content test below enforces it.
@@ -369,7 +355,6 @@ export const NAMED_RUNES: NamedRuneDef[] = [
     id: 'hearthward',
     name: 'Hearthward',
     icon: '🔥',
-    desc: 'Warm gel worked into a closed ward. Cheap, ugly, and it has saved lives.',
     patterns: ['pattern_warding'],
     adornments: ['warm_slime_gel'],
     bonus: {
@@ -380,7 +365,6 @@ export const NAMED_RUNES: NamedRuneDef[] = [
     id: 'winters_edge',
     name: "Winter's Edge",
     icon: '❄️',
-    desc: 'Cut cold, inlaid colder. The garnet is there to stop the stone splitting.',
     patterns: ['pattern_edge'],
     adornments: ['chilled_slime_gel', 'cut_garnet'],
     minQuality: 'a',
@@ -395,7 +379,6 @@ export const NAMED_RUNES: NamedRuneDef[] = [
     id: 'twiceforged',
     name: 'Twiceforged Seal',
     icon: '🔱',
-    desc: 'Might over warding, cut in one sitting. Carvers argue about whether it should work.',
     patterns: ['pattern_might', 'pattern_warding'],
     adornments: ['gold_leaf'],
     minQuality: 'b',
@@ -404,4 +387,4 @@ export const NAMED_RUNES: NamedRuneDef[] = [
       armor: { mods: [{ stat: 'armor', op: 'add', value: 5 }] },
     },
   },
-];
+]);

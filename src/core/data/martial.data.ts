@@ -1,4 +1,6 @@
 import type { ForkArchetypeDef, PositionDef, TechniqueDef, WeaponFamilyDef } from '../types';
+import { prose } from '../text/prose';
+import { POSITIONS_TEXT, FORK_ARCHETYPES_TEXT, TECHNIQUES_TEXT } from '../text/martial.text';
 
 /**
  * Martial technique content. The design mirror-image of the grimoire: magic is
@@ -14,33 +16,29 @@ import type { ForkArchetypeDef, PositionDef, TechniqueDef, WeaponFamilyDef } fro
  * gradients all wear it, so "these two chain" reads at a glance — a card
  * whose right edge matches another's left edge feeds it.
  */
-export const POSITIONS: Record<string, PositionDef> = {
+export const POSITIONS = prose<PositionDef>('POSITIONS', POSITIONS_TEXT, {
   neutral: {
     id: 'neutral',
     name: 'Neutral',
     icon: '⚖️',
-    desc: 'Weight centred, options open. Every plain swing returns here.',
     color: '#9aa5b1',
   },
   coiled: {
     id: 'coiled',
     name: 'Coiled',
     icon: '🌀',
-    desc: 'Wound up, weight loaded — the next heavy motion is already paid for.',
     color: '#b58fe0',
   },
   extended: {
     id: 'extended',
     name: 'Extended',
     icon: '🫱',
-    desc: 'Arm and blade committed forward, reach at its longest.',
     color: '#e0a855',
   },
   off_balance: {
     id: 'off_balance',
     name: 'Off Balance',
     icon: '💫',
-    desc: 'The follow-through carried you past your footing — blows land harder here.',
     color: '#e05555',
     // Positions are felt, not just gate-keys: stumbling is a real exposure…
     effects: { incomingMult: 1.15 },
@@ -49,7 +47,6 @@ export const POSITIONS: Record<string, PositionDef> = {
     id: 'guarded',
     name: 'Guarded',
     icon: '🛡️',
-    desc: 'Weight back, weapon between you and the world — blows land softer here.',
     color: '#5b9bd5',
     // …and a set guard is real cover.
     effects: { incomingMult: 0.9 },
@@ -63,7 +60,6 @@ export const POSITIONS: Record<string, PositionDef> = {
     id: 'spell_ready',
     name: 'Spell Ready',
     icon: '🔮',
-    desc: 'A working held at the edge of release — your attention is in it, not on them.',
     color: '#8ee1f6',
     effects: { incomingMult: 1.1 },
   },
@@ -71,13 +67,12 @@ export const POSITIONS: Record<string, PositionDef> = {
     id: 'wide_open',
     name: 'Wide Open',
     icon: '🤷‍♂️',
-    desc: "You are wide open to ready yourself for an opponent's attack.",
     color: '#97f524',
     effects: {
                incomingMult: 1.2,
              },
   },
-};
+});
 
 /** The pill/tint color for an 'any'-entry reflex — deliberately no position's. */
 export const ANY_POSITION_COLOR = '#6b7280';
@@ -140,12 +135,11 @@ export const FORK_TIER = 3;
  * content test (martial.test.ts) enforces it — even where a number shrinks.
  * The choice is permanent: your practice history is your build.
  */
-export const FORK_ARCHETYPES: Record<string, ForkArchetypeDef> = {
+export const FORK_ARCHETYPES = prose<ForkArchetypeDef>('FORK_ARCHETYPES', FORK_ARCHETYPES_TEXT, {
   split: {
     id: 'split',
     name: 'Split',
     icon: '⚡',
-    desc: 'The one motion becomes two — each blow lighter, together heavier.',
     kind: 'strike',
     hits: 2,
     damageMult: 0.65,
@@ -154,7 +148,6 @@ export const FORK_ARCHETYPES: Record<string, ForkArchetypeDef> = {
     id: 'overwhelm',
     name: 'Overwhelming',
     icon: '💥',
-    desc: 'Everything into it, and past it — the exit is wherever the swing leaves you.',
     kind: 'strike',
     damageMult: 1.6,
     exitTo: 'off_balance',
@@ -163,7 +156,6 @@ export const FORK_ARCHETYPES: Record<string, ForkArchetypeDef> = {
     id: 'exposing',
     name: 'Exposing',
     icon: '💥',
-    desc: 'A violent swing that leaves you wide open on an attack.',
     kind: 'strike',
     damageMult: 1.3,
     dodgeMult: 0.8,
@@ -173,7 +165,6 @@ export const FORK_ARCHETYPES: Record<string, ForkArchetypeDef> = {
     id: 'economy',
     name: 'Economical',
     icon: '♻️',
-    desc: 'No motion wasted: barely softer, far more often — and practice compounds.',
     kind: 'strike',
     damageMult: 0.9,
     cooldownMult: 0.6,
@@ -182,7 +173,6 @@ export const FORK_ARCHETYPES: Record<string, ForkArchetypeDef> = {
     id: 'sweep',
     name: 'Sweeping',
     icon: '🌊',
-    desc: 'The arc widens: part of every blow carries into whoever stands beside them.',
     kind: 'strike',
     damageMult: 0.9,
     splashAdd: 0.35,
@@ -191,7 +181,6 @@ export const FORK_ARCHETYPES: Record<string, ForkArchetypeDef> = {
     id: 'flowing',
     name: 'Flowing',
     icon: '🌀',
-    desc: 'The recovery becomes a reach: the motion ends extended, feeding what enters from there.',
     kind: 'strike',
     exitTo: 'extended',
   },
@@ -199,7 +188,6 @@ export const FORK_ARCHETYPES: Record<string, ForkArchetypeDef> = {
     id: 'lasting',
     name: 'Lasting',
     icon: '⏳',
-    desc: 'The form holds longer than it has any right to.',
     kind: 'buff',
     durationMult: 1.6,
   },
@@ -207,11 +195,10 @@ export const FORK_ARCHETYPES: Record<string, ForkArchetypeDef> = {
     id: 'sudden',
     name: 'Sudden',
     icon: '💨',
-    desc: 'The answer comes again before they expect it once.',
     kind: 'buff',
     cooldownMult: 0.65,
   },
-};
+});
 
 export const FORK_ARCHETYPE_LIST: readonly ForkArchetypeDef[] = Object.values(FORK_ARCHETYPES);
 
@@ -225,12 +212,11 @@ export const FORK_ARCHETYPE_LIST: readonly ForkArchetypeDef[] = Object.values(FO
  * crystallizes the rough form once eligibility holds; teachers (future
  * content) grant the canonical form directly.
  */
-export const TECHNIQUES: Record<string, TechniqueDef> = {
+export const TECHNIQUES = prose<TechniqueDef>('TECHNIQUES', TECHNIQUES_TEXT, {
   gather: {
     id: 'gather',
     name: 'Gather',
     icon: '🌀',
-    desc: 'Plant the feet and load the hips — a softer blow now to wind a harder one.',
     skill: 'fighting',
     from: ['neutral'],
     to: 'coiled',
@@ -243,7 +229,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'heavy_blow',
     name: 'Heavy Blow',
     icon: '🔨',
-    desc: 'Everything the coil stored, spent in one brutal arc. Leaves you off balance.',
     skill: 'fighting',
     from: ['coiled'],
     to: 'off_balance',
@@ -261,7 +246,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'sidestep',
     name: 'Sidestep',
     icon: '💨',
-    desc: 'Answer a landed blow by not being where the next one goes: +40% dodge for 3 seconds.',
     skill: 'fighting',
     trigger: { conditions: [], event: 'onHit', window: 20 },
     from: 'any',
@@ -281,7 +265,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'riposte',
     name: 'Riposte',
     icon: '⚡',
-    desc: 'The answer to an attack that found nothing — a fast cut that leaves you extended.',
     skill: 'fighting',
     trigger: { conditions: [], event: 'onDodge', window: 20 },
     from: 'any',
@@ -299,7 +282,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'thrust',
     name: 'Thrust',
     icon: '🗡️',
-    desc: 'From full extension, drive the point home and recover to centre.',
     family: 'sword',
     skill: 'swordsmanship',
     from: ['extended'],
@@ -315,7 +297,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'crosscut',
     name: 'Crosscut',
     icon: '⚔️',
-    desc: 'Follow an opening with a wide diagonal that carries into the flanks.',
     family: 'sword',
     skill: 'swordsmanship',
     trigger: { conditions: [], event: 'onCrit', window: 20 },
@@ -335,7 +316,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'iai_draw',
     name: 'Iai Draw',
     icon: '🌙',
-    desc: 'The draw is the cut: the fight opens with the blade already through them.',
     family: 'katana',
     skill: 'school_eishin',
     // The opening moments of the fight — wide enough to reach the first swing.
@@ -355,7 +335,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'deflecting_moon',
     name: 'Deflecting Moon',
     icon: '🌗',
-    desc: 'Turn a blow along the curve and wind into it — the answer will find an opening.',
     family: 'katana',
     skill: 'school_niten_ichi',
     trigger: { conditions: [], event: 'onParry', window: 20 },
@@ -377,7 +356,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'finishing_cut',
     name: 'Finishing Cut',
     icon: '👁️',
-    desc: 'One cut, one kill: when the opening is real, everything goes through it.',
     family: 'katana',
     skill: 'school_ittou_ryu',
     // A finisher reads the enemy, not an event: it primes on their failing body.
@@ -400,7 +378,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'slip_jab',
     name: 'Slip Jab',
     icon: '🥊',
-    desc: 'The head moves, the hand answers — a short counter off the slip.',
     family: 'unarmed',
     skill: 'school_boxing',
     trigger: { conditions: [], event: 'onDodge', window: 20 },
@@ -419,7 +396,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'whirl_kick',
     name: 'Whirl Kick',
     icon: '🦵',
-    desc: 'Spend the coil in a full turn — the heel carries through everything beside them.',
     family: 'unarmed',
     skill: 'school_taekwondo',
     from: ['coiled'],
@@ -437,7 +413,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'clinch_knee',
     name: 'Clinch Knee',
     icon: '🐘',
-    desc: 'Answer a landed blow by taking hold of it — a knee where the guard used to be.',
     family: 'unarmed',
     skill: 'school_muay_thai',
     trigger: { conditions: [], event: 'onHit', window: 20 },
@@ -467,7 +442,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'ginga',
     name: 'Ginga',
     icon: '🕺',
-    desc: 'You were never standing still to begin with — the fall is the wind-up.',
     family: 'unarmed',
     skill: 'unarmed_combat',
     from: ['off_balance'],
@@ -482,7 +456,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'meia_lua',
     name: 'Meia Lua',
     icon: '🌜',
-    desc: 'A half-moon heel out of the stumble — the sweep only exists mid-fall.',
     family: 'unarmed',
     skill: 'unarmed_combat',
     from: ['off_balance'],
@@ -499,7 +472,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'weapon_drop',
     name: 'Weapon Drop',
     icon: '🤲',
-    desc: 'Throw yourself into the disarm — the blade goes down, and so does your guard.',
     skill: 'fighting',
     requiresWielded: true,
     from: 'any',
@@ -515,7 +487,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'ground_draw',
     name: 'Ground Draw',
     icon: '🗡',
-    desc: 'The earth was the sheath all along — take the blade back up as one cut.',
     skill: 'fighting',
     requiresGrounded: true,
     from: ['coiled'],
@@ -529,7 +500,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'hidden_draw',
     name: 'Hidden Draw',
     icon: '🔪',
-    desc: 'The knife they did not know about, at the moment they are busiest swinging.',
     skill: 'dagger_combat',
     requiresSheathed: 'dagger',
     // The anticipation read: fires as the enemy winds up its own attack.
@@ -550,7 +520,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'ready_spell',
     name: 'Ready Spell',
     icon: '🔮',
-    desc: 'Hold a prepared working at the edge of release — taken up as the blow comes in.',
     skill: 'school_magic_combat',
     // The baked read: you take a working up BECAUSE something is winding up to
     // swing at you. Without this the form fires the instant it is off cooldown,
@@ -572,7 +541,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'spell_parry',
     name: 'Spell Parry',
     icon: '✨',
-    desc: 'Turn the blow aside and let the held working answer in its place.',
     skill: 'school_magic_combat',
     requiresReadiedSpell: true,
     trigger: { conditions: [], event: 'onParry', window: 20 },
@@ -603,7 +571,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'flowing_shield',
     name: 'Flowing Shield',
     icon: '🛡️🌊',
-    desc: 'Catch the blow on the boss of the shield and let it carry you round — the harder they swing, the harder it comes back.',
     family: 'buckler',
     skill: 'shield_combat',
     trigger: { conditions: [], event: 'onParry', window: 20 },
@@ -631,7 +598,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'electric_cross',
     name: 'Electric Cross',
     icon: '⚡🥊',
-    desc: "The Onisattva's very own electric counter. Take a blow to the shoulder to absorb the damage, then strike back like a lightning bolt.",
     family: 'unarmed',
     skill: 'school_magic_combat',
     trigger: { conditions: [], event: 'onHit' },
@@ -658,7 +624,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'german_suplex',
     name: 'German Suplex',
     icon: '🤼',
-    desc: 'A brutal throw that sends the opponent back',
     skill: 'school_wrestling',
     from: ['wide_open'],
     to: 'off_balance',
@@ -676,11 +641,11 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     forks: ['split', 'flowing'],
     family: 'unarmed',
   },
+  // TODO: intended: inflicts Taunted (target loses dodge and armor for a few seconds, but its next attack deals +20% damage). No such status exists yet; the desc states only what the data does.
   taunt: {
     id: 'taunt',
     name: 'Taunt',
     icon: '🤡',
-    desc: 'taunt your opponent by keeping yourself wide open. inflicts taunted (reduces their dodge and armor for x seconds but makes their next attack deal 20% extra damage)',
     from: 'any',
     to: 'wide_open',
     // A slap with intent: barely damage, but it IS a strike, so it rides the
@@ -704,7 +669,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'impaling_swing',
     name: 'Impaling Swing',
     icon: '🫸🗡',
-    desc: 'Run them through and leave it there — you are unarmed now, and they are carrying your blade.',
     skill: 'fighting',
     requiresWielded: true,
     from: ['coiled'],
@@ -729,7 +693,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     id: 'flesh_draw',
     name: 'Flesh Draw',
     icon: '🗡🙍‍♂️',
-    desc: 'The flesh serves as a sheath of its own.',
     skill: 'fighting',
     requiresImpaled: true,
     from: [
@@ -755,6 +718,6 @@ export const TECHNIQUES: Record<string, TechniqueDef> = {
     },
     forks: ['overwhelm', 'split'],
   },
-};
+});
 
 export const TECHNIQUE_LIST: readonly TechniqueDef[] = Object.values(TECHNIQUES);

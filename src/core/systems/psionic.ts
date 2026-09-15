@@ -19,6 +19,7 @@ import {
   PSI_RECOGNITION_LIST,
   PSI_STARTING_AXES,
 } from '../data/spellcraft.data';
+import { text } from '../text/log';
 
 /**
  * Psionic magic: will, imposed.
@@ -150,18 +151,18 @@ export function checkShape(state: GameState, shape: PsionicShape): ShapeCheck {
   for (const [axis, points] of Object.entries(shape) as [PsiAxisId, number][]) {
     if (!points) continue;
     if (!Number.isInteger(points) || points < 0) {
-      return { ok: false, reason: 'A shape is whole points, none negative' };
+      return { ok: false, reason: text('psionic.reason.not_whole_points') };
     }
-    if (!PSI_AXES[axis]) return { ok: false, reason: `No such axis: ${axis}` };
+    if (!PSI_AXES[axis]) return { ok: false, reason: text('psionic.reason.no_such_axis', { axis }) };
     if (!open.includes(axis)) {
-      return { ok: false, reason: `${PSI_AXES[axis].name} awaits a teacher` };
+      return { ok: false, reason: text('psionic.reason.axis_locked', { axis: PSI_AXES[axis].name }) };
     }
     if (points > cap) {
-      return { ok: false, reason: `${PSI_AXES[axis].name} can hold ${cap} points (Psionics milestones raise it)` };
+      return { ok: false, reason: text('psionic.reason.axis_cap', { axis: PSI_AXES[axis].name, cap }) };
     }
   }
   if (shapeTotal(shape) === 0) {
-    return { ok: false, reason: 'An empty shape imposes nothing' };
+    return { ok: false, reason: text('psionic.reason.empty_shape') };
   }
   return { ok: true };
 }

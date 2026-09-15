@@ -4,7 +4,8 @@ import { EventBus } from './engine/events';
 import { TPS } from './engine/loop';
 import { registerAchievementListeners } from './systems/achievements';
 import { registerSuperAttrListeners } from './systems/superattrs';
-import { acceptQuest, registerQuestListeners, turnInQuest } from './systems/quests';
+import { acceptQuest, registerQuestListeners, talkTo, turnInQuest } from './systems/quests';
+import { buy } from './systems/shops';
 import { registerTitleListeners, setTitle } from './systems/titles';
 import { registerBestiaryListeners } from './systems/bestiary';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
@@ -53,7 +54,11 @@ import {
   travelPlanTo,
   cancelTravelPlan,
   fastTravelTo,
+  goAndDo,
+  setJourneyIntent,
 } from './systems/locations';
+import { climbTo } from './systems/towers';
+import { accrueBonusTime, setBonusSpending, spendsBonusTick } from './systems/bonustime';
 import {
   canEquip,
   equipItem,
@@ -72,7 +77,9 @@ import { STYLES } from './registry';
 import { appendLog } from './systems/log';
 import { RESOURCE_LIST } from './data/resources.data';
 import { resourceLock } from './systems/resources';
+import { buyBoon, leaveReview, prestigeNow } from './systems/prestige';
 import type { PsionicShape, QualityTier, ResourceId, ResourceLock, SlotId } from './types';
+import { text } from './text/log';
 
 /**
  * Copy the trigger overlays for `ids`, deeply. Both directions of a loadout
@@ -142,6 +149,12 @@ export class Game {
   tick(): void {
     if (this.state.paused) return;
     this.advance();
+    // Banked idle time, spent as a second tick. A whole extra advance, clock
+    // included: double speed means the world runs double, not just the bar.
+    if (spendsBonusTick(this.state)) {
+      this.state.bonusTime.banked -= 1;
+      this.advance();
+    }
   }
 
   /**
@@ -159,6 +172,9 @@ export class Game {
   /** One tick, unconditionally. The pause check lives in `tick()`. */
   private advance(): void {
     this.state.totalTicks += 1;
+    // Idleness is judged before anything moves, so the tick that starts or
+    // ends work is not banked as time spent doing nothing.
+    accrueBonusTime(this.state);
     // What the body simply WEARS, kept in step with what the body currently is
     // — before anything ticks, so a gene slotted this tick is already knitting.
     // Outside the travel branch's else, because a poison does not care whether
@@ -252,8 +268,8 @@ export class Game {
     const was = STYLES[this.lastEffectiveStyle];
     this.lastEffectiveStyle = id;
     const msg = STYLES[id].replaces
-      ? `${STYLES[id].icon} Your ${was.name} flows into ${STYLES[id].name}.`
-      : `Your ${was.name} settles back into ${STYLES[id].name}.`;
+      ? text('game.school_engaged', { icon: STYLES[id].icon, was: was.name, now: STYLES[id].name })
+      : text('game.school_released', { was: was.name, now: STYLES[id].name });
     this.bus.emit({ type: 'log', msg, kind: 'combat' });
   }
 
@@ -276,8 +292,28 @@ export class Game {
     cancelTravelPlan(this.state, this.bus);
   }
 
+  /** Walk to a spot and start an activity on arrival (or now, if already there). */
+  goAndDo(spotId: string, activityId: string): boolean {
+    return goAndDo(this.state, this.bus, spotId, activityId);
+  }
+
+  /** Set (or with null, clear) the activity the journey in progress ends in. */
+  setJourneyIntent(activityId: string | null): boolean {
+    return setJourneyIntent(this.state, activityId);
+  }
+
+  /** Spend banked idle time as double speed, or stop spending it. */
+  setBonusSpending(on: boolean): void {
+    setBonusSpending(this.state, on);
+  }
+
   fastTravelTo(spotId: string): boolean {
     return fastTravelTo(this.state, this.bus, spotId);
+  }
+
+  /** Ride a tower's ladder to a floor — or, with null, back down to its hub. */
+  climbTo(floorId: string | null): boolean {
+    return climbTo(this.state, this.bus, floorId);
   }
 
   /** Equip an item; `slot` forces a hand (off-hand sword, main-hand buckler). */
@@ -344,6 +380,16 @@ export class Game {
 
   acceptQuest(questId: string): void {
     acceptQuest(this.state, this.bus, questId);
+  }
+
+  /** A first greeting with whoever is standing here (see systems/quests.ts). */
+  talkTo(npcId: string): boolean {
+    return talkTo(this.state, this.bus, npcId);
+  }
+
+  /** Buy from a vendor's shelf; see systems/shops.ts. Returns how many were bought. */
+  buy(npcId: string, index: number, qty = 1): number {
+    return buy(this.state, this.bus, npcId, index, qty);
   }
 
   turnInQuest(questId: string): void {
@@ -473,7 +519,7 @@ export class Game {
     this.state.style = stanceId;
     this.lastEffectiveStyle = effectiveStyleId(this.state);
     const active = STYLES[this.lastEffectiveStyle];
-    this.bus.emit({ type: 'log', msg: `Combat style: ${active.name}`, kind: 'combat' });
+    this.bus.emit({ type: 'log', msg: text('game.style_changed', { name: active.name }), kind: 'combat' });
   }
 
   /**
@@ -486,8 +532,8 @@ export class Game {
     this.bus.emit({
       type: 'log',
       msg: on
-        ? `🔥 Exerting — your ${STYLES[effectiveStyleId(this.state)].name} now spends stamina for everything it can buy.`
-        : `🍃 Holding back — you fight your stance plainly, and stamina only trickles.`,
+        ? text('game.exerting_on', { style: STYLES[effectiveStyleId(this.state)].name })
+        : text('game.exerting_off'),
       kind: 'combat',
     });
   }
@@ -634,7 +680,7 @@ export class Game {
       if (owned && canEquip(this.state, owned)) this.equip(uid, slot);
     }
 
-    this.bus.emit({ type: 'log', msg: `⚔️ Loadout applied: ${loadout.name}`, kind: 'combat' });
+    this.bus.emit({ type: 'log', msg: text('game.loadout_applied', { name: loadout.name }), kind: 'combat' });
   }
 
   deleteLoadout(name: string): void {
@@ -656,5 +702,33 @@ export class Game {
   /** Sheathe the wielded dagger (concealed carry) or draw it back by hand. */
   toggleSheathe(): void {
     toggleSheathe(this.state);
+  }
+
+  // ---- Prestige (systems/prestige.ts) ----
+
+  /**
+   * End the run. The next run's state is assigned INTO the state object so
+   * every listener registered against it keeps working — the same move
+   * `hardReset` makes. False if the run cannot prestige yet.
+   */
+  prestige(now = Date.now()): boolean {
+    const next = prestigeNow(this.state, now);
+    if (!next) return false;
+    Object.assign(this.state, next);
+    this.resyncAnnouncers();
+    this.bus.emit({
+      type: 'log',
+      msg: text('game.prestiged', { count: next.prestige.count, points: next.prestige.lastHarvest?.total ?? 0 }),
+      kind: 'info',
+    });
+    return true;
+  }
+
+  buyBoon(boonId: string): boolean {
+    return buyBoon(this.state, this.bus, boonId);
+  }
+
+  leavePrestigeReview(): void {
+    leaveReview(this.state);
   }
 }

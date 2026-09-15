@@ -3,6 +3,7 @@ import type { EventBus } from '../engine/events';
 import { ACHIEVEMENTS } from '../registry';
 import { attrValue } from './attributes';
 import { monsterTagSet } from './bestiary';
+import { text } from '../text/log';
 
 /** Increment a counter and grant any achievement tiers it crosses. */
 export function bumpStat(state: GameState, bus: EventBus, key: string, amount = 1): void {
@@ -39,7 +40,7 @@ export function checkAchievements(state: GameState, bus: EventBus, statKey: stri
       bus.emit({ type: 'achievement', id: def.id, tier: claimed });
       bus.emit({
         type: 'log',
-        msg: `🏆 Achievement: ${def.icon} ${def.name} ${tierNumeral(claimed)}!`,
+        msg: text('achievements.claimed', { icon: def.icon, name: def.name, tier: tierNumeral(claimed) }),
         kind: 'achievement',
       });
     }

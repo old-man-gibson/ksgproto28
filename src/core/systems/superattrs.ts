@@ -4,6 +4,7 @@ import { SUPERATTRS } from '../registry';
 import { conditionsMet } from './conditions';
 import { attrName, attrValue, isFused } from './attributes';
 import { raiseStat } from './achievements';
+import { text } from '../text/log';
 
 /**
  * Fuse any super-attribute whose unlock conditions now hold. Cheap enough to
@@ -19,7 +20,7 @@ export function checkSuperUnlocks(state: GameState, bus: EventBus): void {
     const [a, b] = def.components;
     bus.emit({
       type: 'log',
-      msg: `${def.icon} FUSION! ${attrName(a)} and ${attrName(b)} coalesce into ${def.name.toUpperCase()} (${attrValue(state, a)})!`,
+      msg: text('superattrs.fusion', { icon: def.icon, a: attrName(a), b: attrName(b), name: def.name.toUpperCase(), value: attrValue(state, a) }),
       kind: 'fusion',
     });
     // Attribute-threshold achievements must see the fused value immediately.

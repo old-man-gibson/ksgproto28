@@ -12,10 +12,10 @@ import type {
 import type { EventBus } from '../engine/events';
 import { TPS } from '../engine/loop';
 import { chance, randInt } from '../engine/rng';
-import { getSpot, ITEMS, MATERIALS, RECIPES, RUNES } from '../registry';
+import { getSpot, ITEMS, MATERIALS, RECIPES, RUNES, SKILLS, SPOTS } from '../registry';
 import { BASE_ACTION_BAR, BASE_SPEED, getDerivedStats, scopedMult } from './derived';
 import { attrValue, grantAttrXpSplit } from './attributes';
-import { checkDiscovery, grantSkillXp } from './skills';
+import { checkDiscovery, grantSkillXp, skillTrainedBy } from './skills';
 import { grantActivityExposure } from './exposure';
 import { conditionsMet } from './conditions';
 import { tickCombat, abandonCombat, inForcedFight } from './combat';
@@ -46,6 +46,7 @@ import {
   recipeResultName,
   recipeUnlocked,
 } from './crafting';
+import { text } from '../text/log';
 
 /** All activities available at a spot, including synthesized craft activities. */
 export function spotActivities(spot: SpotDef): ActivityDef[] {
@@ -75,13 +76,13 @@ export function selectActivity(state: GameState, bus: EventBus, activityId: stri
   // Switching work is one of the two ways out of a fight, and a forced fight
   // closes both doors (travel is the other — see locations.ts).
   if (inForcedFight(state)) {
-    bus.emit({ type: 'log', msg: '⛔ There is no leaving this fight.', kind: 'danger' });
+    bus.emit({ type: 'log', msg: text('common.no_leaving_fight'), kind: 'danger' });
     return;
   }
   if (activityId) {
     const act = spotActivities(getSpot(state.spot)).find((a) => a.id === activityId);
     if (act?.kind === 'craft' && !recipeUnlocked(state, RECIPES[act.recipe])) {
-      bus.emit({ type: 'log', msg: `🔒 You lack the skill to craft that.`, kind: 'danger' });
+      bus.emit({ type: 'log', msg: text('actions.craft_locked'), kind: 'danger' });
       return;
     }
   }
@@ -89,11 +90,45 @@ export function selectActivity(state: GameState, bus: EventBus, activityId: stri
   state.activity = activityId;
   state.activityProgress = 0;
   state.travelPlan = []; // picking work overrides any pending journey
+  state.travelIntent = null; // and whatever that journey was for
   state.benchWork = null; // and steps away from any bench run
   state.performance = null; // and off any stage
+  // Remember the choice for the next visit — and forget it when the player
+  // stops by hand, so a spot left idle on purpose stays idle.
+  if (activityId) state.resumeActivity[state.spot] = activityId;
+  else delete state.resumeActivity[state.spot];
 
   const act = currentActivity(state);
-  if (act) bus.emit({ type: 'log', msg: `▶️ ${act.name}`, kind: 'action' });
+  if (act) bus.emit({ type: 'log', msg: text('actions.started', { name: act.name }), kind: 'action' });
+}
+
+/**
+ * Whether an activity id can be started here and now: it exists at the spot,
+ * and a craft is unlocked and affordable (a starved craft would only log its
+ * own stop on the next tick).
+ */
+export function canStartActivity(state: GameState, spotId: string, activityId: string): boolean {
+  const act = spotActivities(getSpot(spotId)).find((a) => a.id === activityId);
+  if (!act) return false;
+  if (act.kind === 'craft') {
+    const recipe = RECIPES[act.recipe];
+    return !!recipe && recipeUnlocked(state, recipe) && canAfford(state, recipe);
+  }
+  return true;
+}
+
+/**
+ * The end of a journey, peacefully reached: start what the journey was for,
+ * else pick up whatever the player last did here. Called by every arrival
+ * path AFTER its ambush check — a forced fight owns the arrival instead.
+ */
+export function settleArrival(state: GameState, bus: EventBus): void {
+  const intent = state.travelIntent;
+  state.travelIntent = null;
+  if (state.travel || state.travelPlan.length > 0 || state.recovering || state.combat) return;
+  const wanted =
+    intent && intent.spot === state.spot ? intent.activity : state.resumeActivity[state.spot];
+  if (wanted && canStartActivity(state, state.spot, wanted)) selectActivity(state, bus, wanted);
 }
 
 const RECOVER_THRESHOLD = 0.6;
@@ -113,6 +148,59 @@ const RECOVER_THRESHOLD = 0.6;
  * are knocked out the instant they land.
  */
 const UNCONSCIOUS_CLOCK_RATE = 5;
+
+/**
+ * The tags an activity's cycle grants skill XP under — how an activity reaches
+ * a skill (skillTrainedBy). The tick branches read it, and so does
+ * `trainingSpots`, so "where does this train" cannot drift from what training
+ * actually pays. Hunting lists only its built-ins: the fight adds weapon and
+ * style tags from the loadout (combat.ts), which no spot can promise.
+ */
+export function activityXpTags(act: ActivityDef): string[] {
+  switch (act.kind) {
+    case 'train':
+      return ['training', ...Object.keys(attrXpWeights(act)), ...(act.tags ?? [])];
+    case 'gather':
+      return ['explore', 'gather', ...(act.tags ?? [])];
+    case 'job':
+      return ['job', ...(act.tags ?? [])];
+    case 'craft':
+      return ['craft', ...(act.tags ?? [])];
+    case 'explore':
+      return ['explore', ...(act.tags ?? [])];
+    case 'hunt':
+      return ['combat', 'hunt'];
+    default:
+      return [];
+  }
+}
+
+/**
+ * Discovered spots with an activity that trains a skill or an attribute, as
+ * go-and-do targets. Unlocked crafts only; a spot's activities in their own
+ * order. An attribute is trained by a `train` activity that weights it.
+ */
+export function trainingSpots(
+  state: GameState,
+  target: { skill: string } | { attr: AttributeId },
+): { spot: string; activity: string }[] {
+  const def = 'skill' in target ? SKILLS[target.skill] : null;
+  if ('skill' in target && !def) return [];
+  const trains = (act: ActivityDef) =>
+    def
+      ? skillTrainedBy(def, activityXpTags(act))
+      : act.kind === 'train' && 'attr' in target && (attrXpWeights(act)[target.attr] ?? 0) > 0;
+  const out: { spot: string; activity: string }[] = [];
+  for (const spotId of state.discovered) {
+    const spot = SPOTS[spotId];
+    if (!spot) continue;
+    for (const act of spotActivities(spot)) {
+      if (act.kind === 'craft' && !recipeUnlocked(state, RECIPES[act.recipe])) continue;
+      if (trains(act)) out.push({ spot: spotId, activity: act.id });
+    }
+  }
+  return out;
+}
 
 /** Baseline ticks per training rep — one chunked XP payout per completed rep. */
 export const TRAIN_REP_TICKS = 20;
@@ -251,7 +339,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
     regen(state, stats, RECOVERY_MULT.rest, 'rest');
     if (hpFraction(state, stats) >= RECOVER_THRESHOLD) {
       state.recovering = false;
-      bus.emit({ type: 'log', msg: '💪 You feel steady enough to continue.', kind: 'action' });
+      bus.emit({ type: 'log', msg: text('actions.recovered'), kind: 'action' });
     }
     return;
   }
@@ -278,7 +366,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
       // Every trained attribute is a tag, so a split trains (and can manifest)
       // skills tagged for any of them, not just a nominated primary.
       const weights = attrXpWeights(act);
-      const tags = ['training', ...Object.keys(weights), ...(act.tags ?? [])];
+      const tags = activityXpTags(act);
       checkDiscovery(state, bus, tags);
       state.activityProgress += activityFillRate(act, stats, state);
       const cost = activityCost(act, stats);
@@ -309,7 +397,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
       break;
     }
     case 'gather': {
-      const tags = ['explore', 'gather', ...(act.tags ?? [])];
+      const tags = activityXpTags(act);
       checkDiscovery(state, bus, tags);
       state.activityProgress += activityFillRate(act, stats, state);
       const cost = activityCost(act, stats);
@@ -340,7 +428,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
       // that happens to come with wages. Same hook as gather/train/craft —
       // `tags` is how an activity reaches a skill — with 'job' as the built-in
       // so a future "day labour" skill can claim every shift at once.
-      const tags = ['job', ...(act.tags ?? [])];
+      const tags = activityXpTags(act);
       checkDiscovery(state, bus, tags);
       state.activityProgress += activityFillRate(act, stats, state);
       const cost = activityCost(act, stats);
@@ -370,18 +458,18 @@ export function tickAction(state: GameState, bus: EventBus): void {
       if (!recipe) break;
       // Starved at the start of a cycle: stop instead of grinding a dead cycle.
       if (state.activityProgress === 0 && !canAfford(state, recipe)) {
-        bus.emit({ type: 'log', msg: `📭 Out of materials for ${act.name}.`, kind: 'action' });
+        bus.emit({ type: 'log', msg: text('actions.out_of_materials', { name: act.name }), kind: 'action' });
         state.activity = null;
         break;
       }
-      const tags = ['craft', ...(act.tags ?? [])];
+      const tags = activityXpTags(act);
       checkDiscovery(state, bus, tags);
       state.activityProgress += activityFillRate(act, stats, state);
       if (state.activityProgress >= activityCost(act, stats)) {
         // Reset (not carry) so the start-of-cycle affordability guard holds.
         state.activityProgress = 0;
         if (!canAfford(state, recipe)) {
-          bus.emit({ type: 'log', msg: `📭 Out of materials for ${act.name}.`, kind: 'action' });
+          bus.emit({ type: 'log', msg: text('actions.out_of_materials', { name: act.name }), kind: 'action' });
           state.activity = null;
           break;
         }
@@ -489,7 +577,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
     });
     bus.emit({
       type: 'log',
-      msg: `${boom.icon} ${boom.name} detonates for ${dealt} ${boom.type}!`,
+      msg: text('actions.condition_detonates', { icon: boom.icon, name: boom.name, dealt, type: boom.type }),
       kind: 'danger',
     });
     // A detonation is perfectly capable of finishing you, and must put you
@@ -498,7 +586,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       if (stillOnTheFloor(state)) continue;
       bus.emit({
         type: 'log',
-        msg: `💀 ${boom.name} finishes you. You crawl away to recover...`,
+        msg: text('actions.condition_knocks_out', { name: boom.name }),
         kind: 'danger',
       });
       // Before abandonCombat, which drops the tally on the floor — walking away
@@ -509,7 +597,11 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       state.resources.hp = 1;
       state.recovering = true;
       // Going down DURING a forced fight is losing it, whatever did the deed.
-      if (wasForced) retreatToSafety(state, bus, 'There was no fleeing that fight, and it finished you.');
+      retreatToSafety(
+      state,
+      bus,
+      wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
+    );
       return true;
     }
   }
@@ -517,7 +609,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
   for (const id of result.expired) {
     const def = STATUSES[id];
     if (def && !def.hidden) {
-      bus.emit({ type: 'log', msg: `${def.icon} ${def.name} has passed.`, kind: 'combat' });
+      bus.emit({ type: 'log', msg: text('actions.condition_passed', { icon: def.icon, name: def.name }), kind: 'combat' });
     }
   }
 
@@ -532,7 +624,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
     const held = state.statuses.find((h) => h.id === result.fatal!.id);
     bus.emit({
       type: 'log',
-      msg: `${result.fatal.icon} ${result.fatal.name} takes you. You wake weakened.`,
+      msg: text('actions.condition_fatal', { icon: result.fatal.icon, name: result.fatal.name }),
       kind: 'danger',
     });
     if (held) {
@@ -545,7 +637,11 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
     state.resources.hp = 1;
     state.recovering = true;
     // Going down DURING a forced fight is losing it, whatever did the deed.
-    if (wasForced) retreatToSafety(state, bus, 'There was no fleeing that fight, and it finished you.');
+    retreatToSafety(
+      state,
+      bus,
+      wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
+    );
     return true;
   }
 
@@ -571,7 +667,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       const worst = result.hits[0];
       bus.emit({
         type: 'log',
-        msg: `💀 ${worst.name} finishes you. You crawl away to recover...`,
+        msg: text('actions.condition_knocks_out', { name: worst.name }),
         kind: 'danger',
       });
       // Before abandonCombat, which drops the tally on the floor — walking away
@@ -582,7 +678,11 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       state.resources.hp = 1;
       state.recovering = true;
       // Going down DURING a forced fight is losing it, whatever did the deed.
-      if (wasForced) retreatToSafety(state, bus, 'There was no fleeing that fight, and it finished you.');
+      retreatToSafety(
+      state,
+      bus,
+      wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
+    );
       return true;
     }
   }
@@ -737,7 +837,7 @@ function grantFind(state: GameState, bus: EventBus, spot: SpotDef, find: SpotFin
     else bumpStat(state, bus, find.stat.key, find.stat.amount ?? 1);
   }
 
-  const headline = find.desc ?? `🔎 Something turns up at ${spot.name}.`;
+  const headline = find.desc ?? text('actions.find_generic', { spot: spot.name });
   bus.emit({ type: 'log', msg: headline, kind: 'explore' });
   if (tally.length > 0) {
     logRepeat(bus, { group: `find:${spot.id}:${find.id}`, prefix: '🎁 Found:', tally, kind: 'loot' });
@@ -747,13 +847,13 @@ function grantFind(state: GameState, bus: EventBus, spot: SpotDef, find: SpotFin
   if (find.spot && !state.discovered.includes(find.spot)) {
     state.discovered.push(find.spot);
     const target = getSpot(find.spot);
-    bus.emit({ type: 'log', msg: `📍 Marked on your map: ${target.icon} ${target.name}`, kind: 'explore' });
+    bus.emit({ type: 'log', msg: text('actions.find_marks_spot', { icon: target.icon, name: target.name }), kind: 'explore' });
   }
   if (find.path) {
     const edge = spot.connections.find((c) => c.to === find.path);
     bus.emit({
       type: 'log',
-      msg: `🚪 A way opens from ${spot.name}: ${edge?.label ?? getSpot(find.path).name}.`,
+      msg: text('actions.find_opens_path', { spot: spot.name, label: edge?.label ?? getSpot(find.path).name }),
       kind: 'explore',
     });
   }
@@ -778,7 +878,7 @@ function tickExplore(
   if (gate) {
     logRepeat(bus, {
       group: `gate:${spot.id}:${gate.at}`,
-      prefix: gate.desc ?? `⛔ The search stalls at ${Math.round(gate.at * 100)}% — you are not equipped to go further.`,
+      prefix: gate.desc ?? text('actions.gate_generic', { percent: Math.round(gate.at * 100) }),
       tally: [],
       kind: 'explore',
     });
@@ -800,10 +900,8 @@ function tickExplore(
       type: 'log',
       msg:
         hidden.length > 0
-          ? `🗺️ You know ${spot.name} like your pocket now. New path found: ${hidden
-              .map((c) => c.label ?? c.to)
-              .join(', ')}!`
-          : `🗺️ You have fully explored ${spot.name}.`,
+          ? text('actions.explored_paths', { spot: spot.name, paths: hidden.map((c) => c.label ?? c.to).join(', ') })
+          : text('actions.explored', { spot: spot.name }),
       kind: 'explore',
     });
     return;

@@ -106,3 +106,40 @@ already done — [combat.ts](../src/core/systems/combat.ts) resolves a
 twin-natured strike against whichever type the target guards worse — so what
 was missing was one field on the word for the composer to copy across. Nothing
 in ARCANE.md §§2–11 would change.
+
+---
+
+## The countryside outside Threshold (shelved 2026-09-12)
+
+Eight regions, sixty-odd spots, four NPCs and six quests: Oakrest and the
+Verdant Frontier (the square, the training grounds, the woods, the ravine),
+the Westlands (the starter hamlet, the old player home and its practice
+yards, the hometown forest and river, the Malgeri foothills), the three
+Malgeri regions with their cave system, Stillail Hamlet, and the two swamp
+placeholders. The prototype's whole first world.
+
+**Where it is.** Verbatim in
+[src/core/data/shelved/](../src/core/data/shelved/) — `locations.shelved.ts`
+(regions, areas, spots, and `SHELVED_ROADS`: the Hamlet Road that joined it
+to the Weighbridge, alpha world lock included), `npcs.shelved.ts`,
+`quests.shelved.ts`. The registry does not import any of it, the forge
+catalog does not list it, and no game-side lint runs over it. Its one reader
+is [tests/fixtures/shelved-world.ts](../tests/fixtures/shelved-world.ts),
+which mounts it into the registry for the ~35 test files written against
+that world — so the shelf stays valid content by construction, and a test
+that stands on shelved ground says so in its first line.
+
+**Why it was shelved.** The alpha (plans/alpha-band-one.md) is Threshold and
+the Ascent; the countryside was already shut behind `flag:world_open`, which
+made it a second world the forge, the lints and every new-content decision
+still had to reason about — the "wildly disparate areas must cohere" problem
+the tower exists to dissolve. The user's call on 2026-09-12: shelve it, keep
+Threshold and the Ascent, move the hold to a map of its own behind the first
+prestige. Closing by subtraction again.
+
+**Bringing a piece back** is a paste into the live files plus its road.
+Nothing was rewritten on the way out — ids, edges, finds, encounter tables
+and quest chains are exactly as they were — so a revival is a content
+decision, not a build. Old saves that were standing out there woke at the
+Foot on load (save v49) with their spot-keyed counters intact; a revived map
+would find them waiting.

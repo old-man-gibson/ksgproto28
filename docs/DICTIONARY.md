@@ -33,7 +33,7 @@ source's level.
 | `dodge` `crit` `critDamage` `parry` `penetration` `splash` | caps: dodge 0.75, crit 0.9, pen 0.6, splash 1, parry 0.5 |
 | `riposte` | share of your damage a parry answers with (base 0.3, UNCAPPED — parry's frequency is capped, its force is not) |
 | `spellPower` | magic's damage stat |
-| `skillXp` `trainXp` `loot` `goldGain` `travelSpeed` `craftSpeed` | economy multipliers |
+| `skillXp` `trainXp` `loot` `goldGain` `travelSpeed` `craftSpeed` | economy multipliers. `skillXp` feeds SKILL experience only; `trainXp` (shown as "Attribute XP") feeds ATTRIBUTE experience only |
 | `maxStamina` `staminaRegen` `staminaEff` `staminaPower` | staminaEff floors at 0.5; power = 2 − eff |
 | `maxMana` `manaRegen` `manaEff` `maxSpirit` | resource pools; resting multiplies manaRegen by `ResourceDef.restRegenMult` (×3) |
 | `resSlashing` `resPiercing` `resBludgeoning` `resHeat` `resCold` `resPoison` `resArcane` `resLightning` `resEarth` `resWind` `resWater` `resLight` `resDark` | capped 0.75; statuses may override/floor |
@@ -126,8 +126,11 @@ achievement `statKey`s. Current families:
 | `gather:<materialId>` | materials gathered |
 | `crafts` | crafting completions |
 | `gold:earned` | lifetime gold income (all sources) |
+| `gold:spent` | lifetime gold paid at counters (shops.ts) — the accumulation gate for "has been buying" |
+| `shop:buys` / `shop:buys:<npcId>` | units bought, total / per vendor |
 | `travel:trips` | arrivals |
 | `quests:completed` | turn-ins |
+| `prestige:count` | prestiges completed — mirrors `state.prestige.count`; the hold's door reads it (PRESTIGE.md) |
 | `miracles:learned` | divine repertoire size |
 
 Adding a counter = one `bumpStat` call; it is instantly targetable by

@@ -26,6 +26,7 @@ import {
   skillLevel,
   type Placement,
 } from './disciplines';
+import { text } from '../text/log';
 
 /**
  * Cooking: the framework read from the other end.
@@ -291,21 +292,21 @@ export function previewCook(
   if (!check.ok) return { ok: false, reason: check.reason };
 
   const outcome = matchOutcome(state, disc, placement);
-  if (!outcome) return { ok: false, reason: 'Nothing edible comes of this' };
+  if (!outcome) return { ok: false, reason: text('cooking.reason.no_outcome') };
 
   // The cutting board: same machinery in, a transformed ingredient out. The
   // cut grade is rolled at work time, so the preview promises only the cap —
   // the ingredient's own grade, which no knife exceeds.
   if (outcome.result.kind === 'prepped') {
     const parts = prepParts(disc, placement);
-    if (!parts?.ingredient || !parts.technique) return { ok: false, reason: 'Lay out the board first' };
+    if (!parts?.ingredient || !parts.technique) return { ok: false, reason: text('cooking.reason.board_empty') };
     const prep = PREPS[parts.technique.id];
-    if (!prep) return { ok: false, reason: 'No such technique' };
+    if (!prep) return { ok: false, reason: text('cooking.reason.no_such_technique') };
     if ((prep.minLevel ?? 0) > skillLevel(state, disc)) {
-      return { ok: false, reason: `Your hands do not know that cut yet (Cooking ${prep.minLevel})` };
+      return { ok: false, reason: text('cooking.reason.technique_level', { level: prep.minLevel }) };
     }
     const target = MATERIALS[preppedIdOf(parts.ingredient.id, prep.id)];
-    if (!target) return { ok: false, reason: 'That does not take a knife' };
+    if (!target) return { ok: false, reason: text('cooking.reason.not_preppable') };
     const cap = parts.ingredient.quality;
     return {
       ok: true,
@@ -356,7 +357,7 @@ export function cook(
 ): CookResult | null {
   const check = previewCook(state, placement, disc, duration);
   if (!check.ok || !check.outcome || !check.quality) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
 
@@ -388,6 +389,8 @@ export function cook(
       noveltyKeys(disc, placement),
     );
     const made = MATERIALS[id];
+    // Quest familiarization hears bench work the same way it hears recipes.
+    bus.emit({ type: 'craft', discipline: disc.id });
     // Groupable: a batch run folds into one tallied line instead of a page.
     logRepeat(bus, {
       group: `bench:${disc.id}`,
@@ -421,6 +424,7 @@ export function cook(
   );
 
   const dish = MATERIALS[result.id];
+  bus.emit({ type: 'craft', discipline: disc.id });
   logRepeat(bus, {
     group: `bench:${disc.id}`,
     prefix: `${dish?.icon ?? '🍽️'} Cooked:`,

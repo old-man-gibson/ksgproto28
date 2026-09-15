@@ -511,7 +511,7 @@
       {/if}
       {@render statRow('Spell Power', 'spellPower', fmt(stats.spellPower))}
       {@render statRow('Skill XP', 'skillXp', `×${stats.skillXp.toFixed(2)}`)}
-      {@render statRow('Training XP', 'trainXp', `×${stats.trainXp.toFixed(2)}`)}
+      {@render statRow('Attribute XP', 'trainXp', `×${stats.trainXp.toFixed(2)}`)}
       {@render statRow('Loot Luck', 'loot', `×${stats.loot.toFixed(2)}`)}
       {@render statRow('Gold Gain', 'goldGain', `×${stats.goldGain.toFixed(2)}`)}
       {@render statRow('Travel Speed', 'travelSpeed', `×${stats.travelSpeed.toFixed(2)}`)}

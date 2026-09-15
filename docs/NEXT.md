@@ -4,26 +4,43 @@ Live scratchpad for work that is designed but not finished. Delete a section
 once it ships and the real docs cover it. Everything here was agreed in
 conversation; the specs are the user's, written down so they survive a new chat.
 
-Current save version: **46** (v41 added music: `compositions` +
+Current save version: **48** (v41 added music: `compositions` +
 `performance`; v42 stamped meters onto sheets — the grid also went 48 → 240
 units/bar, save-transparently, since notes store duration ids; v43 added
 repeat spans; v44 added tempo; v45 added the pedal tone; v46 added `mercy`,
-the drought ledger).
+the drought ledger; v47 and v48 add no fields at all — v47 stamps the five
+`flag:unlock_*` subsystem shutters open on older saves, v48 the full arcane
+lexicon and pantheon; see plans/alpha-scope-locks.md).
 `npm run verify` must be green before anything here is called done.
 
 ---
 
 ## Shipped recently (context, not TODO)
 
-- **Region tabs reorder by drag** (`reorderEntry`, `forge/server/edit.ts`; no
-  save version — this writes source, not state). Region order in the world map
-  IS key order in `locations.data.ts`, so the tab strip drags the *entry*: the
-  op cuts its exact character range, `getFullStart()` included so the
-  hand-written comment block above it travels along, and splices it in beside
-  its new neighbour. Nothing is reprinted — moving Threshold to the front is 5
-  lines added and the same 5 removed. `Alt`+`←`/`Alt`+`→` does it from the
-  keyboard, so the strip is not drag-only. This was **§1** of this file, which
-  is why the sections below start at 2; the gesture lives in **FORGE.md** now.
+- **Shops (2026-09-12, no save change) — `systems/shops.ts`, CONTENT_GUIDE §4
+  "NPC + quest" → Shop.** A vendor is an NPC with `shop.lines`; stock is
+  data, prices derive from `value` × `BUY_MARKUP` (2), strangers pay
+  `STRANGER_MARKUP` (×1.5) more until `talkTo` stamps `met:` — the hello IS
+  the discount. Law, test-locked (tests/shops.test.ts): **no arbitrage** —
+  buy price is never below the best possible resale + 1, at any charisma,
+  with rune slots priced at their best roll and `price` overrides floored
+  the same way. Six counters in Threshold: the smith, alchemist and chef
+  sell their bench's INPUTS; three new gate NPCs (outfitter, apothecary,
+  provisioner — placeholder prose) sell gear, healing and dishes. Gated
+  lines (`requires`) put the outfitter's second rack out on
+  `boss:f1_toll_hall`. Counters: `gold:spent`, `shop:buys`,
+  `shop:buys:<npcId>`. Open: the forge NpcInspector does not edit `shop`
+  yet (data survives its writes); stock limits/restock deliberately absent.
+
+- **Prestige (save v50, 2026-09-12) — docs/PRESTIGE.md.** The harvest
+  re-climb: band 1 cleared opens the tab; `harvest` is the one function the
+  preview and the reset both read; the post-prestige overlay is save state
+  (`prestige.review`) and closes only once a point is spent or leaving is
+  confirmed. Boons are the three hooks that already existed (start gold,
+  skill ceilings, grimoire pages). Numbers are first guesses; the designed
+  boon set waits on base building. The countryside was SHELVED the same
+  day (save v49, LONGTERM.md) and the hold moved to its own map behind
+  `prestige:count ≥ 1`.
 
 - **Droughts are over** (`engine/mercy.ts`, save v46). Any roll under 15% —
   drop-table entries, rare encounter lines, monster modifier, monster rarity,
@@ -81,9 +98,12 @@ the drought ledger).
 - **Forced, unfleeable fights.** `SpotDef.forced` / `Connection.forced`.
   Fight spawns on arrival, ticks regardless of activity, refuses every way
   out; losing calls `retreatToSafety`; ambushed arrivals never register the
-  ambush site as a haven. Warned on map edges + travel buttons. **Still
-  open:** does losing cost anything beyond the retreat (knocked-out/dead
-  failure states, `[[project-planned-systems]]`)? Reload-mid-fight skips it —
+  ambush site as a haven. Warned on map edges + travel buttons. **2026-09-12:
+  EVERY knockout now retreats to the last haven stood in** (forced or not),
+  each tower landing carries a camp so a fall on a floor lands on that
+  floor, and the never-nowhere fallback is the start (the Foot) rather than
+  data order. **Still open:** does losing cost anything beyond the retreat
+  (knocked-out/dead failure states, `[[project-planned-systems]]`)? Reload-mid-fight skips it —
   accepted; a `fightLimit` guardian den closes the loop for spots that matter.
 - **Havens.** `rest` + `requires`; `state.safeSpots`; `systems/safety.ts`.
 - **Forge rename**, gated exploration (`SpotFind.requires`, `exploreGates`),
@@ -112,15 +132,24 @@ the drought ledger).
   whose every exit is combat-only. `closeCombat` runs *before* `endFight` so
   the ledger's "Still on you" list is what you actually walk away carrying.
 
-**No world content uses any of this yet** — forced fights, approaches,
-once-bosses and fight budgets are all live and tested, but flagging real
-spots/edges (the Malgeri stubs are the natural place) is authoring work.
-Forge support: forced/fightLimit/once have inspector UI; `approach` and
-encounter `requires` are displayed and validated but edited in the data file.
+**First real consumers landed 2026-09-06** — band 1 of the tower uses a
+`forced` spot (the Broken Cistern), two `once` bosses (the toll collector,
+the brood queen) and a `fightLimit` budget that doubles as a floor clear.
+Approaches and encounter `requires` still have no consumer; the Malgeri stubs
+remain the natural place once the world reopens. Forge support:
+forced/fightLimit/once have inspector UI; `approach` and encounter `requires`
+are displayed and validated but edited in the data file.
 
 ---
 
 ## 0. The tower — chassis SHIPPED 2026-08-10, content open  ← start here
+
+> **The alpha push lives in [plans/alpha-band-one.md](plans/alpha-band-one.md)**
+> and its four story cards. As of 2026-09-06 the tower RUNTIME, three band-1
+> floors, and the alpha scope locks are BUILT (save v47, verify green, in
+> review); the district quest chains wait on the user's list. The ascent went
+> **sequential** — see the epic for the three answers that reshaped this
+> section's rules.
 
 Vertical content, and the reason it exists: **authoring atomicity.** A floor
 declares one required connection and nothing else, so adding one never means
@@ -145,13 +174,16 @@ a library is not a contradiction; it is a tower.
   subsystems, never monopolies: scholars/arcane, temple/divine,
   ironyard/martial (wuxia later), alembic row/alchemy+mutagens, chancery,
   assize/law, wrights/crafting, granaries/resources.
-- **`STARTING_SPOT = 'ascent_foot'`.** The old `my_home` start is still
-  authored and still walkable, down the Hamlet Road from the Granaries;
-  existing saves carry their own spot and are untouched.
-- **The player base is a floor.** `player_base_v1_area` moved into the new
-  `the_ascent` region and is declared as floor `ascent_hold` — `personal`, and
-  `persists` (the one thing a prestige will not take). Its old footpath from
-  `my_home` was severed; you enter through the tower door now.
+- **`STARTING_SPOT = 'ascent_foot'`.** The countryside the old `my_home`
+  start sat in is SHELVED (2026-09-12, LONGTERM.md §"The countryside"); saves
+  standing out there wake at the Foot (save v49).
+- **The player base is its own map.** `player_base_v1_area` lives in the
+  `the_hold` region (name and atlas pin are placeholders), reached through
+  the door at the Foot, which carries `requires: [prestige:count ≥ 1]` —
+  shut until the first prestige, outbound-only like every `requires`. It was
+  a floor of the tower (`ascent_hold`) from 2026-08-10 to 2026-09-12; the
+  user moved it out. `FloorDef.personal` / `.persists` remain as declarations
+  for the prestige system to honour.
 - **Eight lints** (`content.test.ts`, mutation-tested): hub/band/area
   referential integrity, contiguous band indexes, one floor per area, personal
   floors off the ladder, no band asking more clears than it has floors, and
@@ -180,26 +212,32 @@ a library is not a contradiction; it is a tower.
 
 ### Open
 
-- **No floors on the ladder yet.** `FLOORS` holds one off-ladder floor. The
-  three declared bands are empty scaffolding.
-- **Two lints cannot be written until they exist** — "hidden access is never
-  on a critical path" and "every lateral edge is legal to delete" both need a
-  defined critical path. Noted in the test file rather than shipped vacuous.
+- ~~No floors on the ladder~~ **Band 1 has three floors (2026-09-06,
+  plans/alpha-band-one-floors.md)** — sequential ascent, `FloorDef.clear`,
+  `climbTo`, the AscentPanel ladder. The runtime the registry waited for is
+  `systems/towers.ts`. Bands 2–3 are still empty scaffolding, and
+  `clearsToAdvance` is now UNREAD (the sequential decision retired it —
+  fate undecided, flagged in types.ts).
+- ~~Two lints cannot be written~~ **Landed in sequential form**: "hidden
+  access never on a critical path" became *banded floor areas are closed*
+  (the ladder is the only door), in both validation layers.
 - **Cleared floors as idle nodes.** The agreed answer to the active-clear vs
   idle-loop conflict: a cleared floor becomes assignable and feeds the idle
   loop, which is also the scaling gold source base-building sinks want.
   Accumulation gates already make the tower advance offline; this makes it
   *pay* offline. Not built.
-- **Threshold has no NPCs and no quests.** The goldfish found this the honest
-  way: seed 7, which used to close a quest chain from `my_home`, now closes
-  none even at 400k ticks because the quest-givers are all down the Hamlet
-  Road. Seeds 42/99 still close two at 150k, so the property survived — but
-  the starting city needs its own directed content, and it is also where
-  COMPLETABILITY §3's *teachers* belong.
-- **The hold's weather question changed shape.** The old SPEC ("exposed at
-  first, upgradeable to fully sheltered") read naturally for a yard behind a
-  house and reads oddly for a floor of a tower. `sheltered: true` carried over
-  unchanged so nothing shifted silently — TODO on the region entry.
+- **Threshold speaks with nine voices (2026-09-06,
+  plans/alpha-threshold-quests.md).** The user's first quest list is built:
+  the Warden's talk-chain (meet the nine trades — `talk` objectives on the
+  new `met:*` counters) and the seven-system familiarization quest (`stat` +
+  discipline-`craft` objectives, the caged menagerie, the starter lexicon and
+  the two known gods). All prose is placeholder awaiting recaption; the
+  goldfish closes the chain on seed 42 inside Threshold. Future district
+  chains land in the same card.
+- **The hold's weather question is still open.** The old SPEC ("exposed at
+  first, upgradeable to fully sheltered"); `sheltered: true` carried over
+  unchanged to the `the_hold` region so nothing shifted silently — TODO on
+  the region entry.
 - **Names are placeholders.** Threshold, The Ascent, and all eight district
   names rename cleanly in the forge (id rename rewrites every reference).
 

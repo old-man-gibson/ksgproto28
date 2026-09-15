@@ -1,8 +1,10 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { spawnMonster } from '../src/core/systems/combat';
-import { MONSTERS, SPOTS, TIERS, MODIFIER_TIERS } from '../src/core/registry';
+import { MONSTERS, SPOTS, STARTING_SPOT, TIERS, MODIFIER_TIERS } from '../src/core/registry';
 import { getDerivedStats } from '../src/core/systems/derived';
 import {
   MONSTER_EXEMPT_STATS,
@@ -25,6 +27,18 @@ function huntingGame(seed = 7, spot = 'woods_edge') {
   game.equip(1); // rusty sword
   game.selectActivity('hunt');
   return game;
+}
+
+/**
+ * A knockout retreats you to the last haven and drops the activity
+ * (systems/safety.ts, every defeat since 2026-09-12). These tests are about
+ * what fights RESOLVE to, not about walking back, so once you are on your
+ * feet again this puts you straight back on the hunting ground.
+ */
+function keepHunting(g: Game, spot: string): void {
+  if (g.state.recovering || g.state.spot === spot) return;
+  g.state.spot = spot;
+  g.selectActivity('hunt');
 }
 
 describe('the fast feeds on action', () => {
@@ -102,7 +116,10 @@ describe('monster generation', () => {
 describe('combat resolution', () => {
   it('a fresh character eventually wins fights at the starting hunting ground', () => {
     const g = huntingGame();
-    for (let i = 0; i < 5000 && (g.state.stats['kills'] ?? 0) < 3; i++) g.tick();
+    for (let i = 0; i < 5000 && (g.state.stats['kills'] ?? 0) < 3; i++) {
+      g.tick();
+      keepHunting(g, 'woods_edge');
+    }
     expect(g.state.stats['kills'] ?? 0).toBeGreaterThanOrEqual(3);
     expect(g.state.gold).toBeGreaterThan(0);
   });
@@ -114,7 +131,7 @@ describe('combat resolution', () => {
     expect(g.state.attrs.str.xp > 0 || g.state.attrs.str.level > 1).toBe(true);
   });
 
-  it('knockout triggers recovery instead of death, then resumes hunting', () => {
+  it('knockout triggers recovery instead of death, at the last haven', () => {
     // Level-1 character straight into the ravine floor (level 8-14 monsters).
     const g = huntingGame(13, 'ravine_floor');
     let defeated = false;
@@ -123,7 +140,10 @@ describe('combat resolution', () => {
     expect(defeated).toBe(true);
     expect(g.state.resources.hp).toBeGreaterThan(0);
     expect(g.state.recovering).toBe(true);
-    expect(g.state.activity).toBe('hunt'); // selection preserved
+    // Every knockout retreats (2026-09-12): nothing recorded yet, so the
+    // start catches you, and the hunt you were on is dropped with the spot.
+    expect(g.state.spot).toBe(STARTING_SPOT);
+    expect(g.state.activity).toBeNull();
 
     // Recovery: hp climbs back to the threshold, then recovering clears.
     const maxHp = getDerivedStats(g.state).maxHp;
@@ -145,7 +165,10 @@ describe('combat resolution', () => {
     const g = huntingGame();
     g.state.stats['kills'] = 99; // Slayer I lands on the hundredth
     const before = getDerivedStats(g.state).damage;
-    for (let i = 0; i < 5000 && !(g.state.achievements.slayer >= 1); i++) g.tick();
+    for (let i = 0; i < 5000 && !(g.state.achievements.slayer >= 1); i++) {
+      g.tick();
+      keepHunting(g, 'woods_edge');
+    }
     expect(g.state.achievements.slayer).toBeGreaterThanOrEqual(1);
     // +2% damage from Slayer I (measured with same style/equipment)
     expect(getDerivedStats(g.state).damage).toBeGreaterThan(before);

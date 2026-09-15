@@ -3,6 +3,7 @@
   import { isKept } from '../core/systems/ledger';
   import { currentActivity } from '../core/systems/actions';
   import { TPS } from '../core/engine/loop';
+  import { BONUS_CAP_TICKS } from '../core/systems/bonustime';
   import Sidebar from './panels/Sidebar.svelte';
   import LocationPanel from './panels/LocationPanel.svelte';
   import CombatPanel from './panels/CombatPanel.svelte';
@@ -17,6 +18,9 @@
   import { activeQuests, questComplete } from '../core/systems/quests';
   import LogFeed from './LogFeed.svelte';
   import OfflineModal from './OfflineModal.svelte';
+  import PrestigeModal from './PrestigeModal.svelte';
+  import PrestigePanel from './panels/PrestigePanel.svelte';
+  import { prestigeVisible } from '../core/systems/prestige';
   import DefeatModal from './DefeatModal.svelte';
   import { fmt } from './lib/format';
   import DebugPanel from './panels/DebugPanel.svelte';
@@ -26,6 +30,7 @@
   import { forecastFor, PROGNOSIS_TOOLTIP_AT, WEATHERSENSE_ID } from '../core/systems/weathersense';
   import Tip from './lib/Tip.svelte';
   import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from '../core/systems/exposure';
+  import { subsystemUnlocked } from '../core/systems/unlocks';
   import { AREAS, REGIONS, SKILLS, SPOTS } from '../core/registry';
   import {
     barCapacity,
@@ -36,6 +41,8 @@
     tempoOf,
   } from '../core/systems/music';
   import { playBar, stopMusic } from './lib/musicAudio';
+  import { msToTime } from './lib/format';
+  import { OFFLINE_CAP_MS } from '../core/save/offline';
 
   /**
    * Developer tools exist only in `npm run dev`. Vite replaces this with a
@@ -82,18 +89,38 @@
       : [],
   );
 
-  const tabs = [
-    { id: 'location', name: '🗺️ Location' },
-    { id: 'combat', name: '⚔️ Combat' },
-    { id: 'skills', name: '📜 Skills' },
-    { id: 'equipment', name: '🎒 Equipment' },
-    { id: 'chromosome', name: '🧬 Chromosome' },
-    { id: 'music', name: '🎼 Music' },
-    { id: 'wuxin', name: '☯️ Wuxin' },
-    { id: 'bestiary', name: '📖 Bestiary' },
-    { id: 'quests', name: '⭐ Quests' },
-    { id: 'achievements', name: '🏆 Achievements' },
-  ] as const;
+  // Shuttered subsystems (systems/unlocks.ts) keep their tabs off the bar
+  // until content lifts the flag — furniture for a system you have never
+  // heard of is a spoiler, the same rule the benches follow.
+  const tabs = $derived(
+    (
+      [
+        { id: 'location', name: '🗺️ Location' },
+        { id: 'combat', name: '⚔️ Combat' },
+        { id: 'skills', name: '📜 Skills' },
+        { id: 'equipment', name: '🎒 Equipment' },
+        { id: 'chromosome', name: '🧬 Chromosome' },
+        { id: 'music', name: '🎼 Music' },
+        { id: 'wuxin', name: '☯️ Wuxin' },
+        { id: 'bestiary', name: '📖 Bestiary' },
+        { id: 'quests', name: '⭐ Quests' },
+        { id: 'achievements', name: '🏆 Achievements' },
+        // Appears once the run could prestige (band 1 cleared), and stays
+        // once any run has — the pre-prestige view lives here.
+        { id: 'prestige', name: '♻️ Prestige' },
+      ] as const
+    ).filter((t) =>
+      t.id === 'chromosome'
+        ? subsystemUnlocked(gs, 'genes')
+        : t.id === 'music'
+          ? subsystemUnlocked(gs, 'music')
+          : t.id === 'wuxin'
+            ? subsystemUnlocked(gs, 'wuxin')
+            : t.id === 'prestige'
+              ? prestigeVisible(gs)
+              : true,
+    ),
+  );
 
   const readyQuests = $derived(activeQuests(gs).filter((q) => questComplete(gs, q)).length);
 
@@ -189,6 +216,11 @@
     }
   }
 
+  function toggleBonus(ev: MouseEvent) {
+    game.setBonusSpending(!gs.bonusTime.spending);
+    (ev.currentTarget as HTMLButtonElement).blur();
+  }
+
   /** Give the focus back after a click so Space keeps toggling the pause. */
   function togglePause(ev: MouseEvent) {
     game.togglePause();
@@ -226,6 +258,16 @@
         title="Advance until the fight's next line — one thing happening, not one tick (N)"
       >
         ⏭ Next
+      </button>
+      <!-- Banked idle time: filled by doing nothing, spent as double speed
+           only while switched on (systems/bonustime.ts). -->
+      <button
+        class="bonus"
+        class:on={gs.bonusTime.spending}
+        onclick={toggleBonus}
+        title="Bonus time: banked 1:1 while nothing runs (no activity, travel, bench, performance, fight), cap {msToTime((BONUS_CAP_TICKS / TPS) * 1000)}. While on, every working tick runs twice and spends one banked tick."
+      >
+        ⏩ {gs.bonusTime.spending ? '2× ' : ''}{msToTime((gs.bonusTime.banked / TPS) * 1000)}
       </button>
       {#if gs.paused}
         <span class="tickno" title="Ticks elapsed since this save began">t{gs.totalTicks}</span>
@@ -322,6 +364,8 @@
         <QuestsPanel />
       {:else if ui.tab === 'achievements'}
         <AchievementsPanel />
+      {:else if ui.tab === 'prestige'}
+        <PrestigePanel />
       {/if}
     </div>
   </main>
@@ -335,8 +379,29 @@
   <DebugPanel onClose={() => (showDebug = false)} />
 {/if}
 
+{#if ui.catchingUp !== null}
+  <!-- Painted before the boot catch-up runs (see main.ts); the thread is
+       blocked while it simulates, so this is static by design. -->
+  <div class="catchup-overlay" role="status" aria-live="polite">
+    <div class="catchup panel">
+      <h2>⏳ Catching up…</h2>
+      <p class="dim">
+        You were away for {msToTime(ui.catchingUp)}. Simulating
+        {ui.catchingUp > OFFLINE_CAP_MS ? `the first ${msToTime(OFFLINE_CAP_MS)}` : 'that time'}
+        — this can take a while on a long-running save.
+      </p>
+    </div>
+  </div>
+{/if}
+
 {#if ui.offline}
   <OfflineModal summary={ui.offline} onclose={() => (ui.offline = null)} />
+{/if}
+
+{#if gs.prestige.review}
+  <!-- Save state, not UI state: owed until a point is spent or leaving is
+       confirmed, reload or no reload (systems/prestige.ts). -->
+  <PrestigeModal />
 {/if}
 
 {#if ui.defeat}
@@ -349,6 +414,21 @@
 {/if}
 
 <style>
+  .catchup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgb(0 0 0 / 60%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 11;
+  }
+
+  .catchup {
+    max-width: 420px;
+    width: 90%;
+  }
+
   .layout {
     display: grid;
     grid-template-columns: 270px 1fr 320px;
@@ -396,6 +476,12 @@
     color: var(--text-dim);
   }
 
+  .clock .bonus {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .clock .bonus.on,
   .clock .pause.on {
     border-color: var(--accent);
     color: var(--accent);

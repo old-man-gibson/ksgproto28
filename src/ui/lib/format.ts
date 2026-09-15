@@ -35,7 +35,7 @@ import {
   attrValue,
   type BreakdownLine,
 } from '../../core/systems/attributes';
-import { ITEMS, MONSTER_TAGS, QUESTS, SKILLS, STATUSES, STYLES } from '../../core/registry';
+import { ITEMS, MONSTERS, MONSTER_TAGS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
 import { resolveModValue } from '../../core/systems/derived';
 import { resolveRune } from '../../core/systems/runes';
 import { resolvedMove } from '../../core/systems/martial';
@@ -155,6 +155,11 @@ export function condText(cond: UnlockCondition): string {
     case 'equippedTag':
       return `${cond.tag} equipped`;
     case 'stat':
+      // The hold's door (locations.data.ts, the Foot). Prestige is unbuilt;
+      // the door still has to say what opens it rather than print a counter.
+      if (cond.key === 'prestige:count') {
+        return cond.value === 1 ? 'prestige once' : `prestige ${cond.value} times`;
+      }
       return `${cond.key} ≥ ${cond.value}`;
     case 'statMax':
       return `${cond.key} ≤ ${cond.value}`;
@@ -165,6 +170,48 @@ export function condText(cond: UnlockCondition): string {
 
 export function condsText(conds: UnlockCondition[] | undefined): string {
   return (conds ?? []).map(condText).join(', ');
+}
+
+/**
+ * A gate, clear or unlock term in words a player can act on, with progress.
+ * The counters underneath (`slain:*`, `fights:*`, `boss:*`, `gold:earned`)
+ * are implementation — a term must say what to DO, or an accumulation gate
+ * teaches nothing. Falls back to `condText` for shapes it does not know.
+ * Used by the Ascent ladder and the Prestige tab.
+ */
+export function termText(cond: UnlockCondition, state: GameState): string {
+  if (cond.type === 'quest') return `Complete “${QUESTS[cond.id]?.name ?? cond.id}”`;
+  if (cond.type === 'stat') {
+    const have = state.stats[cond.key] ?? 0;
+    const done = have >= cond.value ? ' ✓' : '';
+    const slain = cond.key.match(/^slain:([^:]+):(.+)$/);
+    if (slain) {
+      const monster = MONSTERS[slain[2]]?.name ?? slain[2];
+      const where = SPOTS[slain[1]]?.name ?? slain[1];
+      return `Slay the ${monster} in ${where}${done}`;
+    }
+    const fights = cond.key.match(/^fights:(.+)$/);
+    if (fights) {
+      const where = SPOTS[fights[1]]?.name ?? fights[1];
+      return `Win the fights in ${where} (${Math.min(have, cond.value)}/${cond.value})`;
+    }
+    const boss = cond.key.match(/^boss:(.+)$/);
+    if (boss) {
+      const where = SPOTS[boss[1]]?.name ?? boss[1];
+      return `Defeat the keeper of ${where}${done}`;
+    }
+    if (cond.key === 'gold:earned') {
+      return `Earn ${cond.value} gold all-time (${Math.min(Math.floor(have), cond.value)}/${cond.value})`;
+    }
+    if (cond.key === 'quests:completed') {
+      return `Complete ${cond.value} quests (${Math.min(have, cond.value)}/${cond.value})`;
+    }
+  }
+  return condText(cond);
+}
+
+export function termsText(conds: UnlockCondition[] | undefined, state: GameState): string {
+  return (conds ?? []).map((c) => termText(c, state)).join(', ');
 }
 
 const PERCENT_STATS = new Set<string>([
@@ -798,9 +845,21 @@ function bonusLine(l: BreakdownLine, format: (v: number) => string): string {
 }
 
 /** Tooltip lines for a derived stat: base formula, each bonus source, total. */
+/**
+ * A first line saying WHICH pool a multiplier feeds, for the two that read
+ * alike. Skills and attributes level from separate experience, on separate
+ * multipliers; a player mid-decision should not have to guess which is which.
+ */
+const STAT_NOTES: Partial<Record<StatKey, string>> = {
+  skillXp: 'Multiplies experience SKILLS earn (fighting, scouting, smithing…). Attributes are unaffected.',
+  trainXp: 'Multiplies experience ATTRIBUTES earn (STR, DEX, CON, INT, WIS, CHA) from training, jobs and crafting. Skills are unaffected.',
+};
+
 export function statTipLines(state: GameState, key: StatKey): string[] {
   const bd = statBreakdown(state, key);
   const lines = [`Base ${statVal(key, bd.base)}  (${bd.baseText})`];
+  const note = STAT_NOTES[key];
+  if (note) lines.unshift(note);
   for (const l of bd.lines) lines.push(bonusLine(l, (v) => statVal(key, v)));
   lines.push(`Total ${statVal(key, bd.total)}${bd.capped ? ' — CAPPED' : ''}`);
   // Typed on-hit extras (enchants, weapon runes) ride along with Damage.
@@ -836,6 +895,7 @@ export function attrTipLines(state: GameState, attr: AttributeId): string[] {
   const name = ATTRIBUTE_LIST.find((a) => a.id === attr)?.name ?? attr;
   const lines = [`Trained ${bd.trained}  (base level from XP)`];
   for (const l of bd.lines) lines.push(bonusLine(l, fmt));
+  if (bd.endowment) lines.push(`×${(1 + bd.endowment).toFixed(3)}  Endowment (prestige)`);
   lines.push(`Effective ${name}: ${fmt(bd.effective)}`);
   if (bd.fusion) {
     const partner = ATTRIBUTE_LIST.find((a) => a.id === bd.fusion!.partner)?.name ?? bd.fusion.partner;

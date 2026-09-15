@@ -36,6 +36,7 @@ import { applyStatus, fireStatusEvent, statusIncomingDamageMult, statusesOf } fr
 import { itemName } from './equipment';
 import { feed, monsterSlice, sweepDead } from './combat';
 import { checkCraft, consumePlacement, noveltyKeys, skillLevel, type Placement } from './disciplines';
+import { text } from '../text/log';
 
 /**
  * Alchemy: the crafting mirror of a spoken sentence.
@@ -446,13 +447,13 @@ export function previewBrew(
 ): BrewCheck {
   const level = skillLevel(state, disc);
   const sequence = sequenceOf(disc, placement);
-  if (sequence.length < 2) return { ok: false, reason: 'An alembic needs at least two things in it' };
+  if (sequence.length < 2) return { ok: false, reason: text('alchemy.reason.too_short') };
 
   for (const step of sequence) {
     const def = REAGENTS[step.id];
-    if (!def) return { ok: false, reason: `${MATERIALS[step.id]?.name ?? step.id} is not a reagent` };
+    if (!def) return { ok: false, reason: text('alchemy.reason.not_a_reagent', { name: MATERIALS[step.id]?.name ?? step.id }) };
     if ((def.minLevel ?? 0) > level) {
-      return { ok: false, reason: `${def.name} needs Alchemy ${def.minLevel}` };
+      return { ok: false, reason: text('alchemy.reason.reagent_level', { name: def.name, level: def.minLevel }) };
     }
   }
 
@@ -484,7 +485,7 @@ export function brew(
 ): BrewResult | null {
   const check = previewBrew(state, placement, disc);
   if (!check.ok || !check.spec || !check.sequence) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   if (!consumePlacement(state, disc, placement)) return null;
@@ -511,6 +512,8 @@ export function brew(
   // run that made one formula and one ordinary flask must not describe both as
   // known work. The 📜 rides the ENTRY instead.
   const spec = check.spec;
+  // Quest familiarization hears bench work the same way it hears recipes.
+  bus.emit({ type: 'craft', discipline: disc.id });
   logRepeat(bus, {
     group: `bench:${disc.id}`,
     prefix: '⚗️ Brewed:',
@@ -533,17 +536,17 @@ export interface FlaskCheck {
 
 export function canUseFlask(state: GameState, index: number): FlaskCheck {
   const flask = state.flasks?.[index];
-  if (!flask) return { ok: false, reason: 'No such flask' };
+  if (!flask) return { ok: false, reason: text('alchemy.reason.no_such_flask') };
   const spec = resolveBrew(flask);
-  if (spec.form === 'residue') return { ok: false, reason: 'Residue does nothing but take up room' };
+  if (spec.form === 'residue') return { ok: false, reason: text('alchemy.reason.residue') };
   if (spec.form === 'oil' && !state.equipment.weapon) {
-    return { ok: false, reason: 'Nothing in your hands to work it into' };
+    return { ok: false, reason: text('alchemy.reason.no_weapon') };
   }
   if (BREW_FORMS[spec.form].thrown && !state.combat) {
-    return { ok: false, reason: 'Nothing here to throw it at' };
+    return { ok: false, reason: text('alchemy.reason.no_target') };
   }
   const left = flaskCooldownLeft(state);
-  if (left > 0) return { ok: false, reason: `Your hands are full for another ${(left / 10).toFixed(1)}s` };
+  if (left > 0) return { ok: false, reason: text('alchemy.reason.cooldown', { seconds: (left / 10).toFixed(1) }) };
   return { ok: true };
 }
 
@@ -559,7 +562,7 @@ export function canUseFlask(state: GameState, index: number): FlaskCheck {
 export function useFlask(state: GameState, bus: EventBus, index: number): BrewSpec | null {
   const check = canUseFlask(state, index);
   if (!check.ok) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   const flask = state.flasks[index];
@@ -588,8 +591,13 @@ function anoint(state: GameState, bus: EventBus, spec: BrewSpec, brew: BrewedFla
   bus.emit({
     type: 'log',
     msg:
-      `${spec.icon} You work ${spec.name} into your ${itemName(weapon)} — ${spec.blows} blows` +
-      (had ? ', wiping off what was there.' : '.'),
+      text('alchemy.oiled', {
+        icon: spec.icon,
+        name: spec.name,
+        weapon: itemName(weapon),
+        blows: spec.blows,
+        wiped: had ? text('alchemy.oil_wiped') : text('alchemy.oil_done'),
+      }),
     kind: 'action',
   });
 }
@@ -670,9 +678,11 @@ function swallow(state: GameState, bus: EventBus, spec: BrewSpec): void {
 
   bus.emit({
     type: 'log',
-    msg: `${spec.icon} ${BREW_FORMS[spec.form].verb === 'Apply' ? 'Applied' : 'Drank'} ${spec.name}${
-      gained.length ? ` — ${gained.join(', ')}` : ''
-    }.`,
+    msg: text(BREW_FORMS[spec.form].verb === 'Apply' ? 'alchemy.applied' : 'alchemy.drank', {
+      icon: spec.icon,
+      name: spec.name,
+      gained: gained.length ? text('alchemy.gained', { list: gained.join(', ') }) : '',
+    }),
     kind: 'action',
   });
 }

@@ -1,5 +1,8 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { createInitialState, SAVE_VERSION } from '../src/core/state';
+import { STARTING_SPOT } from '../src/core/registry';
 import { Game } from '../src/core/game';
 import { serialize, deserialize, loadFromStorage, clearStorage, SAVE_KEY } from '../src/core/save/save';
 import { runOfflineProgress, OFFLINE_CAP_MS, OFFLINE_MIN_MS } from '../src/core/save/offline';
@@ -24,8 +27,12 @@ describe('save round-trip', () => {
     expect(loaded.attrs.str.level).toBe(g.state.attrs.str.level);
     expect(loaded.skills.fighting?.level).toBe(g.state.skills.fighting?.level);
     expect(loaded.equipment.weapon?.defId).toBe('rusty_sword');
-    expect(loaded.spot).toBe('woods_edge');
-    expect(loaded.activity).toBe('hunt');
+    // A knockout during those ticks retreats you and drops the hunt (every
+    // defeat does, since 2026-09-12), so the round-trip is checked against
+    // wherever the run actually ended up rather than where it began.
+    expect(loaded.spot).toBe(g.state.spot);
+    expect(loaded.activity).toBe(g.state.activity);
+    expect(['woods_edge', STARTING_SPOT]).toContain(loaded.spot);
   });
 
   /**
@@ -137,6 +144,51 @@ describe('save round-trip', () => {
     expect(resourceLock(migrate(v16, SAVE_VERSION), 'stamina')).toBe('low');
   });
 
+  it('v48 → v49: a save standing on shelved ground wakes at the Foot, lists pruned', () => {
+    // A save mid-journey through places that left the registry, with quests,
+    // havens and discoveries naming them. This file mounts the shelf, so the
+    // real countryside ids are KNOWN here; the stand-ins below are what the
+    // live game sees when it loads such a save — ids it has never heard of.
+    const gone = (s: string) => `gone_${s}`;
+    const v48: Record<string, unknown> = {
+      ...createInitialState(9),
+      version: 48,
+      spot: gone('hamlet_square'),
+      activity: 'job_hauling',
+      travel: { from: gone('hamlet_square'), to: gone('town_gates'), ticksLeft: 3, total: 10 },
+      travelPlan: [gone('town_gates'), gone('village_square')],
+      discovered: [gone('hamlet_square'), gone('town_gates'), 'ascent_foot', 'the_weighbridge'],
+      safeSpots: { nearest: gone('hamlet_square'), unconditional: 'the_weighbridge' },
+      quests: {
+        [gone('first_posting')]: { status: 'active', progress: [3] },
+        faces_of_threshold: { status: 'active', progress: [0] },
+      },
+      stats: { [`fights:${gone('hamlet_forge')}`]: 4 },
+    };
+    const migrated = migrate(v48, SAVE_VERSION);
+    expect(migrated.spot).toBe('ascent_foot');
+    expect(migrated.activity).toBeNull();
+    expect(migrated.travel).toBeNull();
+    expect(migrated.travelPlan).toEqual([]);
+    expect(migrated.discovered).toEqual(['ascent_foot', 'the_weighbridge']);
+    expect(migrated.safeSpots).toEqual({ nearest: null, unconditional: 'the_weighbridge' });
+    expect(Object.keys(migrated.quests)).toEqual(['faces_of_threshold']);
+    // Counters keyed by old ids are inert and stay: a revived map wants them.
+    expect(migrated.stats[`fights:${gone('hamlet_forge')}`]).toBe(4);
+  });
+
+  it('v48 → v49: a save inside the hold keeps its spot — the door gate is outbound-only', () => {
+    const v48: Record<string, unknown> = {
+      ...createInitialState(10),
+      version: 48,
+      spot: 'base_kitchen',
+      discovered: ['ascent_foot', 'base_entrance', 'base_kitchen'],
+    };
+    const migrated = migrate(v48, SAVE_VERSION);
+    expect(migrated.spot).toBe('base_kitchen');
+    expect(migrated.discovered).toEqual(['ascent_foot', 'base_entrance', 'base_kitchen']);
+  });
+
   it('rejects unknown future save versions cleanly', () => {
     const json = JSON.stringify({ ...createInitialState(1), version: SAVE_VERSION + 1 });
     // migrate loop only runs upward; a FUTURE version simply has no work to do.
@@ -215,6 +267,26 @@ describe('load safety', () => {
     const result = loadFromStorage(storage);
     expect(result.healed).toBeUndefined();
     expect(result.state?.totalTicks).toBe(900000);
+  });
+
+  it('never heals a prestige away: a copy from the run just ended has more ticks but fewer prestiges', () => {
+    const storage = fakeStorage();
+    const nextRun = createInitialState(11);
+    nextRun.prestige.count = 1;
+    const lastRun = createInitialState(12);
+    lastRun.totalTicks = 500000;
+    storage.setItem(SAVE_KEY, serialize(nextRun));
+    storage.setItem(`${SAVE_KEY}:recovery-321`, serialize(lastRun));
+
+    const result = loadFromStorage(storage);
+    expect(result.healed).toBeUndefined();
+    expect(result.state?.prestige.count).toBe(1);
+
+    // And the other way round: a copy with MORE prestiges wins on fewer ticks.
+    const further = createInitialState(13);
+    further.prestige.count = 2;
+    storage.setItem(`${SAVE_KEY}:recovery-322`, serialize(further));
+    expect(loadFromStorage(storage).state?.prestige.count).toBe(2);
   });
 
   it('hard reset wipes recovery/backup copies so healing cannot resurrect them', () => {

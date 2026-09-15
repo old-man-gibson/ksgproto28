@@ -43,13 +43,27 @@ export function parse(fileName: string, text: string): ts.SourceFile {
   return ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 }
 
-/** Unwrap `x as const`, `x satisfies T`, and parentheses to the literal inside. */
-function unwrap(node: ts.Expression): ts.Expression {
+/** The hydration helpers from `src/core/text/prose.ts`; their last argument is the literal. */
+const PROSE_WRAPPERS = new Set(['prose', 'proseList']);
+
+/**
+ * Unwrap `x as const`, `x satisfies T`, parentheses, and the
+ * `prose('ROOT', ROOT_TEXT, {...})` call every described registry is declared
+ * through, down to the literal inside.
+ */
+export function unwrap(node: ts.Expression): ts.Expression {
   let current = node;
   for (;;) {
     if (ts.isAsExpression(current) || ts.isSatisfiesExpression(current)) current = current.expression;
     else if (ts.isParenthesizedExpression(current)) current = current.expression;
-    else return current;
+    else if (
+      ts.isCallExpression(current) &&
+      ts.isIdentifier(current.expression) &&
+      PROSE_WRAPPERS.has(current.expression.text) &&
+      current.arguments.length > 0
+    ) {
+      current = current.arguments[current.arguments.length - 1];
+    } else return current;
   }
 }
 
@@ -66,7 +80,7 @@ export function findRoot(sf: ts.SourceFile, name: string): ts.Expression | null 
   return null;
 }
 
-function propOf(obj: ts.ObjectLiteralExpression, key: string): ts.PropertyAssignment | null {
+export function propOf(obj: ts.ObjectLiteralExpression, key: string): ts.PropertyAssignment | null {
   for (const p of obj.properties) {
     if (!ts.isPropertyAssignment(p)) continue;
     const name = p.name;
@@ -152,7 +166,7 @@ export function resolve(root: ts.Expression, path: PathStep[]): Resolved {
   return { node: found ? unwrap(found) : null, prop, container: current, last };
 }
 
-function step(current: ts.Expression, key: PathStep): ts.Expression | null {
+export function step(current: ts.Expression, key: PathStep): ts.Expression | null {
   if (typeof key === 'number') {
     if (!ts.isArrayLiteralExpression(current)) return null;
     return current.elements[key] ?? null;

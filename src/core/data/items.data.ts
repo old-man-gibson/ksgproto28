@@ -1,6 +1,8 @@
 import type { Affix, ItemDef } from '../types';
+import { prose } from '../text/prose';
+import { ITEMS_TEXT } from '../text/items.text';
 
-export const ITEMS: Record<string, ItemDef> = {
+export const ITEMS = prose<ItemDef>('ITEMS', ITEMS_TEXT, {
   rusty_sword: {
     id: 'rusty_sword',
     name: 'Rusty Sword',
@@ -10,7 +12,6 @@ export const ITEMS: Record<string, ItemDef> = {
     tags: ['sword', 'metal'],
     mods: [{ stat: 'damage', op: 'add', value: 3 }],
     value: 5,
-    desc: 'More rust than edge, but it still counts as a sword.',
   },
   oak_club: {
     id: 'oak_club',
@@ -24,7 +25,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'attackSpeed', op: 'mult', value: -0.1 },
     ],
     value: 8,
-    desc: 'Heavy, simple, honest.',
   },
   jotunshamarr: {
     id: 'jotunshamarr',
@@ -38,7 +38,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'attackSpeed', op: 'mult', value: -0.24 },
     ],
     value: 800,
-    desc: 'A hammer used by the giants of the north. A single swing shatters boulders, repeat swings shatter mountains.',
   },
   iron_sword: {
     id: 'iron_sword',
@@ -52,7 +51,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'crit', op: 'add', value: 0.02 },
     ],
     value: 40,
-    desc: 'A proper soldier’s blade.',
   },
   wolf_fang_blade: {
     id: 'wolf_fang_blade',
@@ -66,7 +64,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'attackSpeed', op: 'mult', value: 0.1 },
     ],
     value: 120,
-    desc: 'Serrated with fangs. Hungry.',
   },
   old_spear: {
     id: 'old_spear',
@@ -80,7 +77,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'armor', op: 'add', value: 2 },
     ],
     value: 40,
-    desc: 'A proper soldier’s blade.',
   },
   cloth_tunic: {
     id: 'cloth_tunic',
@@ -115,7 +111,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'spellPower', op: 'mult', value: 0.1 },
     ],
     value: 150,
-    desc: 'Lighter than air, tougher than it looks.',
   },
   lucky_charm: {
     id: 'lucky_charm',
@@ -153,7 +148,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'spellPower', op: 'add', value: 4 },
     ],
     value: 15,
-    desc: 'A sturdy wooden staff attuned to minor arcane currents.',
   },
   hunting_bow: {
     id: 'hunting_bow',
@@ -168,7 +162,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'crit', op: 'add', value: 0.02 },
     ],
     value: 18,
-    desc: 'A basic bow used by trappers and scouts.',
   },
   iron_dagger: {
     id: 'iron_dagger',
@@ -184,7 +177,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'crit', op: 'add', value: 0.03 },
     ],
     value: 22,
-    desc: 'A short blade favored by rogues and travelers.',
   },
   /*
    * Matter carries a will unevenly, and bronze_dagger below is the other pole
@@ -224,7 +216,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'psiPurchase', op: 'mult', value: -0.25 },
     ],
     value: 90,
-    desc: 'Good iron, ruined on purpose: the circuits cut into them run counter to every shape a mind makes. They guard the arms admirably and argue with everything above them.',
   },
   ember_knife: {
     id: 'ember_knife',
@@ -239,7 +230,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'attackSpeed', op: 'mult', value: 0.1 },
     ],
     value: 135,
-    desc: 'A small blade that smolders with captive heat.',
     bonusDamage: { type: 'heat', value: 4 },
   },
   steel_greatsword: {
@@ -256,7 +246,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'critDamage', op: 'mult', value: 0.1 },
     ],
     value: 140,
-    desc: 'A two-handed blade that trades speed for raw power.',
     requirements: [{ type: 'attr', attr: 'str', level: 12 }],
   },
   wooden_shield: {
@@ -271,7 +260,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'maxHp', op: 'add', value: 8 },
     ],
     value: 12,
-    desc: 'A simple plank shield reinforced with rawhide.',
   },
   warden_buckler: {
     id: 'warden_buckler',
@@ -289,19 +277,16 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'dodge', op: 'add', value: 0.03 },
     ],
     value: 160,
-    desc: 'A small shield designed to deflect and riposte.',
     requirements: [{ type: 'attr', attr: 'dex', level: 8 }],
     // Built to be punched forward as much as held back, so it loses nothing in
     // the main hand — declaring a main-hand bonus waives the misfit penalty.
     mainHand: {
-      desc: 'Punched forward: +3 Damage, +4% Parry',
       mods: [
         { stat: 'damage', op: 'add', value: 3 },
         { stat: 'parry', op: 'add', value: 0.04 },
       ],
     },
     offHand: {
-      desc: 'Held back: +3% Parry',
       mods: [{ stat: 'parry', op: 'add', value: 0.03 }],
     },
   },
@@ -321,7 +306,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'parry', op: 'add', value: 0.03 },
     ],
     value: 140,
-    desc: 'A duellist’s blade: all point, no chopping. It expects a free left hand.',
     requirements: [{ type: 'attr', attr: 'dex', level: 12 }],
   },
   parrying_dagger: {
@@ -336,11 +320,9 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'damage', op: 'add', value: 1 },
     ],
     value: 130,
-    desc: 'Swept guard, stiff blade. Made to catch someone else’s point — beside a rapier it is half the fight.',
     requirements: [{ type: 'attr', attr: 'dex', level: 10 }],
     offHand: {
       pairedWith: 'rapier',
-      desc: 'Paired with a rapier: +5% Parry, +2% Crit, +10% Riposte',
       mods: [
         { stat: 'parry', op: 'add', value: 0.05 },
         { stat: 'crit', op: 'add', value: 0.02 },
@@ -360,7 +342,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'dodge', op: 'add', value: 0.02 },
     ],
     value: 6,
-    desc: 'A stitched leather cap that offers basic head protection.',
   },
   leather_jerkin: {
     id: 'leather_jerkin',
@@ -373,7 +354,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'dodge', op: 'add', value: 0.03 },
     ],
     value: 20,
-    desc: 'A flexible leather torso piece favored for mobility.',
   },
   iron_breastplate: {
     id: 'iron_breastplate',
@@ -387,7 +367,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'attackSpeed', op: 'mult', value: -0.05 },
     ],
     value: 85,
-    desc: 'A solid iron chest piece offering reliable protection.',
     requirements: [{ type: 'attr', attr: 'str', level: 8 }],
   },
   iron_gauntlets: {
@@ -401,7 +380,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'armor', op: 'add', value: 4 },
     ],
     value: 14,
-    desc: 'Rudimentary metal gauntlets that protect the hands.',
   },
   scout_bracers: {
     id: 'scout_bracers',
@@ -414,7 +392,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'dodge', op: 'add', value: 0.03 },
     ],
     value: 28,
-    desc: 'Light bracers designed for swift movement and quick draws.',
   },
   soldier_greaves: {
     id: 'soldier_greaves',
@@ -427,7 +404,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'maxHp', op: 'add', value: 10 },
     ],
     value: 55,
-    desc: 'Sturdy leg protection for foot soldiers.',
   },
   leather_boots: {
     id: 'leather_boots',
@@ -440,7 +416,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'travelSpeed', op: 'mult', value: 0.08 },
     ],
     value: 16,
-    desc: 'Soft-soled boots that dampen footsteps.',
   },
   spellwoven_cloak: {
     id: 'spellwoven_cloak',
@@ -454,7 +429,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'armor', op: 'add', value: 3 },
     ],
     value: 120,
-    desc: 'A cloak interlaced with arcane threads that deflect minor harm.',
   },
   apprentice_ring: {
     id: 'apprentice_ring',
@@ -467,7 +441,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'skillXp', op: 'mult', value: 0.04 },
     ],
     value: 25,
-    desc: 'A simple band engraved with minor runes.',
   },
   pilgrim_amulet: {
     id: 'pilgrim_amulet',
@@ -480,7 +453,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'travelSpeed', op: 'mult', value: 0.05 },
     ],
     value: 32,
-    desc: 'An amulet carried by travelers seeking safe passage.',
   },
 
   // ---------- Katanas (sword subgroup: they level Swordsmanship) ----------
@@ -497,7 +469,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'attackSpeed', op: 'mult', value: 0.05 },
     ],
     value: 100,
-    desc: 'A curved blade with a single edge and a single purpose.',
     requirements: [{ type: 'attr', attr: 'dex', level: 8 }],
   },
   uchigatana: {
@@ -513,7 +484,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'attackSpeed', op: 'mult', value: 0.08 },
     ],
     value: 180,
-    desc: 'A curved blade with a single edge and a single purpose.',
     requirements: [{ type: 'attr', attr: 'dex', level: 10 }],
   },
   moonlit_katana: {
@@ -530,7 +500,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'attackSpeed', op: 'mult', value: 0.1 },
     ],
     value: 400,
-    desc: 'It hums faintly when drawn at night. The schools were founded around blades like this.',
     requirements: [{ type: 'skill', id: 'swordsmanship', level: 20 }],
   },
 
@@ -546,7 +515,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'loot', op: 'mult', value: 0.05 },
     ],
     value: 45,
-    desc: 'A pouch of bitter herbs that spiders find deeply offensive.',
   },
   wolf_cloak: {
     id: 'wolf_cloak',
@@ -560,7 +528,6 @@ export const ITEMS: Record<string, ItemDef> = {
       { stat: 'maxHp', op: 'add', value: 10 },
     ],
     value: 110,
-    desc: 'Warm, silent, and faintly smug.',
   },
   bronze_dagger: {
     id: 'bronze_dagger',
@@ -570,7 +537,6 @@ export const ITEMS: Record<string, ItemDef> = {
     // `bronze` is a material tag like `metal`, so anything can key off it
     // later (requiresTag, recipes, a smith who only works one alloy).
     tags: ['dagger', 'bronze', 'metal'],
-    desc: 'A short blade that can be used to cut as well as cut stealthily. Certain fighters might resonate well with it.',
     value: 22,
     mods: [
       { value: 2, stat: 'dex', op: 'add' },
@@ -594,7 +560,6 @@ export const ITEMS: Record<string, ItemDef> = {
     icon: '🛡️',
     slot: 'offhand',
     tags: ['wood', 'tower shield', 'shield'],
-    desc: 'A heavy metal shield. It\'ll protect you from anything but it\'ll slow you down significantly.',
     value: 18,
     mods: [
       { value: 7, stat: 'armor', op: 'add' },
@@ -603,7 +568,7 @@ export const ITEMS: Record<string, ItemDef> = {
     ],
     wield: 'offhand',
   },
-};
+});
 
 /** Affixes randomly attached to monster drops; better monster rarity → higher chance. */
 export const AFFIXES: Affix[] = [

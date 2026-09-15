@@ -2,6 +2,9 @@
   import { gs } from '../state.svelte';
   import { NPCS, QUESTS, SPOTS } from '../../core/registry';
   import { activeQuests, objectiveProgress, questComplete } from '../../core/systems/quests';
+  import { hasWayfinding } from '../../core/systems/legacy';
+  import type { QuestObjective } from '../../core/types';
+  import GoButton from '../lib/GoButton.svelte';
 
   const active = $derived(activeQuests(gs));
   const completed = $derived(
@@ -10,6 +13,15 @@
       .map(([id]) => QUESTS[id])
       .filter(Boolean),
   );
+
+  const wayfinding = $derived(hasWayfinding(gs));
+
+  /** Where an objective is done, when it names a place (a person to meet, a spot to reach). */
+  function objectiveSpot(objective: QuestObjective): string | null {
+    if (objective.type === 'talk') return NPCS[objective.npcId]?.spotId ?? null;
+    if (objective.type === 'reach') return objective.spotId;
+    return null;
+  }
 
   function giverHint(questId: string): string {
     const giver = NPCS[QUESTS[questId]?.giver];
@@ -31,7 +43,10 @@
     <div class="quest" class:ready={questComplete(gs, quest)}>
       <div class="head">
         <span class="name">📜 {quest.name}</span>
-        <span class="dim small">{giverHint(quest.id)}</span>
+        <span class="giver dim small">
+          {giverHint(quest.id)}
+          {#if wayfinding && NPCS[quest.giver]}<GoButton spot={NPCS[quest.giver].spotId} />{/if}
+        </span>
       </div>
       <div class="dim small">{quest.desc}</div>
       {#each quest.objectives as objective, i}
@@ -47,6 +62,9 @@
             ></div>
           </div>
           <span class="small dim">{p.current}/{p.target}</span>
+          {#if wayfinding && p.current < p.target && objectiveSpot(objective)}
+            <GoButton spot={objectiveSpot(objective)!} />
+          {/if}
         </div>
       {/each}
       {#if questComplete(gs, quest)}
@@ -82,6 +100,12 @@
     align-items: baseline;
     gap: 10px;
     flex-wrap: wrap;
+  }
+
+  .giver {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .name {

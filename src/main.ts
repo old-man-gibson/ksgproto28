@@ -1,10 +1,9 @@
 import { mount } from 'svelte';
 import './app.css';
 import App from './ui/App.svelte';
-import { boot, catchUp, game, save, ui } from './ui/state.svelte';
+import { boot, catchUp, game, save, timeAway, ui } from './ui/state.svelte';
 import { TickAccumulator } from './core/engine/loop';
-
-boot();
+import { OFFLINE_MIN_MS } from './core/save/offline';
 
 const acc = new TickAccumulator();
 let last = performance.now();
@@ -57,9 +56,36 @@ function frame() {
   pump();
   requestAnimationFrame(frame);
 }
-requestAnimationFrame(frame);
-setInterval(pump, 1000);
+
+/** Start the clock. Nothing ticks until the boot catch-up has finished. */
+function startPump() {
+  // Reset the reference point AFTER the catch-up, or its own duration would
+  // read as a stall on the first frame and be caught up a second time.
+  last = performance.now();
+  lastSave = last;
+  requestAnimationFrame(frame);
+  setInterval(pump, 1000);
+}
 
 window.addEventListener('beforeunload', () => save());
 
+// Mount FIRST, catch up SECOND. The boot catch-up is synchronous and, on a
+// mature save, can block for minutes — running it before mount left the tab
+// blank with a spinner for the whole wait (and a throw meant no app at all).
+// Now the app paints with a "catching up" overlay, then the catch-up runs.
+// rAF → setTimeout guarantees a real paint in between: the rAF callback runs
+// before the frame is painted, the timeout fires after it.
+const away = timeAway();
+if (away >= OFFLINE_MIN_MS && !game.state.paused) ui.catchingUp = away;
 mount(App, { target: document.getElementById('app')! });
+if (ui.catchingUp !== null) {
+  requestAnimationFrame(() =>
+    setTimeout(() => {
+      boot();
+      startPump();
+    }, 0),
+  );
+} else {
+  boot();
+  startPump();
+}

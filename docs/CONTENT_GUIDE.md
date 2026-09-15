@@ -165,7 +165,47 @@ for all the "magic strings".
 
 ## 3. The workflow
 
-1. Edit a file in `src/core/data/`.
+**Where the words live.** The data files hold mechanics. Every player-facing
+string — `desc`, `dialogue`, `hint` — lives in `src/core/text/<name>.text.ts`,
+one text file per data file, as a flat table keyed by dotted path:
+
+```ts
+// src/core/text/npcs.text.ts
+export const NPCS_TEXT: ProseTable = {
+  'master_smith.desc': 'Runs the third forge from the chimney end.',
+  'master_smith.dialogue': [
+    'Scrap costs nothing and teaches everything. Start there.',
+  ],
+  // nested prose: array elements by id when they have one, else by index
+  'f1_storerooms.finds.strongbox.desc': 'A strongbox. Uncollected.',
+  'faces_of_threshold.objectives.0.desc': 'Meet the smith at the Forges',
+};
+```
+
+The data file declares its registry through `prose()`, which stitches the
+table onto the entries at load time, so `entry.desc` still reads the same
+everywhere:
+
+```ts
+export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, { master_smith: { id: ..., } });
+```
+
+The examples below still show `desc:` inline for brevity. When you add the
+entry, the `desc` goes in the text file under `'<id>.desc'`; the typecheck will
+not stop you from writing it inline (the field is optional in the literal), but
+the forge only ever writes it to the text file. `tests/prose.test.ts` fails on
+a text key that names no entry and on a registry that lost a description.
+Register rules for the words themselves are in `VOICE.md` §3.
+
+Runtime lines — what the log prints when something happens, and the refusal
+text a bench or spell hands back — live in `src/core/text/log.text.ts`, keyed
+by the system that fires them (`combat.appears`, `alchemy.reason.no_target`).
+`{name}`-style placeholders are filled by the call site through `text()` in
+`src/core/text/log.ts`; a placeholder the code never supplies prints as
+written, so it is visible. `tests/logtext.test.ts` fails on a template nothing
+fires and on a call site that passes a parameter the template does not print.
+
+1. Edit a file in `src/core/data/` (numbers) or `src/core/text/` (words).
 2. `npm run verify` — fix anything red.
    - *Typecheck errors* point at the exact file:line (wrong field name, bad
      enum value, duplicate key).
@@ -533,7 +573,9 @@ guardian_hollow: {
 
 Winning frees you where you stand. Losing is a knockout that throws you to a
 haven — the `safeSpots` machinery above, which is much of the reason it
-exists. The player is warned at the door: the world map draws the road red
+exists. Since 2026-09-12 EVERY knockout retreats, forced fight or not: you
+come round at the last camp you stood in (each tower landing is one), never
+where you fell. The player is warned at the door: the world map draws the road red
 with a ⚔️ badge, and the travel button says *no retreat* (even toward an
 undiscovered `❓` destination — the danger is knowable before the first step,
 which is the point). The auto-router never paths THROUGH a forced spot,
@@ -672,6 +714,46 @@ the_source_of_winter: {
 Progress tracks automatically via events. Turn-in requires standing at the
 giver's spot. Completing bumps the `quests:completed` counter.
 
+### Shop (a `shop` on an `NpcDef`)
+
+A vendor is an NPC with wares. Nothing about a shop is saved: stock is
+data, prices are derived, the discount is a counter that already exists.
+
+```ts
+master_smith: {
+  ..., quests: [],
+  shop: {
+    name: 'The Scrap Bin',                       // the counter's heading in the panel
+    lines: [
+      { kind: 'material', id: 'iron_scrap' },    // price = value × BUY_MARKUP (2)
+      { kind: 'material', id: 'healing_salve', quality: 'b' },  // graded wares sell at ONE grade (default 'c')
+      { kind: 'item', id: 'iron_sword' },        // minted through createItem — rune slots roll on purchase
+      { kind: 'item', id: 'rapier', price: 300 }, // flat asking price (still floored — see below)
+      { kind: 'item', id: 'iron_breastplate',    // off the shelf until the counter is stamped
+        requires: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }] },
+    ],
+  },
+},
+```
+
+Rules the engine holds (`systems/shops.ts`, locked by `tests/shops.test.ts`):
+
+- **No arbitrage.** The price paid is `max(asking, best possible resale + 1)`,
+  at any charisma. `goldGain` raises what selling pays and never lowers what
+  buying costs; an item is floored at its best rune-slot roll. A `price`
+  override is floored the same way — a bargain is never a mint.
+- **The hello is the discount.** A stranger pays `STRANGER_MARKUP` (×1.5) on
+  top; `talkTo` stamps `met:<npcId>` and the markup drops. No other state.
+- **Bench NPCs sell INPUTS, gate NPCs sell PRODUCTS.** The smith stocks
+  scrap, never blades; the outfitter at the district gate stocks the blades.
+  Keeps the bench worth using — see "home refines, the world supplies".
+- Unlimited stock, no restock timer, by design. Gate scarcity with
+  `requires`, not counts.
+- Buying bumps `gold:spent`, `shop:buys` and `shop:buys:<npcId>` — all
+  targetable by `stat` conditions and quest objectives.
+- Both linters check every line: the id resolves, `quality` only on a
+  graded ware, `price` positive, asking price above the ware's `value`.
+
 ### Skill (`skills.data.ts`)
 
 ```ts
@@ -698,7 +780,12 @@ herbalism: {
   Both lists must stay sorted by level.
 - **Discovery** = doing something that trains the skill (own tags + the whole
   parent chain, see §1) while `unlock` holds. Locked skills are invisible unless
-  their `parent` is known ("???" hint).
+  their `parent` is known AND every threshold in `unlock` (skill level,
+  attribute level, counter) is at 90% or better — `REVEAL_FRACTION` in
+  skills.ts — at which point the "???" hint appears with its requirements.
+  Quest, equipped-tag and counter-ceiling conditions are not thresholds and
+  never hide a skill on their own. The same 90% rule hides the *next milestone*
+  line in the Skills panel. The Foresight prestige boon lifts both.
 - Actives: `active: { type: 'strike', damageMult: 2.2, cooldown: 80 }` or
   `{ type: 'spell', power: 3, cooldown: 100, damageType: 'heat' }` or
   `{ type: 'buff', mods: [...], duration: 30, cooldown: 120 }` — fired by the

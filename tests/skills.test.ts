@@ -1,3 +1,5 @@
+// The countryside these tests stand on is SHELVED content; the fixture mounts it.
+import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import type { ProgressionBand } from '../src/core/types';
 import { settleLevels } from '../src/core/systems/progression';
@@ -168,13 +170,30 @@ describe('skill discovery & branching', () => {
     expect(g.state.skills.fighting.level).toBeGreaterThanOrEqual(2);
   });
 
-  it('hints children of known skills', () => {
+  it('hints children of known skills only once every threshold is at 90%', () => {
     const g = newGame();
+    // Fighting 1: swordsmanship wants 10 (10% there), unarmed wants 3 (33%).
+    // Neither is close, so neither shows — the player sees no ??? at all.
     g.state.skills.fighting = { level: 1, xp: 0 };
+    expect(hintedSkills(g.state)).toEqual([]);
+
+    // Fighting 9: swordsmanship at 90% appears; unarmed's threshold is met
+    // (its equipped-tag condition is not a threshold and never hides it).
+    g.state.skills.fighting = { level: 9, xp: 0 };
     const hints = hintedSkills(g.state);
     expect(hints).toContain('swordsmanship');
     expect(hints).toContain('unarmed_combat');
     expect(hints).not.toContain('arcana'); // parent (magic) unknown
+  });
+
+  it('Foresight shows locked children at any distance', () => {
+    const g = newGame();
+    g.state.skills.fighting = { level: 1, xp: 0 };
+    g.state.prestige.purchases.foresight = 1;
+    const hints = hintedSkills(g.state);
+    expect(hints).toContain('swordsmanship');
+    expect(hints).toContain('unarmed_combat');
+    expect(hints).not.toContain('arcana'); // still needs a known parent
   });
 });
 

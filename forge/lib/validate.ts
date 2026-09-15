@@ -11,6 +11,7 @@ import type { Connection, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicSca
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
 import { MUSIC_AXES } from '../../src/core/data/music.data';
+import { askingPrice, lineValue } from '../../src/core/systems/shops';
 
 /**
  * Benches that are furniture rather than disciplines. The spellcrafting table
@@ -85,8 +86,11 @@ export function validate(store: S): Issue[] {
     id: string;
     towerId: string;
     bandId?: string;
+    index: number;
     areaId: string;
     gate?: { type: string }[];
+    landing?: string;
+    clear?: { type: string; key?: string; value?: number }[];
     personal?: boolean;
   }>('floor');
 
@@ -94,6 +98,14 @@ export function validate(store: S): Issue[] {
     issues.push({ severity: 'error', subject: { kind, id }, message, path });
   const warn = (kind: string, id: string, message: string, path?: (string | number)[]) =>
     issues.push({ severity: 'warn', subject: { kind, id }, message, path });
+
+  // Text-table keys that named nothing (src/core/text/prose.ts). A typo in a
+  // text file, or an entry renamed without its prose, shows up here rather
+  // than as a silently missing description.
+  const orphans = (store.meta.proseOrphans ?? []) as { table: string; key: string; reason: string }[];
+  for (const o of orphans) {
+    warn('text', o.table, `text key '${o.key}' in ${o.table}_TEXT: ${o.reason}`);
+  }
 
   const claimedTags = new Set<string>();
   for (const s of Object.values(skills)) for (const t of s.tags ?? []) claimedTags.add(t);
@@ -148,10 +160,10 @@ export function validate(store: S): Issue[] {
 
   // ---------- Towers, bands & floors ----------
   // Live mirror of the 'towers, bands & floors' block in tests/content.test.ts,
-  // which is the authority. Two agreed rules are deliberately absent from both
-  // layers — 'hidden access is never on a critical path' and 'every lateral
-  // edge is legal to delete' need a defined critical path, which needs floors
-  // actually placed on the ladder.
+  // which is the authority. REVISED 2026-09-06 for the sequential ascent
+  // (plans/alpha-band-one.md): every rung needs a landing and a clear, no rung
+  // may name a discipline, indexes are contiguous, clear counters must be
+  // payable, and banded floor areas are closed (the ladder is the only door).
   for (const tower of Object.values(towers)) {
     if (!spots[tower.hubSpot]) err('tower', tower.id, `hubSpot '${tower.hubSpot}' does not exist`);
   }
@@ -204,14 +216,75 @@ export function validate(store: S): Issue[] {
         `wants ${band.clearsToAdvance} clears but holds ${inBand.length} floor(s)`,
       );
     }
-    // The band is the disjunction: a floor naming a discipline is a shortcut
-    // for the specialist only while a sibling names none.
-    if (!inBand.some((f) => !(f.gate ?? []).some((c) => c.type === 'skill'))) {
-      err(
-        'band',
-        band.id,
-        'every floor names a skill, so that discipline is mandatory — give the band one floor gated on accumulation',
-      );
+  }
+  // The sequential ascent's per-rung rules. Every rung is mandatory, so a
+  // skill condition anywhere on one makes that discipline mandatory; a rung
+  // without a landing cannot be climbed to; one without a clear seals
+  // everything above it for good.
+  const bandedAreas = new Set<string>();
+  for (const floor of Object.values(floors)) {
+    if (floor.bandId === undefined) continue;
+    bandedAreas.add(floor.areaId);
+    for (const cond of [...(floor.gate ?? []), ...(floor.clear ?? [])]) {
+      if (cond.type === 'skill') {
+        err('floor', floor.id, 'a skill condition on a mandatory rung makes that discipline mandatory');
+      }
+    }
+    if (!floor.landing) err('floor', floor.id, 'a rung needs a landing', ['landing']);
+    else if (!spots[floor.landing]) {
+      err('floor', floor.id, `landing '${floor.landing}' does not exist`, ['landing']);
+    } else if (spots[floor.landing].areaId !== floor.areaId) {
+      err('floor', floor.id, `landing '${floor.landing}' is not on the floor it lands on`, ['landing']);
+    }
+    if (!floor.clear?.length) err('floor', floor.id, 'a rung needs a clear', ['clear']);
+    for (const cond of floor.clear ?? []) {
+      if (cond.type !== 'stat' || !cond.key) continue;
+      const slain = cond.key.match(/^slain:([^:]+):(.+)$/);
+      if (slain) {
+        const spot = spots[slain[1]];
+        if (!spot) err('floor', floor.id, `clear names unknown spot '${slain[1]}'`, ['clear']);
+        else if (!spot.encounters?.some((e) => e.monsterId === slain[2] && e.once)) {
+          err('floor', floor.id, `clear wants slain:${slain[1]}:${slain[2]} but that spot has no such 'once' spawn`, ['clear']);
+        }
+      }
+      const fights = cond.key.match(/^fights:(.+)$/);
+      if (fights) {
+        const spot = spots[fights[1]];
+        if (!spot) err('floor', floor.id, `clear names unknown spot '${fights[1]}'`, ['clear']);
+        else if ((spot.fightLimit ?? 0) < (cond.value ?? 0)) {
+          err('floor', floor.id, `clear wants ${cond.value} fights at ${fights[1]} but its fightLimit stops short`, ['clear']);
+        }
+      }
+      const boss = cond.key.match(/^boss:(.+)$/);
+      if (boss) {
+        const spot = spots[boss[1]];
+        if (!spot) err('floor', floor.id, `clear names unknown spot '${boss[1]}'`, ['clear']);
+        else if (!spot.encounters?.some((e) => e.boss)) {
+          err('floor', floor.id, `clear wants boss:${boss[1]} but no encounter there is boss-flagged`, ['clear']);
+        }
+      }
+    }
+  }
+  // Banded floor indexes: sequential ascent turns a numbering gap into a rung
+  // nobody can clear, so nobody passes it.
+  for (const tower of Object.values(towers)) {
+    const idx = Object.values(floors)
+      .filter((f) => f.towerId === tower.id && f.bandId !== undefined)
+      .map((f) => f.index)
+      .sort((a, b) => a - b);
+    if (idx.length && idx.some((n, i) => n !== i + 1)) {
+      err('tower', tower.id, `banded floor indexes must run 1..n with no gaps (got ${idx.join(', ')})`);
+    }
+  }
+  // Banded floor areas are closed: the registry mirrors edges, so one authored
+  // road across the boundary would open both directions and bypass the seal.
+  for (const spot of Object.values(spots)) {
+    for (const c of spot.connections ?? []) {
+      const toArea = spots[c.to]?.areaId;
+      if (!toArea) continue; // unknown targets are caught by the spot lints
+      if ((bandedAreas.has(spot.areaId) || bandedAreas.has(toArea)) && spot.areaId !== toArea) {
+        err('spot', spot.id, `edge to '${c.to}' crosses a banded floor boundary — the ladder is the only door`, ['connections']);
+      }
     }
   }
 
@@ -272,6 +345,22 @@ export function validate(store: S): Issue[] {
     if (spot.fightLimit && !spot.encounters?.length) {
       err('spot', spot.id, 'a fight budget with no fights — fightLimit needs encounters', ['fightLimit']);
     }
+    if (spot.caged && !spot.encounters?.length) {
+      err('spot', spot.id, 'caged with no encounters — empty cages teach nothing', ['caged']);
+    }
+    if (spot.caged && spot.fightLimit !== undefined) {
+      err('spot', spot.id, 'caged spots must not carry a fightLimit — the cages restock', ['caged']);
+    }
+    for (const e of spot.encounters ?? []) {
+      if (!e.window) continue;
+      if (!(e.window.min > 0) || !(e.window.max > e.window.min)) {
+        err('spot', spot.id, `${e.monsterId}: ambush window needs 0 < min < max`, ['encounters']);
+      }
+    }
+    const bossEntries = (spot.encounters ?? []).filter((e) => e.boss);
+    if (bossEntries.length && !bossEntries.some((e) => !e.window)) {
+      err('spot', spot.id, 'every boss hides behind a power window — keep one windowless keeper', ['encounters']);
+    }
     // Retreats land on havens without re-triggering, so this cannot loop —
     // but a camp that ambushes its guests still reads as a mistake.
     if (spot.forced && (spot.activities ?? []).some((a) => a.kind === 'rest')) {
@@ -320,7 +409,7 @@ export function validate(store: S): Issue[] {
 
   // ---------- Reachability ----------
   const adjacency = buildAdjacency(spots);
-  const start = (store.meta.startingSpot as string) ?? 'village_square';
+  const start = (store.meta.startingSpot as string) ?? 'ascent_foot';
   if (spots[start]) {
     const seen = new Set([start]);
     const queue = [start];
@@ -391,6 +480,20 @@ export function validate(store: S): Issue[] {
         err('npc', npc.id, `offers '${qid}', but that quest's giver is '${quest.giver}'`, ['quests']);
       }
     }
+    // Shops: every line names a real ware, grades only graded wares, and
+    // asks more than the ware is worth (mirrors tests/content.test.ts).
+    (npc.shop?.lines ?? []).forEach((line, i) => {
+      const path = ['shop', 'lines', i];
+      const known = line.kind === 'item' ? items[line.id] : materials[line.id];
+      if (!known) err('npc', npc.id, `sells unknown ${line.kind} '${line.id}'`, path);
+      if (line.kind === 'material' && line.quality && known && !(known as { graded?: boolean }).graded) {
+        err('npc', npc.id, `sells '${line.id}' at a grade, but it is not graded`, [...path, 'quality']);
+      }
+      if (line.price !== undefined && line.price <= 0) err('npc', npc.id, `'${line.id}' price must be positive`, [...path, 'price']);
+      if (known && askingPrice(line, true) <= lineValue(line)) {
+        warn('npc', npc.id, `'${line.id}' is priced under its worth`, [...path, 'price']);
+      }
+    });
   }
   for (const quest of Object.values(quests)) {
     if (!quest.giver) continue;
@@ -435,6 +538,15 @@ export function validate(store: S): Issue[] {
             `every source of '${o.monsterId}' can be used up, and no find restocks it`,
             ['objectives', i],
           );
+        }
+        if (o.type === 'talk' && !npcs[o.npcId]) {
+          err('quest', quest.id, `talk objective names unknown NPC '${o.npcId}'`, ['objectives', i]);
+        }
+        if (o.type === 'craft' && o.discipline && !disciplines[o.discipline]) {
+          err('quest', quest.id, `craft objective names unknown discipline '${o.discipline}'`, ['objectives', i]);
+        }
+        if (o.type === 'stat' && !(o.value > 0)) {
+          err('quest', quest.id, `stat objective '${o.key}' needs a positive bar`, ['objectives', i]);
         }
         if (o.type === 'collect') {
           const gathered = Object.values(spots).some((spot) =>

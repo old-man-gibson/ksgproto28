@@ -4,6 +4,7 @@ import { Game } from '../src/core/game';
 import { ADJACENCY, SPOTS, type Edge } from '../src/core/registry';
 import { findPath } from '../src/core/systems/locations';
 import type { SpotDef } from '../src/core/types';
+import { text } from '../src/core/text/log';
 
 /**
  * Forced, unfleeable fights. The chain under test: a spot (or the road into
@@ -104,7 +105,7 @@ describe('forced fights', () => {
     expect(g.state.spot).toBe('ff_den');
     expect(g.state.activity).toBeNull(); // nothing was selected...
     expect(g.state.combat?.forced).toBe(true); // ...and the fight is on anyway
-    expect(g.state.log.some((l) => l.msg.includes('no way out'))).toBe(true);
+    expect(g.state.log.some((l) => l.msg === text('combat.ambushed'))).toBe(true);
   });
 
   it('a forced EDGE ambushes too, and the road back out does not', () => {

@@ -1,4 +1,6 @@
 import type { PrepDef, QualityTier } from '../types';
+import { prose } from '../text/prose';
+import { PREPS_TEXT } from '../text/preps.text';
 
 /**
  * Knife work: the techniques the Cutting Board knows.
@@ -21,14 +23,13 @@ import type { PrepDef, QualityTier } from '../types';
  * Chilling, curing and other non-knife preparations belong here too
  * eventually, but they wait on cold storage and the fermentation crocks.
  */
-export const PREPS: Record<string, PrepDef> = {
+export const PREPS = prose<PrepDef>('PREPS', PREPS_TEXT, {
   sliced: {
     id: 'sliced',
     name: 'Slice',
     prefix: 'Sliced',
     icon: '🔪',
     tag: 'sliced',
-    desc: 'Broad and even. Lies flat, stacks well — built for the cold counter.',
   },
   diced: {
     id: 'diced',
@@ -37,7 +38,6 @@ export const PREPS: Record<string, PrepDef> = {
     icon: '🎲',
     tag: 'diced',
     minLevel: 4,
-    desc: 'Small and uniform. Surrenders everything to a long simmer — the stove approves.',
   },
   julienned: {
     id: 'julienned',
@@ -46,9 +46,8 @@ export const PREPS: Record<string, PrepDef> = {
     icon: '🥢',
     tag: 'julienned',
     minLevel: 10,
-    desc: 'Matchstick-fine. Cooks in moments, which is all the grill ever gives anything.',
   },
-};
+});
 
 export const PREP_LIST: PrepDef[] = Object.values(PREPS);
 

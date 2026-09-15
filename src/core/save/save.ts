@@ -127,7 +127,7 @@ export function loadFromStorage(storage: Storage = localStorage): LoadResult {
       storage.setItem(`${SAVE_KEY}:backup-v${version}`, json);
     }
     const state = deserialize(json);
-    const recovered = bestRecoveryCopy(storage, state.totalTicks);
+    const recovered = bestRecoveryCopy(storage, state);
     if (recovered) return { state: recovered, corrupted: false, healed: true };
     return { state, corrupted: false };
   } catch (err) {
@@ -137,15 +137,26 @@ export function loadFromStorage(storage: Storage = localStorage): LoadResult {
   }
 }
 
+/**
+ * "More progress", for the heal: prestiges first, then ticks. A prestige
+ * legitimately drops `totalTicks` to a newborn's, so on ticks alone any
+ * recovery copy from the run just ended would resurrect it on the next
+ * boot and undo the prestige — seen live 2026-09-12.
+ */
+function moreProgress(a: GameState, b: GameState): boolean {
+  if (a.prestige.count !== b.prestige.count) return a.prestige.count > b.prestige.count;
+  return a.totalTicks > b.totalTicks;
+}
+
 /** The parseable recovery copy with the most progress, if it beats the main slot. */
-function bestRecoveryCopy(storage: Storage, mainTicks: number): GameState | null {
+function bestRecoveryCopy(storage: Storage, main: GameState): GameState | null {
   let best: GameState | null = null;
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);
     if (!key?.startsWith(`${SAVE_KEY}:recovery-`)) continue;
     try {
       const candidate = deserialize(storage.getItem(key)!);
-      if (candidate.totalTicks > mainTicks && candidate.totalTicks > (best?.totalTicks ?? 0)) {
+      if (moreProgress(candidate, main) && (!best || moreProgress(candidate, best))) {
         best = candidate;
       }
     } catch {

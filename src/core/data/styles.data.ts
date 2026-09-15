@@ -1,4 +1,6 @@
 import type { CombatStyleDef } from '../types';
+import { prose } from '../text/prose';
+import { STYLES_TEXT } from '../text/styles.text';
 
 /**
  * Combat styles, restored to the proto26 vision.
@@ -18,13 +20,12 @@ import type { CombatStyleDef } from '../types';
  *   Evasive, Brace, Finesse, Frenzy)   ~10–15% heavy burst (Crush, Flurry)
  *   drain  everything, straight into exhaustion (Jigen-ryu)
  */
-export const STYLES: Record<string, CombatStyleDef> = {
+export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
   // ==================== GENERIC STANCES ====================
   balanced: {
     id: 'balanced',
     name: 'Neutral',
     icon: '⚖️',
-    desc: 'A normal fighting stance. Nothing special, nothing detrimental — just a little breath behind each blow.',
     mods: [],
     exertion: {
       on: 'attack',
@@ -37,7 +38,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'aggressive',
     name: 'Frenzy',
     icon: '🐺',
-    desc: 'Attack in a relentless fury. The fire costs stamina: while it burns you hit far harder and faster, with your guard thrown away entirely.',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.1 },
       { stat: 'attackSpeed', op: 'mult', value: 0.15 },
@@ -60,7 +60,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'crush',
     name: 'Crush',
     icon: '🔨',
-    desc: 'Slow, devastating blows that break what they land on. Heaves your whole reserve into each swing — the harder you breathe, the deeper it bites.',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.4 },
       { stat: 'penetration', op: 'add', value: 0.1 },
@@ -77,7 +76,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'cleave',
     name: 'Cleave',
     icon: '🪓',
-    desc: 'Wide, committed arcs. The swing carries past its target into whoever else is in reach.',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.2 },
       { stat: 'splash', op: 'add', value: 0.1 },
@@ -94,7 +92,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'quick',
     name: 'Quick',
     icon: '💨',
-    desc: 'Strike first, strike often. Each blow spends a little breath to feed the next, winding you up over a long fight.',
     mods: [
       { stat: 'attackSpeed', op: 'mult', value: 0.3 },
       { stat: 'damage', op: 'mult', value: -0.1 },
@@ -110,7 +107,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'evasive',
     name: 'Evasive',
     icon: '🌀',
-    desc: 'Never be where the blow lands. Spends stamina the instant a strike comes at you, to not be there for it.',
     mods: [
       { stat: 'dodge', op: 'add', value: 0.12 },
       { stat: 'attackSpeed', op: 'mult', value: 0.1 },
@@ -127,7 +123,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'finesse',
     name: 'Finesse',
     icon: '🎯',
-    desc: 'Precision over power: hold your breath, find the gap. Costly and a touch slower, but openings stop being luck.',
     mods: [
       { stat: 'crit', op: 'add', value: 0.12 },
       { stat: 'critDamage', op: 'mult', value: 0.4 },
@@ -147,7 +142,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'defensive',
     name: 'Brace',
     icon: '🐢',
-    desc: 'Guard, absorb, outlast. Sets your feet against each incoming blow, at the cost of breath.',
     mods: [
       { stat: 'armor', op: 'mult', value: 0.5 },
       { stat: 'maxHp', op: 'mult', value: 0.15 },
@@ -164,7 +158,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'multi',
     name: 'Flurry',
     icon: '🌪️',
-    desc: 'A storm of light blows. Burns stamina fast to land several strikes in the space of one — and empties you just as fast.',
     mods: [
       { stat: 'attackSpeed', op: 'mult', value: 0.45 },
       { stat: 'damage', op: 'mult', value: -0.3 },
@@ -182,7 +175,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'jigen_ryu',
     name: 'Jigen-ryu',
     icon: '⚡',
-    desc: 'The school of the first strike: there is no second. The whole reserve goes into one armor-shearing blow — and leaves you spent.',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.5, perLevel: 0.004 },
       { stat: 'penetration', op: 'add', value: 0.2, perLevel: 0.002 },
@@ -208,7 +200,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'niten_ichi_ryu',
     name: 'Niten-Ichi-ryu',
     icon: '🗡️',
-    desc: 'Two heavens as one: while one blade cuts, the other turns the world aside.',
     mods: [
       { stat: 'parry', op: 'add', value: 0.15, perLevel: 0.002 },
       // The second blade is already moving when the first turns a blow aside,
@@ -235,7 +226,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'eishin_ryu',
     name: 'Eishin-ryu',
     icon: '🌙',
-    desc: 'The draw is the cut. Finesse elevated to an art of single flawless openings, held on a still breath.',
     mods: [
       { stat: 'crit', op: 'add', value: 0.18, perLevel: 0.001 },
       { stat: 'critDamage', op: 'mult', value: 0.6, perLevel: 0.005 },
@@ -261,7 +251,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'ittou_ryu_style',
     name: 'Ittou-ryu',
     icon: '👁️',
-    desc: 'One cut, one kill — the Quick stance honed until the first blow decides everything, and the pace never stops climbing.',
     mods: [
       { stat: 'attackSpeed', op: 'mult', value: 0.35 },
       { stat: 'crit', op: 'add', value: 0.1, perLevel: 0.001 },
@@ -292,7 +281,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'destreza',
     name: 'Destreza',
     icon: '🤺',
-    desc: 'Walk the circle and keep the point on the line. You are not somewhere else when the blow comes — your blade is already where it was going.',
     mods: [
       { stat: 'parry', op: 'add', value: 0.14, perLevel: 0.002 },
       { stat: 'riposte', op: 'add', value: 0.25, perLevel: 0.008 },
@@ -317,7 +305,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'bolognese',
     name: 'Bolognese',
     icon: '🔰',
-    desc: 'Catch the blade on the buckler, bind it there, and strike out of the bind. A guard that costs them something to test.',
     mods: [
       { stat: 'parry', op: 'add', value: 0.1, perLevel: 0.0015 },
       { stat: 'riposte', op: 'add', value: 0.15, perLevel: 0.005 },
@@ -344,7 +331,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'boxing',
     name: 'Boxing',
     icon: '🥊',
-    desc: 'Head movement and honest hands: Evasive with counters that sting, and footwork that spends less to slip more.',
     mods: [
       { stat: 'dodge', op: 'add', value: 0.15, perLevel: 0.001 },
       { stat: 'attackSpeed', op: 'mult', value: 0.15 },
@@ -367,7 +353,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'taekwondo',
     name: 'Taekwondo',
     icon: '🦵',
-    desc: 'A storm of heels: the Flurry as kicks that never stop coming, chained off one breath.',
     mods: [
       { stat: 'attackSpeed', op: 'mult', value: 0.5, perLevel: 0.003 },
       { stat: 'dodge', op: 'add', value: 0.05 },
@@ -390,7 +375,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'muay_thai',
     name: 'Muay Thai',
     icon: '🐘',
-    desc: 'Eight deadly limbs. Crush rebuilt from knees, elbows, and intent — cheaper to throw, and it lands through guards.',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.45, perLevel: 0.004 },
       { stat: 'critDamage', op: 'mult', value: 0.4 },
@@ -414,7 +398,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'wrestling',
     name: 'Wrestling',
     icon: '🤼',
-    desc: 'Brace made flesh: control the fight by refusing to fall, and meet every blow with set hips.',
     mods: [
       { stat: 'armor', op: 'mult', value: 0.6, perLevel: 0.004 },
       { stat: 'maxHp', op: 'mult', value: 0.25, perLevel: 0.002 },
@@ -439,7 +422,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'magic_combat',
     name: 'Magic Combat',
     icon: '🔮',
-    desc: 'Finesse rebuilt on arcane fuel: every strike carries will, and the bargain is paid in mana.',
     mods: [
       { stat: 'crit', op: 'add', value: 0.08, perLevel: 0.001 },
       { stat: 'spellPower', op: 'mult', value: 0.1, perLevel: 0.002 },
@@ -459,7 +441,6 @@ export const STYLES: Record<string, CombatStyleDef> = {
     id: 'capoeira',
     name: 'Capoeira',
     icon: '📦',
-    desc: 'Constant rythmic footwork keeps you evasive and lets you throw unpredictable kicks.',
     mods: [
       { stat: 'dodge', op: 'mult', value: 0.08, perLevel: 0.01 },
     ],
@@ -478,4 +459,4 @@ export const STYLES: Record<string, CombatStyleDef> = {
     replaces: 'quick',
     skill: 'school_capoeira',
   },
-};
+});

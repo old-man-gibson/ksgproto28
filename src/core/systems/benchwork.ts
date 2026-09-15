@@ -6,6 +6,7 @@ import { cook, previewCook } from './cooking';
 import { brew, previewBrew } from './alchemy';
 import { previewRefine, refineOnce } from './mutagens';
 import { placed, type Placement } from './disciplines';
+import { text } from '../text/log';
 
 /**
  * Bench work: the same layout, worked over and over, on the clock.
@@ -112,7 +113,7 @@ export function startBenchWork(
   if (!disc) return false;
   const check = benchPreview(state, disc, placement, opts.duration);
   if (!check.ok) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return false;
   }
 
@@ -137,7 +138,10 @@ export function startBenchWork(
   if (opts.count !== 1) {
     bus.emit({
       type: 'log',
-      msg: `▶️ ${disc.benchName ?? disc.name}: working${opts.count ? ` ×${opts.count}` : ' until stopped'}`,
+      msg: text('benchwork.started', {
+        bench: disc.benchName ?? disc.name,
+        count: opts.count ? text('common.times', { qty: opts.count }) : text('benchwork.until_stopped'),
+      }),
       kind: 'action',
     });
   }
@@ -153,7 +157,7 @@ export function stopBenchWork(state: GameState, bus: EventBus, reason?: string):
   const disc = DISCIPLINES[job.disciplineId];
   bus.emit({
     type: 'log',
-    msg: `⏹️ ${disc?.benchName ?? job.disciplineId}: ${reason ?? 'stopped'} (${job.done} done)`,
+    msg: text('benchwork.stopped', { bench: disc?.benchName ?? job.disciplineId, reason: reason ?? 'stopped', done: job.done }),
     kind: 'action',
   });
 }

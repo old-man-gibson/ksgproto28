@@ -39,6 +39,17 @@ lands. A timestamped copy of every touched file goes to `.forge-backups/` first 
 finer grained than a commit, and it catches the state *between* commits, which is where
 content work actually lives.
 
+**Words go to the text file.** `desc`, `dialogue` and `hint` are not stored in the
+data files; they live in `src/core/text/<name>.text.ts` next door, keyed by dotted
+path (`master_smith.desc`, `f1_storerooms.finds.strongbox.desc`), and
+`src/core/text/prose.ts` stitches them onto the entries at load. The forge client
+never notices — it edits `spot.desc` on the loaded object like any field — and
+`forge/server/prose.ts` splits each patch op into its data-file part and its
+text-file part. Editing a description touches only the text file; adding an entry
+writes the numbers to one file and the words to the other; renaming or deleting an
+entry carries its text keys along. A text key that names nothing shows up in the
+validator as a `text` warning.
+
 ---
 
 ## The world map
@@ -374,3 +385,36 @@ in the diff, and leaves a `.forge-backups` copy when applied.
 - Deleting an entry leaves dangling references on purpose — the validator flags them
   rather than cascading a delete you didn't ask for.
 - The forge only writes to files listed in `catalog.ts`; anything else is refused.
+
+## The name deck
+
+`npm run names` rolls twenty two-word ability names from `scripts/names.txt`,
+one *twist* and one *medium*, always from different registers. It is an
+authoring aid and nothing more: the deck never ships, the player never sees a
+rolled name, and a person picks one in twenty and writes the mechanic from it.
+That is the whole reason it is not slop. A generator whose output reaches the
+player is the author; a generator a person culls is a dice roll.
+
+Why two words from different registers: the names worth copying in this style
+(bungee gum, indoor fish, emperor time) put a mundane concrete noun next to a
+modifier from somewhere else entirely, and the mechanic is whatever reconciles
+them. Same-register pairs (fire blast) are what every game does. Registers
+marked `hot` (material twists, weather-phenomenon mediums) never pair with
+each other for the same reason.
+
+The quality lives in the lists, not the script. Edit `names.txt` freely: one
+entry per line, `[twist]` / `[medium]` for the side, `(register)` for the
+register, `hot` after a register name to mark it. Arcane word ids are kept
+out of the deck on purpose so a rolled name never reads as a sentence.
+
+    npm run names                 twenty names
+    npm run names -- 50           fifty
+    npm run names -- --seed 7     the same batch again
+    npm run names -- --twist economy,time --medium creature
+    npm run names -- --sep ": "   Twist: Medium
+    npm run names -- --list       registers and word counts
+
+The test for a kept name: it reads as a joke until the mechanic is known, then
+it reads as exact. The mechanic itself goes through the mutagen decomposition
+(MUTAGENS.md §7b): the medium suggests the delivery, the twist suggests an
+arm, the ceiling decides the numbers, and the restriction is yours to name.

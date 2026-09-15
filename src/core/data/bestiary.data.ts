@@ -1,4 +1,6 @@
 import type { BestiaryFactDef, MonsterTagDef } from '../types';
+import { prose, proseList } from '../text/prose';
+import { MONSTER_TAGS_TEXT, BESTIARY_FACTS_TEXT } from '../text/bestiary.text';
 
 /**
  * Bestiary vocabulary and pacing.
@@ -9,11 +11,11 @@ import type { BestiaryFactDef, MonsterTagDef } from '../types';
  * takes for it to appear as a filter chip — the content test enforces that
  * every tag a monster uses is registered.
  */
-export const MONSTER_TAGS: Record<string, MonsterTagDef> = {
+export const MONSTER_TAGS = prose<MonsterTagDef>('MONSTER_TAGS', MONSTER_TAGS_TEXT, {
   // ---------- Material: what the thing is MADE of ----------
-  living: { id: 'living', name: 'Living', category: 'material', icon: '🫀', desc: 'Flesh, blood, and the usual mortal weaknesses.' },
-  inorganic: { id: 'inorganic', name: 'Inorganic', category: 'material', icon: '🧱', desc: 'Matter without metabolism — gel, stone, metal.' },
-  incorporeal: { id: 'incorporeal', name: 'Incorporeal', category: 'material', icon: '👻', desc: 'Has no body worth cutting.' },
+  living: { id: 'living', name: 'Living', category: 'material', icon: '🫀', },
+  inorganic: { id: 'inorganic', name: 'Inorganic', category: 'material', icon: '🧱', },
+  incorporeal: { id: 'incorporeal', name: 'Incorporeal', category: 'material', icon: '👻', },
 
   // ---------- Taxonomy: what family it belongs to ----------
   // The FIRST taxon tag a monster declares is its bestiary supergroup, so put
@@ -27,11 +29,11 @@ export const MONSTER_TAGS: Record<string, MonsterTagDef> = {
   undead: { id: 'undead', name: 'Undead', category: 'taxon', icon: '💀', plural: 'Undead' },
   spirit: { id: 'spirit', name: 'Spirit', category: 'taxon', icon: '🕯️' },
   dragon: { id: 'dragon', name: 'Dragon', category: 'taxon', icon: '🐉' },
-  eldritch: { id: 'eldritch', name: 'Eldritch', category: 'taxon', icon: '🌀', plural: 'Eldritch', desc: 'Wrong in a way the eye reports late.' },
+  eldritch: { id: 'eldritch', name: 'Eldritch', category: 'taxon', icon: '🌀', plural: 'Eldritch', },
   plant: { id: 'plant', name: 'Plant', category: 'taxon', icon: '🌱' },
 
   // ---------- Element ----------
-  non_elemental: { id: 'non_elemental', name: 'Non-elemental', category: 'element', icon: '⬜', desc: 'Bound to no element. Derived when a monster claims none.' },
+  non_elemental: { id: 'non_elemental', name: 'Non-elemental', category: 'element', icon: '⬜', },
   fire: { id: 'fire', name: 'Fire', category: 'element', icon: '🔥' },
   ice: { id: 'ice', name: 'Ice', category: 'element', icon: '❄️' },
   lightning: { id: 'lightning', name: 'Lightning', category: 'element', icon: '⚡' },
@@ -55,12 +57,12 @@ export const MONSTER_TAGS: Record<string, MonsterTagDef> = {
 
   // ---------- Traits: how it fights or behaves ----------
   flying: { id: 'flying', name: 'Flying', category: 'trait', icon: '🪽' },
-  ranged: { id: 'ranged', name: 'Ranged', category: 'trait', icon: '🏹', desc: 'Attacks from the back rank. Derived from the monster’s reach.' },
-  swarm: { id: 'swarm', name: 'Swarm', category: 'trait', icon: '🐝', desc: 'Comes in numbers, or not at all.' },
-  solitary: { id: 'solitary', name: 'Solitary', category: 'trait', icon: '🚪', desc: 'Never seen with company. Derived from its group rule.' },
-  leader: { id: 'leader', name: 'Leader', category: 'trait', icon: '🎖️', desc: 'Brings an escort. Derived from its escort list.' },
-  unique: { id: 'unique', name: 'Unique', category: 'trait', icon: '❗', desc: 'There is only one, and it knows it.' },
-  splitter: { id: 'splitter', name: 'Splitter', category: 'trait', icon: '✂️', desc: 'Cut it and there is simply more of it.' },
+  ranged: { id: 'ranged', name: 'Ranged', category: 'trait', icon: '🏹', },
+  swarm: { id: 'swarm', name: 'Swarm', category: 'trait', icon: '🐝', },
+  solitary: { id: 'solitary', name: 'Solitary', category: 'trait', icon: '🚪', },
+  leader: { id: 'leader', name: 'Leader', category: 'trait', icon: '🎖️', },
+  unique: { id: 'unique', name: 'Unique', category: 'trait', icon: '❗', },
+  splitter: { id: 'splitter', name: 'Splitter', category: 'trait', icon: '✂️', },
   mimic: { id: 'mimic', name: 'Mimic', category: 'trait', icon: '🎭' },
 
   // ---------- Size ----------
@@ -72,13 +74,13 @@ export const MONSTER_TAGS: Record<string, MonsterTagDef> = {
   huge: { id: 'huge', name: 'Huge', category: 'size', icon: '🔵' },
   gargantuan: { id: 'gargantuan', name: 'Gargantuan', category: 'size', icon: '🟧' },
   colossal: { id: 'colossal', name: 'Colossal', category: 'size', icon: '🟦' },
-};
+});
 
 /**
  * What a completed entry contains, and how hard each part is to learn.
  * Order here is the order the detail view renders in.
  */
-export const BESTIARY_FACTS: BestiaryFactDef[] = [
+export const BESTIARY_FACTS = proseList<BestiaryFactDef>('BESTIARY_FACTS', BESTIARY_FACTS_TEXT, [
   {
     id: 'lore',
     name: 'Field Notes',
@@ -86,7 +88,6 @@ export const BESTIARY_FACTS: BestiaryFactDef[] = [
     minKills: 1,
     sureKills: 10,
     difficulty: 1.4,
-    hint: 'You have seen it die. You have not yet understood it.',
   },
   {
     id: 'rewards',
@@ -95,7 +96,6 @@ export const BESTIARY_FACTS: BestiaryFactDef[] = [
     minKills: 2,
     sureKills: 20,
     difficulty: 1.2,
-    hint: 'You would have to keep count to know what one is worth.',
   },
   {
     id: 'vitals',
@@ -104,7 +104,6 @@ export const BESTIARY_FACTS: BestiaryFactDef[] = [
     minKills: 3,
     sureKills: 30,
     difficulty: 1,
-    hint: 'How much punishment it soaks is still guesswork.',
   },
   {
     id: 'offense',
@@ -113,7 +112,6 @@ export const BESTIARY_FACTS: BestiaryFactDef[] = [
     minKills: 3,
     sureKills: 30,
     difficulty: 1,
-    hint: 'You know it hurts. You could not say how much, or with what.',
   },
   {
     id: 'behavior',
@@ -122,7 +120,6 @@ export const BESTIARY_FACTS: BestiaryFactDef[] = [
     minKills: 5,
     sureKills: 45,
     difficulty: 0.8,
-    hint: 'Its habits — packs, escorts, tactics — remain unread.',
   },
   {
     id: 'defenses',
@@ -131,7 +128,6 @@ export const BESTIARY_FACTS: BestiaryFactDef[] = [
     minKills: 8,
     sureKills: 70,
     difficulty: 0.6,
-    hint: 'Which blows it shrugs off, and which it fears, is unknown.',
   },
   {
     id: 'loot_common',
@@ -140,7 +136,6 @@ export const BESTIARY_FACTS: BestiaryFactDef[] = [
     minKills: 5,
     sureKills: 45,
     difficulty: 0.8,
-    hint: 'You have not butchered enough to know what they carry.',
   },
   {
     id: 'loot_rare',
@@ -149,9 +144,8 @@ export const BESTIARY_FACTS: BestiaryFactDef[] = [
     minKills: 15,
     sureKills: 150,
     difficulty: 0.35,
-    hint: 'Rumours of rarer prizes. Nothing you could put odds on.',
   },
-];
+]);
 
 /**
  * The pacing knobs. Per kill, a learnable fact rolls

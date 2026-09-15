@@ -1,4 +1,6 @@
 import type { TitleDef } from '../types';
+import { prose } from '../text/prose';
+import { TITLES_TEXT } from '../text/titles.text';
 
 /**
  * Titles: earned once via unlock conditions (simple thresholds or complex
@@ -10,14 +12,11 @@ import type { TitleDef } from '../types';
  *   weapon:families — distinct weapon families ever attacked with (unarmed
  *                     doesn't count; tracked in combat.ts).
  */
-export const TITLES: Record<string, TitleDef> = {
+export const TITLES = prose<TitleDef>('TITLES', TITLES_TEXT, {
   iconoclast: {
     id: 'iconoclast',
     name: 'Iconoclast',
     icon: '⛓️‍💥',
-    desc:
-      'Receive ten miracles. The gods call it devotion; you call it a collection — and worn, ' +
-      'this title lets hostile powers share a grimoire page whether they like it or not.',
     unlock: [{ type: 'stat', key: 'miracles:learned', value: 10 }],
     secret: true,
     defiesDogma: true,
@@ -28,7 +27,6 @@ export const TITLES: Record<string, TitleDef> = {
     id: 'wanderer',
     name: 'Wanderer',
     icon: '🥾',
-    desc: 'Complete 50 journeys between spots. The road knows your name.',
     unlock: [{ type: 'stat', key: 'travel:trips', value: 50 }],
     passive: [{ stat: 'travelSpeed', op: 'mult', value: 0.05 }],
     equipped: [
@@ -40,7 +38,6 @@ export const TITLES: Record<string, TitleDef> = {
     id: 'slayer',
     name: 'Slayer',
     icon: '🗡️',
-    desc: 'Fell 100 creatures. They flinch before you swing.',
     unlock: [{ type: 'stat', key: 'kills', value: 100 }],
     passive: [{ stat: 'damage', op: 'mult', value: 0.02 }],
     equipped: [
@@ -52,7 +49,6 @@ export const TITLES: Record<string, TitleDef> = {
     id: 'titan_incarnate',
     name: 'Titan Incarnate',
     icon: '🏔️',
-    desc: 'Reach Strength 100. Mountains politely step aside.',
     unlock: [{ type: 'attr', attr: 'str', level: 100 }],
     passive: [{ stat: 'damage', op: 'add', value: 10 }],
     equipped: [
@@ -64,7 +60,6 @@ export const TITLES: Record<string, TitleDef> = {
     id: 'first_blade',
     name: 'Devotee of the First Blade',
     icon: '⚜️',
-    desc: 'Defeat the Goblin Warchief having never raised any weapon family but your first.',
     unlock: [
       { type: 'stat', key: 'kills:goblin_boss', value: 1 },
       { type: 'statMax', key: 'weapon:families', value: 1 },
@@ -79,7 +74,6 @@ export const TITLES: Record<string, TitleDef> = {
     id: 'untouchable',
     name: 'Untouchable',
     icon: '🌫️',
-    desc: 'Defeat the Goblin Warchief without ever having been knocked out.',
     secret: true,
     unlock: [
       { type: 'stat', key: 'kills:goblin_boss', value: 1 },
@@ -91,4 +85,4 @@ export const TITLES: Record<string, TitleDef> = {
       { stat: 'actionBar', op: 'mult', value: -0.03 },
     ],
   },
-};
+});

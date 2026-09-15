@@ -1,4 +1,5 @@
 import type { ActivityDef, ResourceDef, ResourceId } from '../types';
+import { text } from '../text/log';
 
 /**
  * The pools the player spends and recovers.
@@ -93,9 +94,9 @@ export const RESOURCE_LIST: ResourceDef[] = [
       emptyIcon: '🥵',
       lowCssVar: '--stamina-winded',
       emptyCssVar: '--stamina-exhausted',
-      lowMsg: '😮‍💨 Winded — no strength left to put behind your blows until you catch your breath.',
-      emptyMsg: '🥵 Utterly spent — your limbs drag until you have recovered.',
-      clearedMsg: '💪 Recovered — the shakes are gone and your stamina is yours again.',
+      lowMsg: text('resources.stamina_low'),
+      emptyMsg: text('resources.stamina_empty'),
+      clearedMsg: text('resources.stamina_recovered'),
       emptyRegenMult: 0.5,
       slowUntil: 0.5,
       emptyPenalty: [{ stat: 'speed', op: 'mult', value: -EXHAUSTED_SPEED_PENALTY }],

@@ -6,6 +6,8 @@ import { checkDiscovery, grantSkillXp } from './skills';
 import { grantFavor as addFavor, favorWith, spendFavor } from './deities';
 import { bumpStat } from './achievements';
 import { addSpell, hasDivine } from './spellcraft';
+import { deityKnown } from './unlocks';
+import { text } from '../text/log';
 
 /**
  * Divine magic: worship, favor, miracles.
@@ -25,13 +27,17 @@ export function devotionLevel(state: GameState): number {
 export { favorWith };
 
 /**
- * The whole pantheon takes note of a deed. Today this is favor's only
- * source; deity-specific deeds (aligned with their aspects) will bias it.
+ * Every KNOWN god takes note of a deed. Deities the player has not met
+ * (systems/unlocks.ts — the alpha-light form of deities-must-be-met) accrue
+ * nothing: standing with a god you have never heard of was exactly the smell
+ * that design exists to fix. Deity-specific deeds will bias this later.
  */
 export function grantFavorAll(state: GameState, bus: EventBus, amount: number): void {
   if (amount <= 0) return;
-  for (const deity of DEITY_LIST) addFavor(state, deity.id, amount);
-  bus.emit({ type: 'log', msg: `🕊️ The pantheon takes note. (+${amount} favor)`, kind: 'skill' });
+  for (const deity of DEITY_LIST) {
+    if (deityKnown(state, deity.id)) addFavor(state, deity.id, amount);
+  }
+  bus.emit({ type: 'log', msg: text('divine.favor_gained', { amount }), kind: 'skill' });
 }
 
 export interface MiracleCheck {
@@ -41,15 +47,15 @@ export interface MiracleCheck {
 
 export function checkMiracle(state: GameState, id: string): MiracleCheck {
   const miracle = MIRACLES[id];
-  if (!miracle) return { ok: false, reason: 'No such miracle' };
-  if (hasDivine(state, id)) return { ok: false, reason: 'Already received' };
+  if (!miracle) return { ok: false, reason: text('divine.reason.no_such_miracle') };
+  if (hasDivine(state, id)) return { ok: false, reason: text('divine.reason.already_received') };
   if ((miracle.minLevel ?? 0) > devotionLevel(state)) {
-    return { ok: false, reason: `Needs Devotion ${miracle.minLevel}` };
+    return { ok: false, reason: text('divine.reason.devotion_level', { level: miracle.minLevel }) };
   }
   const held = favorWith(state, miracle.deity);
   if (held < miracle.favorCost) {
     const deity = DEITIES[miracle.deity];
-    return { ok: false, reason: `Needs ${miracle.favorCost} favor with ${deity?.name ?? miracle.deity} (you have ${held})` };
+    return { ok: false, reason: text('divine.reason.favor_short', { cost: miracle.favorCost, deity: deity?.name ?? miracle.deity, held }) };
   }
   return { ok: true };
 }
@@ -63,7 +69,7 @@ export function checkMiracle(state: GameState, id: string): MiracleCheck {
 export function learnMiracle(state: GameState, bus: EventBus, id: string): boolean {
   const check = checkMiracle(state, id);
   if (!check.ok) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return false;
   }
   const miracle = MIRACLES[id]!;
@@ -77,7 +83,7 @@ export function learnMiracle(state: GameState, bus: EventBus, id: string): boole
   const deity = DEITIES[miracle.deity];
   bus.emit({
     type: 'log',
-    msg: `${miracle.icon} Received: ${miracle.name} — an aspect of ${deity?.name ?? miracle.deity}.`,
+    msg: text('divine.received', { icon: miracle.icon, name: miracle.name, deity: deity?.name ?? miracle.deity }),
     kind: 'item',
   });
   return true;

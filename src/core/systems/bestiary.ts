@@ -13,6 +13,8 @@ import { BESTIARY_FACTS, BESTIARY_TUNING } from '../data/bestiary.data';
 import { attackIntervalOf, innateArmor, scaledMonsterAttrs, statsFromAttrs } from './monsterStats';
 import { attrValue } from './attributes';
 import { grantDiscoveryXp } from './skills';
+import { bumpStat } from './achievements';
+import { text } from '../text/log';
 
 /**
  * The bestiary: what the player has learned about each monster.
@@ -193,24 +195,31 @@ export function recordKill(state: GameState, bus: EventBus, monsterId: string): 
     // A species nobody has written down yet is the single biggest thing the
     // book can gain, so it pays several ordinary finds' worth.
     grantDiscoveryXp(state, bus, 'bestiary', 3);
+    // The counter quest familiarization reads ({ type: 'stat' } objectives).
+    bumpStat(state, bus, 'bestiary:entries');
     bus.emit({ type: 'bestiary:entry', monsterId });
     bus.emit({
       type: 'log',
-      msg: `📖 Bestiary: ${def.icon} ${def.name} added to your records.`,
+      msg: text('bestiary.species_added', { icon: def.icon, name: def.name }),
       kind: 'bestiary',
     });
   }
 
+  // A menagerie teaches on a syllabus: caged kills skip the insight roll, so
+  // every fact lands OUTRIGHT at its `minKills` — defined rates, not rolled
+  // ones (SpotDef.caged). The cage knows nothing about which monster; the
+  // schedule is the fact's own.
+  const caged = !!SPOTS[state.spot]?.caged;
   for (const fact of BESTIARY_FACTS) {
     if (entry.facts.includes(fact.id)) continue;
     if (entry.kills < fact.minKills) continue;
-    if (entry.kills < fact.sureKills && !chance(state, factChance(state, fact))) continue;
+    if (!caged && entry.kills < fact.sureKills && !chance(state, factChance(state, fact))) continue;
     entry.facts.push(fact.id);
     grantDiscoveryXp(state, bus, 'bestiary', fact.difficulty <= 0.5 ? 2 : 1);
     bus.emit({ type: 'bestiary:fact', monsterId, factId: fact.id });
     bus.emit({
       type: 'log',
-      msg: `📖 ${fact.icon} ${fact.name} — you now understand this about the ${def.name}.`,
+      msg: text('bestiary.fact_learned', { icon: fact.icon, name: fact.name, monster: def.name }),
       kind: 'bestiary',
     });
   }
@@ -231,7 +240,7 @@ function checkHabitats(state: GameState, bus: EventBus, monsterId: string): void
     bus.emit({ type: 'bestiary:habitat', monsterId, spot: spotId });
     bus.emit({
       type: 'log',
-      msg: `📖 🗺️ You have learned where ${MONSTERS[monsterId].name}s den up: ${spot?.name ?? spotId}.`,
+      msg: text('bestiary.den_learned', { monster: MONSTERS[monsterId].name, spot: spot?.name ?? spotId }),
       kind: 'bestiary',
     });
   }

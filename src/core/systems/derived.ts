@@ -623,6 +623,12 @@ function modFingerprint(state: GameState): string {
   }
   for (const a of ATTRIBUTE_LIST) parts.push(String(state.attrs?.[a.id]?.level ?? 0));
   for (const [id, s] of Object.entries(state.skills ?? {})) parts.push(`k${id}:${s.level}`);
+  // Talent (prestige boon) scales skill effects. Peaks and the count only
+  // change when the whole state is replaced at a prestige; the rank can
+  // change mid-run at the boon list, so it is what needs spelling out.
+  parts.push(
+    `T${state.prestige?.purchases?.talent ?? 0}:${state.prestige?.purchases?.endowment ?? 0}:${state.prestige?.count ?? 0}`,
+  );
   for (const [id, tiers] of Object.entries(state.achievements ?? {})) parts.push(`a${id}:${tiers}`);
   for (const id of state.titles ?? []) parts.push(`t${id}`);
   for (const id of state.fused ?? []) parts.push(`f${id}`);

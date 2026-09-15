@@ -34,6 +34,7 @@ import { weaponTechniqueMods } from './runes';
 import { preparedSpells, resolveSpell } from './spellcraft';
 import { resourceValue } from './resources';
 import { ITEMS } from '../registry';
+import { text } from '../text/log';
 
 /**
  * Martial techniques: response, where magic is composition.
@@ -106,7 +107,7 @@ export function checkTechniqueLearning(state: GameState, bus: EventBus): void {
     learnTechnique(state, def, 'rough');
     bus.emit({
       type: 'log',
-      msg: `🥋 Your body starts answering on its own — ${def.icon} ${def.name} (rough) learned!`,
+      msg: text('martial.technique_learned', { icon: def.icon, name: def.name }),
       kind: 'combat',
     });
   }

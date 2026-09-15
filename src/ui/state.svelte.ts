@@ -1,6 +1,5 @@
 import type { FightLedger, GameState } from '../core/types';
 import { createInitialState } from '../core/state';
-import { DEBUG_STARTING_SPOT } from '../core/registry';
 import { Game } from '../core/game';
 import { MS_PER_TICK } from '../core/engine/loop';
 import { getDerivedStats } from '../core/systems/derived';
@@ -54,8 +53,16 @@ export const ui = $state({
     | 'wuxin'
     | 'bestiary'
     | 'quests'
-    | 'achievements',
+    | 'achievements'
+    | 'prestige',
   offline: null as OfflineSummary | null,
+  /**
+   * Wall-clock ms the boot catch-up is about to simulate, while it runs. The
+   * app mounts and paints BEFORE the catch-up so a heavy save shows an overlay
+   * instead of a blank tab (an 8h catch-up on a mature save takes minutes;
+   * see main.ts). Null once the world is caught up.
+   */
+  catchingUp: null as number | null,
   /** The fight summary being read, if any. */
   defeat: null as FightLedger | null,
   /**
@@ -66,6 +73,12 @@ export const ui = $state({
    */
   defeatShown: gs.lastFight?.endedAt ?? -1,
   mapOpen: true,
+  /**
+   * A bench to open once standing at `spot` — the map card's "go and open".
+   * UI-only on purpose: a window is not game state, and a reload mid-walk
+   * losing it costs one click.
+   */
+  benchOnArrival: null as { spot: string; bench: string } | null,
   /** The position-graph planner section on the Combat tab (see MartialPlanner). */
   plannerOpen: false,
   /** Weapon families the planner is filtering by — a view, never equipment. */
@@ -122,9 +135,22 @@ function runCatchup(elapsedMs: number, quietSmallGaps: boolean): OfflineSummary 
   return summary;
 }
 
-/** Offline catch-up for time since the last save. Call once on boot. */
+/** Wall-clock ms since the last save — what boot's catch-up will simulate. */
+export function timeAway(): number {
+  return Math.max(0, Date.now() - gs.lastSaved);
+}
+
+/**
+ * Offline catch-up for time since the last save. Call once on boot, AFTER
+ * the app has mounted and painted — this blocks the thread for as long as
+ * the capped catch-up takes.
+ */
 export function boot(): void {
-  ui.offline = runCatchup(Date.now() - gs.lastSaved, false);
+  try {
+    ui.offline = runCatchup(timeAway(), false);
+  } finally {
+    ui.catchingUp = null;
+  }
 }
 
 /** Long-stall catch-up for the frame pump (laptop sleep, throttled tab). */
@@ -197,9 +223,6 @@ export async function importSave(file: File): Promise<void> {
   }
 }
 
-/** DebugPanel toggle: new games open at the classic dev start instead of home. */
-export const DEBUG_START_KEY = 'ksg-debug:start-square';
-
 /** DebugPanel toggle: the centromere never has to settle between swaps. */
 export const DEBUG_SETTLE_KEY = 'ksg-debug:skip-settling';
 // Pushed into the core HERE rather than when the debug panel opens, so the
@@ -211,8 +234,7 @@ setSkipSettling(import.meta.env.DEV && localStorage.getItem(DEBUG_SETTLE_KEY) ==
 export function hardReset(): void {
   if (!confirm('Wipe ALL progress and start over?')) return;
   clearStorage();
-  const classic = import.meta.env.DEV && localStorage.getItem(DEBUG_START_KEY) === '1';
-  Object.assign(gs, createInitialState(Date.now(), classic ? DEBUG_STARTING_SPOT : undefined));
+  Object.assign(gs, createInitialState(Date.now()));
   game.resyncAnnouncers();
   ui.offline = null;
   ui.defeat = null;

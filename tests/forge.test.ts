@@ -22,8 +22,13 @@ import { findReferences } from '../forge/lib/refs';
 const FILE = 'locations.data.ts';
 
 const SAMPLE = `import type { SpotDef } from '../types';
+import { prose } from '../text/prose';
+import { SPOTS_TEXT } from '../text/locations.text';
 
-export const SPOTS: Record<string, SpotDef> = {
+// Prose (desc, dialogue, hint) lives in the text file; the forge sees through
+// the prose() wrapper to the literal, so the sample is written the way the
+// real data files are.
+export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   village_square: {
     id: 'village_square',
     name: 'Village Square',
@@ -32,7 +37,6 @@ export const SPOTS: Record<string, SpotDef> = {
     map: { x: 50, y: 22 },
     waypoint: true,
     // The heart of the demo world; everything else hangs off it.
-    desc: 'The heart of Oakrest.',
     activities: [
       { id: 'rest_inn', kind: 'rest', name: 'Rest at the Inn', icon: '🛏️' },
     ],
@@ -47,7 +51,6 @@ export const SPOTS: Record<string, SpotDef> = {
     icon: '🌲',
     areaId: 'whispering_woods',
     map: { x: 14, y: 58 },
-    desc: 'The canopy swallows the sky.',
     activities: [
       { id: 'explore', kind: 'explore', name: 'Explore', icon: '🧭' },
     ],
@@ -57,13 +60,11 @@ export const SPOTS: Record<string, SpotDef> = {
       {
         id: 'mushroom_ring',
         at: 0.3,
-        desc: 'A ring of pale caps.',
         material: { id: 'cave_mushroom', qty: 2 },
       },
       {
         id: 'mossy_chute',
         at: 0.55,
-        desc: 'The moss gives under your boot.',
         path: 'ravine_floor',
       },
     ],
@@ -78,7 +79,7 @@ export const SPOTS: Record<string, SpotDef> = {
       },
     ],
   },
-};
+});
 `;
 
 /** Every comment in the sample, so a test can assert none went missing. */
@@ -308,11 +309,11 @@ describe('entry notes — the TODO/SPEC lines the forge owns', () => {
       SAMPLE,
       'SPOTS',
       ['village_square', 'finds', '#id=lost_coin'],
-      { id: 'lost_coin', at: 0.5, desc: 'A coin in the well.', gold: [1, 5] },
+      { id: 'lost_coin', at: 0.5, gold: [1, 5] },
       'spot',
     ).text;
     expect(after).toContain('finds: [');
-    expect(after).toContain("{ id: 'lost_coin', at: 0.5, desc: 'A coin in the well.', gold: [1, 5] },");
+    expect(after).toContain("{ id: 'lost_coin', at: 0.5, gold: [1, 5] },");
     expectCommentsIntact(after);
   });
 
@@ -349,7 +350,7 @@ describe('entry notes — the TODO/SPEC lines the forge owns', () => {
       SAMPLE,
       'SPOTS',
       'old_mill',
-      { id: 'old_mill', name: 'Old Mill', icon: '🌾', areaId: 'oakrest', desc: '', activities: [], connections: [] },
+      { id: 'old_mill', name: 'Old Mill', icon: '🌾', areaId: 'oakrest', activities: [], connections: [] },
       'spot',
     ).text;
     // Two spaces, like every other entry — the `{` of the declaration sits at

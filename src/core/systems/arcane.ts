@@ -13,6 +13,8 @@ import { ARCANE_WORDS, maxSentenceWords } from '../data/spellcraft.data';
 import { STATUSES } from '../data/statuses.data';
 import { WORD_POWER_PER_LEVEL, wordSkillId, wordTag } from '../data/wordskills.data';
 import { checkDiscovery, grantSkillXpDirect } from './skills';
+import { wordUnlocked } from './unlocks';
+import { text } from '../text/log';
 
 /**
  * The conditions a noun's signature affliction can be RECOGNISED as: the
@@ -378,7 +380,7 @@ export function parseSentence(wordIds: string[]): ArcaneParse {
   }
 
   if (!clauses.some((c) => c.noun || c.verb)) {
-    return { ok: false, reason: 'The words fizzle — a spell needs a noun or a verb', clauses, target, words, tokens };
+    return { ok: false, reason: text('arcane.reason.no_noun_or_verb'), clauses, target, words, tokens };
   }
   return { ok: true, clauses, target, words, tokens };
 }
@@ -780,17 +782,24 @@ export interface SentenceCheck {
 /** Whether THIS mage may speak this sentence, and what it would make. */
 export function checkSentence(state: GameState, wordIds: string[]): SentenceCheck {
   const level = arcaneLevel(state);
-  if (wordIds.length === 0) return { ok: false, reason: 'The sentence is empty' };
+  if (wordIds.length === 0) return { ok: false, reason: text('arcane.reason.empty') };
   const max = maxSentenceWords(level);
   if (wordIds.length > max) {
-    return { ok: false, reason: `You can hold ${max} words in mind at once (Arcana ${level})` };
+    return { ok: false, reason: text('arcane.reason.too_many_words', { max, level }) };
   }
   for (const raw of wordIds) {
     const { id, tier } = splitWordId(raw);
     const w = ARCANE_WORDS[id];
-    if (!w) return { ok: false, reason: `No such word: ${raw}` };
+    if (!w) return { ok: false, reason: text('arcane.reason.no_such_word', { word: raw }) };
+    // The starter-lexicon shutter (systems/unlocks.ts): a locked word is not
+    // merely too advanced, it is not yours at all — and the refusal says so
+    // without naming what would unlock it. LEGALITY only: composeArcane never
+    // hears about it, so monsters and the bench's pure reading are untouched.
+    if (!wordUnlocked(state, id)) {
+      return { ok: false, reason: text('arcane.reason.unknown_word', { word: w.word }) };
+    }
     if ((w.minLevel ?? 0) > level) {
-      return { ok: false, reason: `"${w.word}" needs Arcana ${w.minLevel}` };
+      return { ok: false, reason: text('arcane.reason.word_level', { word: w.word, level: w.minLevel }) };
     }
     // A deepened word must be EARNED: spoken enough in its plain form first.
     if (tier > 1 && masteredTier(state, id) < tier) {
@@ -798,7 +807,7 @@ export function checkSentence(state: GameState, wordIds: string[]): SentenceChec
       const need = WORD_MASTERY[tier - 2];
       return {
         ok: false,
-        reason: `"${name}" must be earned — inscribe with "${w.word}" more (${wordUses(state, id)}/${need})`,
+        reason: text('arcane.reason.word_unearned', { name, word: w.word, uses: wordUses(state, id), need }),
       };
     }
   }

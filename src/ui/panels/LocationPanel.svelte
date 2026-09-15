@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { gs, game, view } from '../state.svelte';
+  import { gs, game, ui, view } from '../state.svelte';
   import { getSpot, MATERIALS, RECIPES } from '../../core/registry';
-  import { locationBreadcrumb, visibleEdges } from '../../core/systems/locations';
-  import { spotCleared } from '../../core/systems/combat';
+  import { locationBreadcrumb } from '../../core/systems/locations';
   import {
     activityCost,
     activityFactorInfo,
@@ -23,35 +22,59 @@
     recipeResultName,
     recipeUnlocked,
   } from '../../core/systems/crafting';
-  import { npcsAt, availableQuests, canTurnIn } from '../../core/systems/quests';
+  import { npcsAt, availableQuests, canTurnIn, hasMet } from '../../core/systems/quests';
+  import { buyPrice, lineIcon, lineName, lineQuality, visibleLines } from '../../core/systems/shops';
+  import { runeSlotRange } from '../../core/systems/runes';
+  import { ITEMS } from '../../core/registry';
+  import { SLOT_NAMES } from '../../core/types';
+  import { QUALITY_TIERS } from '../../core/registry';
+  import { WIELD_NAMES, wieldOf } from '../../core/systems/wield';
+  import { DAMAGE_TYPE_NAMES } from '../../core/types';
+  import type { NpcDef } from '../../core/types';
+  import { RESOURCES } from '../../core/data/resources.data';
+  import { describeMod, grantLine, fmt } from '../lib/format';
+  import { stockOf } from '../../core/systems/disciplines';
+  import type { ShopLine } from '../../core/types';
   import { QUESTS } from '../../core/registry';
   import { ticksToTime, condsText, factorLabel, attrSplitText } from '../lib/format';
   import MapCard from '../MapCard.svelte';
+  import DestinationPreview from './DestinationPreview.svelte';
+  import { visibleBenches } from '../lib/navigation';
   import BenchPanel from './BenchPanel.svelte';
   import SpellcraftPanel from './SpellcraftPanel.svelte';
+  import AscentPanel from './AscentPanel.svelte';
   import Modal from '../lib/Modal.svelte';
   import { DISCIPLINES } from '../../core/data/disciplines.data';
+  import { conditionsMet } from '../../core/systems/conditions';
+  import { subsystemUnlocked } from '../../core/systems/unlocks';
 
   /** Which workbench is open, if any. */
   let openBench = $state<string | null>(null);
+  /** The ware whose card was clicked — the detail window reads the live shelf by index. */
+  let openWare = $state<{ npc: NpcDef; index: number } | null>(null);
+  const wareLine = $derived(openWare ? visibleLines(gs, openWare.npc)[openWare.index] : undefined);
+
+  /** One restore entry as words: "+25 HP", "+10% of max Mana". */
+  function restoreText(r: { resource: string; flat?: number; ofMax?: number }): string {
+    const name = RESOURCES[r.resource as keyof typeof RESOURCES]?.name ?? r.resource;
+    const bits: string[] = [];
+    if (r.flat) bits.push(`+${fmt(r.flat)}`);
+    if (r.ofMax) bits.push(`+${Math.round(r.ofMax * 100)}% of max`);
+    return `${bits.join(' and ')} ${name}`;
+  }
 
   const spot = $derived(getSpot(gs.spot));
-  const edges = $derived(visibleEdges(gs, gs.spot));
 
-  /**
-   * Benches you can actually see. Furniture for a system you have never heard
-   * of is a spoiler rather than a discovery, so the culture bench stays out of
-   * the room while mutagens are locked — the same rule the bench itself
-   * enforces, just applied before it can be clicked.
-   *
-   * ⚠️ ALPHA: mutagens currently start OPEN (see freshMutagenState), so this is
-   * inert today. It is kept wired rather than deleted because it is exactly
-   * what the unlock quest will switch on, and re-deriving it later is how a
-   * gate quietly goes missing.
-   */
-  const visibleBenches = $derived(
-    (spot.benches ?? []).filter((id) => id !== 'mutagens' || gs.mutagens.unlocked),
-  );
+  const visibleBenchIds = $derived(visibleBenches(gs, spot));
+
+  // "Go & open" from the map: open the bench once standing at its spot. Any
+  // other stop (a cancelled or redirected journey) drops the request.
+  $effect(() => {
+    const want = ui.benchOnArrival;
+    if (!want || gs.travel) return;
+    if (want.spot === gs.spot) openBench = want.bench;
+    ui.benchOnArrival = null;
+  });
   const explorePct = $derived(exploreProgress(gs, spot));
   // What the spot still owes you, and how much further to the next one. The
   // finds themselves stay secret — the tick says "there is something here",
@@ -65,6 +88,35 @@
   );
   const recipes = $derived((spot.recipes ?? []).map((rid) => RECIPES[rid]).filter(Boolean));
   const npcs = $derived(npcsAt(gs.spot));
+
+  /** How many of a ware you already hold — graded wares count only the grade on sale. */
+  function heldOf(line: ShopLine): number {
+    if (line.kind === 'item') return gs.inventory.filter((i) => i.defId === line.id).length;
+    if (MATERIALS[line.id]?.graded) return stockOf(gs, line.id, lineQuality(line));
+    return gs.materials[line.id] ?? 0;
+  }
+
+  /**
+   * What a card says under the name. Items: slot, quality, rune slots.
+   * Quality is reserved — equipment has no grades yet, so it reads "—"
+   * until that system lands and this one line starts reading it.
+   * Graded materials show the grade on sale instead.
+   */
+  function wareFacts(line: ShopLine): { label: string; value: string }[] {
+    if (line.kind === 'item') {
+      const def = ITEMS[line.id];
+      if (!def) return [];
+      const [lo, hi] = runeSlotRange(def);
+      return [
+        { label: 'slot', value: SLOT_NAMES[def.slot] },
+        { label: 'quality', value: '—' },
+        { label: 'runes', value: lo === hi ? `${hi}` : `${lo}–${hi}` },
+      ];
+    }
+    const def = MATERIALS[line.id];
+    if (!def?.graded) return [];
+    return [{ label: 'quality', value: QUALITY_TIERS[lineQuality(line)].name }];
+  }
 
   const stats = $derived(view.stats);
   const activeAct = $derived(currentActivity(gs));
@@ -166,7 +218,9 @@
 {#if gs.travel}
   {@const dest = getSpot(gs.travel.to)}
   <div class="panel" style="margin-top: 12px">
-    <h2>🥾 Traveling to {dest.icon} {dest.name}</h2>
+    <h2>
+      🥾 Traveling to {gs.discovered.includes(dest.id) ? `${dest.icon} ${dest.name}` : '❓ an unknown place'}
+    </h2>
     <div class="bar" style="height: 18px">
       <div
         class="fill"
@@ -175,6 +229,8 @@
       <div class="label">{ticksToTime(gs.travel.ticksLeft)} remaining</div>
     </div>
   </div>
+  <!-- Where the journey ends, read ahead: plan the arrival while walking. -->
+  <DestinationPreview />
 {:else}
   <div class="panel" style="margin-top: 12px">
     <div class="dim small">{locationBreadcrumb(gs.spot)}</div>
@@ -238,6 +294,14 @@
           <div class="npc-head">
             <span><b>{npc.icon} {npc.name}</b></span>
             <span class="dim small">“{dialogueLine(npc.dialogue)}”</span>
+            <!-- A first greeting stamps met:<id> — what talk objectives read.
+                 Once made it is a fact about the save, so the button becomes
+                 a quiet checkmark rather than staying clickable. -->
+            {#if hasMet(gs, npc.id)}
+              <span class="met small" title="You have made this acquaintance">🤝 met</span>
+            {:else}
+              <button class="small" onclick={() => game.talkTo(npc.id)}>🤝 Say hello</button>
+            {/if}
           </div>
           {#each availableQuests(gs, npc) as quest (quest.id)}
             <div class="quest-row">
@@ -259,6 +323,62 @@
               </button>
             </div>
           {/each}
+          <!--
+            The counter. Prices derive from value (systems/shops.ts); a stranger
+            pays more, so the hello above is also the discount. Buying never
+            beats selling back — the no-arbitrage floor is inside buyPrice.
+          -->
+          {#if npc.shop}
+            {@const shelf = visibleLines(gs, npc)}
+            {#if shelf.length}
+              <div class="shop">
+                <div class="shop-head">
+                  <b>🪙 {npc.shop.name}</b>
+                  <span class="dim small">
+                    {hasMet(gs, npc.id) ? 'known customer' : 'stranger prices — say hello'} · {Math.floor(gs.gold)} gold on you
+                  </span>
+                </div>
+                <div class="ware-grid">
+                  {#each shelf as line, i (`${line.kind}:${line.id}:${i}`)}
+                    {@const price = buyPrice(gs, npc.id, line, stats.goldGain)}
+                    {@const held = heldOf(line)}
+                    <div
+                      class="ware-card"
+                      class:unaffordable={gs.gold < price}
+                      role="button"
+                      tabindex="0"
+                      onclick={() => (openWare = { npc, index: i })}
+                      onkeydown={(e) => e.key === 'Enter' && (openWare = { npc, index: i })}
+                    >
+                      <div class="ware-top">
+                        <span class="ware-icon">{lineIcon(line)}</span>
+                        <span class="ware-title">
+                          <b>{lineName(line)}</b>
+                          {#if held > 0}<span class="dim small">have {held}</span>{/if}
+                        </span>
+                      </div>
+                      {#if wareFacts(line).length}
+                        <div class="ware-facts small">
+                          {#each wareFacts(line) as f (f.label)}
+                            <span><span class="dim">{f.label}</span> {f.value}</span>
+                          {/each}
+                        </div>
+                      {/if}
+                      <div class="ware-foot">
+                        <span class="ware-price">{price} 🪙</span>
+                        <span class="ware-btns">
+                          <button class="small" disabled={gs.gold < price} onclick={(e) => { e.stopPropagation(); game.buy(npc.id, i, 1); }}>Buy</button>
+                          {#if line.kind === 'material'}
+                            <button class="small" disabled={gs.gold < price} onclick={(e) => { e.stopPropagation(); game.buy(npc.id, i, 5); }}>×5</button>
+                          {/if}
+                        </span>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          {/if}
         </div>
       {/each}
     </div>
@@ -269,11 +389,11 @@
     up to one and it opens, rather than every bench in the room competing for
     space on the page.
   -->
-  {#if visibleBenches.length}
+  {#if visibleBenchIds.length}
     <div class="panel" style="margin-top: 12px">
       <h3>🛠️ Workbenches</h3>
       <div class="btn-grid">
-        {#each visibleBenches as benchId (benchId)}
+        {#each visibleBenchIds as benchId (benchId)}
           {@const bench = DISCIPLINES[benchId]}
           {#if benchId === 'spelltable'}
             <!-- Not a discipline: one table, three schools (see SpellcraftPanel). -->
@@ -281,7 +401,9 @@
               <span class="bench-icon">🔮</span>
               <span class="bench-label">
                 <b>Spellcrafting Table</b>
-                <span class="small dim">Arcane · Divine · Psionic</span>
+                <span class="small dim"
+                  >Arcane · Divine{subsystemUnlocked(gs, 'psionics') ? ' · Psionic' : ''}</span
+                >
               </span>
             </button>
           {:else if bench}
@@ -298,7 +420,94 @@
     </div>
   {/if}
 
-  {#if openBench === 'spelltable'}
+  <!--
+  One ware, in full. The card says what you need to decide; this says
+  everything the ware knows about itself — mods, hands, requirements,
+  tags, what a consumable does. Reads the shelf live so a purchase
+  updates the "have" line without closing the window.
+-->
+{#if openWare && wareLine}
+  {@const line = wareLine}
+  {@const vendor = openWare.npc}
+  {@const price = buyPrice(gs, vendor.id, line, stats.goldGain)}
+  <Modal onclose={() => (openWare = null)}>
+    {#snippet title()}
+      <div class="win-title">{lineIcon(line)} {lineName(line)}</div>
+      <div class="small dim">{vendor.shop?.name} · {vendor.name}</div>
+    {/snippet}
+    <div class="ware-detail">
+      {#if line.kind === 'item'}
+        {@const def = ITEMS[line.id]}
+        {#if def}
+          {@const [lo, hi] = runeSlotRange(def)}
+          {#if def.desc}<div class="dim">{def.desc}</div>{/if}
+          <div class="facts small">
+            <span><span class="dim">slot</span> {SLOT_NAMES[def.slot]}</span>
+            {#if def.slot === 'weapon' || def.slot === 'offhand'}
+              <span><span class="dim">wield</span> {WIELD_NAMES[wieldOf(def)]}</span>
+            {/if}
+            <span><span class="dim">quality</span> —</span>
+            <span><span class="dim">rune slots</span> {lo === hi ? hi : `${lo}–${hi}`} (rolled on purchase)</span>
+          </div>
+          <div class="section">Stats</div>
+          {#if def.mods.length === 0 && !def.bonusDamage && !def.mainHand && !def.offHand}
+            <div class="dim small">No modifiers.</div>
+          {/if}
+          {#each def.mods as mod}<div class="mod">{describeMod(mod)}</div>{/each}
+          {#if def.bonusDamage}
+            <div class="mod">on hit: +{fmt(def.bonusDamage.value)} {DAMAGE_TYPE_NAMES[def.bonusDamage.type]}</div>
+          {/if}
+          {#if def.mainHand}<div class="mod">🤜 Main hand — {def.mainHand.desc}</div>{/if}
+          {#if def.offHand}<div class="mod">🤛 Off hand — {def.offHand.desc}</div>{/if}
+          {#if def.requirements?.length}
+            <div class="section">Requires</div>
+            <div class="mod">{conditionsMet(gs, def.requirements) ? "✔" : "🔒"} {condsText(def.requirements)}</div>
+          {/if}
+          {#if def.tags.length}
+            <div class="section">Tags</div>
+            <div class="tags">{#each def.tags as t}<span class="tag">{t}</span>{/each}</div>
+          {/if}
+        {/if}
+      {:else}
+        {@const def = MATERIALS[line.id]}
+        {#if def}
+          {#if def.desc}<div class="dim">{def.desc}</div>{/if}
+          {#if def.graded}
+            <div class="facts small">
+              <span><span class="dim">quality</span> {QUALITY_TIERS[lineQuality(line)].name} (sold at this grade only)</span>
+            </div>
+          {/if}
+          {#if def.consumable}
+            {@const c = def.consumable}
+            <div class="section">On use</div>
+            {#each c.restore ?? [] as r}<div class="mod">{restoreText(r)}</div>{/each}
+            {#each c.grants ?? [] as g}<div class="mod">{grantLine(g)}</div>{/each}
+            {#if c.cures?.length}<div class="mod">cures: {c.cures.join(", ")}</div>{/if}
+            {#if c.cooldown}<div class="mod dim">cooldown {ticksToTime(c.cooldown)}</div>{/if}
+          {/if}
+          {#if def.craftTags?.length}
+            <div class="section">Tags</div>
+            <div class="tags">{#each def.craftTags as t}<span class="tag">{t}</span>{/each}</div>
+          {/if}
+        {/if}
+      {/if}
+      <div class="ware-buy">
+        <span>
+          <b>{price} 🪙</b>
+          <span class="dim small">· {Math.floor(gs.gold)} on you · have {heldOf(line)}</span>
+        </span>
+        <span class="ware-btns">
+          <button class="small" disabled={gs.gold < price} onclick={() => game.buy(vendor.id, openWare!.index, 1)}>Buy</button>
+          {#if line.kind === 'material'}
+            <button class="small" disabled={gs.gold < price} onclick={() => game.buy(vendor.id, openWare!.index, 5)}>×5</button>
+          {/if}
+        </span>
+      </div>
+    </div>
+  </Modal>
+{/if}
+
+{#if openBench === 'spelltable'}
     <Modal wide onclose={() => (openBench = null)}>
       {#snippet title()}
         <div class="win-title">🔮 Spellcrafting Table</div>
@@ -349,27 +558,8 @@
     </div>
   {/if}
 
-  <div class="panel" style="margin-top: 12px">
-    <h3>Travel</h3>
-    <div class="routes">
-      {#each edges as edge}
-        {@const dest = getSpot(edge.to)}
-        {@const known = gs.discovered.includes(edge.to)}
-        {@const noExit = !!(edge.forced || dest.forced) && !spotCleared(gs, dest)}
-        <button class="route" onclick={() => game.travelTo(edge.to)} disabled={gs.recovering || !!gs.combat?.forced}>
-          <span class="route-name">
-            {known ? `${dest.icon} ${dest.name}` : '❓ Unknown place'}
-            {#if edge.oneWay}<span class="oneway" title="One-way — no coming back this way">⤵ one-way</span>{/if}
-            <!-- The warning the player gets BEFORE committing: this road ends
-                 in a fight that refuses to be fled. Shown even for an unknown
-                 destination — the danger must be knowable at the door. -->
-            {#if noExit}<span class="noexit" title="This way leads to a fight with no way out — you win it or you are carried off">⚔️ no retreat</span>{/if}
-          </span>
-          <span class="dim small">{edge.label ?? ''} · {ticksToTime(edge.ticks)}</span>
-        </button>
-      {/each}
-    </div>
-  </div>
+  <!-- The ladder, wherever a stack is reachable: the hub spot or any floor. -->
+  <AscentPanel />
 {/if}
 
 <style>
@@ -428,33 +618,6 @@
     transition: none; /* fills every tick; easing would lag behind the reset */
   }
 
-  .routes {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .route {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 10px;
-    text-align: left;
-  }
-
-  .oneway {
-    color: var(--danger);
-    font-size: 12px;
-    margin-left: 8px;
-  }
-
-  .noexit {
-    color: var(--danger);
-    font-size: 12px;
-    font-weight: 600;
-    margin-left: 8px;
-  }
-
   .recipes {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -489,6 +652,10 @@
     margin-bottom: 6px;
   }
 
+  .met {
+    color: var(--text-dim);
+  }
+
   .quest-row {
     display: flex;
     justify-content: space-between;
@@ -499,5 +666,142 @@
     border-radius: 8px;
     padding: 8px 10px;
     margin-top: 6px;
+  }
+
+  .shop {
+    margin-top: 8px;
+  }
+
+  .shop-head {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+
+  .ware-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 6px;
+  }
+
+  .ware-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 8px;
+    min-width: 0;
+  }
+
+  .ware-card.unaffordable {
+    opacity: 0.7;
+  }
+
+  .ware-top {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .ware-icon {
+    font-size: 18px;
+    flex: none;
+  }
+
+  .ware-title {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+  }
+
+  .ware-title b {
+    overflow-wrap: anywhere;
+  }
+
+  .ware-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+  }
+
+  .ware-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    margin-top: auto;
+  }
+
+  .ware-price {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .ware-btns {
+    display: flex;
+    gap: 4px;
+  }
+
+  .ware-card {
+    cursor: pointer;
+  }
+
+  .ware-card:hover {
+    border-color: var(--text-dim);
+  }
+
+  .ware-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 280px;
+  }
+
+  .ware-detail .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 12px;
+  }
+
+  .ware-detail .section {
+    margin-top: 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+  }
+
+  .ware-detail .mod {
+    padding-left: 8px;
+  }
+
+  .ware-detail .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .ware-detail .tag {
+    font-size: 12px;
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-dim);
+  }
+
+  .ware-buy {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
   }
 </style>

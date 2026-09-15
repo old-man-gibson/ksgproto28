@@ -1,4 +1,6 @@
 import type { CraftDisciplineDef } from '../types';
+import { prose } from '../text/prose';
+import { DISCIPLINES_TEXT } from '../text/disciplines.text';
 
 /**
  * Modular crafting disciplines.
@@ -14,17 +16,13 @@ import type { CraftDisciplineDef } from '../types';
  * good you are at making it. Sharing an id (runecarving/runecarving) is a
  * convenience — nothing stops a `mutagens` bench running on an `alchemy` skill.
  */
-export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
+export const DISCIPLINES = prose<CraftDisciplineDef>('DISCIPLINES', DISCIPLINES_TEXT, {
   mutagens: {
     id: 'mutagens',
     name: 'Geneshaping',
     benchName: 'Culture Bench',
     icon: '🧫',
     verb: 'Refine',
-    desc:
-      'Two of the same sequence, held against each other until the better one wins, and ' +
-      'biomatter enough to keep them both alive while it happens. It makes nothing new — ' +
-      'what goes in comes out sharper, and never as something else.',
     skill: 'geneshaping',
     tag: 'geneshaping',
     // Slow on purpose: refinement is the loop a player advances on for the
@@ -51,10 +49,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
     name: 'Runecarving',
     benchName: 'Rune Table',
     icon: '💎',
-    desc:
-      'A slab on the bench, one to three patterns cut into it, and whatever you can afford ' +
-      'to work into the cuts. The slab decides how much the work is worth; what you inlay ' +
-      'decides what else it does.',
     skill: 'runecarving',
     tag: 'runecarving',
     ticks: 60,
@@ -159,7 +153,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'carve',
         name: 'Carved Rune',
         icon: '🔷',
-        desc: 'A slab cut to the chosen patterns.',
         requires: [{ tag: 'runestone' }],
         result: { kind: 'carved', pattern: '' },
       },
@@ -187,11 +180,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
     benchName: 'Cooking Stove',
     icon: '🍳',
     verb: 'Cook',
-    desc:
-      'Wet heat and patience: the pot takes raw ingredients and gives back ' +
-      'something that needed time. What you put together decides what you get — ' +
-      'and how good the ingredients were decides how good it is. Diced ' +
-      'ingredients surrender everything to the simmer.',
     skill: 'cooking',
     tag: 'cooking',
     favoredPrep: 'diced',
@@ -284,7 +272,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'feast',
         name: 'Feast Platter',
         icon: '🍖',
-        desc: 'Everything, done properly.',
         requires: [{ tag: 'meat' }, { tag: 'vegetable' }, { tag: 'seasoning' }],
         minQuality: 'a',
         minLevel: 20,
@@ -295,7 +282,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'stew',
         name: 'Hearty Stew',
         icon: '🍲',
-        desc: 'Meat and something green.',
         requires: [{ tag: 'meat' }, { tag: 'vegetable' }],
         priority: 20,
         result: { kind: 'material', id: 'hearty_stew' },
@@ -304,7 +290,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'broth',
         name: 'Mushroom Broth',
         icon: '🍵',
-        desc: 'Mushrooms, water, patience.',
         requires: [{ tag: 'mushroom' }, { tag: 'herb' }],
         priority: 25,
         result: { kind: 'material', id: 'mushroom_broth' },
@@ -313,7 +298,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'ration',
         name: "Traveler's Ration",
         icon: '🥖',
-        desc: 'Whatever keeps.',
         requires: [{ tag: 'ingredient', count: 2 }],
         priority: 5,
         result: { kind: 'material', id: 'travelers_ration' },
@@ -328,7 +312,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'mess',
         name: 'Scorched Mess',
         icon: '🥘',
-        desc: 'It is technically food.',
         requires: [{ tag: 'ingredient' }],
         maxQuality: 'f',
         priority: 100,
@@ -343,10 +326,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
     benchName: 'Open Grill',
     icon: '🍢',
     verb: 'Grill',
-    desc:
-      'Dry heat and no apologies. One good thing over the coals beats four ' +
-      'mediocre things in a pot — the grill is the only bench happy with a ' +
-      'single ingredient, and julienned cuts are done before they can burn.',
     skill: 'cooking',
     tag: 'cooking',
     favoredPrep: 'julienned',
@@ -386,7 +365,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'skewer',
         name: 'Skewered Fish',
         icon: '🍢',
-        desc: 'Fish on a stick over the fire.',
         requires: [{ tag: 'fish' }],
         priority: 20,
         result: { kind: 'material', id: 'skewered_fish' },
@@ -395,7 +373,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'steak',
         name: 'Seared Steak',
         icon: '🥩',
-        desc: 'Hot grate, honest meat, nothing else.',
         requires: [{ tag: 'meat' }],
         priority: 15,
         result: { kind: 'material', id: 'seared_steak' },
@@ -404,7 +381,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'roots',
         name: 'Charred Roots',
         icon: '🍠',
-        desc: 'Blackened outside, sweet inside.',
         requires: [{ tag: 'vegetable', count: 2 }],
         priority: 15,
         result: { kind: 'material', id: 'charred_roots' },
@@ -413,7 +389,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'ration',
         name: "Traveler's Ration",
         icon: '🥖',
-        desc: 'Dried over the coals until it keeps.',
         requires: [{ tag: 'ingredient' }],
         priority: 5,
         result: { kind: 'material', id: 'travelers_ration' },
@@ -422,7 +397,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'mess',
         name: 'Scorched Mess',
         icon: '🥘',
-        desc: 'The grill forgives nothing.',
         requires: [{ tag: 'ingredient' }],
         maxQuality: 'f',
         priority: 100,
@@ -437,10 +411,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
     benchName: 'Clay Oven',
     icon: '🍞',
     verb: 'Bake',
-    desc:
-      'Enclosed heat, measured and even. The oven turns grain into the one ' +
-      'food that becomes an ingredient again — bread feeds you, or it feeds ' +
-      'the counter.',
     skill: 'cooking',
     tag: 'cooking',
     // The oven door stays shut for as long as the oven door stays shut.
@@ -485,7 +455,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'cake',
         name: 'Honey Cake',
         icon: '🍰',
-        desc: 'Grain, honey and an egg — a celebration in miniature.',
         requires: [{ tag: 'grain' }, { tag: 'sweet' }, { tag: 'egg' }],
         minLevel: 12,
         priority: 30,
@@ -495,7 +464,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'pie',
         name: 'Berry Pie',
         icon: '🥧',
-        desc: 'A crust with a secret.',
         requires: [{ tag: 'grain' }, { tag: 'fruit' }],
         priority: 25,
         result: { kind: 'material', id: 'berry_pie' },
@@ -504,7 +472,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'loaf',
         name: 'Rustic Loaf',
         icon: '🍞',
-        desc: 'Two measures of flour and the patience to leave the door shut.',
         requires: [{ tag: 'grain', count: 2 }],
         priority: 20,
         result: { kind: 'material', id: 'rustic_loaf' },
@@ -513,7 +480,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'ration',
         name: "Traveler's Ration",
         icon: '🥖',
-        desc: 'Baked hard enough to survive the road.',
         requires: [{ tag: 'ingredient' }],
         priority: 5,
         result: { kind: 'material', id: 'travelers_ration' },
@@ -522,7 +488,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'mess',
         name: 'Scorched Mess',
         icon: '🥘',
-        desc: 'The oven door hid it until too late.',
         requires: [{ tag: 'ingredient' }],
         maxQuality: 'f',
         priority: 100,
@@ -537,10 +502,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
     benchName: 'Cold Counter',
     icon: '🥪',
     verb: 'Assemble',
-    desc:
-      'No heat at all — stacking, layering, dressing. The only bench that ' +
-      'takes cooked food as happily as raw, which is what a sandwich IS; ' +
-      'sliced ingredients lie flat and stack the way the counter wants.',
     skill: 'cooking',
     tag: 'cooking',
     favoredPrep: 'sliced',
@@ -591,7 +552,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'sandwich',
         name: 'Hearty Sandwich',
         icon: '🥪',
-        desc: 'Bread doing what bread was for.',
         requires: [{ tag: 'bread' }, { tag: 'filling' }],
         priority: 25,
         result: { kind: 'material', id: 'hearty_sandwich' },
@@ -600,7 +560,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'salad',
         name: 'Forest Salad',
         icon: '🥗',
-        desc: 'Everything green, and nothing near a flame.',
         requires: [{ tag: 'vegetable', count: 2 }],
         priority: 20,
         result: { kind: 'material', id: 'forest_salad' },
@@ -609,7 +568,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'ration',
         name: "Traveler's Ration",
         icon: '🥖',
-        desc: 'Wrapped, tied, and honest about what it is.',
         requires: [{ tag: 'ingredient', count: 2 }],
         priority: 5,
         result: { kind: 'material', id: 'travelers_ration' },
@@ -636,11 +594,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
     benchName: 'Alembic',
     icon: '⚗️',
     verb: 'Brew',
-    desc:
-      'Glass, a burner and a great deal of patience. What you add matters less ' +
-      'than the order you add it in: a substance steeped under everything else ' +
-      'gives up its character for strength, and one dropped in last keeps all ' +
-      'of it. What raises the brew decides how it is delivered.',
     skill: 'alchemy',
     tag: 'alchemy',
     ordered: true,
@@ -721,7 +674,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'brew',
         name: 'Brew',
         icon: '⚗️',
-        desc: 'Whatever the sequence spells out.',
         requires: [{ tag: 'reagent', count: 2 }],
         result: { kind: 'brewed' },
       },
@@ -734,11 +686,6 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
     benchName: 'Cutting Board',
     icon: '🔪',
     verb: 'Prepare',
-    desc:
-      'Just a board and a knife. One whole ingredient, one technique, and the ' +
-      'grade of what comes off the board is the evenness of the work — a ' +
-      'perfect cut keeps everything the ingredient had, a rough one gambles ' +
-      'it away.',
     skill: 'cooking',
     tag: 'cooking',
     ticks: 15,
@@ -771,12 +718,11 @@ export const DISCIPLINES: Record<string, CraftDisciplineDef> = {
         id: 'prep',
         name: 'Prepped Ingredient',
         icon: '🔪',
-        desc: 'The same thing it was, ready for the bench that wants it this way.',
         requires: [{ tag: 'whole' }],
         result: { kind: 'prepped' },
       },
     ],
   },
-};
+});
 
 export const DISCIPLINE_LIST: CraftDisciplineDef[] = Object.values(DISCIPLINES);

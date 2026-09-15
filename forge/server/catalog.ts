@@ -67,5 +67,11 @@ export function catalogFor(kind: string): CatalogEntry {
   return entry;
 }
 
-/** Files the forge is allowed to write. Anything else is refused outright. */
-export const WRITABLE = new Set(CATALOG.map((c) => c.file));
+/**
+ * Files the forge is allowed to write. Anything else is refused outright.
+ * Each data file's text file (`src/core/text/<name>.text.ts`, where the prose
+ * lives — see `forge/server/prose.ts`) is writable alongside it.
+ */
+export const WRITABLE = new Set(
+  CATALOG.flatMap((c) => [c.file, c.file.replace(/\/data\/([^/]+)\.data\.ts$/, '/text/$1.text.ts')]),
+);

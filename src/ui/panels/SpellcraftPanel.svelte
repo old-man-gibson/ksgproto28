@@ -63,6 +63,7 @@
   // A spell describes itself the same way everywhere — the grimoire, the
   // combat card's tooltip and the config window all read these.
   import { specLines, targetLabel } from '../lib/format';
+  import { deityKnown, subsystemUnlocked, wordUnlocked } from '../../core/systems/unlocks';
   import Tip from '../lib/Tip.svelte';
 
   /**
@@ -98,8 +99,11 @@
   const lexicon = $derived(
     KIND_ORDER.map((kind) => ({
       kind,
+      // A locked word is not shown greyed — it is not shown at all. The
+      // starter lexicon (systems/unlocks.ts) is the whole vocabulary until
+      // content teaches more; an empty kind row simply doesn't render.
       words: Object.values(ARCANE_WORDS)
-        .filter((w) => w.kind === kind)
+        .filter((w) => w.kind === kind && wordUnlocked(gs, w.id))
         .sort((a, b) => (a.minLevel ?? 0) - (b.minLevel ?? 0)),
     })),
   );
@@ -234,7 +238,10 @@
   }
 
   const godGroups = $derived(
-    deityGroups(queryDeities({ search: godSearch, tags: godTags })),
+    // Unknown gods are absent, not silhouetted (yet) — the deities-must-be-met
+    // design owns the silhouette treatment when it lands. Favor already only
+    // accrues with known gods (grantFavorAll), so nothing hidden is earning.
+    deityGroups(queryDeities({ search: godSearch, tags: godTags }).filter((d) => deityKnown(gs, d.id))),
   );
 
   // ---------- Psionic: the wheel ----------
@@ -399,9 +406,13 @@
     <button class:selected={tab === 'divine'} onclick={() => (tab = 'divine')}>
       🙏 Divine <span class="small dim">Lv {devotionLevel(gs)}</span>
     </button>
-    <button class:selected={tab === 'psionic'} onclick={() => (tab = 'psionic')}>
-      🧠 Psionic <span class="small dim">Lv {psionicsLevel(gs)}</span>
-    </button>
+    <!-- Shuttered until content lifts the flag (systems/unlocks.ts): the
+         table shows two schools to a new player, not a spoiler of the third. -->
+    {#if subsystemUnlocked(gs, 'psionics')}
+      <button class:selected={tab === 'psionic'} onclick={() => (tab = 'psionic')}>
+        🧠 Psionic <span class="small dim">Lv {psionicsLevel(gs)}</span>
+      </button>
+    {/if}
   </div>
 
   {#if tab === 'arcane'}
@@ -500,7 +511,7 @@
     </div>
 
     <div class="palette">
-      {#each lexicon as group (group.kind)}
+      {#each lexicon.filter((g) => g.words.length > 0) as group (group.kind)}
         <div class="group">
           <div class="small dim group-head">{KIND_LABEL[group.kind]}</div>
           <div class="words">

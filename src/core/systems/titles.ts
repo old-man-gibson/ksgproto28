@@ -2,6 +2,7 @@ import type { GameState, TitleDef } from '../types';
 import type { EventBus } from '../engine/events';
 import { TITLES } from '../registry';
 import { conditionsMet } from './conditions';
+import { text } from '../text/log';
 
 export function hasTitle(state: GameState, id: string): boolean {
   return state.titles.includes(id);
@@ -26,7 +27,7 @@ export function checkTitleUnlocks(state: GameState, bus: EventBus): void {
     bus.emit({ type: 'title:unlock', id: def.id });
     bus.emit({
       type: 'log',
-      msg: `👑 Title earned: ${def.icon} ${def.name}!`,
+      msg: text('titles.earned', { icon: def.icon, name: def.name }),
       kind: 'achievement',
     });
   }
@@ -39,7 +40,7 @@ export function setTitle(state: GameState, bus: EventBus, id: string | null): vo
   state.title = id;
   if (id) {
     const def = TITLES[id];
-    bus.emit({ type: 'log', msg: `👑 You now bear the title "${def.name}".`, kind: 'achievement' });
+    bus.emit({ type: 'log', msg: text('titles.worn', { name: def.name }), kind: 'achievement' });
   }
 }
 

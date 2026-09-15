@@ -71,6 +71,7 @@ import {
   edgeKey,
   startingKit,
 } from '../data/mutagens.data';
+import { text } from '../text/log';
 
 /**
  * Mutagens: the crafting mirror of divine magic.
@@ -1724,7 +1725,7 @@ function fits(state: GameState, next: Chromosome): MutagenCheck {
   if (use > limit) {
     return {
       ok: false,
-      reason: `That needs ${use.toFixed(1)} capacity and you have ${limit.toFixed(1)}`,
+      reason: text('mutagens.reason.over_capacity', { use: use.toFixed(1), limit: limit.toFixed(1) }),
     };
   }
   return { ok: true };
@@ -1746,7 +1747,7 @@ export function unlockMutagens(state: GameState, bus: EventBus, lowerArm: 'g' | 
   mut.chromosome.established = startingKit(lowerArm);
   bus.emit({
     type: 'log',
-    msg: '🧬 You can read the shape of a thing now, and argue with it.',
+    msg: text('mutagens.unlocked'),
     kind: 'action',
   });
 }
@@ -1793,7 +1794,7 @@ function discover(
   const weight = Math.pow(growth, book.length);
   book.push(id);
   grantDiscoveryXp(state, bus, 'geneshaping', weight);
-  bus.emit({ type: 'log', msg: `🧬 Catalogued: ${name}.`, kind: 'bestiary' });
+  bus.emit({ type: 'log', msg: text('mutagens.catalogued', { name }), kind: 'bestiary' });
 }
 
 /**
@@ -1825,7 +1826,7 @@ export function harvestKill(state: GameState, bus: EventBus, monsterId: string):
     grantSkillXp(state, bus, ['craft', 'geneshaping'], 12, gene.id);
     bus.emit({
       type: 'log',
-      msg: `🧬 ${gene.icon} ${gene.name} (${QUALITY_TIERS[quality].name}) — recovered intact.`,
+      msg: text('mutagens.gene_recovered', { icon: gene.icon, name: gene.name, grade: QUALITY_TIERS[quality].name }),
       kind: 'loot',
     });
   }
@@ -1838,7 +1839,7 @@ export function harvestKill(state: GameState, bus: EventBus, monsterId: string):
     grantSkillXp(state, bus, ['craft', 'geneshaping'], 6, mutagen.id);
     bus.emit({
       type: 'log',
-      msg: `🧫 ${mutagen.icon} ${mutagen.name} (${QUALITY_TIERS[quality].name})`,
+      msg: text('mutagens.mutagen_recovered', { icon: mutagen.icon, name: mutagen.name, grade: QUALITY_TIERS[quality].name }),
       kind: 'loot',
     });
   }
@@ -1851,7 +1852,7 @@ export function harvestKill(state: GameState, bus: EventBus, monsterId: string):
     grantSkillXp(state, bus, ['craft', 'geneshaping'], 20, nuclease.id);
     bus.emit({
       type: 'log',
-      msg: `🧬 ${nuclease.icon} ${nuclease.name} — an instruction, not an opinion.`,
+      msg: text('mutagens.nuclease_recovered', { icon: nuclease.icon, name: nuclease.name }),
       kind: 'loot',
     });
   }
@@ -1889,15 +1890,15 @@ export function nextGrade(quality: QualityTier): QualityTier | null {
 }
 
 export function canRefine(state: GameState, id: string, from: QualityTier): MutagenCheck {
-  if (!state.mutagens.unlocked) return { ok: false, reason: 'You would not know where to start' };
+  if (!state.mutagens.unlocked) return { ok: false, reason: text('mutagens.reason.not_unlocked') };
   const target = nextGrade(from);
-  if (!target) return { ok: false, reason: 'Nothing refines past Divine' };
+  if (!target) return { ok: false, reason: text('mutagens.reason.refine_ceiling') };
   if (stockOf(state, id, from) < REFINE_COPIES) {
-    return { ok: false, reason: `Needs ${REFINE_COPIES} of the same grade to work against` };
+    return { ok: false, reason: text('mutagens.reason.refine_copies', { copies: REFINE_COPIES }) };
   }
   const cost = refineCost(target);
   if ((state.materials.biomatter ?? 0) < cost) {
-    return { ok: false, reason: `Needs ${cost} biomatter` };
+    return { ok: false, reason: text('mutagens.reason.refine_needs_biomatter', { cost }) };
   }
   return { ok: true };
 }
@@ -1917,7 +1918,7 @@ export function refine(
 ): QualityTier | null {
   const check = canRefine(state, id, from);
   if (!check.ok) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   const target = nextGrade(from)!;
@@ -1929,7 +1930,7 @@ export function refine(
   grantSkillXp(state, bus, ['craft', 'geneshaping'], 8 * (qualityRank(target) + 1), id);
   bus.emit({
     type: 'log',
-    msg: `🧬 ${def?.icon ?? ''} ${def?.name ?? id} refined to ${QUALITY_TIERS[target].name}.`,
+    msg: text('mutagens.refined', { icon: def?.icon ?? '', name: def?.name ?? id, grade: QUALITY_TIERS[target].name }),
     kind: 'item',
   });
   return target;
@@ -1967,18 +1968,18 @@ export function canFuse(
   mutagenId: string,
   quality: QualityTier,
 ): MutagenCheck {
-  if (!state.mutagens.unlocked) return { ok: false, reason: 'You would not know where to start' };
-  if (!NUCLEASES[nucleaseId]) return { ok: false, reason: 'That is not a nuclease' };
+  if (!state.mutagens.unlocked) return { ok: false, reason: text('mutagens.reason.not_unlocked') };
+  if (!NUCLEASES[nucleaseId]) return { ok: false, reason: text('mutagens.reason.not_a_nuclease') };
   if (!fusionOf(nucleaseId, mutagenId)) {
     // The pairing rule, said plainly: a nuclease names an operation and the
     // MUTATION supplies the element it writes, so one that speaks for no
     // element has nothing to give it.
-    return { ok: false, reason: 'That mutation carries no element to write with' };
+    return { ok: false, reason: text('mutagens.reason.no_element') };
   }
-  if ((state.materials[nucleaseId] ?? 0) < 1) return { ok: false, reason: 'You hold no such nuclease' };
-  if (stockOf(state, mutagenId, quality) < 1) return { ok: false, reason: 'You hold none of those' };
+  if ((state.materials[nucleaseId] ?? 0) < 1) return { ok: false, reason: text('mutagens.reason.no_nuclease_held') };
+  if (stockOf(state, mutagenId, quality) < 1) return { ok: false, reason: text('mutagens.reason.none_held') };
   if ((state.materials.biomatter ?? 0) < FUSE_BIOMATTER) {
-    return { ok: false, reason: `Needs ${FUSE_BIOMATTER} biomatter` };
+    return { ok: false, reason: text('mutagens.reason.fuse_needs_biomatter', { cost: FUSE_BIOMATTER }) };
   }
   return { ok: true };
 }
@@ -2002,7 +2003,7 @@ export function fuse(
 ): MutagenDef | null {
   const check = canFuse(state, nucleaseId, mutagenId, quality);
   if (!check.ok) {
-    if (check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   const fused = fusionOf(nucleaseId, mutagenId)!;
@@ -2013,7 +2014,7 @@ export function fuse(
   grantSkillXp(state, bus, ['craft', 'geneshaping'], 25, fused.id);
   bus.emit({
     type: 'log',
-    msg: `🧬 ${fused.icon} ${fused.name} — the instruction takes.`,
+    msg: text('mutagens.fused', { icon: fused.icon, name: fused.name }),
     kind: 'item',
   });
   return fused;
@@ -2031,7 +2032,7 @@ export function fuse(
  */
 export function previewRefine(state: GameState, placement: Placement): MutagenCheck {
   const subject = placement.subject;
-  if (!subject) return { ok: false, reason: 'Nothing on the bench to work on' };
+  if (!subject) return { ok: false, reason: text('mutagens.reason.bench_empty') };
   return canRefine(state, subject.id, subject.quality);
 }
 
@@ -2062,7 +2063,7 @@ export function refineOnce(
 function commit(state: GameState, next: Chromosome, bus?: EventBus): MutagenCheck {
   const check = fits(state, next);
   if (!check.ok) {
-    if (bus && check.reason) bus.emit({ type: 'log', msg: `🔒 ${check.reason}`, kind: 'danger' });
+    if (bus && check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return check;
   }
   state.mutagens.chromosome = next;
@@ -2071,17 +2072,17 @@ function commit(state: GameState, next: Chromosome, bus?: EventBus): MutagenChec
 
 /** Whether the centromere could take this gene right now, and what it wants. */
 export function canSlotMain(state: GameState, gene: GeneInstance): MutagenCheck {
-  if (!MAIN_GENES[gene.id]) return { ok: false, reason: 'That is not a main gene' };
+  if (!MAIN_GENES[gene.id]) return { ok: false, reason: text('mutagens.reason.not_a_main_gene') };
   if (stockOf(state, gene.id, gene.quality) < 1) {
-    return { ok: false, reason: 'You hold none of those' };
+    return { ok: false, reason: text('mutagens.reason.none_held') };
   }
   const settling = settlingLeft(state);
   if (settling > 0) {
-    return { ok: false, reason: `Still settling — ${(settling / 10).toFixed(0)}s` };
+    return { ok: false, reason: text('mutagens.reason.settling', { seconds: (settling / 10).toFixed(0) }) };
   }
   const cost = swapBiomatterCost(gene);
   if ((state.materials.biomatter ?? 0) < cost) {
-    return { ok: false, reason: `Needs ${cost} biomatter to write yourself into that` };
+    return { ok: false, reason: text('mutagens.reason.wear_needs_biomatter', { cost }) };
   }
   return { ok: true };
 }
@@ -2100,7 +2101,7 @@ export function slotMain(
 ): MutagenCheck {
   const allowed = canSlotMain(state, gene);
   if (!allowed.ok) {
-    if (allowed.reason) bus.emit({ type: 'log', msg: `🔒 ${allowed.reason}`, kind: 'danger' });
+    if (allowed.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: allowed.reason }), kind: 'danger' });
     return allowed;
   }
   const current = chromosomeOf(state);
@@ -2116,7 +2117,7 @@ export function slotMain(
   grantSkillXp(state, bus, ['craft', 'geneshaping'], 20 + cost);
   bus.emit({
     type: 'log',
-    msg: `🧬 ${MAIN_GENES[gene.id].icon} You write yourself into a ${MAIN_GENES[gene.id].name} (${cost} biomatter). It has to take.`,
+    msg: text('mutagens.gene_worn', { icon: MAIN_GENES[gene.id].icon, name: MAIN_GENES[gene.id].name, cost }),
     kind: 'action',
   });
   return { ok: true };
@@ -2129,10 +2130,10 @@ export function slotMain(
 export function unslotMain(state: GameState): MutagenCheck {
   const current = chromosomeOf(state);
   const main = current.main;
-  if (!main) return { ok: false, reason: 'You are already wearing your own sequence' };
+  if (!main) return { ok: false, reason: text('mutagens.reason.already_own_sequence') };
   const settling = settlingLeft(state);
   if (settling > 0) {
-    return { ok: false, reason: `Still settling — ${(settling / 10).toFixed(0)}s` };
+    return { ok: false, reason: text('mutagens.reason.settling', { seconds: (settling / 10).toFixed(0) }) };
   }
   state.mutagens.chromosome = { ...current, main: null };
   grantGraded(state, main.id, main.quality, 1);
@@ -2151,9 +2152,9 @@ export function placeMutagen(
   gene: GeneInstance,
 ): MutagenCheck {
   const current = chromosomeOf(state);
-  if (!socketIds(layoutOf(current)).includes(socket)) return { ok: false, reason: 'No such socket' };
-  if (!MUTATIONS[gene.id]) return { ok: false, reason: 'That is not a mutagen' };
-  if (stockOf(state, gene.id, gene.quality) < 1) return { ok: false, reason: 'You hold none of those' };
+  if (!socketIds(layoutOf(current)).includes(socket)) return { ok: false, reason: text('mutagens.reason.no_such_socket') };
+  if (!MUTATIONS[gene.id]) return { ok: false, reason: text('mutagens.reason.not_a_mutagen') };
+  if (stockOf(state, gene.id, gene.quality) < 1) return { ok: false, reason: text('mutagens.reason.none_held') };
   const next: Chromosome = { ...current, placed: { ...current.placed, [socket]: { ...gene } } };
   const check = commit(state, next, bus);
   if (!check.ok) return check;
@@ -2166,7 +2167,7 @@ export function placeMutagen(
 export function removeMutagen(state: GameState, socket: string): MutagenCheck {
   const current = chromosomeOf(state);
   const had = current.placed[socket];
-  if (!had) return { ok: false, reason: 'That socket is empty' };
+  if (!had) return { ok: false, reason: text('mutagens.reason.socket_empty') };
   const placed = { ...current.placed };
   delete placed[socket];
   // Freeing capacity can never fail, so this commits unconditionally.
@@ -2184,12 +2185,12 @@ export function establish(state: GameState, bus: EventBus, a: string, b: string)
   const current = chromosomeOf(state);
   const key = edgeKey(a, b);
   const edge = layoutOf(current).edges.find((e) => edgeKey(e.a, e.b) === key);
-  if (!edge) return { ok: false, reason: 'Nothing connects those' };
-  if (current.established.includes(key)) return { ok: false, reason: 'Already established' };
+  if (!edge) return { ok: false, reason: text('mutagens.reason.no_edge') };
+  if (current.established.includes(key)) return { ok: false, reason: text('mutagens.reason.already_established') };
 
   const cost = histoneCost(edge);
   if ((state.materials.histone ?? 0) < cost) {
-    return { ok: false, reason: `Needs ${cost} histones — you have ${state.materials.histone ?? 0}` };
+    return { ok: false, reason: text('mutagens.reason.histones_short', { cost, held: state.materials.histone ?? 0 }) };
   }
   const check = commit(state, { ...current, established: [...current.established, key] }, bus);
   if (!check.ok) return check;
@@ -2197,7 +2198,7 @@ export function establish(state: GameState, bus: EventBus, a: string, b: string)
   grantSkillXp(state, bus, ['craft', 'geneshaping'], 5 + cost);
   bus.emit({
     type: 'log',
-    msg: `🧵 Coiled a new connection: ${a}–${b} (${cost} histones).`,
+    msg: text('mutagens.edge_coiled', { a, b, cost }),
     kind: 'action',
   });
   return { ok: true };
@@ -2207,8 +2208,8 @@ export function establish(state: GameState, bus: EventBus, a: string, b: string)
 export function cutEdge(state: GameState, bus: EventBus, a: string, b: string): MutagenCheck {
   const current = chromosomeOf(state);
   const key = edgeKey(a, b);
-  if (!current.established.includes(key)) return { ok: false, reason: 'That connection was never made' };
-  if (current.cut.includes(key)) return { ok: false, reason: 'Already cut' };
+  if (!current.established.includes(key)) return { ok: false, reason: text('mutagens.reason.edge_not_established') };
+  if (current.cut.includes(key)) return { ok: false, reason: text('mutagens.reason.already_cut') };
   return commit(state, { ...current, cut: [...current.cut, key] }, bus);
 }
 
@@ -2216,7 +2217,7 @@ export function cutEdge(state: GameState, bus: EventBus, a: string, b: string): 
 export function restoreEdge(state: GameState, a: string, b: string): MutagenCheck {
   const current = chromosomeOf(state);
   const key = edgeKey(a, b);
-  if (!current.cut.includes(key)) return { ok: false, reason: 'That connection is not cut' };
+  if (!current.cut.includes(key)) return { ok: false, reason: text('mutagens.reason.edge_not_cut') };
   state.mutagens.chromosome = { ...current, cut: current.cut.filter((k) => k !== key) };
   return { ok: true };
 }

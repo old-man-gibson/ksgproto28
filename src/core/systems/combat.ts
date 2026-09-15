@@ -578,10 +578,14 @@ import {
   MONSTER_ACTION_BAR,
   MONSTER_RESIST_CAP,
   type MonsterStats,
+  innateArmor,
   monsterStats,
   rollMonsterAttrs,
+  scaledMonsterAttrs,
   statsFromAttrs,
 } from './monsterStats';
+import { clockOf } from './clock';
+import { naturalDarkness } from './exposure';
 import { DOUSING_TYPES, damagePlayer, heal, isAlive, setHpAfterDefeat } from './health';
 import { availableMax, resourceValue, spendResource } from './resources';
 import {
@@ -654,6 +658,7 @@ import {
   noteOutgoing,
   noteParry,
 } from './ledger';
+import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
 
@@ -720,13 +725,60 @@ export const slainKey = (spotId: string, monsterId: string): string =>
 export const fightsKey = (spotId: string): string => `fights:${spotId}`;
 
 /**
+ * Where a spot remembers its BOSS going down (see SpotEncounter.boss). One
+ * latch shared by every variant boss the spot rolls — the clock's keeper, the
+ * ambush champion — so a floor clear or quest reads a single counter and the
+ * AND-only condition language never needs an OR.
+ */
+export const bossKey = (spotId: string): string => `boss:${spotId}`;
+
+/** Night as the darkness system already defines it: dusk through dawn. */
+function isNightNow(state: GameState): boolean {
+  return naturalDarkness(clockOf(state.totalTicks).hour) >= 0.5;
+}
+
+/**
+ * Player power against this spawn's own, priced the way the bestiary prices a
+ * specimen: the entry's level-band midpoint, a plain roll of its tier. The
+ * scalar is damage × max HP on both sides — crude on purpose; it is a spawn
+ * gate, not a balance oracle, and the window it feeds is wide.
+ */
+export function encounterPowerRatio(state: GameState, e: SpotEncounter): number {
+  const def = MONSTERS[e.monsterId];
+  if (!def) return 0;
+  const tier = TIERS[def.tier];
+  const mult = (tier.multiplierRange[0] + tier.multiplierRange[1]) / 2;
+  const level = (e.level[0] + e.level[1]) / 2;
+  const theirs = statsFromAttrs(
+    scaledMonsterAttrs(def, level, mult),
+    undefined,
+    innateArmor(e.monsterId),
+    def.regen ?? 0,
+    level,
+  );
+  const mine = getDerivedStats(state);
+  const power = (s: { damage: number; maxHp: number }) => Math.max(1, s.damage * s.maxHp);
+  return power(mine) / power(theirs);
+}
+
+/**
  * The encounter-table lines the spot can still roll, given what has happened:
  * `once` entries whose kill is on record are gone, and gated entries wait for
  * their conditions. This — not `spot.encounters` — is what spawning reads.
  */
 export function eligibleEncounters(state: GameState, spot: SpotDef): SpotEncounter[] {
+  const night = isNightNow(state);
   return (spot.encounters ?? []).filter((e) => {
     if (e.once && (state.stats[slainKey(spot.id, e.monsterId)] ?? 0) > 0) return false;
+    // The clock decides which keeper holds the floor tonight.
+    if (e.daypart && (e.daypart === 'night') !== night) return false;
+    // The ambush window: an overtuned spawn that appears only while the fight
+    // would be tough-but-possible, and vanishes once outgrown — it can never
+    // be farmed from above, and never flattens someone it would simply kill.
+    if (e.window) {
+      const ratio = encounterPowerRatio(state, e);
+      if (ratio < e.window.min || ratio > e.window.max) return false;
+    }
     return !e.requires || conditionsMet(state, e.requires);
   });
 }
@@ -992,7 +1044,7 @@ function startEncounter(state: GameState, bus: EventBus, spot: SpotDef, forced =
   const notable = group.some((m) => m.modifier !== 'normal' || m.rarity !== 'common');
   if (notable || group.length > 1) {
     const what = group.length > 1 ? `${lead.name} and ${group.length - 1} more` : lead.name;
-    bus.emit({ type: 'log', msg: `⚠️ ${what} (Lv ${lead.level}) appears!`, kind: 'combat' });
+    bus.emit({ type: 'log', msg: text('combat.appears', { what, level: lead.level }), kind: 'combat' });
   }
   feed(
     state,
@@ -1018,7 +1070,7 @@ export function startForcedFight(state: GameState, bus: EventBus, spot: SpotDef)
   // nobody yet. Either way arrival is just arrival.
   if (state.combat || spotCleared(state, spot) || !eligibleEncounters(state, spot).length) return;
   startEncounter(state, bus, spot, true);
-  bus.emit({ type: 'log', msg: `⚔️ You are set upon — there is no way out of this fight!`, kind: 'danger' });
+  bus.emit({ type: 'log', msg: text('combat.ambushed'), kind: 'danger' });
   feed(state, `⚔️ No retreat — this fight ends on its feet or on yours.`);
 }
 
@@ -1370,7 +1422,7 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         const gold = Math.round(qty * monster.level * getDerivedStats(state).goldGain);
         state.gold += gold;
         bumpStat(state, bus, 'gold:earned', gold);
-        bus.emit({ type: 'log', msg: `🪙 Scavenged ${gold} gold.`, kind: 'loot' });
+        bus.emit({ type: 'log', msg: text('combat.scavenged_gold', { gold }), kind: 'loot' });
         break;
       }
       case 'material': {
@@ -1380,7 +1432,7 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         const grade = got.quality ? ` (${QUALITY_TIERS[got.quality].name})` : '';
         bus.emit({
           type: 'log',
-          msg: `📦 ${mat?.icon ?? ''} ${mat?.name ?? pick.id}${grade} ×${qty}`,
+          msg: text('combat.loot_material', { icon: mat?.icon ?? '', name: mat?.name ?? pick.id, grade, qty }),
           kind: 'loot',
         });
         break;
@@ -1406,7 +1458,7 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         bus.emit({ type: 'loot', item });
         bus.emit({
           type: 'log',
-          msg: `📦 Loot: ${ITEMS[pick.id!]?.icon ?? ''} ${itemName(item)}`,
+          msg: text('combat.loot_item', { icon: ITEMS[pick.id!]?.icon ?? '', item: itemName(item) }),
           kind: 'loot',
         });
         break;
@@ -1425,7 +1477,17 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   // the end of the fight, so a knockout after the deed still keeps the deed.
   if (spot?.encounters?.some((e) => e.once && e.monsterId === monster.defId)) {
     bumpStat(state, bus, slainKey(spot.id, monster.defId));
-    bus.emit({ type: 'log', msg: `🏆 The ${monster.name} will not be seen here again.`, kind: 'combat' });
+    bus.emit({ type: 'log', msg: text('combat.unique_slain', { name: monster.name }), kind: 'combat' });
+  }
+  // A BOSS kill latches the spot's boss counter the same eager way. Announced
+  // only the first time — variant keepers keep spawning, and a hunter farming
+  // the ambush window does not need telling on every rematch.
+  if (spot?.encounters?.some((e) => e.boss && e.monsterId === monster.defId)) {
+    const first = (state.stats[bossKey(spot.id)] ?? 0) === 0;
+    bumpStat(state, bus, bossKey(spot.id));
+    if (first) {
+      bus.emit({ type: 'log', msg: text('combat.keeper_slain', { spot: spot.name }), kind: 'combat' });
+    }
   }
 
   const gold = Math.round(monster.gold * getDerivedStats(state).goldGain);
@@ -1438,7 +1500,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   bus.emit({ type: 'kill', monster });
   bus.emit({
     type: 'log',
-    msg: `☠️ Defeated ${monster.name} (Lv ${monster.level}) — +${gold} gold`,
+    msg: text('combat.defeated', { name: monster.name, level: monster.level, gold }),
     kind: 'combat',
   });
 
@@ -1454,7 +1516,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
     if (spot?.fightLimit) {
       bumpStat(state, bus, fightsKey(spot.id));
       if (spotCleared(state, spot)) {
-        bus.emit({ type: 'log', msg: `🏞️ ${spot.name} is cleared — nothing left here wants to fight.`, kind: 'combat' });
+        bus.emit({ type: 'log', msg: text('combat.spot_cleared', { spot: spot.name }), kind: 'combat' });
       }
     }
     closeCombat(state);
@@ -1486,8 +1548,8 @@ function onDefeat(state: GameState, bus: EventBus): void {
   bus.emit({
     type: 'log',
     msg: forced
-      ? `💫 The ${monster.name} beats you senseless.`
-      : `💫 The ${monster.name} knocks you out. You crawl away to recover...`,
+      ? text('combat.knocked_out_forced', { name: monster.name })
+      : text('combat.knocked_out', { name: monster.name }),
     kind: 'danger',
   });
   closeCombat(state);
@@ -1495,11 +1557,16 @@ function onDefeat(state: GameState, bus: EventBus): void {
   state.recovering = true;
   state.respawnTimer = RESPAWN_DELAY * 2;
   endFight(state, 'knocked_out');
-  // A fight with no way out has its own way of ending badly: you do not come
-  // round where you fell — something dragged you clear, and the havens the
-  // save has been tracking decide where (see systems/safety.ts). Whether the
-  // loss costs anything beyond the retreat is deliberately still open.
-  if (forced) retreatToSafety(state, bus, 'There was no fleeing that fight, and you lost it.');
+  // You do not come round where you fell — something dragged you clear, and
+  // the havens the save has been tracking decide where (systems/safety.ts).
+  // Every knockout, not only a forced fight's (user, 2026-09-12): the last
+  // camp you stood in is where a defeat returns you. Whether the loss costs
+  // anything beyond the retreat is deliberately still open.
+  retreatToSafety(
+    state,
+    bus,
+    forced ? 'There was no fleeing that fight, and you lost it.' : 'Knocked out.',
+  );
 }
 
 // ---------- Active skills ----------
@@ -2645,7 +2712,7 @@ function applyBarDamage(state: GameState, bus: EventBus, when: 'onFill' | 'onDep
     ) {
       const name = ITEMS[state.equipment.weapon.defId]?.name ?? 'your weapon';
       unequipSlot(state, 'weapon');
-      bus.emit({ type: 'log', msg: `⚡ Your grip fails — you drop ${name}!`, kind: 'danger' });
+      bus.emit({ type: 'log', msg: text('combat.weapon_dropped', { name }), kind: 'danger' });
       feed(state, `⚡ You drop ${name}!`);
     }
   }
