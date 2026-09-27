@@ -2128,6 +2128,15 @@ export interface MonsterDef {
   /** Monster ids that fill the remaining slots; absent = re-roll the spot table. */
   escorts?: string[];
   /**
+   * Pack tactics. Each OTHER living pack member in the fight makes this one's
+   * blows land `perMate` harder (0.1 = +10% per packmate), so a full pack
+   * opens at its most dangerous and weakens as it thins — kill order and
+   * anything that reaches past the front slot (cleave, splash, area
+   * workings) are what answer it. `flanks`: it circles rather than queues,
+   * so a pack member swinging from a back slot takes no back-row penalty.
+   */
+  pack?: { perMate: number; flanks?: boolean };
+  /**
    * Fractional damage reduction per incoming type: 0.5 = takes half damage,
    * negative = vulnerable (−0.5 = takes 50% more). Missing = 0.
    */
@@ -3679,7 +3688,28 @@ export interface AreaDef {
   regionId: string;
   /** Place tags for every spot in the area — see `SpotDef.tags`. */
   tags?: string[];
+  /** The backdrop fights here are drawn against (see SceneId). */
+  scene?: SceneId;
 }
+
+/**
+ * Which backdrop the battle stage paints behind a fight. Presentation only —
+ * nothing in the core reads it — but it lives on the data so a place's look
+ * is authored where the place is, and a typo fails the typecheck rather than
+ * quietly painting the default. A spot's own `scene` wins over its area's;
+ * with neither, the UI picks from the place tags.
+ */
+export type SceneId =
+  | 'town'
+  | 'hall'
+  | 'forest'
+  | 'deepwood'
+  | 'warren'
+  | 'crypt'
+  | 'wolfden'
+  | 'hive'
+  | 'glade'
+  | 'webs';
 
 /**
  * The opening a particular way into a fight buys — or costs. Declared on a
@@ -3919,6 +3949,25 @@ export interface SpotEncounter {
    * Content resurrects it by resetting the counter (see `SpotFind.stat`).
    */
   once?: boolean;
+  /**
+   * A FIXED formation: these monster ids stand beside the rolled one, in
+   * order, at its level — instead of the group-size roll, the leader's
+   * escorts and the spot's filler. How a nest fields a composition rather
+   * than a crowd: the shield line with archers behind it, the shaman's
+   * circle. The rolled entry is the first body; the formation pass still
+   * puts a melee in front. At most `ENCOUNTER_SLOTS − 1` entries (linted).
+   */
+  party?: string[];
+  /**
+   * The spot's LAST budgeted fight, and only that: on a `fightLimit` spot
+   * whose next win would spend the budget, finale entries are the only ones
+   * that roll; on every earlier fight they never do. "Always led by the king
+   * at the end" as data. Both lint layers demand a `fightLimit`, an ordinary
+   * entry for the fights before it, and one finale that nothing can gate
+   * away (no `window`, `daypart` or `requires`) — the last fight must always
+   * have someone in it, or the spot can never clear.
+   */
+  finale?: boolean;
 }
 
 export interface SpotDef {
@@ -3937,6 +3986,18 @@ export interface SpotDef {
    * counter (see `SpotFind.stat`).
    */
   fightLimit?: number;
+  /**
+   * The budget must be spent in ONE unbroken push. Wins still count toward
+   * `fightLimit`, but the count only holds while you keep hunting here:
+   * leave the spot, switch to any other activity, or go down, and it falls
+   * back to 0. The next wave also comes faster than an ordinary hunt's —
+   * there is no room between fights to recover in, which is the point: the
+   * test is sustain across the whole push, not one fight. Requires
+   * `fightLimit` (linted); a cleared spot stays cleared.
+   */
+  streak?: boolean;
+  /** How the fight here is drawn (see SceneId). Overrides the area's. */
+  scene?: SceneId;
   /**
    * A menagerie: the fights here are staged, and so is the learning. Kills at
    * a caged spot skip the bestiary's insight roll — every fact unlocks

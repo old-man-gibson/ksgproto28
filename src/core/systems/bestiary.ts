@@ -45,6 +45,7 @@ export function monsterTags(def: MonsterDef): string[] {
   if (def.escorts?.length) add('leader');
   if (def.group?.max === 1) add('solitary');
   if ((def.group?.min ?? 1) > 1) add('swarm');
+  if (def.pack) add('pack');
   if (!tags.some((t) => MONSTER_TAGS[t]?.category === 'element')) add('non_elemental');
 
   return tags;

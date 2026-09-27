@@ -47,10 +47,16 @@ describe('the sequential ascent', () => {
     expect(floorUnlocked(state, FLOORS.ascent_f2)).toBe(false);
     state.stats['gold:earned'] = 150;
     expect(floorUnlocked(state, FLOORS.ascent_f2)).toBe(true);
-    // Floor 3 still waits on floor 2's fight budget, whatever the gold says.
+    // Floor 3 still waits on the Grand Elevator, whatever the gold says —
+    // and on the Elevator itself, not only on the four nests it guards.
     state.stats['gold:earned'] = 10_000;
     expect(floorUnlocked(state, FLOORS.ascent_f3)).toBe(false);
-    state.stats['fights:f2_cistern'] = 8;
+    state.stats['fights:f2_goblin_warren'] = 7;
+    state.stats['fights:f2_crypt'] = 6;
+    state.stats['fights:f2_wolf_runs'] = 6;
+    state.stats['fights:f2_hive'] = 5;
+    expect(floorUnlocked(state, FLOORS.ascent_f3)).toBe(false);
+    state.stats['flag:grand_elevator'] = 1;
     expect(floorUnlocked(state, FLOORS.ascent_f3)).toBe(true);
   });
 

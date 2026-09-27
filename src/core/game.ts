@@ -1,5 +1,5 @@
 import type { GameState, Loadout, SkillTrigger, TriggerCondition } from './types';
-import { activeRotation } from './systems/combat';
+import { activeRotation, tickStreaks } from './systems/combat';
 import { EventBus } from './engine/events';
 import { TPS } from './engine/loop';
 import { registerAchievementListeners } from './systems/achievements';
@@ -187,6 +187,8 @@ export class Game {
       tickBenchWork(this.state, this.bus);
       tickPerformance(this.state, this.bus);
     }
+    // After the action, so a streak is judged on where this tick left you.
+    tickStreaks(this.state, this.bus);
     // Time passes whatever you are doing — travel included — and the sense of
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);

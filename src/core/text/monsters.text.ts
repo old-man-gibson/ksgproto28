@@ -114,4 +114,33 @@ export const MONSTERS_TEXT: ProseTable = {
   'paladin_x.desc': '',
 
   'giant_spider_queen.desc': 'Huge legendary vermin, toxic element. Poison bite with an 85% chance to inflict heavy Poison. Takes 67% less slashing, 50% less poison, 35% less bludgeoning and earth; takes 67% more piercing, 40% more heat and 20% more cold damage. Appears in The Undercrofts. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
+
+  // ---------- Floor 2: the Wildwood ----------
+  'goblin_spearman.desc': 'Small basic goblin. Holds the front of a warband. Piercing attacks with a 15% chance to inflict Punctured. Appears in the Goblin Warren. Drops iron scrap and hardwood; rare drop: Old Spear.',
+
+  'goblin_archer.desc': 'Small basic goblin. Shoots from the back rank for piercing damage with a 10% chance to inflict Bleeding; out of reach until the goblins in front of it fall. Appears in the Goblin Warren. Drops hardwood and fur; rare drop: Hunting Bow.',
+
+  'goblin_cutthroat.desc': 'Small basic goblin. Fast, fragile, and never alone: slashing attacks with a 25% chance to inflict Bleeding. Appears in the Goblin Warren. Rare drops: Iron Dagger, Rune of Swiftness.',
+
+  'goblin_shieldbearer.desc': 'Small veteran goblin behind a shield. Armoured; takes 20% less slashing and 30% less piercing damage, 20% more bludgeoning. Shield blows with a 10% chance to inflict Concussed. Appears in the Goblin Warren. Drops iron scrap; rare drop: Wooden Shield.',
+
+  'goblin_shaman.desc': 'Small veteran goblin caster. Speaks fire from the back rank; out of reach until the goblins in front of it fall. Takes 25% less heat damage. Appears in the Goblin Warren. Drops herbs and Emberbloom; rare drops: Oak Staff, Minor Rune of Might.',
+
+  'goblin_king.desc': 'Large elite goblin, one of a kind. Leads the last fight of every Goblin Warren raid, with two Hobgoblins and a Goblin Shaman. Gathers itself for a half-strength swing, then follows with a Heavy Blow at double damage. Slashing attacks with a 25% chance to inflict Bleeding. Three loot rolls; drops include a Boss Token, gold, Iron Gauntlets, the Moonlit Katana and a Greater Rune of Might.',
+
+  'skeleton.desc': 'Undead humanoid bones. Slashing attacks. Takes 50% less piercing and 30% less slashing damage, 50% more bludgeoning and light damage; nearly immune to poison. Appears in the Sunken Crypt. Drops bone dust; rare drop: Rusty Sword.',
+
+  'skeleton_archer.desc': 'Undead humanoid bones with a bow. Shoots from the back rank for piercing damage. Takes 50% less piercing and 30% less slashing damage, 50% more bludgeoning and light damage; nearly immune to poison. Appears in the Sunken Crypt. Drops bone dust.',
+
+  'haunt.desc': 'Veteran incorporeal spirit, dark element. Wails from the back rank for cold damage with a 30% chance to inflict Chilled. Takes 60% less slashing, piercing and bludgeoning damage; takes 75% more light, 50% more arcane and 30% more heat damage. Low health. Appears in the Sunken Crypt. Drops Gloomcap and bone ash; rare drop: Umbral Rune.',
+
+  'grey_wolf.desc': 'Basic beast, pack hunter. Each other pack member still standing adds 12% to its bites, and it attacks at full strength from any rank. Piercing bites with a 15% chance to inflict Bleeding. Appears in the Wolf Runs. Drops fur and raw meat.',
+
+  'wolf_alpha.desc': 'Large veteran beast, pack leader. Always runs with Grey Wolves, three to five in all. Each other pack member still standing adds 12% to its bites. Piercing bites with a 20% chance to inflict Bleeding. Appears in the Wolf Runs. Drops pristine fur and raw meat; rare drops: Wolf Cloak, Wolf Fang Blade, Rune of Swiftness.',
+
+  'worker_ant.desc': 'Small basic vermin with a chitin shell: flat armour against every physical blow. Takes 20% more bludgeoning and 30% more acid damage. Slashing mandibles. Appears in the Hive Mound. Drops wild honey and forest berries.',
+
+  'soldier_ant.desc': 'Veteran vermin with a thick chitin shell: heavy flat armour against every physical blow. Takes 20% more bludgeoning and 30% more acid damage. Slashing mandibles with a 20% chance to inflict Bleeding. Appears in the Hive Mound. Drops wild honey; rare drop: Minor Rune of Vitality.',
+
+  'spitter_ant.desc': 'Small basic vermin. Spits acid from the back rank with a 30% chance to inflict Corroded, which eats armour. Takes 50% less acid damage. Appears in the Hive Mound. Drops wild honey and Green Vitriol.',
 };

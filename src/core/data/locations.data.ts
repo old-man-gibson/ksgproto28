@@ -53,9 +53,9 @@ export const AREAS: Record<string, AreaDef> = {
   // (towers.data.ts). These areas are CLOSED: no authored edge crosses their
   // boundary (linted, both layers) — the ladder is the only way on or off a
   // banded floor, which is what keeps every gate readable at one door.
-  ascent_f1_area: { id: 'ascent_f1_area', name: 'The Old Toll Level', regionId: 'the_ascent' },
-  ascent_f2_area: { id: 'ascent_f2_area', name: 'The Flooded Stair', regionId: 'the_ascent' },
-  ascent_f3_area: { id: 'ascent_f3_area', name: 'The Silk Gallery', regionId: 'the_ascent' },
+  ascent_f1_area: { id: 'ascent_f1_area', name: 'The Old Toll Level', regionId: 'the_ascent', scene: 'hall' },
+  ascent_f2_area: { id: 'ascent_f2_area', name: 'The Wildwood', regionId: 'the_ascent', scene: 'forest' },
+  ascent_f3_area: { id: 'ascent_f3_area', name: 'The Silk Gallery', regionId: 'the_ascent', scene: 'webs' },
 };
 
 /**
@@ -958,58 +958,221 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     connections: [],
   },
 
-  // --- Floor 2: the Flooded Stair (clear: spend the cistern's fight budget) ---
+  // --- Floor 2: the Wildwood (clear: wake the Grand Elevator) ---
+  //
+  // The first floor with a prestige behind it, so the first with a quest's
+  // shape: find the Grand Elevator, raid the four nests that hold it shut,
+  // wake it. Each nest asks a different question (see the Wildwood section
+  // of monsters.data.ts): the Warren formations, the Crypt damage types, the
+  // Runs crowds, the Mound sustain. The crypt and the Elevator are FOUND —
+  // combing the deep wood reveals their paths — and everything else is in
+  // plain sight from the edge. Levels and budgets are first guesses.
   f2_landing: {
     id: 'f2_landing',
-    name: 'The Waterline',
-    icon: '🪜',
+    name: 'The Treeline Camp',
+    icon: '🏕️',
     areaId: 'ascent_f2_area',
-    map: { x: 18, y: 15 },
-    activities: [{ id: 'camp_f2', kind: 'rest', name: 'Camp on the Landing', icon: '🏕️' }],
-    connections: [
-      { to: 'f2_sluice', ticks: 40 },
-      // The way to the cistern is walked knowing: the spot is forced, and the
-      // travel button says so before the click.
-      { to: 'f2_cistern', ticks: 50 },
-    ],
+    map: { x: 10, y: 40 },
+    activities: [{ id: 'camp_f2', kind: 'rest', name: 'Camp at the Treeline', icon: '🏕️' }],
+    connections: [{ to: 'f2_edge', ticks: 40 }],
   },
-  f2_sluice: {
-    id: 'f2_sluice',
-    name: 'The Sluice Gallery',
-    icon: '🚰',
+  f2_edge: {
+    id: 'f2_edge',
+    name: 'The Wildwood Edge',
+    icon: '🌲',
     areaId: 'ascent_f2_area',
-    map: { x: 8, y: 8 },
-    exploreTicks: 420,
+    map: { x: 26, y: 34 },
+    exploreTicks: 360,
     activities: [
-      { id: 'explore_f2', kind: 'explore', name: 'Trace the Channels', icon: '🔍' },
-      { id: 'train_dex_sluice', kind: 'train', attr: 'dex', name: 'Cross the Wet Stones', icon: '👣' },
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Undergrowth', icon: '⚔️' },
+      { id: 'explore_f2_edge', kind: 'explore', name: 'Scout the Edge', icon: '🔍' },
+    ],
+    encounters: [
+      { monsterId: 'forest_rat', weight: 25, level: [3, 5] },
+      { monsterId: 'young_wolf', weight: 30, level: [4, 6] },
+      { monsterId: 'goblin', weight: 25, level: [4, 6] },
+      { monsterId: 'boar', weight: 20, level: [5, 6] },
     ],
     finds: [
+      { id: 'f2_snared_purse', at: 0.3, gold: [40, 70] },
       {
-        id: 'f2_drowned_purse',
-        at: 0.45,
-        gold: [70, 110],
+        id: 'f2_edge_herbs',
+        at: 0.65,
+        material: { id: 'mendroot', qty: 3 },
+        skillXp: { tags: ['herbalism'], xp: 15 },
+      },
+    ],
+    connections: [
+      { to: 'f2_goblin_warren', ticks: 50 },
+      { to: 'f2_wolf_runs', ticks: 50 },
+      { to: 'f2_deepwood', ticks: 60 },
+    ],
+  },
+  f2_deepwood: {
+    id: 'f2_deepwood',
+    name: 'The Deep Wildwood',
+    icon: '🌳',
+    areaId: 'ascent_f2_area',
+    map: { x: 46, y: 26 },
+    scene: 'deepwood',
+    exploreTicks: 540,
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt Under the Canopy', icon: '⚔️' },
+      { id: 'explore_f2_deep', kind: 'explore', name: 'Comb the Deep Wood', icon: '🔍' },
+    ],
+    encounters: [
+      { monsterId: 'young_wolf', weight: 25, level: [5, 7] },
+      { monsterId: 'goblin', weight: 25, level: [5, 7] },
+      { monsterId: 'boar', weight: 30, level: [6, 8] },
+      { monsterId: 'goblin_archer', weight: 20, level: [5, 7] },
+    ],
+    // Two things in here are FOUND rather than seen: the crypt's stair (the
+    // underground nest) and the Elevator's glade. The glade's find also sets
+    // the flag the Pathwarden's quest reads, so finding it is a fact about the
+    // save — accepted before or after, it counts.
+    finds: [
+      {
+        id: 'f2_root_stair',
+        at: 0.35,
+        path: 'f2_crypt',
+      },
+      { id: 'f2_hunters_cache', at: 0.55, gold: [70, 110] },
+      {
+        id: 'f2_elevator_found',
+        at: 0.8,
+        path: 'f2_elevator',
+        stat: { key: 'flag:elevator_found' },
+      },
+    ],
+    connections: [
+      { to: 'f2_hive', ticks: 60 },
+      { to: 'f2_crypt', ticks: 50, hidden: true },
+      { to: 'f2_elevator', ticks: 70, hidden: true },
+    ],
+  },
+
+  // The four nests. Each holds a fixed budget of fights; the clear is the
+  // budget spent, and the Elevator's gate reads all four.
+  f2_goblin_warren: {
+    id: 'f2_goblin_warren',
+    name: 'The Goblin Warren',
+    icon: '👺',
+    areaId: 'ascent_f2_area',
+    map: { x: 16, y: 18 },
+    scene: 'warren',
+    fightLimit: 7,
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Raid the Warren', icon: '⚔️' }],
+    // Formations, not crowds: each line is a warband with a plan. The spear
+    // line and the shield wall hold the front so the archers and the shaman
+    // behind them keep working; the cutthroats come fast and all at once.
+    // Anything that reaches past the front slot changes these fights.
+    encounters: [
+      { monsterId: 'goblin_spearman', weight: 25, level: [6, 7], party: ['goblin_spearman', 'goblin_archer', 'goblin_archer'] },
+      { monsterId: 'goblin_shieldbearer', weight: 20, level: [6, 7], party: ['goblin_shieldbearer', 'goblin_archer'] },
+      { monsterId: 'hobgoblin', weight: 20, level: [6, 7], party: ['goblin', 'goblin_shaman'] },
+      { monsterId: 'goblin_cutthroat', weight: 20, level: [5, 6], party: ['goblin_cutthroat', 'goblin_cutthroat', 'goblin_cutthroat'] },
+      { monsterId: 'goblin_spearman', weight: 15, level: [6, 7], party: ['goblin_shaman', 'goblin_shaman'] },
+      // The last fight of every raid, and only the last: the king, his two
+      // hobgoblins and a shaman. `boss` latches boss:f2_goblin_warren too.
+      {
+        monsterId: 'goblin_king',
+        weight: 100,
+        level: [8, 8],
+        finale: true,
+        boss: true,
+        party: ['goblin_spearman', 'goblin_shaman'],
       },
     ],
     connections: [],
   },
-  f2_cistern: {
-    id: 'f2_cistern',
-    name: 'The Broken Cistern',
-    icon: '💧',
+  f2_crypt: {
+    id: 'f2_crypt',
+    name: 'The Sunken Crypt',
+    icon: '⚰️',
     areaId: 'ascent_f2_area',
-    map: { x: 26, y: 22 },
-    // Arrival is an ambush by ANY route, and the fight budget is the floor's
-    // clear: fightLimit here and ascent_f2.clear name the same number (linted
-    // to agree). At the limit the cistern is CLEARED — it stops forcing, the
-    // hunts go quiet, and the stair above opens.
-    forced: true,
-    fightLimit: 8,
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Wade In', icon: '⚔️' }],
+    map: { x: 58, y: 40 },
+    scene: 'crypt',
+    tags: ['dark'],
+    fightLimit: 6,
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Descend into the Crypt', icon: '⚔️' }],
+    // Bones up front, haunts behind. The bones fold to anything blunt and
+    // the haunts to light, arcane and fire; a player with a club AND a
+    // spell clears this quickly, a player with only a sword clears it all
+    // the same, slower.
     encounters: [
-      { monsterId: 'slime_water', weight: 60, level: [4, 7] },
-      { monsterId: 'slime_base_advanced', weight: 40, level: [5, 8] },
+      { monsterId: 'skeleton', weight: 30, level: [6, 8], party: ['haunt'] },
+      { monsterId: 'haunt', weight: 20, level: [6, 8], party: ['skeleton'] },
+      { monsterId: 'skeleton', weight: 20, level: [6, 8], party: ['skeleton_archer', 'haunt'] },
+      { monsterId: 'skeleton', weight: 15, level: [6, 7], party: ['skeleton', 'haunt'] },
+      { monsterId: 'haunt', weight: 15, level: [6, 7], party: ['haunt'] },
     ],
+    connections: [],
+  },
+  f2_wolf_runs: {
+    id: 'f2_wolf_runs',
+    name: 'The Wolf Runs',
+    icon: '🐾',
+    areaId: 'ascent_f2_area',
+    map: { x: 34, y: 50 },
+    scene: 'wolfden',
+    fightLimit: 6,
+    // Never fewer than three: the runs are pack country.
+    groupWeights: { 3: 45, 4: 35, 5: 20 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Walk the Runs', icon: '⚔️' }],
+    encounters: [
+      { monsterId: 'grey_wolf', weight: 60, level: [5, 7] },
+      { monsterId: 'wolf_alpha', weight: 40, level: [6, 8] },
+    ],
+    connections: [],
+  },
+  f2_hive: {
+    id: 'f2_hive',
+    name: 'The Hive Mound',
+    icon: '🐜',
+    areaId: 'ascent_f2_area',
+    map: { x: 64, y: 14 },
+    scene: 'hive',
+    fightLimit: 5,
+    // One push: leave, rest or go down and the count starts again, and the
+    // next wave comes before the last one is cold (SpotDef.streak). No camp
+    // here on purpose — the lint forbids one.
+    streak: true,
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Break into the Mound', icon: '⚔️' }],
+    encounters: [
+      { monsterId: 'worker_ant', weight: 25, level: [6, 7], party: ['worker_ant'] },
+      { monsterId: 'soldier_ant', weight: 25, level: [6, 7], party: ['worker_ant'] },
+      { monsterId: 'worker_ant', weight: 20, level: [6, 7], party: ['spitter_ant'] },
+      { monsterId: 'soldier_ant', weight: 15, level: [6, 7], party: ['spitter_ant'] },
+      { monsterId: 'worker_ant', weight: 15, level: [6, 7], party: ['worker_ant', 'worker_ant'] },
+    ],
+    connections: [],
+  },
+
+  // The Grand Elevator: not a machine, a thing that carries whoever it
+  // accepts upward. Waking it IS the floor's clear. The search stalls a tenth
+  // of the way in until all four nests are cleared; past that it runs to
+  // the end, and the last find writes the flag the floor clear reads.
+  f2_elevator: {
+    id: 'f2_elevator',
+    name: 'The Grand Elevator',
+    icon: '🛗',
+    areaId: 'ascent_f2_area',
+    map: { x: 44, y: 8 },
+    scene: 'glade',
+    exploreTicks: 300,
+    activities: [{ id: 'wake_elevator', kind: 'explore', name: 'Wake the Grand Elevator', icon: '✨' }],
+    exploreGates: [
+      {
+        at: 0.1,
+        requires: [
+          { type: 'stat', key: 'fights:f2_goblin_warren', value: 7 },
+          { type: 'stat', key: 'fights:f2_crypt', value: 6 },
+          { type: 'stat', key: 'fights:f2_wolf_runs', value: 6 },
+          { type: 'stat', key: 'fights:f2_hive', value: 5 },
+        ],
+      },
+    ],
+    finds: [{ id: 'f2_elevator_wakes', at: 1, stat: { key: 'flag:grand_elevator' } }],
     connections: [],
   },
 

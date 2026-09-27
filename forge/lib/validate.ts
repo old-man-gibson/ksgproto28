@@ -8,6 +8,7 @@
 
 import type { store as Store } from './store.svelte';
 import type { Connection, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, QuestDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
+import { ENCOUNTER_SLOTS } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
 import { MUSIC_AXES } from '../../src/core/data/music.data';
@@ -360,6 +361,33 @@ export function validate(store: S): Issue[] {
     const bossEntries = (spot.encounters ?? []).filter((e) => e.boss);
     if (bossEntries.length && !bossEntries.some((e) => !e.window)) {
       err('spot', spot.id, 'every boss hides behind a power window — keep one windowless keeper', ['encounters']);
+    }
+    // Nests (mirrors tests/content.test.ts): a finale owns the last budgeted
+    // fight and nothing else does, so a fight with nobody in it is terminal.
+    for (const e of spot.encounters ?? []) {
+      for (const id of e.party ?? []) {
+        if (!monsters[id]) err('spot', spot.id, `${e.monsterId}: party names unknown monster '${id}'`, ['encounters']);
+      }
+      if ((e.party?.length ?? 0) + 1 > ENCOUNTER_SLOTS) {
+        err('spot', spot.id, `${e.monsterId}: party overflows the ${ENCOUNTER_SLOTS} formation slots`, ['encounters']);
+      }
+    }
+    const finaleEntries = (spot.encounters ?? []).filter((e) => e.finale);
+    if (finaleEntries.length) {
+      if (!spot.fightLimit) {
+        err('spot', spot.id, 'a finale needs a fightLimit to be the last of', ['encounters']);
+      } else if (spot.fightLimit > 1 && finaleEntries.length === spot.encounters!.length) {
+        err('spot', spot.id, 'every entry is a finale, so the fights before the last have nobody in them', ['encounters']);
+      }
+      if (!finaleEntries.some((e) => !e.window && !e.daypart && !e.requires?.length)) {
+        err('spot', spot.id, 'every finale can be gated away — keep one that always rolls', ['encounters']);
+      }
+    }
+    if (spot.streak && !spot.fightLimit) {
+      err('spot', spot.id, 'a streak needs a fightLimit to push through', ['streak']);
+    }
+    if (spot.streak && (spot.activities ?? []).some((a) => a.kind === 'rest')) {
+      err('spot', spot.id, 'a streak spot with a rest activity breaks its own push', ['streak']);
     }
     // Retreats land on havens without re-triggering, so this cannot loop —
     // but a camp that ambushes its guests still reads as a mistake.

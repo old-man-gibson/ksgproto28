@@ -900,7 +900,10 @@ function tickExplore(
       type: 'log',
       msg:
         hidden.length > 0
-          ? text('actions.explored_paths', { spot: spot.name, paths: hidden.map((c) => c.label ?? c.to).join(', ') })
+          ? text('actions.explored_paths', {
+              spot: spot.name,
+              paths: hidden.map((c) => c.label ?? getSpot(c.to).name).join(', '),
+            })
           : text('actions.explored', { spot: spot.name }),
       kind: 'explore',
     });

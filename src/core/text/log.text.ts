@@ -81,6 +81,8 @@ export const LOG_TEXT = {
   'combat.keeper_slain': '👑 Keeper of {spot} slain.',
   'combat.defeated': '☠️ Defeated {name} (Lv {level}): +{gold} gold',
   'combat.spot_cleared': '🏞️ {spot} cleared. No encounters remain.',
+  'combat.streak_holds': '⛓️ {spot}: the push holds. {left} more without stopping.',
+  'combat.streak_broken': '⛓️ Push at {spot} broken after {won} wins. The count starts again from 0.',
   'combat.weapon_dropped': '⚡ Grip lost. {name} dropped.',
 
   // ---------- consumables ----------

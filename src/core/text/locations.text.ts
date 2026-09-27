@@ -120,12 +120,28 @@ export const SPOTS_TEXT: ProseTable = {
 
   'f1_toll_hall.desc': 'Den of floor 1. Hunt the Hall fights Goblins and Slimes, one Coin Slime, and the keeper: a Hobgoblin by day or a Slimer by night (levels 6 to 7). Defeating either keeper clears the floor. While your power sits at 90 to 98% of theirs, a Hobgoblin Champion or Slime King (levels 11 to 12) can appear as keeper instead.',
 
-  'f2_landing.desc': 'Landing of floor 2. Camp on the Landing is a rest activity, and the landing is a haven. Connects to the Sluice Gallery and the Broken Cistern; arriving at the cistern starts a fight that cannot be fled.',
+  'f2_landing.desc': 'Landing of floor 2, the Wildwood. Camp at the Treeline is a rest activity, and the camp is a haven: a knockout on this floor returns you here. The Pathwarden stands here. Connects to the Wildwood Edge.',
 
-  'f2_sluice.desc': 'Trace the Channels explores the gallery (42 s) for one find. Cross the Wet Stones trains Dexterity.',
-  'f2_sluice.finds.f2_drowned_purse.desc': '💰 A purse wedged in a sluice gate: 70 to 110 gold.',
+  'f2_edge.desc': 'Hunt the Undergrowth fights Forest Rats, Young Wolves, Goblins and Boars (levels 3 to 6). Scout the Edge explores it (36 s) for two finds. Roads lead to the Goblin Warren, the Wolf Runs and the Deep Wildwood.',
+  'f2_edge.finds.f2_snared_purse.desc': '💰 A purse caught in a poacher’s snare: 40 to 70 gold.',
+  'f2_edge.finds.f2_edge_herbs.desc': '🌿 Three roots of mendroot. Pays Herbalism XP.',
 
-  'f2_cistern.desc': 'Den of floor 2. Arriving starts a fight that cannot be fled. Wade In fights Water Slimes and Slimers (levels 4 to 8). The cistern holds 8 winnable fights; the eighth win clears the floor, ends the forced fights and empties the hunts.',
+  'f2_deepwood.desc': 'Hunt Under the Canopy fights Young Wolves, Goblins, Goblin Archers and Boars (levels 5 to 8). Comb the Deep Wood explores it (54 s): a third of the way in it finds the stair down to the Sunken Crypt, and most of the way in the path to the Grand Elevator. A road leads to the Hive Mound.',
+  'f2_deepwood.finds.f2_root_stair.desc': '🕳️ A stair cut down between tree roots. It leads to the Sunken Crypt.',
+  'f2_deepwood.finds.f2_hunters_cache.desc': '💰 A hunter’s cache in a hollow trunk: 70 to 110 gold.',
+  'f2_deepwood.finds.f2_elevator_found.desc': '🛗 A path of fitted stones through the undergrowth. It ends at the Grand Elevator.',
+
+  'f2_goblin_warren.desc': 'Nest. Raid the Warren fights goblin warbands in set formations (levels 5 to 7): spearmen and shieldbearers hold the front while archers and shamans work from the back rank. The Warren holds 7 winnable fights, and the last is always the Goblin King (level 9) with two Hobgoblins and a Shaman. The seventh win clears it.',
+
+  'f2_crypt.desc': 'Nest. Dark. Descend into the Crypt fights Skeletons, Skeleton Archers and Haunts (levels 6 to 8). Skeletons take extra bludgeoning damage; Haunts take far less physical damage and extra light, arcane and heat damage. The crypt holds 6 winnable fights; the sixth win clears it.',
+
+  'f2_wolf_runs.desc': 'Nest. Walk the Runs fights wolf packs of three to five, led by Grey Wolves or an Alpha Wolf (levels 5 to 8). Each pack member still standing makes the others bite harder, and none of them waits behind the front rank. The runs hold 6 winnable fights; the sixth win clears them.',
+
+  'f2_hive.desc': 'Nest. Break into the Mound fights armoured ants (levels 6 to 8): Workers, Soldiers and acid-spitting Spitters. The mound holds 5 winnable fights and they must be won in one push: leaving, resting or being knocked out resets the count to 0, and each wave arrives a third sooner than an ordinary hunt. The fifth win in a row clears it.',
+
+  'f2_elevator.desc': 'The Grand Elevator. Wake the Grand Elevator takes 30 s and stalls a tenth of the way in until the Goblin Warren, the Sunken Crypt, the Wolf Runs and the Hive Mound are all cleared. Waking it clears floor 2: the floors above open, and so does prestige.',
+  'f2_elevator.exploreGates.0.desc': '🛗 The Elevator stirs and stops. Four nests still hold it: the Goblin Warren, the Sunken Crypt, the Wolf Runs and the Hive Mound.',
+  'f2_elevator.finds.f2_elevator_wakes.desc': '🛗 The Grand Elevator wakes. Floor 2 is cleared: the floors above are open, and prestige is available.',
 
   'f3_landing.desc': 'Landing of floor 3. Camp on the Landing is a rest activity, and the landing is a haven. Connects to the Silk Gallery and the Brood Den.',
 

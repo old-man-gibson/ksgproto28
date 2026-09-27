@@ -1396,4 +1396,386 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
       { id: 'poison', intensity: 50, chance: 0.85 },
     ],
   },
+
+  // ---------- Floor 2: the Wildwood (plans/alpha-band-one-floors.md) ----------
+  //
+  // Four nests, four questions. The WARREN asks about formations: fixed
+  // parties (SpotEncounter.party) of goblins with jobs — a spear line, archers
+  // and a shaman who stay out of reach, a shield wall — and the king at the
+  // end (`finale`). The CRYPT asks about damage types: skeletons fold to
+  // bludgeoning and shrug off points and edges, haunts shrug off anything
+  // physical and fold to light, arcane and fire; nothing is immune, so a plain
+  // sword still gets through, slower. The RUNS ask about crowds: wolves hunt
+  // as a pack (MonsterDef.pack) and never come alone. The HIVE asks about
+  // sustain: ants are armoured, and the mound's fights come as one unbroken
+  // push (SpotDef.streak). Levels and numbers are first guesses for review.
+
+  goblin_spearman: {
+    id: 'goblin_spearman',
+    name: 'Goblin Spearman',
+    icon: '🔱',
+    tags: ['living', 'goblin', 'humanoid', 'small'],
+    tier: 'basic',
+    damageType: 'piercing',
+    inflicts: [{ id: 'punctured', intensity: 0.5, chance: 0.15 }],
+    resistances: { poison: 0.1 },
+    attrs: { str: 6, dex: 7, con: 7, int: 3, wis: 3, cha: 3 },
+    growth: { str: 0.9, dex: 0.9, con: 0.9, int: 0.4, wis: 0.4, cha: 0.4 },
+    xp: 11,
+    gold: [2, 6],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'iron_scrap', weight: 18 },
+        { kind: 'material', id: 'hardwood', weight: 12 },
+        { kind: 'item', id: 'old_spear', weight: 2 },
+        { kind: 'nothing', weight: 68 },
+      ],
+    },
+  },
+  goblin_archer: {
+    id: 'goblin_archer',
+    name: 'Goblin Archer',
+    icon: '🏹',
+    tags: ['living', 'goblin', 'humanoid', 'small'],
+    tier: 'basic',
+    damageType: 'piercing',
+    range: 'ranged',
+    inflicts: [{ id: 'bleeding', intensity: 0.5, chance: 0.1 }],
+    resistances: { poison: 0.1 },
+    attrs: { str: 5, dex: 10, con: 4, int: 3, wis: 4, cha: 3 },
+    growth: { str: 0.8, dex: 1.2, con: 0.6, int: 0.4, wis: 0.5, cha: 0.4 },
+    xp: 11,
+    gold: [2, 6],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'hardwood', weight: 15 },
+        { kind: 'material', id: 'torn_fur', weight: 12 },
+        { kind: 'item', id: 'hunting_bow', weight: 2 },
+        { kind: 'nothing', weight: 71 },
+      ],
+    },
+  },
+  goblin_cutthroat: {
+    id: 'goblin_cutthroat',
+    name: 'Goblin Cutthroat',
+    icon: '🗡️',
+    tags: ['living', 'goblin', 'humanoid', 'small'],
+    tier: 'basic',
+    damageType: 'slashing',
+    inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.25 }],
+    resistances: { poison: 0.1 },
+    attrs: { str: 6, dex: 12, con: 4, int: 3, wis: 3, cha: 3 },
+    growth: { str: 0.9, dex: 1.4, con: 0.6, int: 0.4, wis: 0.4, cha: 0.4 },
+    xp: 10,
+    gold: [3, 7],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'item', id: 'iron_dagger', weight: 3 },
+        { kind: 'material', id: 'torn_fur', weight: 15 },
+        { kind: 'rune', id: 'rune_swiftness', weight: 1 },
+        { kind: 'nothing', weight: 81 },
+      ],
+    },
+  },
+  goblin_shieldbearer: {
+    id: 'goblin_shieldbearer',
+    name: 'Goblin Shieldbearer',
+    icon: '🛡️',
+    tags: ['living', 'goblin', 'humanoid', 'small'],
+    tier: 'veteran',
+    damageType: 'bludgeoning',
+    inflicts: [{ id: 'concussed', intensity: 1, chance: 0.1 }],
+    // The shield: edges and points skid off it, a club still rings it.
+    armor: 3,
+    resistances: { poison: 0.1, slashing: 0.2, piercing: 0.3, bludgeoning: -0.2 },
+    attrs: { str: 6, dex: 4, con: 10, int: 3, wis: 4, cha: 3 },
+    growth: { str: 0.8, dex: 0.5, con: 1.2, int: 0.4, wis: 0.5, cha: 0.4 },
+    xp: 16,
+    gold: [3, 8],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'item', id: 'wooden_shield', weight: 4 },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [1, 2] },
+        { kind: 'nothing', weight: 76 },
+      ],
+    },
+  },
+  // Stands at the back and speaks fire. Reachable only once the line in
+  // front of it is down — or by anything that hits past the front slot.
+  goblin_shaman: {
+    id: 'goblin_shaman',
+    name: 'Goblin Shaman',
+    icon: '🪬',
+    tags: ['living', 'goblin', 'humanoid', 'small'],
+    tier: 'veteran',
+    damageType: 'heat',
+    range: 'ranged',
+    rotation: [{ cast: { school: 'arcane', words: ['fire', 'pierce'] } }],
+    resistances: { poison: 0.1, heat: 0.25 },
+    attrs: { str: 3, dex: 6, con: 5, int: 9, wis: 8, cha: 5 },
+    growth: { str: 0.4, dex: 0.7, con: 0.7, int: 1.2, wis: 1, cha: 0.6 },
+    xp: 20,
+    gold: [4, 10],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'emberbloom', weight: 10 },
+        { kind: 'material', id: 'common_herb', weight: 15, qty: [1, 2] },
+        { kind: 'item', id: 'oak_staff', weight: 3 },
+        { kind: 'rune', id: 'minor_rune_might', weight: 2 },
+        { kind: 'nothing', weight: 70 },
+      ],
+    },
+  },
+  /**
+   * The Warren's finale (`finale: true` in the spot table): every raid ends on
+   * him, with two hobgoblins and a shaman beside him. `unique` is flavour —
+   * the finale rolls once per clear, so there is only ever the one king.
+   * Gather → Heavy Blow is the tell: the half-strength wind-up leaves him
+   * coiled, and the next swing is the one to be ready for.
+   */
+  goblin_king: {
+    id: 'goblin_king',
+    name: 'Goblin King',
+    icon: '👑',
+    tags: ['living', 'goblin', 'humanoid', 'large', 'unique'],
+    tier: 'elite',
+    damageType: 'slashing',
+    inflicts: [{ id: 'bleeding', intensity: 1.5, chance: 0.25 }],
+    rotation: [{ technique: 'gather' }, { technique: 'heavy_blow' }],
+    resistances: { poison: 0.25, slashing: 0.1 },
+    attrs: { str: 9, dex: 7, con: 10, int: 5, wis: 5, cha: 9 },
+    growth: { str: 0.9, dex: 0.7, con: 1.1, int: 0.5, wis: 0.5, cha: 0.8 },
+    xp: 180,
+    gold: [20, 45],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 18 },
+        { kind: 'material', id: 'pristine_fur', weight: 12, qty: [1, 2] },
+        { kind: 'item', id: 'iron_gauntlets', weight: 8 },
+        { kind: 'item', id: 'moonlit_katana', weight: 4 },
+        { kind: 'gold', weight: 20, qty: [40, 90] },
+        { kind: 'rune', id: 'greater_rune_might', weight: 6 },
+        { kind: 'nothing', weight: 32 },
+      ],
+    },
+  },
+
+  skeleton: {
+    id: 'skeleton',
+    name: 'Skeleton',
+    icon: '💀',
+    tags: ['inorganic', 'undead', 'humanoid', 'medium'],
+    tier: 'basic',
+    damageType: 'slashing',
+    // Nothing to stab and little to cut; everything to break.
+    resistances: { piercing: 0.5, slashing: 0.25, bludgeoning: -0.5, poison: 0.9, light: -0.5, cold: 0.3 },
+    armor: 1,
+    attrs: { str: 7, dex: 6, con: 8, int: 1, wis: 2, cha: 0 },
+    growth: { str: 1, dex: 0.8, con: 1, int: 0.2, wis: 0.3, cha: 0 },
+    xp: 13,
+    gold: [2, 6],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'bone_dust', weight: 25, qty: [1, 2] },
+        { kind: 'material', id: 'iron_scrap', weight: 10 },
+        { kind: 'item', id: 'rusty_sword', weight: 3 },
+        { kind: 'nothing', weight: 62 },
+      ],
+    },
+  },
+  skeleton_archer: {
+    id: 'skeleton_archer',
+    name: 'Skeleton Archer',
+    icon: '🦴',
+    tags: ['inorganic', 'undead', 'humanoid', 'medium'],
+    tier: 'basic',
+    damageType: 'piercing',
+    range: 'ranged',
+    resistances: { piercing: 0.5, slashing: 0.25, bludgeoning: -0.5, poison: 0.9, light: -0.5, cold: 0.3 },
+    armor: 1,
+    attrs: { str: 5, dex: 9, con: 6, int: 1, wis: 3, cha: 0 },
+    growth: { str: 0.8, dex: 1.1, con: 0.8, int: 0.2, wis: 0.3, cha: 0 },
+    xp: 13,
+    gold: [2, 6],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'bone_dust', weight: 25, qty: [1, 2] },
+        { kind: 'item', id: 'hunting_bow', weight: 2 },
+        { kind: 'nothing', weight: 73 },
+      ],
+    },
+  },
+  // Nothing physical lands well on it — half off every edge, point and
+  // blunt — but it is thin: little health, and light, arcane and fire go
+  // through it. A sword still wins; a spell wins faster. Melee on purpose:
+  // the crypt's question is what you hit with, not what you can reach (that
+  // is the Warren's), so its haunts come to you.
+  haunt: {
+    id: 'haunt',
+    name: 'Haunt',
+    icon: '👻',
+    tags: ['incorporeal', 'spirit', 'undead', 'dark', 'medium'],
+    tier: 'veteran',
+    damageType: 'cold',
+    inflicts: [{ id: 'chilled', intensity: 1, chance: 0.25 }],
+    resistances: {
+      slashing: 0.5,
+      piercing: 0.5,
+      bludgeoning: 0.5,
+      poison: 1,
+      cold: 0.5,
+      light: -0.75,
+      arcane: -0.5,
+      heat: -0.3,
+    },
+    attrs: { str: 3, dex: 8, con: 4, int: 6, wis: 7, cha: 2 },
+    growth: { str: 0.6, dex: 0.9, con: 0.6, int: 0.8, wis: 0.8, cha: 0.2 },
+    xp: 22,
+    gold: [3, 8],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'gloomcap', weight: 10 },
+        { kind: 'material', id: 'bone_ash', weight: 12 },
+        { kind: 'rune', id: 'umbral_rune', weight: 1 },
+        { kind: 'nothing', weight: 77 },
+      ],
+    },
+  },
+
+  // The runs' wolves hunt as one animal: every packmate still standing
+  // makes the others land harder, and none of them waits its turn behind
+  // the front slot. The fight opens at its worst and eases as it thins.
+  grey_wolf: {
+    id: 'grey_wolf',
+    name: 'Grey Wolf',
+    icon: '🐺',
+    tags: ['living', 'beast', 'medium'],
+    tier: 'basic',
+    damageType: 'piercing',
+    inflicts: [{ id: 'bleeding', intensity: 0.5, chance: 0.15 }],
+    pack: { perMate: 0.12, flanks: true },
+    attrs: { str: 6, dex: 8, con: 5, int: 1, wis: 3, cha: 0 },
+    growth: { str: 0.9, dex: 1, con: 0.7, int: 0.3, wis: 0.4, cha: 0 },
+    xp: 10,
+    gold: [1, 4],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'torn_fur', weight: 22 },
+        { kind: 'material', id: 'raw_meat', weight: 15 },
+        { kind: 'material', id: 'pristine_fur', weight: 3 },
+        { kind: 'nothing', weight: 60 },
+      ],
+    },
+  },
+  wolf_alpha: {
+    id: 'wolf_alpha',
+    name: 'Alpha Wolf',
+    icon: '🐺',
+    tags: ['living', 'beast', 'large'],
+    tier: 'veteran',
+    damageType: 'piercing',
+    inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.2 }],
+    pack: { perMate: 0.12, flanks: true },
+    group: { min: 3, max: 5 },
+    escorts: ['grey_wolf'],
+    attrs: { str: 8, dex: 9, con: 8, int: 2, wis: 4, cha: 2 },
+    growth: { str: 1.1, dex: 1.1, con: 1, int: 0.4, wis: 0.5, cha: 0.3 },
+    xp: 20,
+    gold: [3, 8],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'pristine_fur', weight: 12 },
+        { kind: 'material', id: 'raw_meat', weight: 15, qty: [1, 2] },
+        { kind: 'item', id: 'wolf_cloak', weight: 3 },
+        { kind: 'item', id: 'wolf_fang_blade', weight: 1 },
+        { kind: 'rune', id: 'rune_swiftness', weight: 1 },
+        { kind: 'nothing', weight: 68 },
+      ],
+    },
+  },
+
+  // Chitin: flat armour that shaves every physical blow (answered by heavy
+  // hits and armour penetration, or by acid, which eats it — see `corroded`),
+  // plus a joint a hammer finds. Tough rather than dangerous; the mound's
+  // danger is that it never lets you stop.
+  worker_ant: {
+    id: 'worker_ant',
+    name: 'Worker Ant',
+    icon: '🐜',
+    tags: ['living', 'vermin', 'small'],
+    tier: 'basic',
+    damageType: 'slashing',
+    armor: 3,
+    resistances: { bludgeoning: -0.2, acid: -0.3 },
+    attrs: { str: 5, dex: 5, con: 9, int: 1, wis: 2, cha: 0 },
+    growth: { str: 0.8, dex: 0.6, con: 1.1, int: 0.2, wis: 0.3, cha: 0 },
+    xp: 10,
+    gold: [1, 4],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'wild_honey', weight: 15 },
+        { kind: 'material', id: 'forest_berries', weight: 10 },
+        { kind: 'nothing', weight: 75 },
+      ],
+    },
+  },
+  soldier_ant: {
+    id: 'soldier_ant',
+    name: 'Soldier Ant',
+    icon: '🐜',
+    tags: ['living', 'vermin', 'medium'],
+    tier: 'veteran',
+    damageType: 'slashing',
+    inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.2 }],
+    armor: 5,
+    resistances: { bludgeoning: -0.2, acid: -0.3 },
+    attrs: { str: 8, dex: 5, con: 11, int: 1, wis: 2, cha: 0 },
+    growth: { str: 1.1, dex: 0.6, con: 1.3, int: 0.2, wis: 0.3, cha: 0 },
+    xp: 18,
+    gold: [2, 6],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'wild_honey', weight: 18, qty: [1, 2] },
+        { kind: 'rune', id: 'minor_rune_vitality', weight: 2 },
+        { kind: 'nothing', weight: 80 },
+      ],
+    },
+  },
+  spitter_ant: {
+    id: 'spitter_ant',
+    name: 'Spitter Ant',
+    icon: '🪲',
+    tags: ['living', 'vermin', 'small'],
+    tier: 'basic',
+    damageType: 'acid',
+    range: 'ranged',
+    inflicts: [{ id: 'corroded', intensity: 1, chance: 0.2 }],
+    armor: 2,
+    resistances: { acid: 0.5, bludgeoning: -0.2 },
+    attrs: { str: 4, dex: 6, con: 6, int: 1, wis: 2, cha: 0 },
+    growth: { str: 0.6, dex: 0.8, con: 0.8, int: 0.2, wis: 0.3, cha: 0 },
+    xp: 12,
+    gold: [1, 4],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'green_vitriol', weight: 8 },
+        { kind: 'material', id: 'wild_honey', weight: 10 },
+        { kind: 'nothing', weight: 82 },
+      ],
+    },
+  },
 });

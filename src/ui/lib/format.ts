@@ -192,8 +192,20 @@ export function termText(cond: UnlockCondition, state: GameState): string {
     }
     const fights = cond.key.match(/^fights:(.+)$/);
     if (fights) {
-      const where = SPOTS[fights[1]]?.name ?? fights[1];
-      return `Win the fights in ${where} (${Math.min(have, cond.value)}/${cond.value})`;
+      const spot = SPOTS[fights[1]];
+      const where = spot?.name ?? fights[1];
+      const count = `(${Math.min(have, cond.value)}/${cond.value})${done}`;
+      return spot?.streak
+        ? `Win the fights in ${where} in one push ${count}`
+        : `Win the fights in ${where} ${count}`;
+    }
+    // A `flag:` is written by a find; name the search that writes it.
+    if (cond.key.startsWith('flag:')) {
+      for (const spot of Object.values(SPOTS)) {
+        if (!spot.finds?.some((f) => f.stat?.key === cond.key)) continue;
+        const act = spot.activities.find((a) => a.kind === 'explore');
+        if (act) return `${act.name} in ${spot.name}${done}`;
+      }
     }
     const boss = cond.key.match(/^boss:(.+)$/);
     if (boss) {

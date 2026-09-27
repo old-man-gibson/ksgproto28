@@ -3,7 +3,7 @@ import { STARTING_SPOT } from './data/locations.data';
 import { freshMutagenState } from './data/mutagens.data';
 import { freshPrestigeState } from './data/prestige.data';
 
-export const SAVE_VERSION = 53;
+export const SAVE_VERSION = 54;
 
 
 function freshAttrs(): Record<AttributeId, AttrState> {

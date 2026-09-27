@@ -26,4 +26,15 @@ export const QUESTS_TEXT: ProseTable = {
 
   'the_first_ascent.desc': 'Defeat the keeper of the Toll Hall on floor 1: a Hobgoblin by day or a Slimer by night. Either clears the floor. Reward: 350 gold, 1 favor. Requires A Taste of Everything.',
   'the_first_ascent.objectives.0.desc': 'Defeat the keeper of the Toll Hall (Hobgoblin by day, Slimer by night)',
+
+  'into_the_wildwood.desc': 'Climb to floor 2, the Wildwood, and talk to the Pathwarden at the Treeline Camp. Floor 2 opens at 150 gold earned in total. Reward: 100 gold. Requires The First Ascent.',
+  'into_the_wildwood.objectives.0.desc': 'Meet the Pathwarden at the Treeline Camp (floor 2)',
+
+  'the_grand_elevator.desc': 'Find the Grand Elevator in the Deep Wildwood, clear the four nests that keep it asleep, and wake it. Waking it clears floor 2, opens the floors above and makes prestige available. Reward: 600 gold, 2 favor, 60 Scouting XP.',
+  'the_grand_elevator.objectives.0.desc': 'Find the path to the Grand Elevator (comb the Deep Wildwood)',
+  'the_grand_elevator.objectives.1.desc': 'Raid the Goblin Warren, down to its king',
+  'the_grand_elevator.objectives.2.desc': 'Clear the Sunken Crypt (its stair is in the Deep Wildwood)',
+  'the_grand_elevator.objectives.3.desc': 'Break the packs in the Wolf Runs',
+  'the_grand_elevator.objectives.4.desc': 'Clear the Hive Mound in one unbroken push',
+  'the_grand_elevator.objectives.5.desc': 'Wake the Grand Elevator',
 };

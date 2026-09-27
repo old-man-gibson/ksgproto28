@@ -54,7 +54,7 @@ import { checkDiscovery, grantSkillXp, isUnlocked } from './skills';
 import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from './exposure';
 import { itemName, unequipSlot } from './equipment';
 import { effectiveStyleDef, effectiveStyleId } from './styles';
-import { bumpStat } from './achievements';
+import { bumpStat, setStat } from './achievements';
 import { monsterTagSet } from './bestiary';
 import { createItem, grantRune, weaponRuneBonuses } from './runes';
 // Mutual with alchemy.ts, which needs this module's feed/monsterSlice/sweepDead
@@ -661,6 +661,8 @@ import {
 import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
+/** The breather between waves on a `streak` spot — a third of an ordinary one. */
+const STREAK_RESPAWN_DELAY = 5;
 
 export { MONSTER_ACTION_BAR };
 
@@ -683,6 +685,41 @@ export const POSITION_MODS: Record<
     ranged: { damage: 1, fill: 1, stunPerTick: 0, stunCap: 0 },
   },
 };
+
+/**
+ * How many OTHER living pack members stand with this one (MonsterDef.pack).
+ * Zero for anything that is not itself a pack animal.
+ */
+export function packMates(c: CombatState, e: MonsterInstance): number {
+  if (!MONSTERS[e.defId]?.pack) return 0;
+  let n = 0;
+  for (const o of c.enemies) if (o && o !== e && MONSTERS[o.defId]?.pack) n += 1;
+  return n;
+}
+
+/** What pack tactics add to this one's blows right now — 1 when alone or no pack. */
+export function packMultiplier(c: CombatState, e: MonsterInstance): number {
+  const pack = MONSTERS[e.defId]?.pack;
+  return pack ? 1 + pack.perMate * packMates(c, e) : 1;
+}
+
+/**
+ * The slot's position modifier, with pack tactics folded in: a flanking pack
+ * member takes the front's terms from any slot, and every packmate still
+ * standing adds to how hard it lands. Returns the shared table entry
+ * untouched for everything else, so ordinary monsters allocate nothing.
+ */
+export function positionMod(
+  c: CombatState,
+  e: MonsterInstance,
+  slot: number,
+): { damage: number; fill: number; stunPerTick: number; stunCap: number } {
+  const pack = MONSTERS[e.defId]?.pack;
+  const row = slot === 0 || (pack?.flanks && e.range === 'melee') ? 'front' : 'back';
+  const base = POSITION_MODS[row][e.range];
+  if (!pack) return base;
+  return { ...base, damage: base.damage * packMultiplier(c, e) };
+}
 
 /**
  * Push a line to the rolling fight log. It lives on the state (not the
@@ -768,7 +805,10 @@ export function encounterPowerRatio(state: GameState, e: SpotEncounter): number 
  */
 export function eligibleEncounters(state: GameState, spot: SpotDef): SpotEncounter[] {
   const night = isNightNow(state);
+  const finale = onFinaleFight(state, spot);
   return (spot.encounters ?? []).filter((e) => {
+    // The last budgeted fight belongs to the finale, and nothing else does.
+    if (!!e.finale !== finale) return false;
     if (e.once && (state.stats[slainKey(spot.id, e.monsterId)] ?? 0) > 0) return false;
     // The clock decides which keeper holds the floor tonight.
     if (e.daypart && (e.daypart === 'night') !== night) return false;
@@ -791,20 +831,48 @@ export function spotCleared(state: GameState, spot: SpotDef): boolean {
   return !!spot.fightLimit && (state.stats[fightsKey(spot.id)] ?? 0) >= spot.fightLimit;
 }
 
+/**
+ * True when the next win here would spend the budget AND the spot has a
+ * finale to spend it on (see SpotEncounter.finale). A spot without one has
+ * no special last fight, so this is simply false there.
+ */
+export function onFinaleFight(state: GameState, spot: SpotDef): boolean {
+  if (!spot.fightLimit || !spot.encounters?.some((e) => e.finale)) return false;
+  return (state.stats[fightsKey(spot.id)] ?? 0) === spot.fightLimit - 1;
+}
+
+/**
+ * Roll which line of the spot's table shows up next. Separate from minting so
+ * a formation can see the line it came from (its `party`); the RNG draws are
+ * the same ones `spawnMonster` has always made, in the same order.
+ */
+function pickSpawn(state: GameState, spot: SpotDef): SpotEncounter {
+  const table = eligibleEncounters(state, spot);
+  // A rare thing that lives here is a drop like any other — "I have hunted this
+  // ravine for an hour and never seen the hawk" is the same complaint as a fang
+  // blade that will not fall. Keyed per spot: the ravine's hawk is not the
+  // moor's. Escorts roll nothing, so they pay nothing.
+  return mercyPick(state, table, (e, rate) => (mercyTracked(rate) ? `spawn:${spot.id}:${e.monsterId}` : null));
+}
+
 export function spawnMonster(
   state: GameState,
   spot: SpotDef,
   /** Mint a specific monster (escorts) instead of rolling the spot table. */
   override?: { monsterId: string; level: number },
 ): MonsterInstance {
-  const table = eligibleEncounters(state, spot);
-  // A rare thing that lives here is a drop like any other — "I have hunted this
-  // ravine for an hour and never seen the hawk" is the same complaint as a fang
-  // blade that will not fall. Keyed per spot: the ravine's hawk is not the
-  // moor's. Escorts (`override`) roll nothing, so they pay nothing.
   const pick = override
     ? { monsterId: override.monsterId, level: [override.level, override.level] as [number, number] }
-    : mercyPick(state, table, (e, rate) => (mercyTracked(rate) ? `spawn:${spot.id}:${e.monsterId}` : null));
+    : pickSpawn(state, spot);
+  return mintMonster(state, spot, pick);
+}
+
+/** One specimen of a chosen line: level, tier, modifier and rarity rolled. */
+function mintMonster(
+  state: GameState,
+  spot: SpotDef,
+  pick: { monsterId: string; level: [number, number] },
+): MonsterInstance {
   const def = MONSTERS[pick.monsterId];
   const level = randInt(state, pick.level[0], pick.level[1]);
 
@@ -941,7 +1009,18 @@ function rollGroupSize(state: GameState, spot: SpotDef, leader: MonsterDef): num
  * Melee take the front slot where possible — ranged fight better from the back.
  */
 export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | null)[] {
-  const leader = spawnMonster(state, spot);
+  const line = pickSpawn(state, spot);
+  const leader = mintMonster(state, spot, line);
+  if (line.party?.length) {
+    // A composition, not a crowd: exactly these, at the leader's level.
+    const members = [
+      leader,
+      ...line.party
+        .slice(0, ENCOUNTER_SLOTS - 1)
+        .map((monsterId) => mintMonster(state, spot, { monsterId, level: [leader.level, leader.level] })),
+    ];
+    return formation(members);
+  }
   const size = rollGroupSize(state, spot, MONSTERS[leader.defId]);
   const escorts = MONSTERS[leader.defId].escorts;
 
@@ -976,7 +1055,11 @@ export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | 
     }
   }
 
-  // Formation pass: put a melee up front if the group has one.
+  return formation(members);
+}
+
+/** Formation pass: put a melee up front if the group has one, then slot them. */
+function formation(members: MonsterInstance[]): (MonsterInstance | null)[] {
   const frontIndex = members.findIndex((m) => m.range === 'melee');
   if (frontIndex > 0) {
     [members[0], members[frontIndex]] = [members[frontIndex], members[0]];
@@ -1052,6 +1135,42 @@ function startEncounter(state: GameState, bus: EventBus, spot: SpotDef, forced =
       ? `${lead.icon} ${lead.name} (Lv ${lead.level}) and ${group.length - 1} others attack!`
       : `${lead.icon} ${lead.name} (Lv ${lead.level}) attacks!`,
   );
+}
+
+// ---------- Streaks (SpotDef.streak) ----------
+
+let streakSpotCache: SpotDef[] | null = null;
+/** The spots whose budget must be spent in one push. Content is static. */
+function streakSpots(): SpotDef[] {
+  return (streakSpotCache ??= Object.values(SPOTS).filter((s) => s.streak && s.fightLimit));
+}
+
+/**
+ * Still pushing: standing at the spot, not walking away, not down, and either
+ * mid-fight or hunting. Anything else — a road, a camp, a craft, a knockout's
+ * retreat — is the push abandoned.
+ */
+export function streakHolding(state: GameState, spot: SpotDef): boolean {
+  if (state.spot !== spot.id || state.travel || state.recovering) return false;
+  if (state.combat) return true;
+  return spot.activities.find((a) => a.id === state.activity)?.kind === 'hunt';
+}
+
+/**
+ * Break any streak the player is no longer pushing. Once a tick, from the
+ * game loop — reading the player's situation rather than hooking each way
+ * out, so a new way to leave a spot can never forget to break one. A cleared
+ * spot stays cleared: only a count strictly between 0 and the budget resets.
+ */
+export function tickStreaks(state: GameState, bus: EventBus): void {
+  for (const spot of streakSpots()) {
+    const key = fightsKey(spot.id);
+    const won = state.stats[key] ?? 0;
+    if (won <= 0 || won >= spot.fightLimit!) continue;
+    if (streakHolding(state, spot)) continue;
+    setStat(state, bus, key, 0);
+    bus.emit({ type: 'log', msg: text('combat.streak_broken', { spot: spot.name, won }), kind: 'danger' });
+  }
 }
 
 /** True while the live fight is one that refuses to be walked away from. */
@@ -1517,11 +1636,15 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
       bumpStat(state, bus, fightsKey(spot.id));
       if (spotCleared(state, spot)) {
         bus.emit({ type: 'log', msg: text('combat.spot_cleared', { spot: spot.name }), kind: 'combat' });
+      } else if (spot.streak) {
+        const left = spot.fightLimit - (state.stats[fightsKey(spot.id)] ?? 0);
+        feed(state, text('combat.streak_holds', { spot: spot.name, left }));
       }
     }
     closeCombat(state);
     endFight(state, 'won');
-    state.respawnTimer = RESPAWN_DELAY;
+    // A streak spot gives no room to recover between waves (SpotDef.streak).
+    state.respawnTimer = spot?.streak && !spotCleared(state, spot) ? STREAK_RESPAWN_DELAY : RESPAWN_DELAY;
     return;
   }
   if (index === 0) {
@@ -3676,7 +3799,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     if (!e) continue;
     // The terms of an honorable duel: everyone but the front can only watch.
     if (i > 0 && statusPacifiesFlankers(state)) continue;
-    const mod = POSITION_MODS[i === 0 ? 'front' : 'back'][e.range];
+    const mod = positionMod(c, e, i);
     const es = monsterStats(e);
 
     // A shock runs the bar BACKWARDS at the rate it would have filled — the

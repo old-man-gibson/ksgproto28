@@ -72,6 +72,39 @@ export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
     objectives: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1, }],
     rewards: { gold: 350, favor: 1 },
   },
+  // The hand-off to floor 2: the Warden points you at the Pathwarden, who
+  // explains the floor. `talk` reads met:* live, so a climber who got there
+  // first has already done it.
+  into_the_wildwood: {
+    id: 'into_the_wildwood',
+    name: 'Into the Wildwood',
+    giver: 'warden_of_the_foot',
+    requirements: [{ type: 'quest', id: 'the_first_ascent' }],
+    objectives: [{ type: 'talk', npcId: 'pathwarden' }],
+    rewards: { gold: 100 },
+  },
+
+  // ---------- Floor 2: the Wildwood ----------
+  //
+  // The floor's clear written as a quest (user, 2026-09-26: "find and
+  // activate the Grand Elevator"). Every objective reads a counter LIVE, so
+  // nothing done before accepting it is lost — and the floor clears on the
+  // same counters whether or not the quest was ever taken (towers.data.ts):
+  // the quest is the guide and the purse, never the gate.
+  the_grand_elevator: {
+    id: 'the_grand_elevator',
+    name: 'The Grand Elevator',
+    giver: 'pathwarden',
+    objectives: [
+      { type: 'stat', key: 'flag:elevator_found', value: 1 },
+      { type: 'stat', key: 'fights:f2_goblin_warren', value: 7 },
+      { type: 'stat', key: 'fights:f2_crypt', value: 6 },
+      { type: 'stat', key: 'fights:f2_wolf_runs', value: 6 },
+      { type: 'stat', key: 'fights:f2_hive', value: 5 },
+      { type: 'stat', key: 'flag:grand_elevator', value: 1 },
+    ],
+    rewards: { gold: 600, favor: 2, skillXp: [{ id: 'scouting', xp: 60 }] },
+  },
 
   // ---- Vermin Festival quest chain -----
   /* DESC:

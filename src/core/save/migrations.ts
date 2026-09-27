@@ -13,6 +13,43 @@ import { freshPrestigeState } from '../data/prestige.data';
 import { conditionsMet } from '../systems/conditions';
 
 /**
+ * Every list that names a spot or a quest, pruned to what the registry still
+ * knows; a save standing on a place that no longer exists wakes at the Foot
+ * with its journey cancelled. Content-agnostic on purpose (see v48), so any
+ * removal is covered by the same rule.
+ */
+function pruneToRegistry(raw: Record<string, unknown>): void {
+  const known = (id: unknown): id is string => typeof id === 'string' && id in SPOTS;
+  const spotLost = !known(raw.spot);
+  if (spotLost) {
+    raw.spot = STARTING_SPOT;
+    raw.activity = null;
+    raw.pendingApproach = null;
+  }
+  const travel = raw.travel as { from?: unknown; to?: unknown } | null | undefined;
+  if (travel && (!known(travel.from) || !known(travel.to))) raw.travel = null;
+  const plan = Array.isArray(raw.travelPlan) ? (raw.travelPlan as unknown[]) : [];
+  if (spotLost || raw.travel === null || !plan.every(known)) raw.travelPlan = [];
+  const discovered = Array.isArray(raw.discovered) ? (raw.discovered as unknown[]) : [];
+  const kept = discovered.filter(known);
+  if (!kept.includes(raw.spot as string)) kept.push(raw.spot as string);
+  raw.discovered = kept;
+  const safe = raw.safeSpots as { nearest?: unknown; unconditional?: unknown } | undefined;
+  if (safe) {
+    if (!known(safe.nearest)) safe.nearest = null;
+    if (!known(safe.unconditional)) safe.unconditional = null;
+  }
+  const quests = (raw.quests as Record<string, unknown> | undefined) ?? {};
+  for (const id of Object.keys(quests)) if (!(id in QUESTS)) delete quests[id];
+  raw.quests = quests;
+  // The navigation fields (v53) name spots too; absent on older saves.
+  const intent = raw.travelIntent as { spot?: unknown } | null | undefined;
+  if (intent && !known(intent.spot)) raw.travelIntent = null;
+  const resume = raw.resumeActivity as Record<string, unknown> | undefined;
+  if (resume) for (const id of Object.keys(resume)) if (!known(id)) delete resume[id];
+}
+
+/**
  * Save migrations. When SAVE_VERSION bumps, add an entry keyed by the OLD
  * version that upgrades a save to the next version. Applied in sequence.
  */
@@ -487,29 +524,7 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
   // Counters keyed by old spot ids (`fights:*`, `explored`) are left alone —
   // they are inert, and a revived map would want them back.
   48: (raw) => {
-    const known = (id: unknown): id is string => typeof id === 'string' && id in SPOTS;
-    const spotLost = !known(raw.spot);
-    if (spotLost) {
-      raw.spot = STARTING_SPOT;
-      raw.activity = null;
-      raw.pendingApproach = null;
-    }
-    const travel = raw.travel as { from?: unknown; to?: unknown } | null | undefined;
-    if (travel && (!known(travel.from) || !known(travel.to))) raw.travel = null;
-    const plan = Array.isArray(raw.travelPlan) ? (raw.travelPlan as unknown[]) : [];
-    if (spotLost || raw.travel === null || !plan.every(known)) raw.travelPlan = [];
-    const discovered = Array.isArray(raw.discovered) ? (raw.discovered as unknown[]) : [];
-    const kept = discovered.filter(known);
-    if (!kept.includes(raw.spot as string)) kept.push(raw.spot as string);
-    raw.discovered = kept;
-    const safe = raw.safeSpots as { nearest?: unknown; unconditional?: unknown } | undefined;
-    if (safe) {
-      if (!known(safe.nearest)) safe.nearest = null;
-      if (!known(safe.unconditional)) safe.unconditional = null;
-    }
-    const quests = (raw.quests as Record<string, unknown> | undefined) ?? {};
-    for (const id of Object.keys(quests)) if (!(id in QUESTS)) delete quests[id];
-    raw.quests = quests;
+    pruneToRegistry(raw);
     raw.version = 49;
   },
   // v49 → v50: prestige (systems/prestige.ts). The legacy block starts
@@ -554,6 +569,15 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     raw.resumeActivity = raw.resumeActivity ?? {};
     raw.bonusTime = raw.bonusTime ?? { banked: 0, spending: false };
     raw.version = 53;
+  },
+  // v53 → v54: floor 2 rebuilt as the Wildwood (plans/alpha-band-one-floors.md).
+  // The Flooded Stair's sluice and cistern are gone; v48's prune wakes anyone
+  // standing on them at the Foot. `fights:f2_cistern` stays, inert — it no
+  // longer clears anything, so a save that cleared the old floor 2 walks the
+  // new one before floor 3 opens again.
+  53: (raw) => {
+    pruneToRegistry(raw);
+    raw.version = 54;
   },
 };
 

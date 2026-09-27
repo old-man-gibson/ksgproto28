@@ -44,7 +44,7 @@ import {
   FLOORS,
   STARTING_SPOT,
 } from '../src/core/registry';
-import { RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/types';
+import { ENCOUNTER_SLOTS, RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/types';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCES } from '../src/core/data/resources.data';
 import { XP_BASE, XP_RATE } from '../src/core/data/progression.data';
@@ -107,6 +107,15 @@ function statCounterValid(key: string): boolean {
     return !!SPOTS[key.slice(5)]?.encounters?.some((e) => e.boss);
   }
   if (key.startsWith('kills:')) return key.slice(6) in MONSTERS;
+  // `fights:<spot>` counts wins against a spot's fight budget (combat.ts).
+  if (key.startsWith('fights:')) return SPOTS[key.slice(7)]?.fightLimit !== undefined;
+  // `slain:<spot>:<monster>` latches a `once` spawn's kill (combat.ts).
+  const slain = key.match(/^slain:([^:]+):(.+)$/);
+  if (slain) return !!SPOTS[slain[1]]?.encounters?.some((e) => e.monsterId === slain[2] && e.once);
+  // `flag:*` is the cross-room wire: something must actually write it.
+  if (key.startsWith('flag:')) {
+    return Object.values(SPOTS).some((s) => s.finds?.some((f) => f.stat?.key === key));
+  }
   if (key.startsWith('gather:')) return key.slice(7) in MATERIALS;
   if (key.startsWith('attr:')) return VALID_ATTRS.has(key.slice(5) as never);
   return false;
@@ -615,6 +624,59 @@ describe('world graph', () => {
           `${spot.id}: every boss hides behind a power window — keep one windowless keeper`,
         ).toBe(true);
       }
+    }
+  });
+
+  /**
+   * Nests (SpotEncounter.party / .finale, SpotDef.streak). A finale owns the
+   * last budgeted fight and nothing else does, so the shapes that would
+   * leave a fight with nobody in it are terminal states: a finale with no
+   * budget to be last in, a budget whose earlier fights have only finales to
+   * roll, or a last fight every finale can be gated out of.
+   */
+  it('parties are real and fit the field; finales and streaks have a budget to shape', () => {
+    for (const spot of Object.values(SPOTS)) {
+      const encounters = spot.encounters ?? [];
+      for (const e of encounters) {
+        const owner = `${spot.id}/${e.monsterId}`;
+        for (const id of e.party ?? []) {
+          expect(MONSTERS[id], `${owner}: party names unknown monster '${id}'`).toBeDefined();
+        }
+        expect(
+          (e.party?.length ?? 0) + 1,
+          `${owner}: party overflows the ${ENCOUNTER_SLOTS} formation slots`,
+        ).toBeLessThanOrEqual(ENCOUNTER_SLOTS);
+      }
+      const finales = encounters.filter((e) => e.finale);
+      if (finales.length) {
+        expect(spot.fightLimit, `${spot.id}: a finale needs a fightLimit to be the last of`).toBeDefined();
+        if ((spot.fightLimit ?? 0) > 1) {
+          expect(
+            encounters.some((e) => !e.finale),
+            `${spot.id}: every entry is a finale, so the fights before the last have nobody in them`,
+          ).toBe(true);
+        }
+        expect(
+          finales.some((e) => !e.window && !e.daypart && !e.requires?.length),
+          `${spot.id}: every finale can be gated away — keep one that always rolls`,
+        ).toBe(true);
+      }
+      if (spot.streak) {
+        expect(spot.fightLimit, `${spot.id}: a streak needs a fightLimit to push through`).toBeDefined();
+        // You leave to rest, and leaving breaks the push — a camp here would
+        // be a streak spot that breaks itself.
+        expect(
+          spot.activities.some((a) => a.kind === 'rest'),
+          `${spot.id}: a streak spot with a rest activity breaks its own push`,
+        ).toBe(false);
+      }
+    }
+    for (const m of Object.values(MONSTERS)) {
+      if (!m.pack) continue;
+      expect(
+        Number.isFinite(m.pack.perMate) && m.pack.perMate >= 0,
+        `${m.id}: pack.perMate must be a finite, non-negative share`,
+      ).toBe(true);
     }
   });
 

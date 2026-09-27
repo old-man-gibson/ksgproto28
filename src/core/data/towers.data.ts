@@ -110,7 +110,7 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
   },
   ascent_f2: {
     id: 'ascent_f2',
-    name: 'The Flooded Stair',
+    name: 'The Wildwood',
     towerId: 'the_ascent',
     bandId: 'ascent_lower',
     index: 2,
@@ -119,9 +119,20 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     // Pure accumulation: ~a dozen shifts at a Threshold job, or floor 1's
     // fights. Accrues from acting at all.
     gate: [{ type: 'stat', key: 'gold:earned', value: 150 }],
-    // The clear is a spent fight budget: the cistern's fightLimit and this
-    // number are the same dial and are linted to agree.
-    clear: [{ type: 'stat', key: 'fights:f2_cistern', value: 8 }],
+    // Waking the Grand Elevator, which the glade's search gates on the four
+    // nests. The nests are listed too, so the ladder shows the road rather
+    // than only its end — every term here is a counter a win or a search
+    // writes, none of them a quest turn-in (COMPLETABILITY.md §6: a quest
+    // clear strains the player who never reads; the Pathwarden's quest only
+    // points at this). The first prestige opens on the same clear
+    // (prestige.data.ts reads this very array).
+    clear: [
+      { type: 'stat', key: 'fights:f2_goblin_warren', value: 7 },
+      { type: 'stat', key: 'fights:f2_crypt', value: 6 },
+      { type: 'stat', key: 'fights:f2_wolf_runs', value: 6 },
+      { type: 'stat', key: 'fights:f2_hive', value: 5 },
+      { type: 'stat', key: 'flag:grand_elevator', value: 1 },
+    ],
   },
   ascent_f3: {
     id: 'ascent_f3',

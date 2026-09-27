@@ -23,6 +23,8 @@ export const MONSTER_TAGS_TEXT: ProseTable = {
 
   'leader.desc': 'Derived from its escort list: spawns with escorts of the listed species.',
 
+  'pack.desc': 'Derived from its pack rule: hits harder for every other pack member still standing, and does not queue behind the front slot.',
+
   'unique.desc': 'Trait tag: one individual of this species exists.',
 
   'splitter.desc': 'Trait tag: splits into more units when damaged.',

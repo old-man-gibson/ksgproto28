@@ -5,11 +5,18 @@ import type { ProseTable } from './prose';
 
 // ---------- NPCS ----------
 export const NPCS_TEXT: ProseTable = {
-  'warden_of_the_foot.desc': 'Stands at the Foot of the Ascent. Gives the three starting quests: The Faces of Threshold, A Taste of Everything and The First Ascent.',
+  'warden_of_the_foot.desc': 'Stands at the Foot of the Ascent. Gives the starting quests: The Faces of Threshold, A Taste of Everything, The First Ascent and Into the Wildwood.',
   'warden_of_the_foot.dialogue': [
     'Eight roads leave this door, one to each district gate. Each is 6 s.',
     'Talk to the eight trades before you climb. A vendor charges you half again the price until you have spoken to them.',
     'The tower door is open now. Floor 1 has no gate; floor 2 needs 150 gold earned in total.',
+  ],
+
+  'pathwarden.desc': 'Stands at the Treeline Camp, the landing of floor 2. Gives The Grand Elevator.',
+  'pathwarden.dialogue': [
+    'Past the edge the wood gets thick. Comb the deep part long enough and the path to the Grand Elevator turns up; so does a stair down to a crypt.',
+    'Four nests keep the Elevator asleep. The goblins raid in set formations and end every raid on their king. The crypt dead shrug off the wrong weapon. The wolves only come in packs. The ants have to be broken in one push.',
+    'Wake it and it carries you to the floors above. It is also the first place a run can end, and the next one start stronger.',
   ],
 
   'master_smith.desc': 'Smith at the Forges. Sells iron scrap, copper ore, tin ore, hardwood, leather and iron ingots at the Scrap Bin. The Forges hold the iron ingot, iron dagger and iron sword recipes.',

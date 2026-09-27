@@ -10,7 +10,7 @@ export const TOWERS_TEXT: ProseTable = {
 
 // ---------- BANDS ----------
 export const BANDS_TEXT: ProseTable = {
-  'ascent_lower.desc': 'Floors 1 to 3: the Old Toll Level, the Flooded Stair and the Silk Gallery. Each floor must be cleared before the next opens.',
+  'ascent_lower.desc': 'Floors 1 to 3: the Old Toll Level, the Wildwood and the Silk Gallery. Each floor must be cleared before the next opens.',
 
   'ascent_middle.desc': 'Band 2 of the Ascent, above the Lower Reaches. No floors yet.',
 
@@ -21,7 +21,7 @@ export const BANDS_TEXT: ProseTable = {
 export const FLOORS_TEXT: ProseTable = {
   'ascent_f1.desc': 'Floor 1. No gate. Cleared by defeating the keeper of the Toll Hall: a Hobgoblin by day or a Slimer by night.',
 
-  'ascent_f2.desc': 'Floor 2. Gate: 150 gold earned in total. Cleared by winning 8 fights in the Broken Cistern, which forces a fight on arrival.',
+  'ascent_f2.desc': 'Floor 2, a forest. Gate: 150 gold earned in total. Cleared by waking the Grand Elevator, which needs the four nests cleared first: the Goblin Warren, the Sunken Crypt, the Wolf Runs and the Hive Mound. Clearing it opens the floors above and makes prestige available.',
 
   'ascent_f3.desc': 'Floor 3. Gate: 600 gold earned in total. Cleared by killing the Giant Spider Queen in the Brood Den.',
 };

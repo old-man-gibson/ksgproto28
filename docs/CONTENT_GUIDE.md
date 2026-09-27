@@ -396,8 +396,8 @@ per monster), `taxon` (at least one), `element`, `trait`, `size`, and `tier`.
 
 **Never hand-write derived tags.** `monsterTags()` adds them from the stats, so
 the book can't contradict the monster: the `tier` tag, `ranged` (from `range`),
-`leader` (from `escorts`), `solitary` / `swarm` (from `group`), and
-`non_elemental` when nothing else claims an element. A content test enforces
+`leader` (from `escorts`), `solitary` / `swarm` (from `group`), `pack` (from
+`pack`), and `non_elemental` when nothing else claims an element. A content test enforces
 this — declare only the intrinsic tags.
 
 Art is optional and resolved by filename: drop a PNG in `src/assets/enemies/`
@@ -627,6 +627,54 @@ and at the limit the spot is **cleared**: hunts find no one, and a `forced`
 spot stops forcing, so a guardian den is fight-your-way-in-once, pass freely
 after. Cleared forced spots also reopen to the auto-router and drop their ⚔️
 warnings.
+
+**Nests: parties, finales and streaks.** Three more knobs turn a budgeted
+spot into a raid with a shape (the Wildwood's four nests are the worked
+examples, `locations.data.ts`):
+
+```ts
+fightLimit: 7,
+encounters: [
+  // A fixed formation: exactly these beside the rolled body, at its level —
+  // no group-size roll, no escorts, no filler. Melee still takes the front.
+  { monsterId: 'goblin_shieldbearer', weight: 20, level: [6, 7],
+    party: ['goblin_shieldbearer', 'goblin_archer'] },
+  // Owns the LAST budgeted fight, and only it: on fight 7 of 7 finales are
+  // the only lines that roll, on fights 1–6 they never do.
+  { monsterId: 'goblin_king', weight: 100, level: [8, 8], finale: true, boss: true,
+    party: ['goblin_spearman', 'goblin_shaman'] },
+],
+streak: true,   // (on another spot) the budget must be won in ONE push
+```
+
+`party` is how a nest fields a composition instead of a crowd — a shield
+line with archers behind it asks something a pile of goblins does not, since
+only the front slot can be hit. `finale` needs a `fightLimit`, an ordinary
+line for the fights before it, and one finale no `window`/`daypart`/`requires`
+can gate away; `npm run verify` rejects each missing piece, because every one
+leaves a fight with nobody in it. `streak` resets `fights:<spot>` to 0 the
+moment the player stops pushing — walks off, switches activity, goes down —
+and the next wave arrives a third sooner than an ordinary hunt's; a cleared
+spot stays cleared, and a streak spot may not offer a rest (resting would
+break the push it is resting for).
+
+**Pack tactics** live on the monster, not the spot:
+
+```ts
+pack: { perMate: 0.12, flanks: true },   // +12% per packmate standing; no back-row penalty
+```
+
+Each other living pack member in the fight adds `perMate` to its blows, so a
+pack opens at its most dangerous and eases as it thins; `flanks` lets a melee
+pack member swing from a back slot at full effect. It derives the `pack`
+trait tag. Pair it with a spot `groupWeights` that never rolls below 3 and
+the place IS pack country.
+
+**Scenes.** `scene` on an area or a spot picks the backdrop the battle stage
+and the Location header paint (`forest`, `deepwood`, `warren`, `crypt`,
+`wolfden`, `hive`, `glade`, `hall`, `webs`, `town`; see `SceneId`). A spot's
+wins over its area's; with neither, a `dark` place gets the crypt and
+everything else the town. Presentation only — no system reads it.
 
 **Flags — the cross-room wire.** A find may touch a persistent counter, and
 `UnlockCondition`s anywhere may read it — that is the whole mechanism for

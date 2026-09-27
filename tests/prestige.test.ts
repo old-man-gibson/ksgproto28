@@ -4,7 +4,7 @@ import { Game } from '../src/core/game';
 import { EventBus } from '../src/core/engine/events';
 import { migrate } from '../src/core/save/migrations';
 import { deserialize, serialize } from '../src/core/save/save';
-import { PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, STARTING_SPOT } from '../src/core/registry';
+import { FLOORS, PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, STARTING_SPOT } from '../src/core/registry';
 import {
   buyBoon,
   canBuyBoon,
@@ -28,11 +28,17 @@ import type { GameState } from '../src/core/types';
 
 const fresh = (): GameState => createInitialState(0);
 
-/** A run that has cleared band 1 — the brood queen is down. */
+/** Floor 2's clear written onto a save: every nest spent, the Elevator woken. */
+function wakeTheElevator(s: GameState): GameState {
+  for (const c of FLOORS.ascent_f2.clear!) if (c.type === 'stat') s.stats[c.key] = c.value;
+  return s;
+}
+
+/** A run that has cleared band 1 — the Elevator woken, the brood queen down. */
 function bandOneCleared(): GameState {
   const s = fresh();
   s.stats['boss:f1_toll_hall'] = 1;
-  s.stats['fights:f2_cistern'] = 8;
+  wakeTheElevator(s);
   s.stats['slain:f3_brood_den:giant_spider_queen'] = 1;
   return s;
 }
@@ -69,13 +75,19 @@ describe('the gate and the tab', () => {
     expect(prestigeNow(s, 1)).toBeNull();
   });
 
-  it('the brood queen opens both', () => {
-    const s = bandOneCleared();
+  it('waking the Grand Elevator opens both — floor 3 need not fall', () => {
+    const s = fresh();
+    s.stats['boss:f1_toll_hall'] = 1;
+    // Every nest spent is not enough: the Elevator itself must be woken.
+    wakeTheElevator(s);
+    s.stats['flag:grand_elevator'] = 0;
+    expect(canPrestige(s)).toBe(false);
+    s.stats['flag:grand_elevator'] = 1;
     expect(canPrestige(s)).toBe(true);
     expect(prestigeVisible(s)).toBe(true);
   });
 
-  it('once any run has prestiged the tab stays, even before the queen falls again', () => {
+  it('once any run has prestiged the tab stays, even before the Elevator wakes again', () => {
     const next = prestigeNow(bandOneCleared(), 1)!;
     expect(canPrestige(next)).toBe(false);
     expect(prestigeVisible(next)).toBe(true);
@@ -164,7 +176,7 @@ describe('the reset', () => {
 
   it('counts up across runs and keeps unspent points', () => {
     const first = prestigeNow(bandOneCleared(), 1)!;
-    const again = { ...first, stats: { ...first.stats, 'slain:f3_brood_den:giant_spider_queen': 1, 'boss:f1_toll_hall': 1, 'fights:f2_cistern': 8 } };
+    const again = wakeTheElevator({ ...first, stats: { ...first.stats, 'slain:f3_brood_den:giant_spider_queen': 1, 'boss:f1_toll_hall': 1 } } as GameState);
     const second = prestigeNow(again as GameState, 2)!;
     expect(second.prestige.count).toBe(2);
     expect(second.prestige.points).toBe(first.prestige.points + 3);

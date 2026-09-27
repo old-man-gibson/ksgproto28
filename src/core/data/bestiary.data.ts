@@ -61,6 +61,7 @@ export const MONSTER_TAGS = prose<MonsterTagDef>('MONSTER_TAGS', MONSTER_TAGS_TE
   swarm: { id: 'swarm', name: 'Swarm', category: 'trait', icon: '🐝', },
   solitary: { id: 'solitary', name: 'Solitary', category: 'trait', icon: '🚪', },
   leader: { id: 'leader', name: 'Leader', category: 'trait', icon: '🎖️', },
+  pack: { id: 'pack', name: 'Pack', category: 'trait', icon: '🐺', },
   unique: { id: 'unique', name: 'Unique', category: 'trait', icon: '❗', },
   splitter: { id: 'splitter', name: 'Splitter', category: 'trait', icon: '✂️', },
   mimic: { id: 'mimic', name: 'Mimic', category: 'trait', icon: '🎭' },

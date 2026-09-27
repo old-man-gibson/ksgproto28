@@ -18,7 +18,18 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
     name: 'The Warden of the Foot',
     icon: '🗝️',
     spotId: 'ascent_foot',
-    quests: ['faces_of_threshold', 'a_taste_of_everything', 'the_first_ascent'],
+    quests: ['faces_of_threshold', 'a_taste_of_everything', 'the_first_ascent', 'into_the_wildwood'],
+  },
+  // Floor 2's guide (2026-09-26). Stands at the landing, so the first thing
+  // a climber meets on the Wildwood is the person who explains it — COMPLETA-
+  // BILITY Invariant B: the road through a floor is told, not derived.
+  // PLACEHOLDER name and prose, like the rest of band 1.
+  pathwarden: {
+    id: 'pathwarden',
+    name: 'Oda Thornfell, Pathwarden',
+    icon: '🧭',
+    spotId: 'f2_landing',
+    quests: ['the_grand_elevator'],
   },
   master_smith: {
     id: 'master_smith',

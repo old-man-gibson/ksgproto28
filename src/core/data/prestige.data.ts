@@ -1,5 +1,6 @@
 import type { PrestigeBoonDef, PrestigeSourceDef, PrestigeState, UnlockCondition } from '../types';
 import { prose } from '../text/prose';
+import { FLOORS } from './towers.data';
 import { PRESTIGE_BOONS_TEXT } from '../text/prestige.text';
 
 /**
@@ -11,14 +12,13 @@ import { PRESTIGE_BOONS_TEXT } from '../text/prestige.text';
  */
 
 /**
- * The button lights when this holds. Band 1 of the Ascent ends at the brood
- * queen (towers.data.ts, `ascent_f3.clear`) — the user's call 2026-09-12:
- * "show the tab when the player defeats the spider queen". Same latch the
- * floor's clear reads, so the two can never disagree.
+ * The button lights when this holds: floor 2's clear, the Grand Elevator
+ * woken (user, 2026-09-26: "Floor 2 is the first floor where the player
+ * will gain a prestige option after clearing it"). It IS the floor's clear
+ * array rather than a copy of it, so the two can never disagree. Before
+ * that it was the brood queen on floor 3 (2026-09-12).
  */
-export const PRESTIGE_UNLOCK: UnlockCondition[] = [
-  { type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 },
-];
+export const PRESTIGE_UNLOCK: UnlockCondition[] = FLOORS.ascent_f2.clear!;
 
 /**
  * What the harvest measures. Every source accrues from acting at all — the
