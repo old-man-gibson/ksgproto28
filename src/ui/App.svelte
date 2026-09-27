@@ -19,6 +19,7 @@
   import LogFeed from './LogFeed.svelte';
   import OfflineModal from './OfflineModal.svelte';
   import PrestigeModal from './PrestigeModal.svelte';
+  import FloorClearedModal from './FloorClearedModal.svelte';
   import PrestigePanel from './panels/PrestigePanel.svelte';
   import { prestigeVisible } from '../core/systems/prestige';
   import DefeatModal from './DefeatModal.svelte';
@@ -403,6 +404,9 @@
        confirmed, reload or no reload (systems/prestige.ts). -->
   <PrestigeModal />
 {/if}
+
+<!-- A floor's clear, said once and large (floor 2's also opens prestige). -->
+<FloorClearedModal />
 
 {#if ui.defeat}
   <DefeatModal

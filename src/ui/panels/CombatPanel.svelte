@@ -1,7 +1,7 @@
 <script lang="ts">
   import { gs, game, stepTicks, stepEvent, ui, view } from '../state.svelte';
   import { dropFight } from '../../core/systems/ledger';
-  import { ITEMS, POSITIONS, RARITIES, SKILLS, STATUSES, STYLES, TECHNIQUES, TIERS, getSpot } from '../../core/registry';
+  import { ITEMS, POSITIONS, SKILLS, STATUSES, STYLES, TECHNIQUES, TIERS, getSpot } from '../../core/registry';
   import { ANY_POSITION_COLOR, MAX_DRILLED, NEUTRAL_POSITION } from '../../core/data/martial.data';
   import {
     entryPositions,
@@ -21,12 +21,13 @@
   } from '../../core/systems/martial';
   import type { TechniqueDef } from '../../core/types';
   import {
-    MONSTER_ACTION_BAR,
     POSITION_MODS,
     activeRotation,
-    eligibleEncounters,
-    spotCleared,
+    packMates,
+    packMultiplier,
+    positionMod,
   } from '../../core/systems/combat';
+  import BattleStage from '../lib/BattleStage.svelte';
   import { GENE_ACTIVE, expressedGene, geneAbility } from '../../core/systems/mutagens';
   import { monsterStats } from '../../core/systems/monsterStats';
   import { resourceLock } from '../../core/systems/resources';
@@ -315,11 +316,6 @@
   }
 
   const spot = $derived(getSpot(gs.spot));
-  const canHunt = $derived(spot.activities.some((a) => a.kind === 'hunt'));
-  // A finite spot with its budget spent, or a table with every line gated or
-  // already slain: the hunt is willing, but nobody is coming.
-  const cleared = $derived(spotCleared(gs, spot));
-  const nobodyLeft = $derived(!cleared && canHunt && eligibleEncounters(gs, spot).length === 0);
   /** Actives in the order they'll actually be considered. */
   const rotation = $derived(activeRotation(gs));
   /**
@@ -423,15 +419,23 @@
   </button>
 {/snippet}
 
-{#snippet enemyTip(m: MonsterInstance, position: 'front' | 'back')}
-  {@const mod = POSITION_MODS[position][m.range]}
+{#snippet enemyTip(m: MonsterInstance, slot: number)}
+  {@const mod = gs.combat ? positionMod(gs.combat, m, slot) : POSITION_MODS[slot === 0 ? 'front' : 'back'][m.range]}
+  {@const pack = gs.combat ? packMultiplier(gs.combat, m) : 1}
+  {@const place = POSITION_MODS[slot === 0 ? 'front' : 'back'][m.range]}
   <div class="tip-line tip-base">
     {m.icon} {m.name} — Lv {m.level}{TIERS[m.tier].name ? ` · ${TIERS[m.tier].name}` : ''}
   </div>
   <div class="tip-line">
-    {m.range === 'ranged' ? '🏹 Ranged' : '⚔ Melee'} · {position === 'front' ? 'front row' : 'back row'}
+    {m.range === 'ranged' ? '🏹 Ranged' : '⚔ Melee'} · {slot === 0 ? 'front row' : 'back row'}
   </div>
-  {#if mod.damage !== 1 || mod.fill !== 1}
+  {#if pack > 1}
+    <div class="tip-line tip-sub">
+      🐺 Pack tactics: {packMates(gs.combat!, m)} packmate(s) standing, blows land ×{pack.toFixed(2)}{place.fill !== 1
+        ? ' — and it flanks, so the back row costs it nothing'
+        : ''}
+    </div>
+  {:else if mod.damage !== 1 || mod.fill !== 1}
     <div class="tip-line tip-sub">
       Out of place: {Math.round((1 - mod.damage) * 100)}% less damage, {Math.round((1 - mod.fill) * 100)}% slower
     </div>
@@ -441,6 +445,15 @@
     <div class="tip-line tip-sub">Well placed — fighting at full effect</div>
   {/if}
   <div class="tip-line tip-total">{fmt(Math.max(0, m.hp))} / {fmt(monsterStats(m).maxHp)} HP</div>
+  <!-- What it is carrying, in full — the stage shows only the icons. -->
+  {#each visibleStatuses(m) as held (held.id)}
+    <div class="tip-line tip-base" class:primed={escalationPrimed(m, held)} style="margin-top: 6px">
+      {STATUSES[held.id].icon} {STATUSES[held.id].name}{held.stacks > 1 ? ` ×${held.stacks}` : ''}
+    </div>
+    {#each statusTipLines(m, held).slice(1) as line}
+      <div class="tip-line" class:tip-sub={line.startsWith('—')}>{line}</div>
+    {/each}
+  {/each}
 {/snippet}
 
 <!-- A technique's flow as colored pills: entry position(s) → exit position.
@@ -487,72 +500,11 @@
   {/each}
 {/snippet}
 
-{#snippet centreCard(m: MonsterInstance)}
-  <Tip block>
-    <div>
-      <h3 style="color: {RARITIES[m.rarity].color}">
-        {m.icon} {m.name}
-        <span class="dim">Lv {m.level}{TIERS[m.tier].name ? ` · ${TIERS[m.tier].name}` : ''}</span>
-        <span class="reach">{m.range === 'ranged' ? '🏹' : '⚔'}</span>
-      </h3>
-      <div class="bar" style="height: 16px">
-        <div class="fill" style="width: {(m.hp / monsterStats(m).maxHp) * 100}%; background: var(--hp)"></div>
-        <div class="label">{fmt(Math.max(0, m.hp))} / {fmt(monsterStats(m).maxHp)}</div>
-      </div>
-      {#if visibleStatuses(m).length}
-        <div class="foe-afflictions">
-          {#each visibleStatuses(m) as held (held.id)}
-            <Tip>
-              <span class="affliction" class:primed={escalationPrimed(m, held)}>{STATUSES[held.id].icon} {STATUSES[held.id].name}{#if held.stacks > 1}<span class="stacks">×{held.stacks}</span>{/if}</span>
-              {#snippet tip()}
-                {#each statusTipLines(m, held) as line, i}
-                  <div class="tip-line" class:tip-base={i === 0} class:tip-sub={line.startsWith('—')}>{line}</div>
-                {/each}
-              {/snippet}
-            </Tip>
-          {/each}
-        </div>
-      {/if}
-      <div class="bar action-bar">
-        <div
-          class="fill"
-          style="width: {Math.min(100, (m.bar / MONSTER_ACTION_BAR) * 100)}%; background: var(--action)"
-        ></div>
-      </div>
-    </div>
-    {#snippet tip()}{@render enemyTip(m, 'front')}{/snippet}
-  </Tip>
-{/snippet}
-
-{#snippet flankSlot(m: MonsterInstance | null)}
-  <div class="flank-slot" class:empty={!m}>
-    {#if m}
-      <Tip block>
-        <div>
-          <div class="flank-head">
-            <span class="flank-name">{m.icon} {m.name}</span>
-            <span class="reach">{m.range === 'ranged' ? '🏹' : '⚔'}</span>
-          </div>
-          <div class="bar flank-bar">
-            <div class="fill" style="width: {(m.hp / monsterStats(m).maxHp) * 100}%; background: var(--hp)"></div>
-          </div>
-          {#if visibleStatuses(m).length}
-            <div class="flank-afflictions">
-              {#each visibleStatuses(m) as held (held.id)}<span title={STATUSES[held.id].name}>{STATUSES[held.id].icon}</span>{/each}
-            </div>
-          {/if}
-          <div class="bar flank-action">
-            <div
-              class="fill"
-              style="width: {Math.min(100, (m.bar / MONSTER_ACTION_BAR) * 100)}%; background: var(--action)"
-            ></div>
-          </div>
-        </div>
-        {#snippet tip()}{@render enemyTip(m, 'back')}{/snippet}
-      </Tip>
-    {/if}
-  </div>
-{/snippet}
+<!-- The fight, drawn — first on the tab, because it is what the tab is for.
+     Between fights it stays up, showing the place and what it is waiting on. -->
+<div style="margin-bottom: 12px">
+  <BattleStage {spot} foeTip={enemyTip} />
+</div>
 
 <div class="loadout">
 <div class="panel">
@@ -894,51 +846,6 @@
      graph is where you go to see how the pieces connect. -->
 <MartialPlanner />
 
-<!-- Encounter — always on screen, showing a search state between fights. -->
-<div class="panel" style="margin-top: 12px">
-  {#if gs.combat}
-    {@const e = gs.combat.enemies}
-    {#if gs.combat.forced}
-      <!-- The feed announced it once; this stays up for the fight's whole
-           length, because "why is every travel button dead" deserves a
-           standing answer rather than a scrolled-away line. -->
-      <div class="no-retreat small">⚔️ No retreat — this fight ends on its feet or on yours.</div>
-    {/if}
-    <div class="formation">
-      <div class="flank">
-        {@render flankSlot(e[1])}
-        {@render flankSlot(e[2])}
-      </div>
-      <div class="centre">
-        {#if e[0]}{@render centreCard(e[0])}{/if}
-      </div>
-      <div class="flank">
-        {@render flankSlot(e[3])}
-        {@render flankSlot(e[4])}
-      </div>
-    </div>
-  {:else}
-    <h3 class="searching">🔍 Searching for encounter…</h3>
-    <p class="dim small searching-note">
-      {#if gs.recovering}
-        💫 You're recovering from a knockout. Hunting resumes when you're steady.
-      {:else if cleared}
-        🏞️ {spot.name} is cleared — nothing left here wants to fight.
-      {:else if nobodyLeft}
-        🍃 Nothing stirs at {spot.name} — whatever hunts here is gone, or not yet come.
-      {:else if gs.activity && canHunt}
-        Stalking the area for the next encounter{gs.respawnTimer > 0
-          ? ` — ${ticksToTime(gs.respawnTimer)}`
-          : ''}...
-      {:else if canHunt}
-        Select <b>Hunt</b> in the Location tab to seek out monsters here.
-      {:else}
-        No monsters near {spot.name}. Travel somewhere wilder to hunt.
-      {/if}
-    </p>
-  {/if}
-</div>
-
 <!-- Fight feed — persists between encounters. Every line carrying a damage
      number explains it on hover, the same way attributes and stats do. -->
 <div class="panel" style="margin-top: 12px">
@@ -1075,6 +982,11 @@
 </div>
 
 <style>
+  /* A condition one dose from turning (see escalationPrimed). */
+  .tip-line.primed {
+    color: var(--danger);
+  }
+
   .notebook {
     list-style: none;
     margin: 0 0 10px;
@@ -1136,15 +1048,6 @@
     color: var(--accent);
   }
 
-  .foe-afflictions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 4px;
-  }
-  .foe-afflictions :global(.tip-target) {
-    border-bottom: none;
-  }
   .affliction {
     display: inline-flex;
     align-items: center;
@@ -1155,40 +1058,6 @@
     background: color-mix(in srgb, var(--danger, #e05555) 14%, transparent);
     font-size: 0.72rem;
     white-space: nowrap;
-  }
-  /* One dose from turning — see escalationPrimed. The pill pulses because
-     nothing else about a capped condition looks any different. */
-  .affliction.primed {
-    animation: primed-pulse 1.15s ease-in-out infinite;
-  }
-  @keyframes primed-pulse {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 transparent;
-      border-color: var(--danger, #e05555);
-    }
-    50% {
-      box-shadow: 0 0 6px 1px color-mix(in srgb, var(--danger, #e05555) 55%, transparent);
-      border-color: color-mix(in srgb, #fff 45%, var(--danger, #e05555));
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .affliction.primed {
-      animation: none;
-      border-color: color-mix(in srgb, #fff 45%, var(--danger, #e05555));
-      box-shadow: 0 0 5px 1px color-mix(in srgb, var(--danger, #e05555) 45%, transparent);
-    }
-  }
-  .affliction .stacks {
-    opacity: 0.75;
-    font-variant-numeric: tabular-nums;
-  }
-  .flank-afflictions {
-    display: flex;
-    gap: 2px;
-    font-size: 0.7rem;
-    line-height: 1;
-    margin-top: 2px;
   }
 
   /* Styles and actives sit side by side above the encounter; on a narrow
@@ -1430,93 +1299,21 @@
     color: var(--stamina);
   }
 
-  /* Centre takes half the width; each side column holds two stacked flanks. */
-  .formation {
-    display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
-    gap: 10px;
-    align-items: center;
-  }
 
-  .flank {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
 
-  .flank-slot {
-    min-height: 34px;
-  }
 
-  .flank-slot.empty {
-    border: 1px dashed var(--border);
-    border-radius: 6px;
-    opacity: 0.35;
-  }
 
-  /* Back-row enemies read as secondary to the one you're actually fighting. */
-  .flank-slot :global(.tip-target) {
-    opacity: 0.85;
-  }
 
-  .flank-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 4px;
-    font-size: 11.5px;
-  }
 
-  .flank-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 
-  .flank-bar {
-    height: 7px;
-    margin-top: 2px;
-  }
 
-  .flank-action {
-    height: 4px;
-    margin-top: 2px;
-  }
 
-  .flank-action .fill,
-  .flank-bar .fill {
-    transition: none;
-  }
 
-  .reach {
-    font-size: 11px;
-    opacity: 0.75;
-  }
 
-  .searching {
-    color: var(--text-dim);
-    font-weight: 600;
-  }
 
-  .no-retreat {
-    color: var(--danger);
-    font-weight: 600;
-    text-align: center;
-    margin-bottom: 8px;
-  }
 
-  .searching-note {
-    margin: 0;
-  }
 
-  .action-bar {
-    height: 6px;
-    margin-top: 4px;
-  }
 
-  .action-bar .fill {
-    transition: none; /* fills every tick; easing would lag behind the reset */
-  }
 
   .hint {
     margin: 0 0 8px;

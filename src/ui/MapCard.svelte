@@ -1,6 +1,6 @@
 <script lang="ts">
   import { gs, game, ui, view } from './state.svelte';
-  import { AREAS, REGIONS, SPOTS, getSpot } from '../core/registry';
+  import { AREAS, FLOORS, REGIONS, SPOTS, getSpot } from '../core/registry';
   import { visibleEdges, fastTravelCost, canFastTravel, journeyEnd } from '../core/systems/locations';
   import { spotActivities } from '../core/systems/actions';
   import { spotCleared } from '../core/systems/combat';
@@ -13,6 +13,31 @@
   const currentRegion = $derived(AREAS[getSpot(gs.spot).areaId].regionId);
   const shownRegion = $derived(regionOverride ?? currentRegion);
   const regionList = Object.values(REGIONS);
+
+  // A tower's region is a STACK, not a map: its floors are drawn one at a
+  // time, each fitted to its own spots, with a tab per floor you have set
+  // foot on. Every other region draws whole, as before.
+  const floorByArea = new Map(Object.values(FLOORS).map((f) => [f.areaId, f]));
+  let areaOverride = $state<string | null>(null);
+  const floorAreas = $derived(
+    Object.values(AREAS)
+      .filter((a) => a.regionId === shownRegion && floorByArea.has(a.id))
+      .filter((a) => gs.discovered.some((id) => SPOTS[id]?.areaId === a.id))
+      .sort((a, b) => floorByArea.get(a.id)!.index - floorByArea.get(b.id)!.index),
+  );
+  const shownArea = $derived.by((): string | null => {
+    if (!floorAreas.length) return null;
+    if (areaOverride && floorAreas.some((a) => a.id === areaOverride)) return areaOverride;
+    const here = getSpot(gs.spot).areaId;
+    if (floorAreas.some((a) => a.id === here)) return here;
+    return floorAreas[floorAreas.length - 1].id;
+  });
+  // Walking onto another floor shows that floor again.
+  $effect(() => {
+    void gs.spot;
+    areaOverride = null;
+  });
+  const floorScene = $derived(shownArea ? AREAS[shownArea].scene : undefined);
 
   interface MapNode {
     spot: SpotDef;
@@ -30,6 +55,7 @@
     }
     return Object.values(SPOTS)
       .filter((s) => s.map && AREAS[s.areaId].regionId === shownRegion)
+      .filter((s) => !shownArea || s.areaId === shownArea)
       .filter((s) => discovered.has(s.id) || ghosts.has(s.id))
       .map((s): MapNode => ({ spot: s, known: discovered.has(s.id) }));
   });
@@ -72,6 +98,38 @@
       }
     }
     return { lines, exits };
+  });
+
+  /**
+   * A floor fitted to its own spots, at the canvas's aspect, and never zoomed
+   * past 1.5× — a two-spot floor should look small, not swollen.
+   */
+  const viewBox = $derived.by(() => {
+    if (!shownArea || nodes.length === 0) return '0 -6 100 84';
+    const xs = nodes.map((n) => n.spot.map!.x);
+    const ys = nodes.map((n) => n.spot.map!.y);
+    let x = Math.min(...xs) - 14;
+    let y = Math.min(...ys) - 11;
+    let w = Math.max(...xs) + 14 - x;
+    let h = Math.max(...ys) + 12 - y;
+    const aspect = 100 / 84;
+    if (w / h < aspect) {
+      const nw = h * aspect;
+      x -= (nw - w) / 2;
+      w = nw;
+    } else {
+      const nh = w / aspect;
+      y -= (nh - h) / 2;
+      h = nh;
+    }
+    if (w < 66) {
+      const k = 66 / w;
+      x -= (w * k - w) / 2;
+      y -= (h * k - h) / 2;
+      w *= k;
+      h *= k;
+    }
+    return `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
   });
 
   const waypoints = $derived(
@@ -173,7 +231,7 @@
 
 <div class="panel">
   <button class="map-toggle" onclick={() => (ui.mapOpen = !ui.mapOpen)}>
-    {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {REGIONS[shownRegion].name}
+    {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {shownArea ? `${REGIONS[shownRegion].name}: ${AREAS[shownArea].name}` : REGIONS[shownRegion].name}
   </button>
 
   {#if ui.mapOpen}
@@ -189,7 +247,32 @@
       {/each}
     </div>
 
-    <svg viewBox="0 -6 100 84" class="map" aria-label="Region map">
+    {#if floorAreas.length > 0}
+      <div class="region-switch floors">
+        {#each floorAreas as area (area.id)}
+          <button
+            class="small"
+            class:selected={shownArea === area.id}
+            onclick={() => (areaOverride = area.id)}
+          >
+            Floor {floorByArea.get(area.id)!.index} · {area.name}
+          </button>
+        {/each}
+      </div>
+    {/if}
+
+    <svg {viewBox} class="map" class:floor={!!shownArea} aria-label="Region map">
+      {#if floorScene === 'forest'}
+        <!-- Canopy seen from above: the Wildwood reads as woods, not as a void. -->
+        <defs>
+          <pattern id="map-canopy" width="7" height="6" patternUnits="userSpaceOnUse">
+            <rect width="7" height="6" fill="#0d1a13" />
+            <path d="M1.8,4.6 L3,1.2 L4.2,4.6 Z" fill="#17301f" />
+            <path d="M4.6,5.8 L5.6,3 L6.6,5.8 Z" fill="#13281b" />
+          </pattern>
+        </defs>
+        <rect x="-100" y="-100" width="300" height="300" fill="url(#map-canopy)" />
+      {/if}
       {#each mapEdges.lines as e}
         <line
           x1={e.from.map!.x}
@@ -471,6 +554,14 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     margin-top: 4px;
+  }
+
+  .region-switch.floors {
+    margin-top: 4px;
+  }
+  .region-switch.floors button {
+    font-size: 11.5px;
+    padding: 3px 9px;
   }
 
   .edge {

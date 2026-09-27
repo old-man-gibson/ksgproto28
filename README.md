@@ -255,6 +255,26 @@ files it in the combat notebook to study while you plan the rematch, transcript
 and all. The ledger is a rollup rather than a recording: its size follows the
 number of things involved, never how long the fight ran.
 
+**Floor 2 is a forest with four nests.** The Wildwood hides the Grand
+Elevator, the thing that carries a climber to floor 3 and above, and four
+nests keep it asleep, each asking a different question. The **Goblin
+Warren** fields set formations (a spear line with archers behind it, a
+shaman's circle) and always ends on its king. The **Sunken Crypt** mixes
+skeletons that fold to blunt weapons with haunts that shrug off anything
+physical and fold to light and magic. In the **Wolf Runs**, wolves hunt as a
+pack: every packmate standing makes the rest bite harder. The **Hive Mound**
+has to be broken in one push, and leaving or resting resets it. Waking the
+Elevator clears the floor and opens the first **prestige**. See
+[plans/alpha-band-one-floors.md](docs/plans/alpha-band-one-floors.md).
+
+**Fights are drawn.** The Combat tab opens on a battle stage: the place
+painted behind the fight (forest, crypt, warren, hive, the moonlit runs…),
+you on the left and the formation on the right in its slots, with lunges,
+hit flashes, floating numbers and deaths read straight off the state between
+ticks. Every place's header on the Location tab uses the same art. A tower's
+map shows one floor at a time. Portraits appear on the stage wherever a
+monster has `art` and the licensed pack is present, and emoji otherwise.
+
 ## Roadmap (milestone 2+)
 
 - More quests & dialogue trees; NPC shops (charisma already affects prices)
