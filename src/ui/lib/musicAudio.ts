@@ -2,6 +2,7 @@ import type { NoteEvent } from '../../core/types';
 import { BAR_UNITS, DEFAULT_BPM, ticksPerUnit, TICKS_PER_UNIT } from '../../core/data/music.data';
 import { soundedEvents } from '../../core/systems/music';
 import { MS_PER_TICK } from '../../core/engine/loop';
+import { browserStorage } from '../../core/save/save';
 
 /**
  * The bard's voice: Web Audio synthesis for the music system. UI-side only —
@@ -43,7 +44,7 @@ const MUTE_KEY = 'ksg:music-muted';
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
-let muted = typeof localStorage !== 'undefined' && localStorage.getItem(MUTE_KEY) === '1';
+let muted = browserStorage.getItem(MUTE_KEY) === '1';
 
 interface Voice {
   osc: OscillatorNode;
@@ -80,7 +81,7 @@ export function isMuted(): boolean {
 export function setMuted(on: boolean): void {
   muted = on;
   try {
-    localStorage.setItem(MUTE_KEY, on ? '1' : '0');
+    browserStorage.setItem(MUTE_KEY, on ? '1' : '0');
   } catch {
     // storage full/unavailable — the preference just won't persist
   }
@@ -132,7 +133,7 @@ export const VOICES: Record<string, VoiceDef> = {
 };
 
 const VOICE_KEY = 'ksg:music-voice';
-let voiceId = (typeof localStorage !== 'undefined' && localStorage.getItem(VOICE_KEY)) || 'lute';
+let voiceId = browserStorage.getItem(VOICE_KEY) || 'lute';
 
 export function currentVoice(): VoiceDef {
   return VOICES[voiceId] ?? VOICES.lute;
@@ -142,7 +143,7 @@ export function setVoice(id: string): void {
   if (!VOICES[id]) return;
   voiceId = id;
   try {
-    localStorage.setItem(VOICE_KEY, id);
+    browserStorage.setItem(VOICE_KEY, id);
   } catch {
     // storage unavailable — the preference just won't persist
   }

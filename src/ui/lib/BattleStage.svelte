@@ -42,14 +42,25 @@
   const awake = $derived((gs.stats['flag:grand_elevator'] ?? 0) >= 1);
 
   /** Where each formation slot stands on the stage: % from left, % from the floor, size. */
-  const SLOTS = [
+  const WIDE_SLOTS = [
     { x: 60, y: 11, s: 1 },
     { x: 73, y: 31, s: 0.8 },
     { x: 88, y: 27, s: 0.8 },
     { x: 78, y: 6, s: 0.86 },
-    { x: 92, y: 9, s: 0.84 },
+    { x: 90, y: 9, s: 0.84 },
   ];
-  const PLAYER = { x: 20, y: 11 };
+  // A phone-width stage: the front foe moves left and the back rank climbs,
+  // so no plate sits on another's.
+  const NARROW_SLOTS = [
+    { x: 51, y: 9, s: 1 },
+    { x: 73, y: 38, s: 0.8 },
+    { x: 90, y: 31, s: 0.8 },
+    { x: 75, y: 3, s: 0.86 },
+    { x: 91, y: 6, s: 0.84 },
+  ];
+  let stageWidth = $state(800);
+  const SLOTS = $derived(stageWidth <= 560 ? NARROW_SLOTS : WIDE_SLOTS);
+  const PLAYER = $derived(stageWidth <= 560 ? { x: 16, y: 9 } : { x: 20, y: 11 });
 
   // ---------- identity & motion ----------
 
@@ -230,7 +241,7 @@
   const playerBar = $derived(gs.combat ? Math.min(100, (gs.combat.playerBar / stats.actionBar) * 100) : 0);
 </script>
 
-<div class="stage scene-{scene}" class:fighting={!!gs.combat}>
+<div class="stage scene-{scene}" class:fighting={!!gs.combat} bind:clientWidth={stageWidth}>
   <SceneBackdrop {scene} {awake} />
 
   <div class="hud-top">
@@ -362,6 +373,7 @@
 
 <style>
   .stage {
+    container-type: inline-size;
     position: relative;
     height: 290px;
     border-radius: 10px;
@@ -674,6 +686,72 @@
     10% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     85% { opacity: 1; }
     100% { opacity: 0; }
+  }
+
+  /*
+   * A phone-width stage: shorter, smaller bodies and plates, and the back
+   * rank shows bars without names — five name plates cannot share 360px.
+   * The front foe and you keep yours.
+   */
+  @container (max-width: 560px) {
+    .hud {
+      width: 96px;
+    }
+    .name {
+      font-size: 10.5px;
+    }
+    .enemy:not(.front) .name,
+    .enemy:not(.front) .chips span:not(.pack) {
+      display: none;
+    }
+    .enemy:not(.front) .hud {
+      width: 64px;
+    }
+    .emoji {
+      font-size: 42px;
+    }
+    .badge {
+      font-size: 18px;
+      right: -8px;
+    }
+    .art {
+      height: 70px;
+    }
+    .hero {
+      width: 48px;
+      height: 70px;
+    }
+    .shadow {
+      width: 52px;
+    }
+    .ring {
+      width: 56px;
+    }
+    .floater {
+      font-size: 14px;
+    }
+    .floater.crit {
+      font-size: 19px;
+    }
+    .banner {
+      font-size: 16px;
+      padding: 8px 16px;
+    }
+    .idle {
+      left: 34%;
+      max-width: 62%;
+      font-size: 12px;
+      transform: none;
+    }
+    .where {
+      display: none;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .stage {
+      height: 250px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

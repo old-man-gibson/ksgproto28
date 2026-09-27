@@ -614,4 +614,72 @@
       min-height: 100vh;
     }
   }
+
+  /*
+   * Phones (docs/ENGINEERING.md §2): one column — the game first, then the
+   * character sheet, then the log. Below 1100px the sidebar kept a fixed
+   * 240px beside the main column, which left a 375px screen 99px to play in.
+   */
+  @media (max-width: 700px) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'header' 'main' 'sidebar' 'log';
+      grid-template-rows: auto auto auto auto;
+      gap: 8px;
+      padding: 6px;
+      height: auto;
+      min-height: 100vh;
+    }
+    header {
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      padding: 8px 10px;
+    }
+    header h1 {
+      font-size: 16px;
+    }
+    /* Hand-cranking the sim is a desk tool; pause and bonus time stay. */
+    .clock .step,
+    .tickno {
+      display: none;
+    }
+    .status {
+      order: 10;
+      flex-basis: 100%;
+      white-space: normal;
+      font-size: 13px;
+    }
+    .actions {
+      order: 11;
+      flex-basis: 100%;
+      display: flex;
+      gap: 6px;
+    }
+    .actions button {
+      flex: 1;
+      padding: 6px 4px;
+    }
+    main {
+      overflow: visible;
+    }
+    .tab-body {
+      overflow: visible;
+    }
+    /* One swipeable row of tabs instead of three wrapped ones. */
+    .tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 6px;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .tabs button {
+      flex: none;
+      padding: 7px 10px;
+    }
+    .logside {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+  }
 </style>
