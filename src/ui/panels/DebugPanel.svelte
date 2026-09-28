@@ -9,6 +9,7 @@
   import { DEITIES, DEITY_LIST } from '../../core/data/deities.data';
   import { ARCANE_WORDS, PSI_AXIS_LIST } from '../../core/data/spellcraft.data';
   import { grantFavor } from '../../core/systems/deities';
+  import { wordUnlockKey } from '../../core/systems/unlocks';
   import { learnPsiAxis, raisePsiTier } from '../../core/systems/psionic';
   import { TECHNIQUES, TECHNIQUE_LIST } from '../../core/data/martial.data';
   import { learnTechnique, resetTechnique } from '../../core/systems/martial';
@@ -155,6 +156,12 @@
       for (let i = 0; i < uses; i++) counts[`arcane:${w.id},debugseed${i}`] = 1;
     }
     say(`every word credited with ${uses} distinct sentences — all tiers speakable`);
+  }
+
+  /** Lift the starter-lexicon shutter for every word (`flag:word:<id>`, unlocks.ts). */
+  function unlockAllWords() {
+    for (const w of Object.values(ARCANE_WORDS)) gs.stats[wordUnlockKey(w.id)] = 1;
+    say('every arcane word unlocked');
   }
 
   function openAllPsi() {
@@ -428,6 +435,7 @@
       <button onclick={() => giveFavor(true)}>All deities</button>
     </div>
     <div class="row">
+      <button onclick={unlockAllWords}>Unlock every word</button>
       <button onclick={() => masterAllWords()}>Master every word</button>
       <button onclick={openAllPsi}>Open all psi axes</button>
       {#each [4, 8, 12] as t (t)}

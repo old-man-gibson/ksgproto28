@@ -2212,6 +2212,14 @@ export interface MonsterInstance {
   bar: number;
   /** Bar progress shaved this fill cycle — caps the front-row ranged mini-stun. */
   stunSpent: number;
+  /**
+   * What is left of this specimen's MIND, once something has burned it.
+   * Absent = untouched, which reads as full (see monsterStats.ts
+   * `monsterMind`). A monster never spends this pool on a working — only
+   * manaburn eats it — and while it sits below zero the mind cannot shape
+   * one. Transient like the encounter.
+   */
+  mana?: number;
   xp: Big;
   gold: Big;
 }
@@ -3181,6 +3189,20 @@ export interface SpellSpec {
   deity?: string;
   /** The spell cannot be evaded — a working that sees where the target WILL be. */
   sure?: boolean;
+  /**
+   * The working is a COUNTERSPELL ("undo"): never cast on its own, but held
+   * like a trap and sprung inside somebody else's casting. How well it
+   * answers that casting is read against the other working's `signature` at
+   * the moment it springs (see arcane.ts `counterEfficiency`).
+   */
+  counter?: SpellCounter;
+  /**
+   * What the working is MADE of, for a counterspell to match against: each
+   * element spoken, and how deeply. An arcane sentence states it outright
+   * (its nouns, and a bare verb's own substance); a miracle or a shape has no
+   * words, so theirs is read off their strikes instead (`workingSignature`).
+   */
+  signature?: Partial<Record<DamageType, number>>;
   /** Mana spent per cast, before efficiency. */
   manaCost: number;
   /** Stamina spent per cast — miracles paid for in breath. */
@@ -3198,6 +3220,27 @@ export interface SpellSpec {
   focusCost?: number;
   /** Ticks between casts. */
   cooldown: number;
+}
+
+/**
+ * An undoing, as the grammar composed it — everything a counterspell knows
+ * before it has met the working it will answer. Efficiency is not stored:
+ * it depends on what the OTHER side was saying, so it is read at the moment
+ * the trap springs.
+ */
+export interface SpellCounter {
+  /** Undo tiers spoken across the sentence — "unsay" is two, "undo undo" too. */
+  tiers: number;
+  /**
+   * What the undoing is tuned against: element → units spoken (a noun's
+   * depth — frost is two units of cold). `arcane` counts twice over: as a
+   * tuning like any element, and as the universal substance of undoing.
+   */
+  tuning: Partial<Record<DamageType, number>>;
+  /** Manaburn laid on the caster at 100% efficiency, in spell-power multiples. */
+  burn: number;
+  /** Separate applications of that burn — leading landing adverbs. Default 1. */
+  burns?: number;
 }
 
 // ----- Arcane: the syntax -----
@@ -3241,6 +3284,16 @@ export interface ArcaneConjunctionSpec {
    * signature affliction (or anything it escalates into).
    */
   condition?: boolean;
+  /**
+   * "with": the following clause ACCOMPANIES the one before rather than
+   * acting on its own — a bare substance lent to whatever that clause was
+   * doing. Undoing: it joins the tuning. A blow: its riders ride along, the
+   * blow's nature and weight untouched. A ward: one more coat, against its
+   * own element. A mending: its weight joins the mending. Coats and mending
+   * weight are lent at this efficiency; tuning and riders arrive whole.
+   * A linked clause that speaks a verb of its own acts for itself instead.
+   */
+  accompany?: number;
 }
 
 /** What a verb DOES to its clause. Declarative, so verbs are pure content. */
@@ -3283,6 +3336,13 @@ export interface ArcaneVerbSpec {
    * to the caster.
    */
   ward?: { amount: number; duration: number };
+  /**
+   * The clause UNMAKES: the working becomes a counterspell, held like a trap
+   * and sprung inside an enemy's casting (SpellSpec.counter). Its noun tunes
+   * the undoing to an element; `burn` is the manaburn it lays on that caster
+   * at 100% efficiency, in spell-power multiples.
+   */
+  undo?: { burn: number };
 }
 
 /** What an adverb does to the clause it sits in. */
@@ -4469,6 +4529,21 @@ export interface CombatState {
    * like the encounter.
    */
   lastMiracle?: { deity: string; tick: number };
+  /**
+   * The working an enemy last began to cast — what `onEnemyCast` was stamped
+   * for, kept so a trigger can ask WHAT is being cast (its school, its
+   * leading element) and not merely that something is. Read fresh within the
+   * event window; stale after it. Transient.
+   */
+  casting?: {
+    /** Formation slot of the caster when it began. */
+    index: number;
+    name: string;
+    school: SpellSchool;
+    /** The element the working is most made of; absent when it names none. */
+    element?: DamageType;
+    tick: number;
+  };
   /**
    * How much damage each kind of defence last stopped — what a deflection
    * technique answers with (see TechniqueMove.preventedMult). Two ways to

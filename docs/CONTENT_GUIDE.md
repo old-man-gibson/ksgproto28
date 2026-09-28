@@ -1459,14 +1459,17 @@ frost_example: {
 * **Verbs** carry `verb: ArcaneVerbSpec` — all declarative: `powerMult`,
   `barePower` (cast with no noun), `penetration`, `gripMult` (status intensity),
   `cooldownMult`, `splash`, `restore` (heals the caster), `ward` (resistance
-  coat). No code changes, ever.
+  coat), `undo` (makes the working a counterspell; `burn` is its manaburn in
+  spell-power multiples — ARCANE.md §14). No code changes, ever.
 * **Adverbs** carry `adverb:` with `powerMult` / `cooldownMult` / `manaMult`
   (compound per repetition) and `hits` (additive: twice×2 = thrice).
 * **Targets** carry `target:` and must NOT have `stacked` (linted).
 * **Conjunctions** carry `conjunction: ArcaneConjunctionSpec` and relate the
   clause before them to the clause after: `inheritPenetration` (the follow-up
   rides the opening) and `followThrough` (x mult when the previous strike
-  LANDED, resolved per cast). A linked clause escapes the breadth tax -
+  LANDED, resolved per cast), `fuse` (and), `transmute` (but), `alternate`
+  (or), `condition` (if) and `accompany` (with — lends a noun-only clause's
+  substance to the clause before). A linked clause escapes the breadth tax -
   chains are depth, not breadth. Conjunctions never stack (linted), must sit
   between clauses, and cost their `mana` like any word.
 * Word order matters on its own — the composer handles verb-led vs noun-led,

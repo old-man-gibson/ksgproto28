@@ -1,7 +1,9 @@
 import type {
   ArcaneWordDef,
+  DamageType,
   GameState,
   Modifier,
+  SpellCounter,
   SpellSpec,
   SpellStrike,
   SpellTarget,
@@ -100,6 +102,89 @@ export const STACK_POWER = [1, 2.3, 3.9];
 export const STACK_MANA = [1, 3, 6];
 /** Accumulated raw spill at which an expanding working simply hits EVERYONE. */
 export const EVERYTHING_SPLASH = 1.5;
+
+// ----- Anti-magic: the undoing -----
+//
+// A counterspell's EFFICIENCY is how much of the working it answers it takes
+// apart, and it is deliberately uncapped: past 100% there is nothing left of
+// the working to undo, but the burn laid on its caster keeps climbing.
+//
+//   efficiency = UNDO_BASE
+//              + UNDO_PER_TIER × (undo tiers − 1)
+//              + ARCANE_UNDO_PER_UNIT × (arcane units in the tuning)
+//              + match
+//
+// MATCH is where tuning pays. A tuning of n units can reach `matchCeiling(n)`
+// in all — 10% for one unit, 18% for two, ~34% for five — and each unit is
+// worth an even share of that ceiling, so the ceiling rises with every unit
+// tuned while what each one is worth falls. A unit only counts when the
+// working it meets was spoken with the same element at least as deep: tuning
+// frost (two units) against a working that spoke plain ice matches one, and
+// pays for both.
+
+/** What an undoing is worth before it has matched anything: undo:1. */
+export const UNDO_BASE = 0.2;
+/** Each undo tier past the first — unsay adds one of these, unmake two. */
+export const UNDO_PER_TIER = 0.075;
+/**
+ * Each unit of arcane in the tuning, whatever the working was made of.
+ * Arcane is the substance of undoing itself, so it answers everything —
+ * and, being an element like any other, it also MATCHES arcane workings.
+ */
+export const ARCANE_UNDO_PER_UNIT = 0.05;
+/** The match ceiling for a single unit of tuning... */
+export const MATCH_FIRST = 0.1;
+/** ...and the share of it each further unit adds on top. */
+export const MATCH_DECAY = 0.8;
+
+/**
+ * The most a tuning of `units` can add, every unit matched: a geometric sum,
+ * so it rises with every unit and never passes MATCH_FIRST / (1 − MATCH_DECAY).
+ */
+export function matchCeiling(units: number): number {
+  if (units <= 0) return 0;
+  return (MATCH_FIRST * (1 - Math.pow(MATCH_DECAY, units))) / (1 - MATCH_DECAY);
+}
+
+/** A counterspell read against one working, term by term, for the card and the feed. */
+export interface CounterReading {
+  /** The whole of it. Uncapped. */
+  efficiency: number;
+  /** From the undo tiers alone. */
+  base: number;
+  /** From arcane in the tuning, whatever it met. */
+  arcane: number;
+  /** From tuning that met its element. */
+  match: number;
+  /** Units of tuning that met their element this time. */
+  matched: number;
+  /** Units of tuning in all. */
+  tuned: number;
+  /** What each matched unit was worth. */
+  perUnit: number;
+}
+
+/**
+ * How well an undoing answers a working. Pure: the counter as composed, the
+ * working as `workingSignature` reads it, nothing else — so the bench can
+ * state it for any working and combat reads the same number.
+ */
+export function counterEfficiency(
+  counter: SpellCounter,
+  signature: Partial<Record<DamageType, number>>,
+): CounterReading {
+  const base = UNDO_BASE + UNDO_PER_TIER * Math.max(0, counter.tiers - 1);
+  const arcane = ARCANE_UNDO_PER_UNIT * (counter.tuning.arcane ?? 0);
+  let tuned = 0;
+  let matched = 0;
+  for (const [element, units] of Object.entries(counter.tuning) as [DamageType, number][]) {
+    tuned += units;
+    matched += Math.min(units, signature[element] ?? 0);
+  }
+  const perUnit = tuned > 0 ? matchCeiling(tuned) / tuned : 0;
+  const match = perUnit * matched;
+  return { efficiency: base + arcane + match, base, arcane, match, matched, tuned, perUnit };
+}
 
 // ----- Word mastery: tier vocabulary earned by use -----
 
@@ -427,6 +512,19 @@ function shapeConditions(
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
+ * What "with" can accompany: the last clause that ACTED, and what each kind
+ * needs remembered to take a lent substance. Wider than a strike chain on
+ * purpose — a ward or a mending breaks "then", but can still be accompanied.
+ */
+type Acting =
+  | { kind: 'strike'; strike: SpellStrike }
+  /** `base` is the ward's thickness per unit of substance, dials aside. */
+  | { kind: 'ward'; base: number; duration: number }
+  /** Everything the mending multiplies a substance's weight by. */
+  | { kind: 'mend'; restoreMult: number }
+  | { kind: 'undo'; part: { burn: number; hits: number } };
+
+/**
  * Compose a sentence into a SpellSpec. Pure: sentence in, spell out, no state.
  * Callers wanting legality (level gates, length caps) go through
  * `checkSentence`; this will happily compose a master's sentence for a novice
@@ -463,6 +561,23 @@ export function composeArcane(
   let altGroups = 0;
   /** The previous DAMAGING clause's strike, for a conjunction to key off. */
   let prevStrike: SpellStrike | null = null;
+  /** The previous clause that acted at all, for "with" to accompany. */
+  let prevActing: Acting | null = null;
+  /** What the working is made of, for somebody else's undoing to match. */
+  const signature: Partial<Record<DamageType, number>> = {};
+  /**
+   * The undoing, pooled: every clause that undoes feeds ONE counterspell —
+   * its tiers, its tuning, its share of the burn. A sentence answers a
+   * working once, however many ways it was told to.
+   */
+  let undoTiers = 0;
+  const tuning: Partial<Record<DamageType, number>> = {};
+  const undoParts: { burn: number; hits: number }[] = [];
+  // Nothing ("zero") is nothing to tune against.
+  const tune = (noun: ArcaneWordDef, units: number) => {
+    if (noun.untyped || !noun.element) return;
+    tuning[noun.element] = (tuning[noun.element] ?? 0) + units;
+  };
 
   parse.clauses.forEach((clause) => {
     if (!clause.linked) shareIndex += 1;
@@ -562,6 +677,97 @@ export function composeArcane(
 
     if (verb?.cooldownMult) cooldownMult *= Math.pow(verb.cooldownMult, verbCount);
 
+    // What the clause is MADE of, as spoken — its noun at its depth, or a
+    // striking verb's own substance when it stands bare. Read for every clause
+    // that says something, acting or not: an undoing matches the words, not
+    // what they happened to be doing. Wards, mendings and undoings spoken
+    // bare carry no substance of their own.
+    if (noun && !noun.untyped && noun.element) {
+      signature[noun.element] = (signature[noun.element] ?? 0) + (clause.noun?.count ?? 1);
+    } else if (!noun && verb && verb.restore === undefined && !verb.ward && !verb.undo) {
+      const substance = verb.bareType ?? 'arcane';
+      signature[substance] = (signature[substance] ?? 0) + verbCount;
+    }
+
+    /*
+     * "with": a bare substance lent to whatever the clause before it DID,
+     * rather than a clause acting on its own. Only a noun with no verb is
+     * lent — a linked clause that speaks its own verb acts for itself, and
+     * has merely escaped the breadth tax like any linked clause.
+     *
+     * Undoing is what it was made for: the substance joins the TUNING, and
+     * its adverbs ride the burn. Elsewhere it lends what the substance would
+     * have given in that clause's place — riders to a blow (nature and weight
+     * untouched, so "zero with venom" stays nothing, and poisons), a coat
+     * against its own element to a ward, its weight to a mending.
+     */
+    const linkedBy = clause.linked?.conjunction;
+    if (linkedBy?.accompany !== undefined && prevActing && noun && clause.noun && !clause.verb) {
+      const acting: Acting = prevActing;
+      const floored = Math.max(INTENSITY_FLOOR, condIntensity);
+      switch (acting.kind) {
+        case 'undo':
+          tune(noun, clause.noun.count);
+          acting.part.burn *= powerMult * floored * depth;
+          acting.part.hits = Math.max(acting.part.hits, hits);
+          break;
+        case 'strike': {
+          // Shaped as the substance would be on a blow of its own: depth and
+          // intensity for how deep, the clock for how long. Leading landing
+          // adverbs lend it that many times over, the way "but" donates.
+          const lent = shapeConditions(scaleInflicts(noun.inflicts, nounStack * depth * floored), condDur, condRate);
+          if (lent) {
+            const copies = hits > 1 ? Array.from({ length: hits }, () => lent.map((a) => ({ ...a }))).flat() : lent;
+            acting.strike.inflicts = [...(acting.strike.inflicts ?? []), ...copies];
+          }
+          break;
+        }
+        case 'ward': {
+          const amount =
+            acting.base * nounStack * powerMult * floored * depth * condRate * share * linkedBy.accompany;
+          wardMods = [
+            ...wardMods,
+            noun.element
+              ? { stat: RES_STAT_BY_TYPE[noun.element], op: 'add' as const, value: amount }
+              : { stat: 'armor' as const, op: 'add' as const, value: amount * 20 },
+          ];
+          wardDuration = Math.max(wardDuration, Math.max(1, Math.round(acting.duration * condDur * hits)));
+          break;
+        }
+        case 'mend':
+          heal += (noun.power ?? 0) * nounStack * acting.restoreMult * powerMult * share * hits * depth * linkedBy.accompany;
+          break;
+      }
+      return;
+    }
+
+    /*
+     * An UNDOING: the clause neither strikes nor tends — it makes the working
+     * a counterspell. Its noun tunes it; its tiers raise the efficiency the
+     * trap will meet a working with; and everything else the grammar reads
+     * (leading, weight, practice, intensity, depth, breadth) goes into the
+     * BURN it lays on that working's caster. Like a mending, it breaks any
+     * strike chain: there is no blow here for "then" to follow.
+     */
+    if (verb?.undo) {
+      undoTiers += verbCount;
+      if (noun && clause.noun) tune(noun, clause.noun.count);
+      const part = {
+        burn:
+          verb.undo.burn *
+          (noun ? led.power : 1) *
+          powerMult *
+          share *
+          Math.max(INTENSITY_FLOOR, condIntensity) *
+          depth,
+        hits,
+      };
+      undoParts.push(part);
+      prevActing = { kind: 'undo', part };
+      prevStrike = null;
+      return;
+    }
+
     // Restorative clauses land on the caster — unless the sentence SPOKE an
     // address at somebody else. "Water mend" tends your own wounds; "water
     // mend one" pours the mending into the enemy, and a body already whole
@@ -571,6 +777,7 @@ export function composeArcane(
       const base = noun ? (noun.power ?? 0) * nounStack * (verb.powerMult ?? 1) : 0.5;
       heal += base * verb.restore * verbStack * led.power * powerMult * share * hits * depth;
       prevStrike = null;
+      prevActing = { kind: 'mend', restoreMult: (verb.powerMult ?? 1) * verb.restore * verbStack * led.power };
       return;
     }
     if (verb?.ward) {
@@ -606,6 +813,11 @@ export function composeArcane(
         Math.max(1, Math.round(verb.ward.duration * condDur * hits)),
       );
       prevStrike = null;
+      prevActing = {
+        kind: 'ward',
+        base: verb.ward.amount * verbStack * led.mechanics,
+        duration: verb.ward.duration,
+      };
       return;
     }
 
@@ -714,6 +926,7 @@ export function composeArcane(
         if (prevStrike.altGroup === undefined) prevStrike.altGroup = altGroups++;
         strike.altGroup = prevStrike.altGroup;
         prevStrike = strike;
+        prevActing = { kind: 'strike', strike };
         strikes.push(strike);
         return;
       }
@@ -723,6 +936,7 @@ export function composeArcane(
       if (conj.followThrough) strike.followUp = conj.followThrough;
     }
     prevStrike = strike;
+    prevActing = { kind: 'strike', strike };
     strikes.push(strike);
   });
 
@@ -767,6 +981,12 @@ export function composeArcane(
   if (healsEnemy) spec.healsEnemy = true;
   if (splash > 0) spec.splash = splash;
   if (wardMods.length) spec.buff = { name: 'Ward', mods: wardMods, duration: wardDuration };
+  if (undoTiers > 0) {
+    spec.counter = { tiers: undoTiers, tuning, burn: undoParts.reduce((sum, p) => sum + p.burn, 0) };
+    const burns = Math.max(1, ...undoParts.map((p) => p.hits));
+    if (burns > 1) spec.counter.burns = burns;
+  }
+  if (Object.keys(signature).length) spec.signature = signature;
   return spec;
 }
 

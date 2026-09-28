@@ -1,4 +1,12 @@
-import type { CraftedSpell, GameState, PsionicShape, SpellSource, SpellSpec } from '../types';
+import type {
+  CraftedSpell,
+  DamageType,
+  GameState,
+  PsionicShape,
+  SpellSource,
+  SpellSpec,
+  StatusApplication,
+} from '../types';
 import type { EventBus } from '../engine/events';
 import { checkDiscovery, grantDiscoveryXp, grantSkillXp } from './skills';
 import { nextUid } from './equipment';
@@ -168,6 +176,67 @@ export function resolveSpellFor(state: GameState, spell: CraftedSpell): SpellSpe
   return spell.name ? { ...spec, name: spell.name } : spec;
 }
 
+// ---------- Anti-magic: what an undoing reads and what it leaves ----------
+
+/**
+ * What a working is made of, for an undoing to match: element → units.
+ *
+ * An arcane sentence states its own (composeArcane records every noun at its
+ * depth). A miracle or a psionic shape has no words to read, so each strike
+ * stands for one unit of its element, and a twin nature for one of each —
+ * Holy Fire is one heat and one light. Nothing typed is nothing to match.
+ */
+export function workingSignature(spec: SpellSpec): Partial<Record<DamageType, number>> {
+  if (spec.signature) return spec.signature;
+  const out: Partial<Record<DamageType, number>> = {};
+  for (const s of spec.strikes) {
+    if (s.untyped) continue;
+    out[s.type] = (out[s.type] ?? 0) + 1;
+    if (s.orType) out[s.orType] = (out[s.orType] ?? 0) + 1;
+  }
+  return out;
+}
+
+/** The element a working is most made of — what a trigger reads it as. */
+export function leadingElement(spec: SpellSpec): DamageType | undefined {
+  let best: DamageType | undefined;
+  let most = 0;
+  for (const [element, units] of Object.entries(workingSignature(spec)) as [DamageType, number][]) {
+    if (units > most) {
+      best = element;
+      most = units;
+    }
+  }
+  return best;
+}
+
+/**
+ * What is left of a working once an undoing has taken `remaining`'s
+ * complement out of it: every blow, mending, coat and condition it carries,
+ * at that share. A share of 0 or less is nothing at all — the caller says so
+ * rather than resolving an empty working — and 1 is the working untouched.
+ */
+export function undoWorking(spec: SpellSpec, remaining: number): SpellSpec {
+  const r = Math.max(0, Math.min(1, remaining));
+  if (r >= 1) return spec;
+  const thinned = (apps: StatusApplication[]) => apps.map((a) => ({ ...a, intensity: (a.intensity ?? 1) * r }));
+  const out: SpellSpec = {
+    ...spec,
+    strikes: spec.strikes.map((s) => ({
+      ...s,
+      power: s.power * r,
+      ...(s.inflicts ? { inflicts: thinned(s.inflicts) } : {}),
+    })),
+  };
+  if (spec.heal) out.heal = spec.heal * r;
+  if (spec.buff) out.buff = { ...spec.buff, mods: spec.buff.mods.map((m) => ({ ...m, value: m.value * r })) };
+  if (spec.grants) out.grants = thinned(spec.grants);
+  if (spec.afflicts) out.afflicts = thinned(spec.afflicts);
+  if (spec.transfers) out.transfers = { ...spec.transfers, mult: spec.transfers.mult * r };
+  if (spec.amplify) out.amplify = { ...spec.amplify, mult: 1 + (spec.amplify.mult - 1) * r };
+  return out;
+}
+
 // ---------- The book ----------
 
 export function findSpell(state: GameState, uid: number): CraftedSpell | undefined {
@@ -202,6 +271,9 @@ export function hasDivine(state: GameState, litanyId: string): boolean {
  * working does.
  */
 export function isUtilityWorking(spec: SpellSpec): boolean {
+  // A counterspell is a trap: with nobody casting, there is nothing for it to
+  // spring on, and casting it bare would spend the undoing on nothing.
+  if (spec.counter) return false;
   return (spec.grants?.length ?? 0) > 0 || (!!spec.heal && !spec.healsEnemy);
 }
 

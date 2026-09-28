@@ -434,6 +434,30 @@ export const MONSTER_STAT_KEYS = new Set<string>(
 export const MONSTER_EXEMPT_STATS = new Set<string>(['maxMana']);
 
 /**
+ * A monster's MIND, as manaburn sees it: the player's own pool arithmetic —
+ * 1 × INT deep, recovering 0.01 × INT + 0.05 × WIS a second — read off this
+ * specimen's attributes.
+ *
+ * It is NOT a pool a monster spends. `castMonsterWorking` still charges
+ * nothing, and the exemption above still holds: no gene routes into this,
+ * which is why it lives outside `MonsterStats`. It is only what a burn has to
+ * eat before it can run a debt, and a mind IN debt (`mindInDebt`) cannot
+ * shape a working — the same wall a player meets, who can afford nothing
+ * below zero. A caster's mind is deep and a brute's shallow, which is what
+ * lets manaburn devastate the one and barely trouble the other.
+ */
+export function monsterMind(inst: MonsterInstance): { current: number; max: number; regen: number } {
+  const int = Math.max(0, inst.attrs.int ?? 0);
+  const wis = Math.max(0, inst.attrs.wis ?? 0);
+  return { current: inst.mana ?? int, max: int, regen: int * 0.01 + wis * 0.05 };
+}
+
+/** Burned past empty: the mind cannot shape a working until it recovers. */
+export function mindInDebt(inst: MonsterInstance): boolean {
+  return (inst.mana ?? 0) < 0;
+}
+
+/**
  * A live enemy's current stat block.
  *
  * Recomputed on read rather than stored, exactly as the player's is: an

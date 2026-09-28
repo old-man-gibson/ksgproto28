@@ -22,6 +22,7 @@ import type {
   SpellSpec,
   SpellStrike,
   SlotId,
+  Bearer,
   SpotDef,
   SpotEncounter,
   StatusApplication,
@@ -579,6 +580,8 @@ import {
   MONSTER_RESIST_CAP,
   type MonsterStats,
   innateArmor,
+  mindInDebt,
+  monsterMind,
   monsterStats,
   rollMonsterAttrs,
   scaledMonsterAttrs,
@@ -591,9 +594,12 @@ import { availableMax, resourceValue, spendResource } from './resources';
 import {
   findSpell,
   grantCastWordXp,
+  leadingElement,
   preparedSpells,
   resolveSpellFor,
   specForSource,
+  undoWorking,
+  workingSignature,
 } from './spellcraft';
 import {
   applyTechniqueEquipment,
@@ -615,7 +621,7 @@ import {
   weaponStateGate,
 } from './martial';
 import { NEUTRAL_POSITION, POSITIONS, TECHNIQUES } from '../data/martial.data';
-import { OTHERS_POWER, composeArcane } from './arcane';
+import { OTHERS_POWER, composeArcane, counterEfficiency } from './arcane';
 import { HUNGER_PER_WISDOM } from '../data/statuses.data';
 import {
   amplifyStatuses,
@@ -644,6 +650,7 @@ import {
   statusRetaliation,
   statusReversesBar,
   statusesOf,
+  statusNegativeHeadroom,
   stripStatuses,
   tickStatuses,
 } from './statuses';
@@ -1643,6 +1650,9 @@ export function pickActive(
       // Matter argues with a psionic working, so resolve it in the hands that
       // are holding it — the one place combat reads a crafted spell.
       const spec = resolveSpellFor(state, spell);
+      // A counterspell is a trap: it never goes off on its own, on the bar or
+      // from the buff slot. Somebody else's casting springs it (pickCounterspell).
+      if (spec.counter) continue;
       // Offensive spells swing on the action bar; wards, mendings and whatever
       // the grammar sent at its own speaker fire as soon as ready, like buffs.
       // Healing an ENEMY is offensive — kindness, weaponized.
@@ -1864,7 +1874,12 @@ function applySelfRiders(state: GameState, c: CombatState, spec: SpellSpec): voi
  * anything the grammar was told to send to "me". Fires from the buff slot: as
  * soon as it is ready rather than on the action bar. Returns true if it proved
  * fatal, because "fire pierce me" is perfectly valid grammar and the grammar
- * does not check for wisdom.
+ * does not check for wisdom — or if the fight ended under it, so the caller
+ * stops either way.
+ *
+ * `prepaid` is a counterspell's payload: already paid, clocked and trained by
+ * the spring that carries it, and not itself answerable — an undoing's own
+ * words cannot be undone.
  */
 function castCraftedSelf(
   state: GameState,
@@ -1872,15 +1887,34 @@ function castCraftedSelf(
   id: string,
   spec: SpellSpec,
   stats: DerivedStats,
+  prepaid = false,
 ): boolean {
   const c = state.combat!;
-  spendResource(state, 'mana', spec.manaCost * stats.manaEff);
-  // A psionic working is paid for out of the mind's own pool, not the arcane
-  // one. Instant workings SPEND focus; sustained ones will hold it instead.
-  if (spec.focusCost) spendResource(state, 'focus', spec.focusCost);
-  if (spec.staminaCost) drawStamina(state, stats, spec.staminaCost);
-  c.cooldowns[id] = spec.cooldown;
-  feed(state, `${spec.icon} You cast ${spec.name}.`);
+  if (!prepaid) {
+    spendResource(state, 'mana', spec.manaCost * stats.manaEff);
+    // A psionic working is paid for out of the mind's own pool, not the arcane
+    // one. Instant workings SPEND focus; sustained ones will hold it instead.
+    if (spec.focusCost) spendResource(state, 'focus', spec.focusCost);
+    if (spec.staminaCost) drawStamina(state, stats, spec.staminaCost);
+    c.cooldowns[id] = spec.cooldown;
+    feed(state, `${spec.icon} You cast ${spec.name}.`);
+
+    // An enemy's undoing may be waiting for exactly this. What it leaves is
+    // what lands; what it costs you, you have already paid.
+    const answer = answerPlayerWorking(state, bus, spec);
+    if (answer.fatal || !state.combat) return true;
+    // A refused undoing's backlash can drop the one who spoke it.
+    if (c.enemies.some((e) => e && e.hp <= 0)) {
+      sweepDead(state, bus);
+      if (!state.combat) return true;
+    }
+    if (answer.remaining <= 0) {
+      feed(state, `↩️ ${spec.name} comes apart before it can take hold.`);
+      selfCastXp(state, bus, id, spec);
+      return false;
+    }
+    if (answer.remaining < 1) spec = undoWorking(spec, answer.remaining);
+  }
 
   const synergy = miracleSynergy(state, c, spec);
   if (synergy > 1) feed(state, `✨ ${spec.name} resonates with the miracle before it.`);
@@ -1907,13 +1941,18 @@ function castCraftedSelf(
       }
     }
   }
+  if (!prepaid) selfCastXp(state, bus, id, spec);
+  return false;
+}
+
+/** What casting on yourself teaches — whether or not anything survived to land. */
+function selfCastXp(state: GameState, bus: EventBus, id: string, spec: SpellSpec): void {
   grantAttrXp(state, bus, 'int', 2);
   const tags = ['magic', spec.school];
   checkDiscovery(state, bus, tags);
   grantSkillXp(state, bus, tags, 3);
   // Saying a sentence is how its words are worn in (see grantWordXp).
   if (id.startsWith('grimoire:')) grantCastWordXp(state, bus, Number(id.slice(9)));
-  return false;
 }
 
 /**
@@ -1946,9 +1985,13 @@ export const OVERGROWTH_HEAL_TAX = 1 / 3;
  * through one path, and any school the player gains, monsters gain too.
  *
  * A monster pays no pool (it has none) and never learns: its list is authored,
- * and the spec's own cooldown is the whole governor. Returns whether it cast.
+ * and the spec's own cooldown is the whole governor.
+ *
+ * Returns true when the field changed under the enemy phase — a counterspell's
+ * answer killed something, or the fight ended — and the phase must stop
+ * rather than keep walking a formation whose slots have moved.
  */
-function castMonsterWorking(
+export function castMonsterWorking(
   state: GameState,
   bus: EventBus,
   e: MonsterInstance,
@@ -1960,10 +2003,12 @@ function castMonsterWorking(
   e.cooldowns ??= {};
   e.cooldowns[index] = state.totalTicks + spec.cooldown;
   spendMonsterAction(e, index);
+  const c = state.combat!;
+  const slot = c.enemies.indexOf(e);
 
   // The same argument, from the other side. Keyed per specimen so two of the
   // same monster seal their own workings rather than sharing one.
-  const refusal = refuteCast(state, `${e.defId}:${index}:${state.combat!.enemies.indexOf(e)}`, spec.manaCost);
+  const refusal = refuteCast(state, `${e.defId}:${index}:${slot}`, spec.manaCost);
   if (refusal.negated) {
     if (refusal.backlash > 0) {
       e.hp -= Math.max(1, Math.round(refusal.backlash));
@@ -1975,23 +2020,86 @@ function castMonsterWorking(
         ? `🚫 The ${e.name}'s ${spec.name} is refused — it will not find the words again.`
         : `🚫 The ${e.name} reaches for ${spec.name} and the world declines.`,
     );
-    return true;
+    return false;
   }
 
-  const stats = getDerivedStats(state);
-  feed(state, `${spec.icon} The ${e.name} works ${spec.name}.`);
-
   /*
-   * What it does to ITSELF: a mending closes its own wounds, and every inward
-   * face it shaped is worn by it (applyStatus already takes a monster, and
-   * statusMods keeps whichever stats a monster actually has — so a psionic
-   * haste really does quicken its bar, while a face targeting a stat monsters
-   * lack is ignored).
-   *
-   * `spec.buff` is deliberately NOT read: buffs fill the player's own slot on
-   * CombatState. A monster wears conditions instead, which is what `grants`
-   * already is.
+   * The casting is VISIBLE before it resolves: stamped for triggers (with
+   * what is being cast, so a trigger can ask), and offered to whatever
+   * undoing the player has lying in wait. The answer lands inside the
+   * casting, the way a counter technique lands inside the swing — so what
+   * resolves afterwards is what the undoing left of it.
    */
+  c.casting = {
+    index: slot,
+    name: spec.name,
+    school: spec.school,
+    element: leadingElement(spec),
+    tick: state.totalTicks,
+  };
+  markCombatEvent(state, 'onEnemyCast');
+  let working = spec;
+  let remaining = 1;
+  const stats = getDerivedStats(state);
+  const armed = pickCounterspell(state, stats);
+  if (armed) {
+    const standing = livingEnemies(c);
+    remaining = springCounterspell(state, bus, stats, armed, e, spec);
+    if (!state.combat || !isAlive(state)) return true;
+    // Its own answer may have reached the caster, or anyone else: a working
+    // whose speaker has fallen goes with them.
+    const fell = livingEnemies(state.combat) !== standing;
+    if (e.hp <= 0 || !state.combat.enemies.includes(e)) return true;
+    if (remaining <= 0) {
+      feed(state, `↩️ The ${e.name}'s ${spec.name} comes apart before it can land.`);
+      return fell;
+    }
+    working = undoWorking(spec, remaining);
+    if (fell) {
+      feed(state, `${spec.icon} The ${e.name} works what is left of ${spec.name}.`);
+      resolveMonsterWorking(state, bus, e, es, working, stats);
+      return true;
+    }
+  }
+
+  feed(
+    state,
+    remaining < 1
+      ? `${spec.icon} The ${e.name} works what is left of ${spec.name}.`
+      : `${spec.icon} The ${e.name} works ${spec.name}.`,
+  );
+  resolveMonsterWorking(state, bus, e, es, working, stats);
+  return !state.combat || !isAlive(state);
+}
+
+/** How many enemies are still standing — the cheap way to notice a death. */
+function livingEnemies(c: CombatState): number {
+  return c.enemies.filter((e) => e && e.hp > 0).length;
+}
+
+/**
+ * What a monster's working DOES, once it is decided that it happens — shared
+ * by an ordinary cast and by a counterspell's payload. Returns true when it
+ * proved fatal to the player.
+ *
+ * What it does to ITSELF: a mending closes its own wounds, and every inward
+ * face it shaped is worn by it (applyStatus already takes a monster, and
+ * statusMods keeps whichever stats a monster actually has — so a psionic
+ * haste really does quicken its bar, while a face targeting a stat monsters
+ * lack is ignored).
+ *
+ * `spec.buff` is deliberately NOT read: buffs fill the player's own slot on
+ * CombatState. A monster wears conditions instead, which is what `grants`
+ * already is.
+ */
+function resolveMonsterWorking(
+  state: GameState,
+  bus: EventBus,
+  e: MonsterInstance,
+  es: MonsterStats,
+  spec: SpellSpec,
+  stats: DerivedStats,
+): boolean {
   if (spec.heal && !spec.healsEnemy) {
     const i = state.combat!.enemies.indexOf(e);
     if (i >= 0) healEnemy(state, i, spec.heal * es.spellPower, spec.name, false);
@@ -2017,7 +2125,248 @@ function castMonsterWorking(
   }
   // The working itself arriving, blow or no blow (see SpellSpec.afflicts).
   applyStatuses(state, state, spec.afflicts, spec.name, stats);
-  return true;
+  return false;
+}
+
+// ---------- Anti-magic: counterspells ----------
+//
+// A counterspell is any working with an undoing in it (SpellSpec.counter). It
+// is never cast on its own: prepared, it lies in the rotation like a trap, and
+// an enemy's casting springs it — the same way a counter technique lives
+// inside the enemy's swing rather than on either of the ordinary paths. The
+// monster side is the mirror: a counterspell in a monster's rotation is never
+// its turn's action, and YOUR casting springs it.
+//
+// Springing reads the undoing against the working it met (arcane.ts
+// `counterEfficiency`). The working loses that share of itself — all of it at
+// 100% or more — and whoever the undoing is addressed to takes manaburn at
+// efficiency × burn × the undoer's spell power. The burn is never capped:
+// efficiency past 100% has nothing left to take apart, and burns harder.
+// Anything else the sentence carries (a blow, a ward, a mending) goes off
+// with it, aimed at the caster whose working it answered.
+
+/** A prepared counterspell that has passed every gate and waits for a working. */
+interface ArmedCounterspell {
+  id: string;
+  spec: SpellSpec;
+}
+
+/**
+ * The player's counterspell ready to answer a working right now: the first
+ * prepared one in rotation order that is off its clock, not sealed, not being
+ * held in the spellblade seat, affordable, and whose firing conditions hold.
+ * The casting has already been stamped (`onEnemyCast`, `CombatState.casting`),
+ * so a condition can ask what is being cast — that is how several traps tuned
+ * for different elements are routed.
+ */
+function pickCounterspell(state: GameState, stats: DerivedStats): ArmedCounterspell | null {
+  const c = state.combat!;
+  const ctx = { state, combat: c, stats };
+  for (const id of activeRotation(state)) {
+    if (!id.startsWith('grimoire:')) continue;
+    const spell = findSpell(state, Number(id.slice('grimoire:'.length)));
+    if (!spell) continue;
+    if ((c.cooldowns[id] ?? 0) > 0) continue;
+    if (isSealed(state, id)) continue;
+    if (spellIsHeld(state, spell.uid)) continue;
+    const spec = resolveSpellFor(state, spell);
+    if (!spec.counter) continue;
+    // A rattled head cannot hold a spell together — an undoing included.
+    if (statusBlocks(state, 'spell')) continue;
+    if (resourceValue(state, 'mana') < spec.manaCost * stats.manaEff) continue;
+    if (spec.focusCost && resourceValue(state, 'focus') < spec.focusCost) continue;
+    if (!evaluateTrigger(ctx, state.skillTriggers?.[id])) continue;
+    return { id, spec };
+  }
+  return null;
+}
+
+/** Everything a counterspell carries besides the undoing, or null when that is all it is. */
+function counterPayload(spec: SpellSpec): SpellSpec | null {
+  const carries =
+    spec.strikes.length > 0 ||
+    !!spec.heal ||
+    !!spec.buff ||
+    (spec.grants?.length ?? 0) > 0 ||
+    (spec.afflicts?.length ?? 0) > 0;
+  if (!carries) return null;
+  const rest: SpellSpec = { ...spec };
+  delete rest.counter;
+  return rest;
+}
+
+/** Lay an undoing's burn on each bearer, once per application it was spoken with. */
+function layBurn(
+  state: GameState,
+  bearers: Bearer[],
+  intensity: number,
+  times: number,
+  source: string,
+  playerStats?: DerivedStats,
+): void {
+  if (intensity <= 0) return;
+  for (const bearer of bearers) {
+    for (let n = 0; n < times; n++) {
+      applyStatus(
+        state,
+        bearer,
+        { id: 'manaburn', intensity },
+        source,
+        // The player's arcane resistance thins a burn on arrival; a monster's
+        // is read off the monster by applyStatus itself.
+        bearer === state ? playerStats : undefined,
+      );
+    }
+  }
+}
+
+/** A share, the way the feed states one. */
+const pctOf = (x: number) => `${Math.round(x * 100)}%`;
+
+/**
+ * Spring the player's counterspell on a monster's working. Pays, clocks and
+ * trains like a cast (it is one), then returns what is left of the working:
+ * 1 untouched, 0 undone entirely.
+ */
+function springCounterspell(
+  state: GameState,
+  bus: EventBus,
+  stats: DerivedStats,
+  armed: ArmedCounterspell,
+  caster: MonsterInstance,
+  working: SpellSpec,
+): number {
+  const c = state.combat!;
+  const { id, spec } = armed;
+  const counter = spec.counter!;
+  const cost = spec.manaCost * stats.manaEff;
+  // A refuting body argues with its own undoings too (see castCraftedAttack),
+  // and a refused one still costs what it cost.
+  const refusal = refuteCast(state, id, cost);
+  spendResource(state, 'mana', cost);
+  if (spec.focusCost) spendResource(state, 'focus', spec.focusCost);
+  if (spec.staminaCost) drawStamina(state, stats, spec.staminaCost);
+  c.cooldowns[id] = spec.cooldown;
+  if (refusal.negated) {
+    if (refusal.backlash > 0) damagePlayer(state, refusal.backlash, 'arcane');
+    feed(state, `🚫 ${spec.name} is refused before it can spring.`);
+    return 1;
+  }
+
+  const reading = counterEfficiency(counter, workingSignature(working));
+  const burn = reading.efficiency * counter.burn * stats.spellPower;
+  // The address decides who burns: the caster it answered by default, every
+  // enemy thinned for a broadside, and — the grammar does not check for
+  // wisdom — the speaker, for "undo me".
+  if (spec.target === 'self') layBurn(state, [state], burn, counter.burns ?? 1, spec.name, stats);
+  else if (spec.target === 'others') {
+    const all = c.enemies.filter((m): m is MonsterInstance => !!m && m.hp > 0);
+    layBurn(state, all, burn * OTHERS_POWER, counter.burns ?? 1, spec.name);
+  } else layBurn(state, [caster], burn, counter.burns ?? 1, spec.name);
+
+  const undone = reading.efficiency >= 1 ? 'undone entirely' : `${pctOf(reading.efficiency)} of it undone`;
+  feed(
+    state,
+    `🪤 ${spec.name} springs on the ${caster.name}'s ${working.name}: ${pctOf(reading.efficiency)} efficiency, ${undone}, manaburn ${Math.round(burn)}.`,
+  );
+
+  grantAttrXp(state, bus, 'int', 3);
+  const tags = ['combat', 'magic', spec.school];
+  checkDiscovery(state, bus, tags);
+  grantSkillXp(state, bus, tags, 4);
+  if (id.startsWith('grimoire:')) grantCastWordXp(state, bus, Number(id.slice(9)));
+
+  // Whatever else the sentence carries goes off with it, at the caster.
+  const payload = counterPayload(spec);
+  if (payload) {
+    if (payload.target === 'self') castCraftedSelf(state, bus, id, payload, stats, true);
+    else if (caster.hp > 0 && c.enemies.includes(caster)) {
+      castCraftedAttack(state, bus, id, payload, { spring: { aimAt: c.enemies.indexOf(caster) } });
+    }
+  }
+  return Math.max(0, 1 - reading.efficiency);
+}
+
+/**
+ * An enemy's undoing, answering YOUR working. The first enemy holding a
+ * counterspell that is ready springs it — the front first, then the flanks,
+ * each reading its own rotation top-down — and only one answers any one
+ * working: a coven does not take the same sentence apart five times over.
+ *
+ * A mind in debt cannot shape an undoing any more than a working; a refuting
+ * body (yours) argues with it like any other.
+ *
+ * Returns what is left of your working (1 untouched, 0 undone), and whether
+ * the answer finished you.
+ */
+function answerPlayerWorking(
+  state: GameState,
+  bus: EventBus,
+  working: SpellSpec,
+): { remaining: number; fatal: boolean } {
+  const c = state.combat!;
+  for (let slot = 0; slot < c.enemies.length; slot++) {
+    const e = c.enemies[slot];
+    if (!e || e.hp <= 0 || mindInDebt(e)) continue;
+    // The terms of an honorable duel: everyone but the front can only watch.
+    if (slot > 0 && statusPacifiesFlankers(state)) continue;
+    const rotation = MONSTERS[e.defId]?.rotation ?? [];
+    for (let index = 0; index < rotation.length; index++) {
+      const entry = rotation[index];
+      if (!('cast' in entry)) continue;
+      if ((e.cooldowns?.[index] ?? 0) > state.totalTicks) continue;
+      if (entry.uses !== undefined && (e.spent?.[index] ?? 0) >= entry.uses) continue;
+      const spec = specForSource(entry.cast);
+      if (!spec.counter) continue;
+      const key = `${e.defId}:${index}:${slot}`;
+      if (isSealed(state, key)) continue;
+      return springEnemyCounter(state, bus, e, index, key, spec, working);
+    }
+  }
+  return { remaining: 1, fatal: false };
+}
+
+/** A monster's counterspell, sprung on your working. See answerPlayerWorking. */
+function springEnemyCounter(
+  state: GameState,
+  bus: EventBus,
+  e: MonsterInstance,
+  index: number,
+  key: string,
+  spec: SpellSpec,
+  working: SpellSpec,
+): { remaining: number; fatal: boolean } {
+  e.cooldowns ??= {};
+  e.cooldowns[index] = state.totalTicks + spec.cooldown;
+  spendMonsterAction(e, index);
+
+  const refusal = refuteCast(state, key, spec.manaCost);
+  if (refusal.negated) {
+    if (refusal.backlash > 0) {
+      e.hp -= Math.max(1, Math.round(refusal.backlash));
+      noteOutgoing(state, Math.max(1, Math.round(refusal.backlash)));
+    }
+    feed(state, `🚫 The ${e.name} reaches to undo your ${working.name} and the world declines.`);
+    return { remaining: 1, fatal: false };
+  }
+
+  const counter = spec.counter!;
+  const es = monsterStats(e);
+  const stats = getDerivedStats(state);
+  const reading = counterEfficiency(counter, workingSignature(working));
+  const burn = reading.efficiency * counter.burn * es.spellPower;
+  // "Undo me" in a monster's mouth burns the monster. The grammar is the
+  // grammar, whoever speaks it.
+  layBurn(state, spec.target === 'self' ? [e] : [state], burn, counter.burns ?? 1, spec.name, stats);
+  const undone = reading.efficiency >= 1 ? 'undone entirely' : `${pctOf(reading.efficiency)} of it undone`;
+  feed(
+    state,
+    `🪤 The ${e.name}'s ${spec.name} springs on your ${working.name}: ${pctOf(reading.efficiency)} efficiency, ${undone}, manaburn ${Math.round(burn)}.`,
+  );
+
+  const payload = counterPayload(spec);
+  const fatal = payload ? resolveMonsterWorking(state, bus, e, es, payload, stats) : false;
+  return { remaining: Math.max(0, 1 - reading.efficiency), fatal };
 }
 
 /**
@@ -2044,7 +2393,15 @@ function pickMonsterAction(
     // ...and, for anything it brought a finite supply of, one counter beside
     // the clock. An empty satchel falls through to whatever it can still do.
     if (entry.uses !== undefined && (e.spent?.[index] ?? 0) >= entry.uses) continue;
-    if ('cast' in entry) return { index, cast: entry.cast };
+    if ('cast' in entry) {
+      // An undoing is never its own turn's action: it waits in the rotation
+      // for YOUR casting to spring it (answerPlayerWorking).
+      if (specForSource(entry.cast).counter) continue;
+      // A mind burned past empty cannot shape a working until it recovers —
+      // it falls through to whatever else it can still do, or a plain swing.
+      if (mindInDebt(e)) continue;
+      return { index, cast: entry.cast };
+    }
     const tech = TECHNIQUES[entry.technique];
     if (!tech) continue;
     // A monster has no ledger, so it reads the DECLARED ways only — practice
@@ -2404,6 +2761,18 @@ export function healEnemy(
   feed(state, `🌿 The ${target.name} swells with unwanted life.`);
 }
 
+/** How a crafted attack is being delivered, when it is not an ordinary cast. */
+export interface CastOptions {
+  /**
+   * A counterspell's payload, sprung inside somebody else's casting: already
+   * paid for, clocked, argued with and trained by the spring, not itself
+   * answerable (an undoing's own words cannot be undone), and aimed at the
+   * caster whose working it answered — for a flanker, the only way it is
+   * ever reached.
+   */
+  spring?: { aimAt: number };
+}
+
 /**
  * Cast a prepared offensive spell on the player's swing. This is what the
  * weapon path cannot express: several typed strikes per cast, a clause landing
@@ -2411,34 +2780,55 @@ export function healEnemy(
  * strike. Returns true when the player phase should end — the front slot was
  * killed, or the fight is over.
  */
-export function castCraftedAttack(state: GameState, bus: EventBus, id: string, spec: SpellSpec): boolean {
+export function castCraftedAttack(
+  state: GameState,
+  bus: EventBus,
+  id: string,
+  spec: SpellSpec,
+  opts: CastOptions = {},
+): boolean {
   const c = state.combat!;
   const stats = getDerivedStats(state);
-  /*
-   * A refuting body argues with EVERY working in the fight, and its own hands
-   * are not exempt — that is the cost of wearing it. Rolled before anything
-   * resolves but after the price is known, because a refused working still
-   * costs what it cost: the argument is the expensive part.
-   */
-  const refusal = refuteCast(state, id, spec.manaCost * stats.manaEff);
-  if (refusal.negated) {
+  if (!opts.spring) {
+    /*
+     * A refuting body argues with EVERY working in the fight, and its own hands
+     * are not exempt — that is the cost of wearing it. Rolled before anything
+     * resolves but after the price is known, because a refused working still
+     * costs what it cost: the argument is the expensive part.
+     */
+    const refusal = refuteCast(state, id, spec.manaCost * stats.manaEff);
+    if (refusal.negated) {
+      spendResource(state, 'mana', spec.manaCost * stats.manaEff);
+      c.cooldowns[id] = spec.cooldown;
+      if (refusal.backlash > 0) damagePlayer(state, refusal.backlash, 'arcane');
+      feed(
+        state,
+        refusal.sealed
+          ? `🚫 ${spec.name} is refused, and will not be spoken again this fight.`
+          : `🚫 ${spec.name} is refused before it can finish.`,
+      );
+      return !isAlive(state);
+    }
     spendResource(state, 'mana', spec.manaCost * stats.manaEff);
+    // A psionic working is paid for out of the mind's own pool (see castSpell).
+    if (spec.focusCost) spendResource(state, 'focus', spec.focusCost);
+    // Some miracles are paid for in breath as well as mana (Redouble Venom).
+    if (spec.staminaCost) drawStamina(state, stats, spec.staminaCost);
     c.cooldowns[id] = spec.cooldown;
-    if (refusal.backlash > 0) damagePlayer(state, refusal.backlash, 'arcane');
-    feed(
-      state,
-      refusal.sealed
-        ? `🚫 ${spec.name} is refused, and will not be spoken again this fight.`
-        : `🚫 ${spec.name} is refused before it can finish.`,
-    );
-    return !isAlive(state);
+
+    // An enemy's undoing may be lying in wait for exactly this. What it leaves
+    // is what lands; what it costs you, you have already paid.
+    const answer = answerPlayerWorking(state, bus, spec);
+    if (answer.fatal || !state.combat) return true;
+    if (answer.remaining <= 0) {
+      feed(state, `↩️ ${spec.name} comes apart before it can land.`);
+      attackCastXp(state, bus, id, spec);
+      return sweepDead(state, bus);
+    }
+    if (answer.remaining < 1) spec = undoWorking(spec, answer.remaining);
   }
-  spendResource(state, 'mana', spec.manaCost * stats.manaEff);
-  // A psionic working is paid for out of the mind's own pool (see castSpell).
-  if (spec.focusCost) spendResource(state, 'focus', spec.focusCost);
-  // Some miracles are paid for in breath as well as mana (Redouble Venom).
-  if (spec.staminaCost) drawStamina(state, stats, spec.staminaCost);
-  c.cooldowns[id] = spec.cooldown;
+  /** Who the working is aimed at: the front, or the caster a spring answered. */
+  const aim = opts.spring?.aimAt ?? 0;
 
   // Divine resonance and affliction-feeding, resolved once per cast.
   const synergy = miracleSynergy(state, c, spec);
@@ -2450,13 +2840,13 @@ export function castCraftedAttack(state: GameState, bus: EventBus, id: string, s
 
   // Strip the caster's own afflictions and deliver them to the front enemy,
   // with interest — Venom Feast's whole idea.
-  if (spec.transfers && c.enemies[0]) {
+  if (spec.transfers && c.enemies[aim]) {
     const taken = stripStatuses(state, spec.transfers.statuses);
     if (taken.length) {
       for (const t of taken) {
         applyStatus(
           state,
-          c.enemies[0],
+          c.enemies[aim]!,
           { id: t.id, intensity: t.intensity * spec.transfers.mult },
           spec.name,
         );
@@ -2468,7 +2858,7 @@ export function castCraftedAttack(state: GameState, bus: EventBus, id: string, s
   const targets =
     spec.target === 'others'
       ? c.enemies.map((e, i) => (e ? i : -1)).filter((i) => i >= 0)
-      : [0];
+      : [aim];
   // A broadside thins the working across everyone it addresses.
   const share = spec.target === 'others' ? OTHERS_POWER : 1;
 
@@ -2542,7 +2932,7 @@ export function castCraftedAttack(state: GameState, bus: EventBus, id: string, s
         }
         const raw =
           vs.spellPower * strike.power * share * castMult * follow * critMult * (0.9 + rand(state) * 0.2);
-        if (idx === 0) mainRaw += raw;
+        if (idx === aim) mainRaw += raw;
         // A twin-natured strike lands as whichever type the target guards worse.
         const type =
           strike.orType && resistanceOf(target, strike.orType) < resistanceOf(target, strike.type)
@@ -2612,7 +3002,7 @@ export function castCraftedAttack(state: GameState, bus: EventBus, id: string, s
 
   // Spill from a single-target working that was told to be bigger ("expand").
   if (spec.target !== 'others' && (spec.splash ?? 0) > 0) {
-    const flanks = c.enemies.map((e, i) => (e && i > 0 ? i : -1)).filter((i) => i >= 0);
+    const flanks = c.enemies.map((e, i) => (e && i !== aim ? i : -1)).filter((i) => i >= 0);
     if (flanks.length > 0) {
       const idx = flanks[randInt(state, 0, flanks.length - 1)];
       const other = c.enemies[idx]!;
@@ -2625,10 +3015,11 @@ export function castCraftedAttack(state: GameState, bus: EventBus, id: string, s
 
   // A venom already at work on the front enemy is redoubled and refreshed —
   // after the strike, so the miracle's own fresh poison counts too.
-  if (spec.amplify && c.enemies[0]) {
-    const touched = amplifyStatuses(c.enemies[0], spec.amplify.statuses, spec.amplify.mult);
+  const aimed = c.enemies[aim];
+  if (spec.amplify && aimed) {
+    const touched = amplifyStatuses(aimed, spec.amplify.statuses, spec.amplify.mult);
     if (touched > 0) {
-      feed(state, `${spec.icon} The venom in the ${c.enemies[0].name} redoubles.`);
+      feed(state, `${spec.icon} The venom in the ${aimed.name} redoubles.`);
     }
   }
 
@@ -2647,14 +3038,20 @@ export function castCraftedAttack(state: GameState, bus: EventBus, id: string, s
 
   if (applyRetaliation(state, bus, 'onAttack')) return true;
 
+  // A spring's payload was trained by the spring that carried it.
+  if (!opts.spring) attackCastXp(state, bus, id, spec);
+
+  return sweepDead(state, bus);
+}
+
+/** What an offensive cast teaches — whether or not anything survived to land. */
+function attackCastXp(state: GameState, bus: EventBus, id: string, spec: SpellSpec): void {
   grantAttrXp(state, bus, 'int', 3);
   const tags = ['combat', 'magic', spec.school];
   checkDiscovery(state, bus, tags);
   grantSkillXp(state, bus, tags, 4);
   if (id.startsWith('grimoire:')) grantCastWordXp(state, bus, Number(id.slice(9)));
   bus.emit({ type: 'tick:action', tags, skillXp: 0 });
-
-  return sweepDead(state, bus);
 }
 
 /**
@@ -2914,12 +3311,22 @@ function tickEnemyStatuses(state: GameState, bus: EventBus, c: CombatState): voi
       }
     }
 
+    const mind = monsterMind(e);
     const result = tickStatuses(state, e, {
       hp: e.hp,
       maxHp: monsterStats(e).maxHp,
       inCombat: true,
+      // The one pool a monster has for a condition to eat (see monsterMind).
+      pools: { mana: { current: mind.current, trueMax: mind.max } },
     });
-    if (result.damage <= 0) continue;
+    const detonated = burnMind(state, e, mind, result);
+    if (result.damage <= 0) {
+      if (detonated && e.hp <= 0) {
+        onKill(state, bus, i);
+        if (!state.combat) return;
+      }
+      continue;
+    }
     const dealt = Math.max(1, Math.round(result.damage));
     e.hp -= dealt;
     // A bleed you put on it is damage you dealt — it just arrives on its own
@@ -2947,6 +3354,50 @@ function tickEnemyStatuses(state: GameState, bus: EventBus, c: CombatState): voi
   settleWhen(state, 'cond:foes', (run) =>
     run.ids.some((id: string) => c.enemies.some((e) => e && e.hp > 0 && statusesOf(e).some((s) => s.id === id))),
   );
+}
+
+/**
+ * What a condition ate out of a monster's MIND this tick, and what went off.
+ *
+ * The drain comes off the notional pool, into debt as far as the burn's own
+ * headroom allows — exactly `drainIntoDebt`'s rule for the player. A debt
+ * that bottoms out detonates as the player's does: arcane, most resistance no
+ * help, because it was already inside them. Returns whether anything went off.
+ */
+function burnMind(
+  state: GameState,
+  e: MonsterInstance,
+  mind: ReturnType<typeof monsterMind>,
+  result: ReturnType<typeof tickStatuses>,
+): boolean {
+  let mana = mind.current;
+  for (const drain of result.drains) {
+    if (drain.resource !== 'mana') continue;
+    mana = Math.max(-statusNegativeHeadroom(e, 'mana', mind.max), mana - drain.amount);
+  }
+  if (mana !== mind.current) e.mana = mana;
+  for (const boom of result.detonations) {
+    const res = Math.max(-1, Math.min(0.9, monsterStats(e).resistances[boom.type] ?? 0)) * (1 - boom.bypassRes);
+    const dealt = Math.max(1, Math.round(boom.amount * (1 - res)));
+    e.hp -= dealt;
+    noteOutgoing(state, dealt);
+    feed(state, `${boom.icon} The ${boom.name.toLowerCase()} in the ${e.name} goes off for ${dealt} ${boom.type}.`);
+  }
+  return result.detonations.length > 0;
+}
+
+/**
+ * A burned mind recovering at the player's own rate (monsterMind). Only a
+ * mind something has touched is tracked at all; back at full, it forgets.
+ */
+function tickEnemyMinds(c: CombatState): void {
+  for (const e of c.enemies) {
+    if (!e || e.mana === undefined) continue;
+    const mind = monsterMind(e);
+    const next = e.mana + mind.regen / TPS;
+    if (next >= mind.max) delete e.mana;
+    else e.mana = next;
+  }
 }
 
 /**
@@ -3013,6 +3464,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
   // a burn that suppresses regeneration gets to land its tick first, and a
   // regenerating thing can never out-heal the very damage that stops it.
   tickEnemyRegen(state, c);
+  tickEnemyMinds(c);
 
   speakTongue(state, bus);
   if (!state.combat) return;
@@ -3760,7 +4212,9 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     feedTheFast(state, e);
 
     if (action?.cast) {
-      castMonsterWorking(state, bus, e, es, action.cast, action.index);
+      // A counterspell's answer can kill mid-cast, and sweeping moves the
+      // formation under this loop — the same reason bar damage ends the phase.
+      if (castMonsterWorking(state, bus, e, es, action.cast, action.index)) return;
       if (!state.combat || !isAlive(state)) return;
       continue;
     }

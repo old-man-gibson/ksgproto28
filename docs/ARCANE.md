@@ -13,6 +13,10 @@
 > [LONGTERM.md](LONGTERM.md). New ideas for this school go on that shelf, not
 > into this document.
 >
+> **One addition since, at the user's call (2026-09-28): anti-magic** — the
+> verb `undo`, the conjunction `with`, and counterspells (§14). It reopens
+> nothing else.
+>
 > **Closed is not bug-free.** It means the design is finished and the feature
 > list is shut — not that the implementation is clean. Bugs are still fixed
 > here, and fixing one reopens nothing. **Suspected soft spot at closing time
@@ -50,10 +54,10 @@ exactly one kind:
 
 | kind | what it is | count |
 |---|---|---|
-| **noun** | the substance spoken into being (fire, ice, zero…) | 12 |
-| **verb** | what the substance is made to do (cut, pierce, mend…) | 9 |
+| **noun** | the substance spoken into being (fire, ice, zero…) | 14 |
+| **verb** | what the substance is made to do (cut, pierce, mend, undo…) | 10 |
 | **adverb** | how it is spoken (slowly, gently, twice…) | 7 |
-| **conjunction** | how clauses relate (then, and, but, or, if) | 5 |
+| **conjunction** | how clauses relate (then, and, but, or, if, with) | 6 |
 | **target** | the address the spell is sent to (one, others, me) | 3 |
 
 Sentence length is capped by the **Arcana** skill:
@@ -295,6 +299,12 @@ alone. Linked clauses escape the breadth tax (§3).
   merely On Fire). Conditioned on a riderless word, the blow is conditioned
   on nothing, and nothing never comes true. Unmet, the strike simply is not
   spoken — and breaks any then-chain behind it.
+- **with** (`accompany: 0.75`) — *accompaniment*. A linked clause with a noun
+  and no verb does not act: it lends its substance to whatever the clause
+  before it did — tuning to an undoing, riders to a blow, a coat to a ward,
+  weight to a mending (§14d). Unlike the others it keys off any clause that
+  acted, not only a strike. A linked clause with a verb of its own acts for
+  itself.
 
 ## 7. Targets and delivery
 
@@ -363,6 +373,7 @@ and toggleable in the rotation UI, no separate black box:
   `target !== 'self'`) swing on the action bar in place of a weapon attack.
 - **Self-workings** (wards, mendings, whatever the grammar sent at its own
   speaker) fire from the buff slot as soon as they are ready.
+- **Counterspells** (§14) ride neither: an enemy's casting springs them.
 - A rattled head cannot hold a spell together (`statusBlocks('spell')` —
   concussion blocks casting). Too little mana is not a refusal — just not
   yet.
@@ -496,12 +507,14 @@ word's identity. Full stats live in `ARCANE_WORDS` — this table is the map.
 | grasp → clutch → strangle | verb | 8 | holds: noun's riders linger doubled |
 | cut → gash → sunder | verb | 9 | the triangle: delivery |
 | crush → crumple → implode | verb | 9 | the triangle: weight |
+| undo → unsay → unmake | verb | 10 | the unmaking: makes a counterspell (§14) |
 | slowly / quickly | adverb | 0 | the weight-and-clock pair |
 | twice → thrice → fourfold | adverb | 6 | count (leading) vs depth (trailing) |
 | gently → faintly → barely | adverb | 7 | the scaffold word |
 | dimly → thinly → scarcely | adverb | 8 | dilute riders (trailing: linger) |
 | intensely → fiercely → overwhelmingly | adverb | 10 | deepen riders (trailing: concentrate) |
 | viciously → savagely → murderously | adverb | 13 | crit hunting / widening |
+| with | conj | 11 | accompaniment: lends a bare substance to the clause before (§14d) |
 | then | conj | 12 | sequence: ride the opening, ×1.3 if it landed |
 | and | conj | 14 | fusion: one blow, two natures |
 | or | conj | 15 | alternatives at half mana |
@@ -542,7 +555,141 @@ than sitting in a table somewhere, which is what lets the wuxin layer
 (`systems/wuxin.ts`) be about *rewiring which noun sits in which slot* rather
 than about inventing a second combat system.
 
-## 14. Cross-references
+## 14. Anti-magic — `undo`, `with`, and counterspells
+
+> Added 2026-09-28 at the user's request — the one addition since closing. It
+> reopens nothing else; the shelf rule above still holds. The card is
+> [plans/anti-magic.md](plans/anti-magic.md).
+
+**A counterspell is a trap.** Any sentence with an undoing in it (`undo` →
+`unsay` → `unmake`) composes to a spec carrying `counter`, and a counterspell
+is never cast on its own: it rides neither the action bar nor the buff slot,
+cannot be held in the spellblade seat, and is not a utility. Prepared, it lies
+in the rotation and **springs inside an enemy's casting** — the way a counter
+technique lives inside the enemy's swing (`pickCounterspell`, combat.ts). The
+first prepared counterspell in rotation order that is off its clock,
+affordable, not sealed, and whose firing conditions hold is the one that
+springs. One working meets at most one answer.
+
+### 14a. Efficiency
+
+What a counterspell takes apart of the working it meets, read at the moment it
+springs against that working's **signature** — what it is made of
+(`counterEfficiency`, arcane.ts):
+
+    efficiency = 20%                        undo
+               + 7.5% × (undo tiers − 1)    unsay, unmake, or undo spoken again
+               + 5%   × arcane tiers         arcane answers everything
+               + match
+
+**Match.** The tuning is every element the undoing was spoken with — the noun
+in an undo clause and every substance lent to it by `with` — at its depth
+(frost is two tiers of cold). A tuning of *n* tiers can reach a match ceiling
+of `0.1 × (1 − 0.8ⁿ) / 0.2`, and each tier is worth an even share of it:
+
+| tuning | ceiling | each tier |
+|---|---|---|
+| fire | +10% | 10% |
+| flame (`fire:2`) | +18% | 9% |
+| blaze and arc (`fire:3`, `spark:2`) | +33.6% | 6.7% |
+| n → ∞ | → +50% | → 0 |
+
+A tier counts when the working was spoken with the same element at least as
+deep — `min(tuned, spoken)` per element. So the ceiling rises with every tier
+tuned while each tier is worth less; a broad tuning answers more things, each
+less well than a specialist; and tuning deeper than the working pays for tiers
+that find nothing (blaze against plain fire matches one tier of three). A
+perfect match is never required. Arcane is an element like any other for
+matching, *and* pays its universal 5% a tier. Zero is nothing: it tunes
+against nothing, and is nothing to match.
+
+**Signature.** An arcane sentence states its own (`SpellSpec.signature`):
+every noun spoken at its depth, and a bare striking verb as its own substance,
+whatever the clause was doing. A miracle or a psionic shape has no words, so
+each strike stands for one tier of its element — Holy Fire is one heat and one
+light (`workingSignature`, spellcraft.ts).
+
+**Uncapped.** Efficiency is never clamped. At 100% or more there is nothing of
+the working left to take apart, and the burn keeps climbing.
+
+### 14b. What springing does
+
+- **The working** resolves at `1 − efficiency` of itself — every blow, rider,
+  mending, coat and condition it carries (`undoWorking`). At 100% or more it
+  does not happen at all. What it cost its caster stays paid.
+- **Manaburn** lands on whoever the undoing is addressed to, at
+  `efficiency × burn × the undoer's spell power` (`undo`'s burn is 1.0). The
+  default address means *the caster it answered*, flanker included; `others`
+  burns every enemy at 50%; `me` burns the speaker — the grammar does not
+  check for wisdom. The burn reads the rest of the grammar the way a blow's
+  weight does: noun-led `fire undo` ×1.15, verb-led `undo fire` ×0.85, adverb
+  weight, practice and intensity compound in, and a leading landing adverb
+  lays it that many separate times (more stacks, a deeper possible debt).
+  Undo tiers do not multiply the burn: they raise efficiency, and the burn
+  follows efficiency. Arcane resistance thins a burn on arrival, which is
+  why `undo`'s word gift is arcane resistance.
+- **Everything else the sentence carries** goes off with it: strikes at the
+  caster it answered, wards and mendings on the speaker. `fire ward undo` is
+  an undoing that coats you against fire every time it springs. A
+  counterspell's own words cannot be undone.
+- It pays, clocks and trains like any cast. `undo`'s `cooldownMult` is 1.2,
+  compounding per tier like any verb's.
+
+### 14c. Monsters undo too — and have minds to burn
+
+A counterspell in a monster's rotation is never its turn's action: YOUR
+casting springs it (`answerPlayerWorking`) — the first enemy, front first,
+holding one that is ready — through the same reading, with the monster's
+spell power behind the burn. The Death Knight holds `undo light with fire`: it
+answers exactly what it fears.
+
+Monsters never pay for a working, so manaburn used to have nothing to eat on
+them. A monster now has a **mind** (`monsterMind`, monsterStats.ts): the
+player's own pool arithmetic read off its attributes — 1 × INT deep,
+recovering 0.01 × INT + 0.05 × WIS a second. It is never spent on a working
+(monsters still pay nothing, and `maxMana` stays exempt from genes); manaburn
+alone eats it, runs it into debt under the player's headroom rule, and
+detonates the same way. **A mind in debt cannot shape a working** — casts and
+undoings alike fall through to whatever else the monster can do, which is
+the wall a player in debt meets too. A wise caster shrugs off a burn that
+floors a clever one: WIS mends the mind nearly as fast as a burn eats it. And
+the `arcane` noun's unravelling → manaburn escalation finally has something to
+eat on a monster, which is the identity §13 always claimed for it.
+
+### 14d. `with` — accompaniment
+
+`with` binds the next clause to the one before as company rather than as a
+clause of its own. A linked clause with a **noun and no verb** lends its
+substance to whatever the clause before it *did*:
+
+| before `with` | the lent substance |
+|---|---|
+| an undoing | joins the tuning; its adverbs ride the burn |
+| a blow | its riders ride along; the blow's nature and weight are untouched — `zero pierce with venom` stays untyped, and poisons |
+| a ward | one more coat, against its own element, at 75% |
+| a mending | its weight joins the mending, at 75% |
+
+A linked clause that speaks a verb of its own acts for itself, escaping the
+breadth tax like any linked clause. `undo with fire with ice` is one answer
+tuned two ways; `fire undo ice undo` is two undo clauses paying breadth.
+
+### 14e. Triggers
+
+`onEnemyCast` is stamped when an enemy begins a working, before it resolves,
+alongside `CombatState.casting` — which slot, which school, which element it
+is most made of. Two subjects read it within the event window: **Enemy Working
+(school)** and **Enemy Working (element)**. That is how several traps are
+routed: a fire-tuned undoing gated on *Enemy Working (element) is Heat* waits
+out everything else. Any rotation entry can gate on the event.
+
+### 14f. Access
+
+Both words sit behind the starter-lexicon shutter like every word outside the
+opening eleven (`flag:word:undo`, `flag:word:with`), and nothing in the world
+teaches them yet. Monsters speak them freely. The debug panel's *Unlock every
+word* lifts the shutter.
+
+## 15. Cross-references
 
 - **Authoring words**: [CONTENT_GUIDE §9a](CONTENT_GUIDE.md) — verbs and
   adverbs are fully declarative; you declare what a word IS, the composer
