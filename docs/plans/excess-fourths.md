@@ -333,9 +333,9 @@ spot with `midnight` is the player stamping that tag onto the world.
 
 ## Coverage — what still lacks a fourth
 
-The lexicon is 38 words: 30 foldable (14 nouns, 9 verbs, 7 adverbs) plus 5
-conjunctions and 3 targets that cannot be mastered at all. **7 of 30 have a
-fourth. 23 do not.** A word with no authored fourth simply cannot be overspoken,
+The lexicon is 40 words: 31 foldable (14 nouns, 10 verbs, 7 adverbs) plus 6
+conjunctions and 3 targets that cannot be mastered at all. **7 of 31 have a
+fourth. 24 do not.** A word with no authored fourth simply cannot be overspoken,
 so this table is the roadmap and also the shape of the god's appetite.
 
 **Nouns — 5 of 14 done.** Remaining, with the identity a fourth has to break:
@@ -356,8 +356,8 @@ so this table is the roadmap and also the shape of the god's appetite.
 the martial layer, and its legality under the martial prime directive is not
 incidental. Read [MARTIAL.md §9a](../MARTIAL.md) before authoring its fourth.
 
-**Verbs — 1 of 9 done.** Remaining: `pierce`, `fly`, `expand`, `ward`, `burst`,
-`mend`, `grasp`, `cut`.
+**Verbs — 1 of 10 done.** Remaining: `pierce`, `fly`, `expand`, `ward`, `burst`,
+`mend`, `grasp`, `cut`, `undo` (added 2026-09-28 — anti-magic, ARCANE.md §14).
 
 **Adverbs — 1 of 7 done.** Remaining: `slowly`, `quickly`, `gently`, `dimly`,
 `intensely`, `viciously`.

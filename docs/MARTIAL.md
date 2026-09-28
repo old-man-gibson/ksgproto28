@@ -144,7 +144,9 @@ Trigger **events** are stamped by combat onto `combat.events[event] = totalTicks
 | `onCrit` | you land a critical hit |
 | `onParry` | you parry |
 | `onDodge` | you dodge an enemy attack |
+| `onGraze` | your swing missed but still opened something up |
 | `onEncounterStart` | the formation spawns |
+| `onEnemyCast` | an enemy begins a working (ARCANE.md §14) |
 
 An event-gated trigger passes while the stamp is at most `window` ticks old
 (default `EVENT_WINDOW = 2`). **Reactive attack techniques must carry a wide

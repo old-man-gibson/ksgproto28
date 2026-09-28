@@ -51,6 +51,8 @@ export const ARCANE_WORDS_TEXT: ProseTable = {
 
   'mend.desc': 'Verb. 3 mana. Heals for 1.0 spell power. Lands on the speaker unless another target is spoken; addressed at an enemy, it heals the enemy.',
 
+  'undo.desc': 'Verb. 3 mana, cooldown x1.2. Makes the spell a counterspell: it is never cast on its own, and fires when an enemy casts. Efficiency: 20%, +7.5% per extra undo tier, +5% per arcane tier, plus a match bonus for each element tier the enemy spell also uses. The enemy spell loses that share of its effect (all of it at 100% or more), and its caster takes manaburn of efficiency x1.0 spell power. Efficiency can exceed 100%.',
+
   'slowly.desc': 'Adverb. 1 mana, spell mana x1.2. Damage x1.4, cooldown x1.5. Leading: conditions last 2x as long at full rate. Trailing: 3x as long at a third of the rate.',
 
   'quickly.desc': 'Adverb. 1 mana. Damage x0.75, cooldown x0.65. Leading: conditions run in a quarter of the time at 3x rate. Trailing: half the time at 2x rate.',
@@ -74,6 +76,8 @@ export const ARCANE_WORDS_TEXT: ProseTable = {
   'or.desc': 'Conjunction. 1 mana. The linked clauses become alternatives: one is rolled per cast, and each linked clause pays half its mana.',
 
   'if.desc': 'Conjunction. 1 mana. The next clause does not strike; its noun names a condition, and the previous blow fires only while the target has that condition or one it escalates into.',
+
+  'with.desc': 'Conjunction. 1 mana. A next clause with a noun and no verb joins the previous clause instead of acting: an undo gains its element as tuning, a blow carries its condition, a ward adds a coat against its element at 75%, a mend adds its weight at 75%. A clause with its own verb acts on its own.',
 
   'one.desc': 'Target word: the front enemy. 0 mana. The default when no target is spoken.',
 

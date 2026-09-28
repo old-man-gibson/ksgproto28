@@ -60,6 +60,13 @@ export const TRIGGER_EVENTS: { id: string; name: string }[] = [
    */
   { id: 'onGraze', name: 'On grazing a miss' },
   { id: 'onEncounterStart', name: 'On encounter start' },
+  /**
+   * An enemy began a working. Stamped BEFORE it resolves, so what reacts to it
+   * answers the casting rather than its aftermath — a counterspell is sprung
+   * inside it (combat.ts `pickCounterspell`), and anything else gated on it
+   * catches the next moment it can.
+   */
+  { id: 'onEnemyCast', name: 'On an enemy casting' },
 ];
 
 /** How many ticks an event stays "fresh" for an event-gated trigger. */
@@ -73,6 +80,12 @@ export function opsFor(kind: 'number' | 'enum'): TriggerOp[] {
 }
 
 const pctOf = (cur: number, max: number): number => (max > 0 ? (cur / max) * 100 : 0);
+
+/** The working an enemy is casting right now, if one began within the event window. */
+function freshCasting(ctx: TriggerContext) {
+  const k = ctx.combat.casting;
+  return k && ctx.state.totalTicks - k.tick <= EVENT_WINDOW ? k : undefined;
+}
 
 /**
  * The centre enemy — the only one you can actually hit, so every `enemy.*`
@@ -189,6 +202,19 @@ const SUBJECT_LIST: TriggerSubjectDef[] = [
       { value: 'melee', label: '⚔ Melee' },
       { value: 'ranged', label: '🏹 Ranged' },
     ] },
+  // What the enemy is casting — blank when nothing began within the event
+  // window. How several counterspells tuned for different things are routed:
+  // each asks after the working it was tuned for.
+  { id: 'enemy.castSchool', name: 'Enemy Working (school)', kind: 'enum',
+    read: (ctx) => freshCasting(ctx)?.school ?? '',
+    options: () => [
+      { value: 'arcane', label: '🔮 Arcane' },
+      { value: 'divine', label: '🙏 Divine' },
+      { value: 'psionic', label: '🧠 Psionic' },
+    ] },
+  { id: 'enemy.castElement', name: 'Enemy Working (element)', kind: 'enum',
+    read: (ctx) => freshCasting(ctx)?.element ?? '',
+    options: () => Object.entries(DAMAGE_TYPE_NAMES).map(([value, label]) => ({ value, label })) },
   // The anticipation read: how close the enemy is to acting. "≥ 70" is
   // "mid-windup" — the moment counters and hidden draws want.
   { id: 'enemy.bar', name: 'Enemy Action Bar', kind: 'number', unit: '%',

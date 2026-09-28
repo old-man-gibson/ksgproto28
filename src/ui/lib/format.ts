@@ -38,6 +38,7 @@ import {
 import { ITEMS, MONSTERS, MONSTER_TAGS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
 import { resolveModValue } from '../../core/systems/derived';
 import { resolveRune } from '../../core/systems/runes';
+import { OTHERS_POWER, counterEfficiency, matchCeiling } from '../../core/systems/arcane';
 import { resolvedMove } from '../../core/systems/martial';
 import type { GeneSpec } from '../../core/systems/mutagens';
 import {
@@ -345,6 +346,8 @@ const TARGET_LABEL: Record<SpellTarget, string> = {
  * default address reads as an enemy.
  */
 export function targetLabel(spec: SpellSpec): string {
+  // A counterspell is aimed at a casting, not at whoever is standing there.
+  if (spec.counter) return '🪤 an enemy casting';
   // Anything aimed at somebody else makes this an outward working — including
   // a spell that only lays conditions on them and never strikes.
   const outward =
@@ -669,9 +672,41 @@ export function geneAbilityLines(state: GameState): string[] {
   return out;
 }
 
+/**
+ * What a counterspell is before it has met anything: when it fires, what it is
+ * worth untuned, what its tuning can add, and who burns. The efficiency it
+ * actually reaches depends on the working it meets, so the card states the
+ * terms and the fight feed states the sum.
+ */
+export function counterLines(spec: SpellSpec): string[] {
+  const counter = spec.counter;
+  if (!counter) return [];
+  const floor = counterEfficiency(counter, {});
+  const lines = ['🪤 Counterspell: fires when an enemy casts, never on its own'];
+  const terms = [`undo ${pct(floor.base)}`];
+  if (floor.arcane) terms.push(`arcane +${pct(floor.arcane)}`);
+  lines.push(`Efficiency ${pct(floor.efficiency)} before matching (${terms.join(', ')})`);
+  if (floor.tuned > 0) {
+    const tuned = (Object.entries(counter.tuning) as [keyof typeof DAMAGE_TYPE_NAMES, number][])
+      .map(([element, units]) => `${DAMAGE_TYPE_NAMES[element].toLowerCase()} ×${units}`)
+      .join(', ');
+    lines.push(
+      `Tuned to ${tuned}: each tier the enemy spell shares adds +${pct(floor.perUnit)}, up to +${pct(matchCeiling(floor.tuned))}`,
+    );
+  }
+  const who =
+    spec.target === 'self' ? 'you take' : spec.target === 'others' ? 'every enemy takes' : 'its caster takes';
+  const burn = spec.target === 'others' ? counter.burn * OTHERS_POWER : counter.burn;
+  const times = (counter.burns ?? 1) > 1 ? `, ${counter.burns} times` : '';
+  lines.push(
+    `The enemy spell loses that share of its effect (all of it at 100% or more); ${who} manaburn of efficiency × ${burn.toFixed(2)} spell power${times}`,
+  );
+  return lines;
+}
+
 /** A spell's mechanics, one line per thing it does. */
 export function specLines(spec: SpellSpec): string[] {
-  const lines: string[] = [];
+  const lines: string[] = counterLines(spec);
   for (const s of spec.strikes) {
     let line = s.untyped
       ? `${s.power.toFixed(2)}× spell power, untyped — ignores resistance and weakness alike`

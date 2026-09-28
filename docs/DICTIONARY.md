@@ -63,7 +63,9 @@ is ≤ `window` ticks old (default `EVENT_WINDOW = 2`; reactive techniques carry
 | `onCrit` | you land a critical hit |
 | `onParry` | you parry |
 | `onDodge` | you dodge an enemy attack |
+| `onGraze` | your swing missed but still opened something up |
 | `onEncounterStart` | the formation spawns |
+| `onEnemyCast` | an enemy begins a working, before it resolves — what springs counterspells (ARCANE.md §14) |
 
 Planned (§10 MARTIAL.md): `onTechnique:<id>` follow-ups (one deep, never
 chained).
@@ -89,6 +91,8 @@ Conditions AND together. Percentage subjects read 0–100.
 | `enemy.range` | enum | `melee` / `ranged` |
 | `combat.position` | enum | your micro-position (see §8) |
 | `enemy.bar` | number % | how close the centre enemy is to acting (≥ 65 ≈ mid-windup — the anticipation read) |
+| `enemy.castSchool` | enum | the working an enemy began within the event window: `arcane` `divine` `psionic`; blank otherwise |
+| `enemy.castElement` | enum | the DamageType that working is most made of (its signature, ARCANE.md §14a); blank otherwise |
 | `technique.<id>` | enum | one per technique: `ready` / `cooling`. Reads COOLDOWN only, so a plan can refuse to start a chain whose exits are unavailable. Hidden from the picker until learned (`TriggerSubjectDef.visible`) |
 | `style.active` | enum | the style actually fighting (school or stance id) |
 | `style.selected` | enum | the stance you picked |
@@ -273,7 +277,8 @@ both sides of a fight apply it without new plumbing.
 ## 11. Spellcraft vocabularies (for cross-system content)
 
 Arcane word kinds: `noun` `verb` `adverb` `target` `conjunction`
-(then/and/but/or/if); words in spellcraft.data.ts. Psi axes: `force` `reach`
+(then/and/but/or/if/with); words in spellcraft.data.ts. A sentence with the
+verb `undo` is a counterspell (`SpellSpec.counter`, ARCANE.md §14). Psi axes: `force` `reach`
 `grip` `speed` `clairvoyance` `space` `mass` `vitality`. Deity relations:
 `synergy` / `hostility` (hostility wins); miracles cost `favor[deityId]`.
 Novelty domains: `bestiary` `library` `dialogue` `arcana`.
