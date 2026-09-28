@@ -22,9 +22,7 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 import { CATALOG, catalogFor, WRITABLE } from './catalog';
 import {
   notesOf,
-  renameEntry,
   reorderEntry,
-  setAt,
   setNoteAt,
   sourceOf,
   type NoteMarker,
@@ -265,6 +263,14 @@ export function forge(): Plugin {
                 notes.push(result.note);
                 continue;
               }
+              // Moving an entry is data-only: prose is keyed by id, so the text
+              // file next door has nothing to follow.
+              if (op.op === 'reorder') {
+                const result = reorderEntry(entry.file, current, entry.root, op.key, op.anchor, op.before);
+                working.set(entry.file, result.text);
+                notes.push(result.note);
+                continue;
+              }
               // Prose fields live in the text file next door; one client op
               // may become a data edit plus several text edits (prose.ts).
               const textText = await load(textFileFor(entry.file));
@@ -273,21 +279,6 @@ export function forge(): Plugin {
                 working.set(edit.file, result.text);
                 notes.push(result.note);
               }
-              const current = working.get(entry.file)!;
-              const result =
-                op.op === 'add'
-                  ? addEntry(entry.file, current, entry.root, op.key, op.value, entry.keyOrder)
-                  : op.op === 'delete'
-                    ? deleteAt(entry.file, current, entry.root, op.path)
-                    : op.op === 'rename'
-                      ? renameEntry(entry.file, current, entry.root, op.from, op.to)
-                      : op.op === 'reorder'
-                        ? reorderEntry(entry.file, current, entry.root, op.key, op.anchor, op.before)
-                        : op.op === 'note'
-                          ? setNoteAt(entry.file, current, entry.root, op.key, op.marker, op.text)
-                          : setAt(entry.file, current, entry.root, op.path, op.value, entry.keyOrder);
-              working.set(entry.file, result.text);
-              notes.push(result.note);
             }
 
             const changes = [...working].map(([file, after]) => {
