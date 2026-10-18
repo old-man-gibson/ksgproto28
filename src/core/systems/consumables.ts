@@ -8,6 +8,43 @@ import { heal } from './health';
 import { applyStatus, fireStatusEvent, statusesOf } from './statuses';
 import { gradesHeld, knowsRecipe, recipeKey, recipeName, stockOf } from './disciplines';
 import { bumpStat } from './achievements';
+import { TECHNIQUES } from '../registry';
+import { learnTechnique } from './martial';
+import { wordUnlocked, wordUnlockKey } from './unlocks';
+import { checkTitleUnlocks } from './titles';
+import { grantFavorAll } from './divine';
+
+/** Votive tokens offered so far (systems/consumables.ts, the votive card). */
+export const VOTIVE_KEY = 'votive:tokens';
+/** Starting favor a newly met god receives (paid by `meetDeity`). */
+export const VOTIVE_BASELINE_KEY = 'votive:baseline';
+/** Favor held unassigned, placed on a god of your choice on the Divine tab. */
+export const FLOATING_FAVOR_KEY = 'favor:floating';
+/** What the first votive token gives every god, now and later. */
+export const VOTIVE_FIRST_FAVOR = 2;
+
+/**
+ * Cards: consumables that are read (or offered) for a one-time effect rather
+ * than eaten. They have no grade and none of the eating rules apply.
+ */
+export function isCard(spec: ConsumableSpec | undefined): boolean {
+  return !!spec && !!(spec.teaches || spec.unlocksWord || spec.teachesTechnique || spec.stamps || spec.votive);
+}
+
+/**
+ * Whether a card's effect has already happened — a recipe known, a word
+ * lifted, a technique held in canonical form, a flag set. A spent card is
+ * refused at use and never rolled as a rare find. The votive token never
+ * spends: each one after the first is another floating favor.
+ */
+export function cardSpent(state: GameState, spec: ConsumableSpec | undefined): boolean {
+  if (!spec) return false;
+  if (spec.teaches) return knowsRecipe(state, spec.teaches);
+  if (spec.unlocksWord) return wordUnlocked(state, spec.unlocksWord);
+  if (spec.teachesTechnique) return state.techniques?.[spec.teachesTechnique]?.form === 'canonical';
+  if (spec.stamps) return (state.stats[spec.stamps] ?? 0) >= 1;
+  return false;
+}
 import { text } from '../text/log';
 
 /**
@@ -76,8 +113,8 @@ export function canUse(state: GameState, id: string, quality: QualityTier): UseC
     ? stockOf(state, id, quality)
     : (state.materials[id] ?? 0);
   if (held < 1) return { ok: false, reason: text('consumables.reason.none_held') };
-  if (spec.teaches && knowsRecipe(state, spec.teaches)) {
-    return { ok: false, reason: text('consumables.reason.recipe_known') };
+  if (cardSpent(state, spec)) {
+    return { ok: false, reason: text(spec.teaches ? 'consumables.reason.recipe_known' : 'consumables.reason.card_spent') };
   }
   const left = cooldownLeft(state, id);
   if (left > 0) return { ok: false, reason: text('consumables.reason.cooldown', { seconds: (left / 10).toFixed(1) }) };
@@ -100,6 +137,47 @@ function consumeOne(state: GameState, id: string, quality: QualityTier): boolean
   else delete bucket[quality];
   if (Object.keys(bucket).length === 0) delete state.stock[id];
   return true;
+}
+
+function useCard(state: GameState, bus: EventBus, def: MaterialDef, spec: ConsumableSpec): void {
+  if (spec.teaches) {
+    bumpStat(state, bus, recipeKey(spec.teaches));
+    bus.emit({ type: 'log', msg: text('consumables.recipe_learned', { name: recipeName(spec.teaches) }), kind: 'skill' });
+    return;
+  }
+  if (spec.unlocksWord) {
+    bumpStat(state, bus, wordUnlockKey(spec.unlocksWord));
+    bus.emit({ type: 'log', msg: text('consumables.word_learned', { word: spec.unlocksWord }), kind: 'skill' });
+    return;
+  }
+  if (spec.teachesTechnique) {
+    const tech = TECHNIQUES[spec.teachesTechnique];
+    if (tech) learnTechnique(state, tech, 'canonical');
+    bus.emit({
+      type: 'log',
+      msg: text('consumables.technique_learned', { name: tech?.name ?? spec.teachesTechnique }),
+      kind: 'skill',
+    });
+    return;
+  }
+  if (spec.stamps) {
+    bumpStat(state, bus, spec.stamps);
+    bus.emit({ type: 'log', msg: text('consumables.card_used', { icon: def.icon, verb: spec.useVerb ?? 'Used', name: def.name }), kind: 'skill' });
+    // A stamped flag is what hidden titles read; titles do not watch stats.
+    checkTitleUnlocks(state, bus);
+    return;
+  }
+  if (spec.votive) {
+    bumpStat(state, bus, VOTIVE_KEY);
+    if ((state.stats[VOTIVE_KEY] ?? 0) === 1) {
+      grantFavorAll(state, bus, VOTIVE_FIRST_FAVOR);
+      bumpStat(state, bus, VOTIVE_BASELINE_KEY, VOTIVE_FIRST_FAVOR);
+      bus.emit({ type: 'log', msg: text('consumables.votive_first', { amount: VOTIVE_FIRST_FAVOR }), kind: 'skill' });
+    } else {
+      bumpStat(state, bus, FLOATING_FAVOR_KEY);
+      bus.emit({ type: 'log', msg: text('consumables.votive_floating'), kind: 'skill' });
+    }
+  }
 }
 
 export interface UseResult {
@@ -135,15 +213,10 @@ export function useConsumable(
   const def = MATERIALS[id]!;
   if (!consumeOne(state, id, quality)) return null;
 
-  // A recipe card is read, not eaten: it teaches and is gone. No grade, no
-  // effects, so none of the eating rules below apply.
-  if (spec.teaches) {
-    bumpStat(state, bus, recipeKey(spec.teaches));
-    bus.emit({
-      type: 'log',
-      msg: text('consumables.recipe_learned', { name: recipeName(spec.teaches) }),
-      kind: 'skill',
-    });
+  // A card is read (or offered), not eaten: it does its one thing and is
+  // gone. No grade and no effects, so none of the eating rules below apply.
+  if (isCard(spec)) {
+    useCard(state, bus, def, spec);
     return { restored: [], granted: [], cured: [] };
   }
 

@@ -52,7 +52,7 @@ import {
   shapePsionic,
 } from './systems/spellcraft';
 import { forgetPsiShape, memorizePsiShape } from './systems/psionic';
-import { learnMiracle } from './systems/divine';
+import { assignFloatingFavor, learnMiracle } from './systems/divine';
 import { chooseFork, toggleDrill, toggleSheathe } from './systems/martial';
 import { TECHNIQUES } from './data/martial.data';
 import type { Placement } from './systems/disciplines';
@@ -492,6 +492,11 @@ export class Game {
   /** Receive a miracle, spending favor with its deity. */
   learnMiracle(miracleId: string) {
     return learnMiracle(this.state, this.bus, miracleId);
+  }
+
+  /** Place one unassigned favor (later votive tokens) with a known god. */
+  assignFloatingFavor(deityId: string) {
+    return assignFloatingFavor(this.state, this.bus, deityId);
   }
 
   /** Rest before the next fight below `at` (share of max HP, 0 = off), to full or to `at`. */

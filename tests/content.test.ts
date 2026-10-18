@@ -55,6 +55,7 @@ import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../src/core/systems/monsterStats';
 import { monsterTags } from '../src/core/systems/bestiary';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
+import { isCard } from '../src/core/systems/consumables';
 import { askingPrice, lineValue } from '../src/core/systems/shops';
 import { wordTag } from '../src/core/data/wordskills.data';
 import { attrXpWeights } from '../src/core/systems/actions';
@@ -132,6 +133,11 @@ function contentFlags(): Set<string> {
       if (act.kind !== 'search') continue;
       for (const r of act.rewards) if (r.stat?.key.startsWith('flag:')) keys.add(r.stat.key);
     }
+  }
+  // A card that stamps a flag when read (ConsumableSpec.stamps).
+  for (const mat of Object.values(MATERIALS)) {
+    const k = mat.consumable?.stamps;
+    if (k?.startsWith('flag:')) keys.add(k);
   }
   return keys;
 }
@@ -1435,7 +1441,7 @@ describe('crafting disciplines', () => {
       }
       const doesSomething =
         (spec.restore?.length ?? 0) + (spec.grants?.length ?? 0) + (spec.cures?.length ?? 0) > 0 ||
-        !!spec.teaches;
+        isCard(spec);
       expect(doesSomething, `${mat.id} is usable but does nothing`).toBe(true);
     }
   });
@@ -1464,6 +1470,25 @@ describe('recipe cards and rare finds', () => {
     for (const id of recipeIds) expect(taught.has(id), `learned dish '${id}' has no card`).toBe(true);
   });
 
+  it('every card names a real target and can be had', () => {
+    for (const mat of Object.values(MATERIALS)) {
+      const spec = mat.consumable;
+      if (!isCard(spec)) continue;
+      if (spec!.unlocksWord) expect(ARCANE_WORDS[spec!.unlocksWord], `${mat.id}: unknown word`).toBeDefined();
+      if (spec!.teachesTechnique) expect(TECHNIQUES[spec!.teachesTechnique], `${mat.id}: unknown technique`).toBeDefined();
+      if (spec!.stamps) expect(spec!.stamps.startsWith('flag:'), `${mat.id}: stamps must name a flag: counter`).toBe(true);
+      expect(mat.graded, `${mat.id}: cards are ungraded`).toBeFalsy();
+      expect(sold.has(mat.id) || dropped.has(mat.id), `${mat.id}: no counter sells it and no activity drops it`).toBe(true);
+    }
+  });
+
+  it('a secret recipe has conditions to meet, or it would never appear', () => {
+    for (const r of Object.values(RECIPES)) {
+      if (!r.secret) continue;
+      expect(r.unlock?.length ?? 0, `${r.id}: secret with no unlock`).toBeGreaterThan(0);
+    }
+  });
+
   it('activity drops name real materials, on kinds that roll them, at sane chances', () => {
     for (const spot of Object.values(SPOTS)) {
       for (const act of spot.activities) {
@@ -1473,6 +1498,9 @@ describe('recipe cards and rare finds', () => {
         for (const d of drops) {
           expect(MATERIALS[d.material], `${spot.id}/${act.id}: unknown drop '${d.material}'`).toBeDefined();
           expect(d.chance > 0 && d.chance <= 1, `${spot.id}/${act.id}: chance must be in (0, 1]`).toBe(true);
+          if (d.quality) expect(MATERIALS[d.material]?.graded, `${spot.id}/${act.id}: quality on an ungraded drop`).toBe(true);
+          if (d.rarer !== undefined) expect(d.rarer, `${spot.id}/${act.id}: rarer must be > 1`).toBeGreaterThan(1);
+          if (d.qty !== undefined) expect(d.qty, `${spot.id}/${act.id}: qty must be >= 1`).toBeGreaterThanOrEqual(1);
         }
       }
     }

@@ -7,6 +7,15 @@ export function recipeUnlocked(state: GameState, recipe: RecipeDef): boolean {
 }
 
 /**
+ * A secret recipe not yet unlocked (RecipeDef.secret) is not listed at all —
+ * not as a locked line, not as a map-card activity. It appears the moment its
+ * conditions are met.
+ */
+export function recipeHidden(state: GameState, recipe: RecipeDef | undefined): boolean {
+  return !!recipe?.secret && !recipeUnlocked(state, recipe);
+}
+
+/**
  * Every route to the product, in the order they are considered. `cost` is
  * route zero, so a recipe without `alts` behaves exactly as it always did.
  */

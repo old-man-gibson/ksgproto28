@@ -75,7 +75,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'lectory_steps.desc': 'Gate of the Scholars’ Quarter. Argue on the Steps trains Intelligence. Connects to the Foot, the Reading Hall, the Chalk Yard, the Granary Gate and the Pilgrims’ Stair.',
 
-  'the_reading_hall.desc': 'Indoor. Holds a Spell Table for inscribing spells. Read Until It Sticks trains Intelligence and, about once in 1,250 reps, turns up a recipe card no counter sells. Sit With a Hard Passage trains Wisdom and pays magic skill XP. Docent Marell stands here.',
+  'the_reading_hall.desc': 'Indoor. Holds a Spell Table for inscribing spells. Read Until It Sticks trains Intelligence. Sit With a Hard Passage trains Wisdom and pays magic skill XP. Docent Marell stands here.',
 
   'chalk_yard.desc': 'Read the Old Working explores the yard (42 s). Copy Out a Proof trains Intelligence.',
 
@@ -96,7 +96,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'alembic_row_gate.desc': 'Gate of Alembic Row. Sister Nim sells healing salve, mushroom broth, mendroot and spring water here. Connects to the Foot, the Alembics, the Vivarium, the Muster Gate and the Chancery Arch.',
 
-  'the_alembics.desc': 'Indoor, heat-tagged. Holds an alchemy bench and a preparing bench. Odri Venn sells reagents here.',
+  'the_alembics.desc': 'Indoor, heat-tagged. Holds an alchemy bench and a preparing bench. Wash Out the Retorts is a job: 11 gold per 21 s. Odri Venn sells reagents here.',
 
   'the_vivarium.desc': 'Indoor. Holds a Culture Bench for geneshaping.',
 

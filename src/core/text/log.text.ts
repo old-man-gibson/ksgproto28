@@ -90,6 +90,13 @@ export const LOG_TEXT = {
   'consumables.reason.none_held': 'None held',
   'consumables.reason.cooldown': 'Ready in {seconds}s',
   'consumables.reason.recipe_known': 'Recipe already known',
+  'consumables.reason.card_spent': 'Already done',
+  'consumables.word_learned': '📝 Word learned: {word}. It is on the Spellcrafting Table (castable once Arcana reaches its level).',
+  'consumables.technique_learned': '📘 Technique learned: {name} (canonical form).',
+  'consumables.card_used': '{icon} {verb}: {name}.',
+  'consumables.votive_first': '🕯️ Votive token offered. Gods you meet later start with +{amount} favor too.',
+  'consumables.votive_floating': '🕯️ Votive token offered: +1 unassigned favor. Place it on a god of your choice on the Divine tab.',
+  'divine.favor_assigned': '🕊️ 1 unassigned favor placed with {deity}.',
   'consumables.recipe_learned': '📜 Recipe learned: {name}. It is listed on the bench that cooks it.',
   'consumables.used': '{icon} {verb} {grade} {name}.',
 

@@ -442,6 +442,50 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 60,
     consumable: { useVerb: 'Read', teaches: 'lectory_porridge' },
   },
+  // District rare finds (ActivityDef.drops). Cards are read or offered for a
+  // one-time effect (ConsumableSpec), ungraded, and unmarked in play.
+  word_slip_stone: {
+    id: 'word_slip_stone',
+    name: 'Word Slip: Stone',
+    icon: '📝',
+    value: 40,
+    consumable: { useVerb: 'Read', unlocksWord: 'stone' },
+  },
+  votive_token: {
+    id: 'votive_token',
+    name: 'Votive Token',
+    icon: '🕯️',
+    value: 25,
+    consumable: { useVerb: 'Offer', votive: true },
+  },
+  drill_manual_riposte: {
+    id: 'drill_manual_riposte',
+    name: 'Drill Manual: Riposte',
+    icon: '📘',
+    value: 40,
+    consumable: { useVerb: 'Study', teachesTechnique: 'riposte' },
+  },
+  chancery_price_seal: {
+    id: 'chancery_price_seal',
+    name: 'Chancery Price Seal',
+    icon: '🔏',
+    value: 50,
+    consumable: { useVerb: 'Register', stamps: 'flag:chancery_seal' },
+  },
+  unclaimed_case_file: {
+    id: 'unclaimed_case_file',
+    name: 'Unclaimed Case File',
+    icon: '📁',
+    value: 20,
+    consumable: { useVerb: 'Read', stamps: 'flag:assize_case_file' },
+  },
+  smiths_pattern_bronze: {
+    id: 'smiths_pattern_bronze',
+    name: "Smith's Pattern: Bronze",
+    icon: '📐',
+    value: 45,
+    consumable: { useVerb: 'Study', stamps: 'flag:pattern_bronze' },
+  },
   travelers_ration: {
     id: 'travelers_ration',
     name: "Traveler's Ration",

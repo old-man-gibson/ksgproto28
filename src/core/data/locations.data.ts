@@ -525,7 +525,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     exploreTicks: 420,
     activities: [
       { id: 'explore_chalk', kind: 'explore', name: 'Read the Old Working', icon: '🔍' },
-      { id: 'train_int_chalk', kind: 'train', attr: 'int', name: 'Copy Out a Proof', icon: '✏️' },
+      // Scholars' find (arcane): a slip with a word the lexicon locks.
+      { id: 'train_int_chalk', kind: 'train', attr: 'int', name: 'Copy Out a Proof', icon: '✏️',
+        drops: [{ material: 'word_slip_stone', chance: 0.0008 }] },
     ],
     connections: [],
   },
@@ -555,7 +557,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 80, y: 10 },
     tags: ['indoor'],
     activities: [
-      { id: 'train_wis_chapels', kind: 'train', attr: 'wis', name: 'Keep a Vigil', icon: '🕯️', tags: ['magic'] },
+      // Temple's find (divine): votive tokens, each twice as rare as the last.
+      { id: 'train_wis_chapels', kind: 'train', attr: 'wis', name: 'Keep a Vigil', icon: '🕯️', tags: ['magic'],
+        drops: [{ material: 'votive_token', chance: 0.0008, rarer: 2 }] },
     ],
     // The Warden's second quest, the prior and this spot's own text all send
     // the player here to learn a miracle; the table's Divine tab is where
@@ -627,7 +631,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 93, y: 28 },
     activities: [
       { id: 'train_dex_sand', kind: 'train', attr: 'dex', name: 'Footwork on the Sand', icon: '👣' },
-      { id: 'spar_sand', kind: 'train', attr: 'str', name: 'Spar', icon: '⚔️', tags: ['combat'] },
+      // Ironyard's find (martial): a drill manual, the stand-in for a teacher.
+      { id: 'spar_sand', kind: 'train', attr: 'str', name: 'Spar', icon: '⚔️', tags: ['combat'],
+        drops: [{ material: 'drill_manual_riposte', chance: 0.0008 }] },
     ],
     connections: [],
   },
@@ -667,7 +673,12 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     areaId: 'alembic_row',
     map: { x: 90, y: 55 },
     tags: ['indoor', 'heat'],
-    activities: [],
+    // Alembic Row's find (alchemy) needs a cycle to roll on; the district had
+    // none, so the Alembics get a job. Emberbloom is not on the shelf.
+    activities: [
+      { id: 'job_retorts', kind: 'job', gold: 11, ticksPer: 210, name: 'Wash Out the Retorts', icon: '🧽',
+        drops: [{ material: 'emberbloom', chance: 0.00875, qty: 3 }] },
+    ],
     benches: ['alchemy', 'preparing'],
     connections: [],
   },
@@ -706,7 +717,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 62, y: 70 },
     tags: ['indoor'],
     activities: [
-      { id: 'job_copying', kind: 'job', gold: 12, ticksPer: 220, name: 'Copy Out Writs', icon: '🖋️', staticTime: true },
+      // Chancery's find (administrative): a standing discount at every counter.
+      { id: 'job_copying', kind: 'job', gold: 12, ticksPer: 220, name: 'Copy Out Writs', icon: '🖋️', staticTime: true,
+        drops: [{ material: 'chancery_price_seal', chance: 0.0092 }] },
       { id: 'train_int_rolls', kind: 'train', attr: 'int', name: 'Read the Indexes', icon: '🗂️' },
     ],
     connections: [],
@@ -762,7 +775,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 10, y: 55 },
     tags: ['indoor'],
     activities: [
-      { id: 'job_watch', kind: 'job', gold: 14, ticksPer: 260, name: 'Stand the Night Watch', icon: '🌙', staticTime: true },
+      // Assize's find (law): a case file that earns a hidden title.
+      { id: 'job_watch', kind: 'job', gold: 14, ticksPer: 260, name: 'Stand the Night Watch', icon: '🌙', staticTime: true,
+        drops: [{ material: 'unclaimed_case_file', chance: 0.0108 }] },
     ],
     connections: [],
   },
@@ -790,12 +805,16 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 7, y: 47 },
     tags: ['heat'],
     activities: [
-      { id: 'job_bellows_threshold', kind: 'job', gold: 14, ticksPer: 250, name: 'Work the Bellows', icon: '🔥' },
+      // Wrights' find (crafting): the pattern that opens the bronze line.
+      { id: 'job_bellows_threshold', kind: 'job', gold: 14, ticksPer: 250, name: 'Work the Bellows', icon: '🔥',
+        drops: [{ material: 'smiths_pattern_bronze', chance: 0.0104 }] },
       { id: 'train_str_forges', kind: 'train', attr: 'str', name: 'Swing the Sledge', icon: '🔨', tags: ['blunt'] },
     ],
     // The city's smithing counter: the same starter recipes the hamlet forge
     // teaches, because the Warden's iron has to become something somewhere.
-    recipes: ['iron_ingot', 'iron_dagger', 'iron_sword'],
+    // The bronze line is SECRET (RecipeDef.secret): listed only once the
+    // Smith's Pattern found working the bellows has been studied.
+    recipes: ['iron_ingot', 'iron_dagger', 'iron_sword', 'copper_ingot', 'tin_ingot', 'bronze_ingot', 'bronze_dagger'],
     benches: ['assembling'],
     connections: [],
   },
@@ -835,7 +854,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 30, y: 8 },
     tags: ['indoor', 'heat'],
     activities: [
-      { id: 'job_pans', kind: 'job', gold: 10, ticksPer: 200, name: 'Scrub the Pans', icon: '🍳' },
+      // Granaries' find (resources): a good pot for the stove's tool slot.
+      { id: 'job_pans', kind: 'job', gold: 10, ticksPer: 200, name: 'Scrub the Pans', icon: '🍳',
+        drops: [{ material: 'iron_pot', chance: 0.0083, quality: 'b', unique: true }] },
     ],
     benches: ['cooking', 'preparing'],
     connections: [],

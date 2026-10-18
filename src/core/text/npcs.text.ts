@@ -45,7 +45,7 @@ export const NPCS_TEXT: ProseTable = {
     'Raw ingredients only at my door. Cooked dishes are on Orrin Tallow’s cart at the Granary Gate.',
     'The stove and the preparing bench are behind me. One dish cooked here counts for the Warden’s second quest.',
     'Scrub the Pans pays 10 gold per 20 s if you need coin.',
-    'Two recipe cards at my door: Herb-Rubbed Meat and Fish and Onion Pot. Read one and the stove knows the dish. The Reading Hall has a third somewhere in its stacks.',
+    'Two recipe cards at my door: Herb-Rubbed Meat and Fish and Onion Pot. Read one and the stove knows the dish.',
   ],
 
   'row_alchemist.desc': 'Alchemist at the Alembics. Sells reagents at the Reagent Shelf: spring water, pressed oil, grain spirit, common herb, mendroot, bloodwort, fixing salt, bone ash and brimstone. The alchemy bench here brews by ordered sequence.',

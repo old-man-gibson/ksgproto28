@@ -2,7 +2,8 @@
   import OfficeDirectory from './OfficeDirectory.svelte';
   import { OFFICE_ROOMS } from '../core/systems/floodedFloor';
   import { gs, game, ui, view } from './state.svelte';
-  import { AREAS, REGIONS, SPOTS, getSpot } from '../core/registry';
+  import { AREAS, RECIPES, REGIONS, SPOTS, getSpot } from '../core/registry';
+  import { recipeHidden } from '../core/systems/crafting';
   import { visibleEdges, fastTravelCost, canFastTravel, journeyEnd } from '../core/systems/locations';
   import { spotActivities } from '../core/systems/actions';
   import { spotCleared } from '../core/systems/combat';
@@ -148,7 +149,11 @@
       journeyEnds: journeyEnd(gs) === spot.id,
       route: routeInfo(gs, spot.id, view.stats.travelSpeed),
       features: feats,
-      activities: known ? spotActivities(spot).filter((a) => !listed.has(a.id)) : [],
+      activities: known
+        ? spotActivities(spot).filter(
+            (a) => !listed.has(a.id) && !(a.kind === 'craft' && recipeHidden(gs, RECIPES[a.recipe])),
+          )
+        : [],
     };
   });
 

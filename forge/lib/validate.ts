@@ -12,6 +12,7 @@ import type { ActivityDrop, Connection, CraftDisciplineDef, MaterialDef, Monster
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
 import { MUSIC_AXES } from '../../src/core/data/music.data';
+import { ARCANE_WORDS } from '../../src/core/data/spellcraft.data';
 import { askingPrice, lineValue } from '../../src/core/systems/shops';
 
 /**
@@ -411,8 +412,12 @@ export function validate(store: S): Issue[] {
         err('spot', spot.id, `activity '${act.id}' has drops, but only train/gather/job cycles roll them`, ['activities', `#id=${act.id}`]);
       }
       for (const d of drops) {
-        if (!materials[d.material]) err('spot', spot.id, `activity '${act.id}' drops unknown material '${d.material}'`, ['activities', `#id=${act.id}`]);
-        if (!(d.chance > 0 && d.chance <= 1)) err('spot', spot.id, `activity '${act.id}' drop chance must be in (0, 1]`, ['activities', `#id=${act.id}`]);
+        const at = ['activities', `#id=${act.id}`];
+        if (!materials[d.material]) err('spot', spot.id, `activity '${act.id}' drops unknown material '${d.material}'`, at);
+        if (!(d.chance > 0 && d.chance <= 1)) err('spot', spot.id, `activity '${act.id}' drop chance must be in (0, 1]`, at);
+        if (d.quality && !(materials[d.material] as { graded?: boolean } | undefined)?.graded) err('spot', spot.id, `activity '${act.id}' pins a grade on an ungraded drop`, at);
+        if (d.rarer !== undefined && !(d.rarer > 1)) err('spot', spot.id, `activity '${act.id}' drop rarer must be > 1`, at);
+        if (d.qty !== undefined && !(d.qty >= 1)) err('spot', spot.id, `activity '${act.id}' drop qty must be >= 1`, at);
       }
     }
     for (const e of spot.encounters ?? []) {
@@ -1057,11 +1062,16 @@ export function validate(store: S): Issue[] {
       }
     }
     for (const mat of Object.values(store.all<MaterialDef>('material'))) {
-      const t = mat.consumable?.teaches;
+      const c = mat.consumable;
+      const card = !!c && !!(c.teaches || c.unlocksWord || c.teachesTechnique || c.stamps || c.votive);
+      if (card && !sold.has(mat.id) && !dropped.has(mat.id)) err('material', mat.id, 'a card no counter sells and no activity drops', ['consumable']);
+      if (c?.stamps && !c.stamps.startsWith('flag:')) err('material', mat.id, 'stamps must name a flag: counter', ['consumable']);
+      if (c?.unlocksWord && !ARCANE_WORDS[c.unlocksWord]) err('material', mat.id, `unlocks unknown word '${c.unlocksWord}'`, ['consumable']);
+      if (c?.teachesTechnique && !store.all('technique')[c.teachesTechnique]) err('material', mat.id, `teaches unknown technique '${c.teachesTechnique}'`, ['consumable']);
+      const t = c?.teaches;
       if (!t) continue;
       taught.add(t);
       if (!recipeIds.has(t)) err('material', mat.id, `teaches '${t}', which no bench outcome names as its recipe`, ['consumable']);
-      if (!sold.has(mat.id) && !dropped.has(mat.id)) err('material', mat.id, 'a recipe card no counter sells and no activity drops', ['consumable']);
     }
     for (const id of recipeIds) {
       if (!taught.has(id)) err('discipline', id, `learned dish '${id}' has no recipe card to teach it`);

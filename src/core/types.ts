@@ -2394,6 +2394,21 @@ export interface ConsumableSpec {
    * and is consumed. Refused once the recipe is known.
    */
   teaches?: string;
+  /** Lifts a locked arcane word (`flag:word:<id>`). Refused once known. */
+  unlocksWord?: string;
+  /** Teaches a technique in canonical form (or upgrades a rough one). Refused once canonical. */
+  teachesTechnique?: string;
+  /**
+   * Sets a `flag:` counter to 1 — what a hidden title, a secret recipe or a
+   * standing rule (the Chancery price seal) reads. Refused once set.
+   */
+  stamps?: string;
+  /**
+   * The votive token (systems/consumables.ts): the first one offered gives +2
+   * favor with every known god and +2 starting favor with gods met later;
+   * each one after is 1 floating favor, assigned on the Divine tab.
+   */
+  votive?: boolean;
 }
 
 // ---------- Quality ----------
@@ -2824,6 +2839,12 @@ export interface RecipeAlt {
 
 export interface RecipeDef {
   id: string;
+  /**
+   * Not listed anywhere until `unlock` is met — a recipe the player has to
+   * discover (a smith's pattern turned up at work) rather than one shown
+   * locked with its requirement.
+   */
+  secret?: boolean;
   /** Display name for the craft. Falls back to the result's own name. */
   name?: string;
   result: { kind: 'item' | 'material' | 'rune'; id: string; qty?: number };
@@ -3824,6 +3845,17 @@ export interface ActivityCycleTags {
 export interface ActivityDrop {
   material: string;
   chance: number;
+  /** How many arrive at once. Default 1. */
+  qty?: number;
+  /** A graded drop arrives at this grade instead of a rolled one. */
+  quality?: QualityTier;
+  /**
+   * Each previous find divides the chance by this (2 = every repeat takes
+   * twice as long on average). Counted under `found:<material>`.
+   */
+  rarer?: number;
+  /** Not rolled while one is held (a tool you only need one of). */
+  unique?: boolean;
 }
 
 export type ActivityDef =

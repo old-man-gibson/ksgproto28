@@ -1,6 +1,7 @@
 <script lang="ts">
   import { gs, game, ui } from '../state.svelte';
-  import { getSpot } from '../../core/registry';
+  import { RECIPES, getSpot } from '../../core/registry';
+  import { recipeHidden } from '../../core/systems/crafting';
   import { journeyEnd, locationBreadcrumb } from '../../core/systems/locations';
   import { exploreProgress, spotActivities } from '../../core/systems/actions';
   import { npcsAt } from '../../core/systems/quests';
@@ -15,7 +16,11 @@
   const spot = $derived(endId ? getSpot(endId) : null);
   const known = $derived(!!endId && gs.discovered.includes(endId));
   const features = $derived(spot && known ? spotFeatures(gs, spot) : []);
-  const activities = $derived(spot && known ? spotActivities(spot) : []);
+  const activities = $derived(
+    spot && known
+      ? spotActivities(spot).filter((a) => !(a.kind === 'craft' && recipeHidden(gs, RECIPES[a.recipe])))
+      : [],
+  );
   const people = $derived(endId && known ? npcsAt(endId) : []);
 
   /** What arrival will start: the queued intent, else the spot's resume entry. */

@@ -1,4 +1,7 @@
 import type { GameState } from '../types';
+import type { EventBus } from '../engine/events';
+import { setStat } from './achievements';
+import { grantFavor } from './deities';
 
 /**
  * Piecemeal subsystem unlocking, alpha shape (plans/alpha-scope-locks.md).
@@ -64,6 +67,19 @@ export function wordUnlocked(state: GameState, wordId: string): boolean {
 export const STARTER_DEITIES: ReadonlySet<string> = new Set(['denjalle', 'usvylgr']);
 
 export const deityMetKey = (deityId: string): string => `met:deity:${deityId}`;
+
+/**
+ * Meet a god: the single entry point future authored encounters call. Stamps
+ * `met:deity:<id>` and pays the votive baseline (the first votive token's
+ * standing +2), so devotion shown before the meeting still counts. Returns
+ * false for a god already known.
+ */
+export function meetDeity(state: GameState, bus: EventBus, deityId: string): boolean {
+  if (deityKnown(state, deityId)) return false;
+  setStat(state, bus, deityMetKey(deityId), 1);
+  grantFavor(state, deityId, state.stats['votive:baseline'] ?? 0);
+  return true;
+}
 
 export function deityKnown(state: GameState, deityId: string): boolean {
   return STARTER_DEITIES.has(deityId) || (state.stats[deityMetKey(deityId)] ?? 0) >= 1;

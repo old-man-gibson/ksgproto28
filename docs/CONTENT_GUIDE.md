@@ -694,9 +694,36 @@ read them directly.
   finds rolled once per completed cycle of a train/gather/job activity
   (`systems/activitydrops.ts`). Rolls under 15% use the shared drought curve,
   keyed per activity and material, so the average holds and the worst run is
-  bounded. A card that teaches a recipe the player already knows or holds is
-  not rolled. Both validation layers check the material, the kind and the
-  chance. The Reading Hall's "Read Until It Sticks" is the first user.
+  bounded. Optional fields: `qty`, `quality` (pin a graded drop's grade),
+  `rarer: 2` (each previous find, counted under `found:<material>`, halves the
+  chance), `unique` (not rolled while one is held). A card whose effect has
+  already happened, or one that is held, is not rolled. **House rate:** about
+  one find per 40 minutes of the activity, so chance = base cycle ticks /
+  24,000 (a train rep is 20 ticks). **Unmarked by design (user, 2026-10-17):**
+  no badge, and no spot or NPC text names a find; players discover them.
+
+**The rare finds, for maintainers** (players are told nothing):
+
+| District | Activity | Find | Effect |
+|---|---|---|---|
+| Scholars' Quarter | Read Until It Sticks (Reading Hall) | Recipe: Lectory Porridge | cooking recipe (the user's library exception) |
+| Scholars' Quarter | Copy Out a Proof (Chalk Yard) | Word Slip: Stone | lifts the word `stone` |
+| Temple Rise | Keep a Vigil (Nine Chapels) | Votive Token (`rarer: 2`) | first: +2 favor with every known god and +2 starting favor for gods met later (`votive:baseline`, paid by `meetDeity`); later: 1 floating favor (`favor:floating`), placed on the Divine tab |
+| The Ironyard | Spar (the Sand) | Drill Manual: Riposte | Riposte in canonical form |
+| Alembic Row | Wash Out the Retorts (the Alembics, job) | Emberbloom ×3 | a reagent the shelf does not sell |
+| The Chancery | Copy Out Writs (the Rolls) | Chancery Price Seal | `flag:chancery_seal`: 10% off at every counter, above the no-arbitrage floor (shops.ts) |
+| The Assize | Stand the Night Watch (the Holding) | Unclaimed Case File | `flag:assize_case_file`: hidden title Friend of the Court |
+| Wrights' Ward | Work the Bellows (the Forges) | Smith's Pattern: Bronze | `flag:pattern_bronze`: the secret copper/tin/bronze ingot and bronze dagger recipes appear at the Forges |
+| The Granaries | Scrub the Pans (Granary Kitchens) | Iron Pot (grade B, `unique`) | cookware for the stove's tool slot |
+
+**Card effects** (`ConsumableSpec`; ungraded; refused once spent): `teaches`
+(a recipe), `unlocksWord`, `teachesTechnique` (canonical form), `stamps` (a
+`flag:` counter, then titles are re-checked), `votive` (above). Every card must
+be sold or dropped somewhere, and its target must exist (both layers).
+
+**Secret recipes** (`RecipeDef.secret`): not listed anywhere — Crafting panel,
+map card, destination preview — until `unlock` is met. A secret recipe must
+have an `unlock`.
 
 **Recipe cards and learned dishes.** A bench outcome with `recipe: 'id'`
 matches only once that recipe is known (`recipe:<id>`). A material whose

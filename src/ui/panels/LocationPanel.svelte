@@ -21,6 +21,7 @@
     recipeCostText,
     recipeResultIcon,
     recipeResultName,
+    recipeHidden,
     recipeUnlocked,
   } from '../../core/systems/crafting';
   import { npcsAt, availableQuests, canTurnIn, hasMet } from '../../core/systems/quests';
@@ -87,7 +88,9 @@
   const nextFind = $derived(
     [...unclaimedFinds].sort((a, b) => a.at - b.at).find((f) => f.at > explorePct),
   );
-  const recipes = $derived((spot.recipes ?? []).map((rid) => RECIPES[rid]).filter(Boolean));
+  const recipes = $derived(
+    (spot.recipes ?? []).map((rid) => RECIPES[rid]).filter((r) => r && !recipeHidden(gs, r)),
+  );
   const npcs = $derived(npcsAt(gs.spot));
 
   /** How many of a ware you already hold — graded wares count only the grade on sale. */

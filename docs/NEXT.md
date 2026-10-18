@@ -32,7 +32,14 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
     (works with the Warden's crate) and Fish and Onion Pot. Reading in the
     Reading Hall drops Lectory Porridge about once in 1,250 reps
     (`ActivityDef.drops`, drought-protected).
-  - **Open (user):** which other activities get rare finds of their own.
+  - **Then: one rare find per district** (user-approved list; CONTENT_GUIDE
+    §"The rare finds, for maintainers"). They are unmarked on purpose. The
+    votive token's first copy gives a standing +2 to every god (now and when
+    met). Later copies give floating favor you place on the Divine tab, each
+    twice as rare as the last. The Assize find earns the hidden title Friend of
+    the Court. The bronze recipes are secret until the Smith's Pattern is
+    studied. The Alembics gained the job Wash Out the Retorts, because the
+    district had no cycle activity to roll on.
 
 - **Quest 2 playtested from a fresh save (2026-10-17, no save change)** —
   see the playtest section of

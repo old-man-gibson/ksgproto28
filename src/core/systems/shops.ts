@@ -77,9 +77,18 @@ export function buyPrice(
   line: ShopLine,
   goldGain = getDerivedStats(state).goldGain,
 ): number {
-  const asked = askingPrice(line, hasMet(state, npcId));
+  const base = askingPrice(line, hasMet(state, npcId));
+  // The Chancery price seal (a rare find on the Rolls' writ copying): a
+  // standing discount at every counter. Applied before the floor, so it can
+  // never undercut resale — the no-arbitrage law still holds.
+  const asked = (state.stats[PRICE_SEAL_FLAG] ?? 0) > 0 ? Math.max(1, Math.ceil(base * PRICE_SEAL_MULT)) : base;
   return Math.max(asked, resaleCeiling(state, line, goldGain) + 1);
 }
+
+/** Set by the Chancery Price Seal card (`ConsumableSpec.stamps`). */
+export const PRICE_SEAL_FLAG = 'flag:chancery_seal';
+/** What the seal leaves of the asking price. */
+export const PRICE_SEAL_MULT = 0.9;
 
 /** Lines a vendor shows this player: unresolved ids and unmet `requires` stay off the shelf. */
 export function visibleLines(state: GameState, npc: NpcDef): ShopLine[] {
