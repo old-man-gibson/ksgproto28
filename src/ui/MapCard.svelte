@@ -682,7 +682,9 @@
 
   .map-card {
     position: fixed;
-    z-index: 100;
+    /* Under every overlay (offline 10, catch-up 11, windows 20+): a bench or
+       defeat window that opens while the cursor rests on the card covers it. */
+    z-index: 9;
     width: 290px;
     max-height: 70vh;
     overflow-y: auto;

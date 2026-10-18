@@ -185,5 +185,12 @@ Measured, not changed (numbers for the user's call): a fresh character who
 walks from floor 0 straight into the Cages is knocked out on the first trip
 in 35/40 seeds with the rusty sword, 40/40 on Skip, 33/40 dagger, 30/40
 unarmed, 18/40 hammer, 14/40 spear (rested to full after each knockout, it
-finishes in 1–2 knockouts). The level-3 goblin's bleed carries into the next
-staged fight with no recovery between bouts.
+finishes in 1–2 knockouts). The main cause is the cage slime, not the
+goblin.  resists slashing and piercing by 50% and takes 25%
+more from blunt damage. Each slime bout costs a rusty-sword newcomer about half
+their HP over 16–19 s; fists lose 26–32%, the spear 5%. Slimes land 26 of the
+rusty sword's 40 knockouts. The tutorial's Cell Slime has explicit zero
+resistances, so floor 0 never shows this. What changes the count (rusty sword,
+first-trip knockouts out of 40): goblin removed 32, goblin capped at level 2 35,
+heal between bouts 23, heal and no goblin 15. Bouts chain with no recovery, so
+a goblin's bleed also rides into the next cage.
