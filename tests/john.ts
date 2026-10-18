@@ -27,8 +27,9 @@ import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
  * builds the tutorial hands out.
  *
  * `attentive` adds exactly one habit: he looks around a floor before fighting
- * on it and wields what the floor hands over (the sluice's club before the
- * cistern, the gallery's spear before the den). Comparing the two is how the
+ * on it and uses what the floor hands over (the sluice's club and its wheel,
+ * which drains the cistern, before wading in; the gallery's spear before the
+ * den). Comparing the two is how the
  * floors' own answers are shown to be worth picking up.
  *
  * He reports; he never tunes. The judgement — how long a floor should take,
@@ -243,7 +244,9 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   if (opts.attentive) {
     persist('f2_sluice', 'explore_f2', () => found('f2_sluice', 'f2_snagged_club'));
     wield('oak_club');
-    walk('f2_landing');
+    // The sluice's other answer: drain the cistern, then take the dry
+    // channel in (the walk below routes through it from here).
+    persist('f2_sluice', 'turn_wheel', () => stat('flag:f2_cistern_drained') >= 1);
   }
   if (!persist('f2_cistern', 'hunt', () => stat('fights:f2_cistern') >= SPOTS.f2_cistern.fightLimit!)) return finish();
   // Every find on the floor, on the way out: the purse is most of the
@@ -261,6 +264,8 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     persist('f3_web_gallery', 'explore_f3', () => found('f3_web_gallery', 'f3_webbed_spear'));
     if (s.equipment.weapon?.defId !== 'old_spear') wield('old_spear');
   }
+  // The queen comes out for the third burned egg sac, never on a roll.
+  if (!persist('f3_brood_den', 'burn_sacs', () => stat('flag:f3_sacs_burned') >= 3)) return finish();
   if (!persist('f3_brood_den', 'hunt', () => stat('slain:f3_brood_den:giant_spider_queen') >= 1)) return finish();
   mark('floor3', 'floor3');
   return finish();

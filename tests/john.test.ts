@@ -121,11 +121,15 @@ describe('pacing — the floors hand over their own answers', () => {
    * (the trained edge roughly evens it for John in the cistern); the tool
    * itself must win. Counted in wins, not seconds — a lost fight is short.
    */
-  function duel(spotId: string, monsterId: string, weapon: string, level: number): number {
+  /** The den's queen only comes out once three egg sacs have burned. */
+  const SACS = { 'flag:f3_sacs_burned': 3 };
+  /** `stats` is the spot state the fight needs before it can be rolled. */
+  function duel(spotId: string, monsterId: string, weapon: string, level: number, stats: Record<string, number> = {}): number {
     let wins = 0;
     for (let seed = 1; seed <= 20; seed++) {
       const g = new Game(createInitialState(seed, spotId));
       const s = g.state;
+      Object.assign(s.stats, stats);
       for (const a of ['str', 'dex', 'con'] as const) s.attrs[a].level = level;
       const item = createItem(s, weapon);
       s.inventory.push(item);
@@ -164,10 +168,10 @@ describe('pacing — the floors hand over their own answers', () => {
     expect(SPOTS.f3_web_gallery.finds?.some((f) => f.item === 'old_spear')).toBe(true);
     // At the attributes a climber arrives with, the point wins and the edge
     // does not; the edge catches up with a few more levels (pacing, §6).
-    const sword = duel('f3_brood_den', 'giant_spider_queen', 'rusty_sword', 12);
-    const spear = duel('f3_brood_den', 'giant_spider_queen', 'old_spear', 12);
+    const sword = duel('f3_brood_den', 'giant_spider_queen', 'rusty_sword', 12, SACS);
+    const spear = duel('f3_brood_den', 'giant_spider_queen', 'old_spear', 12, SACS);
     expect(spear, `spear ${spear}/20 against sword ${sword}/20`).toBeGreaterThanOrEqual(15);
     expect(sword).toBeLessThanOrEqual(spear - 10);
-    expect(duel('f3_brood_den', 'giant_spider_queen', 'rusty_sword', 16), 'a rusty sword four levels on').toBeGreaterThanOrEqual(12);
+    expect(duel('f3_brood_den', 'giant_spider_queen', 'rusty_sword', 16, SACS), 'a rusty sword four levels on').toBeGreaterThanOrEqual(12);
   });
 });

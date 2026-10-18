@@ -1168,6 +1168,27 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     activities: [
       { id: 'explore_f2', kind: 'explore', name: 'Trace the Channels', icon: '🔍' },
       { id: 'train_dex_sluice', kind: 'train', attr: 'dex', name: 'Cross the Wet Stones', icon: '👣' },
+      // The cistern's other answer: drain it. Three quarter-turns, and the
+      // fourth empties it — `drained` requires all three turns, so the
+      // search always takes exactly four and never pays early. Drained, the
+      // cistern rolls its stranded table and the dry channel below opens.
+      {
+        id: 'turn_wheel',
+        kind: 'search',
+        name: 'Turn the Sluice Wheel',
+        icon: '☸️',
+        ticksPer: 80,
+        rewards: [
+          { id: 'turn', weight: 1, limit: 3, stat: { key: 'flag:f2_wheel_turns' } },
+          {
+            id: 'drained',
+            weight: 1,
+            limit: 1,
+            requires: [{ type: 'stat', key: 'flag:f2_wheel_turns', value: 3 }],
+            stat: { key: 'flag:f2_cistern_drained', set: 1 },
+          },
+        ],
+      },
     ],
     // The floor hands over its own answer: the cistern's slimes shrug off
     // blades and points but not a club. Found before the purse, so a player
@@ -1184,7 +1205,21 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
         gold: [70, 110],
       },
     ],
-    connections: [],
+    connections: [
+      // The drained cistern's back door, and the first consumer of
+      // `approach`: walked this way, the first slimes are caught from
+      // behind (surprised). One-way, so the cistern lists no road back up a
+      // channel that is not there yet; the front door is still forced.
+      {
+        to: 'f2_cistern',
+        ticks: 40,
+        oneWay: true,
+        label: 'Down the Dry Channel',
+        requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }],
+        revealWhen: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }],
+        approach: { enemies: [{ id: 'surprised' }] },
+      },
+    ],
   },
   f2_cistern: {
     id: 'f2_cistern',
@@ -1203,9 +1238,14 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     // three to five times across the eight.
     groupWeights: { 1: 80, 2: 20 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Wade In', icon: '⚔️' }],
+    // Flooded (the default) or drained (the sluice wheel): one table each,
+    // switched on the wheel's flag. Stranded slimes are the same species two
+    // levels down — out of the water, not a different monster.
     encounters: [
-      { monsterId: 'slime_water', weight: 60, level: [4, 6] },
-      { monsterId: 'slime_base_advanced', weight: 40, level: [5, 7] },
+      { monsterId: 'slime_water', weight: 60, level: [4, 6], requires: [{ type: 'statMax', key: 'flag:f2_cistern_drained', value: 0 }] },
+      { monsterId: 'slime_base_advanced', weight: 40, level: [5, 7], requires: [{ type: 'statMax', key: 'flag:f2_cistern_drained', value: 0 }] },
+      { monsterId: 'slime_water', weight: 60, level: [2, 4], requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }] },
+      { monsterId: 'slime_base_advanced', weight: 40, level: [3, 5], requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }] },
     ],
     connections: [],
   },
@@ -1228,8 +1268,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
         to: 'f3_brood_den',
         ticks: 60,
         label: 'Follow the Silk to the Den',
-        requires: [{ type: 'stat', key: 'fights:f3_web_gallery', value: 6 }],
-        revealWhen: [{ type: 'stat', key: 'fights:f3_web_gallery', value: 6 }],
+        requires: [{ type: 'stat', key: 'fights:f3_web_gallery', value: 4 }],
+        revealWhen: [{ type: 'stat', key: 'fights:f3_web_gallery', value: 4 }],
       },
     ],
   },
@@ -1244,13 +1284,18 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'explore_f3', kind: 'explore', name: 'Cut Through the Webs', icon: '🔍' },
       { id: 'hunt', kind: 'hunt', name: 'Hunt the Gallery', icon: '⚔️' },
     ],
-    // The brood. Six wins spend it and open the road to the den; after that
+    // The brood. Four wins spend it and open the road to the den; after that
     // the gallery's hunt goes quiet and the den is where spiders are farmed.
-    fightLimit: 6,
+    // Six (2026-10-10) chained into knockouts: a won spider fight costs half
+    // a band-1 climber's health and the hunt rolls the next one straight
+    // away, so most falls came on the second or third fight in a row.
+    fightLimit: 4,
     groupWeights: { 1: 80, 2: 20 },
+    // One level down from the 2026-10-10 table (5–7 / 6–8), which still put
+    // every build on the floor three to six times here.
     encounters: [
-      { monsterId: 'cave_spider', weight: 60, level: [5, 7] },
-      { monsterId: 'slime_spider', weight: 40, level: [6, 8] },
+      { monsterId: 'cave_spider', weight: 60, level: [4, 6] },
+      { monsterId: 'slime_spider', weight: 40, level: [5, 7] },
     ],
     // The queen takes half again from a point and shrugs off a third of an
     // edge; a spear cut out of the webs is the floor's answer to her, the way
@@ -1275,16 +1320,38 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🕷️',
     areaId: 'ascent_f3_area',
     map: { x: 94, y: 74 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Go to the Centre', icon: '⚔️' }],
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Go to the Centre', icon: '⚔️' },
+      // The queen is drawn out, not rolled: burn three egg sacs and the next
+      // fight at the centre is hers. A search, so burning is never a fight —
+      // walking to the centre afterwards is the decision. Each sac requires
+      // the one before, so the three lines always arrive in order.
+      {
+        id: 'burn_sacs',
+        kind: 'search',
+        name: 'Burn the Egg Sacs',
+        icon: '🔥',
+        ticksPer: 60,
+        rewards: [
+          { id: 'sac_1', weight: 1, limit: 1, stat: { key: 'flag:f3_sacs_burned' } },
+          { id: 'sac_2', weight: 1, limit: 1, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 1 }], stat: { key: 'flag:f3_sacs_burned' } },
+          { id: 'sac_3', weight: 1, limit: 1, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 2 }], stat: { key: 'flag:f3_sacs_burned' } },
+        ],
+      },
+    ],
     // Pairs at most: the default table's packs of three and four were death
     // sentences for a band-1 build and most of the old floor's knockouts.
     groupWeights: { 1: 75, 2: 25 },
+    // Three states, one table each: the brood guards its eggs (sacs 0–2);
+    // the queen alone once the third burns; the brood again once she is
+    // dead, so the den stays a place to hunt spiders.
     encounters: [
-      { monsterId: 'cave_spider', weight: 70, level: [7, 9] },
+      { monsterId: 'cave_spider', weight: 70, level: [6, 8], requires: [{ type: 'statMax', key: 'flag:f3_sacs_burned', value: 2 }] },
       // The floor's clear: `once`, latching slain:f3_brood_den:giant_spider_queen.
       // She is solitary (`group.max: 1` on the def), so she always comes alone
       // and is never drafted into a spider's escort.
-      { monsterId: 'giant_spider_queen', weight: 30, level: [9, 9], once: true },
+      { monsterId: 'giant_spider_queen', weight: 30, level: [9, 9], once: true, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 3 }] },
+      { monsterId: 'cave_spider', weight: 70, level: [6, 8], requires: [{ type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 }] },
     ],
     connections: [],
   },

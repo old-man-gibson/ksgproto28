@@ -6,7 +6,7 @@ status: review
 system: meta
 parent: alpha-band-one
 save: ''
-updated: 2026-10-10
+updated: 2026-10-17
 invariants:
 - completability
 - no-terminal-states
@@ -27,8 +27,8 @@ placeholder prose**; ids rename cleanly in the forge.
 | Floor | Gate | Clear | Teeth |
 |---|---|---|---|
 | 1 · The Old Toll Level | none | **`boss:f1_toll_hall`** — the clock-keeper or the ambush, whichever pays it (REVISED by quest 3, see [alpha-threshold-quests](alpha-threshold-quests.md); slime_coin stays as a `once` treasure spawn) | rats/basic slimes 1–4, goblins 2–5; keepers 6–7; ambush 11–12; the hidden Bonded Deep 8–11 |
-| 2 · The Flooded Stair | `gold:earned` ≥ 150 | spend the cistern's **fightLimit: 8** | water slimes 4–6, slimers 5–7, pairs at most; the cistern is **forced** (first real consumer); the sluice hands over a club |
-| 3 · The Silk Gallery | `gold:earned` ≥ 600 | slay the `once` **giant_spider_queen** (lv 9, solitary) in the brood den | the gallery's brood (spiders 5–8, **fightLimit: 6**) opens the den road; den spiders 7–9; the gallery hands over a spear |
+| 2 · The Flooded Stair | `gold:earned` ≥ 150 | spend the cistern's **fightLimit: 8** | water slimes 4–6, slimers 5–7, pairs at most; the cistern is **forced** (first real consumer); the sluice hands over a club, and its wheel drains the cistern (two levels down, a surprised back door) |
+| 3 · The Silk Gallery | `gold:earned` ≥ 600 | slay the `once` **giant_spider_queen** (lv 9, solitary) in the brood den | the gallery's brood (spiders 4–7, **fightLimit: 4**) opens the den road; den spiders 6–8; three burned egg sacs bring the queen out; the gallery hands over a spear |
 
 - The three clears demonstrate the three flavors from the parent card: named
   kill (`slain:*`), fight budget (`fights:*`), and — once quests exist — a
@@ -93,6 +93,48 @@ queen at 16 — sword 17. In the real climb John's sword carries floor 1's
 Swordsmanship and roughly breaks even with the club in the cistern: switching
 to the floor's answer or staying with the trained weapon is a real choice.
 
-Still open: the gallery is now the steepest step (3–6 knockouts for every
-build, arriving from floor 2); floor-3 spots sit in one corner of the shared
-Ascent map and the den's node lands under the landing's label.
+~~Still open: the gallery is now the steepest step (3–6 knockouts for every
+build, arriving from floor 2)~~ — see below. Still open: floor-3 spots sit in
+one corner of the shared Ascent map and the den's node lands under the
+landing's label.
+
+# Floors 2 and 3 get a second verb (2026-10-17, no save change)
+
+Floor 1 is fight → search → read → route → boss; floors 2 and 3 were "fight
+until the counter fills". The user picked three changes from a list. All are
+data on existing machinery; the flags reset with the run like every counter.
+
+- **Drain the cistern (floor 2).** The Sluice Gallery gains *Turn the Sluice
+  Wheel*, a search whose fourth result requires the first three, so it always
+  takes exactly four turns. It sets `flag:f2_cistern_drained`, which (a)
+  swaps the cistern's table to the same slimes two levels down (encounter
+  `requires` / `statMax` — the first consumer of encounter requires), and
+  (b) reveals *Down the Dry Channel*, a one-way road from the sluice into the
+  cistern whose `approach` lays `surprised` on the first slimes (the first
+  consumer of approaches). The front door stays forced; draining makes the
+  gauntlet easier, it does not remove it.
+- **Burn the egg sacs (floor 3).** The queen is drawn out, not rolled. The
+  den gains *Burn the Egg Sacs*, three chained search results bumping
+  `flag:f3_sacs_burned`; at three, the den's table is the queen alone (she
+  used to be a 30% line beside the spiders). Before that it is the brood,
+  after her death the brood again, so the den stays a hunting spot.
+- **Softer gallery.** Spider levels one down (gallery 4–6 / 5–7, den 6–8),
+  cave spider STR 8 → 6, and the brood's budget 6 → 4 (the den road's
+  `requires` / `revealWhen` move with it). Measured with a knockout tracer:
+  most falls were on the 2nd or 3rd fight in a row — a won spider fight costs
+  about half a climber's health and the hunt rolls the next straight away —
+  so the fight count was the lever; levels, strength, poison chance and
+  dexterity each moved the count only a few knockouts. Poison chance and DEX
+  were tried and left as they were.
+
+| | 2026-10-10 | 2026-10-17 |
+|---|---|---|
+| Gallery knockouts, 18 climbs | 79 (3–6 each) | 41 (1–4 each) |
+| Den knockouts, 18 climbs | 29 | 14 |
+| Floor-2 knockouts, plain / attentive | 37 / — | 37 / 19 (drained) |
+| Band 1, every build | 13–19 min | 13–18 min |
+
+A trade-off worth knowing: the attentive John who drains the cistern meets
+floor 3 a little weaker (stranded slimes pay less XP and coin), 48 gallery
+knockouts against the plain climb's 41. Draining is easier now and costs a
+little later, which is a choice, not a free win.

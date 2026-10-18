@@ -109,10 +109,31 @@ function statCounterValid(key: string): boolean {
     return !!SPOTS[key.slice(5)]?.encounters?.some((e) => e.boss);
   }
   if (key.startsWith('fights:')) return (SPOTS[key.slice(7)]?.fightLimit ?? 0) > 0;
+  // `slain:<spot>:<monster>` is bumped when a `once` entry dies there (combat.ts).
+  if (key.startsWith('slain:')) {
+    const [, spotId, monsterId] = key.split(':');
+    return !!SPOTS[spotId]?.encounters?.some((e) => e.once && e.monsterId === monsterId);
+  }
   if (key.startsWith('kills:')) return key.slice(6) in MONSTERS;
   if (key.startsWith('gather:')) return key.slice(7) in MATERIALS;
   if (key.startsWith('attr:')) return VALID_ATTRS.has(key.slice(5) as never);
+  // `flag:*` is content's own namespace (SpotFind.stat): real only when some
+  // find or search reward writes it, by bump or by set.
+  if (key.startsWith('flag:')) return contentFlags().has(key);
   return false;
+}
+
+/** Every `flag:*` key a find or a search reward writes — what conditions may read. */
+function contentFlags(): Set<string> {
+  const keys = new Set<string>();
+  for (const spot of Object.values(SPOTS)) {
+    for (const f of spot.finds ?? []) if (f.stat?.key.startsWith('flag:')) keys.add(f.stat.key);
+    for (const act of spot.activities) {
+      if (act.kind !== 'search') continue;
+      for (const r of act.rewards) if (r.stat?.key.startsWith('flag:')) keys.add(r.stat.key);
+    }
+  }
+  return keys;
 }
 
 const VALID_STATS = new Set(Object.keys(STAT_NAMES));

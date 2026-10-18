@@ -139,17 +139,22 @@ export const SPOTS_TEXT: ProseTable = {
 
   'f2_landing.desc': 'Landing of floor 2. Camp on the Landing is a rest activity, and the landing is a haven. Connects to the Sluice Gallery and the Broken Cistern; arriving at the cistern starts a fight that cannot be fled.',
 
-  'f2_sluice.desc': 'Trace the Channels explores the gallery (42 s) for two finds. Cross the Wet Stones trains Dexterity.',
+  'f2_sluice.desc': 'Trace the Channels explores the gallery (42 s) for two finds. Cross the Wet Stones trains Dexterity. Turn the Sluice Wheel drains the Broken Cistern in four turns (8 s each): its slimes drop two levels, and the Dry Channel opens from here into the cistern, arriving behind the first slimes (surprised).',
+  'f2_sluice.activities.turn_wheel.rewards.turn.desc': '☸️ The sluice wheel gives a quarter turn. The cistern drains on the fourth.',
+  'f2_sluice.activities.turn_wheel.rewards.drained.desc': '🌊 The fourth turn opens the sluice and the Broken Cistern drains. Its slimes are stranded two levels down, and the Dry Channel leads from here into the cistern behind them.',
   'f2_sluice.finds.f2_snagged_club.desc': '🏏 An oak club snagged in a grate. A club deals bludgeoning damage, which the cistern’s slimes take more of; blades and points they mostly shrug off.',
   'f2_sluice.finds.f2_drowned_purse.desc': '💰 A purse wedged in a sluice gate: 70 to 110 gold.',
 
-  'f2_cistern.desc': 'Den of floor 2. Arriving starts a fight that cannot be fled. Wade In fights Water Slimes and Slimers (levels 4 to 7), mostly one at a time. The cistern holds 8 winnable fights; the eighth win clears the floor, ends the forced fights and empties the hunts.',
+  'f2_cistern.desc': 'Den of floor 2. Arriving starts a fight that cannot be fled. Wade In fights Water Slimes and Slimers (levels 4 to 7; 2 to 5 once the Sluice Wheel has drained it), mostly one at a time. The cistern holds 8 winnable fights; the eighth win clears the floor, ends the forced fights and empties the hunts.',
 
   'f3_landing.desc': 'Landing of floor 3. Camp on the Landing is a rest activity, and the landing is a haven. Connects to the Silk Gallery; the road to the Brood Den appears once the gallery’s brood is driven off.',
 
-  'f3_web_gallery.desc': 'Cut Through the Webs explores the gallery (48 s) for two finds. Hunt the Gallery fights Cave Spiders and Slime Spiders (levels 5 to 8). The gallery holds 6 winnable fights; the sixth win opens the road to the Brood Den and empties the hunt.',
+  'f3_web_gallery.desc': 'Cut Through the Webs explores the gallery (48 s) for two finds. Hunt the Gallery fights Cave Spiders and Slime Spiders (levels 4 to 7). The gallery holds 6 winnable fights; the sixth win opens the road to the Brood Den and empties the hunt.',
   'f3_web_gallery.finds.f3_webbed_spear.desc': '🔱 An old spear bound into the webs. A spear deals piercing damage, which the Giant Spider Queen takes half again of.',
   'f3_web_gallery.finds.f3_wrapped_valuables.desc': '💰 A cocooned satchel: 120 to 180 gold.',
 
-  'f3_brood_den.desc': 'Den of floor 3. Go to the Centre fights Cave Spiders (levels 7 to 9), at most two at a time, and, once, the Giant Spider Queen (level 9), who always fights alone. Killing the queen clears the floor.',
+  'f3_brood_den.desc': 'Den of floor 3. Go to the Centre fights Cave Spiders (levels 6 to 8), at most two at a time. Burn the Egg Sacs burns one sac per search (6 s); after the third, the next fight at the centre is the Giant Spider Queen (level 9), who always fights alone. Killing the queen clears the floor, and the spiders return.',
+  'f3_brood_den.activities.burn_sacs.rewards.sac_1.desc': '🔥 Egg sac burned (1 of 3).',
+  'f3_brood_den.activities.burn_sacs.rewards.sac_2.desc': '🔥 Egg sac burned (2 of 3).',
+  'f3_brood_den.activities.burn_sacs.rewards.sac_3.desc': '🔥 Egg sac burned (3 of 3). The Giant Spider Queen comes out: the next fight at the centre is hers.',
 };

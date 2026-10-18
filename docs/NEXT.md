@@ -17,6 +17,14 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **Floors 2 and 3 get a second verb (2026-10-17, no save change)** — see
+  [plans/alpha-band-one-floors.md](plans/alpha-band-one-floors.md). The
+  sluice wheel drains the cistern (weaker table + a surprised back door), the
+  queen comes out for three burned egg sacs instead of a 30% roll, and the
+  gallery is four fights instead of six. Floor-3 knockouts per climb halved
+  (about 6 → 3). Also from the same playthrough: tile-map exit labels are
+  legible, the tutorial names the ❓ pins, and coinless kills drop "+0 gold".
+
 - **John, and band 1 retuned around him (2026-10-10, no save change).**
   COMPLETABILITY §8's floor-build driver now exists for band 1
   (`tests/john.ts`; `npm run pacing` prints the table; `tests/john.test.ts`
@@ -153,8 +161,8 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 **First real consumers landed 2026-09-06** — band 1 of the tower uses a
 `forced` spot (the Broken Cistern), two `once` bosses (the toll collector,
 the brood queen) and a `fightLimit` budget that doubles as a floor clear.
-Approaches and encounter `requires` still have no consumer; the Malgeri stubs
-remain the natural place once the world reopens. Forge support:
+Approaches and encounter `requires` got their first consumers on 2026-10-17
+(the drained cistern: the dry channel's surprised arrival, the stranded table). Forge support:
 forced/fightLimit/once have inspector UI; `approach` and encounter `requires`
 are displayed and validated but edited in the data file.
 

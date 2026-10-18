@@ -184,7 +184,9 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     damageType: 'poison',
     inflicts: [{ id: 'poison', intensity: 1, chance: 0.35 }],
     resistances: { poison: 0.5 },
-    attrs: { str: 8, dex: 11, con: 7, int: 3, wis: 4, cha: 0 },
+    // STR 8 → 6 (2026-10-17): a won fight cost about half a band-1
+    // climber's health. Fast and evasive is the identity; DEX stays.
+    attrs: { str: 6, dex: 11, con: 7, int: 3, wis: 4, cha: 0 },
     growth: { str: 1.3, dex: 1.5, con: 1.1, int: 0.75, wis: 0.75, cha: 0.75 },
     xp: 20,
     // Kill gold scales with level × tier, so 6–14 paid ~170 a spider on the
