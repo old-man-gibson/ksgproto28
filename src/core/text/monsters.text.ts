@@ -24,6 +24,7 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_base_basic.desc': 'Small basic slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in The Cages and The Undercrofts. Drops Slime Gel.',
 
+  'suspiciously_large_slime.desc': 'Large basic slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears only when the Cages keeper dares you: every 8 wins while you train there, until you beat it. The fight cannot be fled. Drops 2–4 Slime Gel.',
   'slime_base_advanced.desc': 'Veteran slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in The Undercrofts. Drops Slime Gel.',
 
   'slime_base_elite.desc': 'Large elite slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage, 30% less poison, 20% less cold, and 25% more bludgeoning damage. Two loot rolls of Slime Gel.',

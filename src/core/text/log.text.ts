@@ -102,6 +102,13 @@ export const LOG_TEXT = {
   'disciplines.reason.slot_empty': '{slot} is empty',
   'disciplines.reason.wrong_slot': '{name} does not belong in {slot}',
   'disciplines.reason.no_stock_at_grade': 'You have no {name} of that grade',
+  // ---------- training (systems/training.ts) ----------
+  'training.patched_first': '🩹 Cage keeper: "Hey kid, here. Train safely." HP full; bleeds and poisons cleared. The keeper does this after every win here while your six attributes total {cap} or less.',
+  'training.patched': '🩹 The cage keeper patches you up: HP full.',
+  'training.dare_held': '⏸️ The cage keeper stops the cages: a {name} is up. Play is held until you answer; the time is banked as bonus time.',
+  'training.dare_taken': '⚔️ You step in with the {name}. No fleeing, and no patching up until it is over.',
+  'training.dare_declined': 'You pass on the {name}. The cages carry on; the keeper asks again after {every} more wins.',
+
   'disciplines.reason.short_at_grade': 'You have {held} {name} of that grade; this layout uses {need}',
   'disciplines.reason.slot_locked': 'Slot locked',
   'disciplines.reason.no_outcome': 'No recipe matches these inputs',

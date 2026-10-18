@@ -132,6 +132,8 @@ export interface MonsterStats {
   vsSmaller: number;
   /** Damage reduction per size step the ATTACKER is below this one. */
   fromSmaller: number;
+  /** Extra damage per size step the TARGET is above this one. */
+  vsLarger: number;
   /** Additional hits per swing, rolled the way the player's are. */
   extraSwings: number;
   /** Share of remaining cooldown handed back when a swing misses. */
@@ -399,6 +401,7 @@ export function statsFromAttrs(
     resRanged: 0,
     vsSmaller: 0,
     fromSmaller: 0,
+    vsLarger: 0,
     extraSwings: 0,
     missRefund: 0,
     graze: 0,

@@ -194,3 +194,22 @@ resistances, so floor 0 never shows this. What changes the count (rusty sword,
 first-trip knockouts out of 40): goblin removed 32, goblin capped at level 2 35,
 heal between bouts 23, heal and no goblin 15. Bouts chain with no recovery, so
 a goblin's bleed also rides into the next cage.
+
+**Built the same day on the user's answer** (CONTENT_GUIDE §"Training
+spots"): the cage keeper heals after every win while the six attributes total
+30 or less ("Hey kid, here. Train safely."). Every 8 wins the keeper holds play
+on a dare: the Suspiciously Large Slime (large, level 14, unfleeable), or flee
+back to the ordinary cages. Held time is banked as bonus time. Beating it
+earns the hidden title **David and Goslimath**: `vsLarger`, a new stat
+mirroring `vsSmaller`, worth +3% per size step always and +15% more while
+worn. Measured with the real code over 30 seeds (floor 0 straight into the
+Cages):
+
+- First-visit knockouts: rusty sword 16/30, Skip 22/30, dagger 14/30,
+  unarmed 6/30, hammer 2/30, spear 3/30.
+- The heal ends about 4–5 minutes into cage farming (attributes reach 30), so
+  a farmer sees one or two dares.
+- First-offer wins at level 14 (24 seeds per pick): rusty sword 4, dagger 3,
+  hammer 13, spear 14, unarmed 15, Skip 16.
+
+Numbers are first guesses for the user to tune.

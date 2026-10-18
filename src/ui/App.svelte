@@ -19,6 +19,8 @@
   import LogFeed from './LogFeed.svelte';
   import OfflineModal from './OfflineModal.svelte';
   import PrestigeModal from './PrestigeModal.svelte';
+  import DareModal from './DareModal.svelte';
+  import { pendingDare } from '../core/systems/training';
   import PrestigePanel from './panels/PrestigePanel.svelte';
   import { prestigeVisible } from '../core/systems/prestige';
   import DefeatModal from './DefeatModal.svelte';
@@ -410,6 +412,12 @@
   <!-- Save state, not UI state: owed until a point is spent or leaving is
        confirmed, reload or no reload (systems/prestige.ts). -->
   <PrestigeModal />
+{/if}
+
+{#if pendingDare(gs)}
+  <!-- Save state, not UI state: the keeper's dare holds play until answered,
+       reload or no reload (systems/training.ts). -->
+  <DareModal spot={pendingDare(gs)!} />
 {/if}
 
 {#if ui.defeat}

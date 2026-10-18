@@ -622,6 +622,19 @@ describe('world graph', () => {
           `${spot.id}: caged spots must not carry a fightLimit — the cages restock`,
         ).toBeUndefined();
       }
+      // Training spots (systems/training.ts): the keeper's care and dare.
+      if (spot.healBetweenBouts) {
+        expect(spot.healBetweenBouts.maxAttrTotal, `${spot.id}: healBetweenBouts needs a positive cap`).toBeGreaterThan(0);
+      }
+      if (spot.dare) {
+        const d = spot.dare;
+        expect(MONSTERS[d.monsterId], `${spot.id}: dares an unknown monster '${d.monsterId}'`).toBeDefined();
+        expect(Number.isInteger(d.every) && d.every > 0, `${spot.id}: dare.every must be a positive whole number`).toBe(true);
+        expect(d.level, `${spot.id}: dare.level must be at least 1`).toBeGreaterThanOrEqual(1);
+        expect(spot.encounters?.length ?? 0, `${spot.id}: a dare with no fights to win toward it`).toBeGreaterThan(0);
+        expect(spot.healBetweenBouts, `${spot.id}: a dare is offered only while the keeper tends you`).toBeDefined();
+        expect(d.desc, `${spot.id}: the keeper's dare line (<spot>.dare.desc) is missing`).toBeTruthy();
+      }
       // Ambush windows and the boss latch (SpotEncounter.window / .boss).
       for (const e of spot.encounters ?? []) {
         if (!e.window) continue;

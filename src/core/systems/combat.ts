@@ -795,8 +795,12 @@ export function spotCleared(state: GameState, spot: SpotDef): boolean {
 export function spawnMonster(
   state: GameState,
   spot: SpotDef,
-  /** Mint a specific monster (escorts) instead of rolling the spot table. */
-  override?: { monsterId: string; level: number },
+  /**
+   * Mint a specific monster (escorts) instead of rolling the spot table.
+   * `plain` also skips the modifier and rarity rolls — a staged fight is the
+   * one the keeper described, not a champion that happened to roll.
+   */
+  override?: { monsterId: string; level: number; plain?: boolean },
 ): MonsterInstance {
   const table = eligibleEncounters(state, spot);
   // A rare thing that lives here is a drop like any other — "I have hunted this
@@ -820,13 +824,15 @@ export function spawnMonster(
   // different keys, because they are different complaints. A boss is something
   // this SPOT is refusing to hand over; an epic is the world at large refusing,
   // since the rarity weights are global and every fight anywhere rolls them.
-  const modifier =
-    MODIFIER_TIERS[
-      mercyPick(state, modifierWeights, (e, rate) => (mercyTracked(rate) ? `mod:${spot.id}:${e.id}` : null)).id
-    ];
+  const modifier = override?.plain
+    ? MODIFIER_TIERS.normal
+    : MODIFIER_TIERS[
+        mercyPick(state, modifierWeights, (e, rate) => (mercyTracked(rate) ? `mod:${spot.id}:${e.id}` : null)).id
+      ];
   const modifierMult = rollRange(state, modifier.multiplierRange);
-  const rarity =
-    RARITIES[mercyPick(state, RARITY_WEIGHTS, (e, rate) => (mercyTracked(rate) ? `rarity:${e.id}` : null)).id];
+  const rarity = override?.plain
+    ? RARITIES.common
+    : RARITIES[mercyPick(state, RARITY_WEIGHTS, (e, rate) => (mercyTracked(rate) ? `rarity:${e.id}` : null)).id];
 
   const statMult = tierMult * modifierMult * rarity.statMult;
   const rewardMult = tier.rewardMult * modifier.rewardMult * rarity.statMult;
@@ -988,8 +994,13 @@ export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | 
   return slots;
 }
 
-function startEncounter(state: GameState, bus: EventBus, spot: SpotDef, forced = false): void {
-  const enemies = spawnGroup(state, spot);
+function startEncounter(
+  state: GameState,
+  bus: EventBus,
+  spot: SpotDef,
+  forced = false,
+  enemies: (MonsterInstance | null)[] = spawnGroup(state, spot),
+): void {
   state.combat = {
     enemies,
     ...(enemies.some((e) => e?.defId === TOLL_GOLEM) ? { introTicks: 30 } : {}),
@@ -1077,6 +1088,25 @@ export function startForcedFight(state: GameState, bus: EventBus, spot: SpotDef)
   if (state.combat || spotCleared(state, spot) || !eligibleEncounters(state, spot).length) return;
   startEncounter(state, bus, spot, true);
   bus.emit({ type: 'log', msg: text('combat.ambushed'), kind: 'danger' });
+  feed(state, `⚔️ No retreat — this fight ends on its feet or on yours.`);
+}
+
+/**
+ * One named monster, alone, and no way out: the keeper's dare
+ * (systems/training.ts). Pinned like an escort, with no rolled modifier or
+ * rarity, so the fight is the one the player was warned about.
+ */
+export function startStagedFight(
+  state: GameState,
+  bus: EventBus,
+  spot: SpotDef,
+  monsterId: string,
+  level: number,
+): void {
+  if (state.combat) abandonCombat(state);
+  const slots: (MonsterInstance | null)[] = Array(ENCOUNTER_SLOTS).fill(null);
+  slots[0] = spawnMonster(state, spot, { monsterId, level, plain: true });
+  startEncounter(state, bus, spot, true, slots);
   feed(state, `⚔️ No retreat — this fight ends on its feet or on yours.`);
 }
 
@@ -1532,9 +1562,11 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
         bus.emit({ type: 'log', msg: text('combat.spot_cleared', { spot: spot.name }), kind: 'combat' });
       }
     }
+    const forcedWin = !!c.forced;
     closeCombat(state);
     endFight(state, 'won');
     state.respawnTimer = RESPAWN_DELAY;
+    if (spot) bus.emit({ type: 'fight:won', spot: spot.id, forced: forcedWin });
     return;
   }
   if (index === 0) {
@@ -3457,6 +3489,9 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       const smallerBy = stepsSmaller(state, monster.defId);
       const bully = 1 + vs.vsSmaller * smallerBy;
       if (bully !== 1) steps.push({ label: 'Looming over it', mult: bully });
+      // Being the SMALLER thing, for a body built for it (`vsLarger`).
+      const underdog = 1 + vs.vsLarger * stepsLarger(state, monster.defId);
+      if (underdog !== 1) steps.push({ label: 'Under its guard', mult: underdog });
       // …and the same gap read from ITS side. A thing far above you struggles
       // to be reached by you, exactly as the mirror rule already did to your
       // blows from something small. Floored at zero — never a heal.
@@ -3464,7 +3499,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       const looming = Math.max(0, 1 - theirs.fromSmaller * stepsLarger(state, monster.defId));
       if (looming !== 1) steps.push({ label: 'It looms over you', mult: looming });
       for (let h = 0; h < hits; h++) {
-        let hit = swing * bully * looming;
+        let hit = swing * bully * underdog * looming;
         // A named crit is not luck, so it neither pays the ledger nor is paid
         // by it — it skips the roll entirely (see PLAYER_CRIT).
         const crit = forced ? true : procChance(state, PLAYER_CRIT, vs.crit);
@@ -3928,6 +3963,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // the specimen rather than the player, so a genome that looms works for
     // whoever is wearing it (docs/plans/monster-stat-parity.md).
     const bully = 1 + es.vsSmaller * stepsLarger(state, e.defId);
+    // …and its `vsLarger`, when the player is the bigger one.
+    const underdog = 1 + es.vsLarger * stepsSmaller(state, e.defId);
     // A counter form gets between you and the blow: it comes off BEFORE armor,
     // so what the reflex took and what the harness took are one block, and a
     // `preventedMult` on the same move answers with all of it.
@@ -3972,6 +4009,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         critMult *
         looming *
         bully *
+        underdog *
         (0.9 + rand(state) * 0.2);
       thrown += one;
       const raw = counter ? one * (1 - counter.move.counter!.reduce) : one;

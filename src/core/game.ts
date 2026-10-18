@@ -15,6 +15,7 @@ import {
   skipTutorial,
 } from './systems/tutorial';
 import { registerBestiaryListeners } from './systems/bestiary';
+import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
   socketRune,
@@ -65,7 +66,7 @@ import {
   setJourneyIntent,
 } from './systems/locations';
 import { climbTo } from './systems/towers';
-import { accrueBonusTime, setBonusSpending, spendsBonusTick } from './systems/bonustime';
+import { accrueBonusTime, bankTick, setBonusSpending, spendsBonusTick } from './systems/bonustime';
 import {
   canEquip,
   equipItem,
@@ -138,6 +139,8 @@ export class Game {
     registerTitleListeners(state, this.bus);
     // The tutorial only watches arrivals at the Foot (its exit).
     registerTutorialListeners(state, this.bus);
+    // Training spots heal and dare off a won fight (systems/training.ts).
+    registerTrainingListeners(state, this.bus);
     this.bus.on('log', (ev) => {
       if (this.suppressLog) return;
       appendLog(this.state, {
@@ -157,6 +160,13 @@ export class Game {
    */
   tick(): void {
     if (this.state.paused) return;
+    // A question the game is waiting on (the keeper's dare) holds the world.
+    // The wall time spent deciding is banked as bonus time, not lost — which
+    // is also what happens when the question lands while the player is away.
+    if (dareHolds(this.state)) {
+      bankTick(this.state);
+      return;
+    }
     this.advance();
     // Banked idle time, spent as a second tick. A whole extra advance, clock
     // included: double speed means the world runs double, not just the bar.
@@ -178,8 +188,12 @@ export class Game {
     for (const def of RESOURCE_LIST) this.lastLocks[def.id] = resourceLock(this.state, def.id);
   }
 
-  /** One tick, unconditionally. The pause check lives in `tick()`. */
+  /**
+   * One tick. The pause check lives in `tick()`; a held dare stops this too, so
+   * the step buttons cannot walk past the question (or bank time doing it).
+   */
   private advance(): void {
+    if (dareHolds(this.state)) return;
     this.state.totalTicks += 1;
     // Idleness is judged before anything moves, so the tick that starts or
     // ends work is not banked as time spent doing nothing.
@@ -477,6 +491,11 @@ export class Game {
   /** Receive a miracle, spending favor with its deity. */
   learnMiracle(miracleId: string) {
     return learnMiracle(this.state, this.bus, miracleId);
+  }
+
+  /** Answer the keeper's waiting dare: fight it (true) or pass (false). */
+  answerDare(accept: boolean) {
+    return answerDare(this.state, this.bus, accept);
   }
 
   /** Shape a psionic working from force/reach/grip points. */

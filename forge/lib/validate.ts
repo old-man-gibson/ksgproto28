@@ -357,6 +357,20 @@ export function validate(store: S): Issue[] {
     if (spot.caged && spot.fightLimit !== undefined) {
       err('spot', spot.id, 'caged spots must not carry a fightLimit — the cages restock', ['caged']);
     }
+    // Training spots (systems/training.ts).
+    if (spot.healBetweenBouts && !(spot.healBetweenBouts.maxAttrTotal > 0)) {
+      err('spot', spot.id, 'healBetweenBouts needs a positive maxAttrTotal', ['healBetweenBouts']);
+    }
+    if (spot.dare) {
+      const d = spot.dare;
+      if (!monsters[d.monsterId]) err('spot', spot.id, `dares an unknown monster '${d.monsterId}'`, ['dare']);
+      if (!(Number.isInteger(d.every) && d.every > 0)) err('spot', spot.id, 'dare.every must be a positive whole number of wins', ['dare']);
+      if (!(d.level >= 1)) err('spot', spot.id, 'dare.level must be at least 1', ['dare']);
+      // Wins are what count down to the dare, and the keeper only dares the
+      // players it is still looking after.
+      if (!spot.encounters?.length) err('spot', spot.id, 'a dare with no fights to win toward it', ['dare']);
+      if (!spot.healBetweenBouts) err('spot', spot.id, 'a dare needs healBetweenBouts — it is offered only while the keeper tends you', ['dare']);
+    }
     for (const e of spot.encounters ?? []) {
       if (!e.window) continue;
       if (!(e.window.min > 0) || !(e.window.max > e.window.min)) {

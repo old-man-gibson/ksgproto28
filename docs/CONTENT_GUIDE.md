@@ -628,6 +628,30 @@ spot stops forcing, so a guardian den is fight-your-way-in-once, pass freely
 after. Cleared forced spots also reopen to the auto-router and drop their ⚔️
 warnings.
 
+**Training spots — a keeper and a dare** (`systems/training.ts`; the Cages
+are the first). Two spot fields:
+
+```ts
+healBetweenBouts: { maxAttrTotal: 30 },   // after every WIN here, while the six
+                                          // attribute levels total <= 30: HP full,
+                                          // damage-over-time conditions cleared
+dare: { monsterId: 'suspiciously_large_slime', level: 14, every: 8 },
+```
+
+The heal removes the chain that knocks newcomers out (a hunt rolls the next
+bout with no recovery); each bout keeps its own risk, and outgrowing the cap
+ends it. The dare needs `healBetweenBouts`: every `every` wins while the
+keeper still tends you, play **holds** on a popup. Answering **Fight** starts
+`monsterId` at `level`, alone, plain (no rolled modifier or rarity) and
+unfleeable. Answering **Flee** returns you to the ordinary cages. While it waits,
+`Game.tick` advances nothing and banks every tick as bonus time; the step
+buttons do nothing. Offers stop once that monster has a kill on record. The
+keeper's line is prose: `<spot>.dare.desc` in the text table. The pending
+question is a stat (`dare:<spot>:pending`, plus the global `hold:dare` the
+tick reads), so it survives a reload with no save change. Both validation
+layers check that the monster exists, `every` is a positive whole number, the
+spot has encounters and a keeper, and the line is written.
+
 **Flags — the cross-room wire.** A find may touch a persistent counter, and
 `UnlockCondition`s anywhere may read it — that is the whole mechanism for
 "the lever in room A opens the fight in room B":

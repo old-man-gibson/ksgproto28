@@ -24,9 +24,11 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
   spellcrafting table (the miracle line pointed there); benches count two
   slots of one grade against one stack; the spell table refuses a repeat
   sentence in its preview and warns when a spell outcosts the mana pool; the
-  map card's bench rows queue "On arrival" once a walk has started. Open for
-  the user: newcomers are knocked out on their first Cages visit in most
-  seeds.
+  map card's bench rows queue "On arrival" once a walk has started. Then, on
+  the user's answer: the Cages keeper heals beginners between bouts and holds
+  play every 8 wins on a dare (the Suspiciously Large Slime). Held time is
+  banked as bonus time. Beating the slime earns the hidden title David and
+  Goslimath (new stat `vsLarger`). See CONTENT_GUIDE §"Training spots".
 
 - **Floors 2 and 3 get a second verb (2026-10-17, no save change)** — see
   [plans/alpha-band-one-floors.md](plans/alpha-band-one-floors.md). The

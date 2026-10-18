@@ -283,6 +283,28 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
       ],
     },
   },
+  // The cage keeper's dare (SpotDef.dare on the_cages): the cage slime, grown
+  // one size past the player. Same resistances as its kin, so blunt is still
+  // the answer and a sword is still the hard way. Spawns nowhere on its own.
+  suspiciously_large_slime: {
+    id: 'suspiciously_large_slime',
+    name: 'Suspiciously Large Slime',
+    icon: '🟢',
+    tags: ['inorganic', 'slime', 'large'],
+    art: 'slime_base_basic.png',
+    tier: 'basic',
+    damageType: 'bludgeoning',
+    resistances: { slashing: 0.5, piercing: 0.5, bludgeoning: -0.25, cold: 0.15, poison: 0.25 },
+    attrs: { str: 5, dex: 3, con: 8, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0.6, dex: 0.4, con: 1.0, int: 0.4, wis: 0.4, cha: 0.4 },
+    group: { max: 1 },
+    xp: 40,
+    gold: [2, 4],
+    loot: {
+      rolls: 1,
+      entries: [{ kind: 'material', id: 'slime_gel', weight: 100, qty: [2, 4] }],
+    },
+  },
   slime_base_advanced: {
     id: 'slime_base_advanced',
     name: 'Slimer',

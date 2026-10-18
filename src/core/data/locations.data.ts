@@ -599,6 +599,14 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     // A menagerie (SpotDef.caged): staged one-at-a-time fights, no rolled
     // champions, and every bestiary fact lands exactly at its minKills.
     caged: true,
+    // The keeper looks after beginners (systems/training.ts): healed after
+    // every win while the six attributes total 30 or less, and dared to take
+    // on the Suspiciously Large Slime every 8 wins until it is beaten.
+    // Level 14 measured at the first offer (24 seeds per tutorial pick): the
+    // rusty sword wins ~1 in 6, fists/hammer/spear about half — its blunt
+    // weakness is the lesson.
+    healBetweenBouts: { maxAttrTotal: 30 },
+    dare: { monsterId: 'suspiciously_large_slime', level: 14, every: 8 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Step Into a Cage', icon: '🪤' }],
     encounters: [
       { monsterId: 'forest_rat', weight: 40, level: [1, 2] },

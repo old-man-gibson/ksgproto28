@@ -5,6 +5,7 @@ import type { ProseTable } from './prose';
 
 // ---------- TITLES ----------
 export const TITLES_TEXT: ProseTable = {
+  'david_and_goslimath.desc': 'Beat the Suspiciously Large Slime the Cages keeper dared you to fight. +3% damage per size step against anything larger than you, always; +15% more per step while worn.',
   'procedural_objection.desc': 'Defeat the Toll Collector without casting a spell during that encounter. The stamp yields to force.',
   'iconoclast.desc': 'Learn ten miracles. Passive: +5 maximum spirit. Worn: +5% spell power, and miracles of hostile deities may be prepared together.',
 

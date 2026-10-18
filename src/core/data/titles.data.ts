@@ -13,6 +13,17 @@ import { TITLES_TEXT } from '../text/titles.text';
  *                     doesn't count; tracked in combat.ts).
  */
 export const TITLES = prose<TitleDef>('TITLES', TITLES_TEXT, {
+  // The cage keeper's dare, taken and won (SpotDef.dare on the_cages). The
+  // underdog's title: `vsLarger` reads per size step the target is above you.
+  david_and_goslimath: {
+    id: 'david_and_goslimath',
+    name: 'David and Goslimath',
+    icon: '🪨',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'kills:suspiciously_large_slime', value: 1 }],
+    passive: [{ stat: 'vsLarger', op: 'add', value: 0.03 }],
+    equipped: [{ stat: 'vsLarger', op: 'add', value: 0.15 }],
+  },
   procedural_objection: {
     id: 'procedural_objection', name: 'Procedural Objection', icon: '✊', secret: true,
     unlock: [{ type: 'stat', key: 'flag:toll_brute_force', value: 1 }],

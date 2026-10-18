@@ -148,7 +148,7 @@ export const ORDER_BY_FIELD: Record<string, string> = {
 /** Field order the forge writes for each known entity shape. */
 export const KEY_ORDER: Record<string, string[]> = {
   spot: [
-    'id', 'name', 'icon', 'areaId', 'tags', 'map', 'waypoint', 'forced', 'fightLimit', 'caged', 'activities',
+    'id', 'name', 'icon', 'areaId', 'tags', 'map', 'waypoint', 'forced', 'fightLimit', 'caged', 'healBetweenBouts', 'dare', 'activities',
     'encounters', 'modifierWeights', 'groupWeights', 'exploreTicks', 'finds', 'exploreGates',
     'recipes', 'benches', 'connections',
   ],

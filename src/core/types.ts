@@ -173,6 +173,12 @@ export type StatKey =
    */
   | 'fromSmaller'
   /**
+   * Extra damage PER SIZE STEP a target is LARGER than you — `vsSmaller`'s
+   * mirror, the underdog's stat. 0.2 against something one step up is +20%.
+   * Nothing against your equals or anything smaller.
+   */
+  | 'vsLarger'
+  /**
    * Share of every technique's REMAINING cooldown given back when a swing
    * misses — 0.1 takes a tenth off everything still ticking.
    *
@@ -208,6 +214,7 @@ export const STAT_NAMES: Record<StatKey, string> = {
   resistCap: 'Resistance Ceiling',
   vsSmaller: 'Damage vs Smaller',
   fromSmaller: 'Resistance vs Smaller',
+  vsLarger: 'Damage vs Larger',
   resAcid: 'Acid Resistance',
   missRefund: 'Cooldown Back on a Miss',
   graze: 'Graze Damage on a Miss',
@@ -3974,6 +3981,23 @@ export interface SpotDef {
    * defined rates instead of rolled ones. The fights themselves are ordinary.
    */
   caged?: boolean;
+  /**
+   * A keeper who patches up beginners: after every fight WON here, a player
+   * whose six attribute levels total at most `maxAttrTotal` is healed to full
+   * and loses every condition that deals damage over time. Chained bouts are
+   * what knock newcomers out (the next fight rolls with no recovery); this
+   * removes the chain and leaves each bout its own risk. Outgrowing the cap
+   * ends it, so it cannot become a free farm.
+   */
+  healBetweenBouts?: { maxAttrTotal: number };
+  /**
+   * The keeper's dare (systems/training.ts): every `every` fights won here
+   * while `healBetweenBouts` still applies, play HOLDS on a question — fight
+   * `monsterId` at `level`, alone and unfleeable, or decline and keep
+   * training. Held time is banked as bonus time, never lost. Offers stop once
+   * that monster has been beaten. `desc` is the keeper's line (prose).
+   */
+  dare?: SpotDare;
   /** Spawn weights for rolled modifier tiers (demiboss/boss/aberrant). */
   modifierWeights?: Partial<Record<ModifierTierId, number>>;
   /** Area group-size distribution, e.g. { 1: 20, 3: 40, 5: 40 } for a swarm zone. */
@@ -5617,6 +5641,8 @@ export type GameEvent =
   | { type: 'superattr:unlock'; id: SuperAttributeId }
   | { type: 'encounter'; spot: string; monsterIds: string[] }
   | { type: 'kill'; monster: MonsterInstance }
+  /** The last enemy of a fight fell. `forced`: it was a fight that could not be fled. */
+  | { type: 'fight:won'; spot: string; forced: boolean }
   | { type: 'defeat'; monster: MonsterInstance }
   | { type: 'loot'; item: ItemInstance }
   | { type: 'achievement'; id: string; tier: number }
@@ -5633,3 +5659,12 @@ export type GameEvent =
   | { type: 'bestiary:habitat'; monsterId: string; spot: string };
 
 export type GameEventType = GameEvent['type'];
+
+/** See `SpotDef.dare`. */
+export interface SpotDare {
+  monsterId: string;
+  level: number;
+  every: number;
+  /** What the keeper says when play holds (text table: `<spot>.dare.desc`). */
+  desc: string;
+}
