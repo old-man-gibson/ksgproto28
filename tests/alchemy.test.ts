@@ -222,6 +222,18 @@ describe('the bench', () => {
     expect(resolveBrew(g.state.flasks[0]).name).toBe(made!.spec.name);
   });
 
+  it('a reagent laid twice at one grade needs two in stock', () => {
+    const g = fresh();
+    g.state.skills.alchemy = { level: 0, xp: 0 };
+    grantGraded(g.state, 'spring_water', 'b', 1);
+    const twice = lay(at('spring_water', 'b'), at('spring_water', 'b'));
+    const check = previewBrew(g.state, twice);
+    expect(check.ok).toBe(false);
+    expect(check.reason).toMatch(/1 Spring Water of that grade; this layout uses 2/);
+    expect(brew(g.state, g.bus, twice)).toBeNull();
+    expect(stockOf(g.state, 'spring_water', 'b')).toBe(1);
+  });
+
   it('closes gaps: an empty step in the middle is not a step', () => {
     const g = fresh();
     shelf(g);

@@ -554,6 +554,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     activities: [
       { id: 'train_wis_chapels', kind: 'train', attr: 'wis', name: 'Keep a Vigil', icon: '🕯️', tags: ['magic'] },
     ],
+    // The Warden's second quest, the prior and this spot's own text all send
+    // the player here to learn a miracle; the table's Divine tab is where
+    // miracles are bought. Same furniture as the Reading Hall's.
+    benches: ['spelltable'],
     connections: [],
   },
   censer_walk: {

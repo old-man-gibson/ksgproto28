@@ -17,6 +17,17 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **Quest 2 playtested from a fresh save (2026-10-17, no save change)** —
+  see the playtest section of
+  [plans/alpha-threshold-quests.md](plans/alpha-threshold-quests.md). It
+  completes from the Warden's crate. Fixed: the Nine Chapels now hold a
+  spellcrafting table (the miracle line pointed there); benches count two
+  slots of one grade against one stack; the spell table refuses a repeat
+  sentence in its preview and warns when a spell outcosts the mana pool; the
+  map card's bench rows queue "On arrival" once a walk has started. Open for
+  the user: newcomers are knocked out on their first Cages visit in most
+  seeds.
+
 - **Floors 2 and 3 get a second verb (2026-10-17, no save change)** — see
   [plans/alpha-band-one-floors.md](plans/alpha-band-one-floors.md). The
   sluice wheel drains the cistern (weaker table + a surprised back door), the

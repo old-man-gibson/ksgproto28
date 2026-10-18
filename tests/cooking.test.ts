@@ -94,6 +94,24 @@ describe('what comes out of the pot', () => {
     expect(previewCook(g.state, pot(['raw_meat', 'f'], ['wild_onion', 'f'])).outcome?.id).toBe('mess');
   });
 
+  it('two slots of one material at one grade need two in stock', () => {
+    // The Warden's crate rolls each unit's grade, so a newcomer often holds
+    // exactly one of a grade. The preview used to pass meat+meat on that one
+    // unit, run the whole simmer, then stop with nothing made.
+    const g = fresh();
+    g.state.skills.cooking = { level: 1, xp: 0 };
+    grantGraded(g.state, 'raw_meat', 'd', 1);
+    const doubled = pot(['raw_meat', 'd'], ['raw_meat', 'd']);
+    const check = previewCook(g.state, doubled);
+    expect(check.ok).toBe(false);
+    expect(check.reason).toMatch(/1 Raw Meat of that grade; this layout uses 2/);
+
+    grantGraded(g.state, 'raw_meat', 'd', 1);
+    expect(previewCook(g.state, doubled).ok).toBe(true);
+    expect(cook(g.state, g.bus, doubled)).not.toBeNull();
+    expect(stockOf(g.state, 'raw_meat', 'd')).toBe(0);
+  });
+
   it('needs both starting slots filled', () => {
     const g = fresh();
     kitchen(g);

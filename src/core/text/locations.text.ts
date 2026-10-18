@@ -81,7 +81,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'temple_rise_gate.desc': 'Gate of Temple Rise. Walk the Stair trains Constitution. Connects to the Foot, the Nine Chapels, Censer Walk, the Lectory Steps and the Muster Gate.',
 
-  'the_nine_chapels.desc': 'Indoor. Keep a Vigil trains Wisdom and pays magic skill XP. Prior Ashvane stands here; miracles are learned here for favor.',
+  'the_nine_chapels.desc': 'Indoor. Holds a Spellcrafting Table: its Divine tab teaches miracles for favor. Keep a Vigil trains Wisdom and pays magic skill XP. Prior Ashvane stands here.',
 
   'censer_walk.desc': 'Colonnade off the Pilgrims’ Stair. Work the Colonnade trains Charisma. Ilex stands here.',
 

@@ -14,7 +14,6 @@
     MAX_STACK,
     WORD_MASTERY,
     arcaneLevel,
-    checkSentence,
     masteredTier,
     splitWordId,
     wordLevel,
@@ -46,6 +45,7 @@
     PREPARED_PER_LEVELS,
     preparedCap,
     canCastUtility,
+    checkInscription,
     isUtilityWorking,
     preparedSpells,
     resolveSpell,
@@ -60,6 +60,7 @@
     SpellSpec,
   } from '../../core/types';
   import { TPS } from '../../core/engine/loop';
+  import { trueMax } from '../../core/systems/resources';
   // A spell describes itself the same way everywhere — the grimoire, the
   // combat card's tooltip and the config window all read these.
   import { specLines, targetLabel } from '../lib/format';
@@ -85,7 +86,15 @@
   let sentence = $state<string[]>([]);
   const level = $derived(arcaneLevel(gs));
   const cap = $derived(maxSentenceWords(level));
-  const check = $derived(sentence.length ? checkSentence(gs, sentence) : null);
+  // checkInscription = legal speech AND not already written (the floor 0 word
+  // is in every new grimoire, and it is the first thing a newcomer tries).
+  const check = $derived(sentence.length ? checkInscription(gs, sentence) : null);
+  /** A sentence the pool cannot pay for inscribes fine and then never casts. */
+  const overPool = $derived.by(() => {
+    const cost = check?.ok ? (check.spec?.manaCost ?? 0) : 0;
+    const pool = trueMax(view.stats, 'mana');
+    return cost > pool ? { cost, pool } : null;
+  });
 
   /** The full lexicon, locked words included — a locked word is a goal. */
   const KIND_ORDER: ArcaneWordKind[] = ['noun', 'verb', 'adverb', 'conjunction', 'target'];
@@ -502,6 +511,12 @@
         <div class="small dim">🔒 {check.reason}</div>
       {:else}
         <div class="small dim">The table is quiet.</div>
+      {/if}
+      {#if overPool}
+        <div class="small out-of-reach too-wide">
+          💧 Costs <b>{overPool.cost}</b> mana and your pool holds <b>{overPool.pool}</b>. It can be
+          inscribed, but it will not cast until Intelligence raises the pool.
+        </div>
       {/if}
     </div>
 

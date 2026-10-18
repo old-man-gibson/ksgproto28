@@ -158,6 +158,18 @@
     }
     ui.benchOnArrival = { spot: spotId, bench };
     ui.tab = 'location';
+    // The bench window opens under the cursor; a card left standing would
+    // sit on top of it (the card is fixed, above modals).
+    cardFor = null;
+  }
+
+  /**
+   * The journey already ends here (clicking the pin starts the walk at once):
+   * queue the bench for arrival, the way activities queue with On arrival.
+   */
+  function toggleBenchOnArrival(spotId: string, bench: string) {
+    const queued = ui.benchOnArrival?.spot === spotId && ui.benchOnArrival.bench === bench;
+    ui.benchOnArrival = queued ? null : { spot: spotId, bench };
   }
 
   function goDo(spotId: string, activity: string) {
@@ -396,7 +408,16 @@
       {#each c.features as f (f.key)}
         <div class="row">
           <span>{f.icon} {f.label}</span>
-          {#if f.bench}
+          {#if f.bench && c.journeyEnds}
+            <button
+              class="small"
+              class:selected={ui.benchOnArrival?.spot === c.spot.id && ui.benchOnArrival.bench === f.bench}
+              title="Open this bench when the journey ends"
+              onclick={() => toggleBenchOnArrival(c.spot.id, f.bench!)}
+            >
+              On arrival
+            </button>
+          {:else if f.bench}
             <button
               class="small"
               disabled={!c.here && (stuck || !r.path)}

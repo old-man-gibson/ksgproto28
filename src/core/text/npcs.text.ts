@@ -26,9 +26,9 @@ export const NPCS_TEXT: ProseTable = {
     'Read Until It Sticks trains Intelligence here. Sit With a Hard Passage trains Wisdom and pays magic skill XP.',
   ],
 
-  'chapel_priest.desc': 'Prior of the Nine Chapels. Miracles are learned here for favor. Sells nothing and gives no quests.',
+  'chapel_priest.desc': 'Prior of the Nine Chapels. Miracles are learned here for favor, on the Divine tab of the Spellcrafting Table. Sells nothing and gives no quests.',
   'chapel_priest.dialogue': [
-    'Favor pays for miracles. Quest turn-ins earn it; learning a miracle spends it.',
+    'Miracles are on the Divine tab of the Spellcrafting Table behind me. Each costs favor with its own god; quest turn-ins earn favor with every god you know.',
     'D’Enjalle, the Shining Rapier, is a god of honor, fire and order. Usvýlgr, the Crafty Hammer, is a god of crafting and earth.',
     'Two of the nine doors are locked. Nothing behind them can be learned yet.',
   ],

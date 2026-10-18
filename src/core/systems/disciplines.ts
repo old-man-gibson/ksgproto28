@@ -275,6 +275,9 @@ export function checkCraft(
   placement: Placement,
 ): CraftCheck {
   const open = openSlots(state, disc);
+  // Slots that spend the same material at the same grade draw on one stack:
+  // two slots of grade-D meat need two grade-D meat, not one seen twice.
+  const demand = new Map<string, number>();
 
   for (const slot of open) {
     const put = placement[slot.id];
@@ -285,11 +288,20 @@ export function checkCraft(
     // Designs and tools are validated by whoever owns their catalogue; only
     // materials are checked against tags and stock here.
     if (slotPicks(slot) !== 'material') continue;
+    const name = MATERIALS[put.id]?.name ?? put.id;
     if (!slotAccepts(slot, put.id)) {
-      return { ok: false, reason: text('disciplines.reason.wrong_slot', { name: MATERIALS[put.id]?.name ?? put.id, slot: slot.name }) };
+      return { ok: false, reason: text('disciplines.reason.wrong_slot', { name, slot: slot.name }) };
     }
-    if (stockOf(state, put.id, put.quality) < 1) {
-      return { ok: false, reason: text('disciplines.reason.no_stock_at_grade', { name: MATERIALS[put.id]?.name ?? put.id }) };
+    const held = stockOf(state, put.id, put.quality);
+    if (held < 1) {
+      return { ok: false, reason: text('disciplines.reason.no_stock_at_grade', { name }) };
+    }
+    if (!slotConsumes(slot)) continue;
+    const key = `${put.id}:${put.quality}`;
+    const need = (demand.get(key) ?? 0) + 1;
+    demand.set(key, need);
+    if (held < need) {
+      return { ok: false, reason: text('disciplines.reason.short_at_grade', { name, held, need }) };
     }
   }
   // Anything placed in a slot that isn't open yet is not a legal layout.

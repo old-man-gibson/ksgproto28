@@ -102,6 +102,7 @@ export const LOG_TEXT = {
   'disciplines.reason.slot_empty': '{slot} is empty',
   'disciplines.reason.wrong_slot': '{name} does not belong in {slot}',
   'disciplines.reason.no_stock_at_grade': 'You have no {name} of that grade',
+  'disciplines.reason.short_at_grade': 'You have {held} {name} of that grade; this layout uses {need}',
   'disciplines.reason.slot_locked': 'Slot locked',
   'disciplines.reason.no_outcome': 'No recipe matches these inputs',
 
@@ -261,7 +262,7 @@ export const LOG_TEXT = {
   'spellcraft.reason.not_enough_focus': 'Not enough focus',
   'spellcraft.prepared_cap': '🔒 Prepared spell limit is {cap}.',
   'spellcraft.prepare_conflict': '⚡ {conflict}',
-  'spellcraft.already_inscribed': '🔒 Sentence already in the grimoire.',
+  'spellcraft.reason.already_inscribed': 'Already in your grimoire. Change or add a word to inscribe a new spell',
   'spellcraft.inscribed': '{icon} Inscribed: {name}',
   'spellcraft.already_shaped': '🔒 Shape already held.',
   'spellcraft.recognition_locked': '🔒 Shape matches {recognition}, which needs a teacher.',

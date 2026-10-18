@@ -142,3 +142,48 @@ kill / craft(recipe|discipline) / collect / reach / talk / stat, which covers
 everything the first list needed. The known gap: `collect` with GRADED
 materials reads the wrong bucket (spawned as its own task, 2026-09-06) — keep
 graded ids out of collect objectives until it lands.
+
+# Playtest 2026-10-17 — quest 2 from a fresh save
+
+Played on the dev-test sandbox as a newcomer: tutorial (rusty sword, Neutral,
+fire), quest 1, then every quest 2 objective done where its text says.
+**Quest 2 completes from the Warden's crate with no purchases.** The cheapest
+path: 1 ingot (3 of the 6 scrap); meat + herb on the stove (Traveler's
+Ration); water then mendroot in the alembic (Mending Elixir); any NEW arcane
+sentence; Perfect Lunge (D'Enjalle) or Artisan's Cunning (Usvýlgr), the only
+5-favor miracles with no Devotion gate; the Cages for species and kills.
+Floor 0 already pays 3–4 kills and 1 species toward the stat lines.
+
+Fixed in the same pass:
+
+- **The miracle line sent players to a spot that could not teach one.** The
+  objective, the prior and the spot text all said "the Nine Chapels"; only
+  the Reading Hall had a spellcrafting table. The chapels now hold one too,
+  and the prior and spot text name the Divine tab.
+- **Benches previewed layouts the stock could not pay for.** `checkCraft`
+  checked each slot for ≥1 unit, so one grade-D meat in both stove slots
+  previewed a ration, ran the 12 s simmer, then stopped with "out of stock
+  (0 done)". The crate rolls each unit's grade separately, so a newcomer
+  often holds exactly one of a grade. It now counts slots that draw on the
+  same stack (stove, alembic, every `checkCraft` bench).
+- **The floor 0 word was refused only in the log.** Inscribing `fire` again
+  failed with a log line hidden behind the table's window, and Inscribe stayed
+  enabled. `checkInscription` (spellcraft.ts) now feeds the preview, so the
+  table says the sentence is already written. A second line warns when a
+  sentence costs more mana than the pool holds. The table's own example,
+  `fire pierce`, costs 3 and a fresh pool is 2.
+- **Map card: "Go & open" died once the walk started.** Clicking a pin walks
+  at once, and the card then disabled every bench row. Bench rows now offer
+  "On arrival" like activity rows, and the card closes after "Go & open"
+  (it sits above modals).
+- Wording: "Win 5 fights" read the `kills` counter → "Defeat 5 monsters
+  (floor 0 counts)"; the cook line names the Cooking Stove (the Forges'
+  Cold Counter also makes a Traveler's Ration, under `assembling`, which does
+  not count); the spell line says "new" and uses the button's name.
+
+Measured, not changed (numbers for the user's call): a fresh character who
+walks from floor 0 straight into the Cages is knocked out on the first trip
+in 35/40 seeds with the rusty sword, 40/40 on Skip, 33/40 dagger, 30/40
+unarmed, 18/40 hammer, 14/40 spear (rested to full after each knockout, it
+finishes in 1–2 knockouts). The level-3 goblin's bleed carries into the next
+staged fight with no recovery between bouts.
