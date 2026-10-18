@@ -1046,7 +1046,11 @@ function startEncounter(state: GameState, bus: EventBus, spot: SpotDef, forced =
   const notable = group.some((m) => m.modifier !== 'normal' || m.rarity !== 'common');
   if (notable || group.length > 1) {
     const what = group.length > 1 ? `${lead.name} and ${group.length - 1} more` : lead.name;
-    bus.emit({ type: 'log', msg: text('combat.appears', { what, level: lead.level }), kind: 'combat' });
+    bus.emit({
+      type: 'log',
+      msg: text(group.length > 1 ? 'combat.appear_group' : 'combat.appears', { what, level: lead.level }),
+      kind: 'combat',
+    });
   }
   feed(
     state,
@@ -1503,7 +1507,12 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   bus.emit({ type: 'kill', monster });
   bus.emit({
     type: 'log',
-    msg: text('combat.defeated', { name: monster.name, level: monster.level, gold }),
+    // Slimes and slime spiders carry no coin; "+0 gold" on most of the first
+    // kills a new life makes read as a fault, so a coinless kill says nothing.
+    msg:
+      gold > 0
+        ? text('combat.defeated', { name: monster.name, level: monster.level, gold })
+        : text('combat.defeated_no_gold', { name: monster.name, level: monster.level }),
     kind: 'combat',
   });
 

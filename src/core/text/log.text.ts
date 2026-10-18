@@ -73,6 +73,7 @@ export const LOG_TEXT = {
   'combat.knocked_out_forced': '💫 {name} knocks you out.',
   'combat.knocked_out': '💫 {name} knocks you out. Recovering.',
   'combat.appears': '⚠️ {what} (Lv {level}) appears!',
+  'combat.appear_group': '⚠️ {what} (Lv {level}) appear!',
   'combat.ambushed': '⚔️ Ambushed. No escape from this fight.',
   'combat.scavenged_gold': '🪙 Scavenged {gold} gold.',
   'combat.loot_material': '📦 {icon} {name}{grade} ×{qty}',
@@ -80,6 +81,7 @@ export const LOG_TEXT = {
   'combat.unique_slain': '🏆 {name} slain. It will not return.',
   'combat.keeper_slain': '👑 Keeper of {spot} slain.',
   'combat.defeated': '☠️ Defeated {name} (Lv {level}): +{gold} gold',
+  'combat.defeated_no_gold': '☠️ Defeated {name} (Lv {level}).',
   'combat.spot_cleared': '🏞️ {spot} cleared. No encounters remain.',
   'combat.weapon_dropped': '⚡ Grip lost. {name} dropped.',
 
@@ -136,10 +138,10 @@ export const LOG_TEXT = {
 
   // ---------- locations ----------
   'locations.heading': '🥾 Heading to {name}{via}...',
-  'locations.via': ' via {label}',
+  'locations.via': ' ({label})',
   'locations.setting_out': '🗺️ Setting out for {icon} {name}{legs}...',
   'locations.legs': ' ({legs} legs)',
-  'locations.unknown_place': 'Unknown place',
+  'locations.unknown_place': 'an undiscovered place',
   'locations.blocked': '🔒 Path locked.',
   'locations.discovered': '📍 Discovered: {icon} {name}',
   'locations.arrived': 'You arrive at {name}.',

@@ -16,23 +16,23 @@ export const TUTORIAL_TEXT: ProseTable = {
     'A stance is a set of modifiers that applies while you fight; the Combat tab lists them and lets you change stance at any time, in or out of a fight. Neutral has no modifiers. Every stance also has an exertion: stamina spent per exchange for a bonus, switched on with the Exerting button on the Combat tab. Spending stops at the 20% stamina reserve and resumes when the bar is full. Pick one to continue.',
 
   'cellblock.desc':
-    'The map on the Location tab is the only travel control. Click The Cellblock on it. A road costs the seconds shown on it (2 s here); arrival is written to the log on the right.',
+    'The map on the Location tab is the only travel control. Click The Cellblock on it: a place you have not been to shows as ❓ ??? until you arrive, so it is the ❓ pin joined to the cell. A road costs the seconds shown on it (2 s here); arrival is written to the log.',
 
   'fight.desc':
     'Select Fight the Cell Slime under Activities. A fight starts and runs on its own: your action bar fills at your attack speed and each fill is one swing. The Combat tab shows both sides, your stance and the Exerting button. The Cell Slime deals exactly 1 damage per hit and has enough HP to take several of yours. HP, stamina and mana are the bars on the left. HP recovers over time and faster at a haven; the cell is one (Sleep on the Straw).',
 
   'field.desc':
-    'The slime paid XP, gold and a bestiary entry (Bestiary tab); anything it dropped is on the Equipment tab. Click The Field on the map (3 s).',
+    'The slime paid XP, gold and a bestiary entry (Bestiary tab); anything it dropped is on the Equipment tab. Click The Field on the map: the ❓ pin joined to the Cellblock (3 s).',
 
   'spell.desc':
     'Arcane spells are sentences of words, written at a Spell Table; the smallest sentence is one word. Pick one below. It goes into your grimoire as a prepared spell, and reading it trains Intelligence to 2. Mana is 1 per point of Intelligence and the spell costs 2, so it becomes castable at once. Prepared spells cast on their own in fights whenever the mana is there; the Combat tab lists what is prepared, and the grimoire is on the Location tab at any Spell Table.',
 
   'cast.desc':
-    'Select Fight in the Field. Your prepared spell fires on one of your swings when you have the mana, and the log names it. Mana refills over time; Intelligence and Wisdom raise the rate. Win one fight here to continue. Study the Gate Plaque trains Intelligence if you want a bigger pool first.',
+    'Select Fight in the Field. Your prepared spell fires on one of your swings when you have the mana, and the Fight Feed on the Combat tab names it. Mana refills over time; Intelligence and Wisdom raise the rate. Win one fight here to continue. Study the Gate Plaque trains Intelligence if you want a bigger pool first.',
 
   'gate.desc':
-    'Click The Gate on the map (3 s). Beyond it is Threshold, the city at the Foot of the Ascent.',
+    'Click The Gate on the map: the ❓ pin joined to the Field (3 s). Beyond it is Threshold, the city at the Foot of the Ascent.',
 
   'leave.desc':
-    'Walk through the gate (3 s). The road is one-way: floor 0 closes behind you. At the Foot, Rest at the Doorstep Inn is the city haven, the Warden of the Foot gives the first quests (People section, then the Quests tab), and the ladder panel lists the tower floors with what opens each. These panels stay readable on the Quests tab under Guide.',
+    'Click → Threshold beside the Gate on the map (3 s). The road is one-way: floor 0 closes behind you. At the Foot, Rest at the Doorstep Inn is the city haven, the Warden of the Foot gives the first quests (People section, then the Quests tab), and the ladder panel lists the tower floors with what opens each. These panels stay readable on the Quests tab under Guide.',
 };

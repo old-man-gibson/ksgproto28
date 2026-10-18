@@ -525,6 +525,17 @@
     stroke: rgba(255, 255, 255, 0.55);
   }
 
+  /* An exit is the only way off a drawn region (floor 0's gate is the
+     tutorial's last step), and dim italic grey vanishes into grass tiles.
+     Same halo as the labels; the hover accent below still wins. */
+  .map.tiled .exit {
+    fill: #fff;
+    font-weight: 600;
+    paint-order: stroke;
+    stroke: #0d1014;
+    stroke-width: 0.8;
+  }
+
   .edge {
     stroke: var(--border);
     stroke-width: 0.5;
