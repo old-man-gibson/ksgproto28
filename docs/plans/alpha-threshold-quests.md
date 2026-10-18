@@ -209,6 +209,9 @@ Cages):
   unarmed 6/30, hammer 2/30, spear 3/30.
 - The heal ends about 4–5 minutes into cage farming (attributes reach 30), so
   a farmer sees one or two dares.
+- Later the same day the cage slimes were bred with no armour or resistances
+  (user), and the dare moved to level 16: every tutorial pick wins 9–12 of 24,
+  and rusty-sword first-visit knockouts fell to 2/24. Before that:
 - First-offer wins at level 14 (24 seeds per pick): rusty sword 4, dagger 3,
   hammer 13, spear 14, unarmed 15, Skip 16.
 

@@ -283,9 +283,35 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
       ],
     },
   },
-  // The cage keeper's dare (SpotDef.dare on the_cages): the cage slime, grown
-  // one size past the player. Same resistances as its kin, so blunt is still
-  // the answer and a sword is still the hard way. Spawns nowhere on its own.
+  // The Cages' stock (user, 2026-10-17): slimes BRED to take the same damage
+  // from everything. Explicit zeros and no armour override what `slime` and
+  // `inorganic` imply (monsterStats.ts), so no tutorial weapon pick is a
+  // hidden coin flip here. The wild slime keeps its resistances.
+  cage_slime: {
+    id: 'cage_slime',
+    name: 'Cage-Bred Slime',
+    icon: '🟢',
+    tags: ['inorganic', 'slime', 'small'],
+    art: 'slime_base_basic.png',
+    tier: 'basic',
+    damageType: 'bludgeoning',
+    armor: 0,
+    resistances: { slashing: 0, piercing: 0, bludgeoning: 0 },
+    attrs: { str: 4, dex: 4, con: 6, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0.6, dex: 0.5, con: 0.8, int: 0.4, wis: 0.4, cha: 0.4 },
+    xp: 6,
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'slime_gel', weight: 35 },
+        { kind: 'gold', weight: 20, qty: [1, 5] },
+        { kind: 'nothing', weight: 45 },
+      ],
+    },
+  },
+  // The cage keeper's dare (SpotDef.dare on the_cages): a cage slime grown one
+  // size past the player, bred like the rest — no armour, no resistances.
+  // Spawns nowhere on its own.
   suspiciously_large_slime: {
     id: 'suspiciously_large_slime',
     name: 'Suspiciously Large Slime',
@@ -294,7 +320,8 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     art: 'slime_base_basic.png',
     tier: 'basic',
     damageType: 'bludgeoning',
-    resistances: { slashing: 0.5, piercing: 0.5, bludgeoning: -0.25, cold: 0.15, poison: 0.25 },
+    armor: 0,
+    resistances: { slashing: 0, piercing: 0, bludgeoning: 0 },
     attrs: { str: 5, dex: 3, con: 8, int: 1, wis: 1, cha: 1 },
     growth: { str: 0.6, dex: 0.4, con: 1.0, int: 0.4, wis: 0.4, cha: 0.4 },
     group: { max: 1 },

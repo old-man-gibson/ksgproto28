@@ -30,6 +30,8 @@
   import { GENE_ACTIVE, expressedGene, geneAbility } from '../../core/systems/mutagens';
   import { monsterStats } from '../../core/systems/monsterStats';
   import { resourceLock } from '../../core/systems/resources';
+  import { huntRest, restTarget, restingForFight } from '../../core/systems/huntrest';
+  import { hpFraction } from '../../core/systems/health';
   import { escalationPrimed, statusForcingStyle, visibleStatuses } from '../../core/systems/statuses';
   import { STAT_NAMES, type MonsterInstance } from '../../core/types';
   import { styleUnlocked, styleSlots, effectiveStyleDef, stanceIdFor } from '../../core/systems/styles';
@@ -922,6 +924,9 @@
     <p class="dim small searching-note">
       {#if gs.recovering}
         💫 You're recovering from a knockout. Hunting resumes when you're steady.
+      {:else if gs.activity && canHunt && restingForFight(gs)}
+        🛌 Resting before the next fight: HP {Math.floor(hpFraction(gs, view.stats) * 100)}% of
+        {Math.round(restTarget(huntRest(gs)) * 100)}%.
       {:else if cleared}
         🏞️ {spot.name} is cleared — nothing left here wants to fight.
       {:else if nobodyLeft}
@@ -937,6 +942,34 @@
       {/if}
     </p>
   {/if}
+  <!-- The player's own rule between fights (systems/huntrest.ts). Applies to
+       hunts only: forced fights and the keeper's dare start regardless. -->
+  <div class="hunt-rest small">
+    <label>
+      Rest before the next fight when HP is below
+      <select
+        value={String(huntRest(gs).at)}
+        onchange={(e) => game.setHuntRest(Number(e.currentTarget.value), huntRest(gs).toFull)}
+      >
+        <option value="0">off</option>
+        {#each [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] as v (v)}
+          <option value={String(v)}>{Math.round(v * 100)}%</option>
+        {/each}
+      </select>
+    </label>
+    {#if huntRest(gs).at > 0}
+      <label>
+        until
+        <select
+          value={huntRest(gs).toFull ? 'full' : 'at'}
+          onchange={(e) => game.setHuntRest(huntRest(gs).at, e.currentTarget.value === 'full')}
+        >
+          <option value="full">full HP</option>
+          <option value="at">the threshold</option>
+        </select>
+      </label>
+    {/if}
+  </div>
 </div>
 
 <!-- Fight feed — persists between encounters. Every line carrying a damage
@@ -1075,6 +1108,15 @@
 </div>
 
 <style>
+  .hunt-rest {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
   .notebook {
     list-style: none;
     margin: 0 0 10px;

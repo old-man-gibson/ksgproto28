@@ -1434,8 +1434,47 @@ describe('crafting disciplines', () => {
         expect(STATUSES[g.id], `${mat.id} grants unknown '${g.id}'`).toBeTruthy();
       }
       const doesSomething =
-        (spec.restore?.length ?? 0) + (spec.grants?.length ?? 0) + (spec.cures?.length ?? 0) > 0;
+        (spec.restore?.length ?? 0) + (spec.grants?.length ?? 0) + (spec.cures?.length ?? 0) > 0 ||
+        !!spec.teaches;
       expect(doesSomething, `${mat.id} is usable but does nothing`).toBe(true);
+    }
+  });
+});
+
+describe('recipe cards and rare finds', () => {
+  const recipeIds = new Set(
+    Object.values(DISCIPLINES).flatMap((d) => d.outcomes.map((o) => o.recipe).filter((r): r is string => !!r)),
+  );
+  const dropped = new Set(
+    Object.values(SPOTS).flatMap((s) => s.activities.flatMap((a) => ('drops' in a ? a.drops ?? [] : []).map((d) => d.material))),
+  );
+  const sold = new Set(
+    Object.values(NPCS).flatMap((n) => (n.shop?.lines ?? []).filter((l) => l.kind === 'material').map((l) => l.id)),
+  );
+
+  it('every card teaches a learned dish, every dish has a card, every card can be had', () => {
+    const taught = new Set<string>();
+    for (const mat of Object.values(MATERIALS)) {
+      const t = mat.consumable?.teaches;
+      if (!t) continue;
+      taught.add(t);
+      expect(recipeIds.has(t), `${mat.id} teaches '${t}', which no bench outcome names`).toBe(true);
+      expect(sold.has(mat.id) || dropped.has(mat.id), `${mat.id}: no counter sells it and no activity drops it`).toBe(true);
+    }
+    for (const id of recipeIds) expect(taught.has(id), `learned dish '${id}' has no card`).toBe(true);
+  });
+
+  it('activity drops name real materials, on kinds that roll them, at sane chances', () => {
+    for (const spot of Object.values(SPOTS)) {
+      for (const act of spot.activities) {
+        const drops = 'drops' in act ? act.drops : undefined;
+        if (!drops?.length) continue;
+        expect(['train', 'gather', 'job'], `${spot.id}/${act.id}: only train/gather/job roll drops`).toContain(act.kind);
+        for (const d of drops) {
+          expect(MATERIALS[d.material], `${spot.id}/${act.id}: unknown drop '${d.material}'`).toBeDefined();
+          expect(d.chance > 0 && d.chance <= 1, `${spot.id}/${act.id}: chance must be in (0, 1]`).toBe(true);
+        }
+      }
     }
   });
 });

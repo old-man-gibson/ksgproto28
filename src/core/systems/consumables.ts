@@ -6,7 +6,8 @@ import { getDerivedStats } from './derived';
 import { availableMax, resourceValue, restoreResource } from './resources';
 import { heal } from './health';
 import { applyStatus, fireStatusEvent, statusesOf } from './statuses';
-import { gradesHeld, stockOf } from './disciplines';
+import { gradesHeld, knowsRecipe, recipeKey, recipeName, stockOf } from './disciplines';
+import { bumpStat } from './achievements';
 import { text } from '../text/log';
 
 /**
@@ -75,6 +76,9 @@ export function canUse(state: GameState, id: string, quality: QualityTier): UseC
     ? stockOf(state, id, quality)
     : (state.materials[id] ?? 0);
   if (held < 1) return { ok: false, reason: text('consumables.reason.none_held') };
+  if (spec.teaches && knowsRecipe(state, spec.teaches)) {
+    return { ok: false, reason: text('consumables.reason.recipe_known') };
+  }
   const left = cooldownLeft(state, id);
   if (left > 0) return { ok: false, reason: text('consumables.reason.cooldown', { seconds: (left / 10).toFixed(1) }) };
   return { ok: true };
@@ -130,6 +134,18 @@ export function useConsumable(
   const spec = consumableSpec(id)!;
   const def = MATERIALS[id]!;
   if (!consumeOne(state, id, quality)) return null;
+
+  // A recipe card is read, not eaten: it teaches and is gone. No grade, no
+  // effects, so none of the eating rules below apply.
+  if (spec.teaches) {
+    bumpStat(state, bus, recipeKey(spec.teaches));
+    bus.emit({
+      type: 'log',
+      msg: text('consumables.recipe_learned', { name: recipeName(spec.teaches) }),
+      kind: 'skill',
+    });
+    return { restored: [], granted: [], cured: [] };
+  }
 
   const stats = getDerivedStats(state);
   const scale = qualityMult(quality);

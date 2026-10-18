@@ -28,6 +28,8 @@ import { IN_COMBAT_REGEN_MULT, RECOVERY_MULT } from '../data/resources.data';
 import { fieldHunger, resistBlock, statusesOf, tickStatuses } from './statuses';
 import { fastGuard, fastOf } from './mutagens';
 import { grantMaterial } from './disciplines';
+import { restingForFight } from './huntrest';
+import { rollActivityDrops } from './activitydrops';
 import {
   availableMax,
   drainIntoDebt,
@@ -351,8 +353,13 @@ export function tickAction(state: GameState, bus: EventBus): void {
   // The health trickle runs for whatever you are doing, so it is applied once
   // here rather than tucked into each case — including the ones that break out
   // early. A live fight halves it; the lulls between encounters do not.
-  const restfulness = RECOVERY_MULT[act?.kind ?? 'none'] * combatRegenMult(state, stats);
-  regen(state, stats, restfulness, resting ? 'rest' : 'idle');
+  // A hunt holding its next fight back for the player's HP threshold is
+  // resting in earnest (systems/huntrest.ts), at the rest rate.
+  const restingForNext = act?.kind === 'hunt' && !state.combat && restingForFight(state);
+  const restfulness = restingForNext
+    ? RECOVERY_MULT.rest
+    : RECOVERY_MULT[act?.kind ?? 'none'] * combatRegenMult(state, stats);
+  regen(state, stats, restfulness, resting || restingForNext ? 'rest' : 'idle');
 
   const spot = getSpot(state.spot);
 
@@ -383,6 +390,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
         grantAttrXpSplit(state, bus, weights, TRAIN_REP_TICKS * stats.trainXp * xpMult);
         grantSkillXp(state, bus, tags, 0.25 * TRAIN_REP_TICKS);
         grantActivityExposure(state, bus, tags, TRAIN_REP_TICKS);
+        rollActivityDrops(state, bus, act);
       }
       break;
     }
@@ -438,6 +446,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
           tally: [{ label: `${mat?.icon ?? '📦'} ${mat?.name ?? act.material}`, qty: amount }],
           kind: 'loot',
         });
+        rollActivityDrops(state, bus, act);
       }
       break;
     }
@@ -468,6 +477,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
           tally: [{ label: 'gold', qty: pay, style: 'amount' }],
           kind: 'action',
         });
+        rollActivityDrops(state, bus, act);
       }
       break;
     }

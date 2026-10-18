@@ -372,7 +372,7 @@
                         <span class="ware-price">{price} 🪙</span>
                         <span class="ware-btns">
                           <button class="small" disabled={gs.gold < price} onclick={(e) => { e.stopPropagation(); game.buy(npc.id, i, 1); }}>Buy</button>
-                          {#if line.kind === 'material'}
+                          {#if line.kind === 'material' && !MATERIALS[line.id]?.consumable?.teaches}
                             <button class="small" disabled={gs.gold < price} onclick={(e) => { e.stopPropagation(); game.buy(npc.id, i, 5); }}>×5</button>
                           {/if}
                         </span>
@@ -502,7 +502,7 @@
         </span>
         <span class="ware-btns">
           <button class="small" disabled={gs.gold < price} onclick={() => game.buy(vendor.id, openWare!.index, 1)}>Buy</button>
-          {#if line.kind === 'material'}
+          {#if line.kind === 'material' && !MATERIALS[line.id]?.consumable?.teaches}
             <button class="small" disabled={gs.gold < price} onclick={() => game.buy(vendor.id, openWare!.index, 5)}>×5</button>
           {/if}
         </span>

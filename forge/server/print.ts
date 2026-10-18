@@ -166,7 +166,7 @@ export const KEY_ORDER: Record<string, string[]> = {
   item: ['id', 'name', 'icon', 'slot', 'tags', 'value', 'mods', 'requires'],
   material: ['id', 'name', 'icon', 'value', 'tags'],
   recipe: ['id', 'name', 'icon', 'ticks', 'xp', 'cost', 'alts', 'result', 'unlock'],
-  activity: ['id', 'kind', 'attr', 'material', 'recipe', 'gold', 'ticksPer', 'name', 'icon', 'tags', 'staticTime', 'speedFactors', 'outputFactors', 'outputCap', 'attrXp'],
+  activity: ['id', 'kind', 'attr', 'material', 'recipe', 'gold', 'ticksPer', 'name', 'icon', 'tags', 'staticTime', 'speedFactors', 'outputFactors', 'outputCap', 'attrXp', 'drops'],
   encounter: ['monsterId', 'weight', 'level', 'daypart', 'boss', 'window', 'once', 'requires'],
   objective: ['type', 'monsterId', 'recipeId', 'discipline', 'materialId', 'spotId', 'npcId', 'key', 'value', 'count', 'qty'],
   drop: ['kind', 'id', 'chance', 'qty'],

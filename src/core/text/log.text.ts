@@ -89,6 +89,8 @@ export const LOG_TEXT = {
   'consumables.reason.not_usable': 'Not usable',
   'consumables.reason.none_held': 'None held',
   'consumables.reason.cooldown': 'Ready in {seconds}s',
+  'consumables.reason.recipe_known': 'Recipe already known',
+  'consumables.recipe_learned': '📜 Recipe learned: {name}. It is listed on the bench that cooks it.',
   'consumables.used': '{icon} {verb} {grade} {name}.',
 
   // ---------- cooking ----------
@@ -102,6 +104,14 @@ export const LOG_TEXT = {
   'disciplines.reason.slot_empty': '{slot} is empty',
   'disciplines.reason.wrong_slot': '{name} does not belong in {slot}',
   'disciplines.reason.no_stock_at_grade': 'You have no {name} of that grade',
+  // ---------- activitydrops (systems/activitydrops.ts) ----------
+  'activitydrops.found': '🎁 Rare find ({activity}): {icon} {name}.',
+
+  // ---------- huntrest (systems/huntrest.ts) ----------
+  'huntrest.resting': '🛌 HP {hp}%, below your {at}% threshold: resting before the next fight, until {to}%.',
+  'huntrest.done': '⚔️ Rested. The hunt goes on.',
+  'huntrest.stuck': '⚔️ HP is not recovering (a condition blocks it). The hunt goes on without resting.',
+
   // ---------- training (systems/training.ts) ----------
   'training.patched_first': '🩹 Cage keeper: "Hey kid, here. Train safely." HP full; bleeds and poisons cleared. The keeper does this after every win here while your six attributes total {cap} or less.',
   'training.patched': '🩹 The cage keeper patches you up: HP full.',

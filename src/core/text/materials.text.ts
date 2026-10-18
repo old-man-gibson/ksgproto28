@@ -85,6 +85,12 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'mushroom_broth.desc': 'Drink: Clear-Headed ×1 for 8 minutes (+8% spell power, +5% skill XP, slow mana restore).',
 
+  'herb_rubbed_meat.desc': 'Eat: restores 15% of max HP at once, then Well Fed ×1. Learned dish: any meat + any herb on the Cooking Stove.',
+  'fish_onion_pot.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.75. Learned dish: any fish + any vegetable on the Cooking Stove.',
+  'lectory_porridge.desc': 'Eat: Clear Headed ×1.5 (spell power, skill XP, slow mana restore) and Well Fed ×0.5. Learned dish: any grain + any sweet ingredient on the Cooking Stove.',
+  'recipe_herb_rubbed_meat.desc': 'Read to learn Herb-Rubbed Meat: any meat + any herb on the Cooking Stove. Consumed when read. Sold at the Larder Door.',
+  'recipe_fish_onion_pot.desc': 'Read to learn Fish and Onion Pot: any fish + any vegetable on the Cooking Stove. Consumed when read. Sold at the Larder Door.',
+  'recipe_lectory_porridge.desc': 'Read to learn Lectory Porridge: any grain + any sweet ingredient (flour and honey) on the Cooking Stove. Consumed when read. Found only while reading in the Reading Hall.',
   'travelers_ration.desc': 'Eat: Well Fed ×0.5.',
 
   'feast_platter.desc': 'Eat: restores 25% of max HP at once, plus Well Fed ×2 and Steady Hand ×1.5.',

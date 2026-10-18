@@ -635,7 +635,7 @@ are the first). Two spot fields:
 healBetweenBouts: { maxAttrTotal: 30 },   // after every WIN here, while the six
                                           // attribute levels total <= 30: HP full,
                                           // damage-over-time conditions cleared
-dare: { monsterId: 'suspiciously_large_slime', level: 14, every: 8 },
+dare: { monsterId: 'suspiciously_large_slime', level: 16, every: 8 },
 ```
 
 The heal removes the chain that knocks newcomers out (a hunt rolls the next
@@ -690,6 +690,23 @@ read them directly.
   ×1.5, and you normalize by hand when you want a true split. Omit it to keep
   the kind's default — train → its own `attr`, gather → Wisdom, job → Charisma,
   craft → nothing (crafting pays no attribute XP until a `attrXp` says so).
+- `drops: [{ material: 'recipe_lectory_porridge', chance: 0.0008 }]` — rare
+  finds rolled once per completed cycle of a train/gather/job activity
+  (`systems/activitydrops.ts`). Rolls under 15% use the shared drought curve,
+  keyed per activity and material, so the average holds and the worst run is
+  bounded. A card that teaches a recipe the player already knows or holds is
+  not rolled. Both validation layers check the material, the kind and the
+  chance. The Reading Hall's "Read Until It Sticks" is the first user.
+
+**Recipe cards and learned dishes.** A bench outcome with `recipe: 'id'`
+matches only once that recipe is known (`recipe:<id>`). A material whose
+consumable says `teaches: 'id'` is the card: using it (verb "Read") stamps the
+recipe and is consumed, and it is refused once the recipe is known. The bench
+window lists known recipes with the tags each one takes. The lints require
+every learned dish to have a card, every card to teach a real dish, and every
+card to be sold at a counter or dropped by an activity. Learned dishes take a
+priority above the generic outcome their tags would otherwise hit (fish + onion
+is a stew without the card).
 
 A `train` activity is `attr: 'str'` for the simple case, or `attrXp` alone when
 several attributes are the point — `attr` is optional, and the split then *is*

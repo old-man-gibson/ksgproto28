@@ -17,6 +17,23 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **Bred cage slimes, rest-before-fighting, recipe cards (2026-10-17, no save
+  migration).** User's answers to the playtest:
+  - **Bred slimes.** The Cages' slimes are bred with no armour or
+    resistances (`cage_slime`; the dare slime too, retuned to level 16, where
+    every tutorial pick wins 9–12 of 24). Rusty-sword first-visit knockouts
+    fell from 16/30 to 2/24.
+  - **Rest before fighting.** A player setting on the Combat tab (`huntRest`,
+    systems/huntrest.ts): below an HP share, a hunt rests in place at the rest
+    rate before its next fight, to full or to the threshold. It is off by
+    default and gates spawning only.
+  - **Recipe cards.** Bench outcomes can require a learned recipe; cards teach
+    them (CONTENT_GUIDE §"Recipe cards"). The chef sells Herb-Rubbed Meat
+    (works with the Warden's crate) and Fish and Onion Pot. Reading in the
+    Reading Hall drops Lectory Porridge about once in 1,250 reps
+    (`ActivityDef.drops`, drought-protected).
+  - **Open (user):** which other activities get rare finds of their own.
+
 - **Quest 2 playtested from a fresh save (2026-10-17, no save change)** —
   see the playtest section of
   [plans/alpha-threshold-quests.md](plans/alpha-threshold-quests.md). It

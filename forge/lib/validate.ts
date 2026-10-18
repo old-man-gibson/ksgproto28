@@ -8,7 +8,7 @@
 
 import type { store as Store } from './store.svelte';
 import { searchContentIssues } from '../../src/core/systems/searchValidation';
-import type { Connection, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, QuestDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
+import type { ActivityDrop, Connection, CraftDisciplineDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, QuestDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
 import { MUSIC_AXES } from '../../src/core/data/music.data';
@@ -401,6 +401,18 @@ export function validate(store: S): Issue[] {
     for (const bid of spot.benches ?? []) {
       if (!disciplines[bid] && !SPECIAL_BENCHES.has(bid)) {
         err('spot', spot.id, `unknown bench '${bid}'`, ['benches']);
+      }
+    }
+    // Rare finds on ordinary work (ActivityDef.drops, systems/activitydrops.ts).
+    for (const act of spot.activities ?? []) {
+      const drops = 'drops' in act ? act.drops : undefined;
+      if (!drops?.length) continue;
+      if (!['train', 'gather', 'job'].includes(act.kind)) {
+        err('spot', spot.id, `activity '${act.id}' has drops, but only train/gather/job cycles roll them`, ['activities', `#id=${act.id}`]);
+      }
+      for (const d of drops) {
+        if (!materials[d.material]) err('spot', spot.id, `activity '${act.id}' drops unknown material '${d.material}'`, ['activities', `#id=${act.id}`]);
+        if (!(d.chance > 0 && d.chance <= 1)) err('spot', spot.id, `activity '${act.id}' drop chance must be in (0, 1]`, ['activities', `#id=${act.id}`]);
       }
     }
     for (const e of spot.encounters ?? []) {
@@ -1026,6 +1038,35 @@ export function validate(store: S): Issue[] {
     }
   }
 
+  // Recipe cards and learned dishes (ConsumableSpec.teaches ↔ CraftOutcomeDef.recipe):
+  // every learned dish has a card, every card teaches a real dish, and every
+  // card can be had — sold at a counter or dropped by some activity.
+  {
+    const taught = new Set<string>();
+    const recipeIds = new Set<string>();
+    for (const disc of Object.values(store.all<CraftDisciplineDef>('discipline'))) {
+      for (const o of disc.outcomes ?? []) if (o.recipe) recipeIds.add(o.recipe);
+    }
+    const sold = new Set<string>();
+    for (const npc of Object.values(npcs)) for (const line of npc.shop?.lines ?? []) if (line.kind === 'material') sold.add(line.id);
+    const dropped = new Set<string>();
+    for (const spot of Object.values(spots)) {
+      for (const act of spot.activities ?? []) {
+        const drops: ActivityDrop[] = ('drops' in act ? act.drops : undefined) ?? [];
+        for (const d of drops) dropped.add(d.material);
+      }
+    }
+    for (const mat of Object.values(store.all<MaterialDef>('material'))) {
+      const t = mat.consumable?.teaches;
+      if (!t) continue;
+      taught.add(t);
+      if (!recipeIds.has(t)) err('material', mat.id, `teaches '${t}', which no bench outcome names as its recipe`, ['consumable']);
+      if (!sold.has(mat.id) && !dropped.has(mat.id)) err('material', mat.id, 'a recipe card no counter sells and no activity drops', ['consumable']);
+    }
+    for (const id of recipeIds) {
+      if (!taught.has(id)) err('discipline', id, `learned dish '${id}' has no recipe card to teach it`);
+    }
+  }
   return issues;
 }
 

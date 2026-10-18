@@ -294,6 +294,36 @@ export const DISCIPLINES = prose<CraftDisciplineDef>('DISCIPLINES', DISCIPLINES_
         priority: 25,
         result: { kind: 'material', id: 'mushroom_broth' },
       },
+      // Learned dishes (CraftOutcomeDef.recipe): matched only once their
+      // recipe card has been read. Two are sold at the Larder Door; Lectory
+      // Porridge only turns up while reading in the Reading Hall.
+      {
+        id: 'herb_rubbed_meat',
+        name: 'Herb-Rubbed Meat',
+        icon: '🍖',
+        recipe: 'herb_rubbed_meat',
+        requires: [{ tag: 'meat' }, { tag: 'herb' }],
+        priority: 30,
+        result: { kind: 'material', id: 'herb_rubbed_meat' },
+      },
+      {
+        id: 'fish_onion_pot',
+        name: 'Fish and Onion Pot',
+        icon: '🐟',
+        recipe: 'fish_onion_pot',
+        requires: [{ tag: 'fish' }, { tag: 'vegetable' }],
+        priority: 30,
+        result: { kind: 'material', id: 'fish_onion_pot' },
+      },
+      {
+        id: 'lectory_porridge',
+        name: 'Lectory Porridge',
+        icon: '🥣',
+        recipe: 'lectory_porridge',
+        requires: [{ tag: 'grain' }, { tag: 'sweet' }],
+        priority: 30,
+        result: { kind: 'material', id: 'lectory_porridge' },
+      },
       {
         id: 'ration',
         name: "Traveler's Ration",

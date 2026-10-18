@@ -2389,6 +2389,11 @@ export interface ConsumableSpec {
   cooldown?: number;
   /** Flavour shown on the use button. */
   useVerb?: string;
+  /**
+   * A recipe card: using it teaches this recipe (a `CraftOutcomeDef.recipe`)
+   * and is consumed. Refused once the recipe is known.
+   */
+  teaches?: string;
 }
 
 // ---------- Quality ----------
@@ -2565,6 +2570,11 @@ export interface CraftOutcomeDef {
   minLevel?: number;
   /** Higher wins when several outcomes match. */
   priority?: number;
+  /**
+   * A learned dish: the outcome matches only once this recipe is known
+   * (`recipe:<id>`, taught by a recipe card — `ConsumableSpec.teaches`).
+   */
+  recipe?: string;
   /** What comes out. */
   result: CraftResult;
 }
@@ -3802,6 +3812,18 @@ export interface ActivityCycleTags {
    * job → 'job'.
    */
   tags?: string[];
+  /**
+   * Rare finds rolled once per completed cycle (systems/activitydrops.ts):
+   * `chance` per cycle, drought-protected like every roll under 15%. A drop
+   * whose material teaches a recipe the player already knows (or holds) is
+   * skipped, so a recipe card turns up once.
+   */
+  drops?: ActivityDrop[];
+}
+
+export interface ActivityDrop {
+  material: string;
+  chance: number;
 }
 
 export type ActivityDef =
@@ -4929,6 +4951,12 @@ export interface GameState {
    * `spending` is on, every non-idle tick runs twice and costs one.
    */
   bonusTime: { banked: number; spending: boolean };
+  /**
+   * Rest before the next fight (systems/huntrest.ts): below `at` (a share of
+   * max HP; 0 = off) a hunt rests in place before rolling its next encounter,
+   * until full or back to `at`. `active` is the rest in progress.
+   */
+  huntRest: HuntRest;
   discovered: string[];
   /** Explore progress (ticks) per spot id. */
   explored: Record<string, number>;
@@ -5659,6 +5687,13 @@ export type GameEvent =
   | { type: 'bestiary:habitat'; monsterId: string; spot: string };
 
 export type GameEventType = GameEvent['type'];
+
+/** See `GameState.huntRest`. */
+export interface HuntRest {
+  at: number;
+  toFull: boolean;
+  active: boolean;
+}
 
 /** See `SpotDef.dare`. */
 export interface SpotDare {

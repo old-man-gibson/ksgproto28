@@ -67,6 +67,7 @@ import { grantMaterial } from './disciplines';
 import { QUALITY_TIERS } from '../data/quality.data';
 import { ELEMENTAL_TYPES, SIZE_LADDER, sizeRank } from '../types';
 import { monsterSizeRank } from './bestiary';
+import { holdNextFight } from './huntrest';
 import {
   GENE_ACTIVE,
   SPLIT_SPLASH,
@@ -3040,6 +3041,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // A cleared spot spawns nothing, and neither does a table whose every
     // line is gated or already slain — the hunt simply finds no one.
     if (spotCleared(state, spot) || !eligibleEncounters(state, spot).length) return;
+    // The player's own rule: below the threshold, rest before the next one.
+    if (holdNextFight(state, bus)) return;
     startEncounter(state, bus, spot);
     return;
   }

@@ -21,6 +21,7 @@
   import PrestigeModal from './PrestigeModal.svelte';
   import DareModal from './DareModal.svelte';
   import { pendingDare } from '../core/systems/training';
+  import { restingForFight } from '../core/systems/huntrest';
   import PrestigePanel from './panels/PrestigePanel.svelte';
   import { prestigeVisible } from '../core/systems/prestige';
   import DefeatModal from './DefeatModal.svelte';
@@ -189,6 +190,7 @@
     if (gs.travel) return '🥾 Traveling...';
     if (gs.recovering) return '💫 Recovering...';
     if (gs.performance) return '🎵 Performing...';
+    if (activity?.kind === 'hunt' && !gs.combat && restingForFight(gs)) return '🛌 Resting before the next fight';
     if (activity) return `${activity.icon} ${activity.name}`;
     return '💤 Idle';
   }

@@ -75,7 +75,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'lectory_steps.desc': 'Gate of the Scholars’ Quarter. Argue on the Steps trains Intelligence. Connects to the Foot, the Reading Hall, the Chalk Yard, the Granary Gate and the Pilgrims’ Stair.',
 
-  'the_reading_hall.desc': 'Indoor. Holds a Spell Table for inscribing spells. Read Until It Sticks trains Intelligence; Sit With a Hard Passage trains Wisdom and pays magic skill XP. Docent Marell stands here.',
+  'the_reading_hall.desc': 'Indoor. Holds a Spell Table for inscribing spells. Read Until It Sticks trains Intelligence and, about once in 1,250 reps, turns up a recipe card no counter sells. Sit With a Hard Passage trains Wisdom and pays magic skill XP. Docent Marell stands here.',
 
   'chalk_yard.desc': 'Read the Old Working explores the yard (42 s). Copy Out a Proof trains Intelligence.',
 
@@ -88,7 +88,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'ironyard_gate.desc': 'Gate of the Ironyard. Drill in Formation trains Strength. Captain Hurst stands here. Connects to the Foot, the Cages, the Sand, the Long Gallery, the Pilgrims’ Stair and the Retort Gate.',
 
-  'the_cages.desc': 'Menagerie. Step Into a Cage fights one Forest Rat, Slime or Goblin at a time (levels 1 to 3), never a rolled modifier. Kills here unlock each bestiary fact exactly at its kill count.',
+  'the_cages.desc': 'Menagerie. Step Into a Cage fights one Forest Rat, Cage-Bred Slime or Goblin at a time (levels 1 to 3), never a rolled modifier. The slimes are bred with no armour or resistances. Kills here unlock each bestiary fact exactly at its kill count. The keeper heals beginners after every win.',
 
   'the_sand.desc': 'Footwork on the Sand trains Dexterity. Spar trains Strength and pays combat skill XP. Master Ekwe stands here.',
 

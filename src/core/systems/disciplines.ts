@@ -64,6 +64,35 @@ export function nextSlot(
   return locked.length ? { slot: locked[0], level: locked[0].unlockLevel! } : undefined;
 }
 
+/** The counter a learned recipe stamps. */
+export const recipeKey = (id: string): string => `recipe:${id}`;
+
+/** The bench and outcome a recipe unlocks, or null for an unknown id. */
+export function recipeOutcome(
+  id: string,
+): { disc: CraftDisciplineDef; outcome: CraftOutcomeDef } | null {
+  for (const disc of Object.values(DISCIPLINES)) {
+    const outcome = disc.outcomes.find((o) => o.recipe === id);
+    if (outcome) return { disc, outcome };
+  }
+  return null;
+}
+
+/** A recipe as the player reads it: the dish's name. */
+export function recipeName(id: string): string {
+  return recipeOutcome(id)?.outcome.name ?? id;
+}
+
+/** Recipes the player knows for one bench, in data order. */
+export function knownRecipes(state: GameState, disc: CraftDisciplineDef): CraftOutcomeDef[] {
+  return disc.outcomes.filter((o) => o.recipe && knowsRecipe(state, o.recipe));
+}
+
+/** Whether the player has learned this recipe (from a recipe card). */
+export function knowsRecipe(state: GameState, id: string): boolean {
+  return (state.stats[recipeKey(id)] ?? 0) > 0;
+}
+
 /** What a material carries into a discipline's slots. */
 export function craftTagsOf(materialId: string): string[] {
   return MATERIALS[materialId]?.craftTags ?? [];
@@ -247,6 +276,7 @@ export function matchOutcome(
 
   const matches = disc.outcomes.filter((o) => {
     if ((o.minLevel ?? 0) > level) return false;
+    if (o.recipe && !knowsRecipe(state, o.recipe)) return false;
     if (o.minQuality && (!best || !qualityAtLeast(best, o.minQuality))) return false;
     if (o.maxQuality && best && qualityRank(best) > qualityRank(o.maxQuality)) return false;
     return o.requires.every((r) => (counts.get(r.tag) ?? 0) >= (r.count ?? 1));

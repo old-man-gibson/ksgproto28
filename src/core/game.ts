@@ -16,6 +16,7 @@ import {
 } from './systems/tutorial';
 import { registerBestiaryListeners } from './systems/bestiary';
 import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
+import { setHuntRest } from './systems/huntrest';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
   socketRune,
@@ -491,6 +492,11 @@ export class Game {
   /** Receive a miracle, spending favor with its deity. */
   learnMiracle(miracleId: string) {
     return learnMiracle(this.state, this.bus, miracleId);
+  }
+
+  /** Rest before the next fight below `at` (share of max HP, 0 = off), to full or to `at`. */
+  setHuntRest(at: number, toFull: boolean) {
+    setHuntRest(this.state, at, toFull);
   }
 
   /** Answer the keeper's waiting dare: fight it (true) or pass (false). */

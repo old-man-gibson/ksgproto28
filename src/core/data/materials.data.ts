@@ -385,6 +385,63 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
       grants: [{ id: 'clear_headed', intensity: 1 }],
     },
   },
+  // Learned dishes (the stove's recipe outcomes) and the cards that teach
+  // them. Cards are read, not eaten (ConsumableSpec.teaches), and ungraded.
+  herb_rubbed_meat: {
+    id: 'herb_rubbed_meat',
+    name: 'Herb-Rubbed Meat',
+    icon: '🍖',
+    value: 16,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      restore: [{ resource: 'hp', ofMax: 0.15 }],
+      grants: [{ id: 'well_fed', intensity: 1 }],
+    },
+  },
+  fish_onion_pot: {
+    id: 'fish_onion_pot',
+    name: 'Fish and Onion Pot',
+    icon: '🐟',
+    value: 22,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      grants: [{ id: 'well_fed', intensity: 1 }, { id: 'steady_hand', intensity: 0.75 }],
+    },
+  },
+  lectory_porridge: {
+    id: 'lectory_porridge',
+    name: 'Lectory Porridge',
+    icon: '🥣',
+    value: 30,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      grants: [{ id: 'clear_headed', intensity: 1.5 }, { id: 'well_fed', intensity: 0.5 }],
+    },
+  },
+  recipe_herb_rubbed_meat: {
+    id: 'recipe_herb_rubbed_meat',
+    name: 'Recipe: Herb-Rubbed Meat',
+    icon: '📜',
+    value: 15,
+    consumable: { useVerb: 'Read', teaches: 'herb_rubbed_meat' },
+  },
+  recipe_fish_onion_pot: {
+    id: 'recipe_fish_onion_pot',
+    name: 'Recipe: Fish and Onion Pot',
+    icon: '📜',
+    value: 30,
+    consumable: { useVerb: 'Read', teaches: 'fish_onion_pot' },
+  },
+  recipe_lectory_porridge: {
+    id: 'recipe_lectory_porridge',
+    name: 'Recipe: Lectory Porridge',
+    icon: '📜',
+    value: 60,
+    consumable: { useVerb: 'Read', teaches: 'lectory_porridge' },
+  },
   travelers_ration: {
     id: 'travelers_ration',
     name: "Traveler's Ration",

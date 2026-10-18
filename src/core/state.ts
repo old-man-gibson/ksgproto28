@@ -71,6 +71,7 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     travelIntent: null,
     resumeActivity: {},
     bonusTime: { banked: 0, spending: false },
+    huntRest: { at: 0, toFull: true, active: false },
     discovered: [spot],
     explored: {},
     finds: {},

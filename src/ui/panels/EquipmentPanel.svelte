@@ -135,11 +135,16 @@
    * amount; sustained ones name the condition and how long it runs, since that
    * is the difference a player actually needs to see before choosing.
    */
+  /** A grade word for graded stock only: an ungraded card or salve has no "Fair". */
+  function gradeWord(id: string, quality: QualityTier): string {
+    return MATERIALS[id]?.graded ? `${QUALITY_TIERS[quality].name} ` : '';
+  }
+
   function provisionTip(id: string, quality: QualityTier): string[] {
     const def = MATERIALS[id];
     const spec = consumableSpec(id);
     const grade = QUALITY_TIERS[quality];
-    const lines = [`${def?.icon ?? '📦'} ${grade.name} ${def?.name ?? id}`];
+    const lines = [`${def?.icon ?? '📦'} ${gradeWord(id, quality)}${def?.name ?? id}`];
     if (def?.desc) lines.push(def.desc);
 
     for (const r of spec?.restore ?? []) {
@@ -227,7 +232,7 @@
     provisions.map((p) => ({
       key: `${p.def.id}|${p.quality}`,
       icon: p.def.icon,
-      label: `${QUALITY_TIERS[p.quality].name} ${p.def.name} ×${fmt(p.qty)}`,
+      label: `${gradeWord(p.def.id, p.quality)}${p.def.name} ×${fmt(p.qty)}`,
       qty: p.qty,
       value: gradedUnitPrice(gs, p.def.id, p.quality, goldGain) * p.qty,
       tierRank: qualityRank(p.quality),
@@ -1129,7 +1134,7 @@
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}
       <div class="win-title" style="color: {QUALITY_TIERS[quality].color}">
-        {def?.icon ?? '🍽️'} {QUALITY_TIERS[quality].name} {def?.name ?? id}
+        {def?.icon ?? '🍽️'} {gradeWord(id, quality)}{def?.name ?? id}
       </div>
       <div class="small dim">×{fmt(provisionQty)} held · {fmt(gradedUnitPrice(gs, id, quality, goldGain))} 🪙 each</div>
     {/snippet}

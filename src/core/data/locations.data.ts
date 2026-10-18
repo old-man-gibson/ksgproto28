@@ -507,7 +507,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 38, y: 5 },
     tags: ['indoor'],
     activities: [
-      { id: 'train_int_hall', kind: 'train', attr: 'int', name: 'Read Until It Sticks', icon: '📚' },
+      // The hall's rare find (ActivityDef.drops): the one recipe no counter
+      // sells. 0.0008 per rep is about 1 in 1,250, drought-protected.
+      { id: 'train_int_hall', kind: 'train', attr: 'int', name: 'Read Until It Sticks', icon: '📚',
+        drops: [{ material: 'recipe_lectory_porridge', chance: 0.0008 }] },
       { id: 'train_wis_hall', kind: 'train', attr: 'wis', name: 'Sit With a Hard Passage', icon: '🧘', tags: ['magic'] },
     ],
     benches: ['spelltable'],
@@ -602,15 +605,14 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     // The keeper looks after beginners (systems/training.ts): healed after
     // every win while the six attributes total 30 or less, and dared to take
     // on the Suspiciously Large Slime every 8 wins until it is beaten.
-    // Level 14 measured at the first offer (24 seeds per tutorial pick): the
-    // rusty sword wins ~1 in 6, fists/hammer/spear about half — its blunt
-    // weakness is the lesson.
+    // Level 16 measured at the first offer with the bred (neutral) slime, 24
+    // seeds per tutorial pick: every pick wins 9-12 of 24.
     healBetweenBouts: { maxAttrTotal: 30 },
-    dare: { monsterId: 'suspiciously_large_slime', level: 14, every: 8 },
+    dare: { monsterId: 'suspiciously_large_slime', level: 16, every: 8 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Step Into a Cage', icon: '🪤' }],
     encounters: [
       { monsterId: 'forest_rat', weight: 40, level: [1, 2] },
-      { monsterId: 'slime_base_basic', weight: 40, level: [1, 2] },
+      { monsterId: 'cage_slime', weight: 40, level: [1, 2] },
       { monsterId: 'goblin', weight: 20, level: [2, 3] },
     ],
     modifierWeights: { normal: 100 },
