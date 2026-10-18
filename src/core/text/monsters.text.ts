@@ -5,6 +5,7 @@ import type { ProseTable } from './prose';
 
 // ---------- MONSTERS ----------
 export const MONSTERS_TEXT: ProseTable = {
+  'toll_collector_golem.desc': 'Water covers the collector’s legs. One hand turns a sodden form; the other brings the toll stamp down. Heat fills its sight with steam, cold locks its joints, and lightning drives its stamping arm beyond its limits.',
   'forest_rat.desc': 'Small basic beast. Bites for piercing damage. Appears in The Cages and The Undercrofts. Rare drop: Cloth Tunic.',
 
   'young_wolf.desc': 'Basic beast. Bites for piercing damage with a 20% chance to inflict Punctured. Drops fur and raw meat.',
@@ -18,6 +19,8 @@ export const MONSTERS_TEXT: ProseTable = {
   'cave_spider.desc': 'Veteran vermin. Poison bite with a 35% chance to inflict Poison. Takes 50% less poison damage. Appears in The Undercrofts.',
 
   'stone_golem.desc': 'Large elite construct, earth element. Always met alone. Bludgeoning blows with a 25% chance to inflict Concussed. Takes 60% less slashing and piercing damage, 50% more bludgeoning and arcane damage. Two loot rolls; drops iron scrap and gold.',
+
+  'slime_cell.desc': 'Training slime on floor 0. Every hit it lands deals exactly 1 damage. No armour and no resistances, so every starting weapon deals its listed damage. Appears in the Cellblock (once) and the Field (three fights). Drops Slime Gel.',
 
   'slime_base_basic.desc': 'Small basic slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in The Cages and The Undercrofts. Drops Slime Gel.',
 
@@ -113,5 +116,5 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'paladin_x.desc': '',
 
-  'giant_spider_queen.desc': 'Huge legendary vermin, toxic element. Poison bite with an 85% chance to inflict heavy Poison. Takes 67% less slashing, 50% less poison, 35% less bludgeoning and earth; takes 67% more piercing, 40% more heat and 20% more cold damage. Appears in The Undercrofts. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
+  'giant_spider_queen.desc': 'Huge elite vermin, toxic element. Always fights alone. Poison bite with a 60% chance to inflict heavy Poison. Takes 40% less slashing, 50% less poison, 35% less earth and 20% less bludgeoning; takes 50% more piercing, 40% more heat and 20% more cold damage. Appears in the Brood Den. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
 };

@@ -8,6 +8,8 @@
  * adding a registry to the forge is one entry here.
  */
 
+import { isTileFile } from './tilemaps';
+
 export interface CatalogEntry {
   /** Stable key used in URLs and patch ops. */
   kind: string;
@@ -28,6 +30,7 @@ export interface CatalogEntry {
 }
 
 export const CATALOG: CatalogEntry[] = [
+  { kind: 'keyItem', label: 'Key Items', icon: '🗝️', file: 'src/core/data/keyitems.data.ts', root: 'KEY_ITEMS', exportName: 'KEY_ITEMS' },
   { kind: 'region', label: 'Regions', icon: '🗺️', file: 'src/core/data/locations.data.ts', root: 'REGIONS', keyOrder: 'region', exportName: 'REGIONS' },
   { kind: 'area', label: 'Areas', icon: '🏞️', file: 'src/core/data/locations.data.ts', root: 'AREAS', keyOrder: 'area', exportName: 'AREAS' },
   { kind: 'spot', label: 'Spots', icon: '📍', file: 'src/core/data/locations.data.ts', root: 'SPOTS', keyOrder: 'spot', exportName: 'SPOTS', hint: 'Places you stand, act, and travel between.' },
@@ -75,3 +78,13 @@ export function catalogFor(kind: string): CatalogEntry {
 export const WRITABLE = new Set(
   CATALOG.flatMap((c) => [c.file, c.file.replace(/\/data\/([^/]+)\.data\.ts$/, '/text/$1.text.ts')]),
 );
+
+/**
+ * The full gate: catalog files, their text files, and the drawn-map family
+ * (`src/ui/lib/tilemaps/<region>.map.json` plus the two generated modules),
+ * which the forge reprints whole rather than editing — see
+ * forge/server/tilemaps.ts for why that is safe there and nowhere else.
+ */
+export function isWritable(rel: string): boolean {
+  return WRITABLE.has(rel) || isTileFile(rel);
+}

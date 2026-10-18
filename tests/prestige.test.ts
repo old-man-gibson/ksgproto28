@@ -5,6 +5,7 @@ import { EventBus } from '../src/core/engine/events';
 import { migrate } from '../src/core/save/migrations';
 import { deserialize, serialize } from '../src/core/save/save';
 import { PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, STARTING_SPOT } from '../src/core/registry';
+import { TUTORIAL_EXIT } from '../src/core/data/tutorial.data';
 import {
   buyBoon,
   canBuyBoon,
@@ -144,8 +145,11 @@ describe('the reset', () => {
     s.discovered.push('f3_landing');
     s.stats['gold:earned'] = 500;
     const next = prestigeNow(s, 777)!;
-    expect(next.spot).toBe(STARTING_SPOT);
-    expect(next.discovered).toEqual([STARTING_SPOT]);
+    // A second life skips the tutorial cell: it opens at the Foot, done-flag stamped.
+    expect(next.spot).toBe(TUTORIAL_EXIT);
+    expect(next.discovered).toEqual([TUTORIAL_EXIT]);
+    expect(next.stats['flag:tutorial_done']).toBe(1);
+    expect(STARTING_SPOT).not.toBe(TUTORIAL_EXIT);
     expect(next.gold).toBe(0);
     expect(next.stats['gold:earned']).toBeUndefined();
     expect(next.stats['slain:f3_brood_den:giant_spider_queen']).toBeUndefined();
@@ -177,7 +181,7 @@ describe('the reset', () => {
     expect(g.prestige(5)).toBe(true);
     expect(g.state).toBe(before);
     expect(g.state.prestige.count).toBe(1);
-    expect(g.state.spot).toBe(STARTING_SPOT);
+    expect(g.state.spot).toBe(TUTORIAL_EXIT);
     // A second call refuses: the new run has not cleared band 1.
     expect(g.prestige(6)).toBe(false);
   });

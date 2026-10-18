@@ -274,4 +274,12 @@ export const LOG_TEXT = {
 
   // ---------- towers ----------
   'towers.moving': '🗼 {verb} to {icon} {name}...',
+
+  // ---------- tutorial ----------
+  'tutorial.armed': '🎒 Taken from the rack and equipped: {list}.',
+  'tutorial.unarmed': '👊 Nothing taken from the rack. Fighting unarmed.',
+  'tutorial.stance': '🥋 Stance set: {icon} {name}. Change it on the Combat tab at any time.',
+  'tutorial.spell': '📖 "{word}" written into your grimoire and prepared. Intelligence 2: mana pool 2.',
+  'tutorial.skipped': '⏭️ Tutorial skipped. You stand at {icon} {name}.',
+  'tutorial.done': '✅ Tutorial complete. Its panels are on the Quests tab under Guide.',
 } as const;

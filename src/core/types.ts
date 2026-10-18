@@ -1085,6 +1085,8 @@ export type StatusStackMode =
 
 export interface StatusStacking {
   mode: StatusStackMode;
+  /** Refresh the duration on reapplication without adding intensity or stacks. */
+  refreshDuration?: boolean;
   /** 'absorb': share of the new application's intensity that is folded in. */
   absorb?: number;
   /** Ceiling on summed intensity ('sum') or instance count ('count'). */
@@ -2084,6 +2086,14 @@ export interface MonsterDef {
   desc?: string;
   /** Intrinsic tier — part of the monster's identity, not rolled. */
   tier: TierId;
+  /**
+   * Every blow that LANDS deals exactly this much — no crit, no jitter, no
+   * armour, no resistance, no counter reduction. Training equipment: the
+   * tutorial's Cell Slime deals 1 so a first fight can be read while it
+   * happens. Dodges, parries and misses still resolve normally; only the
+   * number that reaches the HP bar is pinned. Absent for everything real.
+   */
+  fixedDamage?: number;
   /** The damage type of this monster's attacks. */
   damageType: DamageType;
   /** Conditions its blows can inflict, rolled per landed hit. */
@@ -3703,6 +3713,8 @@ export interface ApproachSpec {
 export interface Connection {
   to: string;
   ticks: number;
+  /** Invisible until these hold; never copied onto the return edge. */
+  revealWhen?: UnlockCondition[];
   /** One-way edges (drops, slides) get no automatic reverse edge. */
   oneWay?: boolean;
   /**
@@ -3786,6 +3798,7 @@ export interface ActivityCycleTags {
 }
 
 export type ActivityDef =
+  | ({ id: string; kind: 'search'; name: string; icon: string; ticksPer: number; rewards: SearchReward[] } & ActivityCycleTags)
   /** Trains `attr`, or several at once via `attrXp` — at least one is required. */
   | ({ id: string; kind: 'train'; attr?: AttributeId; name: string; icon: string } & ActivityCycleTags)
   | { id: string; kind: 'hunt'; name: string; icon: string }
@@ -3833,6 +3846,8 @@ export interface SpotFind {
   desc?: string;
   material?: { id: string; qty?: number };
   item?: string;
+  /** A permanent, unsellable journal item, retained until prestige. */
+  keyItem?: string;
   rune?: string;
   /** Inclusive gold roll. */
   gold?: [number, number];
@@ -3865,6 +3880,21 @@ export interface SpotFind {
    * on a later visit once the conditions hold. Arriving early costs nothing.
    */
   requires?: UnlockCondition[];
+}
+
+export interface KeyItemDef {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
+/** One weighted result per completed search. Limits and guarantees are per spot/activity, per run. */
+export interface SearchReward extends Omit<SpotFind, 'at' | 'path' | 'spot'> {
+  weight: number;
+  limit?: number;
+  /** Force this eligible result by this completed search if it has never paid. */
+  guaranteedBy?: number;
 }
 
 /**
@@ -3979,6 +4009,37 @@ export interface SpotDef {
    */
   forced?: boolean;
   connections: Connection[];
+}
+
+// ---------- The tutorial ----------
+
+/**
+ * The choices the tutorial hands out, each exactly once per life. A choice
+ * is a Game method (`chooseTutorialWeapon` …) that grants and equips, then
+ * stamps its `flag:tutorial_<choice>` counter so the step reads done.
+ */
+export type TutorialChoice = 'weapon' | 'stance' | 'spell';
+
+/** The rack in the holding cell. `unarmed` grants nothing and is a real pick. */
+export type TutorialWeapon = 'spear' | 'sword' | 'dagger' | 'hammer' | 'unarmed';
+
+/**
+ * One panel of the tutorial (data/tutorial.data.ts). The current step is
+ * DERIVED: the first one whose `done` is false. No step index is saved —
+ * a step is finished when the world says so, which is what lets a player
+ * who did things out of order see the right panel and never a stale one.
+ */
+export interface TutorialStepDef {
+  id: string;
+  title: string;
+  /** The panel's text. Engineer register: what it is, what it does, what it costs. */
+  desc: string;
+  /** Where the step is done, for the panel's pointer. */
+  spot?: string;
+  /** Renders the choice widget for this step (weapon rack, stance list, spell pick). */
+  choice?: TutorialChoice;
+  /** True once the world shows the step was done. Pure; reads counters and position. */
+  done: (state: GameState) => boolean;
 }
 
 // ---------- Towers, bands & floors ----------
@@ -4416,6 +4477,8 @@ export interface BuffState {
 export const ENCOUNTER_SLOTS = 5;
 
 export interface CombatState {
+  /** Brief encounter introduction; neither side acts until it finishes. */
+  introTicks?: number;
   /**
    * Fixed-length formation. Only `enemies[0]` (the centre) can be attacked;
    * when it dies a random survivor swaps into slot 0 and its own slot empties.

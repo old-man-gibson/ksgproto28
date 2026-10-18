@@ -23,6 +23,21 @@ import { STATUSES_TEXT } from '../text/statuses.text';
 const SECOND = 10;
 
 export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
+  toll_steam: {
+    id: 'toll_steam', name: 'Steam-blinded', icon: '♨️', duration: 80,
+    stacking: { mode: 'highest', cap: 1, refreshDuration: true }, missChance: 0.65,
+  },
+  toll_ice: {
+    id: 'toll_ice', name: 'Ice-locked Joints', icon: '🧊', duration: 80,
+    stacking: { mode: 'highest', cap: 1, refreshDuration: true },
+    mods: [{ stat: 'dodge', op: 'mult', value: -1 }, { stat: 'armor', op: 'mult', value: -0.75 }],
+  },
+  toll_overdrive: {
+    id: 'toll_overdrive', name: 'Stamping Overdrive', icon: '⚡', duration: 80,
+    stacking: { mode: 'highest', cap: 1, refreshDuration: true },
+    mods: [{ stat: 'attackSpeed', op: 'mult', value: 0.65 }],
+    bar: { onFill: { type: 'lightning', flat: 12 } },
+  },
   /*
    * EYELESS — nothing to put out.
    *

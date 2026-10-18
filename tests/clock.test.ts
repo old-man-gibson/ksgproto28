@@ -79,12 +79,13 @@ describe('the world clock', () => {
     expect(formatTime(clockOf(at(0, 7, 5)))).toBe('07:05');
   });
 
-  it('a new life opens at 09:00, at the tower foot — the square stays a debug start', () => {
+  it('a new life opens at 09:00, in the holding cell — the square stays a debug start', () => {
     const fresh = createInitialState(1);
     const opening = clockOf(fresh.totalTicks);
     expect([opening.hour, opening.minute, opening.dayOfYear]).toEqual([9, 0, 0]);
-    // The story starts in Threshold, at the door all eight districts reach.
-    expect(fresh.spot).toBe('ascent_foot');
-    expect(fresh.discovered).toEqual(['ascent_foot']);
+    // The story starts on floor 0 of the tower, in the tutorial's cell; the
+    // gate at the end of it lets out at the Foot, the door every district reaches.
+    expect(fresh.spot).toBe('f0_cell');
+    expect(fresh.discovered).toEqual(['f0_cell']);
   });
 });

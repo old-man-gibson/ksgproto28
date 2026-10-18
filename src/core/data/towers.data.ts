@@ -90,22 +90,34 @@ export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
  * its own, behind the first prestige — see the `the_hold` region.)
  */
 export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
+  // ---- Floor 0: the Holding Level, the tutorial. OFF the ladder (no bandId)
+  // so it advances nothing, gates nothing and is exempt from the closed-area
+  // rule: its gate is an authored one-way road into Threshold. Index 0 is
+  // hub level, which is what it is — the floor the door at the Foot opens
+  // onto from the inside. A fresh save starts on it (STARTING_SPOT); the
+  // tutorial's steps and flags live in data/tutorial.data.ts.
+  ascent_f0: {
+    id: 'ascent_f0',
+    name: 'The Holding Level',
+    towerId: 'the_ascent',
+    index: 0,
+    areaId: 'ascent_f0_area',
+    landing: 'f0_cell',
+  },
   // ---- Band 1: the Lower Reaches. Names are placeholders (forge-renameable);
   // levels and gate numbers are first guesses, tuned in review. Every clear
   // reads a counter that already persists — nothing here added save state.
   ascent_f1: {
     id: 'ascent_f1',
-    name: 'The Old Toll Level',
+    name: 'The Flooded Offices',
     towerId: 'the_ascent',
     bandId: 'ascent_lower',
     index: 1,
     areaId: 'ascent_f1_area',
     landing: 'f1_landing',
-    // No gate: the first rung is the tutorial floor, open from tick one.
-    // The clear latches on the toll hall's BOSS counter — the keeper changes
-    // with the clock (and the ambush window may swap in a champion), but
-    // every variant pays the same `boss:` latch, so the clear never needs an
-    // OR. See the hall's encounter table.
+    // The flooded offices are the first rung after the prologue.
+    // Keep the existing boss counter so old clears and the Warden quest
+    // remain valid; the submerged collector now pays it and the toll stamp.
     clear: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }],
   },
   ascent_f2: {

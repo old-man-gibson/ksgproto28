@@ -1,4 +1,4 @@
-import type { GameState, Loadout, SkillTrigger, TriggerCondition } from './types';
+import type { GameState, Loadout, SkillTrigger, TriggerCondition, TutorialWeapon } from './types';
 import { activeRotation } from './systems/combat';
 import { EventBus } from './engine/events';
 import { TPS } from './engine/loop';
@@ -7,6 +7,13 @@ import { registerSuperAttrListeners } from './systems/superattrs';
 import { acceptQuest, registerQuestListeners, talkTo, turnInQuest } from './systems/quests';
 import { buy } from './systems/shops';
 import { registerTitleListeners, setTitle } from './systems/titles';
+import {
+  chooseTutorialSpell,
+  chooseTutorialWeapon,
+  confirmTutorialStance,
+  registerTutorialListeners,
+  skipTutorial,
+} from './systems/tutorial';
 import { registerBestiaryListeners } from './systems/bestiary';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
@@ -129,6 +136,8 @@ export class Game {
     registerMutagenListeners(state, this.bus);
     // Titles last: their checks read counters the earlier listeners bump.
     registerTitleListeners(state, this.bus);
+    // The tutorial only watches arrivals at the Foot (its exit).
+    registerTutorialListeners(state, this.bus);
     this.bus.on('log', (ev) => {
       if (this.suppressLog) return;
       appendLog(this.state, {
@@ -536,6 +545,29 @@ export class Game {
         : text('game.exerting_off'),
       kind: 'combat',
     });
+  }
+
+  // ---------- The tutorial (floor 0) ----------
+
+  /** The rack in the holding cell: one weapon, a shield beside a one-handed pick. Once per life. */
+  chooseTutorialWeapon(weapon: TutorialWeapon, shield = false): boolean {
+    return chooseTutorialWeapon(this.state, this.bus, weapon, shield);
+  }
+
+  /** Set the stance through the real control, then stamp the tutorial's step. */
+  chooseTutorialStance(styleId: string): boolean {
+    this.setStyle(styleId);
+    return confirmTutorialStance(this.state, this.bus);
+  }
+
+  /** One word into the grimoire, prepared, with the Intelligence to cast it. Once per life. */
+  chooseTutorialSpell(word: string): boolean {
+    return chooseTutorialSpell(this.state, this.bus, word);
+  }
+
+  /** End the tutorial now: defaults for every choice not made, and the Foot. */
+  skipTutorial(): boolean {
+    return skipTutorial(this.state, this.bus);
   }
 
   // ---------- Active-skill rotation & triggers ----------

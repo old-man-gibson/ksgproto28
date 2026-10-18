@@ -57,7 +57,7 @@ export function retreatSpot(state: GameState): string {
   const fallback = state.safeSpots.unconditional;
   if (fallback && SPOTS[fallback]) return fallback;
 
-  // Never nowhere: the start if it is a haven (the Foot is), else the first
+  // Never nowhere: the start if it is a haven (the holding cell is), else the first
   // unconditional haven in the world, else the start regardless. Data order
   // must not decide this — before the start was checked first, a fresh save
   // knocked out on its first hunt woke in the hold's bedroom.

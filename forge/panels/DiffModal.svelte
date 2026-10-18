@@ -80,6 +80,11 @@
         <div class="file">
           <div class="file-head">
             <code>{change.file}</code>
+            {#if change.removed}
+              <span class="pill bad">deleted</span>
+            {:else if change.created}
+              <span class="pill ok">new file</span>
+            {/if}
             <span class="pill ok">+{change.stat.added}</span>
             <span class="pill bad">−{change.stat.removed}</span>
           </div>

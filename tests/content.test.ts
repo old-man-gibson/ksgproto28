@@ -1,6 +1,8 @@
 // The countryside these tests stand on is SHELVED content; the fixture mounts it.
 import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
+import { KEY_ITEMS } from '../src/core/data/keyitems.data';
+import { searchContentIssues } from '../src/core/systems/searchValidation';
 import {
   ACHIEVEMENTS,
   ADJACENCY,
@@ -106,6 +108,7 @@ function statCounterValid(key: string): boolean {
   if (key.startsWith('boss:')) {
     return !!SPOTS[key.slice(5)]?.encounters?.some((e) => e.boss);
   }
+  if (key.startsWith('fights:')) return (SPOTS[key.slice(7)]?.fightLimit ?? 0) > 0;
   if (key.startsWith('kills:')) return key.slice(6) in MONSTERS;
   if (key.startsWith('gather:')) return key.slice(7) in MATERIALS;
   if (key.startsWith('attr:')) return VALID_ATTRS.has(key.slice(5) as never);
@@ -470,6 +473,7 @@ describe('world graph', () => {
 
   it('exploration finds resolve, sit inside the search, and pay something', () => {
     for (const spot of Object.values(SPOTS)) {
+      expect(searchContentIssues(spot, { keyItems: KEY_ITEMS, items: ITEMS, materials: MATERIALS, runes: RUNES }), spot.id).toEqual([]);
       const finds = spot.finds ?? [];
       if (finds.length === 0) continue;
       // A find is a depth of search — without a search there is no depth.
@@ -489,7 +493,7 @@ describe('world graph', () => {
         expect(f.at, `${owner}: at must be <= 1`).toBeLessThanOrEqual(1);
 
         const pays =
-          f.material || f.item || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc;
+          f.material || f.item || f.keyItem || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc;
         expect(pays, `${owner}: find yields nothing at all`).toBeTruthy();
 
         // The cross-room wire may only touch its own namespace — bumping
@@ -561,6 +565,7 @@ describe('world graph', () => {
       }
       for (const c of spot.connections) {
         checkConditions(`${spot.id} -> ${c.to} approach requires`, c.approach?.requires);
+        checkConditions(`${spot.id} -> ${c.to} reveal`, c.revealWhen);
       }
     }
   });

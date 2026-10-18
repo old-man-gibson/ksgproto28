@@ -1,5 +1,6 @@
 import type { GameState } from '../types';
 import type { EventBus } from '../engine/events';
+import { officeArrival } from './floodedFloor';
 import { AREAS, REGIONS, SPOTS, edgesFrom, getSpot, type Edge } from '../registry';
 import { getDerivedStats } from './derived';
 import { abandonCombat, inForcedFight, spotCleared, startForcedFight } from './combat';
@@ -16,9 +17,10 @@ import { text } from '../text/log';
  * along the way named it (see SpotFind).
  */
 export function visibleEdges(state: GameState, spotId: string): Edge[] {
-  if (edgesFrom(spotId).every((e) => !e.hidden)) return edgesFrom(spotId);
+  const edges = edgesFrom(spotId).filter((e) => conditionsMet(state, e.revealWhen ?? []));
+  if (edges.every((e) => !e.hidden)) return edges;
   const opened = foundPaths(state, spotId);
-  return edgesFrom(spotId).filter((e) => !e.hidden || isExplored(state, e.from) || opened.has(e.to));
+  return edges.filter((e) => !e.hidden || isExplored(state, e.from) || opened.has(e.to));
 }
 
 interface TravelOpts {
@@ -77,6 +79,7 @@ export function tickTravel(state: GameState, bus: EventBus): void {
   if (t.ticksLeft > 0) return;
 
   state.travel = null;
+  t.to = officeArrival(state, bus, t.from, t.to);
   state.spot = t.to;
 
   // The road itself is a teacher: walking legs grant Scouting XP by distance

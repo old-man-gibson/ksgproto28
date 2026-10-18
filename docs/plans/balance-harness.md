@@ -47,3 +47,15 @@ Tier-5 mutagens break a rule of the game rather than bending a number, so each
 one is a mini-feature and reviewing one means understanding the rule. **That
 cost is irreducible and should not be optimised away** — it is what the tier is
 for. This card is about the other 60-odd.
+
+## 2026-10-10: the whole-band half exists
+
+`tests/john.ts` (COMPLETABILITY §8's John) plays band 1 end to end and
+`npm run pacing` prints the timeline: segment times, knockouts by floor, the
+first boss fight, gold at the top. It answers "is this band paced right",
+which is the question this card's per-monster batch cannot. `john.test.ts`
+also carries a small duel helper (one monster, pinned attributes, one weapon
+against another, counted in wins), the seed of this card's loop. What is
+still todo is the card itself: N fights per monster across level bands,
+outliers flagged against authored expectations.
+

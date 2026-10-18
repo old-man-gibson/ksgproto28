@@ -1,3 +1,4 @@
+import { TOLL_GOLEM, TOLL_SPELL_FLAG, noteTollSpell, reactTollGolem, rewardTollGolem } from './floodedFloor';
 import type {
   ActiveSpec,
   CombatState,
@@ -991,6 +992,7 @@ function startEncounter(state: GameState, bus: EventBus, spot: SpotDef, forced =
   const enemies = spawnGroup(state, spot);
   state.combat = {
     enemies,
+    ...(enemies.some((e) => e?.defId === TOLL_GOLEM) ? { introTicks: 30 } : {}),
     playerBar: 0,
     momentum: 0,
     position: NEUTRAL_POSITION,
@@ -1472,6 +1474,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   const monster = c.enemies[index]!;
   const tags = combatTags(state);
   const spot = SPOTS[state.spot];
+  if (monster.defId === TOLL_GOLEM) rewardTollGolem(state, bus);
 
   // A `once` kill goes on the spot's record the moment it happens — not at
   // the end of the fight, so a knockout after the deed still keeps the deed.
@@ -1516,6 +1519,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
     if (spot?.fightLimit) {
       bumpStat(state, bus, fightsKey(spot.id));
       if (spotCleared(state, spot)) {
+        if (spot.id === 'f1_storerooms') bus.emit({ type: 'log', kind: 'explore', msg: 'The remaining vermin scurry beneath a fallen shelf. Their retreat reveals a passage to the records rooms.' });
         bus.emit({ type: 'log', msg: text('combat.spot_cleared', { spot: spot.name }), kind: 'combat' });
       }
     }
@@ -1874,6 +1878,7 @@ function castCraftedSelf(
   stats: DerivedStats,
 ): boolean {
   const c = state.combat!;
+  noteTollSpell(state, bus);
   spendResource(state, 'mana', spec.manaCost * stats.manaEff);
   // A psionic working is paid for out of the mind's own pool, not the arcane
   // one. Instant workings SPEND focus; sustained ones will hold it instead.
@@ -2413,6 +2418,7 @@ export function healEnemy(
  */
 export function castCraftedAttack(state: GameState, bus: EventBus, id: string, spec: SpellSpec): boolean {
   const c = state.combat!;
+  noteTollSpell(state, bus);
   const stats = getDerivedStats(state);
   /*
    * A refuting body argues with EVERY working in the fight, and its own hands
@@ -2563,6 +2569,11 @@ export function castCraftedAttack(state: GameState, bus: EventBus, id: string, s
         total += landed.dealt;
         if (landed.dealt > 0) {
           landedAny = true;
+          const reacted = reactTollGolem(state, target, type);
+          if (reacted && h === 0) feed(state, type === 'heat'
+            ? '♨️ Water bursts into steam. The collector stamps blindly through the cloud.'
+            : type === 'cold' ? '🧊 Ice locks the collector in place and prises its armor apart.'
+            : '⚡ The collector stamps faster. Each stroke tears through its own mechanism.');
           for (const app of strike.inflicts ?? []) applyStatus(state, target, app, spec.name);
         }
       }
@@ -2994,6 +3005,13 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
 
   const c = state.combat;
 
+  if (c.introTicks && c.introTicks > 0) {
+    if (c.introTicks === 30 || c.introTicks === 20) feed(state, '“Please provide documents.”');
+    if (c.introTicks === 10) feed(state, '“Procedural flow is being impaired. Removing interrupting entity.”');
+    c.introTicks -= 1;
+    return;
+  }
+
   for (const id of Object.keys(c.cooldowns)) {
     if (c.cooldowns[id] > 0) c.cooldowns[id] -= 1;
   }
@@ -3341,8 +3359,10 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         // weight is slow to gather it again.
         if (spec.selfDelay) c.playerBar = Math.max(0, c.playerBar - spec.selfDelay);
       } else if (skillActive && skillActive.spec.type === 'spell') {
+        noteTollSpell(state, bus);
         dmg = vs.spellPower * skillActive.spec.power;
         dmgType = skillActive.spec.damageType ?? 'arcane';
+        reactTollGolem(state, monster, dmgType);
         isWeaponHit = false;
         label = `${SKILLS[skillActive.id].icon} ${SKILLS[skillActive.id].name} scorches`;
         hitLabel = hitSource = SKILLS[skillActive.id].name;
@@ -3947,6 +3967,18 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       thrown += one;
       const raw = counter ? one * (1 - counter.move.counter!.reduce) : one;
       const slice = incomingSlice(stats, type, e.name, raw, braced, ranged);
+      // Training equipment (MonsterDef.fixedDamage): the number that reaches
+      // the bar is pinned, whatever the roll, the armour or the counter did.
+      const fixed = MONSTERS[e.defId]?.fixedDamage;
+      if (fixed !== undefined) {
+        slice.raw = fixed;
+        slice.armor = 0;
+        slice.resisted = 0;
+        slice.dealt = fixed;
+        addSlice(slices, slice);
+        dmg += fixed;
+        continue;
+      }
       addSlice(slices, slice);
       dmg += Math.max(1, Math.round(slice.dealt * bite));
     }
@@ -4064,6 +4096,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
  * what you actually walk away carrying rather than what the fight was holding.
  */
 function closeCombat(state: GameState): void {
+  delete state.stats[TOLL_SPELL_FLAG];
   recoverGroundedWeapon(state);
   // A working held at the edge of release does not survive the fight it was
   // being held for. Its mana was spent when it was taken up; that is the cost.

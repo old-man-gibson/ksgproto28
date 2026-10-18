@@ -7,6 +7,7 @@
  */
 
 import type { store as Store } from './store.svelte';
+import { searchContentIssues } from '../../src/core/systems/searchValidation';
 import type { Connection, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, QuestDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
@@ -280,6 +281,11 @@ export function validate(store: S): Issue[] {
   // road across the boundary would open both directions and bypass the seal.
   for (const spot of Object.values(spots)) {
     for (const c of spot.connections ?? []) {
+      for (const condition of c.revealWhen ?? []) {
+        if (condition.type === 'stat' && condition.key.startsWith('fights:') && !(spots[condition.key.slice(7)]?.fightLimit)) {
+          err('spot', spot.id, `reveal condition '${condition.key}' needs a spot with a fight limit`);
+        }
+      }
       const toArea = spots[c.to]?.areaId;
       if (!toArea) continue; // unknown targets are caught by the spot lints
       if ((bandedAreas.has(spot.areaId) || bandedAreas.has(toArea)) && spot.areaId !== toArea) {
@@ -389,6 +395,7 @@ export function validate(store: S): Issue[] {
     }
 
     validateFinds(spot, { materials, items, runes, spots, claimedTags }, err, warn);
+    for (const message of searchContentIssues(spot, { materials, items, runes, keyItems: store.all('keyItem') })) err('spot', spot.id, message);
 
     // A hidden edge nobody can ever reveal.
     const canComb = (spot.activities ?? []).some((a) => a.kind === 'explore');
@@ -1092,7 +1099,7 @@ function validateFinds(
 }
 
 function payloadOf(f: SpotFind): boolean {
-  return !!(f.material || f.item || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc);
+  return !!(f.material || f.item || f.keyItem || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc);
 }
 
 export interface Edge extends Connection {

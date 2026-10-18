@@ -12,12 +12,16 @@
    * is one line with no arrows, a one-way drop is one line with an arrow, and
    * two separately-declared directions bow apart so both stay clickable.
    */
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { store } from '../lib/store.svelte';
   import { validate, type Issue } from '../lib/validate';
   import type { Selection } from '../lib/selection';
   import ContextMenu, { type MenuItem } from '../lib/ContextMenu.svelte';
   import type { Connection, NpcDef, SpotDef } from '../../src/core/types';
+  import { TOOLS, tilesUi, type Tool } from '../lib/tiles.svelte';
+  import { eraseRect, fillRect, paintStamp, pickAt, spanRect, tileAt, tileCentre } from '../lib/tilemap';
+  import { drawTileMap } from '../../src/ui/lib/tilemaps/draw';
+  import type { TileRect } from '../../src/ui/lib/tilemaps/types';
 
   interface Props {
     selection: Selection;
@@ -120,6 +124,217 @@
   const inRegion = $derived(
     Object.values(spots).filter((s) => areas[s.areaId]?.regionId === region),
   );
+
+  // ---------- The drawn map (Tiles mode) ----------
+  //
+  // A region with a map (store.maps) paints under the diagram whether or not
+  // Tiles mode is on — the picture is what players see. With the mode on, a
+  // paint tool turns the canvas into a brush target and the spot layer goes
+  // pointer-transparent until the Hand tool is picked again.
+
+  const tileMap = $derived(region ? (store.maps[region] ?? null) : null);
+  const painting = $derived(tilesUi.on && tilesUi.tool !== 'hand');
+  let tileCanvas = $state<HTMLCanvasElement | null>(null);
+  let overlayCanvas = $state<HTMLCanvasElement | null>(null);
+  let hover = $state<{ x: number; y: number } | null>(null);
+  let strokeRect = $state<TileRect | null>(null);
+  /** The stroke in progress; plain, because nothing renders from it but strokeRect. */
+  let stroke: { tool: Tool; start: { x: number; y: number }; last: { x: number; y: number }; seed: number; changed: boolean } | null =
+    null;
+
+  $effect(() => {
+    tilesUi.show(region);
+  });
+
+  // The picture: redrawn when the grid changes, a layer is hidden, or the region switches.
+  $effect(() => {
+    const canvas = tileCanvas;
+    const map = tileMap;
+    void tilesUi.version;
+    const hidden = tilesUi.on ? new Set(tilesUi.hidden) : undefined;
+    if (!canvas || !map) return;
+    untrack(() => void drawTileMap(canvas, map, { resolve: tilesUi.resolveImage, hidden }));
+  });
+
+  // The overlay: grid, hovered cell with the stamp ghosted, the rectangle being dragged.
+  $effect(() => {
+    const canvas = overlayCanvas;
+    const map = tileMap;
+    const h = hover;
+    const rect = strokeRect;
+    const stamp = tilesUi.stamp;
+    const tool = tilesUi.tool;
+    const grid = tilesUi.grid;
+    void tilesUi.loaded;
+    if (!canvas || !map) return;
+    const T = map.tile;
+    canvas.width = map.width * T;
+    canvas.height = map.height * T;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (grid) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 1; x < map.width; x++) {
+        ctx.moveTo(x * T + 0.5, 0);
+        ctx.lineTo(x * T + 0.5, canvas.height);
+      }
+      for (let y = 1; y < map.height; y++) {
+        ctx.moveTo(0, y * T + 0.5);
+        ctx.lineTo(canvas.width, y * T + 0.5);
+      }
+      ctx.stroke();
+    }
+    if (rect) {
+      ctx.fillStyle = tool === 'eraseRect' ? 'rgba(248, 113, 113, 0.28)' : 'rgba(108, 158, 255, 0.28)';
+      ctx.fillRect(rect.x * T, rect.y * T, rect.w * T, rect.h * T);
+      ctx.strokeStyle = tool === 'eraseRect' ? '#f87171' : '#6c9eff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(rect.x * T + 1, rect.y * T + 1, rect.w * T - 2, rect.h * T - 2);
+    } else if (h && tool !== 'hand') {
+      if (stamp && (tool === 'brush' || tool === 'rect')) {
+        ctx.imageSmoothingEnabled = false;
+        ctx.globalAlpha = 0.65;
+        untrack(() => {
+          for (const layer of stamp.layers) {
+            for (let y = 0; y < stamp.h; y++) {
+              for (let x = 0; x < stamp.w; x++) {
+                const cell = layer.cells[y]?.[x];
+                if (!cell) continue;
+                const img = tilesUi.imageNow(cell.key);
+                if (!img) continue;
+                ctx.drawImage(img, (cell.local % cell.columns) * T, Math.floor(cell.local / cell.columns) * T, T, T, (h.x + x) * T, (h.y + y) * T, T, T);
+              }
+            }
+          }
+        });
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = '#6c9eff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(h.x * T + 1, h.y * T + 1, stamp.w * T - 2, stamp.h * T - 2);
+      } else {
+        ctx.strokeStyle = tool === 'erase' || tool === 'eraseRect' ? '#f87171' : '#6c9eff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(h.x * T + 1, h.y * T + 1, T - 2, T - 2);
+      }
+    }
+  });
+
+  function cellUnder(ev: { clientX: number; clientY: number }): { x: number; y: number } | null {
+    if (!tileMap) return null;
+    const p = toData(ev);
+    return tileAt(tileMap, p.x, p.y);
+  }
+
+  /** The nearest cell, for rectangles dragged past the picture's edge. */
+  function cellNear(ev: { clientX: number; clientY: number }): { x: number; y: number } {
+    const p = toData(ev);
+    const map = tileMap!;
+    return {
+      x: Math.min(map.width - 1, Math.max(0, Math.floor((p.x / 100) * map.width))),
+      y: Math.min(map.height - 1, Math.max(0, Math.floor((p.y / 75) * map.height))),
+    };
+  }
+
+  /** Every cell on the straight line between two, so a fast drag leaves no gaps. */
+  function cellsBetween(a: { x: number; y: number }, b: { x: number; y: number }): { x: number; y: number }[] {
+    const n = Math.max(Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+    const out: { x: number; y: number }[] = [];
+    for (let i = 1; i <= n; i++) {
+      out.push({ x: Math.round(a.x + ((b.x - a.x) * i) / n), y: Math.round(a.y + ((b.y - a.y) * i) / n) });
+    }
+    return out;
+  }
+
+  function applyCell(tool: Tool, cell: { x: number; y: number }): boolean {
+    if (!tileMap) return false;
+    if (tool === 'brush' && tilesUi.stamp) return paintStamp(tileMap, tilesUi.stamp, cell.x, cell.y, tilesUi.layer);
+    if (tool === 'erase') return eraseRect(tileMap, tilesUi.layer, { x: cell.x, y: cell.y, w: 1, h: 1 });
+    return false;
+  }
+
+  /** Returns true when the pointer-down was consumed by a paint tool. */
+  function beginStroke(ev: PointerEvent): boolean {
+    if (!tileMap || !region) return false;
+    const cell = cellUnder(ev);
+    const tool = tilesUi.tool;
+    if (tool === 'pick') {
+      if (!cell) return true;
+      const picked = pickAt(tileMap, cell.x, cell.y, ev.shiftKey ? tilesUi.layer : null);
+      if (!picked) {
+        store.say('Nothing there to pick', 'warn');
+        return true;
+      }
+      tilesUi.stamp = picked.stamp;
+      tilesUi.layer = picked.layer;
+      tilesUi.tool = 'brush';
+      store.say(`Picked from layer '${tileMap.layers[picked.layer].name}'`, 'ok');
+      return true;
+    }
+    if ((tool === 'brush' || tool === 'rect') && !tilesUi.stamp) {
+      store.say('Load the brush first — drag a rectangle on a sheet in the palette', 'warn');
+      return true;
+    }
+    const start = cell ?? (tool === 'rect' || tool === 'eraseRect' ? cellNear(ev) : null);
+    if (!start) return true;
+    tilesUi.snapshot(region);
+    stroke = { tool, start, last: start, seed: Math.floor(Math.random() * 1e9), changed: false };
+    if (tool === 'brush' || tool === 'erase') {
+      stroke.changed = applyCell(tool, start);
+      if (stroke.changed) tilesUi.changed();
+    } else {
+      strokeRect = spanRect(start, start);
+    }
+    svgEl?.setPointerCapture(ev.pointerId);
+    return true;
+  }
+
+  function moveStroke(ev: PointerEvent): void {
+    if (!stroke || !tileMap) return;
+    if (stroke.tool === 'brush' || stroke.tool === 'erase') {
+      const cell = cellUnder(ev);
+      if (!cell || (cell.x === stroke.last.x && cell.y === stroke.last.y)) return;
+      let changed = false;
+      for (const c of cellsBetween(stroke.last, cell)) changed = applyCell(stroke.tool, c) || changed;
+      stroke.last = cell;
+      if (changed) {
+        stroke.changed = true;
+        tilesUi.changed();
+      }
+      return;
+    }
+    strokeRect = spanRect(stroke.start, cellNear(ev));
+  }
+
+  function endStroke(): void {
+    if (!stroke) return;
+    const s = stroke;
+    stroke = null;
+    if (!tileMap || !region) {
+      strokeRect = null;
+      return;
+    }
+    if (s.tool === 'rect' && strokeRect && tilesUi.stamp) {
+      s.changed = fillRect(tileMap, strokeRect, tilesUi.stamp, tilesUi.layer, tilesUi.random ? 'random' : 'tile', s.seed);
+    } else if (s.tool === 'eraseRect' && strokeRect) {
+      s.changed = eraseRect(tileMap, tilesUi.layer, strokeRect);
+    }
+    strokeRect = null;
+    if (s.changed) {
+      store.touchTileMap(region);
+      tilesUi.changed();
+    } else {
+      tilesUi.dropSnapshot(region);
+    }
+  }
+
+  function toggleTiles(): void {
+    tilesUi.on = !tilesUi.on;
+    if (!tilesUi.on) tilesUi.tool = 'hand';
+    onselect(null);
+  }
 
   const npcsBySpot = $derived.by(() => {
     const map = new Map<string, NpcDef[]>();
@@ -276,7 +491,12 @@
     const p = toData(ev);
     const spot = spots[dragging.id];
     if (!spot) return;
-    const next = clampToCanvas(round(p.x - dragging.dx), round(p.y - dragging.dy));
+    let next = clampToCanvas(round(p.x - dragging.dx), round(p.y - dragging.dy));
+    // On a drawn region a spot sits on a tile, so snap to the tile's centre.
+    if (tileMap && snap) {
+      const t = tileAt(tileMap, Math.min(99.99, next.x), Math.min(74.99, next.y));
+      if (t) next = tileCentre(tileMap, t.x, t.y);
+    }
     if (next.x === spot.map?.x && next.y === spot.map?.y) return;
     dragging.moved = true;
     store.set('spot', [dragging.id, 'map'], next);
@@ -597,6 +817,7 @@
   }
 
   function onCanvasDblClick(ev: MouseEvent): void {
+    if (painting) return;
     const p = toData(ev);
     if (p.x < 0 || p.x > 100 || p.y < 0 || p.y > 75) return;
     addSpot(p.x, p.y);
@@ -621,6 +842,7 @@
   let panning = $state<{ x: number; y: number } | null>(null);
 
   function onCanvasPointerDown(ev: PointerEvent): void {
+    if (painting && ev.button === 0 && beginStroke(ev)) return;
     // Middle button, or left button on empty canvas, pans.
     if (ev.button === 1 || (ev.button === 0 && ev.target === svgEl)) {
       const p = toData(ev);
@@ -631,6 +853,11 @@
   }
 
   function onCanvasPointerMove(ev: PointerEvent): void {
+    if (tilesUi.on) hover = cellUnder(ev);
+    if (stroke) {
+      moveStroke(ev);
+      return;
+    }
     if (panning) {
       // Via the CTM, not the bounding rect: a viewBox with the default
       // preserveAspectRatio letterboxes, so rect-relative maths drifts by
@@ -649,6 +876,26 @@
   function onKey(ev: KeyboardEvent): void {
     const tag = (ev.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (tilesUi.on && region) {
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'z') {
+        ev.preventDefault();
+        if (ev.shiftKey) tilesUi.redo(region);
+        else tilesUi.undo(region);
+        return;
+      }
+      if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'y') {
+        ev.preventDefault();
+        tilesUi.redo(region);
+        return;
+      }
+      if (!ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+        const tool = TOOLS.find((t) => t.key.toLowerCase() === ev.key.toLowerCase());
+        if (tool && tileMap) {
+          tilesUi.tool = tool.id;
+          return;
+        }
+      }
+    }
     if (ev.key === 'Delete' || ev.key === 'Backspace') {
       if (selection?.type === 'edge') {
         ev.preventDefault();
@@ -662,6 +909,7 @@
       // selection — otherwise cancelling a mis-started link also loses your place.
       if (menu) menu = null;
       else if (linking) linking = null;
+      else if (painting) tilesUi.tool = 'hand';
       else onselect(null);
     }
   }
@@ -704,7 +952,15 @@
       {/each}
     </div>
     <div class="grow"></div>
-    <label class="toggle"><input type="checkbox" bind:checked={snap} /> Snap ½</label>
+    <button
+      class="tiny tiles-toggle"
+      class:on={tilesUi.on}
+      onclick={toggleTiles}
+      title="Tiles mode: paint this region's drawn map (docs/TILEMAPS.md). The side panel becomes the palette."
+    >
+      🧱 Tiles{tileMap ? '' : ' · none'}
+    </button>
+    <label class="toggle"><input type="checkbox" bind:checked={snap} /> {tileMap ? 'Snap tile' : 'Snap ½'}</label>
     <label class="toggle"><input type="checkbox" bind:checked={showLabels} /> Names</label>
     <label class="toggle"><input type="checkbox" bind:checked={showNpcs} /> NPCs</label>
     <label class="toggle"><input type="checkbox" bind:checked={showFinds} /> Finds</label>
@@ -717,18 +973,23 @@
     viewBox="{view.x} {view.y} {view.w} {view.h}"
     class="canvas"
     class:linking={!!linking}
+    class:painting
     role="application"
     aria-label="World map editor"
     onpointerdown={onCanvasPointerDown}
     onpointermove={onCanvasPointerMove}
+    onpointerleave={() => (hover = null)}
     onpointerup={() => {
       panning = null;
+      endStroke();
       onPointerUp();
     }}
     onpointercancel={() => {
       panning = null;
       linking = null;
       dragging = null;
+      stroke = null;
+      strokeRect = null;
     }}
     ondblclick={onCanvasDblClick}
     oncontextmenu={(ev) => openMenu(ev, 'Map', canvasMenu(toData(ev)))}
@@ -742,6 +1003,20 @@
 
     <!-- The playable canvas: the linter rejects anything outside it. -->
     <rect x="0" y="0" width={W} height={H} fill="url(#grid)" stroke="#243049" stroke-width="0.2" />
+
+    <!-- The drawn map, pinned to the same 100 × 75 the spots are placed in (as MapCard does). -->
+    {#if tileMap}
+      {#key region}
+        <foreignObject x="0" y="0" width={W} height={H} class="tiles-fo">
+          <div xmlns="http://www.w3.org/1999/xhtml" class="tiles-box">
+            <canvas bind:this={tileCanvas} class="tiles-canvas"></canvas>
+            {#if tilesUi.on}
+              <canvas bind:this={overlayCanvas} class="tiles-canvas"></canvas>
+            {/if}
+          </div>
+        </foreignObject>
+      {/key}
+    {/if}
 
     {#each edges.drawn as e (e.from.id + '>' + e.to.id)}
       {@const g = edgeGeom(e)}
@@ -888,6 +1163,23 @@
     </div>
   {/if}
 
+  {#if tilesUi.on}
+    <div class="legend">
+      {#if !tileMap}
+        <span class="dim">This region draws the node diagram. Create a grid for it in the panel on the right.</span>
+      {:else}
+        <span class="dim">
+          <b>{TOOLS.find((t) => t.id === tilesUi.tool)?.label ?? ''}</b>
+          · layer <b>{tileMap.layers[tilesUi.layer]?.name ?? '—'}</b>
+          {#if hover}· tile {hover.x},{hover.y}{/if}
+        </span>
+        <span class="grow"></span>
+        <span class="dim">
+          {#each TOOLS as t (t.id)}<kbd>{t.key}</kbd> {t.id} · {/each}<kbd>Ctrl+Z</kbd> undo · <kbd>Esc</kbd> back to the hand
+        </span>
+      {/if}
+    </div>
+  {:else}
   <div class="legend">
     <span class="k"><i class="ln"></i> two-way</span>
     <span class="k"><i class="ln one"></i> one-way</span>
@@ -901,6 +1193,7 @@
       wheel to zoom · <b>right-click</b> anything for actions · <b>Del</b> removes a selected edge
     </span>
   </div>
+  {/if}
 </div>
 
 {#if menu}
@@ -1002,6 +1295,51 @@
 
   .canvas.linking {
     cursor: crosshair;
+  }
+
+  /* A paint tool in hand: the brush needs the whole picture, so spots, edges
+     and NPCs stop catching the pointer until the Hand is picked again. */
+  .canvas.painting {
+    cursor: crosshair;
+  }
+
+  .canvas.painting .node,
+  .canvas.painting .edge-hit,
+  .canvas.painting .npc {
+    pointer-events: none;
+  }
+
+  .tiles-fo {
+    pointer-events: none;
+  }
+
+  .tiles-box {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .tiles-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    display: block;
+  }
+
+  .tiles-toggle.on {
+    background: rgba(108, 158, 255, 0.18);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .legend kbd {
+    font-family: var(--mono);
+    border: 1px solid var(--border-bright);
+    border-radius: 3px;
+    padding: 0 3px;
+    font-size: 10px;
   }
 
   /* ---------- Edges ---------- */

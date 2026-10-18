@@ -13,6 +13,10 @@ import { TITLES_TEXT } from '../text/titles.text';
  *                     doesn't count; tracked in combat.ts).
  */
 export const TITLES = prose<TitleDef>('TITLES', TITLES_TEXT, {
+  procedural_objection: {
+    id: 'procedural_objection', name: 'Procedural Objection', icon: '✊', secret: true,
+    unlock: [{ type: 'stat', key: 'flag:toll_brute_force', value: 1 }],
+  },
   iconoclast: {
     id: 'iconoclast',
     name: 'Iconoclast',

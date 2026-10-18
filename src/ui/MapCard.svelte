@@ -1,4 +1,6 @@
 <script lang="ts">
+  import OfficeDirectory from './OfficeDirectory.svelte';
+  import { OFFICE_ROOMS } from '../core/systems/floodedFloor';
   import { gs, game, ui, view } from './state.svelte';
   import { AREAS, REGIONS, SPOTS, getSpot } from '../core/registry';
   import { visibleEdges, fastTravelCost, canFastTravel, journeyEnd } from '../core/systems/locations';
@@ -7,32 +9,18 @@
   import { conditionsMet } from '../core/systems/conditions';
   import { condsText, fmt, ticksToTime } from './lib/format';
   import { routeInfo, spotFeatures, type SpotFeature } from './lib/navigation';
+  import { mapNodes } from './lib/map';
   import type { SpotDef } from '../core/types';
+  import TileMap from './lib/tilemaps/TileMap.svelte';
+  import { TILEMAPS } from './lib/tilemaps';
 
   let regionOverride = $state<string | null>(null);
   const currentRegion = $derived(AREAS[getSpot(gs.spot).areaId].regionId);
   const shownRegion = $derived(regionOverride ?? currentRegion);
   const regionList = Object.values(REGIONS);
 
-  interface MapNode {
-    spot: SpotDef;
-    known: boolean;
-  }
-
   // Discovered spots plus "?" ghosts one visible edge away from a discovered spot.
-  const nodes = $derived.by(() => {
-    const discovered = new Set(gs.discovered);
-    const ghosts = new Set<string>();
-    for (const id of gs.discovered) {
-      for (const e of visibleEdges(gs, id)) {
-        if (!discovered.has(e.to)) ghosts.add(e.to);
-      }
-    }
-    return Object.values(SPOTS)
-      .filter((s) => s.map && AREAS[s.areaId].regionId === shownRegion)
-      .filter((s) => discovered.has(s.id) || ghosts.has(s.id))
-      .map((s): MapNode => ({ spot: s, known: discovered.has(s.id) }));
-  });
+  const nodes = $derived(mapNodes(gs, shownRegion));
 
   const mapEdges = $derived.by(() => {
     const rendered = new Map(nodes.map((n) => [n.spot.id, n]));
@@ -43,6 +31,7 @@
       if (!n.known) continue;
       let exitCount = 0;
       for (const e of visibleEdges(gs, n.spot.id)) {
+        if (OFFICE_ROOMS.includes(n.spot.id) && OFFICE_ROOMS.includes(e.to)) continue;
         const target = SPOTS[e.to];
         const targetRegion = AREAS[target.areaId].regionId;
         if (targetRegion !== shownRegion) {
@@ -73,6 +62,15 @@
     }
     return { lines, exits };
   });
+
+  /**
+   * A region with a composed scene (lib/tilemaps) is painted from tiles under
+   * the diagram. Regions without one — and any machine without the art packs
+   * (`tilesFailed`) — keep the plain dark ground.
+   */
+  const tilemap = $derived(TILEMAPS[shownRegion] ?? null);
+  let tilesFailed = $state(false);
+  const tiled = $derived(!!tilemap && !tilesFailed);
 
   const waypoints = $derived(
     Object.values(SPOTS).filter(
@@ -189,7 +187,16 @@
       {/each}
     </div>
 
-    <svg viewBox="0 -6 100 84" class="map" aria-label="Region map">
+    {#if shownRegion === currentRegion && OFFICE_ROOMS.includes(gs.spot)}
+      <OfficeDirectory />
+    {:else}
+    <div class="map-wrap" class:tiled>
+    {#if tilemap}
+      {#key shownRegion}
+        <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} />
+      {/key}
+    {/if}
+    <svg viewBox="0 -6 100 84" class="map" class:tiled aria-label="Region map">
       {#each mapEdges.lines as e}
         <line
           x1={e.from.map!.x}
@@ -283,6 +290,8 @@
         </g>
       {/each}
     </svg>
+    </div>
+    {/if}
 
     <div class="fast small">
       <span class="dim">⚡ Caravan:</span>
@@ -471,6 +480,49 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     margin-top: 4px;
+  }
+
+  /*
+   * The tiles sit UNDER the same SVG, which is why the diagram keeps its
+   * viewBox (0 −6 100 84: six rows of headroom for labels above, three
+   * below): the canvas is pinned to the picture's own 100 × 75, so a spot's
+   * map coordinates land on the same tile whether or not the sheets loaded.
+   * The SVG's own ground goes transparent over tiles.
+   */
+  .map-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    margin-top: 4px;
+  }
+
+  .map-wrap.tiled {
+    aspect-ratio: 100 / 84;
+  }
+
+  .map-wrap.tiled :global(.tiles) {
+    top: calc(100% * 6 / 84);
+    height: calc(100% * 75 / 84);
+  }
+
+  .map-wrap.tiled .map {
+    position: absolute;
+    inset: 0;
+    max-height: none;
+    height: 100%;
+    background: transparent;
+    margin-top: 0;
+  }
+
+  .map.tiled .label {
+    fill: #fff;
+    paint-order: stroke;
+    stroke: #0d1014;
+    stroke-width: 0.8;
+  }
+
+  .map.tiled .edge {
+    stroke: rgba(255, 255, 255, 0.55);
   }
 
   .edge {

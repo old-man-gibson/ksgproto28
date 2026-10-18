@@ -1426,6 +1426,12 @@ it('frozen hollow is survivable around level-ready gear', () => {
 ```
 Drop it in any test file, `npx vitest run`, and you have a repeatable pacing probe.
 
+For the tower as a whole there is already one: **John** (`tests/john.ts`,
+COMPLETABILITY §8) plays band 1 by the obvious road with every rack weapon,
+and `npm run pacing` prints when each stretch ended, where the knockouts were
+and what the climb held at the top. Touching a band-1 floor, monster or gate?
+Run it before and after; `tests/john.test.ts` holds the curve's bounds.
+
 ## 9. Spellcraft content (words, miracles, psionic recognitions)
 
 Three schools, three registries, one shared idea: a spell stores **what made

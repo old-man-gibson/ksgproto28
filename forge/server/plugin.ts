@@ -19,12 +19,9 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Connect, Plugin, ViteDevServer } from 'vite';
-import { CATALOG, catalogFor, WRITABLE } from './catalog';
+import { CATALOG, catalogFor, isWritable } from './catalog';
 import {
   notesOf,
-  renameEntry,
-  reorderEntry,
-  setAt,
   setNoteAt,
   sourceOf,
   type NoteMarker,
@@ -32,6 +29,20 @@ import {
 } from './edit';
 import { diffLines, diffStat } from './diff';
 import { routeOp, textFileFor } from './prose';
+import {
+  MAPS_GEN,
+  SHEETS_GEN,
+  genMapsModule,
+  genSheetsModule,
+  mapFileFor,
+  mapProblems,
+  packDirs,
+  printMap,
+  readMaps,
+  readPackTmx,
+  scanPacks,
+} from './tilemaps';
+import type { TileMapDef } from '../../src/ui/lib/tilemaps/types';
 
 const API = '/__forge/api';
 
@@ -41,7 +52,9 @@ export type PatchOp =
   | { op: 'add'; kind: string; key: string; value: unknown }
   | { op: 'rename'; kind: string; from: string; to: string }
   | { op: 'reorder'; kind: string; key: string; anchor: string; before: boolean }
-  | { op: 'note'; kind: string; key: string; marker: NoteMarker; text: string | null };
+  | { op: 'note'; kind: string; key: string; marker: NoteMarker; text: string | null }
+  /** A region's drawn map, written whole; `null` deletes the file. */
+  | { op: 'tilemap'; region: string; map: TileMapDef | null };
 
 interface PatchRequest {
   ops: PatchOp[];
@@ -90,10 +103,15 @@ export function forge(): Plugin {
   let server: ViteDevServer;
   let rootDir = process.cwd();
 
-  /** Guarded read of a data file. */
+  /** Guarded read of a data file. A tool-owned file that does not exist yet reads as empty. */
   const readData = async (rel: string): Promise<string> => {
-    if (!WRITABLE.has(rel)) throw new Error(`Refusing to read outside the content catalog: ${rel}`);
-    return fs.readFile(path.join(rootDir, rel), 'utf8');
+    if (!isWritable(rel)) throw new Error(`Refusing to read outside the content catalog: ${rel}`);
+    try {
+      return await fs.readFile(path.join(rootDir, rel), 'utf8');
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT' && rel.startsWith('src/ui/lib/tilemaps/')) return '';
+      throw err;
+    }
   };
 
   /**
@@ -239,6 +257,8 @@ export function forge(): Plugin {
             // valid, then written once at the end.
             const originals = new Map<string, string>();
             const working = new Map<string, string>();
+            /** Files a tilemap op removed; they leave `working` as '' and are unlinked on apply. */
+            const removed = new Set<string>();
             const notes: string[] = [];
 
             const load = async (file: string): Promise<string> => {
@@ -250,9 +270,40 @@ export function forge(): Plugin {
               return working.get(file)!;
             };
 
+            // Drawn maps: whole-file writes, then the two generated modules are
+            // recomputed from what the tilemaps folder will hold afterwards.
+            const mapOps = ops.filter((o): o is Extract<PatchOp, { op: 'tilemap' }> => o.op === 'tilemap');
+            if (mapOps.length) {
+              const maps = readMaps(rootDir);
+              for (const op of mapOps) {
+                const file = mapFileFor(op.region);
+                await load(file);
+                if (op.map === null) {
+                  working.set(file, '');
+                  removed.add(file);
+                  delete maps[op.region];
+                  notes.push(`${file}: removed — ${op.region} draws the node diagram again`);
+                  continue;
+                }
+                const problems = mapProblems(op.map);
+                if (problems.length) {
+                  return send(res, 400, { error: `Map for ${op.region}: ${problems.join('; ')}` });
+                }
+                removed.delete(file);
+                working.set(file, printMap(op.map));
+                maps[op.region] = op.map;
+                notes.push(`${file}: ${op.map.width}×${op.map.height}, ${op.map.layers.length} layer(s), ${op.map.tilesets.length} sheet(s)`);
+              }
+              await load(MAPS_GEN);
+              await load(SHEETS_GEN);
+              working.set(MAPS_GEN, genMapsModule(Object.keys(maps)));
+              working.set(SHEETS_GEN, genSheetsModule(maps, packDirs(rootDir)));
+            }
+
             for (const op of ops) {
+              if (op.op === 'tilemap') continue;
               const entry = catalogFor(op.kind);
-              if (!WRITABLE.has(entry.file)) {
+              if (!isWritable(entry.file)) {
                 return send(res, 400, { error: `Not writable: ${entry.file}` });
               }
               const current = await load(entry.file);
@@ -273,27 +324,19 @@ export function forge(): Plugin {
                 working.set(edit.file, result.text);
                 notes.push(result.note);
               }
-              const current = working.get(entry.file)!;
-              const result =
-                op.op === 'add'
-                  ? addEntry(entry.file, current, entry.root, op.key, op.value, entry.keyOrder)
-                  : op.op === 'delete'
-                    ? deleteAt(entry.file, current, entry.root, op.path)
-                    : op.op === 'rename'
-                      ? renameEntry(entry.file, current, entry.root, op.from, op.to)
-                      : op.op === 'reorder'
-                        ? reorderEntry(entry.file, current, entry.root, op.key, op.anchor, op.before)
-                        : op.op === 'note'
-                          ? setNoteAt(entry.file, current, entry.root, op.key, op.marker, op.text)
-                          : setAt(entry.file, current, entry.root, op.path, op.value, entry.keyOrder);
-              working.set(entry.file, result.text);
-              notes.push(result.note);
             }
 
             const changes = [...working].map(([file, after]) => {
               const before = originals.get(file)!;
               const hunks = diffLines(before, after);
-              return { file, hunks, stat: diffStat(hunks), unchanged: before === after };
+              return {
+                file,
+                hunks,
+                stat: diffStat(hunks),
+                unchanged: before === after,
+                removed: removed.has(file) || undefined,
+                created: (before === '' && after !== '') || undefined,
+              };
             });
 
             if (dryRun) return send(res, 200, { dryRun: true, notes, changes });
@@ -302,8 +345,10 @@ export function forge(): Plugin {
             for (const [file, after] of working) {
               const before = originals.get(file)!;
               if (before === after) continue;
-              backups.push(await backup(file, before));
-              await fs.writeFile(path.join(rootDir, file), after, 'utf8');
+              if (before !== '') backups.push(await backup(file, before));
+              const target = path.join(rootDir, file);
+              if (removed.has(file)) await fs.rm(target, { force: true });
+              else await fs.writeFile(target, after, 'utf8');
             }
             return send(res, 200, { dryRun: false, notes, changes, backups });
           }
@@ -321,9 +366,26 @@ export function forge(): Plugin {
             return send(res, 200, { backups: files.sort().reverse().slice(0, 100) });
           }
 
+          // ---------- Drawn maps: the packs, one example map, the maps on disk ----------
+          if (route === '/tiles/packs') {
+            return send(res, 200, { packs: scanPacks(rootDir) });
+          }
+
+          if (route === '/tiles/tmx' && req.method === 'POST') {
+            const { dir, path: rel } = (await readBody(req)) as { dir: string; path: string };
+            if (!dir || dir.includes('..') || dir.includes('/') || dir.includes('\\')) {
+              return send(res, 400, { error: 'Bad pack folder' });
+            }
+            return send(res, 200, { map: readPackTmx(rootDir, dir, rel) });
+          }
+
+          if (route === '/tiles/maps') {
+            return send(res, 200, { maps: readMaps(rootDir) });
+          }
+
           if (route === '/restore' && req.method === 'POST') {
             const { backup: name, file } = (await readBody(req)) as { backup: string; file: string };
-            if (!WRITABLE.has(file)) return send(res, 400, { error: `Not writable: ${file}` });
+            if (!isWritable(file)) return send(res, 400, { error: `Not writable: ${file}` });
             if (name.includes('/') || name.includes('\\') || name.includes('..')) {
               return send(res, 400, { error: 'Bad backup name' });
             }

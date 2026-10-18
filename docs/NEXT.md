@@ -17,6 +17,24 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **John, and band 1 retuned around him (2026-10-10, no save change).**
+  COMPLETABILITY §8's floor-build driver now exists for band 1
+  (`tests/john.ts`; `npm run pacing` prints the table; `tests/john.test.ts`
+  holds the bounds). What he measured, and the retune, are on
+  [plans/alpha-band-one-floors.md](plans/alpha-band-one-floors.md): floor 3
+  was 14–110 knockouts and up to two hours, ending on 6k–90k gold; band 1 is
+  now 13–19 minutes for every build. The toll collector became a real fight,
+  the gallery a brood that opens the den, the queen solitary with venom under
+  the rot cap, and floors 2 and 3 hand over their own answers on the explore
+  track (a club, a spear). Numbers stay the user's to retune.
+
+- **Flooded first floor (2026-09-17)** — see [FLOODED_FLOOR.md](FLOODED_FLOOR.md).
+  Supersedes the old toll hall keeper content: finite vermin section, repeatable
+  searches with capped rewards, key-item daybook, explored office key, 3×3
+  room-sequence directory, and a submerged collector with three spell reactions.
+  Spell-free victory awards a secret title. The existing floor/quest clear
+  counter is retained; no save migration or global skill-XP change.
+
 - **Shops (2026-09-12, no save change) — `systems/shops.ts`, CONTENT_GUIDE §4
   "NPC + quest" → Shop.** A vendor is an NPC with `shop.lines`; stock is
   data, prices derive from `value` × `BUY_MARKUP` (2), strangers pay

@@ -6,6 +6,7 @@ import type { ProseTable } from './prose';
 // ---------- ITEMS ----------
 export const ITEMS_TEXT: ProseTable = {
   'rusty_sword.desc': 'One-handed sword. +3 Damage.',
+  'old_hammer.desc': 'One-handed hammer. +5 Damage, −12% Attack Speed.',
 
   'oak_club.desc': 'One-handed blunt weapon. +5 Damage, -10% Attack Speed.',
 

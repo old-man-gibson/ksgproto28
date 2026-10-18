@@ -1,5 +1,5 @@
 import type { GameState, ItemInstance } from '../types';
-import { ITEMS, QUESTS, SKILLS, SPOTS, STARTING_SPOT, STYLES } from '../registry';
+import { ITEMS, QUESTS, SKILLS, SPOTS, STYLES } from '../registry';
 import { runeClassOf } from '../systems/runes';
 import { getDerivedStats } from '../systems/derived';
 import { settleLevels } from '../systems/progression';
@@ -490,7 +490,9 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     const known = (id: unknown): id is string => typeof id === 'string' && id in SPOTS;
     const spotLost = !known(raw.spot);
     if (spotLost) {
-      raw.spot = STARTING_SPOT;
+      // The Foot, not STARTING_SPOT: since v53 a new life opens in the
+      // tutorial cell, and a save from the countryside has no business there.
+      raw.spot = 'ascent_foot';
       raw.activity = null;
       raw.pendingApproach = null;
     }
@@ -554,6 +556,16 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     raw.resumeActivity = raw.resumeActivity ?? {};
     raw.bonusTime = raw.bonusTime ?? { banked: 0, spending: false };
     raw.version = 53;
+  },
+  // v53 → v54: floor 0, the tutorial. A save from before it has already
+  // played the opening the tutorial replaces, so it is stamped done — the
+  // same confiscation rule as the v47 shutters: a panel explaining a fight to
+  // someone standing on floor 3 would be a regression, not onboarding.
+  53: (raw) => {
+    const stats = (raw.stats as Record<string, number> | undefined) ?? {};
+    stats['flag:tutorial_done'] = Math.max(1, stats['flag:tutorial_done'] ?? 0);
+    raw.stats = stats;
+    raw.version = 54;
   },
 };
 

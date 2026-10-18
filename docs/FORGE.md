@@ -140,6 +140,18 @@ pins shrink in map terms instead of covering the geography. It is dev-only like 
 input. (Currently holds an Azgaar fantasy-map export, "Arevilia", which is
 not final — that's exactly why it's a drop-in file and not data.)
 
+## Tiles mode
+
+**🧱 Tiles** on the World Map toolbar turns the region's picture on: the
+right-hand panel becomes a palette of the tile packs under
+`src/assets/tilemaps/`, and brush, fill, eraser and picker paint a
+`src/ui/lib/tilemaps/<region>.map.json` under the spot diagram. Spots stay
+live (the Hand tool drags them, snapping to tile centres). The map file is
+the one thing the forge writes **whole** rather than surgically — it carries
+no hand comments to protect — and two generated modules (`maps.gen.ts`,
+`sheets.gen.ts`) are rewritten with it so the game needs no hand edit to
+show a new region. Everything about it: **[TILEMAPS.md](TILEMAPS.md)**.
+
 ## Notes to your future self
 
 Every entry editor carries two note fields, **📌 TODO** and **📋 SPEC**. They
@@ -275,14 +287,19 @@ forge/
   lib/
     api.ts            client for /__forge/api/*
     store.svelte.ts   working copy + staged patch ops (coalesces a drag into one edit)
+    tilemap.ts        pure edits on a drawn map (stamps, fills, compaction)
+    tiles.svelte.ts   Tiles mode state: tool, stamp, active layer, undo
     validate.ts       live mirror of the content linter
     selection.ts      what the map has selected
     Field / RefPicker / TagInput
   panels/
     WorldMap  Inspector  SpotInspector  EdgeInspector  NpcInspector  FindsEditor
+    TileSide  TilePalette  TileLayers          (Tiles mode, docs/TILEMAPS.md)
     Browser  EntryEditor  RefGraph  DiffModal  IssueList
   server/
-    plugin.ts   the Vite dev plugin: /registry, /patch, /verify, /source, /backups
+    plugin.ts   the Vite dev plugin: /registry, /patch, /verify, /source, /backups, /tiles/*
+    tilemaps.ts drawn maps: pack scan, the map printer, the two generated modules
+    tmx.ts      readers for Tiled's .tsx / .tmx
     edit.ts     TypeScript AST surgery
     print.ts    prints values back as idiomatic TS (single quotes, 2 spaces, key order)
     diff.ts     line diff for the review modal

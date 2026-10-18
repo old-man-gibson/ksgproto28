@@ -269,6 +269,8 @@ function inflict(
     }
   }
 
+  if (stacking.refreshDuration) held.ticksLeft = durationOf(def, app);
+
   // Pushed past its ceiling, a condition either clamps or gives way to
   // something worse (a chill that reaches 100% is no longer a chill).
   const cap = capOverrideFor(bearer, def.id) ?? stacking.cap;

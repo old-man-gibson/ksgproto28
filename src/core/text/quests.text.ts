@@ -24,6 +24,6 @@ export const QUESTS_TEXT: ProseTable = {
   'a_taste_of_everything.objectives.5.desc': 'Inscribe a spell at the Reading Hall’s Spell Table',
   'a_taste_of_everything.objectives.6.desc': 'Learn a miracle at the Nine Chapels',
 
-  'the_first_ascent.desc': 'Defeat the keeper of the Toll Hall on floor 1: a Hobgoblin by day or a Slimer by night. Either clears the floor. Reward: 350 gold, 1 favor. Requires A Taste of Everything.',
-  'the_first_ascent.objectives.0.desc': 'Defeat the keeper of the Toll Hall (Hobgoblin by day, Slimer by night)',
+  "the_first_ascent.desc": "Find the toll stamp that is still being used in the flooded offices. Follow the vermin’s retreat, search the records, and locate the collector.",
+  "the_first_ascent.objectives.0.desc": "Recover the toll stamp from the collector",
 };

@@ -10,6 +10,8 @@ import type {
   SpotFind,
 } from '../types';
 import type { EventBus } from '../engine/events';
+import { rollSearch } from './search';
+import { grantKeyItem } from './keyitems';
 import { TPS } from '../engine/loop';
 import { chance, randInt } from '../engine/rng';
 import { getSpot, ITEMS, MATERIALS, RECIPES, RUNES, SKILLS, SPOTS } from '../registry';
@@ -18,7 +20,7 @@ import { attrValue, grantAttrXpSplit } from './attributes';
 import { checkDiscovery, grantSkillXp, skillTrainedBy } from './skills';
 import { grantActivityExposure } from './exposure';
 import { conditionsMet } from './conditions';
-import { tickCombat, abandonCombat, inForcedFight } from './combat';
+import { tickCombat, abandonCombat, inForcedFight, spotCleared, startForcedFight } from './combat';
 import { retreatToSafety } from './safety';
 import { tickResources } from './resources';
 import { damagePlayer, heal, hpFraction, isAlive, type HealKind } from './health';
@@ -166,6 +168,7 @@ export function activityXpTags(act: ActivityDef): string[] {
       return ['job', ...(act.tags ?? [])];
     case 'craft':
       return ['craft', ...(act.tags ?? [])];
+    case 'search':
     case 'explore':
       return ['explore', ...(act.tags ?? [])];
     case 'hunt':
@@ -296,6 +299,7 @@ export function activityCost(act: ActivityDef, stats: DerivedStats): number {
       break;
     case 'gather':
     case 'job':
+    case 'search':
       baselineTicks = act.ticksPer;
       break;
     case 'craft':
@@ -355,6 +359,7 @@ export function tickAction(state: GameState, bus: EventBus): void {
   // A forced fight started on arrival, not from an activity, so it ticks no
   // matter what is (or isn't) selected — you cannot put it down by having
   // nothing to do. Whatever work was picked resumes once the fight resolves.
+  if (!state.combat && spot.forced && !spotCleared(state, spot)) startForcedFight(state, bus, spot);
   if (inForcedFight(state)) {
     tickCombat(state, bus, spot);
     return;
@@ -383,6 +388,19 @@ export function tickAction(state: GameState, bus: EventBus): void {
     }
     case 'rest': {
       // Nothing to do but recover, which the trickle above already did.
+      break;
+    }
+    case 'search': {
+      state.activityProgress += activityFillRate(act, stats, state);
+      const cost = activityCost(act, stats);
+      if (state.activityProgress >= cost) {
+        state.activityProgress -= cost;
+        const reward = rollSearch(state, bus, spot.id, act);
+        if (reward) grantFind(state, bus, spot, { ...reward, at: 1 }, false);
+        else bus.emit({ type: 'log', kind: 'explore', msg: 'Nothing remains to be found in this search.' });
+        checkDiscovery(state, bus, activityXpTags(act));
+        grantSkillXp(state, bus, activityXpTags(act), 2);
+      }
       break;
     }
     case 'explore': {
@@ -791,13 +809,16 @@ export function foundPaths(state: GameState, spotId: string): Set<string> {
 }
 
 /** Hand over one find's payload and remember it as claimed. */
-function grantFind(state: GameState, bus: EventBus, spot: SpotDef, find: SpotFind): void {
+function grantFind(state: GameState, bus: EventBus, spot: SpotDef, find: SpotFind, remember = true): void {
   // Assign, THEN read back. The value of `x ??= []` is the raw array, but the
   // UI's deep $state proxy stores a proxied copy of it — pushing into the
   // expression's result writes to an array nothing will ever read. It only
   // misfires when the key was absent, which is every spot the first time.
-  state.finds[spot.id] ??= [];
-  state.finds[spot.id].push(find.id);
+  if (remember) {
+    state.finds[spot.id] ??= [];
+    state.finds[spot.id].push(find.id);
+  }
+  if (find.keyItem) grantKeyItem(state, bus, find.keyItem);
 
   const tally: { label: string; qty: number; style?: 'amount' }[] = [];
 

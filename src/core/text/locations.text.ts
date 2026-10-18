@@ -5,6 +5,22 @@ import type { ProseTable } from './prose';
 
 // ---------- SPOTS ----------
 export const SPOTS_TEXT: ProseTable = {
+  "f1_landing.desc": "Water runs down the stair and spreads beneath the doors. Somewhere inside, a stamp strikes a desk. Find the toll stamp still being used on this floor.",
+  "f1_storerooms.desc": "Rats crowd the fallen shelves. Drive them out and watch where they flee.",
+  "f1_bonded_deep.desc": "The fleeing vermin leave a gap beneath a shelf. Beyond it, cupboards and sodden files line a long passage. Search the rooms for a record of the toll stamp.",
+  "f1_archive.desc": "Daybooks sit on the upper shelves, above the waterline. Search here for the collector’s records.",
+  "f1_lockers.desc": "Coats hang above flooded lockers. Loose coins and tools collect beneath them.",
+  "f1_forms.desc": "Drawers of blank forms swell against their frames. An old sign points toward the office reception.",
+  "f1_reception.desc": "The reception desk is dry underneath. Search it before trying the office doors. Each door names the room beyond; the daybook records the order of the clerk’s visits.",
+  "f1_registry.desc": "Numbered drawers reach the ceiling. The water has carried their labels across the floor.",
+  "f1_scribe.desc": "Form templates lie beneath a paperweight. A ruler projects from the drawer beside them.",
+  "f1_auditor.desc": "A validation ledger lies open beside a stack of rejected forms.",
+  "f1_break_room.desc": "A bowl of wax apples sits between two empty cups.",
+  "f1_dispatch.desc": "Pigeonholes cover the wall. Unsent envelopes cling to the table legs.",
+  "f1_records.desc": "Copies of the same receipt hang from drying lines.",
+  "f1_supplies.desc": "Boxes of spare nibs stand on a stool above the water.",
+  "f1_toll_hall.desc": "A golem stands submerged behind a desk, stamping sodden documents. The water around it can become steam, ice, or a conductor. The toll stamp remains in its hand.",
+
   'base_entrance.desc': 'The door into your hold. It opens from the Foot of the Ascent after your first prestige and leads to the Main Hall.',
 
   'base_equipment_depot.desc': 'Storage room for gear. No activities. Connects to the Main Hall, the Dining Hall, the Infirmary and the Training Area.',
@@ -109,28 +125,31 @@ export const SPOTS_TEXT: ProseTable = {
 
   'the_undercrofts.desc': 'Indoor. Go Through the Back Stores explores the cellars (52 s). Shift Barrels All Day trains Constitution.',
 
-  'f1_landing.desc': 'Landing of floor 1. Camp on the Landing is a rest activity, and the landing is a haven: a knockout on this floor returns you here. Connects to the Bonded Stores and the Toll Hall.',
+  'f0_cell.desc': 'Floor 0, where a new life starts. Sleep on the Straw is a rest activity, so the cell is a haven. The rack here is the tutorial’s weapon choice. The cell door leads to the Cellblock (2 s).',
 
-  'f1_storerooms.desc': 'Go Through the Crates explores the stores (36 s) for two finds; full exploration reveals a hidden way down to the Bonded Deep. Clear Out the Vermin fights Forest Rats and Slimes (levels 1 to 4).',
-  'f1_storerooms.finds.f1_manifest_coin.desc': '💰 A strongbox under a manifest: 30 to 50 gold.',
-  'f1_storerooms.finds.f1_dried_herbs.desc': '🌿 Four bundles of common herb. Pays Herbalism XP.',
+  'f0_cellblock.desc': 'Corridor outside the cell. Fight the Cell Slime is one fight: the slime deals 1 damage per hit and is gone once beaten. The yard door leads to the Field (3 s).',
 
-  'f1_bonded_deep.desc': 'Dark. Hidden stores below the Bonded Stores, guarded far above this floor’s level: Slimers and Metal Slimes at levels 8 to 11. Search Past the Manifests explores it (42 s) for one find.',
-  'f1_bonded_deep.finds.f1_deep_strongroom.desc': '💰 An uncollected strongroom: 180 to 260 gold.',
+  'f0_field.desc': 'Open ground between the cellblock and the gate. Fight in the Field holds three fights against Cell Slimes (levels 1 to 2), then goes quiet. Study the Gate Plaque trains Intelligence. The path leads to the Gate (3 s).',
 
-  'f1_toll_hall.desc': 'Den of floor 1. Hunt the Hall fights Goblins and Slimes, one Coin Slime, and the keeper: a Hobgoblin by day or a Slimer by night (levels 6 to 7). Defeating either keeper clears the floor. While your power sits at 90 to 98% of theirs, a Hobgoblin Champion or Slime King (levels 11 to 12) can appear as keeper instead.',
+  'f0_gate.desc': 'The way out of floor 0. The road through it into Threshold (3 s) is one-way: the Foot of the Ascent is on the other side and the floor closes behind you.',
+
+
+
+
 
   'f2_landing.desc': 'Landing of floor 2. Camp on the Landing is a rest activity, and the landing is a haven. Connects to the Sluice Gallery and the Broken Cistern; arriving at the cistern starts a fight that cannot be fled.',
 
-  'f2_sluice.desc': 'Trace the Channels explores the gallery (42 s) for one find. Cross the Wet Stones trains Dexterity.',
+  'f2_sluice.desc': 'Trace the Channels explores the gallery (42 s) for two finds. Cross the Wet Stones trains Dexterity.',
+  'f2_sluice.finds.f2_snagged_club.desc': '🏏 An oak club snagged in a grate. A club deals bludgeoning damage, which the cistern’s slimes take more of; blades and points they mostly shrug off.',
   'f2_sluice.finds.f2_drowned_purse.desc': '💰 A purse wedged in a sluice gate: 70 to 110 gold.',
 
-  'f2_cistern.desc': 'Den of floor 2. Arriving starts a fight that cannot be fled. Wade In fights Water Slimes and Slimers (levels 4 to 8). The cistern holds 8 winnable fights; the eighth win clears the floor, ends the forced fights and empties the hunts.',
+  'f2_cistern.desc': 'Den of floor 2. Arriving starts a fight that cannot be fled. Wade In fights Water Slimes and Slimers (levels 4 to 7), mostly one at a time. The cistern holds 8 winnable fights; the eighth win clears the floor, ends the forced fights and empties the hunts.',
 
-  'f3_landing.desc': 'Landing of floor 3. Camp on the Landing is a rest activity, and the landing is a haven. Connects to the Silk Gallery and the Brood Den.',
+  'f3_landing.desc': 'Landing of floor 3. Camp on the Landing is a rest activity, and the landing is a haven. Connects to the Silk Gallery; the road to the Brood Den appears once the gallery’s brood is driven off.',
 
-  'f3_web_gallery.desc': 'Cut Through the Webs explores the gallery (48 s) for one find. Hunt the Gallery fights Cave Spiders and Slime Spiders (levels 7 to 11).',
+  'f3_web_gallery.desc': 'Cut Through the Webs explores the gallery (48 s) for two finds. Hunt the Gallery fights Cave Spiders and Slime Spiders (levels 5 to 8). The gallery holds 6 winnable fights; the sixth win opens the road to the Brood Den and empties the hunt.',
+  'f3_web_gallery.finds.f3_webbed_spear.desc': '🔱 An old spear bound into the webs. A spear deals piercing damage, which the Giant Spider Queen takes half again of.',
   'f3_web_gallery.finds.f3_wrapped_valuables.desc': '💰 A cocooned satchel: 120 to 180 gold.',
 
-  'f3_brood_den.desc': 'Den of floor 3. Go to the Centre fights Cave Spiders (levels 8 to 11) and, once, the Giant Spider Queen (level 12). Killing the queen clears the floor.',
+  'f3_brood_den.desc': 'Den of floor 3. Go to the Centre fights Cave Spiders (levels 7 to 9), at most two at a time, and, once, the Giant Spider Queen (level 9), who always fights alone. Killing the queen clears the floor.',
 };

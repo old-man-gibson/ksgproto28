@@ -19,7 +19,9 @@ export const BANDS_TEXT: ProseTable = {
 
 // ---------- FLOORS ----------
 export const FLOORS_TEXT: ProseTable = {
-  'ascent_f1.desc': 'Floor 1. No gate. Cleared by defeating the keeper of the Toll Hall: a Hobgoblin by day or a Slimer by night.',
+  'ascent_f0.desc': 'Floor 0, the tutorial. Not on the ladder: it opens nothing and is left by the one-way gate into Threshold. A new life starts in its holding cell.',
+
+  "ascent_f1.desc": "Find the toll stamp in the flooded offices. Drive out the vermin, search for the clerk’s daybook, and follow its room sequence to the collector.",
 
   'ascent_f2.desc': 'Floor 2. Gate: 150 gold earned in total. Cleared by winning 8 fights in the Broken Cistern, which forces a fight on arrival.',
 

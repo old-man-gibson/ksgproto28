@@ -5,6 +5,7 @@ import type { ProseTable } from './prose';
 
 // ---------- TITLES ----------
 export const TITLES_TEXT: ProseTable = {
+  'procedural_objection.desc': 'Defeat the Toll Collector without casting a spell during that encounter. The stamp yields to force.',
   'iconoclast.desc': 'Learn ten miracles. Passive: +5 maximum spirit. Worn: +5% spell power, and miracles of hostile deities may be prepared together.',
 
   'wanderer.desc': 'Complete 50 journeys between spots. Passive: +5% travel speed. Worn: +10% travel speed and +10% loot.',

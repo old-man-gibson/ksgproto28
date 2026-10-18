@@ -1,4 +1,5 @@
 <script lang="ts">
+  import KeyItems from '../KeyItems.svelte';
   import { gs, game, ui, view } from '../state.svelte';
   import { getSpot, MATERIALS, RECIPES } from '../../core/registry';
   import { locationBreadcrumb } from '../../core/systems/locations';
@@ -176,6 +177,8 @@
     </div>
   {:else if act.kind === 'hunt'}
     <div class="tip-line">Seeks out monsters to fight here</div>
+  {:else if act.kind === 'search'}
+    <div class="tip-line">Repeatedly searches this room. Each completed search yields one result; some discoveries can only be found once.</div>
   {:else if act.kind === 'rest'}
     <div class="tip-line">Recovers HP steadily</div>
   {:else if act.kind === 'explore'}
@@ -237,6 +240,7 @@
     <h2>{spot.icon} {spot.name}</h2>
     <p class="dim">{spot.desc}</p>
 
+    <KeyItems />
     <h3>Activities</h3>
     <div class="btn-grid">
       {#each spot.activities as act}

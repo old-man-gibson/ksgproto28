@@ -25,7 +25,7 @@
   let { id, onselect }: Props = $props();
 
   /** Kinds you can place by hand — `craft` is synthesized from `recipes`. */
-  const KINDS = ['train', 'hunt', 'rest', 'explore', 'gather', 'job'] as const;
+  const KINDS = ['train', 'hunt', 'rest', 'explore', 'search', 'gather', 'job'] as const;
   type PlaceableKind = (typeof KINDS)[number];
   const ATTRS: AttributeId[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
   /** One table serving three schools: legal furniture that resolves to no discipline. */
@@ -126,6 +126,8 @@
         return { id: actId, kind: 'rest', name: 'Rest', icon: '🔥' };
       case 'explore':
         return { id: actId, kind: 'explore', name: 'Explore', icon: '🔍' };
+      case 'search':
+        return { id: actId, kind: 'search', name: 'Search', icon: '🔎', ticksPer: 50, rewards: [{ id: 'coins', weight: 1, gold: [1, 3] }] };
       case 'gather':
         return { id: actId, kind: 'gather', material: '', ticksPer: 20, name: 'Gather', icon: '🧺' };
       case 'job':
@@ -143,6 +145,16 @@
 
   function setAct(actId: string, key: string, value: unknown): void {
     set(['activities', `#id=${actId}`, key], value);
+  }
+
+  function setSearchRewards(actId: string, raw: string): void {
+    try {
+      const rewards: unknown = JSON.parse(raw);
+      if (!Array.isArray(rewards) || rewards.some((r) => !r || typeof r !== 'object' || !r.id || !(r.weight > 0))) throw new Error('Use an array of rewards, each with an id and positive weight.');
+      setAct(actId, 'rewards', rewards);
+    } catch (error) {
+      store.say(`Search rewards: ${error instanceof Error ? error.message : 'invalid JSON'}`, 'warn');
+    }
   }
 
   function setActNum(actId: string, key: string, raw: string): void {
@@ -325,7 +337,15 @@
         ✕
       </button>
     </div>
-    {#if act.kind === 'gather'}
+    {#if act.kind === 'search'}
+      <label class="line sub">Ticks per search
+        <input type="number" min="1" value={act.ticksPer} onchange={(ev) => setActNum(act.id, 'ticksPer', ev.currentTarget.value)} />
+      </label>
+      <label class="line sub">Reward table (JSON)
+        <textarea aria-label="Search reward table" rows="8" value={JSON.stringify(act.rewards, null, 2)} onchange={(ev) => setSearchRewards(act.id, ev.currentTarget.value)}></textarea>
+      </label>
+      <p class="dim small">Each reward has id and weight; optional limit caps awards per run, guaranteedBy prevents long droughts. Payload: gold, material, item, rune, keyItem, skillXp or stat.</p>
+    {:else if act.kind === 'gather'}
       <div class="line sub">
         <span class="lbl">material</span>
         <div class="grow">

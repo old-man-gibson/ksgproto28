@@ -12,6 +12,7 @@ npm run dev      # dev server at http://localhost:5173
 npm run build    # static production build in dist/ (deployable to any static host)
 npm test         # core logic unit tests (vitest)
 npm run check    # typecheck (svelte-check)
+npm run pacing   # play band 1 headless (John, docs/COMPLETABILITY.md §8) and print the timeline
 ```
 
 Requires Node.js (LTS). The build is a fully static site — `dist/` works on GitHub Pages,
@@ -275,6 +276,11 @@ project are our own; the art is his.
 > redistributing the battler files themselves. A fresh clone installs, builds
 > and runs — enemy portraits simply resolve to missing images until you restore
 > that folder from your own copy of the Librarium pack.
+>
+> The same goes for `src/assets/tilemaps/` — the Epic RPG World tile packs the
+> drawn maps are painted from (floor 0 today). Without them the map falls back
+> to the plain diagram; the composed scenes themselves are in the repo. See
+> [docs/TUTORIAL.md](docs/TUTORIAL.md) §4.
 
 Who wrote what — design, implementation, and the provenance of every layer of
 this project — is recorded in [docs/AUTHORSHIP.md](docs/AUTHORSHIP.md).

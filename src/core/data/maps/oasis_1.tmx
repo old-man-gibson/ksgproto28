@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="36" height="24" tilewidth="32" tileheight="32" infinite="1" nextlayerid="3" nextobjectid="1">
+ <tileset firstgid="1" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/Desert-Tileset-cliff1-2T.tsx"/>
+ <tileset firstgid="289" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/Desert-Tileset-cliff1-3T.tsx"/>
+ <tileset firstgid="577" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/Props.tsx"/>
+ <tileset firstgid="2189" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/props2.tsx"/>
+ <tileset firstgid="2814" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/props2-sprites.tsx"/>
+ <tileset firstgid="2885" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/props-houses-tents-sprites.tsx"/>
+ <tileset firstgid="3016" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/props-sprites.tsx"/>
+ <tileset firstgid="3366" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/props-tents-houses.tsx"/>
+ <tileset firstgid="5236" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/Terrain-Desert.tsx"/>
+ <tileset firstgid="7767" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/water-to-rocky-ground.tsx"/>
+ <tileset firstgid="8166" source="../../../assets/tilemaps/Epic RPG World - Desert V1.6/tiledmap editor/Tilesets/water-to-sand.tsx"/>
+ <layer id="1" name="Tile Layer 1" width="36" height="24">
+  <data encoding="csv">
+   <chunk x="0" y="-16" width="16" height="16">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,7929,7920,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,7901,7882,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,7863,7958,7939,7910,7929,7920,0,0,
+0,0,0,0,0,0,0,0,7901,7977,7787,7787,7787,7853,0,0,
+0,0,0,0,0,0,7825,8053,7787,7787,7787,7787,7787,7901,7882,0,
+0,0,0,0,0,0,8129,7977,7787,7787,7787,7787,7787,7825,7806,0,
+0,0,0,0,0,7958,7977,7825,8091,7948,7986,7967,8091,7806,0,0,
+0,0,0,0,0,7815,7825,7844,5918,5918,5921,5918,5918,5918,0,0,
+0,0,0,0,0,0,7844,5880,5919,5880,5919,6001,6002,0,0,0,
+0,0,0,0,0,0,0,0,0,0,6038,5913,5915,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+</chunk>
+  </data>
+ </layer>
+ <layer id="2" name="Tile Layer 2" width="36" height="24">
+  <data encoding="csv"/>
+ </layer>
+</map>

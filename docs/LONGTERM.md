@@ -143,3 +143,15 @@ and quest chains are exactly as they were — so a revival is a content
 decision, not a build. Old saves that were standing out there woke at the
 Foot on load (save v49) with their spot-keyed counters intact; a revived map
 would find them waiting.
+
+## Tile maps in the forge — autotile, the generator, fake doors (shelved 2026-09-15)
+
+What shipped stays: the Tiles mode (docs/TILEMAPS.md — palettes, painting,
+`<region>.map.json`, the two generated modules) is complete on its own and
+floor 0 is drawn from it. What is shelved is everything after it in
+[plans/forge-tilemaps.md](plans/forge-tilemaps.md): interpreting the packs'
+automapping Rules, the room-and-corridor generator with per-pack kits, and
+fake doors that glitch until revealed. The design and the nine decisions the
+user took are on that card and its three draft stories; the Tiled readers
+already return the Rules and Wang sets the autotile would need. Shelved by
+the user the day it was planned — revisit only when they raise it.

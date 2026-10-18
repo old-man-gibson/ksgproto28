@@ -22,6 +22,8 @@
   import PrestigePanel from './panels/PrestigePanel.svelte';
   import { prestigeVisible } from '../core/systems/prestige';
   import DefeatModal from './DefeatModal.svelte';
+  import TutorialCard from './TutorialCard.svelte';
+  import { tutorialActive } from '../core/systems/tutorial';
   import { fmt } from './lib/format';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf } from '../core/systems/clock';
@@ -336,6 +338,12 @@
   </aside>
 
   <main>
+    <!-- Floor 0's commentary track, above the tabs so every step's pointer
+         ("click the map", "open the Combat tab") is readable from where it
+         sends you. Gone for good once flag:tutorial_done is stamped. -->
+    {#if tutorialActive(gs)}
+      <TutorialCard />
+    {/if}
     <nav class="tabs">
       {#each tabs as tab}
         <button class:selected={ui.tab === tab.id} onclick={() => (ui.tab = tab.id)}>
