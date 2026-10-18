@@ -114,7 +114,10 @@
       return [
         { label: 'slot', value: SLOT_NAMES[def.slot] },
         { label: 'quality', value: '—' },
-        { label: 'runes', value: lo === hi ? `${hi}` : `${lo}–${hi}` },
+        // Runes ride the runecarving shutter.
+        ...(subsystemUnlocked(gs, 'runecarving')
+          ? [{ label: 'runes', value: lo === hi ? `${hi}` : `${lo}–${hi}` }]
+          : []),
       ];
     }
     const def = MATERIALS[line.id];
@@ -454,7 +457,9 @@
               <span><span class="dim">wield</span> {WIELD_NAMES[wieldOf(def)]}</span>
             {/if}
             <span><span class="dim">quality</span> —</span>
-            <span><span class="dim">rune slots</span> {lo === hi ? hi : `${lo}–${hi}`} (rolled on purchase)</span>
+            {#if subsystemUnlocked(gs, 'runecarving')}
+              <span><span class="dim">rune slots</span> {lo === hi ? hi : `${lo}–${hi}`} (rolled on purchase)</span>
+            {/if}
           </div>
           <div class="section">Stats</div>
           {#if def.mods.length === 0 && !def.bonusDamage && !def.mainHand && !def.offHand}

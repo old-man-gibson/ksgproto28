@@ -6,8 +6,14 @@ import { grantFavor } from './deities';
 /**
  * Piecemeal subsystem unlocking, alpha shape (plans/alpha-scope-locks.md).
  *
- * Five systems are shuttered for the alpha: their tabs, benches and school
- * pages simply do not render until the flag lifts. The latch is an ordinary
+ * Seven systems are shuttered for the alpha: their tabs, benches and school
+ * pages simply do not render until the flag lifts. The last two (save v55,
+ * user 2026-10-17): `martial` hides the position planner, loadouts, drilling
+ * and the rotation editor — techniques still learn themselves and fire on
+ * their own — and `prep` hides the kitchen side-benches (the Cutting Board
+ * and the Cold Counter), leaving the Cooking Stove. Runes ride the
+ * `runecarving` shutter: while it is shut, rune drops pay nothing and the
+ * Equipment tab shows no runes or rune slots. The latch is an ordinary
  * `flag:*` counter, which buys three things at once: content can lift it
  * today (`SpotFind.stat`, and quest rewards once those grow a stat kind), the
  * flag namespace is already linted in both validation layers, and no save
@@ -19,7 +25,7 @@ import { grantFavor } from './deities';
  * saved work behind a locked system keep functioning. Locking is about what a
  * NEW player is invited into, never about confiscating state.
  */
-export const LOCKABLE_SUBSYSTEMS = ['runecarving', 'music', 'genes', 'psionics', 'wuxin'] as const;
+export const LOCKABLE_SUBSYSTEMS = ['runecarving', 'music', 'genes', 'psionics', 'wuxin', 'martial', 'prep'] as const;
 export type LockableSubsystem = (typeof LOCKABLE_SUBSYSTEMS)[number];
 
 /** The stat counter that opens a subsystem — `>= 1` is open. */

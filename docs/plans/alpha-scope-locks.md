@@ -76,3 +76,22 @@ Two more shutters from the user's onboarding spec, same flag philosophy:
   none was added.
 - Fast travel ignores road locks between discovered waypoints — irrelevant to
   fresh saves (nothing outside is discovered), noted for the reopening.
+
+# Two more shutters (2026-10-17, save v55)
+
+User call: narrow the alpha slice.
+
+- `martial`: hides the Position Planner, loadouts, drilling, trigger editing
+  and drag-to-reorder on the Combat tab. Active Skills stays as a read-only
+  list. Techniques still self-learn and fire. Undrilled techniques bank no
+  mastery reps while it is shut.
+- `prep`: hides the Cutting Board (Kitchens, Alembics) and the Cold Counter
+  (Forges). The Cooking Stove stays. Spot, NPC and stove texts no longer name
+  the hidden benches; restore those lines when `prep` opens.
+- Runes: ride `runecarving`. While shut: a rune loot line pays nothing (other
+  lines' odds unchanged), no Runes section, no slot pips, no "rune slots" on
+  item windows or shop cards. Items still roll slots underneath.
+- Migration v54 → v55 stamps `flag:unlock_martial` and `flag:unlock_prep` on
+  older saves (same rule as v47: a save that has had a system keeps it).
+- Version note: `claude/kind-tesla-7sqw30` (cloud branch) defines a DIFFERENT
+  v53 → v54 migration than this line. Reconcile before merging both.

@@ -17,6 +17,16 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **Alpha slice narrowed; stats grouped (2026-10-17, save v55).**
+  - Locked: martial planner (`martial`), kitchen side-benches (`prep`), runes
+    (now ride `runecarving`). Details: plans/alpha-scope-locks.md.
+  - Sidebar: Combat Stats are four click-to-open groups with one summary each.
+    Offense = rough weapon DPS + crit. Defense = expected damage from a
+    20-damage physical hit (dodge, parry, armor, resistance, ward). Growth =
+    XP multipliers. Fortune & pace = loot, gold, travel, craft. Resistances
+    moved into Defense. Math: src/ui/lib/statSummary.ts.
+  - Open: v54 collision with `claude/kind-tesla-7sqw30`.
+
 - **Bred cage slimes, rest-before-fighting, recipe cards (2026-10-17, no save
   migration).** User's answers to the playtest:
   - **Bred slimes.** The Cages' slimes are bred with no armour or

@@ -567,6 +567,18 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     raw.stats = stats;
     raw.version = 54;
   },
+  // v54 → v55: two more alpha shutters (user, 2026-10-17) — the martial
+  // planner and the kitchen side-benches (systems/unlocks.ts). A save from
+  // before has had both, so it keeps them, exactly as v47 did for the first
+  // five. New games open with them shut. No field changes.
+  54: (raw) => {
+    const stats = (raw.stats as Record<string, number> | undefined) ?? {};
+    raw.stats = stats;
+    for (const id of ['martial', 'prep']) {
+      stats[`flag:unlock_${id}`] = stats[`flag:unlock_${id}`] ?? 1;
+    }
+    raw.version = 55;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {

@@ -34,6 +34,7 @@
   import { RECOVERY_MULT, RESOURCES } from '../../core/data/resources.data';
   import { fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
   import Tip from '../lib/Tip.svelte';
+  import { REFERENCE_BLOW, expectedHitTaken, roughDps } from '../lib/statSummary';
 
   const stats = $derived(view.stats);
 
@@ -168,6 +169,10 @@
 
   const wornTitle = $derived(equippedTitle(gs));
   const afflictions = $derived(visibleStatuses(gs));
+
+  /** Which stat groups are open (per viewer, this session). Closed by default. */
+  type StatGroup = 'offense' | 'defense' | 'growth' | 'fortune';
+  let openGroups = $state<Record<StatGroup, boolean>>({ offense: false, defense: false, growth: false, fortune: false });
 
   const resistances = $derived(
     (Object.entries(RES_STAT_BY_TYPE) as [DamageType, StatKey][])
@@ -442,10 +447,17 @@
   <div class="dim small hint">Training progress lives in the Skills tab.</div>
 </div>
 
+<!--
+  Combat stats in four groups (user, 2026-10-17). Each header carries one rough
+  number (statSummary.ts says what it leaves out); a click opens the full rows,
+  and every row keeps its own breakdown tooltip.
+-->
 <div class="panel" style="margin-top: 12px">
   <h3>Combat Stats</h3>
   <table class="small">
     <tbody>
+      {@render groupHead('offense', '⚔️ Offense', `~${fmt(roughDps(stats))} dmg/s · ${pct(stats.crit)} crit`, 'Weapon damage per second before the target\'s armour and resistances: damage × hits per swing × average crit bonus ÷ attack time. Spells and techniques are not included.')}
+      {#if openGroups.offense}
       {@render statRow('Damage', 'damage', fmt(stats.damage))}
       {@render statRow('Speed', 'speed', fmt(stats.speed))}
       {#if Math.round(stats.actionBar) !== BASE_ACTION_BAR}
@@ -479,8 +491,6 @@
           {(actionTicks(stats.actionBar, attackFillRate(stats)) / 10).toFixed(1)}s{#if stats.extraSwings > 0}&nbsp;<span class="dim">(+{stats.extraSwings.toFixed(1)})</span>{/if}
         </td>
       </tr>
-      {@render statRow('Armor', 'armor', fmt(stats.armor))}
-      {@render statRow('Dodge', 'dodge', pct(stats.dodge))}
       {@render statRow('Crit', 'crit', pct(stats.crit))}
       {@render statRow('Crit Damage', 'critDamage', `×${stats.critDamage.toFixed(2)}`)}
       {#if stats.penetration > 0}
@@ -489,6 +499,13 @@
       {#if stats.splash > 0}
         {@render statRow('Splash Damage', 'splash', pct(stats.splash))}
       {/if}
+      {@render statRow('Spell Power', 'spellPower', fmt(stats.spellPower))}
+      {/if}
+
+      {@render groupHead('defense', '🛡️ Defense', `takes ~${fmt(expectedHitTaken(stats))} of a ${REFERENCE_BLOW} hit`, `What one typical ${REFERENCE_BLOW}-damage physical blow costs you on average: it must get past your dodge, then your parry, then armour, resistance and ward. Averaged over slashing, piercing and bludgeoning; enemy crits are not included.`)}
+      {#if openGroups.defense}
+      {@render statRow('Armor', 'armor', fmt(stats.armor))}
+      {@render statRow('Dodge', 'dodge', pct(stats.dodge))}
       {#if stats.parry > 0}
         <tr>
           <td class="dim">
@@ -509,41 +526,82 @@
              so a fencing build reads its progress here long after 50%. -->
         {@render statRow('Riposte', 'riposte', pct(stats.riposte))}
       {/if}
-      {@render statRow('Spell Power', 'spellPower', fmt(stats.spellPower))}
+      {#each resistances as r}
+        <tr>
+          <td class="dim">
+            <Tip>
+              {DAMAGE_TYPE_NAMES[r.type]} Res.
+              {#snippet tip()}{@render statTip(r.key)}{/snippet}
+            </Tip>
+          </td>
+          <td style="color: {r.value > 0 ? 'var(--xp)' : 'var(--danger)'}">{pct(r.value)}</td>
+        </tr>
+      {/each}
+      {/if}
+
+      {@render groupHead('growth', '📈 Growth', `skill ×${stats.skillXp.toFixed(2)} · attribute ×${stats.trainXp.toFixed(2)}`, 'How fast skills and attributes level: multipliers on the XP every action pays.')}
+      {#if openGroups.growth}
       {@render statRow('Skill XP', 'skillXp', `×${stats.skillXp.toFixed(2)}`)}
       {@render statRow('Attribute XP', 'trainXp', `×${stats.trainXp.toFixed(2)}`)}
+      {/if}
+
+      {@render groupHead('fortune', '💰 Fortune & pace', `loot ×${stats.loot.toFixed(2)} · gold ×${stats.goldGain.toFixed(2)}`, 'What drops and pays, and how fast you travel and craft.')}
+      {#if openGroups.fortune}
       {@render statRow('Loot Luck', 'loot', `×${stats.loot.toFixed(2)}`)}
       {@render statRow('Gold Gain', 'goldGain', `×${stats.goldGain.toFixed(2)}`)}
       {@render statRow('Travel Speed', 'travelSpeed', `×${stats.travelSpeed.toFixed(2)}`)}
       {#if stats.craftSpeed !== 1}
         {@render statRow('Craft Speed', 'craftSpeed', `×${stats.craftSpeed.toFixed(2)}`)}
       {/if}
+      {/if}
     </tbody>
   </table>
 </div>
 
-{#if resistances.length > 0}
-  <div class="panel" style="margin-top: 12px">
-    <h3>Resistances</h3>
-    <table class="small">
-      <tbody>
-        {#each resistances as r}
-          <tr>
-            <td class="dim">
-              <Tip>
-                {DAMAGE_TYPE_NAMES[r.type]}
-                {#snippet tip()}{@render statTip(r.key)}{/snippet}
-              </Tip>
-            </td>
-            <td style="color: {r.value > 0 ? 'var(--xp)' : 'var(--danger)'}">{pct(r.value)}</td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
-  </div>
-{/if}
+{#snippet groupHead(id: StatGroup, name: string, summary: string, explain: string)}
+  <tr class="stat-group-row">
+    <td colspan="2">
+      <button
+        class="stat-group-btn"
+        class:open={openGroups[id]}
+        aria-expanded={openGroups[id]}
+        onclick={() => (openGroups[id] = !openGroups[id])}
+      >
+        <span class="stat-group-name">{openGroups[id] ? '▾' : '▸'} {name}</span>
+        <Tip>
+          <span class="stat-group-sum">{summary}</span>
+          {#snippet tip()}<div class="tip-line tip-base">{explain}</div>{/snippet}
+        </Tip>
+      </button>
+    </td>
+  </tr>
+{/snippet}
 
 <style>
+  .stat-group-btn {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    padding: 4px 6px;
+    margin-top: 4px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-align: left;
+  }
+  .stat-group-btn.open {
+    border-color: var(--accent);
+  }
+  .stat-group-name {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .stat-group-sum {
+    color: var(--text-dim);
+    padding-left: 14px;
+  }
   .worn-title {
     color: var(--accent);
     font-weight: 600;

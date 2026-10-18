@@ -96,7 +96,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'alembic_row_gate.desc': 'Gate of Alembic Row. Sister Nim sells healing salve, mushroom broth, mendroot and spring water here. Connects to the Foot, the Alembics, the Vivarium, the Muster Gate and the Chancery Arch.',
 
-  'the_alembics.desc': 'Indoor, heat-tagged. Holds an alchemy bench and a preparing bench. Wash Out the Retorts is a job: 11 gold per 21 s. Odri Venn sells reagents here.',
+  'the_alembics.desc': 'Indoor, heat-tagged. Holds an alchemy bench. Wash Out the Retorts is a job: 11 gold per 21 s. Odri Venn sells reagents here.',
 
   'the_vivarium.desc': 'Indoor. Holds a Culture Bench for geneshaping.',
 
@@ -114,13 +114,13 @@ export const SPOTS_TEXT: ProseTable = {
 
   'wrights_gate.desc': 'Gate of Wrights’ Ward. Pell Marrow sells armour and weapons here; four more lines open once the Toll Hall keeper is defeated. Connects to the Foot, the Forges, the Long Bench, the Assize Gate and the Granary Gate.',
 
-  'the_forges.desc': 'Heat-tagged. Smithing counter with recipes for iron ingot, iron dagger and iron sword, plus an assembling bench. Work the Bellows is a job: 14 gold per 25 s. Swing the Sledge trains Strength and pays blunt skill XP. Ferra Ostwind sells ore, scrap, wood and leather here.',
+  'the_forges.desc': 'Heat-tagged. Smithing counter with recipes for iron ingot, iron dagger and iron sword. Work the Bellows is a job: 14 gold per 25 s. Swing the Sledge trains Strength and pays blunt skill XP. Ferra Ostwind sells ore, scrap, wood and leather here.',
 
   'the_long_bench.desc': 'Indoor. Holds a Rune Table for runecarving.',
 
   'granary_gate.desc': 'Gate of the Granaries. Orrin Tallow sells rations and cooked dishes here. Connects to the Foot, the Granary Kitchens, the Weighbridge, the Undercrofts, the Wrights’ Gate and the Lectory Steps.',
 
-  'granary_kitchens.desc': 'Indoor, heat-tagged. Holds a Cooking Stove and a preparing bench. Scrub the Pans is a job: 10 gold per 20 s. Bryva Coll sells raw ingredients here.',
+  'granary_kitchens.desc': 'Indoor, heat-tagged. Holds a Cooking Stove. Scrub the Pans is a job: 10 gold per 20 s. Bryva Coll sells raw ingredients here.',
 
   'the_weighbridge.desc': 'Haul and Stack is a job: 11 gold per 18 s. Shift the Heavy Lots trains Strength.',
 

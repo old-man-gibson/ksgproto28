@@ -6,6 +6,7 @@
   import type { StackRef } from '../../core/systems/equipment';
   import { RESOURCES } from '../../core/data/resources.data';
   import { consumableSpec, cooldownLeft, heldConsumables } from '../../core/systems/consumables';
+  import { subsystemUnlocked } from '../../core/systems/unlocks';
   import {
     activeCoating,
     brewGrade,
@@ -104,6 +105,8 @@
 
   /** Everything usable, best grade first. */
   const provisions = $derived(heldConsumables(gs));
+  /** Runes ride the runecarving shutter: no runes, sockets or pips while it is shut. */
+  const runesOpen = $derived(subsystemUnlocked(gs, 'runecarving'));
 
   /**
    * Flasks, grouped by the sequence that made them. Grouping by SEQUENCE rather
@@ -608,7 +611,7 @@
       {rune.icon} {rune.name}: {describeRuneEffect(rune.effects[context])}
     </div>
   {/each}
-  {#if empty > 0}
+  {#if runesOpen && empty > 0}
     <div class="tip-line tip-sub">{empty} empty rune slot{empty > 1 ? 's' : ''}</div>
   {/if}
   {#if def.requirements?.length}
@@ -650,7 +653,7 @@
       <!-- The tick takes over the lock's corner; requirements don't matter to a bulk sale. -->
       {#if mark}<span class="tick">✓</span>{:else if locked}<span class="lock">🔒</span>{/if}
       {#if count > 1}<span class="count">{count}</span>{/if}
-      {#if (item.slots ?? 0) > 0}
+      {#if runesOpen && (item.slots ?? 0) > 0}
         <span class="pips">
           {#each { length: item.slots ?? 0 } as _, i (i)}
             <span class="pip" class:filled={i < (item.runes?.length ?? 0)}></span>
@@ -667,7 +670,7 @@
   {@const def = ITEMS[item.defId]}
   {@const context = runeContextFor(def.slot)}
   {@const socketed = item.runes ?? []}
-  {#if (item.slots ?? 0) > 0}
+  {#if runesOpen && (item.slots ?? 0) > 0}
     <div class="win-section">
       <div class="small dim">Rune slots</div>
       {#each socketed as ref, i (i)}
@@ -939,6 +942,7 @@
   {/if}
 </div>
 
+{#if runesOpen}
 <CollectionSection
   title="🔮 Runes"
   entries={runeEntries}
@@ -952,6 +956,7 @@
   onSell={(keys) => game.sellRunesBatch(keys)}
   onDump={(keys) => game.discardRunesBatch(keys)}
 />
+{/if}
 
 <CollectionSection
   title="🍽️ Provisions"

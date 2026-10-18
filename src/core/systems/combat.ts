@@ -68,6 +68,7 @@ import { QUALITY_TIERS } from '../data/quality.data';
 import { ELEMENTAL_TYPES, SIZE_LADDER, sizeRank } from '../types';
 import { monsterSizeRank } from './bestiary';
 import { holdNextFight } from './huntrest';
+import { subsystemUnlocked } from './unlocks';
 import {
   GENE_ACTIVE,
   SPLIT_SPLASH,
@@ -1475,7 +1476,9 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         break;
       }
       case 'rune': {
-        grantRune(state, bus, pick.id!, qty);
+        // Runes ride the runecarving shutter: while it is shut, a rune line
+        // that comes up pays nothing (every other line's odds are untouched).
+        if (subsystemUnlocked(state, 'runecarving')) grantRune(state, bus, pick.id!, qty);
         break;
       }
       case 'item': {
