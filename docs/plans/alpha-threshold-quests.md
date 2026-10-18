@@ -186,7 +186,7 @@ walks from floor 0 straight into the Cages is knocked out on the first trip
 in 35/40 seeds with the rusty sword, 40/40 on Skip, 33/40 dagger, 30/40
 unarmed, 18/40 hammer, 14/40 spear (rested to full after each knockout, it
 finishes in 1–2 knockouts). The main cause is the cage slime, not the
-goblin.  resists slashing and piercing by 50% and takes 25%
+goblin. `slime_base_basic` resists slashing and piercing by 50% and takes 25%
 more from blunt damage. Each slime bout costs a rusty-sword newcomer about half
 their HP over 16–19 s; fists lose 26–32%, the spear 5%. Slimes land 26 of the
 rusty sword's 40 knockouts. The tutorial's Cell Slime has explicit zero
