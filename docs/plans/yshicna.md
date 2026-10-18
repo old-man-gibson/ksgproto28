@@ -43,7 +43,7 @@ invariant this epic is most likely to break by accident.
 ## Stories under this epic
 
 - `excess-fourths` — Miracle A, permission to speak a word a fourth time.
-  7 of 30 foldable words have an authored fourth; the card holds the roster,
+  7 of 31 foldable words have an authored fourth; the card holds the roster,
   the coverage table and the per-spot saturation rule.
 - `broken-areas` — what a place becomes when two fourths saturate it. A `todo`
   seed, and a hard dependency on shipping any second fourth.

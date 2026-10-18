@@ -105,7 +105,11 @@
           // A sentence the composer could not read falls back to FADED, which
           // is the forge's cue that a word id is wrong — monsters never go
           // through checkSentence, so nothing else would have told you.
-          faded: spec.strikes.length === 0 && !spec.heal && !spec.grants?.length,
+          // A counterspell does none of those things on its own turn — it
+          // springs inside YOUR casting instead (ARCANE.md §14) — so it is
+          // read, not faded.
+          faded: spec.strikes.length === 0 && !spec.heal && !spec.grants?.length && !spec.counter,
+          trap: !!spec.counter,
           damage,
           perSecond: seconds > 0 ? damage / seconds : damage,
           seconds,
@@ -200,6 +204,7 @@
               {r.name}
               {#if r.sentence}<code class="say">“{r.sentence}”</code>{/if}
               {#if r.faded}<span class="warn">unreadable — check the ids</span>{/if}
+              {#if 'trap' in r && r.trap}<span class="tag">🪤 counterspell — springs on your casting</span>{/if}
               {#if r.heal}<span class="tag">heals {n(r.heal * stats.spellPower)}</span>{/if}
               {#if r.inflicts.length}<span class="tag">{statusLine(r.inflicts)}</span>{/if}
             </td>

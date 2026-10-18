@@ -316,6 +316,24 @@ export const ARCANE_WORDS = prose<ArcaneWordDef>('ARCANE_WORDS', ARCANE_WORDS_TE
     mana: 3,
     verb: { restore: 1.0 },
   },
+  /*
+   * The unmaking. A clause that undoes neither strikes, mends nor wards: the
+   * whole working becomes a COUNTERSPELL, held like a trap and sprung inside
+   * an enemy's casting (see arcane.ts `counterEfficiency` for the matching
+   * and combat.ts for the spring). Its noun tunes it — "fire undo" answers
+   * fire best — and deepening buys efficiency rather than burn: the burn
+   * follows the efficiency, so the better the answer, the harder it burns.
+   */
+  undo: {
+    id: 'undo',
+    word: 'undo',
+    stacked: ['unsay', 'unmake'],
+    kind: 'verb',
+    icon: '↩️',
+    minLevel: 10,
+    mana: 3,
+    verb: { undo: { burn: 1 }, cooldownMult: 1.2 },
+  },
 
   // ----- Adverbs: how it is spoken -----
   slowly: {
@@ -476,6 +494,21 @@ export const ARCANE_WORDS = prose<ArcaneWordDef>('ARCANE_WORDS', ARCANE_WORDS_TE
     minLevel: 18,
     mana: 1,
     conjunction: { condition: true },
+  },
+  /*
+   * Accompaniment. Made for undoing — "undo with fire with ice" is one answer
+   * tuned two ways, where two undo clauses would be two answers paying the
+   * breadth tax — but it lends a bare substance to whatever the clause before
+   * it was doing: riders to a blow, a coat to a ward, weight to a mending.
+   */
+  with: {
+    id: 'with',
+    word: 'with',
+    kind: 'conjunction',
+    icon: '🔗',
+    minLevel: 11,
+    mana: 1,
+    conjunction: { accompany: 0.75 },
   },
 
   // ----- Targeting words: the address the spell is sent to -----
@@ -870,7 +903,7 @@ export const MIRACLES = prose<MiracleDef>('MIRACLES', MIRACLES_TEXT, {
   // here simply cannot be overspoken. Full design: docs/NEXT.md.
 
   // SPEC: PASSIVE, no spell. Offered (not desired) once 80% of FOLDABLE words
-  // — those with a `stacked` form, currently 28 of 36 — are completely
+  // — those with a `stacked` form, currently 31 of 40 — are completely
   // mastered. Aura on the whole encounter, both sides: everyone is held to the
   // lowest speaking. ONLY ARCANE MAGIC BECOMES ATOMIC — folding, and nothing
   // else. Statuses still escalate, multi-strike specs still land in full,

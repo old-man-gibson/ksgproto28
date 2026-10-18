@@ -22,6 +22,7 @@ import type { Connect, Plugin, ViteDevServer } from 'vite';
 import { CATALOG, catalogFor, isWritable } from './catalog';
 import {
   notesOf,
+  reorderEntry,
   setNoteAt,
   sourceOf,
   type NoteMarker,
@@ -312,6 +313,14 @@ export function forge(): Plugin {
                   return send(res, 400, { error: `Unknown note marker: ${String(op.marker)}` });
                 }
                 const result = setNoteAt(entry.file, current, entry.root, op.key, op.marker, op.text);
+                working.set(entry.file, result.text);
+                notes.push(result.note);
+                continue;
+              }
+              // Moving an entry is data-only: prose is keyed by id, so the text
+              // file next door has nothing to follow.
+              if (op.op === 'reorder') {
+                const result = reorderEntry(entry.file, current, entry.root, op.key, op.anchor, op.before);
                 working.set(entry.file, result.text);
                 notes.push(result.note);
                 continue;

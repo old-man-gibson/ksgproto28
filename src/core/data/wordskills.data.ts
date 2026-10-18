@@ -64,6 +64,8 @@ const WORD_GIFTS: Record<string, Modifier[]> = {
   grasp: mods({ stat: 'spellPower', op: 'mult', value: 0.02 }),
   ward: mods({ stat: 'armor', op: 'add', value: 1 }),
   mend: mods({ stat: 'maxHp', op: 'add', value: 6 }),
+  // What you can take apart has less of a hold on you.
+  undo: mods({ stat: 'resArcane', op: 'add', value: 0.03 }),
 
   // ----- Adverbs: how you speak becomes how you are -----
   slowly: mods({ stat: 'maxMana', op: 'add', value: 2 }),
@@ -80,6 +82,7 @@ const WORD_GIFTS: Record<string, Modifier[]> = {
   but: mods({ stat: 'spellPower', op: 'mult', value: 0.02 }),
   or: mods({ stat: 'loot', op: 'mult', value: 0.02 }),
   if: mods({ stat: 'skillXp', op: 'mult', value: 0.02 }),
+  with: mods({ stat: 'manaRegen', op: 'add', value: 0.02 }),
   one: mods({ stat: 'crit', op: 'add', value: 0.01 }),
   others: mods({ stat: 'splash', op: 'add', value: 0.02 }),
   me: mods({ stat: 'maxHp', op: 'add', value: 5 }),

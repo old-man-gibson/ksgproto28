@@ -1430,6 +1430,13 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
       { technique: 'heavy_blow' },
       { cast: { school: 'arcane', words: ['gloom', 'cut'] } },
       { cast: { school: 'arcane', words: ['viciously', 'gloom', 'pierce'] } },
+      /*
+       * An undoing, tuned against exactly what it fears: light (double
+       * damage) and heat. Never its turn's action — a counterspell waits in
+       * the rotation for YOUR casting to spring it, so where it sits in the
+       * list decides nothing. The counterplay is the rest of the lexicon.
+       */
+      { cast: { school: 'arcane', words: ['undo', 'light', 'with', 'fire'] } },
     ],
     art: 'Darkness Dullahan.png',
   },

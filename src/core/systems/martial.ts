@@ -541,8 +541,10 @@ export function readyableSpell(
 ): { uid: number; cost: number } | null {
   for (const spell of preparedSpells(state)) {
     const spec = resolveSpell(spell);
-    // A working with nothing to deliver is not worth holding.
+    // A working with nothing to deliver is not worth holding — and a
+    // counterspell is held for somebody else's casting, not a blade's opening.
     if (spec.strikes.length === 0 && !spec.heal) continue;
+    if (spec.counter) continue;
     const cost = spec.manaCost * stats.manaEff;
     if (resourceValue(state, 'mana') < cost) continue;
     return { uid: spell.uid, cost };

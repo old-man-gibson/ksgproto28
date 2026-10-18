@@ -28,7 +28,7 @@
     spotCleared,
   } from '../../core/systems/combat';
   import { GENE_ACTIVE, expressedGene, geneAbility } from '../../core/systems/mutagens';
-  import { monsterStats } from '../../core/systems/monsterStats';
+  import { monsterMind, monsterStats } from '../../core/systems/monsterStats';
   import { resourceLock } from '../../core/systems/resources';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
   import { huntRest, restTarget, restingForFight } from '../../core/systems/huntrest';
@@ -121,7 +121,9 @@
       return {
         icon: spec.icon,
         name: spec.name,
-        mark: SCHOOL_MARK[spec.school] ?? '📖',
+        // A counterspell is a trap before it is anything else: it waits for an
+        // enemy's casting rather than taking a turn.
+        mark: spec.counter ? '🪤' : (SCHOOL_MARK[spec.school] ?? '📖'),
         cost: costs.join(' '),
         cooldown: spec.cooldown,
       };
@@ -229,7 +231,9 @@
     onCrit: 'a crit',
     onParry: 'a parry',
     onDodge: 'a dodge',
+    onGraze: 'a graze',
     onEncounterStart: 'the bell',
+    onEnemyCast: 'a casting',
   };
 
   /**
@@ -448,6 +452,12 @@
     <div class="tip-line tip-sub">Well placed — fighting at full effect</div>
   {/if}
   <div class="tip-line tip-total">{fmt(Math.max(0, m.hp))} / {fmt(monsterStats(m).maxHp)} HP</div>
+  {#if m.mana !== undefined}
+    <!-- Only a mind something has burned is shown: untouched, it is full. -->
+    <div class="tip-line tip-total">
+      🔯 Mind {fmt(m.mana)} / {fmt(monsterMind(m).max)}{m.mana < 0 ? ' — in debt: cannot cast until it recovers' : ''}
+    </div>
+  {/if}
 {/snippet}
 
 <!-- A technique's flow as colored pills: entry position(s) → exit position.
@@ -506,6 +516,15 @@
         <div class="fill" style="width: {(m.hp / monsterStats(m).maxHp) * 100}%; background: var(--hp)"></div>
         <div class="label">{fmt(Math.max(0, m.hp))} / {fmt(monsterStats(m).maxHp)}</div>
       </div>
+      {#if m.mana !== undefined}
+        <!-- A burned mind: what manaburn has left of it. Below zero it cannot cast. -->
+        <div class="bar mind-bar" class:debt={m.mana < 0}>
+          <div
+            class="fill"
+            style="width: {Math.max(0, Math.min(100, (m.mana / Math.max(1, monsterMind(m).max)) * 100))}%; background: var(--manaburn)"
+          ></div>
+        </div>
+      {/if}
       {#if visibleStatuses(m).length}
         <div class="foe-afflictions">
           {#each visibleStatuses(m) as held (held.id)}
@@ -1194,6 +1213,13 @@
     color: var(--accent);
   }
 
+  .mind-bar {
+    height: 4px;
+    margin-top: 2px;
+  }
+  .mind-bar.debt {
+    outline: 1px solid var(--manaburn);
+  }
   .foe-afflictions {
     display: flex;
     flex-wrap: wrap;

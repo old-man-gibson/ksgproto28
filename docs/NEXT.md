@@ -711,10 +711,10 @@ on a single word: **80% of words completely mastered.** The entry reads
 **"[name] offers the atomic state of words."**
 
 > **The denominator is FOLDABLE words only** (those with a `stacked` form).
-> Today the lexicon is 38 words of which 8 — the five conjunctions and three
+> Today the lexicon is 40 words of which 9 — the six conjunctions and three
 > targets — can never be mastered at all, so 80% of the whole lexicon is
-> 30.4 of a possible 30: literally unreachable. Against foldable words the bar
-> is 24 of 30, and it stays honest as words are added. Compute it as a share,
+> 32 of a possible 31: literally unreachable. Against foldable words the bar
+> is 24.8 of 31, and it stays honest as words are added. Compute it as a share,
 > not a stored count. *Atomic* as in indivisible:
 words at their irreducible minimum, which cannot be built up or broken down.
 (Aberrant gods share Ik'Thel'the's register of abstraction.)

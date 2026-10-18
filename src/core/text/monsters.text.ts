@@ -114,7 +114,7 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'psionic_slime.desc': 'Large elite slime, fire element. Casts psionic workings from range for heat damage: a piercing single-target shape that cannot miss, then a wide multi-target sweep. Takes 80% less heat damage; no physical resistances. Carries 120 to 250 gold; no other loot yet.',
 
-  'death_knight.desc': 'Medium veteran armoured humanoid, dark element. Fights with a sword first (Gather, then Heavy Blow) and casts dark arcane sentences when off balance. Immune to poison; takes 80% less dark and 75% less cold damage; takes double light damage and 40% more heat and earth damage. No loot yet.',
+  'death_knight.desc': 'Medium veteran armoured humanoid, dark element. Fights with a sword first (Gather, then Heavy Blow) and casts dark arcane sentences when off balance. Holds a counterspell tuned against light and heat, which fires when you cast. Immune to poison; takes 80% less dark and 75% less cold damage; takes double light damage and 40% more heat and earth damage. No loot yet.',
 
   'paladin_x.desc': '',
 
