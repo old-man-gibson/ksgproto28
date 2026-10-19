@@ -1,5 +1,5 @@
 import type { GameState, ItemInstance } from '../types';
-import { ITEMS, QUESTS, SKILLS, SPOTS, STYLES } from '../registry';
+import { FLOORS, ITEMS, MONSTERS, QUESTS, SKILLS, SPOTS, STYLES } from '../registry';
 import { runeClassOf } from '../systems/runes';
 import { getDerivedStats } from '../systems/derived';
 import { settleLevels } from '../systems/progression';
@@ -11,6 +11,8 @@ import { TECHNIQUE_LIST } from '../data/martial.data';
 import { freshMutagenState, startingKit } from '../data/mutagens.data';
 import { freshPrestigeState } from '../data/prestige.data';
 import { conditionsMet } from '../systems/conditions';
+import { floorXpKey, levelFromXp, questLevelXp } from '../systems/levels';
+import { KILL_LEVEL_XP_RATE } from '../data/levels.data';
 
 /**
  * Save migrations. When SAVE_VERSION bumps, add an entry keyed by the OLD
@@ -578,6 +580,35 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
       stats[`flag:unlock_${id}`] = stats[`flag:unlock_${id}`] ?? 1;
     }
     raw.version = 55;
+  },
+  // v55 → v56: character level (systems/levels.ts). Back-paid from the
+  // record: every kill at its monster's base XP (the level scaling at the
+  // time is not on record, so this undercounts), each completed quest's
+  // level XP, each cleared floor's clear XP, stamped so it never pays twice.
+  55: (raw) => {
+    const stats = (raw.stats as Record<string, number> | undefined) ?? {};
+    raw.stats = stats;
+    let xp = 0;
+    for (const [key, n] of Object.entries(stats)) {
+      if (!key.startsWith('kills:')) continue;
+      const def = MONSTERS[key.slice('kills:'.length)];
+      if (def && n > 0) xp += def.xp * n * KILL_LEVEL_XP_RATE;
+    }
+    const quests = (raw.quests as Record<string, { status?: string }> | undefined) ?? {};
+    for (const [id, q] of Object.entries(quests)) {
+      if (q?.status === 'done' && QUESTS[id]) xp += questLevelXp(QUESTS[id]);
+    }
+    for (const floor of Object.values(FLOORS)) {
+      if (!floor.clearXp || !floor.clear?.length) continue;
+      const cleared = floor.clear.every((c) => c.type === 'stat' && (stats[c.key] ?? 0) >= c.value);
+      if (!cleared) continue;
+      xp += floor.clearXp;
+      stats[floorXpKey(floor.id)] = 1;
+    }
+    const { level, xp: rest } = levelFromXp(xp);
+    raw.level = level;
+    raw.levelXp = rest;
+    raw.version = 56;
   },
 };
 

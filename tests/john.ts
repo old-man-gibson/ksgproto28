@@ -3,6 +3,7 @@ import { Game } from '../src/core/game';
 import { TPS } from '../src/core/engine/loop';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { hasKeyItem } from '../src/core/systems/keyitems';
+import { xpToReach } from '../src/core/systems/levels';
 import { FLOORS, SPOTS } from '../src/core/registry';
 import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
 
@@ -74,6 +75,10 @@ export interface ClimbReport {
   firstBoss: { ticks: number; won: boolean } | null;
   bossAttempts: number;
   goldEarned: number;
+  /** Character level when each segment finished (systems/levels.ts). */
+  levels: Record<ClimbSegment, number | null>;
+  /** Lifetime character-level XP at the end of the climb. */
+  levelXp: number;
   fights: FightRecord[];
 }
 
@@ -99,6 +104,8 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     firstBoss: null,
     bossAttempts: 0,
     goldEarned: 0,
+    levels: Object.fromEntries(SEGMENTS.map((k) => [k, null])) as ClimbReport['levels'],
+    levelXp: 0,
     fights: [],
   };
 
@@ -195,6 +202,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   };
   const mark = (seg: ClimbSegment, next: ClimbSegment) => {
     report.done[seg] = t;
+    report.levels[seg] = s.level;
     segment = next;
   };
 
@@ -272,6 +280,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
 
   function finish(): ClimbReport {
     report.goldEarned = earned();
+    report.levelXp = Math.round(xpToReach(s.level) + s.levelXp);
     return report;
   }
 }

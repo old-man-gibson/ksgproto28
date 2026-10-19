@@ -42,6 +42,7 @@ import { createItem, grantRune } from './runes';
 import { bumpStat, setStat } from './achievements';
 import { feedFloating, floatingRun, logRepeat, settleFloating } from './log';
 import { endFight, noteConditionDamage } from './ledger';
+import { revealMapped } from './mapped';
 import {
   canAfford,
   consumeCost,
@@ -879,6 +880,7 @@ function grantFind(state: GameState, bus: EventBus, spot: SpotDef, find: SpotFin
     state.discovered.push(find.spot);
     const target = getSpot(find.spot);
     bus.emit({ type: 'log', msg: text('actions.find_marks_spot', { icon: target.icon, name: target.name }), kind: 'explore' });
+    revealMapped(state);
   }
   if (find.path) {
     const edge = spot.connections.find((c) => c.to === find.path);

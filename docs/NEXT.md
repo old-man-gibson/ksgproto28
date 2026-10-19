@@ -4,7 +4,7 @@ Live scratchpad for work that is designed but not finished. Delete a section
 once it ships and the real docs cover it. Everything here was agreed in
 conversation; the specs are the user's, written down so they survive a new chat.
 
-Current save version: **48** (v41 added music: `compositions` +
+Current save version: **56** (v56: character level, LEVELS.md). Older history: **48** (v41 added music: `compositions` +
 `performance`; v42 stamped meters onto sheets — the grid also went 48 → 240
 units/bar, save-transparently, since notes store duration ids; v43 added
 repeat spans; v44 added tempo; v45 added the pedal tone; v46 added `mercy`,
@@ -16,6 +16,25 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 ---
 
 ## Shipped recently (context, not TODO)
+
+- **Start and navigation rethink; character levels (2026-10-18, save v56).**
+  User's picks: city option A, start option 2, levels.
+  - **City has no fog.** `RegionDef.mapped` on Threshold: the whole city is on
+    the map the first time you stand in it, and on every load. Town roads are
+    ×0.2 (1 s Foot ↔ gate). Town quest givers and objectives get Go buttons
+    without Wayfinding; `QuestObjective.at` names where a craft/stat
+    objective is done. NAVIGATION.md §2.4, §5.
+  - **Tower first.** The Warden offers The First Ascent from the start and
+    lists it first; the tutorial's last panel and finish line recommend it.
+    The two town quests stay optional before it. TUTORIAL.md §1.
+  - **Character level.** Kills, quest turn-ins and first floor clears pay
+    level XP; +1 to all six attributes per level; resets with the run; the
+    Head Start boon raises the starting level. Band 1 ends at level 5 (17 of
+    18 John climbs). Floor 3 got easier: gallery knockouts 39 → 18.
+    LEVELS.md.
+  - Goldfish quest test re-seeded (7 → 1); 8 of seeds 1–13 close a quest.
+  - Open: the Cages heal cap could read character level instead of the
+    trained attribute total (LEVELS.md §5).
 
 - **Alpha slice narrowed; stats grouped (2026-10-17, save v55).**
   - Locked: martial planner (`martial`), kitchen side-benches (`prep`), runes

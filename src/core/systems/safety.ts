@@ -2,6 +2,7 @@ import type { ActivityDef, GameState, SpotDef } from '../types';
 import type { EventBus } from '../engine/events';
 import { getSpot, SPOTS, STARTING_SPOT } from '../registry';
 import { conditionsMet } from './conditions';
+import { revealMapped } from './mapped';
 import { text } from '../text/log';
 
 /**
@@ -79,6 +80,7 @@ export function retreatToSafety(state: GameState, bus: EventBus, reason: string)
   state.travelPlan = [];
   state.travelIntent = null;
   if (!state.discovered.includes(to)) state.discovered.push(to);
+  revealMapped(state);
 
   const dest = getSpot(to);
   bus.emit({

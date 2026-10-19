@@ -21,7 +21,8 @@ describe('region map after tower travel', () => {
       .filter((e) => AREAS[SPOTS[e.to].areaId].regionId === 'threshold');
     expect(districtDoors).toHaveLength(8);
     for (const door of districtDoors) expect(nodes.some((n) => n.spot.id === door.to)).toBe(true);
-    expect(nodes.some((n) => !n.known)).toBe(true);
+    // Threshold is mapped (RegionDef.mapped): standing in it puts all of it on the map.
+    expect(nodes.every((n) => n.known)).toBe(true);
   });
 
   it('keeps other tower floors off the current floor map', () => {

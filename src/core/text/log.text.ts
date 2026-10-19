@@ -169,6 +169,7 @@ export const LOG_TEXT = {
   'locations.unknown_place': 'an undiscovered place',
   'locations.blocked': '🔒 Path locked.',
   'locations.discovered': '📍 Discovered: {icon} {name}',
+  'locations.region_mapped': '🗺️ {region} mapped: {count} places added to the map.',
   'locations.arrived': 'You arrive at {name}.',
   'locations.route_blocked': 'Route blocked. Stopped here.',
   'locations.stop_requested': 'Stopping at the next halt.',
@@ -303,10 +304,12 @@ export const LOG_TEXT = {
   'towers.moving': '🗼 {verb} to {icon} {name}...',
 
   // ---------- tutorial ----------
+  'levels.up': '⬆️ Level {level}: +{bonus} to every attribute.',
+  'levels.floor': '🗼 {name} cleared for the first time this run: +{xp} level XP.',
   'tutorial.armed': '🎒 Taken from the rack and equipped: {list}.',
   'tutorial.unarmed': '👊 Nothing taken from the rack. Fighting unarmed.',
   'tutorial.stance': '🥋 Stance set: {icon} {name}. Change it on the Combat tab at any time.',
   'tutorial.spell': '📖 "{word}" written into your grimoire and prepared. Intelligence 2: mana pool 2.',
   'tutorial.skipped': '⏭️ Tutorial skipped. You stand at {icon} {name}.',
-  'tutorial.done': '✅ Tutorial complete. Its panels are on the Quests tab under Guide.',
+  'tutorial.done': '✅ Tutorial complete. Its panels are on the Quests tab under Guide. Next: The First Ascent (floor 1), from the Warden of the Foot.',
 } as const;

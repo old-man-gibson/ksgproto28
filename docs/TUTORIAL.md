@@ -48,6 +48,14 @@ next run, and the v53→v54 migration stamps it on every older save.
 The panels stay readable afterwards on the Quests tab under **Guide**
 (COMPLETABILITY §3: a one-time tutorial is not an explanation).
 
+**After the tutorial: tower first** (user, 2026-10-18). The `leave` panel and
+the finish line (`tutorial.done`) both name the next step: floor 1, the
+Warden's quest The First Ascent. The Warden offers it from the start and
+lists it first; The Faces of Threshold and A Taste of Everything are offered
+beside it and are optional before the climb. The whole city is on the map on
+arrival (NAVIGATION.md §2.4), 1 s per road, so going to town first costs
+nothing but the choice.
+
 ## 2. The rules that make it safe
 
 - **The step is derived, never saved.** `tutorialStep` returns the first step
@@ -63,7 +71,7 @@ The panels stay readable afterwards on the Quests tab under **Guide**
   thing the tutorial owns is the stamp.
 - **The spell is granted, not inscribed.** `inscribeArcane` would refuse
   `spark` (Arcana 3) to a fresh speaker, and bumping `spells:inscribed` would
-  pre-pay the Warden's second quest. So the grimoire entry is written directly
+  pre-pay A Taste of Everything. So the grimoire entry is written directly
   and that counter is left alone. A one-word sentence costs 2 mana; mana is
   1 × INT; the pick trains INT to exactly 2 (never lowering a level already
   earned), which is what makes the spell castable in the very next fight.

@@ -9,7 +9,7 @@ export const REGIONS: Record<string, RegionDef> = {
   // opens. `settlement` on the REGION is lamplight everywhere inside the
   // walls — no darkness training anywhere in Threshold, and no night-fighting
   // penalty either. Districts that want a dark room say so on the spot.
-  threshold: { id: 'threshold', name: 'Threshold', terrain: 'plains', tags: ['settlement'], world: { x: 14, y: 22 } },
+  threshold: { id: 'threshold', name: 'Threshold', terrain: 'plains', mapped: true, tags: ['settlement'], world: { x: 14, y: 22 } },
   // Your hold — its own map, reached through the door at the Foot, and shut
   // until the first prestige (`prestige:count`, see the Foot's connection).
   // It stopped being a floor of the tower on 2026-09-12; the user's call was
@@ -493,10 +493,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'train_int_steps', kind: 'train', attr: 'int', name: 'Argue on the Steps', icon: '💬' },
     ],
     connections: [
-      { to: 'ascent_foot', ticks: 60, label: 'the Scholars’ Road' },
-      { to: 'temple_rise_gate', ticks: 90 },
-      { to: 'the_reading_hall', ticks: 40 },
-      { to: 'chalk_yard', ticks: 40 },
+      { to: 'ascent_foot', ticks: 12, label: 'the Scholars’ Road' },
+      { to: 'temple_rise_gate', ticks: 18 },
+      { to: 'the_reading_hall', ticks: 8 },
+      { to: 'chalk_yard', ticks: 8 },
     ],
   },
   the_reading_hall: {
@@ -543,10 +543,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'train_con_stair', kind: 'train', attr: 'con', name: 'Walk the Stair', icon: '🚶' },
     ],
     connections: [
-      { to: 'ascent_foot', ticks: 60, label: 'the Pilgrim Way' },
-      { to: 'ironyard_gate', ticks: 90 },
-      { to: 'the_nine_chapels', ticks: 40 },
-      { to: 'censer_walk', ticks: 40 },
+      { to: 'ascent_foot', ticks: 12, label: 'the Pilgrim Way' },
+      { to: 'ironyard_gate', ticks: 18 },
+      { to: 'the_nine_chapels', ticks: 8 },
+      { to: 'censer_walk', ticks: 8 },
     ],
   },
   the_nine_chapels: {
@@ -561,7 +561,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'train_wis_chapels', kind: 'train', attr: 'wis', name: 'Keep a Vigil', icon: '🕯️', tags: ['magic'],
         drops: [{ material: 'votive_token', chance: 0.0008, rarer: 2 }] },
     ],
-    // The Warden's second quest, the prior and this spot's own text all send
+    // A Taste of Everything, the prior and this spot's own text all send
     // the player here to learn a miracle; the table's Divine tab is where
     // miracles are bought. Same furniture as the Reading Hall's.
     benches: ['spelltable'],
@@ -590,11 +590,11 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'train_str_muster', kind: 'train', attr: 'str', name: 'Drill in Formation', icon: '🪖' },
     ],
     connections: [
-      { to: 'ascent_foot', ticks: 60, label: 'the Muster Road' },
-      { to: 'alembic_row_gate', ticks: 90 },
-      { to: 'the_sand', ticks: 40 },
-      { to: 'long_gallery', ticks: 40 },
-      { to: 'the_cages', ticks: 40 },
+      { to: 'ascent_foot', ticks: 12, label: 'the Muster Road' },
+      { to: 'alembic_row_gate', ticks: 18 },
+      { to: 'the_sand', ticks: 8 },
+      { to: 'long_gallery', ticks: 8 },
+      { to: 'the_cages', ticks: 8 },
     ],
   },
   the_cages: {
@@ -660,10 +660,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 68.4, y: 51.6 },
     activities: [],
     connections: [
-      { to: 'ascent_foot', ticks: 60, label: 'the Retort Road' },
-      { to: 'chancery_arch', ticks: 90 },
-      { to: 'the_alembics', ticks: 40 },
-      { to: 'the_vivarium', ticks: 40 },
+      { to: 'ascent_foot', ticks: 12, label: 'the Retort Road' },
+      { to: 'chancery_arch', ticks: 18 },
+      { to: 'the_alembics', ticks: 8 },
+      { to: 'the_vivarium', ticks: 8 },
     ],
   },
   the_alembics: {
@@ -703,10 +703,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 50, y: 57.5 },
     activities: [],
     connections: [
-      { to: 'ascent_foot', ticks: 60, label: 'the Chancery Road' },
-      { to: 'assize_gate', ticks: 90 },
-      { to: 'the_rolls', ticks: 40 },
-      { to: 'seal_room', ticks: 40 },
+      { to: 'ascent_foot', ticks: 12, label: 'the Chancery Road' },
+      { to: 'assize_gate', ticks: 18 },
+      { to: 'the_rolls', ticks: 8 },
+      { to: 'seal_room', ticks: 8 },
     ],
   },
   the_rolls: {
@@ -748,10 +748,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'train_cha_assize', kind: 'train', attr: 'cha', name: 'Watch a Case Argued', icon: '👂' },
     ],
     connections: [
-      { to: 'ascent_foot', ticks: 60, label: 'the Assize Road' },
-      { to: 'wrights_gate', ticks: 90 },
-      { to: 'the_high_bench', ticks: 40 },
-      { to: 'the_holding', ticks: 40 },
+      { to: 'ascent_foot', ticks: 12, label: 'the Assize Road' },
+      { to: 'wrights_gate', ticks: 18 },
+      { to: 'the_high_bench', ticks: 8 },
+      { to: 'the_holding', ticks: 8 },
     ],
   },
   the_high_bench: {
@@ -791,10 +791,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 24, y: 37.5 },
     activities: [],
     connections: [
-      { to: 'ascent_foot', ticks: 60, label: 'the Wrights’ Road' },
-      { to: 'granary_gate', ticks: 90 },
-      { to: 'the_forges', ticks: 40 },
-      { to: 'the_long_bench', ticks: 40 },
+      { to: 'ascent_foot', ticks: 12, label: 'the Wrights’ Road' },
+      { to: 'granary_gate', ticks: 18 },
+      { to: 'the_forges', ticks: 8 },
+      { to: 'the_long_bench', ticks: 8 },
     ],
   },
   the_forges: {
@@ -839,11 +839,11 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 31.6, y: 23.4 },
     activities: [],
     connections: [
-      { to: 'ascent_foot', ticks: 60, label: 'the Granary Road' },
-      { to: 'lectory_steps', ticks: 90 },
-      { to: 'the_weighbridge', ticks: 40 },
-      { to: 'the_undercrofts', ticks: 40 },
-      { to: 'granary_kitchens', ticks: 40 },
+      { to: 'ascent_foot', ticks: 12, label: 'the Granary Road' },
+      { to: 'lectory_steps', ticks: 18 },
+      { to: 'the_weighbridge', ticks: 8 },
+      { to: 'the_undercrofts', ticks: 8 },
+      { to: 'granary_kitchens', ticks: 8 },
     ],
   },
   granary_kitchens: {

@@ -473,6 +473,11 @@ linter checks the value in both layers), and `sheltered: true` marks
 interiors — weather stops at the door. An unpinned region has no weather at
 all.
 
+`mapped: true` removes a region's fog: standing in (discovering) any of its
+spots discovers all of them, on arrival and on load (NAVIGATION.md §2.4). Set
+on Threshold only. A spot added to a mapped region later is revealed on the
+next load with no migration.
+
 **Labels read per direction.** `label` is the way out; `returnLabel` is what the
 mirrored edge wears when the trip home is its own act rather than the same one
 backwards:
@@ -768,8 +773,12 @@ wraith_hunt: {
     // { type: 'craft', recipeId: 'iron_ingot', count: 3, ... }
     // { type: 'collect', materialId: 'frost_shard', qty: 8, ... } // consumed at turn-in!
     // { type: 'reach', spotId: 'malgeri_peak', ... }
+    // { type: 'stat', key: 'kills', value: 5, at: 'the_cages', ... }
+    //   `at`: where it is usually done, for the Quests tab's Go link (any kind
+    //   that names no place itself). Display only; progress never reads it.
   ],
   rewards: { gold: 250, items: ['frost_brand'],
+    levelXp: 80,                                  // absent: DEFAULT_QUEST_LEVEL_XP (50)
     materials: [{ id: 'iron_ingot', qty: 2 }],
     skillXp: [{ id: 'fighting', xp: 30 }] },     // no-op if skill not yet known
 },
@@ -780,7 +789,13 @@ the_source_of_winter: {
 },
 ```
 Progress tracks automatically via events. Turn-in requires standing at the
-giver's spot. Completing bumps the `quests:completed` counter.
+giver's spot. Completing bumps the `quests:completed` counter and pays
+character-level XP (LEVELS.md). A Go link appears beside the giver and each
+unfinished objective with a place when that place is in town (or anywhere,
+with the Wayfinding boon).
+
+A ladder floor (`towers.data.ts`) pays `clearXp` level XP the first time
+its `clear` holds in a run. Band 1: 100 / 150 / 200.
 
 ### Shop (a `shop` on an `NpcDef`)
 

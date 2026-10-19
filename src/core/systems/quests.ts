@@ -7,6 +7,7 @@ import { createItem } from './runes';
 import { bumpStat } from './achievements';
 import { grantFavorAll } from './divine';
 import { grantMaterial } from './disciplines';
+import { grantLevelXp, questLevelXp } from './levels';
 import { text } from '../text/log';
 
 /** Tags an exchange with an NPC trains (see the `speechcraft` skill). */
@@ -166,6 +167,8 @@ export function turnInQuest(state: GameState, bus: EventBus, questId: string): b
   for (const sx of r.skillXp ?? []) {
     grantSkillXpDirect(state, bus, sx.id, sx.xp);
   }
+  const levelXp = questLevelXp(quest);
+  if (levelXp > 0) parts.push(`${levelXp} level XP`);
 
   state.quests[questId].status = 'done';
   bumpStat(state, bus, 'quests:completed');
@@ -187,6 +190,8 @@ export function turnInQuest(state: GameState, bus: EventBus, questId: string): b
     }),
     kind: 'quest',
   });
+  // After the turn-in line, so a level-up reads as its consequence.
+  grantLevelXp(state, bus, levelXp);
   return true;
 }
 

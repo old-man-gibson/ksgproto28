@@ -41,8 +41,9 @@ export const PRESTIGE_SOURCES: Record<string, PrestigeSourceDef> = {
 
 /**
  * What points buy. Every effect is a one-shot grant at run start or a read
- * at its use site (skillCap, preparedCap) — never a Modifier, so nothing
- * here touches the derived-stats fingerprint. The three ceilings are the
+ * at its use site (skillCap, preparedCap) — never a Modifier. Head Start
+ * sets the character level, which IS in the derived-stats fingerprint, so
+ * the stat block follows it like any other level-up. The three ceilings are the
  * first consumers of the cap-raise lane WEATHER.md left unwired.
  */
 export const PRESTIGE_BOONS = prose<PrestigeBoonDef>('PRESTIGE_BOONS', PRESTIGE_BOONS_TEXT, {
@@ -125,6 +126,15 @@ export const PRESTIGE_BOONS = prose<PrestigeBoonDef>('PRESTIGE_BOONS', PRESTIGE_
     icon: '🧭',
     cost: [2],
     effect: { kind: 'wayfinding' },
+  },
+  // The character level resets with the run (user, 2026-10-18); each rank
+  // starts the next one a level higher, attribute bonus included.
+  head_start: {
+    id: 'head_start',
+    name: 'Head Start',
+    icon: '⏫',
+    cost: [1, 2, 3, 4, 5],
+    effect: { kind: 'startLevel', levels: 1 },
   },
 });
 

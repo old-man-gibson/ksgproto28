@@ -4,6 +4,7 @@
   import { NPCS, QUESTS, SPOTS } from '../../core/registry';
   import { activeQuests, objectiveProgress, questComplete } from '../../core/systems/quests';
   import { hasWayfinding } from '../../core/systems/legacy';
+  import { inMappedRegion } from '../../core/systems/mapped';
   import type { QuestObjective } from '../../core/types';
   import GoButton from '../lib/GoButton.svelte';
   import { TUTORIAL_STEP_LIST } from '../../core/data/tutorial.data';
@@ -25,11 +26,19 @@
 
   const wayfinding = $derived(hasWayfinding(gs));
 
-  /** Where an objective is done, when it names a place (a person to meet, a spot to reach). */
+  /**
+   * Go links: town places always (the city has no fog, systems/mapped.ts),
+   * everywhere else with the Wayfinding boon.
+   */
+  function linked(spot: string | null | undefined): spot is string {
+    return !!spot && (wayfinding || inMappedRegion(spot));
+  }
+
+  /** Where an objective is done: a person to meet, a spot to reach, or its `at` hint. */
   function objectiveSpot(objective: QuestObjective): string | null {
     if (objective.type === 'talk') return NPCS[objective.npcId]?.spotId ?? null;
     if (objective.type === 'reach') return objective.spotId;
-    return null;
+    return objective.at ?? null;
   }
 
   function giverHint(questId: string): string {
@@ -56,7 +65,7 @@
         <span class="name">📜 {quest.name}</span>
         <span class="giver dim small">
           {giverHint(quest.id)}
-          {#if wayfinding && NPCS[quest.giver]}<GoButton spot={NPCS[quest.giver].spotId} />{/if}
+          {#if linked(NPCS[quest.giver]?.spotId)}<GoButton spot={NPCS[quest.giver].spotId} />{/if}
         </span>
       </div>
       <div class="dim small">{quest.desc}</div>
@@ -73,7 +82,7 @@
             ></div>
           </div>
           <span class="small dim">{p.current}/{p.target}</span>
-          {#if wayfinding && p.current < p.target && objectiveSpot(objective)}
+          {#if p.current < p.target && linked(objectiveSpot(objective))}
             <GoButton spot={objectiveSpot(objective)!} />
           {/if}
         </div>

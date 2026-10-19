@@ -9,6 +9,7 @@ import { canStartActivity, foundPaths, isExplored, selectActivity, settleArrival
 import { checkDiscovery, grantSkillXp } from './skills';
 import { noteTravelSkies } from './weathersense';
 import { noteSafeSpot } from './safety';
+import { revealMapped } from './mapped';
 import { text } from '../text/log';
 
 /**
@@ -98,6 +99,7 @@ export function tickTravel(state: GameState, bus: EventBus): void {
   } else if (!morePlanned) {
     bus.emit({ type: 'log', msg: text('locations.arrived', { name: getSpot(t.to).name }), kind: 'travel' });
   }
+  logMapped(state, bus);
   // The spot — or the particular road just walked — may declare a fight that
   // starts the moment you arrive and cannot be fled.
   const dest = getSpot(t.to);
@@ -142,6 +144,14 @@ export function tickTravel(state: GameState, bus: EventBus): void {
     return;
   }
   settleArrival(state, bus);
+}
+
+/** Reveal mapped regions (systems/mapped.ts) and log each one that opened. */
+export function logMapped(state: GameState, bus: EventBus): void {
+  for (const { region, added } of revealMapped(state)) {
+    const name = REGIONS[region]?.name ?? region;
+    bus.emit({ type: 'log', msg: text('locations.region_mapped', { region: name, count: added }), kind: 'travel' });
+  }
 }
 
 // ---------- Routing ----------

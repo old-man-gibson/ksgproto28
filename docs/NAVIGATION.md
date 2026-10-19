@@ -71,7 +71,29 @@ destinations (tests/map.test.ts), which is what the caravan price uses.
 Unknown names stay hidden everywhere: the card, the travel header, the
 journey line and the log say "Unknown place".
 
-### 2.4 Bonus time (`systems/bonustime.ts`)
+### 2.4 The city has no fog (`systems/mapped.ts`, 2026-10-18)
+
+User's call: Threshold is a directory, not a place to scout. The tower is
+where scouting happens.
+
+- `RegionDef.mapped: true` on `threshold`. Discovering any spot in a mapped
+  region discovers all of them (`revealMapped`). One log line:
+  `🗺️ Threshold mapped: 26 places added to the map.`
+- Called on arrival (`tickTravel` → `logMapped`), on load (`deserialize`,
+  which also covers saves from before the flag and town spots added later),
+  and wherever a spot is discovered without a walk: tutorial skip, a new run
+  (`prestigeNow`), the haven carry (`retreatToSafety`), a rumor find.
+- Not at `createInitialState`: a new game starts in the holding cell with no
+  town spot known. Revealing at creation would also have finished the
+  tutorial's `leave` step (stood at the Foot = discovered) before the cell.
+- Town roads are ×0.2 of their old length: Foot ↔ district gate 12 ticks
+  (1 s), gate ↔ gate 18, gate ↔ room 8. The doors out of town keep theirs
+  (floor 0 → Foot 30, Foot → the hold 90). Walking in town pays
+  proportionally less Scouting XP (`t.total × 0.08`).
+- NPC lines and spot texts that quote town road seconds say 1 s (2 s for two
+  hops); retune them with the ticks.
+
+### 2.5 Bonus time (`systems/bonustime.ts`)
 
 User's choices (2026-09-13): banked 1:1, cap 8 hours (the offline catch-up
 cap), spent only while the player toggles it on.
@@ -126,13 +148,26 @@ breadcrumb, description, what arrival will do ("start" for an intent,
 arrival toggle, the features with "Open on arrival" for benches, people and
 exploration. An unknown destination shows nothing but that it is unknown.
 
-## 5. Wayfinding (prestige boon)
+## 5. Go links outside the map
 
-User's call: go links outside the map are a prestige unlock. `wayfinding`
-(cost 2, one rank; PRESTIGE.md §4).
+### 5.1 Town places (no boon, 2026-10-18)
 
-- **Quests tab**: a Go button beside the giver, and beside each unfinished
-  `talk` or `reach` objective (the only kinds that name a place).
+The Quests tab shows a Go button for any giver or objective whose spot is in
+a mapped region (`inMappedRegion`), from the first run.
+
+- Objective spot: `talk` → the NPC's spot; `reach` → its `spotId`; any
+  other kind → its `at` hint (`QuestObjective.at`). `at` is display only;
+  progress never reads it. A Taste of Everything sets it on all seven
+  objectives (the Forges, the Granary Kitchens, the Alembics, the Cages ×2,
+  the Reading Hall, the Nine Chapels).
+
+### 5.2 Wayfinding (prestige boon)
+
+User's call: go links to places outside town are a prestige unlock.
+`wayfinding` (cost 2, one rank; PRESTIGE.md §4).
+
+- **Quests tab**: the same Go buttons for givers and objectives outside
+  mapped regions.
 - **Skills tab**: "Trains at" under every expanded skill and attribute, with
   up to six known spots and Go & start (`trainingSpots`, actions.ts).
 - `activityXpTags(act)` is the one list of tags an activity's cycle pays

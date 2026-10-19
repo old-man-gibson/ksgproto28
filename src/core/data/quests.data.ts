@@ -32,6 +32,7 @@ export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
     ],
     rewards: {
       gold: 60,
+      levelXp: 50,
       // The introduction to the gods (the prior's doing, narratively): with
       // the turn-in's own +1 this reaches the cheapest miracle's price.
       favor: 4,
@@ -52,25 +53,26 @@ export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
     giver: 'warden_of_the_foot',
     requirements: [{ type: 'quest', id: 'faces_of_threshold' }],
     objectives: [
-      { type: 'craft', recipeId: 'iron_ingot', count: 1, },
-      { type: 'craft', discipline: 'cooking', count: 1, },
-      { type: 'craft', discipline: 'alchemy', count: 1, },
-      { type: 'stat', key: 'bestiary:entries', value: 3, },
-      { type: 'stat', key: 'kills', value: 5, },
-      { type: 'stat', key: 'spells:inscribed', value: 1, },
-      { type: 'stat', key: 'miracles:learned', value: 1, },
+      { type: 'craft', recipeId: 'iron_ingot', count: 1, at: 'the_forges', },
+      { type: 'craft', discipline: 'cooking', count: 1, at: 'granary_kitchens', },
+      { type: 'craft', discipline: 'alchemy', count: 1, at: 'the_alembics', },
+      { type: 'stat', key: 'bestiary:entries', value: 3, at: 'the_cages', },
+      { type: 'stat', key: 'kills', value: 5, at: 'the_cages', },
+      { type: 'stat', key: 'spells:inscribed', value: 1, at: 'the_reading_hall', },
+      { type: 'stat', key: 'miracles:learned', value: 1, at: 'the_nine_chapels', },
     ],
-    rewards: { gold: 250 },
+    rewards: { gold: 250, levelXp: 75 },
   },
   the_first_ascent: {
     id: 'the_first_ascent',
     name: 'The First Ascent',
     giver: 'warden_of_the_foot',
-    requirements: [{ type: 'quest', id: 'a_taste_of_everything' }],
+    // Offered from the start and listed first: the recommended opening is
+    // the tower. The two town quests are optional before it.
     // The collector pays the existing floor-clear latch when it yields the
     // toll stamp. Older saves that already cleared this floor still count.
     objectives: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1, }],
-    rewards: { gold: 350, favor: 1 },
+    rewards: { gold: 350, favor: 1, levelXp: 100 },
   },
 
   // ---- Vermin Festival quest chain -----

@@ -62,7 +62,8 @@ All declarative, so the preview can be computed from them.
 ## 4. Boon effects (`PrestigeBoonEffect`)
 
 Never a `Modifier` — every kind is a one-shot grant or a read at its use
-site, so the derived-stats cache and its fingerprint are not involved.
+site. Only `startLevel` reaches the stat block, through the character level,
+which is in `modFingerprint` (LEVELS.md §2.3).
 
 | kind | applied | read by |
 |---|---|---|
@@ -72,7 +73,8 @@ site, so the derived-stats cache and its fingerprint are not involved.
 | `talent` | — | `collectBaseMods` (attributes.ts): a skill's effects × `1 + rate × rank × peakLevel × prestiges` |
 | `endowment` | — | `effectiveAttrsFrom` (attributes.ts), last pass: an attribute's effective value × `1 + rate × rank × peakAttr × prestiges` |
 | `foresight` | — | `skillRevealed` (skills.ts) and the Skills panel's milestone line: locked skills and the next milestone show at any progress instead of only at 90% of the threshold (`REVEAL_FRACTION`) |
-| `wayfinding` | — | `hasWayfinding` (legacy.ts), read by the Quests and Skills panels: go links to quest givers and `talk`/`reach` objectives, and to every known spot that trains a skill or attribute (`trainingSpots`, actions.ts). See NAVIGATION.md |
+| `wayfinding` | — | `hasWayfinding` (legacy.ts), read by the Quests and Skills panels: go links to quest givers and objectives outside town (town places have them without the boon), and to every known spot that trains a skill or attribute (`trainingSpots`, actions.ts). See NAVIGATION.md §5 |
+| `startLevel` | `applyRunStart` on every new run; and at purchase, for the run in progress (`applyStartingLevel`, levels.ts: raises the level to 1 + levels × rank, never lowers) | `startingLevel` (legacy.ts). See LEVELS.md §2.4 |
 
 **Endowment** (user, 2026-09-12) is talent's twin for attributes, the
 second `auto` boon: same product, the peak being the TRAINED level recorded

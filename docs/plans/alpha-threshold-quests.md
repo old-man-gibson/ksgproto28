@@ -79,7 +79,15 @@ lexicon and pantheon onto older saves.
 
 # Quest 3 — The First Ascent (built 2026-09-06, same day)
 
-`the_first_ascent` (Warden, requires quest 2): clear floor 1. The user's
+**2026-10-18: no longer quest 3 in practice.** User's start option 2 ("tower
+first"): `the_first_ascent` has no requirement, the Warden lists it first,
+and the tutorial's last panel recommends it. The Faces of Threshold and A
+Taste of Everything are offered beside it, optional before the climb (Taste
+still requires Faces). All three pay character-level XP (100 / 50 / 75,
+LEVELS.md). Town objectives carry Go links without Wayfinding
+(NAVIGATION.md §5.1).
+
+`the_first_ascent` (Warden, originally required quest 2): clear floor 1. The user's
 design, and what it became:
 
 - **The keeper changes with the clock** — `SpotEncounter.daypart`, on the

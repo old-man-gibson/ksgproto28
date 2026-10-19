@@ -21,6 +21,7 @@ import { fieldHunger, statusMods } from './statuses';
 import { fastGuard, fastOf } from './mutagens';
 import { resolveRune } from './runes';
 import { ATTRIBUTE_LIST, ATTRIBUTE_TRAINING } from '../data/attributes.data';
+import { LEVEL_ATTR_BONUS } from '../data/levels.data';
 import { ATTRIBUTE_PROGRESSION } from '../data/progression.data';
 import { bandedXpNeeded, settleLevels } from './progression';
 import type { EventBus } from '../engine/events';
@@ -129,6 +130,7 @@ const SKILL: ModOrigin = { kind: 'skill' };
 const TRAINING: ModOrigin = { kind: 'training' };
 const TITLE: ModOrigin = { kind: 'title' };
 const BUFF: ModOrigin = { kind: 'buff' };
+const LEVEL: ModOrigin = { kind: 'level' };
 
 const ATTR_IDS: ReadonlySet<string> = new Set(ATTRIBUTE_LIST.map((a) => a.id));
 
@@ -264,6 +266,13 @@ export function collectBaseMods(
       // One shared label so tooltips can group all milestones into one line.
       for (const m of milestone.bonus) push(m, `${training.name} milestones`, TRAINING);
     }
+  }
+
+  // Character level (systems/levels.ts): a flat add to all six. Not a trained
+  // level, so no rank or milestone threshold reads it.
+  const fromLevel = Math.max(0, (state.level ?? 1) - 1) * LEVEL_ATTR_BONUS;
+  if (fromLevel > 0) {
+    for (const a of ATTRIBUTE_LIST) push({ stat: a.id, op: 'add', value: fromLevel }, `Level ${state.level}`, LEVEL);
   }
 
   // Titles: passive bonuses from every earned title, plus the worn title's

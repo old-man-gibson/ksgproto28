@@ -44,6 +44,10 @@ const columns: [string, (r: ClimbReport) => string | number][] = [
   ['den KO', (r) => r.knockouts.floor3],
   ['band 1', (r) => min(r.done.floor3)],
   ['gold', (r) => r.goldEarned],
+  ['lv f1', (r) => r.levels.floor1 ?? '—'],
+  ['lv f2', (r) => r.levels.floor2 ?? '—'],
+  ['lv end', (r) => r.levels.floor3 ?? '—'],
+  ['level XP', (r) => r.levelXp],
 ];
 
 const rows: ClimbReport[] = [];
