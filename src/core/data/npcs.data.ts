@@ -18,7 +18,7 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
     name: 'The Warden of the Foot',
     icon: '🗝️',
     spotId: 'ascent_foot',
-    quests: ['faces_of_threshold', 'a_taste_of_everything', 'the_first_ascent'],
+    quests: ['the_first_ascent', 'faces_of_threshold', 'a_taste_of_everything'],
   },
   master_smith: {
     id: 'master_smith',

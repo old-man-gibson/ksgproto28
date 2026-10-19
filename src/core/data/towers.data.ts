@@ -119,6 +119,7 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     // Keep the existing boss counter so old clears and the Warden quest
     // remain valid; the submerged collector now pays it and the toll stamp.
     clear: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }],
+    clearXp: 100,
   },
   ascent_f2: {
     id: 'ascent_f2',
@@ -134,6 +135,7 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     // The clear is a spent fight budget: the cistern's fightLimit and this
     // number are the same dial and are linted to agree.
     clear: [{ type: 'stat', key: 'fights:f2_cistern', value: 8 }],
+    clearXp: 150,
   },
   ascent_f3: {
     id: 'ascent_f3',
@@ -146,5 +148,6 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     gate: [{ type: 'stat', key: 'gold:earned', value: 600 }],
     // A named kill again — the brood den's `once` queen.
     clear: [{ type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 }],
+    clearXp: 200,
   },
 });

@@ -9,6 +9,7 @@
   import { DEITIES, DEITY_LIST } from '../../core/data/deities.data';
   import { ARCANE_WORDS, PSI_AXIS_LIST } from '../../core/data/spellcraft.data';
   import { grantFavor } from '../../core/systems/deities';
+  import { grantLevelXp } from '../../core/systems/levels';
   import { wordUnlockKey } from '../../core/systems/unlocks';
   import { learnPsiAxis, raisePsiTier } from '../../core/systems/psionic';
   import { TECHNIQUES, TECHNIQUE_LIST } from '../../core/data/martial.data';
@@ -134,6 +135,11 @@
   function giveGold(amount: number) {
     gs.gold += amount;
     say(`+${fmt(amount)} gold`);
+  }
+
+  function giveLevelXp(amount: number) {
+    grantLevelXp(gs, game.bus, amount);
+    say(`+${fmt(amount)} level XP`);
   }
 
   // ---- Spellcraft ----
@@ -419,6 +425,8 @@
     <div class="row">
       <button onclick={() => giveGold(1000)}>+1k gold</button>
       <button onclick={() => giveGold(1_000_000)}>+1M gold</button>
+      <button onclick={() => giveLevelXp(100)}>+100 level XP</button>
+      <button onclick={() => giveLevelXp(1000)}>+1k level XP</button>
     </div>
   </div>
 

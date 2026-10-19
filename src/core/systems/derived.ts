@@ -624,6 +624,8 @@ function modFingerprint(state: GameState): string {
     }
   }
   for (const a of ATTRIBUTE_LIST) parts.push(String(state.attrs?.[a.id]?.level ?? 0));
+  // Character level: +1 to every attribute per level (attributes.ts).
+  parts.push(`L${state.level ?? 1}`);
   for (const [id, s] of Object.entries(state.skills ?? {})) parts.push(`k${id}:${s.level}`);
   // Talent (prestige boon) scales skill effects. Peaks and the count only
   // change when the whole state is replaced at a prestige; the rank can

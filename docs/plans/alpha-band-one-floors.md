@@ -127,12 +127,17 @@ data on existing machinery; the flags reset with the run like every counter.
   dexterity each moved the count only a few knockouts. Poison chance and DEX
   were tried and left as they were.
 
-| | 2026-10-10 | 2026-10-17 |
-|---|---|---|
-| Gallery knockouts, 18 climbs | 79 (3–6 each) | 41 (1–4 each) |
-| Den knockouts, 18 climbs | 29 | 14 |
-| Floor-2 knockouts, plain / attentive | 37 / — | 37 / 19 (drained) |
-| Band 1, every build | 13–19 min | 13–18 min |
+| | 2026-10-10 | 2026-10-17 | 2026-10-18 (levels) |
+|---|---|---|---|
+| Gallery knockouts, 18 climbs | 79 (3–6 each) | 41 (1–4 each) | 18 (0–3 each) |
+| Den knockouts, 18 climbs | 29 | 14 | 5 |
+| Floor-2 knockouts, plain / attentive | 37 / — | 37 / 19 (drained) | 31 / — |
+| Band 1, every build | 13–19 min | 13–18 min | 9–15 min |
+
+2026-10-18: character level (LEVELS.md) adds +1 to every attribute per level;
+climbers reach level 2 by the collector, 3 by the cistern's end and 5 by the
+queen. Same driver, same seeds. Town roads got 5× shorter the same day, which
+trims John's job walks a little.
 
 A trade-off worth knowing: the attentive John who drains the cistern meets
 floor 3 a little weaker (stranded slimes pay less XP and coin), 48 gallery

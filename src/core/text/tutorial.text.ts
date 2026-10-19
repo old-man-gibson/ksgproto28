@@ -34,5 +34,5 @@ export const TUTORIAL_TEXT: ProseTable = {
     'Click The Gate on the map: the ❓ pin joined to the Field (3 s). Beyond it is Threshold, the city at the Foot of the Ascent.',
 
   'leave.desc':
-    'Click → Threshold beside the Gate on the map (3 s). The road is one-way: floor 0 closes behind you. At the Foot, Rest at the Doorstep Inn is the city haven, the Warden of the Foot gives the first quests (People section, then the Quests tab), and the ladder panel lists the tower floors with what opens each. These panels stay readable on the Quests tab under Guide.',
+    'Click → Threshold beside the Gate on the map (3 s). The road is one-way: floor 0 closes behind you. At the Foot, Rest at the Doorstep Inn is the city haven, the Warden of the Foot gives the first quests (People section, then the Quests tab), and the ladder panel lists the tower floors with what opens each. Recommended next: floor 1, the Warden’s quest The First Ascent. The city is optional before it: all of it is on the map, 1 s per road. These panels stay readable on the Quests tab under Guide.',
 };

@@ -35,6 +35,9 @@
   import { fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
   import Tip from '../lib/Tip.svelte';
   import { REFERENCE_BLOW, expectedHitTaken, roughDps } from '../lib/statSummary';
+  import { levelAttrBonus, xpToNext } from '../../core/systems/levels';
+  import { startingLevel } from '../../core/systems/legacy';
+  import { LEVEL_ATTR_BONUS } from '../../core/data/levels.data';
 
   const stats = $derived(view.stats);
 
@@ -46,6 +49,9 @@
   const pool = (id: ResourceId) => poolText(cur(id), cap(id));
 
   const hpPct = $derived(barPct(cur('hp'), cap('hp')));
+  // Character level (systems/levels.ts).
+  const nextLevelXp = $derived(xpToNext(gs.level));
+  const levelPct = $derived(barPct(gs.levelXp, nextLevelXp));
   // Health's trickle is graded by what you are doing — and halved mid-fight
   // while stamina is off its ceiling — so the tooltip quotes the rate actually
   // running rather than the bare stat, and names whichever of the two is the
@@ -379,6 +385,23 @@
     {/if}
   </div>
 
+  <Tip block>
+    <div class="bar res-bar level-bar">
+      <div class="fill" style="width: {levelPct}%; background: var(--xp)"></div>
+      <div class="label">Level {gs.level} · {Math.floor(gs.levelXp)}/{nextLevelXp} XP</div>
+    </div>
+    {#snippet tip()}
+      <div class="tip-line tip-base">Level {gs.level}: +{levelAttrBonus(gs)} to every attribute</div>
+      <div class="tip-line">Next level: {Math.ceil(nextLevelXp - gs.levelXp)} XP, then +{LEVEL_ATTR_BONUS} more to every attribute</div>
+      <div class="tip-line">XP from: kills (the monster's XP), quest turn-ins, a floor's first clear in the run</div>
+      {#if startingLevel(gs) > 1}
+        <div class="tip-line">Resets with the run. This run started at level {startingLevel(gs)} (Head Start).</div>
+      {:else}
+        <div class="tip-line">Resets with the run. The Head Start prestige boon raises the level a run starts at.</div>
+      {/if}
+    {/snippet}
+  </Tip>
+
   <h3>Attributes</h3>
 
   {#each fusedDefs as sup}
@@ -608,6 +631,9 @@
     margin-bottom: 8px;
   }
 
+  .level-bar {
+    margin-top: 8px;
+  }
   .resources {
     display: flex;
     flex-direction: column;

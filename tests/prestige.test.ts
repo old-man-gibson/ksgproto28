@@ -4,7 +4,7 @@ import { Game } from '../src/core/game';
 import { EventBus } from '../src/core/engine/events';
 import { migrate } from '../src/core/save/migrations';
 import { deserialize, serialize } from '../src/core/save/save';
-import { PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, STARTING_SPOT } from '../src/core/registry';
+import { AREAS, PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, SPOTS, STARTING_SPOT } from '../src/core/registry';
 import { TUTORIAL_EXIT } from '../src/core/data/tutorial.data';
 import {
   buyBoon,
@@ -147,7 +147,10 @@ describe('the reset', () => {
     const next = prestigeNow(s, 777)!;
     // A second life skips the tutorial cell: it opens at the Foot, done-flag stamped.
     expect(next.spot).toBe(TUTORIAL_EXIT);
-    expect(next.discovered).toEqual([TUTORIAL_EXIT]);
+    // The Foot, then the rest of Threshold: the city has no fog (systems/mapped.ts).
+    expect(next.discovered[0]).toBe(TUTORIAL_EXIT);
+    expect(next.discovered.every((id) => AREAS[SPOTS[id].areaId].regionId === 'threshold')).toBe(true);
+    expect(next.discovered).toContain('the_cages');
     expect(next.stats['flag:tutorial_done']).toBe(1);
     expect(STARTING_SPOT).not.toBe(TUTORIAL_EXIT);
     expect(next.gold).toBe(0);

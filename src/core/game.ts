@@ -16,6 +16,7 @@ import {
 } from './systems/tutorial';
 import { registerBestiaryListeners } from './systems/bestiary';
 import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
+import { registerLevelListeners } from './systems/levels';
 import { setHuntRest } from './systems/huntrest';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
@@ -142,6 +143,7 @@ export class Game {
     registerTutorialListeners(state, this.bus);
     // Training spots heal and dare off a won fight (systems/training.ts).
     registerTrainingListeners(state, this.bus);
+    registerLevelListeners(state, this.bus);
     this.bus.on('log', (ev) => {
       if (this.suppressLog) return;
       appendLog(this.state, {

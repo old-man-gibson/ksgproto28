@@ -20,6 +20,15 @@ export function boughtBoons(state: GameState): { def: PrestigeBoonDef; rank: num
     .filter((b) => b.rank > 0);
 }
 
+/** Character level a run starts at: 1 plus the Head Start boon's levels × rank. */
+export function startingLevel(state: GameState): number {
+  let level = 1;
+  for (const { def, rank } of boughtBoons(state)) {
+    if (def.effect.kind === 'startLevel') level += def.effect.levels * rank;
+  }
+  return level;
+}
+
 /** Whether locked skills and upcoming milestones show at any progress (the Foresight boon). */
 export function hasForesight(state: GameState): boolean {
   return boughtBoons(state).some(({ def }) => def.effect.kind === 'foresight');

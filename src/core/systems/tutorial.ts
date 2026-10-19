@@ -18,6 +18,7 @@ import { createItem } from './runes';
 import { addSpell } from './spellcraft';
 import { abandonCombat } from './combat';
 import { noteSafeSpot } from './safety';
+import { revealMapped } from './mapped';
 import { text } from '../text/log';
 
 /**
@@ -182,6 +183,7 @@ export function skipTutorial(state: GameState, bus: EventBus): boolean {
     if (!state.discovered.includes(TUTORIAL_EXIT)) state.discovered.push(TUTORIAL_EXIT);
     noteSafeSpot(state, TUTORIAL_EXIT);
   }
+  revealMapped(state);
   const dest = getSpot(TUTORIAL_EXIT);
   bus.emit({ type: 'log', msg: text('tutorial.skipped', { icon: dest.icon, name: dest.name }), kind: 'quest' });
   // The arrive listener above stamps the done flag and logs the finish; a

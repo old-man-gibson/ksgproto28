@@ -6,6 +6,8 @@ import { TUTORIAL_DONE_KEY, TUTORIAL_EXIT } from '../data/tutorial.data';
 import { conditionsMet } from './conditions';
 import { floorCleared, ladderFloors } from './towers';
 import { boonRank } from './legacy';
+import { revealMapped } from './mapped';
+import { applyStartingLevel } from './levels';
 import { text } from '../text/log';
 
 /**
@@ -139,6 +141,7 @@ export function buyBoon(state: GameState, bus: EventBus, boonId: string): boolea
   state.prestige.purchases[boonId] = boonRank(state, boonId) + 1;
   if (state.prestige.review) state.prestige.spentThisReview += cost;
   if (def.effect.kind === 'startGold') state.gold += def.effect.amount;
+  if (def.effect.kind === 'startLevel') applyStartingLevel(state);
   bus.emit({
     type: 'log',
     msg: text('prestige.boon_bought', {
@@ -165,6 +168,7 @@ export function applyRunStart(state: GameState): void {
     const rank = boonRank(state, def.id);
     if (rank > 0 && def.effect.kind === 'startGold') state.gold += def.effect.amount * rank;
   }
+  applyStartingLevel(state);
 }
 
 /**
@@ -214,6 +218,7 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
   next.stats[TUTORIAL_DONE_KEY] = 1;
   next.spot = TUTORIAL_EXIT;
   next.discovered = [TUTORIAL_EXIT];
+  revealMapped(next);
   applyRunStart(next);
   return next;
 }

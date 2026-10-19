@@ -71,7 +71,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'base_material_storage.desc': 'Storage room off the Workshop. No activities.',
 
-  'ascent_foot.desc': 'Hub of Threshold and the door to the Ascent. Rest at the Doorstep Inn makes this the city haven: a lost fight returns you here. All eight district roads end here, 6 s each. The Warden of the Foot stands here and gives the starting quests. The door to your hold opens after your first prestige.',
+  'ascent_foot.desc': 'Hub of Threshold and the door to the Ascent. Rest at the Doorstep Inn makes this the city haven: a lost fight returns you here. All eight district roads end here, 1 s each. The Warden of the Foot stands here and gives the starting quests. The door to your hold opens after your first prestige.',
 
   'lectory_steps.desc': 'Gate of the Scholars’ Quarter. Argue on the Steps trains Intelligence. Connects to the Foot, the Reading Hall, the Chalk Yard, the Granary Gate and the Pilgrims’ Stair.',
 

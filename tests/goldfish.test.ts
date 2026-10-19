@@ -54,7 +54,10 @@ describe('the goldfish — a player who never makes a correct decision', () => {
       // gates, so the goldfish has more strangers to greet and seed 42 now
       // spends its span saying hello. Scan of 1–13 the same day: 7 of 14 seeds
       // close a quest; 7 is one of them.
-      const r = runGoldfish(7, 150_000);
+      // Seed changed again 2026-10-18: the city lost its fog, its roads got
+      // 5× shorter and the Warden lists The First Ascent first. Scan of 1–13:
+      // 8 seeds close a quest; 7 no longer does, 1 does.
+      const r = runGoldfish(1, 150_000);
       expect(r.questsDone, 'never finished a single quest').toBeGreaterThan(0);
       expect(r.blanked).toBe(0);
     },

@@ -621,7 +621,9 @@ export type ModOriginKind =
   | 'title'
   | 'buff'
   | 'status'
-  | 'style';
+  | 'style'
+  /** Character level (systems/levels.ts): a flat add to every attribute. */
+  | 'level';
 
 export interface ModOrigin {
   kind: ModOriginKind;
@@ -3774,6 +3776,11 @@ export interface RegionDef {
    */
   sheltered?: boolean;
   /**
+   * No fog: discovering any spot in the region discovers all of them
+   * (systems/mapped.ts). Set on Threshold.
+   */
+  mapped?: boolean;
+  /**
    * Place tags for the WHOLE region — see `SpotDef.tags`. A spot's effective
    * tags are the union down the chain (region ∪ area ∪ spot), so 'dark' on a
    * cave-system region darkens every chamber without tagging each one.
@@ -4297,6 +4304,11 @@ export interface FloorDef {
    */
   clear?: UnlockCondition[];
   /**
+   * Character-level XP paid the first time `clear` holds in a run
+   * (systems/levels.ts). The run's record is the `level:floor:<id>` counter.
+   */
+  clearXp?: number;
+  /**
    * Only the owner may enter. Flavour today, since the game is single-player,
    * but it is the field content should read rather than hardcoding the base's
    * id in half a dozen places.
@@ -4387,7 +4399,13 @@ export type PrestigeBoonEffect =
    * (systems/locations.ts `goAndDo` / `travelPlanTo`). Read by the Quests
    * and Skills panels.
    */
-  | { kind: 'wayfinding' };
+  | { kind: 'wayfinding' }
+  /**
+   * Head Start: a run starts at character level 1 + levels × rank, with the
+   * level's attribute bonus. Applied at run start and at purchase; never
+   * lowers a level already reached (systems/levels.ts applyStartingLevel).
+   */
+  | { kind: 'startLevel'; levels: number };
 
 /** Something prestige points buy. Rank r (1-based) costs `cost[r-1]`; `cost.length` is the max rank. */
 export interface PrestigeBoonDef {
@@ -4490,7 +4508,16 @@ export type ShopLine =
     }
   | { kind: 'item'; id: string; price?: number; requires?: UnlockCondition[] };
 
-export type QuestObjective =
+export type QuestObjective = QuestObjectiveKind & {
+  /**
+   * Where the objective is usually done, for the Quests tab's Go link. Only
+   * for kinds that name no place themselves ('talk' uses the NPC's spot,
+   * 'reach' its spotId). A hint: progress never checks it.
+   */
+  at?: string;
+};
+
+type QuestObjectiveKind =
   | { type: 'kill'; monsterId?: string; count: number; desc: string }
   /**
    * Crafts of any kind. `recipeId` names one recipe; `discipline` instead
@@ -4520,6 +4547,11 @@ export interface QuestRewards {
   materials?: { id: string; qty: number }[];
   items?: string[];
   skillXp?: { id: string; xp: number }[];
+  /**
+   * Character-level XP (systems/levels.ts). Absent: DEFAULT_QUEST_LEVEL_XP
+   * (data/levels.data.ts). Every turn-in pays one or the other.
+   */
+  levelXp?: number;
   /**
    * Favor with every KNOWN deity, on top of the 1 every turn-in already pays.
    * The lever that makes a first miracle reachable without grinding five
@@ -4960,6 +4992,12 @@ export interface GameState {
   attrs: Record<AttributeId, AttrState>;
   /** Unlocked super-attributes. */
   fused: SuperAttributeId[];
+  /**
+   * Character level and the XP banked toward the next one (systems/levels.ts).
+   * +1 to every attribute per level above 1. Resets with the run.
+   */
+  level: number;
+  levelXp: number;
   /**
    * Current value of every pool (see RESOURCES). Maxes, regen rates and
    * consumption multipliers are all derived stats — nothing here is a capacity.
@@ -5789,6 +5827,7 @@ export type GameEvent =
   | { type: 'talk'; npcId: string }
   | { type: 'quest:accept'; id: string }
   | { type: 'quest:complete'; id: string }
+  | { type: 'level:up'; level: number }
   | { type: 'bestiary:entry'; monsterId: string }
   | { type: 'bestiary:fact'; monsterId: string; factId: string }
   | { type: 'bestiary:habitat'; monsterId: string; spot: string };

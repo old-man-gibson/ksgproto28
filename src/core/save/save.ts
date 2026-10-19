@@ -6,6 +6,7 @@ import { spotActivities } from '../systems/actions';
 import { normalizeComposition } from '../systems/music';
 import { reclaimedForSave } from '../systems/martial';
 import { transcriptForSave } from '../systems/log';
+import { revealMapped } from '../systems/mapped';
 
 export const SAVE_KEY = 'ksgproto28:save';
 
@@ -74,6 +75,8 @@ export function deserialize(json: string): GameState {
   // references to things that no longer exist.
   const spot = SPOTS[state.spot] ?? SPOTS[STARTING_SPOT];
   state.spot = spot.id;
+  // Mapped regions have no fog; this also covers town spots added since.
+  revealMapped(state);
   if (state.activity) {
     const remapped = LEGACY_ACTIVITY_RENAMES[state.activity] ?? state.activity;
     state.activity = spotActivities(spot).some((a) => a.id === remapped) ? remapped : null;

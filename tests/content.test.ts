@@ -1103,6 +1103,7 @@ describe('npcs & quests', () => {
         if (o.type === 'collect')
           expect(MATERIALS[o.materialId], `${q.id} collect ${o.materialId}`).toBeDefined();
         if (o.type === 'reach') expect(SPOTS[o.spotId], `${q.id} reach ${o.spotId}`).toBeDefined();
+        if (o.at) expect(SPOTS[o.at], `${q.id} objective at ${o.at}`).toBeDefined();
         if (o.type === 'talk') expect(NPCS[o.npcId], `${q.id} talk ${o.npcId}`).toBeDefined();
         if (o.type === 'stat') {
           expect(o.value, `${q.id} stat ${o.key}: the bar must be positive`).toBeGreaterThan(0);
