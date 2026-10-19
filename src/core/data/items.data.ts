@@ -13,6 +13,22 @@ export const ITEMS = prose<ItemDef>('ITEMS', ITEMS_TEXT, {
     mods: [{ stat: 'damage', op: 'add', value: 3 }],
     value: 5,
   },
+  // The tutorial rack's hammer (data/tutorial.data.ts): the blunt starter,
+  // priced beside the rusty sword. Heavier per swing and slower, which is
+  // the trade the Crush stance is built around.
+  old_hammer: {
+    id: 'old_hammer',
+    name: 'Old Hammer',
+    icon: '🔨',
+    slot: 'weapon',
+    wield: 'one_handed',
+    tags: ['blunt', 'iron'],
+    mods: [
+      { stat: 'damage', op: 'add', value: 5 },
+      { stat: 'attackSpeed', op: 'mult', value: -0.12 },
+    ],
+    value: 6,
+  },
   oak_club: {
     id: 'oak_club',
     name: 'Oak Club',

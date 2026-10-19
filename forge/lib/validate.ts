@@ -7,10 +7,12 @@
  */
 
 import type { store as Store } from './store.svelte';
-import type { Connection, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, QuestDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
+import { searchContentIssues } from '../../src/core/systems/searchValidation';
+import type { ActivityDrop, Connection, CraftDisciplineDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, QuestDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
 import { MUSIC_AXES } from '../../src/core/data/music.data';
+import { ARCANE_WORDS } from '../../src/core/data/spellcraft.data';
 import { askingPrice, lineValue } from '../../src/core/systems/shops';
 
 /**
@@ -280,6 +282,11 @@ export function validate(store: S): Issue[] {
   // road across the boundary would open both directions and bypass the seal.
   for (const spot of Object.values(spots)) {
     for (const c of spot.connections ?? []) {
+      for (const condition of c.revealWhen ?? []) {
+        if (condition.type === 'stat' && condition.key.startsWith('fights:') && !(spots[condition.key.slice(7)]?.fightLimit)) {
+          err('spot', spot.id, `reveal condition '${condition.key}' needs a spot with a fight limit`);
+        }
+      }
       const toArea = spots[c.to]?.areaId;
       if (!toArea) continue; // unknown targets are caught by the spot lints
       if ((bandedAreas.has(spot.areaId) || bandedAreas.has(toArea)) && spot.areaId !== toArea) {
@@ -351,6 +358,20 @@ export function validate(store: S): Issue[] {
     if (spot.caged && spot.fightLimit !== undefined) {
       err('spot', spot.id, 'caged spots must not carry a fightLimit — the cages restock', ['caged']);
     }
+    // Training spots (systems/training.ts).
+    if (spot.healBetweenBouts && !(spot.healBetweenBouts.maxAttrTotal > 0)) {
+      err('spot', spot.id, 'healBetweenBouts needs a positive maxAttrTotal', ['healBetweenBouts']);
+    }
+    if (spot.dare) {
+      const d = spot.dare;
+      if (!monsters[d.monsterId]) err('spot', spot.id, `dares an unknown monster '${d.monsterId}'`, ['dare']);
+      if (!(Number.isInteger(d.every) && d.every > 0)) err('spot', spot.id, 'dare.every must be a positive whole number of wins', ['dare']);
+      if (!(d.level >= 1)) err('spot', spot.id, 'dare.level must be at least 1', ['dare']);
+      // Wins are what count down to the dare, and the keeper only dares the
+      // players it is still looking after.
+      if (!spot.encounters?.length) err('spot', spot.id, 'a dare with no fights to win toward it', ['dare']);
+      if (!spot.healBetweenBouts) err('spot', spot.id, 'a dare needs healBetweenBouts — it is offered only while the keeper tends you', ['dare']);
+    }
     for (const e of spot.encounters ?? []) {
       if (!e.window) continue;
       if (!(e.window.min > 0) || !(e.window.max > e.window.min)) {
@@ -383,12 +404,29 @@ export function validate(store: S): Issue[] {
         err('spot', spot.id, `unknown bench '${bid}'`, ['benches']);
       }
     }
+    // Rare finds on ordinary work (ActivityDef.drops, systems/activitydrops.ts).
+    for (const act of spot.activities ?? []) {
+      const drops = 'drops' in act ? act.drops : undefined;
+      if (!drops?.length) continue;
+      if (!['train', 'gather', 'job'].includes(act.kind)) {
+        err('spot', spot.id, `activity '${act.id}' has drops, but only train/gather/job cycles roll them`, ['activities', `#id=${act.id}`]);
+      }
+      for (const d of drops) {
+        const at = ['activities', `#id=${act.id}`];
+        if (!materials[d.material]) err('spot', spot.id, `activity '${act.id}' drops unknown material '${d.material}'`, at);
+        if (!(d.chance > 0 && d.chance <= 1)) err('spot', spot.id, `activity '${act.id}' drop chance must be in (0, 1]`, at);
+        if (d.quality && !(materials[d.material] as { graded?: boolean } | undefined)?.graded) err('spot', spot.id, `activity '${act.id}' pins a grade on an ungraded drop`, at);
+        if (d.rarer !== undefined && !(d.rarer > 1)) err('spot', spot.id, `activity '${act.id}' drop rarer must be > 1`, at);
+        if (d.qty !== undefined && !(d.qty >= 1)) err('spot', spot.id, `activity '${act.id}' drop qty must be >= 1`, at);
+      }
+    }
     for (const e of spot.encounters ?? []) {
       if (!monsters[e.monsterId]) err('spot', spot.id, `spawns unknown monster '${e.monsterId}'`, ['encounters']);
       if (e.level?.[0] > e.level?.[1]) err('spot', spot.id, `encounter '${e.monsterId}' has an inverted level range`, ['encounters']);
     }
 
     validateFinds(spot, { materials, items, runes, spots, claimedTags }, err, warn);
+    for (const message of searchContentIssues(spot, { materials, items, runes, keyItems: store.all('keyItem') })) err('spot', spot.id, message);
 
     // A hidden edge nobody can ever reveal.
     const canComb = (spot.activities ?? []).some((a) => a.kind === 'explore');
@@ -1005,6 +1043,40 @@ export function validate(store: S): Issue[] {
     }
   }
 
+  // Recipe cards and learned dishes (ConsumableSpec.teaches ↔ CraftOutcomeDef.recipe):
+  // every learned dish has a card, every card teaches a real dish, and every
+  // card can be had — sold at a counter or dropped by some activity.
+  {
+    const taught = new Set<string>();
+    const recipeIds = new Set<string>();
+    for (const disc of Object.values(store.all<CraftDisciplineDef>('discipline'))) {
+      for (const o of disc.outcomes ?? []) if (o.recipe) recipeIds.add(o.recipe);
+    }
+    const sold = new Set<string>();
+    for (const npc of Object.values(npcs)) for (const line of npc.shop?.lines ?? []) if (line.kind === 'material') sold.add(line.id);
+    const dropped = new Set<string>();
+    for (const spot of Object.values(spots)) {
+      for (const act of spot.activities ?? []) {
+        const drops: ActivityDrop[] = ('drops' in act ? act.drops : undefined) ?? [];
+        for (const d of drops) dropped.add(d.material);
+      }
+    }
+    for (const mat of Object.values(store.all<MaterialDef>('material'))) {
+      const c = mat.consumable;
+      const card = !!c && !!(c.teaches || c.unlocksWord || c.teachesTechnique || c.stamps || c.votive);
+      if (card && !sold.has(mat.id) && !dropped.has(mat.id)) err('material', mat.id, 'a card no counter sells and no activity drops', ['consumable']);
+      if (c?.stamps && !c.stamps.startsWith('flag:')) err('material', mat.id, 'stamps must name a flag: counter', ['consumable']);
+      if (c?.unlocksWord && !ARCANE_WORDS[c.unlocksWord]) err('material', mat.id, `unlocks unknown word '${c.unlocksWord}'`, ['consumable']);
+      if (c?.teachesTechnique && !store.all('technique')[c.teachesTechnique]) err('material', mat.id, `teaches unknown technique '${c.teachesTechnique}'`, ['consumable']);
+      const t = c?.teaches;
+      if (!t) continue;
+      taught.add(t);
+      if (!recipeIds.has(t)) err('material', mat.id, `teaches '${t}', which no bench outcome names as its recipe`, ['consumable']);
+    }
+    for (const id of recipeIds) {
+      if (!taught.has(id)) err('discipline', id, `learned dish '${id}' has no recipe card to teach it`);
+    }
+  }
   return issues;
 }
 
@@ -1092,7 +1164,7 @@ function validateFinds(
 }
 
 function payloadOf(f: SpotFind): boolean {
-  return !!(f.material || f.item || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc);
+  return !!(f.material || f.item || f.keyItem || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc);
 }
 
 export interface Edge extends Connection {

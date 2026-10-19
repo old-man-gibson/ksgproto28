@@ -13,6 +13,31 @@ import { TITLES_TEXT } from '../text/titles.text';
  *                     doesn't count; tracked in combat.ts).
  */
 export const TITLES = prose<TitleDef>('TITLES', TITLES_TEXT, {
+  // The Assize's rare find (the case file from the night watch), read.
+  friend_of_the_court: {
+    id: 'friend_of_the_court',
+    name: 'Friend of the Court',
+    icon: '⚖️',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'flag:assize_case_file', value: 1 }],
+    passive: [{ stat: 'goldGain', op: 'mult', value: 0.02 }],
+    equipped: [{ stat: 'goldGain', op: 'mult', value: 0.08 }],
+  },
+  // The cage keeper's dare, taken and won (SpotDef.dare on the_cages). The
+  // underdog's title: `vsLarger` reads per size step the target is above you.
+  david_and_goslimath: {
+    id: 'david_and_goslimath',
+    name: 'David and Goslimath',
+    icon: '🪨',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'kills:suspiciously_large_slime', value: 1 }],
+    passive: [{ stat: 'vsLarger', op: 'add', value: 0.03 }],
+    equipped: [{ stat: 'vsLarger', op: 'add', value: 0.15 }],
+  },
+  procedural_objection: {
+    id: 'procedural_objection', name: 'Procedural Objection', icon: '✊', secret: true,
+    unlock: [{ type: 'stat', key: 'flag:toll_brute_force', value: 1 }],
+  },
   iconoclast: {
     id: 'iconoclast',
     name: 'Iconoclast',

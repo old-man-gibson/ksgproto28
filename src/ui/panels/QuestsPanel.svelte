@@ -1,10 +1,19 @@
 <script lang="ts">
+  import KeyItems from '../KeyItems.svelte';
   import { gs } from '../state.svelte';
   import { NPCS, QUESTS, SPOTS } from '../../core/registry';
   import { activeQuests, objectiveProgress, questComplete } from '../../core/systems/quests';
   import { hasWayfinding } from '../../core/systems/legacy';
   import type { QuestObjective } from '../../core/types';
   import GoButton from '../lib/GoButton.svelte';
+  import { TUTORIAL_STEP_LIST } from '../../core/data/tutorial.data';
+
+  /**
+   * The tutorial's panels, re-openable for good (COMPLETABILITY.md §3: every
+   * system is explained somewhere the player can open again — a one-time
+   * tutorial does not count). Folded by default; the floor-0 card points here.
+   */
+  let guideOpen = $state(false);
 
   const active = $derived(activeQuests(gs));
   const completed = $derived(
@@ -29,6 +38,8 @@
     return giver ? `${giver.icon} ${giver.name} — ${spot?.icon ?? ''} ${spot?.name ?? ''}` : '';
   }
 </script>
+
+<KeyItems />
 
 <div class="panel">
   <h2>⭐ Quests</h2>
@@ -79,6 +90,20 @@
       <div class="done small">🎉 {quest.name}</div>
     {/each}
   {/if}
+
+  <button class="guide-toggle" onclick={() => (guideOpen = !guideOpen)}>
+    {guideOpen ? '▾' : '▸'} 📘 Guide — the floor 0 tutorial, step by step
+  </button>
+  {#if guideOpen}
+    <ol class="guide">
+      {#each TUTORIAL_STEP_LIST as step (step.id)}
+        <li>
+          <b>{step.title}</b>
+          <div class="dim small">{step.desc}</div>
+        </li>
+      {/each}
+    </ol>
+  {/if}
 </div>
 
 <style>
@@ -127,5 +152,23 @@
   .done {
     color: var(--text-dim);
     padding: 3px 0;
+  }
+
+  .guide-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-top: 14px;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .guide {
+    margin: 8px 0 0;
+    padding-left: 22px;
+  }
+
+  .guide li {
+    margin-bottom: 8px;
   }
 </style>

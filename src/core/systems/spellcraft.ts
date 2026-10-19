@@ -11,6 +11,7 @@ import type { EventBus } from '../engine/events';
 import { checkDiscovery, grantDiscoveryXp, grantSkillXp } from './skills';
 import { nextUid } from './equipment';
 import {
+  type SentenceCheck,
   checkSentence,
   composeArcane,
   grantWordXp,
@@ -435,22 +436,32 @@ export function setPrepared(state: GameState, bus: EventBus, uid: number, prepar
 // (Divine inscription lives in divine.ts with the favor economy.)
 
 /**
+ * Whether the table would take this sentence now: legal speech AND not a
+ * sentence the grimoire already holds. The bench preview reads this, so a
+ * repeat (the floor 0 word, typically) is refused before Inscribe is pressed
+ * rather than in a log line behind the table's window.
+ */
+export function checkInscription(state: GameState, words: string[]): SentenceCheck {
+  const check = checkSentence(state, words);
+  if (check.ok && hasSpell(state, { school: 'arcane', words })) {
+    return { ...check, ok: false, reason: text('spellcraft.reason.already_inscribed') };
+  }
+  return check;
+}
+
+/**
  * Inscribe an arcane sentence into the grimoire. Deterministic like every
  * craft: the sentence is checked, written, and paid for in Arcana XP that
  * rewards NEW sentences over recompositions — the reserved 'arcana' novelty
  * domain doing what it was reserved for.
  */
 export function inscribeArcane(state: GameState, bus: EventBus, words: string[]): CraftedSpell | null {
-  const check = checkSentence(state, words);
+  const check = checkInscription(state, words);
   if (!check.ok || !check.spec) {
     if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return null;
   }
   const source: SpellSource = { school: 'arcane', words: [...words] };
-  if (hasSpell(state, source)) {
-    bus.emit({ type: 'log', msg: text('spellcraft.already_inscribed'), kind: 'danger' });
-    return null;
-  }
 
   // Speaking at the table may be what manifests the skill in the first place.
   // 'magic' rides along because Arcana sits under Magic in the tree, and a

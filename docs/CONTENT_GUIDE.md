@@ -628,6 +628,30 @@ spot stops forcing, so a guardian den is fight-your-way-in-once, pass freely
 after. Cleared forced spots also reopen to the auto-router and drop their ⚔️
 warnings.
 
+**Training spots — a keeper and a dare** (`systems/training.ts`; the Cages
+are the first). Two spot fields:
+
+```ts
+healBetweenBouts: { maxAttrTotal: 30 },   // after every WIN here, while the six
+                                          // attribute levels total <= 30: HP full,
+                                          // damage-over-time conditions cleared
+dare: { monsterId: 'suspiciously_large_slime', level: 16, every: 8 },
+```
+
+The heal removes the chain that knocks newcomers out (a hunt rolls the next
+bout with no recovery); each bout keeps its own risk, and outgrowing the cap
+ends it. The dare needs `healBetweenBouts`: every `every` wins while the
+keeper still tends you, play **holds** on a popup. Answering **Fight** starts
+`monsterId` at `level`, alone, plain (no rolled modifier or rarity) and
+unfleeable. Answering **Flee** returns you to the ordinary cages. While it waits,
+`Game.tick` advances nothing and banks every tick as bonus time; the step
+buttons do nothing. Offers stop once that monster has a kill on record. The
+keeper's line is prose: `<spot>.dare.desc` in the text table. The pending
+question is a stat (`dare:<spot>:pending`, plus the global `hold:dare` the
+tick reads), so it survives a reload with no save change. Both validation
+layers check that the monster exists, `every` is a positive whole number, the
+spot has encounters and a keeper, and the line is written.
+
 **Flags — the cross-room wire.** A find may touch a persistent counter, and
 `UnlockCondition`s anywhere may read it — that is the whole mechanism for
 "the lever in room A opens the fight in room B":
@@ -666,6 +690,50 @@ read them directly.
   ×1.5, and you normalize by hand when you want a true split. Omit it to keep
   the kind's default — train → its own `attr`, gather → Wisdom, job → Charisma,
   craft → nothing (crafting pays no attribute XP until a `attrXp` says so).
+- `drops: [{ material: 'recipe_lectory_porridge', chance: 0.0008 }]` — rare
+  finds rolled once per completed cycle of a train/gather/job activity
+  (`systems/activitydrops.ts`). Rolls under 15% use the shared drought curve,
+  keyed per activity and material, so the average holds and the worst run is
+  bounded. Optional fields: `qty`, `quality` (pin a graded drop's grade),
+  `rarer: 2` (each previous find, counted under `found:<material>`, halves the
+  chance), `unique` (not rolled while one is held). A card whose effect has
+  already happened, or one that is held, is not rolled. **House rate:** about
+  one find per 40 minutes of the activity, so chance = base cycle ticks /
+  24,000 (a train rep is 20 ticks). **Unmarked by design (user, 2026-10-17):**
+  no badge, and no spot or NPC text names a find; players discover them.
+
+**The rare finds, for maintainers** (players are told nothing):
+
+| District | Activity | Find | Effect |
+|---|---|---|---|
+| Scholars' Quarter | Read Until It Sticks (Reading Hall) | Recipe: Lectory Porridge | cooking recipe (the user's library exception) |
+| Scholars' Quarter | Copy Out a Proof (Chalk Yard) | Word Slip: Stone | lifts the word `stone` |
+| Temple Rise | Keep a Vigil (Nine Chapels) | Votive Token (`rarer: 2`) | first: +2 favor with every known god and +2 starting favor for gods met later (`votive:baseline`, paid by `meetDeity`); later: 1 floating favor (`favor:floating`), placed on the Divine tab |
+| The Ironyard | Spar (the Sand) | Drill Manual: Riposte | Riposte in canonical form |
+| Alembic Row | Wash Out the Retorts (the Alembics, job) | Emberbloom ×3 | a reagent the shelf does not sell |
+| The Chancery | Copy Out Writs (the Rolls) | Chancery Price Seal | `flag:chancery_seal`: 10% off at every counter, above the no-arbitrage floor (shops.ts) |
+| The Assize | Stand the Night Watch (the Holding) | Unclaimed Case File | `flag:assize_case_file`: hidden title Friend of the Court |
+| Wrights' Ward | Work the Bellows (the Forges) | Smith's Pattern: Bronze | `flag:pattern_bronze`: the secret copper/tin/bronze ingot and bronze dagger recipes appear at the Forges |
+| The Granaries | Scrub the Pans (Granary Kitchens) | Iron Pot (grade B, `unique`) | cookware for the stove's tool slot |
+
+**Card effects** (`ConsumableSpec`; ungraded; refused once spent): `teaches`
+(a recipe), `unlocksWord`, `teachesTechnique` (canonical form), `stamps` (a
+`flag:` counter, then titles are re-checked), `votive` (above). Every card must
+be sold or dropped somewhere, and its target must exist (both layers).
+
+**Secret recipes** (`RecipeDef.secret`): not listed anywhere — Crafting panel,
+map card, destination preview — until `unlock` is met. A secret recipe must
+have an `unlock`.
+
+**Recipe cards and learned dishes.** A bench outcome with `recipe: 'id'`
+matches only once that recipe is known (`recipe:<id>`). A material whose
+consumable says `teaches: 'id'` is the card: using it (verb "Read") stamps the
+recipe and is consumed, and it is refused once the recipe is known. The bench
+window lists known recipes with the tags each one takes. The lints require
+every learned dish to have a card, every card to teach a real dish, and every
+card to be sold at a counter or dropped by an activity. Learned dishes take a
+priority above the generic outcome their tags would otherwise hit (fish + onion
+is a stew without the card).
 
 A `train` activity is `attr: 'str'` for the simple case, or `attrXp` alone when
 several attributes are the point — `attr` is optional, and the split then *is*
@@ -1425,6 +1493,12 @@ it('frozen hollow is survivable around level-ready gear', () => {
 });
 ```
 Drop it in any test file, `npx vitest run`, and you have a repeatable pacing probe.
+
+For the tower as a whole there is already one: **John** (`tests/john.ts`,
+COMPLETABILITY §8) plays band 1 by the obvious road with every rack weapon,
+and `npm run pacing` prints when each stretch ended, where the knockouts were
+and what the climb held at the top. Touching a band-1 floor, monster or gate?
+Run it before and after; `tests/john.test.ts` holds the curve's bounds.
 
 ## 9. Spellcraft content (words, miracles, psionic recognitions)
 

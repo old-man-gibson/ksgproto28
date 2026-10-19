@@ -20,6 +20,8 @@
   import DiffModal from './panels/DiffModal.svelte';
   import IssueList from './panels/IssueList.svelte';
   import PsionicBench from './panels/PsionicBench.svelte';
+  import TileSide from './panels/TileSide.svelte';
+  import { tilesUi } from './lib/tiles.svelte';
 
   type Tab =
     | { kind: 'map' }
@@ -167,6 +169,8 @@
       </h1>
       {#if tab.kind === 'browse'}
         <code class="dim">{store.entry(tab.type)?.file}</code>
+      {:else if tab.kind === 'map' && tilesUi.on && tilesUi.region}
+        <code class="dim">src/ui/lib/tilemaps/{tilesUi.region}.map.json</code>
       {:else if tab.kind === 'map' || tab.kind === 'atlas'}
         <code class="dim">src/core/data/locations.data.ts</code>
       {/if}
@@ -182,7 +186,13 @@
 
       {#if store.dirty}
         <span class="pill warn">{store.ops.length} pending</span>
-        <button onclick={() => store.discard()} class="danger">Discard</button>
+        <button
+          onclick={() => {
+            store.discard();
+            tilesUi.forget();
+          }}
+          class="danger">Discard</button
+        >
         <button class="primary" onclick={() => (showDiff = true)}>
           Review &amp; Apply <span class="kbd">Ctrl+S</span>
         </button>
@@ -213,7 +223,11 @@
           label="Resize the inspector"
         />
         <div class="side scroll" style="width: {inspectorWidth.value}px">
-          <Inspector {selection} onselect={(s) => (selection = s)} />
+          {#if tilesUi.on}
+            <TileSide />
+          {:else}
+            <Inspector {selection} onselect={(s) => (selection = s)} />
+          {/if}
         </div>
       {:else if tab.kind === 'atlas'}
         <div class="pane">

@@ -5,6 +5,9 @@ import type { ProseTable } from './prose';
 
 // ---------- TITLES ----------
 export const TITLES_TEXT: ProseTable = {
+  'friend_of_the_court.desc': 'Read the unclaimed case file found on the Assize night watch. +2% gold gain always; +8% more while worn.',
+  'david_and_goslimath.desc': 'Beat the Suspiciously Large Slime the Cages keeper dared you to fight. +3% damage per size step against anything larger than you, always; +15% more per step while worn.',
+  'procedural_objection.desc': 'Defeat the Toll Collector without casting a spell during that encounter. The stamp yields to force.',
   'iconoclast.desc': 'Learn ten miracles. Passive: +5 maximum spirit. Worn: +5% spell power, and miracles of hostile deities may be prepared together.',
 
   'wanderer.desc': 'Complete 50 journeys between spots. Passive: +5% travel speed. Worn: +10% travel speed and +10% loot.',

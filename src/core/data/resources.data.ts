@@ -44,6 +44,7 @@ export const RECOVERY_MULT: Record<ActivityDef['kind'] | 'none', number> = {
   gather: 2,
   craft: 2,
   explore: 1,
+  search: 1,
   hunt: 1,
   none: 1,
 };

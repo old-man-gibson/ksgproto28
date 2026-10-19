@@ -159,8 +159,12 @@ export const RECIPES: Record<string, RecipeDef> = {
     // trade at once.
     unlock: [{ type: 'skill', id: 'leathercrafting', level: 5 }],
   },
+  // The bronze line: SECRET until the Smith's Pattern (a rare find working
+  // the Forges' bellows) is studied — then listed at the Forges.
   copper_ingot: {
     id: 'copper_ingot',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'flag:pattern_bronze', value: 1 }],
     name: 'Copper Ingot',
     ticks: 100,
     xp: 3,
@@ -172,6 +176,8 @@ export const RECIPES: Record<string, RecipeDef> = {
   },
   tin_ingot: {
     id: 'tin_ingot',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'flag:pattern_bronze', value: 1 }],
     name: 'Tin Ingot',
     ticks: 60,
     xp: 0,
@@ -183,6 +189,8 @@ export const RECIPES: Record<string, RecipeDef> = {
   },
   bronze_ingot: {
     id: 'bronze_ingot',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'flag:pattern_bronze', value: 1 }],
     name: 'Bronze Ingot',
     ticks: 140,
     xp: 4,
@@ -195,6 +203,8 @@ export const RECIPES: Record<string, RecipeDef> = {
   },
   bronze_dagger: {
     id: 'bronze_dagger',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'flag:pattern_bronze', value: 1 }],
     name: 'Bronze Dagger',
     ticks: 220,
     xp: 8,
@@ -203,7 +213,7 @@ export const RECIPES: Record<string, RecipeDef> = {
       { id: 'leather', qty: 1 },
     ],
     tags: ['smithing'],
-    result: { id: 'iron_dagger', kind: 'item' },
+    result: { id: 'bronze_dagger', kind: 'item' },
   },
   /**
    * Four routes to the same hide. Order is preference: the junk goes first, so

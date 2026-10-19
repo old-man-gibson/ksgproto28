@@ -3,7 +3,7 @@ import { STARTING_SPOT } from './data/locations.data';
 import { freshMutagenState } from './data/mutagens.data';
 import { freshPrestigeState } from './data/prestige.data';
 
-export const SAVE_VERSION = 53;
+export const SAVE_VERSION = 55;
 
 
 function freshAttrs(): Record<AttributeId, AttrState> {
@@ -71,6 +71,7 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     travelIntent: null,
     resumeActivity: {},
     bonusTime: { banked: 0, spending: false },
+    huntRest: { at: 0, toFull: true, active: false },
     discovered: [spot],
     explored: {},
     finds: {},
@@ -79,6 +80,9 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     safeSpots: { nearest: null, unconditional: null },
     pendingApproach: null,
 
+    // The rusty sword is in the pack, unequipped: the rack in the holding cell
+    // (the tutorial's first choice) equips it, or a spear, dagger or hammer
+    // beside it. Skipping the tutorial leaves it here as it always was.
     inventory: [{ uid: 1, defId: 'rusty_sword', slots: 1, runes: [] }],
     equipment: {},
     materials: {},

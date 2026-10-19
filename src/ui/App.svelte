@@ -19,9 +19,14 @@
   import LogFeed from './LogFeed.svelte';
   import OfflineModal from './OfflineModal.svelte';
   import PrestigeModal from './PrestigeModal.svelte';
+  import DareModal from './DareModal.svelte';
+  import { pendingDare } from '../core/systems/training';
+  import { restingForFight } from '../core/systems/huntrest';
   import PrestigePanel from './panels/PrestigePanel.svelte';
   import { prestigeVisible } from '../core/systems/prestige';
   import DefeatModal from './DefeatModal.svelte';
+  import TutorialCard from './TutorialCard.svelte';
+  import { tutorialActive } from '../core/systems/tutorial';
   import { fmt } from './lib/format';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf } from '../core/systems/clock';
@@ -185,6 +190,7 @@
     if (gs.travel) return '🥾 Traveling...';
     if (gs.recovering) return '💫 Recovering...';
     if (gs.performance) return '🎵 Performing...';
+    if (activity?.kind === 'hunt' && !gs.combat && restingForFight(gs)) return '🛌 Resting before the next fight';
     if (activity) return `${activity.icon} ${activity.name}`;
     return '💤 Idle';
   }
@@ -336,6 +342,12 @@
   </aside>
 
   <main>
+    <!-- Floor 0's commentary track, above the tabs so every step's pointer
+         ("click the map", "open the Combat tab") is readable from where it
+         sends you. Gone for good once flag:tutorial_done is stamped. -->
+    {#if tutorialActive(gs)}
+      <TutorialCard />
+    {/if}
     <nav class="tabs">
       {#each tabs as tab}
         <button class:selected={ui.tab === tab.id} onclick={() => (ui.tab = tab.id)}>
@@ -402,6 +414,12 @@
   <!-- Save state, not UI state: owed until a point is spent or leaving is
        confirmed, reload or no reload (systems/prestige.ts). -->
   <PrestigeModal />
+{/if}
+
+{#if pendingDare(gs)}
+  <!-- Save state, not UI state: the keeper's dare holds play until answered,
+       reload or no reload (systems/training.ts). -->
+  <DareModal spot={pendingDare(gs)!} />
 {/if}
 
 {#if ui.defeat}

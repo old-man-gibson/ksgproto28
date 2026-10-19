@@ -1,6 +1,8 @@
 // The countryside these tests stand on is SHELVED content; the fixture mounts it.
 import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
+import { KEY_ITEMS } from '../src/core/data/keyitems.data';
+import { searchContentIssues } from '../src/core/systems/searchValidation';
 import {
   ACHIEVEMENTS,
   ADJACENCY,
@@ -53,6 +55,7 @@ import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../src/core/systems/monsterStats';
 import { monsterTags } from '../src/core/systems/bestiary';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
+import { isCard } from '../src/core/systems/consumables';
 import { askingPrice, lineValue } from '../src/core/systems/shops';
 import { wordTag } from '../src/core/data/wordskills.data';
 import { attrXpWeights } from '../src/core/systems/actions';
@@ -106,10 +109,37 @@ function statCounterValid(key: string): boolean {
   if (key.startsWith('boss:')) {
     return !!SPOTS[key.slice(5)]?.encounters?.some((e) => e.boss);
   }
+  if (key.startsWith('fights:')) return (SPOTS[key.slice(7)]?.fightLimit ?? 0) > 0;
+  // `slain:<spot>:<monster>` is bumped when a `once` entry dies there (combat.ts).
+  if (key.startsWith('slain:')) {
+    const [, spotId, monsterId] = key.split(':');
+    return !!SPOTS[spotId]?.encounters?.some((e) => e.once && e.monsterId === monsterId);
+  }
   if (key.startsWith('kills:')) return key.slice(6) in MONSTERS;
   if (key.startsWith('gather:')) return key.slice(7) in MATERIALS;
   if (key.startsWith('attr:')) return VALID_ATTRS.has(key.slice(5) as never);
+  // `flag:*` is content's own namespace (SpotFind.stat): real only when some
+  // find or search reward writes it, by bump or by set.
+  if (key.startsWith('flag:')) return contentFlags().has(key);
   return false;
+}
+
+/** Every `flag:*` key a find or a search reward writes — what conditions may read. */
+function contentFlags(): Set<string> {
+  const keys = new Set<string>();
+  for (const spot of Object.values(SPOTS)) {
+    for (const f of spot.finds ?? []) if (f.stat?.key.startsWith('flag:')) keys.add(f.stat.key);
+    for (const act of spot.activities) {
+      if (act.kind !== 'search') continue;
+      for (const r of act.rewards) if (r.stat?.key.startsWith('flag:')) keys.add(r.stat.key);
+    }
+  }
+  // A card that stamps a flag when read (ConsumableSpec.stamps).
+  for (const mat of Object.values(MATERIALS)) {
+    const k = mat.consumable?.stamps;
+    if (k?.startsWith('flag:')) keys.add(k);
+  }
+  return keys;
 }
 
 const VALID_STATS = new Set(Object.keys(STAT_NAMES));
@@ -470,6 +500,7 @@ describe('world graph', () => {
 
   it('exploration finds resolve, sit inside the search, and pay something', () => {
     for (const spot of Object.values(SPOTS)) {
+      expect(searchContentIssues(spot, { keyItems: KEY_ITEMS, items: ITEMS, materials: MATERIALS, runes: RUNES }), spot.id).toEqual([]);
       const finds = spot.finds ?? [];
       if (finds.length === 0) continue;
       // A find is a depth of search — without a search there is no depth.
@@ -489,7 +520,7 @@ describe('world graph', () => {
         expect(f.at, `${owner}: at must be <= 1`).toBeLessThanOrEqual(1);
 
         const pays =
-          f.material || f.item || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc;
+          f.material || f.item || f.keyItem || f.rune || f.gold || f.spot || f.path || f.skillXp || f.stat || f.desc;
         expect(pays, `${owner}: find yields nothing at all`).toBeTruthy();
 
         // The cross-room wire may only touch its own namespace — bumping
@@ -561,6 +592,7 @@ describe('world graph', () => {
       }
       for (const c of spot.connections) {
         checkConditions(`${spot.id} -> ${c.to} approach requires`, c.approach?.requires);
+        checkConditions(`${spot.id} -> ${c.to} reveal`, c.revealWhen);
       }
     }
   });
@@ -595,6 +627,19 @@ describe('world graph', () => {
           spot.fightLimit,
           `${spot.id}: caged spots must not carry a fightLimit — the cages restock`,
         ).toBeUndefined();
+      }
+      // Training spots (systems/training.ts): the keeper's care and dare.
+      if (spot.healBetweenBouts) {
+        expect(spot.healBetweenBouts.maxAttrTotal, `${spot.id}: healBetweenBouts needs a positive cap`).toBeGreaterThan(0);
+      }
+      if (spot.dare) {
+        const d = spot.dare;
+        expect(MONSTERS[d.monsterId], `${spot.id}: dares an unknown monster '${d.monsterId}'`).toBeDefined();
+        expect(Number.isInteger(d.every) && d.every > 0, `${spot.id}: dare.every must be a positive whole number`).toBe(true);
+        expect(d.level, `${spot.id}: dare.level must be at least 1`).toBeGreaterThanOrEqual(1);
+        expect(spot.encounters?.length ?? 0, `${spot.id}: a dare with no fights to win toward it`).toBeGreaterThan(0);
+        expect(spot.healBetweenBouts, `${spot.id}: a dare is offered only while the keeper tends you`).toBeDefined();
+        expect(d.desc, `${spot.id}: the keeper's dare line (<spot>.dare.desc) is missing`).toBeTruthy();
       }
       // Ambush windows and the boss latch (SpotEncounter.window / .boss).
       for (const e of spot.encounters ?? []) {
@@ -1395,8 +1440,69 @@ describe('crafting disciplines', () => {
         expect(STATUSES[g.id], `${mat.id} grants unknown '${g.id}'`).toBeTruthy();
       }
       const doesSomething =
-        (spec.restore?.length ?? 0) + (spec.grants?.length ?? 0) + (spec.cures?.length ?? 0) > 0;
+        (spec.restore?.length ?? 0) + (spec.grants?.length ?? 0) + (spec.cures?.length ?? 0) > 0 ||
+        isCard(spec);
       expect(doesSomething, `${mat.id} is usable but does nothing`).toBe(true);
+    }
+  });
+});
+
+describe('recipe cards and rare finds', () => {
+  const recipeIds = new Set(
+    Object.values(DISCIPLINES).flatMap((d) => d.outcomes.map((o) => o.recipe).filter((r): r is string => !!r)),
+  );
+  const dropped = new Set(
+    Object.values(SPOTS).flatMap((s) => s.activities.flatMap((a) => ('drops' in a ? a.drops ?? [] : []).map((d) => d.material))),
+  );
+  const sold = new Set(
+    Object.values(NPCS).flatMap((n) => (n.shop?.lines ?? []).filter((l) => l.kind === 'material').map((l) => l.id)),
+  );
+
+  it('every card teaches a learned dish, every dish has a card, every card can be had', () => {
+    const taught = new Set<string>();
+    for (const mat of Object.values(MATERIALS)) {
+      const t = mat.consumable?.teaches;
+      if (!t) continue;
+      taught.add(t);
+      expect(recipeIds.has(t), `${mat.id} teaches '${t}', which no bench outcome names`).toBe(true);
+      expect(sold.has(mat.id) || dropped.has(mat.id), `${mat.id}: no counter sells it and no activity drops it`).toBe(true);
+    }
+    for (const id of recipeIds) expect(taught.has(id), `learned dish '${id}' has no card`).toBe(true);
+  });
+
+  it('every card names a real target and can be had', () => {
+    for (const mat of Object.values(MATERIALS)) {
+      const spec = mat.consumable;
+      if (!isCard(spec)) continue;
+      if (spec!.unlocksWord) expect(ARCANE_WORDS[spec!.unlocksWord], `${mat.id}: unknown word`).toBeDefined();
+      if (spec!.teachesTechnique) expect(TECHNIQUES[spec!.teachesTechnique], `${mat.id}: unknown technique`).toBeDefined();
+      if (spec!.stamps) expect(spec!.stamps.startsWith('flag:'), `${mat.id}: stamps must name a flag: counter`).toBe(true);
+      expect(mat.graded, `${mat.id}: cards are ungraded`).toBeFalsy();
+      expect(sold.has(mat.id) || dropped.has(mat.id), `${mat.id}: no counter sells it and no activity drops it`).toBe(true);
+    }
+  });
+
+  it('a secret recipe has conditions to meet, or it would never appear', () => {
+    for (const r of Object.values(RECIPES)) {
+      if (!r.secret) continue;
+      expect(r.unlock?.length ?? 0, `${r.id}: secret with no unlock`).toBeGreaterThan(0);
+    }
+  });
+
+  it('activity drops name real materials, on kinds that roll them, at sane chances', () => {
+    for (const spot of Object.values(SPOTS)) {
+      for (const act of spot.activities) {
+        const drops = 'drops' in act ? act.drops : undefined;
+        if (!drops?.length) continue;
+        expect(['train', 'gather', 'job'], `${spot.id}/${act.id}: only train/gather/job roll drops`).toContain(act.kind);
+        for (const d of drops) {
+          expect(MATERIALS[d.material], `${spot.id}/${act.id}: unknown drop '${d.material}'`).toBeDefined();
+          expect(d.chance > 0 && d.chance <= 1, `${spot.id}/${act.id}: chance must be in (0, 1]`).toBe(true);
+          if (d.quality) expect(MATERIALS[d.material]?.graded, `${spot.id}/${act.id}: quality on an ungraded drop`).toBe(true);
+          if (d.rarer !== undefined) expect(d.rarer, `${spot.id}/${act.id}: rarer must be > 1`).toBeGreaterThan(1);
+          if (d.qty !== undefined) expect(d.qty, `${spot.id}/${act.id}: qty must be >= 1`).toBeGreaterThanOrEqual(1);
+        }
+      }
     }
   });
 });

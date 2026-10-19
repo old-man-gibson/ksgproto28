@@ -24,6 +24,12 @@ export const REGIONS: Record<string, RegionDef> = {
   // nothing about exposure has silently shifted; decide whether the hold
   // keeps an open yard (drop `sheltered`, tag the indoor rooms individually)
   // or is simply indoors.
+  // Floor 0 of the tower, the tutorial (plans/floor-zero-tutorial.md): a
+  // holding cell, the cellblock outside it, the field and the gate into
+  // Threshold. Its own map so it can be drawn as tiles (ui/lib/tilemaps).
+  // `settlement` = lamplight: no night-fighting penalty on a floor that
+  // exists to explain fighting.
+  holding_level: { id: 'holding_level', name: 'The Holding Level', terrain: 'plains', tags: ['settlement'], world: { x: 14.3, y: 22.4 } },
   the_hold: { id: 'the_hold', name: 'Your Hold', terrain: 'plains', sheltered: true, world: { x: 14.8, y: 21 } },
 };
 
@@ -53,7 +59,9 @@ export const AREAS: Record<string, AreaDef> = {
   // (towers.data.ts). These areas are CLOSED: no authored edge crosses their
   // boundary (linted, both layers) — the ladder is the only way on or off a
   // banded floor, which is what keeps every gate readable at one door.
-  ascent_f1_area: { id: 'ascent_f1_area', name: 'The Old Toll Level', regionId: 'the_ascent' },
+  // Floor 0: off the ladder, closed behind the player by a one-way gate.
+  ascent_f0_area: { id: 'ascent_f0_area', name: 'The Holding Level', regionId: 'holding_level' },
+  ascent_f1_area: { id: 'ascent_f1_area', name: 'The Flooded Offices', regionId: 'the_ascent' },
   ascent_f2_area: { id: 'ascent_f2_area', name: 'The Flooded Stair', regionId: 'the_ascent' },
   ascent_f3_area: { id: 'ascent_f3_area', name: 'The Silk Gallery', regionId: 'the_ascent' },
 };
@@ -499,7 +507,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 38, y: 5 },
     tags: ['indoor'],
     activities: [
-      { id: 'train_int_hall', kind: 'train', attr: 'int', name: 'Read Until It Sticks', icon: '📚' },
+      // The hall's rare find (ActivityDef.drops): the one recipe no counter
+      // sells. 0.0008 per rep is about 1 in 1,250, drought-protected.
+      { id: 'train_int_hall', kind: 'train', attr: 'int', name: 'Read Until It Sticks', icon: '📚',
+        drops: [{ material: 'recipe_lectory_porridge', chance: 0.0008 }] },
       { id: 'train_wis_hall', kind: 'train', attr: 'wis', name: 'Sit With a Hard Passage', icon: '🧘', tags: ['magic'] },
     ],
     benches: ['spelltable'],
@@ -514,7 +525,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     exploreTicks: 420,
     activities: [
       { id: 'explore_chalk', kind: 'explore', name: 'Read the Old Working', icon: '🔍' },
-      { id: 'train_int_chalk', kind: 'train', attr: 'int', name: 'Copy Out a Proof', icon: '✏️' },
+      // Scholars' find (arcane): a slip with a word the lexicon locks.
+      { id: 'train_int_chalk', kind: 'train', attr: 'int', name: 'Copy Out a Proof', icon: '✏️',
+        drops: [{ material: 'word_slip_stone', chance: 0.0008 }] },
     ],
     connections: [],
   },
@@ -544,8 +557,14 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 80, y: 10 },
     tags: ['indoor'],
     activities: [
-      { id: 'train_wis_chapels', kind: 'train', attr: 'wis', name: 'Keep a Vigil', icon: '🕯️', tags: ['magic'] },
+      // Temple's find (divine): votive tokens, each twice as rare as the last.
+      { id: 'train_wis_chapels', kind: 'train', attr: 'wis', name: 'Keep a Vigil', icon: '🕯️', tags: ['magic'],
+        drops: [{ material: 'votive_token', chance: 0.0008, rarer: 2 }] },
     ],
+    // The Warden's second quest, the prior and this spot's own text all send
+    // the player here to learn a miracle; the table's Divine tab is where
+    // miracles are bought. Same furniture as the Reading Hall's.
+    benches: ['spelltable'],
     connections: [],
   },
   censer_walk: {
@@ -587,10 +606,17 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     // A menagerie (SpotDef.caged): staged one-at-a-time fights, no rolled
     // champions, and every bestiary fact lands exactly at its minKills.
     caged: true,
+    // The keeper looks after beginners (systems/training.ts): healed after
+    // every win while the six attributes total 30 or less, and dared to take
+    // on the Suspiciously Large Slime every 8 wins until it is beaten.
+    // Level 16 measured at the first offer with the bred (neutral) slime, 24
+    // seeds per tutorial pick: every pick wins 9-12 of 24.
+    healBetweenBouts: { maxAttrTotal: 30 },
+    dare: { monsterId: 'suspiciously_large_slime', level: 16, every: 8 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Step Into a Cage', icon: '🪤' }],
     encounters: [
       { monsterId: 'forest_rat', weight: 40, level: [1, 2] },
-      { monsterId: 'slime_base_basic', weight: 40, level: [1, 2] },
+      { monsterId: 'cage_slime', weight: 40, level: [1, 2] },
       { monsterId: 'goblin', weight: 20, level: [2, 3] },
     ],
     modifierWeights: { normal: 100 },
@@ -605,7 +631,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 93, y: 28 },
     activities: [
       { id: 'train_dex_sand', kind: 'train', attr: 'dex', name: 'Footwork on the Sand', icon: '👣' },
-      { id: 'spar_sand', kind: 'train', attr: 'str', name: 'Spar', icon: '⚔️', tags: ['combat'] },
+      // Ironyard's find (martial): a drill manual, the stand-in for a teacher.
+      { id: 'spar_sand', kind: 'train', attr: 'str', name: 'Spar', icon: '⚔️', tags: ['combat'],
+        drops: [{ material: 'drill_manual_riposte', chance: 0.0008 }] },
     ],
     connections: [],
   },
@@ -645,7 +673,12 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     areaId: 'alembic_row',
     map: { x: 90, y: 55 },
     tags: ['indoor', 'heat'],
-    activities: [],
+    // Alembic Row's find (alchemy) needs a cycle to roll on; the district had
+    // none, so the Alembics get a job. Emberbloom is not on the shelf.
+    activities: [
+      { id: 'job_retorts', kind: 'job', gold: 11, ticksPer: 210, name: 'Wash Out the Retorts', icon: '🧽',
+        drops: [{ material: 'emberbloom', chance: 0.00875, qty: 3 }] },
+    ],
     benches: ['alchemy', 'preparing'],
     connections: [],
   },
@@ -684,7 +717,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 62, y: 70 },
     tags: ['indoor'],
     activities: [
-      { id: 'job_copying', kind: 'job', gold: 12, ticksPer: 220, name: 'Copy Out Writs', icon: '🖋️', staticTime: true },
+      // Chancery's find (administrative): a standing discount at every counter.
+      { id: 'job_copying', kind: 'job', gold: 12, ticksPer: 220, name: 'Copy Out Writs', icon: '🖋️', staticTime: true,
+        drops: [{ material: 'chancery_price_seal', chance: 0.0092 }] },
       { id: 'train_int_rolls', kind: 'train', attr: 'int', name: 'Read the Indexes', icon: '🗂️' },
     ],
     connections: [],
@@ -740,7 +775,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 10, y: 55 },
     tags: ['indoor'],
     activities: [
-      { id: 'job_watch', kind: 'job', gold: 14, ticksPer: 260, name: 'Stand the Night Watch', icon: '🌙', staticTime: true },
+      // Assize's find (law): a case file that earns a hidden title.
+      { id: 'job_watch', kind: 'job', gold: 14, ticksPer: 260, name: 'Stand the Night Watch', icon: '🌙', staticTime: true,
+        drops: [{ material: 'unclaimed_case_file', chance: 0.0108 }] },
     ],
     connections: [],
   },
@@ -768,12 +805,16 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 7, y: 47 },
     tags: ['heat'],
     activities: [
-      { id: 'job_bellows_threshold', kind: 'job', gold: 14, ticksPer: 250, name: 'Work the Bellows', icon: '🔥' },
+      // Wrights' find (crafting): the pattern that opens the bronze line.
+      { id: 'job_bellows_threshold', kind: 'job', gold: 14, ticksPer: 250, name: 'Work the Bellows', icon: '🔥',
+        drops: [{ material: 'smiths_pattern_bronze', chance: 0.0104 }] },
       { id: 'train_str_forges', kind: 'train', attr: 'str', name: 'Swing the Sledge', icon: '🔨', tags: ['blunt'] },
     ],
     // The city's smithing counter: the same starter recipes the hamlet forge
     // teaches, because the Warden's iron has to become something somewhere.
-    recipes: ['iron_ingot', 'iron_dagger', 'iron_sword'],
+    // The bronze line is SECRET (RecipeDef.secret): listed only once the
+    // Smith's Pattern found working the bellows has been studied.
+    recipes: ['iron_ingot', 'iron_dagger', 'iron_sword', 'copper_ingot', 'tin_ingot', 'bronze_ingot', 'bronze_dagger'],
     benches: ['assembling'],
     connections: [],
   },
@@ -813,7 +854,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 30, y: 8 },
     tags: ['indoor', 'heat'],
     activities: [
-      { id: 'job_pans', kind: 'job', gold: 10, ticksPer: 200, name: 'Scrub the Pans', icon: '🍳' },
+      // Granaries' find (resources): a good pot for the stove's tool slot.
+      { id: 'job_pans', kind: 'job', gold: 10, ticksPer: 200, name: 'Scrub the Pans', icon: '🍳',
+        drops: [{ material: 'iron_pot', chance: 0.0083, quality: 'b', unique: true }] },
     ],
     benches: ['cooking', 'preparing'],
     connections: [],
@@ -851,111 +894,288 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
 
   // ---------- The Ascent: band 1 ----------
   //
-  // Three spots per floor on one pattern: the landing (where the ladder puts
-  // you), a working spot, and the den that carries the floor's clear counter.
-  // No edge leaves any of these areas — the ladder (systems/towers.ts) is the
-  // only door, and the lint holds it shut. Names are placeholders; encounter
-  // levels and clear numbers are first guesses for review.
+  // The flooded first floor has three sections; later floors retain their
+  // landing / working spot / den structure. No edge leaves a floor's area:
+  // the ladder is the only door, enforced by both validation layers.
 
-  // --- Floor 1: the Old Toll Level (clear: kill the toll collector) ---
+  // --- Floor 1: flooded halls, records search, then the office sequence. ---
   f1_landing: {
-    id: 'f1_landing',
-    name: 'The First Landing',
-    icon: '🪜',
-    areaId: 'ascent_f1_area',
-    map: { x: 18, y: 68 },
-    // Every landing is a camp: a haven on the floor itself, so a knockout
-    // above returns you here rather than all the way down to the Foot
-    // (systems/safety.ts records the last haven stood in).
-    activities: [{ id: 'camp_f1', kind: 'rest', name: 'Camp on the Landing', icon: '🏕️' }],
+    id: "f1_landing",
+    name: "The Flooded Landing",
+    icon: "🪜",
+    areaId: "ascent_f1_area",
+    map: {"x": 10, "y": 68},
+    tags: ["indoor"],
+    activities: [
+      {"id": "camp_f1", "kind": "rest", "name": "Camp Above the Water", "icon": "🏕️"},
+    ],
     connections: [
-      { to: 'f1_storerooms', ticks: 40 },
-      { to: 'f1_toll_hall', ticks: 50 },
+      {"to": "f1_storerooms", "ticks": 25, "oneWay": true},
     ],
   },
   f1_storerooms: {
-    id: 'f1_storerooms',
-    name: 'The Bonded Stores',
-    icon: '📦',
-    areaId: 'ascent_f1_area',
-    map: { x: 8, y: 62 },
-    exploreTicks: 360,
+    id: "f1_storerooms",
+    name: "The Vermin Hall",
+    icon: "🐀",
+    areaId: "ascent_f1_area",
+    map: {"x": 10, "y": 49},
+    tags: ["indoor"],
     activities: [
-      { id: 'explore_f1', kind: 'explore', name: 'Go Through the Crates', icon: '🔍' },
-      { id: 'hunt', kind: 'hunt', name: 'Clear Out the Vermin', icon: '⚔️' },
+      {"id": "hunt", "kind": "hunt", "name": "Drive Out the Vermin", "icon": "⚔️"},
     ],
+    connections: [
+      {"to": "f1_landing", "ticks": 25, "oneWay": true},
+      {"to": "f1_bonded_deep", "revealWhen": [{"type": "stat", "key": "fights:f1_storerooms", "value": 6}], "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "fights:f1_storerooms", "value": 6}], "label": "Follow the Fleeing Vermin"},
+    ],
+    fightLimit: 6,
+    groupWeights: {"1": 100},
+    modifierWeights: {"normal": 100},
+    // The first real fights after the tutorial. Rats only for four wins, so a
+    // fresh character grows a little before it meets something that shrugs
+    // off a blade: a basic slime resists slashing and piercing by half, and
+    // walked into hurt it beat a rusty sword or a dagger about one run in three.
+    // (Skip tutorial starts this hall at level-1 attributes and can still be
+    // worn down by the rats alone; one knockout, then he walks back stronger.)
     encounters: [
-      { monsterId: 'forest_rat', weight: 60, level: [1, 3] },
-      { monsterId: 'slime_base_basic', weight: 40, level: [2, 4] },
+      {"monsterId": "forest_rat", "weight": 75, "level": [1, 2]},
+      {"monsterId": "slime_base_basic", "weight": 25, "level": [1, 1], "requires": [{"type": "stat", "key": "fights:f1_storerooms", "value": 4}]},
     ],
-    finds: [
-      {
-        id: 'f1_manifest_coin',
-        at: 0.35,
-        gold: [30, 50],
-      },
-      {
-        id: 'f1_dried_herbs',
-        at: 0.7,
-        material: { id: 'common_herb', qty: 4 },
-        skillXp: { tags: ['herbalism'], xp: 12 },
-      },
-    ],
-    // "Relatively safe as long as they do not stray too far from the explored
-    // path" — the straying, made literal: a hidden way down to stock nobody
-    // bonded, guarded well above the floor's weight. Combing the stores
-    // reveals it; walking it is the choice.
-    connections: [{ to: 'f1_bonded_deep', ticks: 40, hidden: true }],
   },
   f1_bonded_deep: {
-    id: 'f1_bonded_deep',
-    name: 'The Bonded Deep',
-    icon: '🕳️',
-    areaId: 'ascent_f1_area',
-    map: { x: 4, y: 70 },
-    tags: ['dark'],
+    id: "f1_bonded_deep",
+    name: "The Records Passage",
+    icon: "📚",
+    areaId: "ascent_f1_area",
+    map: {"x": 10, "y": 30},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_storerooms", "ticks": 25, "oneWay": true},
+      {"to": "f1_archive", "ticks": 25, "oneWay": true},
+      {"to": "f1_lockers", "ticks": 25, "oneWay": true},
+      {"to": "f1_forms", "ticks": 25, "oneWay": true},
+    ],
+  },
+  f1_archive: {
+    id: "f1_archive",
+    name: "The Archive",
+    icon: "🔎",
+    areaId: "ascent_f1_area",
+    map: {"x": 29, "y": 19},
+    tags: ["indoor"],
     activities: [
-      { id: 'hunt', kind: 'hunt', name: 'Go In Anyway', icon: '⚔️' },
-      { id: 'explore_f1_deep', kind: 'explore', name: 'Search Past the Manifests', icon: '🔍' },
+      {"id": "search", "kind": "search", "name": "Search the Shelves", "icon": "🔎", "ticksPer": 50, "rewards": [{"id": "salvage", "weight": 65, "material": {"id": "common_herb", "qty": 1}}, {"id": "coins", "weight": 35, "gold": [3, 8]}, {"id": "daybook", "weight": 25, "limit": 1, "guaranteedBy": 4, "keyItem": "toll_clerk_book"}]},
     ],
-    encounters: [
-      { monsterId: 'slime_base_advanced', weight: 55, level: [8, 10] },
-      { monsterId: 'slime_metal', weight: 45, level: [9, 11] },
+    connections: [
+      {"to": "f1_bonded_deep", "ticks": 25, "oneWay": true},
     ],
-    exploreTicks: 420,
+  },
+  f1_lockers: {
+    id: "f1_lockers",
+    name: "Staff Lockers",
+    icon: "🔎",
+    areaId: "ascent_f1_area",
+    map: {"x": 29, "y": 34},
+    tags: ["indoor"],
+    activities: [
+      {"id": "search", "kind": "search", "name": "Search the Room", "icon": "🔎", "ticksPer": 50, "rewards": [{"id": "salvage", "weight": 65, "material": {"id": "iron_scrap", "qty": 1}}, {"id": "coins", "weight": 35, "gold": [3, 8]}]},
+    ],
+    connections: [
+      {"to": "f1_bonded_deep", "ticks": 25, "oneWay": true},
+    ],
+  },
+  f1_forms: {
+    id: "f1_forms",
+    name: "Forms Store",
+    icon: "🔎",
+    areaId: "ascent_f1_area",
+    map: {"x": 29, "y": 49},
+    tags: ["indoor"],
+    activities: [
+      {"id": "search", "kind": "search", "name": "Search the Room", "icon": "🔎", "ticksPer": 50, "rewards": [{"id": "salvage", "weight": 65, "material": {"id": "iron_scrap", "qty": 1}}, {"id": "coins", "weight": 35, "gold": [3, 8]}]},
+    ],
+    connections: [
+      {"to": "f1_bonded_deep", "ticks": 25, "oneWay": true},
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_clerk_book", "value": 1}], "label": "Enter the Office Section"},
+    ],
+  },
+  f1_reception: {
+    id: "f1_reception",
+    name: "Office Reception",
+    icon: "🗝️",
+    areaId: "ascent_f1_area",
+    map: {"x": 48, "y": 58},
+    tags: ["indoor"],
+    activities: [
+      {"id": "explore_reception", "kind": "explore", "name": "Search Beneath the Desk", "icon": "🔍"},
+    ],
+    connections: [
+      {"to": "f1_forms", "ticks": 25, "oneWay": true},
+      {"to": "f1_scribe", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Scribe’s Office"},
+      {"to": "f1_auditor", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Auditor"},
+      {"to": "f1_break_room", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Break Room"},
+      {"to": "f1_toll_hall", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Toll Collector’s Office"},
+      {"to": "f1_registry", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Registry"},
+      {"to": "f1_dispatch", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Dispatch Office"},
+      {"to": "f1_records", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Records Office"},
+      {"to": "f1_supplies", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Supply Office"},
+    ],
+    exploreTicks: 40,
     finds: [
-      {
-        id: 'f1_deep_strongroom',
-        at: 0.8,
-        gold: [180, 260],
-      },
+      {"id": "office_key", "at": 1, "keyItem": "toll_office_key"},
     ],
-    connections: [],
+  },
+  f1_registry: {
+    id: "f1_registry",
+    name: "The Registry",
+    icon: "🗃️",
+    areaId: "ascent_f1_area",
+    map: {"x": 48, "y": 18},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_scribe", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Scribe’s Office"},
+      {"to": "f1_auditor", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Auditor"},
+      {"to": "f1_break_room", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Break Room"},
+      {"to": "f1_toll_hall", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Toll Collector’s Office"},
+      {"to": "f1_dispatch", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Dispatch Office"},
+      {"to": "f1_records", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Records Office"},
+      {"to": "f1_supplies", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Supply Office"},
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "label": "Return to Reception"},
+    ],
+  },
+  f1_scribe: {
+    id: "f1_scribe",
+    name: "Scribe’s Office",
+    icon: "✒️",
+    areaId: "ascent_f1_area",
+    map: {"x": 68, "y": 18},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_auditor", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Auditor"},
+      {"to": "f1_break_room", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Break Room"},
+      {"to": "f1_toll_hall", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Toll Collector’s Office"},
+      {"to": "f1_registry", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Registry"},
+      {"to": "f1_dispatch", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Dispatch Office"},
+      {"to": "f1_records", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Records Office"},
+      {"to": "f1_supplies", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Supply Office"},
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "label": "Return to Reception"},
+    ],
+  },
+  f1_auditor: {
+    id: "f1_auditor",
+    name: "The Auditor",
+    icon: "🔍",
+    areaId: "ascent_f1_area",
+    map: {"x": 88, "y": 18},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_scribe", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Scribe’s Office"},
+      {"to": "f1_break_room", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Break Room"},
+      {"to": "f1_toll_hall", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Toll Collector’s Office"},
+      {"to": "f1_registry", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Registry"},
+      {"to": "f1_dispatch", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Dispatch Office"},
+      {"to": "f1_records", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Records Office"},
+      {"to": "f1_supplies", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Supply Office"},
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "label": "Return to Reception"},
+    ],
+  },
+  f1_break_room: {
+    id: "f1_break_room",
+    name: "Break Room",
+    icon: "🍎",
+    areaId: "ascent_f1_area",
+    map: {"x": 48, "y": 38},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_scribe", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Scribe’s Office"},
+      {"to": "f1_auditor", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Auditor"},
+      {"to": "f1_toll_hall", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Toll Collector’s Office"},
+      {"to": "f1_registry", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Registry"},
+      {"to": "f1_dispatch", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Dispatch Office"},
+      {"to": "f1_records", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Records Office"},
+      {"to": "f1_supplies", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Supply Office"},
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "label": "Return to Reception"},
+    ],
+  },
+  f1_dispatch: {
+    id: "f1_dispatch",
+    name: "Dispatch Office",
+    icon: "📨",
+    areaId: "ascent_f1_area",
+    map: {"x": 68, "y": 38},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_scribe", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Scribe’s Office"},
+      {"to": "f1_auditor", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Auditor"},
+      {"to": "f1_break_room", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Break Room"},
+      {"to": "f1_toll_hall", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Toll Collector’s Office"},
+      {"to": "f1_registry", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Registry"},
+      {"to": "f1_records", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Records Office"},
+      {"to": "f1_supplies", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Supply Office"},
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "label": "Return to Reception"},
+    ],
+  },
+  f1_records: {
+    id: "f1_records",
+    name: "Records Office",
+    icon: "📑",
+    areaId: "ascent_f1_area",
+    map: {"x": 88, "y": 38},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_scribe", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Scribe’s Office"},
+      {"to": "f1_auditor", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Auditor"},
+      {"to": "f1_break_room", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Break Room"},
+      {"to": "f1_toll_hall", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Toll Collector’s Office"},
+      {"to": "f1_registry", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Registry"},
+      {"to": "f1_dispatch", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Dispatch Office"},
+      {"to": "f1_supplies", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Supply Office"},
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "label": "Return to Reception"},
+    ],
+  },
+  f1_supplies: {
+    id: "f1_supplies",
+    name: "Supply Office",
+    icon: "📦",
+    areaId: "ascent_f1_area",
+    map: {"x": 68, "y": 58},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_scribe", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Scribe’s Office"},
+      {"to": "f1_auditor", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Auditor"},
+      {"to": "f1_break_room", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Break Room"},
+      {"to": "f1_toll_hall", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Toll Collector’s Office"},
+      {"to": "f1_registry", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "The Registry"},
+      {"to": "f1_dispatch", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Dispatch Office"},
+      {"to": "f1_records", "ticks": 25, "oneWay": true, "requires": [{"type": "stat", "key": "flag:key_item:toll_office_key", "value": 1}], "label": "Records Office"},
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "label": "Return to Reception"},
+    ],
   },
   f1_toll_hall: {
-    id: 'f1_toll_hall',
-    name: 'The Toll Hall',
-    icon: '🪙',
-    areaId: 'ascent_f1_area',
-    map: { x: 26, y: 74 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt the Hall', icon: '⚔️' }],
-    // Quest 3's design (plans/alpha-threshold-quests.md): the KEEPER changes
-    // with the clock — hobgoblin by day, an advanced slime by night — and the
-    // clear latches on `boss:f1_toll_hall`, whichever keeper paid it. The two
-    // windowed entries are the AMBUSH: a Champion or the Slime King, rolled
-    // only while the player's power sits at 90–98% of theirs — a fight you
-    // planned into, paying accordingly, and gone once outgrown.
-    encounters: [
-      { monsterId: 'goblin', weight: 40, level: [2, 5] },
-      { monsterId: 'slime_base_basic', weight: 25, level: [3, 5] },
-      // The toll collector: once, and gone — a purse on legs, not the keeper.
-      { monsterId: 'slime_coin', weight: 10, level: [5, 5], once: true },
-      { monsterId: 'hobgoblin', weight: 15, level: [6, 7], daypart: 'day', boss: true },
-      { monsterId: 'slime_base_advanced', weight: 15, level: [6, 7], daypart: 'night', boss: true },
-      { monsterId: 'hobgoblin_champion', weight: 15, level: [11, 12], daypart: 'day', boss: true, window: { min: 0.9, max: 0.98 } },
-      { monsterId: 'slime_king', weight: 15, level: [11, 12], daypart: 'night', boss: true, window: { min: 0.9, max: 0.98 } },
+    id: "f1_toll_hall",
+    name: "Toll Collector’s Office",
+    icon: "🗿",
+    areaId: "ascent_f1_area",
+    map: {"x": 88, "y": 58},
+    tags: ["indoor"],
+    activities: [],
+    connections: [
+      {"to": "f1_reception", "ticks": 25, "oneWay": true, "label": "Return to Reception"},
     ],
-    connections: [],
+    forced: true,
+    fightLimit: 1,
+    groupWeights: {"1": 100},
+    modifierWeights: {"normal": 100},
+    encounters: [
+      {"monsterId": "toll_collector_golem", "weight": 1, "level": [4, 4], "once": true, "boss": true},
+    ],
   },
 
   // --- Floor 2: the Flooded Stair (clear: spend the cistern's fight budget) ---
@@ -983,15 +1203,58 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     activities: [
       { id: 'explore_f2', kind: 'explore', name: 'Trace the Channels', icon: '🔍' },
       { id: 'train_dex_sluice', kind: 'train', attr: 'dex', name: 'Cross the Wet Stones', icon: '👣' },
+      // The cistern's other answer: drain it. Three quarter-turns, and the
+      // fourth empties it — `drained` requires all three turns, so the
+      // search always takes exactly four and never pays early. Drained, the
+      // cistern rolls its stranded table and the dry channel below opens.
+      {
+        id: 'turn_wheel',
+        kind: 'search',
+        name: 'Turn the Sluice Wheel',
+        icon: '☸️',
+        ticksPer: 80,
+        rewards: [
+          { id: 'turn', weight: 1, limit: 3, stat: { key: 'flag:f2_wheel_turns' } },
+          {
+            id: 'drained',
+            weight: 1,
+            limit: 1,
+            requires: [{ type: 'stat', key: 'flag:f2_wheel_turns', value: 3 }],
+            stat: { key: 'flag:f2_cistern_drained', set: 1 },
+          },
+        ],
+      },
     ],
+    // The floor hands over its own answer: the cistern's slimes shrug off
+    // blades and points but not a club. Found before the purse, so a player
+    // who looks around before wading in carries the right tool into the den.
     finds: [
+      {
+        id: 'f2_snagged_club',
+        at: 0.2,
+        item: 'oak_club',
+      },
       {
         id: 'f2_drowned_purse',
         at: 0.45,
         gold: [70, 110],
       },
     ],
-    connections: [],
+    connections: [
+      // The drained cistern's back door, and the first consumer of
+      // `approach`: walked this way, the first slimes are caught from
+      // behind (surprised). One-way, so the cistern lists no road back up a
+      // channel that is not there yet; the front door is still forced.
+      {
+        to: 'f2_cistern',
+        ticks: 40,
+        oneWay: true,
+        label: 'Down the Dry Channel',
+        requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }],
+        revealWhen: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }],
+        approach: { enemies: [{ id: 'surprised' }] },
+      },
+    ],
   },
   f2_cistern: {
     id: 'f2_cistern',
@@ -1005,10 +1268,19 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     // hunts go quiet, and the stair above opens.
     forced: true,
     fightLimit: 8,
+    // Mostly one at a time: a forced spot cannot be walked away from, and a
+    // pair of slimers at the top of the old range knocked a blade-user out
+    // three to five times across the eight.
+    groupWeights: { 1: 80, 2: 20 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Wade In', icon: '⚔️' }],
+    // Flooded (the default) or drained (the sluice wheel): one table each,
+    // switched on the wheel's flag. Stranded slimes are the same species two
+    // levels down — out of the water, not a different monster.
     encounters: [
-      { monsterId: 'slime_water', weight: 60, level: [4, 7] },
-      { monsterId: 'slime_base_advanced', weight: 40, level: [5, 8] },
+      { monsterId: 'slime_water', weight: 60, level: [4, 6], requires: [{ type: 'statMax', key: 'flag:f2_cistern_drained', value: 0 }] },
+      { monsterId: 'slime_base_advanced', weight: 40, level: [5, 7], requires: [{ type: 'statMax', key: 'flag:f2_cistern_drained', value: 0 }] },
+      { monsterId: 'slime_water', weight: 60, level: [2, 4], requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }] },
+      { monsterId: 'slime_base_advanced', weight: 40, level: [3, 5], requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }] },
     ],
     connections: [],
   },
@@ -1023,7 +1295,17 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     activities: [{ id: 'camp_f3', kind: 'rest', name: 'Camp on the Landing', icon: '🏕️' }],
     connections: [
       { to: 'f3_web_gallery', ticks: 40 },
-      { to: 'f3_brood_den', ticks: 60 },
+      // The den is reached by thinning the brood first: the gallery's fight
+      // budget spent, the road appears. The same shape as the first floor's
+      // Records Passage, and what keeps the queen from being the first thing
+      // a newcomer to this floor meets.
+      {
+        to: 'f3_brood_den',
+        ticks: 60,
+        label: 'Follow the Silk to the Den',
+        requires: [{ type: 'stat', key: 'fights:f3_web_gallery', value: 4 }],
+        revealWhen: [{ type: 'stat', key: 'fights:f3_web_gallery', value: 4 }],
+      },
     ],
   },
   f3_web_gallery: {
@@ -1037,11 +1319,28 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'explore_f3', kind: 'explore', name: 'Cut Through the Webs', icon: '🔍' },
       { id: 'hunt', kind: 'hunt', name: 'Hunt the Gallery', icon: '⚔️' },
     ],
+    // The brood. Four wins spend it and open the road to the den; after that
+    // the gallery's hunt goes quiet and the den is where spiders are farmed.
+    // Six (2026-10-10) chained into knockouts: a won spider fight costs half
+    // a band-1 climber's health and the hunt rolls the next one straight
+    // away, so most falls came on the second or third fight in a row.
+    fightLimit: 4,
+    groupWeights: { 1: 80, 2: 20 },
+    // One level down from the 2026-10-10 table (5–7 / 6–8), which still put
+    // every build on the floor three to six times here.
     encounters: [
-      { monsterId: 'cave_spider', weight: 60, level: [7, 10] },
-      { monsterId: 'slime_spider', weight: 40, level: [8, 11] },
+      { monsterId: 'cave_spider', weight: 60, level: [4, 6] },
+      { monsterId: 'slime_spider', weight: 40, level: [5, 7] },
     ],
+    // The queen takes half again from a point and shrugs off a third of an
+    // edge; a spear cut out of the webs is the floor's answer to her, the way
+    // the sluice's club is the answer to the cistern.
     finds: [
+      {
+        id: 'f3_webbed_spear',
+        at: 0.25,
+        item: 'old_spear',
+      },
       {
         id: 'f3_wrapped_valuables',
         at: 0.5,
@@ -1056,20 +1355,123 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🕷️',
     areaId: 'ascent_f3_area',
     map: { x: 94, y: 74 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Go to the Centre', icon: '⚔️' }],
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Go to the Centre', icon: '⚔️' },
+      // The queen is drawn out, not rolled: burn three egg sacs and the next
+      // fight at the centre is hers. A search, so burning is never a fight —
+      // walking to the centre afterwards is the decision. Each sac requires
+      // the one before, so the three lines always arrive in order.
+      {
+        id: 'burn_sacs',
+        kind: 'search',
+        name: 'Burn the Egg Sacs',
+        icon: '🔥',
+        ticksPer: 60,
+        rewards: [
+          { id: 'sac_1', weight: 1, limit: 1, stat: { key: 'flag:f3_sacs_burned' } },
+          { id: 'sac_2', weight: 1, limit: 1, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 1 }], stat: { key: 'flag:f3_sacs_burned' } },
+          { id: 'sac_3', weight: 1, limit: 1, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 2 }], stat: { key: 'flag:f3_sacs_burned' } },
+        ],
+      },
+    ],
+    // Pairs at most: the default table's packs of three and four were death
+    // sentences for a band-1 build and most of the old floor's knockouts.
+    groupWeights: { 1: 75, 2: 25 },
+    // Three states, one table each: the brood guards its eggs (sacs 0–2);
+    // the queen alone once the third burns; the brood again once she is
+    // dead, so the den stays a place to hunt spiders.
     encounters: [
-      { monsterId: 'cave_spider', weight: 70, level: [8, 11] },
+      { monsterId: 'cave_spider', weight: 70, level: [6, 8], requires: [{ type: 'statMax', key: 'flag:f3_sacs_burned', value: 2 }] },
       // The floor's clear: `once`, latching slain:f3_brood_den:giant_spider_queen.
-      { monsterId: 'giant_spider_queen', weight: 30, level: [12, 12], once: true },
+      // She is solitary (`group.max: 1` on the def), so she always comes alone
+      // and is never drafted into a spider's escort.
+      { monsterId: 'giant_spider_queen', weight: 30, level: [9, 9], once: true, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 3 }] },
+      { monsterId: 'cave_spider', weight: 70, level: [6, 8], requires: [{ type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 }] },
     ],
     connections: [],
   },
+  // ---------- The Ascent: floor 0, the Holding Level (the tutorial) ----------
+  //
+  // Where a new life opens (STARTING_SPOT). Four spots in a line — cell,
+  // cellblock, field, gate — and the gate's road into Threshold is ONE-WAY:
+  // the floor is off the ladder (bandless, see towers.data.ts) and closes
+  // behind the player. The tutorial itself (data/tutorial.data.ts) reads
+  // these spot ids and the counters the fights here pay; nothing on the
+  // floor gates on a tutorial choice, so a player who ignores every panel
+  // still walks out. Numbers: 2–3 s roads, a one-fight cellblock, a
+  // three-fight field.
+  f0_cell: {
+    id: 'f0_cell',
+    name: 'The Holding Cell',
+    icon: '🔒',
+    areaId: 'ascent_f0_area',
+    // Map coordinates on this floor are laid over the drawn scene
+    // (ui/lib/tilemaps/holding_level.map.json, 32 × 24 tiles): x = tile / 32 × 100,
+    // y = tile / 24 × 75. The cell is the room at the crop's left.
+    map: { x: 17, y: 25 },
+    tags: ['indoor'],
+    // A haven: the tutorial's own knockouts (there should be none — the
+    // slime deals 1) return here rather than to a city the player has not
+    // seen yet. Also what makes STARTING_SPOT the safety fallback.
+    activities: [{ id: 'rest_f0', kind: 'rest', name: 'Sleep on the Straw', icon: '🛏️' }],
+    connections: [{ to: 'f0_cellblock', ticks: 20, label: 'the cell door' }],
+  },
+  f0_cellblock: {
+    id: 'f0_cellblock',
+    name: 'The Cellblock',
+    icon: '🚪',
+    areaId: 'ascent_f0_area',
+    map: { x: 35, y: 8 },
+    tags: ['indoor'],
+    // One fight, then quiet: the Cell Slime is `once` (so the tutorial can
+    // read `slain:f0_cellblock:slime_cell`) and the fightLimit clears the
+    // spot after that single win, so a second hunt here finds nothing.
+    fightLimit: 1,
+    // Always one slime, never a boss variant: a first fight with nothing
+    // unexplained in it.
+    modifierWeights: { normal: 100 },
+    groupWeights: { 1: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Cell Slime', icon: '⚔️' }],
+    encounters: [{ monsterId: 'slime_cell', weight: 100, level: [1, 1], once: true }],
+    connections: [{ to: 'f0_field', ticks: 30, label: 'the yard door' }],
+  },
+  f0_field: {
+    id: 'f0_field',
+    name: 'The Field',
+    icon: '🌾',
+    areaId: 'ascent_f0_area',
+    map: { x: 61, y: 44 },
+    // Three fights' worth of Cell Slimes, so the spell the tutorial hands
+    // out has something to be cast at; then the field goes quiet too.
+    fightLimit: 3,
+    modifierWeights: { normal: 100 },
+    groupWeights: { 1: 100 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Fight in the Field', icon: '⚔️' },
+      { id: 'train_int_f0', kind: 'train', attr: 'int', name: 'Study the Gate Plaque', icon: '📖' },
+    ],
+    encounters: [{ monsterId: 'slime_cell', weight: 100, level: [1, 2] }],
+    connections: [{ to: 'f0_gate', ticks: 30, label: 'the path to the gate' }],
+  },
+  f0_gate: {
+    id: 'f0_gate',
+    name: 'The Gate',
+    icon: '🚧',
+    areaId: 'ascent_f0_area',
+    map: { x: 80, y: 17 },
+    activities: [],
+    // One way. The floor is a tutorial, not a place; once the player is in
+    // the city there is nothing here to come back for, and the 'every spot
+    // can get home' lint is satisfied because the Foot is a waypoint.
+    connections: [{ to: 'ascent_foot', ticks: 30, oneWay: true, label: 'through the gate into Threshold' }],
+  },
 });
 /**
- * A new life opens at the foot of the tower, in the city that grew around it.
- * The Foot is the right root for three reasons rather than one: it is the
- * haven (the only `rest` in Threshold), it is the city's waypoint, and it is
- * the one spot all eight districts already reach — so the reachability lint
- * anchors on the same place the fiction does.
+ * A new life opens in a holding cell on floor 0 of the tower (the tutorial,
+ * data/tutorial.data.ts). The cell is a haven, so it is also the safety
+ * fallback for a save that has never stood anywhere else. The gate at the
+ * end of the floor is a one-way road into Threshold, whose Foot is the
+ * city’s waypoint and the hub every district reaches — the reachability
+ * lint walks from here and through that gate.
  */
-export const STARTING_SPOT = 'ascent_foot';
+export const STARTING_SPOT = 'f0_cell';

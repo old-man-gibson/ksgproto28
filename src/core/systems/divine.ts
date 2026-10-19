@@ -40,6 +40,20 @@ export function grantFavorAll(state: GameState, bus: EventBus, amount: number): 
   bus.emit({ type: 'log', msg: text('divine.favor_gained', { amount }), kind: 'skill' });
 }
 
+/** Favor held unassigned (later votive tokens), for the Divine tab. */
+export function floatingFavor(state: GameState): number {
+  return state.stats['favor:floating'] ?? 0;
+}
+
+/** Place one unassigned favor with a known god. */
+export function assignFloatingFavor(state: GameState, bus: EventBus, deityId: string): boolean {
+  if (floatingFavor(state) < 1 || !deityKnown(state, deityId) || !DEITIES[deityId]) return false;
+  bumpStat(state, bus, 'favor:floating', -1);
+  addFavor(state, deityId, 1);
+  bus.emit({ type: 'log', msg: text('divine.favor_assigned', { deity: DEITIES[deityId].name }), kind: 'skill' });
+  return true;
+}
+
 export interface MiracleCheck {
   ok: boolean;
   reason?: string;

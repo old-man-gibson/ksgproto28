@@ -366,7 +366,7 @@ The invariants are lint rules, not just prose here. Content rules live in
 | **Non-finite values never serialize** — `serialize` clamps on the way out; player-controlled exponents are bounded at the `Math.pow` sites | `save.ts` + `completability.test.ts` | C | **unbuilt** (§4b) |
 | **Every subsystem-naming critical gate has a teacher** — an NPC or guide that hands over the combination, **reachable without passing the gate it teaches** | `content.test.ts` + forge mirror | B | **unbuilt** (§3) |
 | **Optional is computed, not declared** — derived from the critical-path closure; an author-set flag is cross-checked against it, never trusted | `content.test.ts` | B, §5 | **unbuilt** |
-| **John** — a directed floor-build driver clears bands 1..N−1 | `tests/john.ts` | tuning target | **unbuilt** — needs the band structure |
+| **John** — a directed floor-build driver clears bands 1..N−1 | `tests/john.ts` + `.test.ts`, `npm run pacing` | tuning target | **shipped** for band 1 (2026-10-10) |
 
 ### The goldfish is not a completion oracle
 
@@ -430,6 +430,35 @@ And the comprehension floor is then a parameter rather than a mood:
 
 > **John asserts through band N−1 and stops.** Moving the floor means moving
 > that number, not re-litigating the philosophy.
+
+**Built 2026-10-10 for band 1** (`tests/john.ts`). John is Skip tutorial —
+rusty sword, Neutral, no spell — walking the floors in order, hunting and
+searching where each floor says to, working a Threshold job when a gate wants
+coin, and walking straight back after every knockout. He never shops, crafts,
+quests or reads. The same driver also plays the tutorial with each rack pick,
+so the curve is measured for every build the game hands out, and an
+`attentive` habit (explore first, wield what the floor hands over) measures
+whether the floors' own answers are worth picking up. `npm run pacing` prints
+the table; `tests/john.test.ts` holds the expectations.
+
+What he found on the way, before the band was retuned around him:
+
+- **Lethality, not pacing, on floor 3.** 14–110 knockouts and up to two hours
+  for every build. The spider queen's venom sat above poison's escalation cap,
+  so her second bite turned to rot that finished most winners on the floor
+  after she died; she could also be drafted as her own escort (four in one
+  fight). Now: band 1 in about 16 minutes for John, 5–8 knockouts on the
+  floor, and a rusty sword that beats the queen once it has a few more levels.
+- **An economy that inverted at the top of the band.** Kill gold scales with
+  level × tier, so floor-3 spiders paid ~170 each and a band-1 climb ended
+  holding 6k–90k gold. Now ~1k.
+- **A first boss that was a formality** — ten seconds, one landed blow, its
+  three spell reactions unfelt. Now a 20–35 s fight that wins about one first
+  attempt in four.
+- **A trained weapon can beat the right one.** Floor 2's find (a club) wins a
+  cistern duel 20 to 11 from equal footing, but John's sword carries floor 1's
+  Swordsmanship and roughly breaks even. That is a real decision rather than a
+  bug, so it is tested as a duel, not as a rule John must follow.
 
 ---
 

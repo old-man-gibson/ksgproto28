@@ -8,3 +8,11 @@ dist/
 # but redistribution of the raw files is not permitted, so the 2,169 PNGs stay
 # out of version control. See docs/AUTHORSHIP.md §9.
 src/assets/enemies/
+
+# Third-party tile art: Epic RPG World packs (Old Prison, Grass Land 2.0 and
+# the rest) by Rafael Matos / Mattz Art, bought for this project. Licensed for
+# use in a game, not for redistribution, so the packs (and their zips) stay
+# out of version control like the battlers above. The composed scenes in
+# src/ui/lib/tilemaps/*.map.json are ours (tile INDEXES, no pixels); a checkout
+# without the packs draws the node diagram instead. See docs/TILEMAPS.md.
+src/assets/tilemaps/

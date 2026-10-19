@@ -12,6 +12,7 @@
   import { DISCIPLINES } from '../../core/data/disciplines.data';
   import {
     gradesHeld,
+    knownRecipes,
     nextSlot,
     openSlots,
     slotConsumes,
@@ -43,6 +44,8 @@
   }: { disciplineId?: string; large?: boolean } = $props();
 
   const disc = $derived(DISCIPLINES[disciplineId]);
+  /** Learned dishes this bench can make (recipe cards read), with what they take. */
+  const recipesKnown = $derived(knownRecipes(gs, disc));
   /** Runecarving has its own preview (patterns, tools, split chance); cooking
    * has its own (matched dish, resulting grade). The bench itself is the same. */
   const carving = $derived(disc.id === 'runecarving');
@@ -417,6 +420,17 @@
     </div>
   {/if}
 
+  {#if recipesKnown.length}
+    <!-- A recipe card's whole point is the combination it names, so the bench
+         says it back (CraftOutcomeDef.recipe). -->
+    <div class="ctx-row small known-recipes">
+      <span class="dim">Recipes known</span>
+      {#each recipesKnown as r (r.id)}
+        <span class="recipe-chip">{r.icon} {r.name}: {r.requires.map((q) => (q.count && q.count > 1 ? `${q.count}× ${q.tag}` : q.tag)).join(' + ')}</span>
+      {/each}
+    </div>
+  {/if}
+
   {#if disc.timeline}
     <!-- The stove's other dial: how long the whole cook runs. Every entry
          point's exposure follows from it, so the same layout simmered longer
@@ -764,6 +778,11 @@
 </div>
 
 <style>
+  .recipe-chip {
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
   /* Embedded, the bench is a tool and stays narrow. Opened as furniture it
      gets room: bigger cells, more air, and the picker laid out beside it. */
   .bench-panel {

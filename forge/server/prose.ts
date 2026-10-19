@@ -23,6 +23,7 @@ import {
   parse,
   propOf,
   renameEntry,
+  reorderEntry,
   setAt,
   step,
   unwrap,
@@ -145,7 +146,8 @@ export type ForgeOp =
   | { op: 'set'; kind: string; path: PathStep[]; value: unknown }
   | { op: 'delete'; kind: string; path: PathStep[] }
   | { op: 'add'; kind: string; key: string; value: unknown }
-  | { op: 'rename'; kind: string; from: string; to: string };
+  | { op: 'rename'; kind: string; from: string; to: string }
+  | { op: 'reorder'; kind: string; key: string; anchor: string; before: boolean };
 
 /**
  * Split one client op into the edits it really is: at most one on the data
@@ -210,6 +212,15 @@ export function routeOp(
     }
     edits.push({ file: dataFile, apply: (t) => deleteAt(dataFile, t, entry.root, op.path) });
     textDeletePrefix(key);
+    return edits;
+  }
+
+  if (op.op === 'reorder') {
+    // Key order only; no text key moves with it.
+    edits.push({
+      file: dataFile,
+      apply: (t) => reorderEntry(dataFile, t, entry.root, op.key, op.anchor, op.before),
+    });
     return edits;
   }
 

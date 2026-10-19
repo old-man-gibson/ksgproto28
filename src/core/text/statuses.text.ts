@@ -5,6 +5,9 @@ import type { ProseTable } from './prose';
 
 // ---------- STATUSES ----------
 export const STATUSES_TEXT: ProseTable = {
+  'toll_steam.desc': 'Steam covers the collector’s sight. Its attacks frequently miss. Further heat spells refresh the cloud without making it stronger.',
+  'toll_ice.desc': 'Ice holds the collector’s joints in place. It cannot dodge and loses most of its armor. Further cold spells refresh the ice without stacking it.',
+  'toll_overdrive.desc': 'Current runs through the submerged mechanism. It attacks faster and takes damage whenever its action bar fills. Further lightning spells refresh the effect without stacking it.',
   'eyeless.desc': 'Cannot be Dazzled or Blinded. No other effect.',
 
   'refutation.desc': 'Ward absorbs a flat 40 damage from each hit after resistances, plus 1.5 per point of spell power, for 15 seconds. Anything that strikes you in melee takes 6 piercing damage and is Punctured.',

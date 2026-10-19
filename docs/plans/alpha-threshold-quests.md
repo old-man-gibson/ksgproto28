@@ -142,3 +142,77 @@ kill / craft(recipe|discipline) / collect / reach / talk / stat, which covers
 everything the first list needed. The known gap: `collect` with GRADED
 materials reads the wrong bucket (spawned as its own task, 2026-09-06) — keep
 graded ids out of collect objectives until it lands.
+
+# Playtest 2026-10-17 — quest 2 from a fresh save
+
+Played on the dev-test sandbox as a newcomer: tutorial (rusty sword, Neutral,
+fire), quest 1, then every quest 2 objective done where its text says.
+**Quest 2 completes from the Warden's crate with no purchases.** The cheapest
+path: 1 ingot (3 of the 6 scrap); meat + herb on the stove (Traveler's
+Ration); water then mendroot in the alembic (Mending Elixir); any NEW arcane
+sentence; Perfect Lunge (D'Enjalle) or Artisan's Cunning (Usvýlgr), the only
+5-favor miracles with no Devotion gate; the Cages for species and kills.
+Floor 0 already pays 3–4 kills and 1 species toward the stat lines.
+
+Fixed in the same pass:
+
+- **The miracle line sent players to a spot that could not teach one.** The
+  objective, the prior and the spot text all said "the Nine Chapels"; only
+  the Reading Hall had a spellcrafting table. The chapels now hold one too,
+  and the prior and spot text name the Divine tab.
+- **Benches previewed layouts the stock could not pay for.** `checkCraft`
+  checked each slot for ≥1 unit, so one grade-D meat in both stove slots
+  previewed a ration, ran the 12 s simmer, then stopped with "out of stock
+  (0 done)". The crate rolls each unit's grade separately, so a newcomer
+  often holds exactly one of a grade. It now counts slots that draw on the
+  same stack (stove, alembic, every `checkCraft` bench).
+- **The floor 0 word was refused only in the log.** Inscribing `fire` again
+  failed with a log line hidden behind the table's window, and Inscribe stayed
+  enabled. `checkInscription` (spellcraft.ts) now feeds the preview, so the
+  table says the sentence is already written. A second line warns when a
+  sentence costs more mana than the pool holds. The table's own example,
+  `fire pierce`, costs 3 and a fresh pool is 2.
+- **Map card: "Go & open" died once the walk started.** Clicking a pin walks
+  at once, and the card then disabled every bench row. Bench rows now offer
+  "On arrival" like activity rows, and the card closes after "Go & open"
+  (it sits above modals).
+- Wording: "Win 5 fights" read the `kills` counter → "Defeat 5 monsters
+  (floor 0 counts)"; the cook line names the Cooking Stove (the Forges'
+  Cold Counter also makes a Traveler's Ration, under `assembling`, which does
+  not count); the spell line says "new" and uses the button's name.
+
+Measured, not changed (numbers for the user's call): a fresh character who
+walks from floor 0 straight into the Cages is knocked out on the first trip
+in 35/40 seeds with the rusty sword, 40/40 on Skip, 33/40 dagger, 30/40
+unarmed, 18/40 hammer, 14/40 spear (rested to full after each knockout, it
+finishes in 1–2 knockouts). The main cause is the cage slime, not the
+goblin. `slime_base_basic` resists slashing and piercing by 50% and takes 25%
+more from blunt damage. Each slime bout costs a rusty-sword newcomer about half
+their HP over 16–19 s; fists lose 26–32%, the spear 5%. Slimes land 26 of the
+rusty sword's 40 knockouts. The tutorial's Cell Slime has explicit zero
+resistances, so floor 0 never shows this. What changes the count (rusty sword,
+first-trip knockouts out of 40): goblin removed 32, goblin capped at level 2 35,
+heal between bouts 23, heal and no goblin 15. Bouts chain with no recovery, so
+a goblin's bleed also rides into the next cage.
+
+**Built the same day on the user's answer** (CONTENT_GUIDE §"Training
+spots"): the cage keeper heals after every win while the six attributes total
+30 or less ("Hey kid, here. Train safely."). Every 8 wins the keeper holds play
+on a dare: the Suspiciously Large Slime (large, level 14, unfleeable), or flee
+back to the ordinary cages. Held time is banked as bonus time. Beating it
+earns the hidden title **David and Goslimath**: `vsLarger`, a new stat
+mirroring `vsSmaller`, worth +3% per size step always and +15% more while
+worn. Measured with the real code over 30 seeds (floor 0 straight into the
+Cages):
+
+- First-visit knockouts: rusty sword 16/30, Skip 22/30, dagger 14/30,
+  unarmed 6/30, hammer 2/30, spear 3/30.
+- The heal ends about 4–5 minutes into cage farming (attributes reach 30), so
+  a farmer sees one or two dares.
+- Later the same day the cage slimes were bred with no armour or resistances
+  (user), and the dare moved to level 16: every tutorial pick wins 9–12 of 24,
+  and rusty-sword first-visit knockouts fell to 2/24. Before that:
+- First-offer wins at level 14 (24 seeds per pick): rusty sword 4, dagger 3,
+  hammer 13, spear 14, unarmed 15, Skip 16.
+
+Numbers are first guesses for the user to tune.

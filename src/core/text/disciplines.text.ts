@@ -10,7 +10,7 @@ export const DISCIPLINES_TEXT: ProseTable = {
   'runecarving.desc': 'Rune Table. Takes a rune slab, one to three carving patterns (second at Runecarving 10, third at 25), and optional inlay, pigment, up to two gems and a carving tool that is not consumed. Slab grade scales the pattern effects; each adornment adds its own.',
   'runecarving.outcomes.carve.desc': 'A slab cut to the chosen patterns.',
 
-  'cooking.desc': 'Cooking Stove. Simmers two to four raw ingredients for 8, 12 or 16 units; each slot enters the pot at a fixed point of the simmer. The outcome is matched on ingredient tags; the grade comes from ingredient grade and how well each cut fits its time in the pot. Diced cuts fit the stove best.',
+  'cooking.desc': 'Cooking Stove. Simmers two to four raw ingredients for 8, 12 or 16 units; each slot enters the pot at a fixed point of the simmer. The outcome is matched on ingredient tags; the grade comes from ingredient grade and how well each ingredient suits its time in the pot.',
   'cooking.outcomes.feast.desc': 'Meat, a vegetable and a seasoning, all Superb grade or better. Cooking 20.',
   'cooking.outcomes.stew.desc': 'Meat and a vegetable.',
   'cooking.outcomes.broth.desc': 'A mushroom and an herb.',

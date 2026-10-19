@@ -173,6 +173,12 @@ export type StatKey =
    */
   | 'fromSmaller'
   /**
+   * Extra damage PER SIZE STEP a target is LARGER than you — `vsSmaller`'s
+   * mirror, the underdog's stat. 0.2 against something one step up is +20%.
+   * Nothing against your equals or anything smaller.
+   */
+  | 'vsLarger'
+  /**
    * Share of every technique's REMAINING cooldown given back when a swing
    * misses — 0.1 takes a tenth off everything still ticking.
    *
@@ -208,6 +214,7 @@ export const STAT_NAMES: Record<StatKey, string> = {
   resistCap: 'Resistance Ceiling',
   vsSmaller: 'Damage vs Smaller',
   fromSmaller: 'Resistance vs Smaller',
+  vsLarger: 'Damage vs Larger',
   resAcid: 'Acid Resistance',
   missRefund: 'Cooldown Back on a Miss',
   graze: 'Graze Damage on a Miss',
@@ -1085,6 +1092,8 @@ export type StatusStackMode =
 
 export interface StatusStacking {
   mode: StatusStackMode;
+  /** Refresh the duration on reapplication without adding intensity or stacks. */
+  refreshDuration?: boolean;
   /** 'absorb': share of the new application's intensity that is folded in. */
   absorb?: number;
   /** Ceiling on summed intensity ('sum') or instance count ('count'). */
@@ -2084,6 +2093,14 @@ export interface MonsterDef {
   desc?: string;
   /** Intrinsic tier — part of the monster's identity, not rolled. */
   tier: TierId;
+  /**
+   * Every blow that LANDS deals exactly this much — no crit, no jitter, no
+   * armour, no resistance, no counter reduction. Training equipment: the
+   * tutorial's Cell Slime deals 1 so a first fight can be read while it
+   * happens. Dodges, parries and misses still resolve normally; only the
+   * number that reaches the HP bar is pinned. Absent for everything real.
+   */
+  fixedDamage?: number;
   /** The damage type of this monster's attacks. */
   damageType: DamageType;
   /** Conditions its blows can inflict, rolled per landed hit. */
@@ -2380,6 +2397,26 @@ export interface ConsumableSpec {
   cooldown?: number;
   /** Flavour shown on the use button. */
   useVerb?: string;
+  /**
+   * A recipe card: using it teaches this recipe (a `CraftOutcomeDef.recipe`)
+   * and is consumed. Refused once the recipe is known.
+   */
+  teaches?: string;
+  /** Lifts a locked arcane word (`flag:word:<id>`). Refused once known. */
+  unlocksWord?: string;
+  /** Teaches a technique in canonical form (or upgrades a rough one). Refused once canonical. */
+  teachesTechnique?: string;
+  /**
+   * Sets a `flag:` counter to 1 — what a hidden title, a secret recipe or a
+   * standing rule (the Chancery price seal) reads. Refused once set.
+   */
+  stamps?: string;
+  /**
+   * The votive token (systems/consumables.ts): the first one offered gives +2
+   * favor with every known god and +2 starting favor with gods met later;
+   * each one after is 1 floating favor, assigned on the Divine tab.
+   */
+  votive?: boolean;
 }
 
 // ---------- Quality ----------
@@ -2556,6 +2593,11 @@ export interface CraftOutcomeDef {
   minLevel?: number;
   /** Higher wins when several outcomes match. */
   priority?: number;
+  /**
+   * A learned dish: the outcome matches only once this recipe is known
+   * (`recipe:<id>`, taught by a recipe card — `ConsumableSpec.teaches`).
+   */
+  recipe?: string;
   /** What comes out. */
   result: CraftResult;
 }
@@ -2805,6 +2847,12 @@ export interface RecipeAlt {
 
 export interface RecipeDef {
   id: string;
+  /**
+   * Not listed anywhere until `unlock` is met — a recipe the player has to
+   * discover (a smith's pattern turned up at work) rather than one shown
+   * locked with its requirement.
+   */
+  secret?: boolean;
   /** Display name for the craft. Falls back to the result's own name. */
   name?: string;
   result: { kind: 'item' | 'material' | 'rune'; id: string; qty?: number };
@@ -3763,6 +3811,8 @@ export interface ApproachSpec {
 export interface Connection {
   to: string;
   ticks: number;
+  /** Invisible until these hold; never copied onto the return edge. */
+  revealWhen?: UnlockCondition[];
   /** One-way edges (drops, slides) get no automatic reverse edge. */
   oneWay?: boolean;
   /**
@@ -3843,9 +3893,33 @@ export interface ActivityCycleTags {
    * job → 'job'.
    */
   tags?: string[];
+  /**
+   * Rare finds rolled once per completed cycle (systems/activitydrops.ts):
+   * `chance` per cycle, drought-protected like every roll under 15%. A drop
+   * whose material teaches a recipe the player already knows (or holds) is
+   * skipped, so a recipe card turns up once.
+   */
+  drops?: ActivityDrop[];
+}
+
+export interface ActivityDrop {
+  material: string;
+  chance: number;
+  /** How many arrive at once. Default 1. */
+  qty?: number;
+  /** A graded drop arrives at this grade instead of a rolled one. */
+  quality?: QualityTier;
+  /**
+   * Each previous find divides the chance by this (2 = every repeat takes
+   * twice as long on average). Counted under `found:<material>`.
+   */
+  rarer?: number;
+  /** Not rolled while one is held (a tool you only need one of). */
+  unique?: boolean;
 }
 
 export type ActivityDef =
+  | ({ id: string; kind: 'search'; name: string; icon: string; ticksPer: number; rewards: SearchReward[] } & ActivityCycleTags)
   /** Trains `attr`, or several at once via `attrXp` — at least one is required. */
   | ({ id: string; kind: 'train'; attr?: AttributeId; name: string; icon: string } & ActivityCycleTags)
   | { id: string; kind: 'hunt'; name: string; icon: string }
@@ -3893,6 +3967,8 @@ export interface SpotFind {
   desc?: string;
   material?: { id: string; qty?: number };
   item?: string;
+  /** A permanent, unsellable journal item, retained until prestige. */
+  keyItem?: string;
   rune?: string;
   /** Inclusive gold roll. */
   gold?: [number, number];
@@ -3925,6 +4001,21 @@ export interface SpotFind {
    * on a later visit once the conditions hold. Arriving early costs nothing.
    */
   requires?: UnlockCondition[];
+}
+
+export interface KeyItemDef {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
+/** One weighted result per completed search. Limits and guarantees are per spot/activity, per run. */
+export interface SearchReward extends Omit<SpotFind, 'at' | 'path' | 'spot'> {
+  weight: number;
+  limit?: number;
+  /** Force this eligible result by this completed search if it has never paid. */
+  guaranteedBy?: number;
 }
 
 /**
@@ -4004,6 +4095,23 @@ export interface SpotDef {
    * defined rates instead of rolled ones. The fights themselves are ordinary.
    */
   caged?: boolean;
+  /**
+   * A keeper who patches up beginners: after every fight WON here, a player
+   * whose six attribute levels total at most `maxAttrTotal` is healed to full
+   * and loses every condition that deals damage over time. Chained bouts are
+   * what knock newcomers out (the next fight rolls with no recovery); this
+   * removes the chain and leaves each bout its own risk. Outgrowing the cap
+   * ends it, so it cannot become a free farm.
+   */
+  healBetweenBouts?: { maxAttrTotal: number };
+  /**
+   * The keeper's dare (systems/training.ts): every `every` fights won here
+   * while `healBetweenBouts` still applies, play HOLDS on a question — fight
+   * `monsterId` at `level`, alone and unfleeable, or decline and keep
+   * training. Held time is banked as bonus time, never lost. Offers stop once
+   * that monster has been beaten. `desc` is the keeper's line (prose).
+   */
+  dare?: SpotDare;
   /** Spawn weights for rolled modifier tiers (demiboss/boss/aberrant). */
   modifierWeights?: Partial<Record<ModifierTierId, number>>;
   /** Area group-size distribution, e.g. { 1: 20, 3: 40, 5: 40 } for a swarm zone. */
@@ -4039,6 +4147,37 @@ export interface SpotDef {
    */
   forced?: boolean;
   connections: Connection[];
+}
+
+// ---------- The tutorial ----------
+
+/**
+ * The choices the tutorial hands out, each exactly once per life. A choice
+ * is a Game method (`chooseTutorialWeapon` …) that grants and equips, then
+ * stamps its `flag:tutorial_<choice>` counter so the step reads done.
+ */
+export type TutorialChoice = 'weapon' | 'stance' | 'spell';
+
+/** The rack in the holding cell. `unarmed` grants nothing and is a real pick. */
+export type TutorialWeapon = 'spear' | 'sword' | 'dagger' | 'hammer' | 'unarmed';
+
+/**
+ * One panel of the tutorial (data/tutorial.data.ts). The current step is
+ * DERIVED: the first one whose `done` is false. No step index is saved —
+ * a step is finished when the world says so, which is what lets a player
+ * who did things out of order see the right panel and never a stale one.
+ */
+export interface TutorialStepDef {
+  id: string;
+  title: string;
+  /** The panel's text. Engineer register: what it is, what it does, what it costs. */
+  desc: string;
+  /** Where the step is done, for the panel's pointer. */
+  spot?: string;
+  /** Renders the choice widget for this step (weapon rack, stance list, spell pick). */
+  choice?: TutorialChoice;
+  /** True once the world shows the step was done. Pure; reads counters and position. */
+  done: (state: GameState) => boolean;
 }
 
 // ---------- Towers, bands & floors ----------
@@ -4476,6 +4615,8 @@ export interface BuffState {
 export const ENCOUNTER_SLOTS = 5;
 
 export interface CombatState {
+  /** Brief encounter introduction; neither side acts until it finishes. */
+  introTicks?: number;
   /**
    * Fixed-length formation. Only `enemies[0]` (the centre) can be attacked;
    * when it dies a random survivor swaps into slot 0 and its own slot empties.
@@ -4917,6 +5058,12 @@ export interface GameState {
    * `spending` is on, every non-idle tick runs twice and costs one.
    */
   bonusTime: { banked: number; spending: boolean };
+  /**
+   * Rest before the next fight (systems/huntrest.ts): below `at` (a share of
+   * max HP; 0 = off) a hunt rests in place before rolling its next encounter,
+   * until full or back to `at`. `active` is the rest in progress.
+   */
+  huntRest: HuntRest;
   discovered: string[];
   /** Explore progress (ticks) per spot id. */
   explored: Record<string, number>;
@@ -5629,6 +5776,8 @@ export type GameEvent =
   | { type: 'superattr:unlock'; id: SuperAttributeId }
   | { type: 'encounter'; spot: string; monsterIds: string[] }
   | { type: 'kill'; monster: MonsterInstance }
+  /** The last enemy of a fight fell. `forced`: it was a fight that could not be fled. */
+  | { type: 'fight:won'; spot: string; forced: boolean }
   | { type: 'defeat'; monster: MonsterInstance }
   | { type: 'loot'; item: ItemInstance }
   | { type: 'achievement'; id: string; tier: number }
@@ -5645,3 +5794,19 @@ export type GameEvent =
   | { type: 'bestiary:habitat'; monsterId: string; spot: string };
 
 export type GameEventType = GameEvent['type'];
+
+/** See `GameState.huntRest`. */
+export interface HuntRest {
+  at: number;
+  toFull: boolean;
+  active: boolean;
+}
+
+/** See `SpotDef.dare`. */
+export interface SpotDare {
+  monsterId: string;
+  level: number;
+  every: number;
+  /** What the keeper says when play holds (text table: `<spot>.dare.desc`). */
+  desc: string;
+}

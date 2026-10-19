@@ -64,6 +64,35 @@ export function nextSlot(
   return locked.length ? { slot: locked[0], level: locked[0].unlockLevel! } : undefined;
 }
 
+/** The counter a learned recipe stamps. */
+export const recipeKey = (id: string): string => `recipe:${id}`;
+
+/** The bench and outcome a recipe unlocks, or null for an unknown id. */
+export function recipeOutcome(
+  id: string,
+): { disc: CraftDisciplineDef; outcome: CraftOutcomeDef } | null {
+  for (const disc of Object.values(DISCIPLINES)) {
+    const outcome = disc.outcomes.find((o) => o.recipe === id);
+    if (outcome) return { disc, outcome };
+  }
+  return null;
+}
+
+/** A recipe as the player reads it: the dish's name. */
+export function recipeName(id: string): string {
+  return recipeOutcome(id)?.outcome.name ?? id;
+}
+
+/** Recipes the player knows for one bench, in data order. */
+export function knownRecipes(state: GameState, disc: CraftDisciplineDef): CraftOutcomeDef[] {
+  return disc.outcomes.filter((o) => o.recipe && knowsRecipe(state, o.recipe));
+}
+
+/** Whether the player has learned this recipe (from a recipe card). */
+export function knowsRecipe(state: GameState, id: string): boolean {
+  return (state.stats[recipeKey(id)] ?? 0) > 0;
+}
+
 /** What a material carries into a discipline's slots. */
 export function craftTagsOf(materialId: string): string[] {
   return MATERIALS[materialId]?.craftTags ?? [];
@@ -247,6 +276,7 @@ export function matchOutcome(
 
   const matches = disc.outcomes.filter((o) => {
     if ((o.minLevel ?? 0) > level) return false;
+    if (o.recipe && !knowsRecipe(state, o.recipe)) return false;
     if (o.minQuality && (!best || !qualityAtLeast(best, o.minQuality))) return false;
     if (o.maxQuality && best && qualityRank(best) > qualityRank(o.maxQuality)) return false;
     return o.requires.every((r) => (counts.get(r.tag) ?? 0) >= (r.count ?? 1));
@@ -275,6 +305,9 @@ export function checkCraft(
   placement: Placement,
 ): CraftCheck {
   const open = openSlots(state, disc);
+  // Slots that spend the same material at the same grade draw on one stack:
+  // two slots of grade-D meat need two grade-D meat, not one seen twice.
+  const demand = new Map<string, number>();
 
   for (const slot of open) {
     const put = placement[slot.id];
@@ -285,11 +318,20 @@ export function checkCraft(
     // Designs and tools are validated by whoever owns their catalogue; only
     // materials are checked against tags and stock here.
     if (slotPicks(slot) !== 'material') continue;
+    const name = MATERIALS[put.id]?.name ?? put.id;
     if (!slotAccepts(slot, put.id)) {
-      return { ok: false, reason: text('disciplines.reason.wrong_slot', { name: MATERIALS[put.id]?.name ?? put.id, slot: slot.name }) };
+      return { ok: false, reason: text('disciplines.reason.wrong_slot', { name, slot: slot.name }) };
     }
-    if (stockOf(state, put.id, put.quality) < 1) {
-      return { ok: false, reason: text('disciplines.reason.no_stock_at_grade', { name: MATERIALS[put.id]?.name ?? put.id }) };
+    const held = stockOf(state, put.id, put.quality);
+    if (held < 1) {
+      return { ok: false, reason: text('disciplines.reason.no_stock_at_grade', { name }) };
+    }
+    if (!slotConsumes(slot)) continue;
+    const key = `${put.id}:${put.quality}`;
+    const need = (demand.get(key) ?? 0) + 1;
+    demand.set(key, need);
+    if (held < need) {
+      return { ok: false, reason: text('disciplines.reason.short_at_grade', { name, held, need }) };
     }
   }
   // Anything placed in a slot that isn't open yet is not a legal layout.

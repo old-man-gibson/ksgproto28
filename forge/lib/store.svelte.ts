@@ -8,11 +8,12 @@
  * coalesce, so that whole drag lands as one edit to two numbers.
  */
 
-import { api, type CatalogEntry, type NoteMarker, type PatchOp, type PathStep } from './api';
+import { api, type CatalogEntry, type NoteMarker, type PatchOp, type PathStep, type TileMapDef } from './api';
 
 type NoteBook = Record<string, Record<string, Partial<Record<NoteMarker, string>>>>;
 import { findReferences, type RefSite } from './refs';
 import { isGeneStub } from './validate';
+import { compact } from './tilemap';
 
 type Dict = Record<string, Record<string, unknown>>;
 
@@ -20,6 +21,12 @@ class Store {
   catalog = $state<CatalogEntry[]>([]);
   data = $state<Dict>({});
   meta = $state<Record<string, unknown>>({});
+  /**
+   * Drawn maps by region (src/ui/lib/tilemaps/<region>.map.json). Edited in
+   * place by the Tiles mode and staged WHOLE — one `tilemap` op per region,
+   * the newest grid replacing the last (see forge/server/tilemaps.ts).
+   */
+  maps = $state<Record<string, TileMapDef>>({});
   ops = $state<PatchOp[]>([]);
   loading = $state(true);
   error = $state<string | null>(null);
@@ -33,10 +40,15 @@ class Store {
     this.loading = true;
     this.error = null;
     try {
-      const [{ catalog }, { data, meta }] = await Promise.all([api.catalog(), api.registry()]);
+      const [{ catalog }, { data, meta }, { maps }] = await Promise.all([
+        api.catalog(),
+        api.registry(),
+        api.tiles.maps(),
+      ]);
       this.catalog = catalog;
       this.data = data as Dict;
       this.meta = meta;
+      this.maps = maps;
       this.ops = [];
     } catch (err) {
       this.error = err instanceof Error ? err.message : String(err);
@@ -168,6 +180,38 @@ class Store {
     this.ops = [...this.ops, { op: 'reorder', kind, key, anchor, before }];
   }
 
+  // ---------- Drawn maps ----------
+
+  /** Give a region a drawn map (or replace the one it has), staged whole. */
+  setTileMap(region: string, map: TileMapDef): void {
+    this.maps[region] = map;
+    this.stageMap(region);
+  }
+
+  /**
+   * The Tiles mode paints straight into `maps[region]`; call this when a
+   * stroke ends so the staged op carries the grid as it now stands. Unused
+   * sheets are dropped on the way, so the file lists only what it draws.
+   */
+  touchTileMap(region: string): void {
+    const map = this.maps[region];
+    if (!map) return;
+    compact(map);
+    this.stageMap(region);
+  }
+
+  /** Remove a region's drawn map; it goes back to the node diagram. */
+  dropTileMap(region: string): void {
+    delete this.maps[region];
+    this.ops = [...this.ops.filter((o) => !(o.op === 'tilemap' && o.region === region)), { op: 'tilemap', region, map: null }];
+  }
+
+  private stageMap(region: string): void {
+    const map = this.maps[region];
+    const snapshot = map ? (structuredClone($state.snapshot(map)) as TileMapDef) : null;
+    this.ops = [...this.ops.filter((o) => !(o.op === 'tilemap' && o.region === region)), { op: 'tilemap', region, map: snapshot }];
+  }
+
   /** Everywhere `id` is pointed at, so a rename can be shown before it happens. */
   references(kind: string, id: string): RefSite[] {
     return findReferences(this.data, kind, id);
@@ -232,6 +276,14 @@ class Store {
       book[kind][to] = book[kind][from];
       delete book[kind][from];
     }
+    // A region's drawn map is keyed by its id on disk, so it moves too.
+    if (kind === 'region' && this.maps[from]) {
+      this.maps[to] = this.maps[from];
+      delete this.maps[from];
+      this.ops = this.ops.filter((o) => !(o.op === 'tilemap' && (o.region === from || o.region === to)));
+      this.ops = [...this.ops, { op: 'tilemap', region: from, map: null }];
+      this.stageMap(to);
+    }
     return sites;
   }
 
@@ -266,7 +318,7 @@ class Store {
   get stagedGeneStubs(): string[] {
     const touched = new Set<string>();
     for (const op of this.ops) {
-      if (op.kind !== 'maingene') continue;
+      if (op.op === 'tilemap' || op.kind !== 'maingene') continue;
       if (op.op === 'add' || op.op === 'note' || op.op === 'reorder') touched.add(op.key);
       else if (op.op === 'rename') touched.add(op.to);
       else touched.add(String(op.path[0]));

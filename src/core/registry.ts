@@ -1,4 +1,5 @@
 import type { BandDef, Connection, FloorDef, SpotDef } from './types';
+export { KEY_ITEMS } from './data/keyitems.data';
 import { SKILLS } from './data/skills.data';
 import { STYLES } from './data/styles.data';
 import { ITEMS, AFFIXES } from './data/items.data';
@@ -32,6 +33,7 @@ import { MIRACLES } from './data/spellcraft.data';
 import { MUSIC_ARCHETYPES, MUSIC_METERS, MUSIC_SCALES } from './data/music.data';
 import { BANDS, FLOORS, TOWERS } from './data/towers.data';
 import { PRESTIGE_BOONS, PRESTIGE_SOURCES, PRESTIGE_UNLOCK } from './data/prestige.data';
+import { TUTORIAL_STEPS, TUTORIAL_STEP_LIST } from './data/tutorial.data';
 
 export {
   SKILLS,
@@ -90,6 +92,8 @@ export {
   PRESTIGE_UNLOCK,
   PRESTIGE_SOURCES,
   PRESTIGE_BOONS,
+  TUTORIAL_STEPS,
+  TUTORIAL_STEP_LIST,
 };
 
 export interface Edge extends Connection {

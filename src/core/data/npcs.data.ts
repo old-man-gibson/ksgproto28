@@ -80,6 +80,9 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
         { kind: 'material', id: 'bird_egg' },
         { kind: 'material', id: 'forest_berries' },
         { kind: 'material', id: 'wild_honey' },
+        // Recipe cards (ConsumableSpec.teaches): the stove's learned dishes.
+        { kind: 'material', id: 'recipe_herb_rubbed_meat' },
+        { kind: 'material', id: 'recipe_fish_onion_pot' },
       ],
     },
   },

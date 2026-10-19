@@ -14,7 +14,6 @@
     MAX_STACK,
     WORD_MASTERY,
     arcaneLevel,
-    checkSentence,
     masteredTier,
     splitWordId,
     wordLevel,
@@ -23,7 +22,7 @@
   import { WORD_MILESTONE_LEVELS, WORD_POWER_PER_LEVEL, wordSkillId } from '../../core/data/wordskills.data';
   import { SKILLS } from '../../core/registry';
   import { sumMods } from '../lib/format';
-  import { checkMiracle, devotionLevel, favorWith, miracleSpec } from '../../core/systems/divine';
+  import { checkMiracle, devotionLevel, favorWith, floatingFavor, miracleSpec } from '../../core/systems/divine';
   import { deitiesInRelation, deityGroups, queryDeities } from '../../core/systems/deities';
   import {
     MAX_PSI_MEMORIZED,
@@ -46,6 +45,7 @@
     PREPARED_PER_LEVELS,
     preparedCap,
     canCastUtility,
+    checkInscription,
     isUtilityWorking,
     preparedSpells,
     resolveSpell,
@@ -60,6 +60,7 @@
     SpellSpec,
   } from '../../core/types';
   import { TPS } from '../../core/engine/loop';
+  import { trueMax } from '../../core/systems/resources';
   // A spell describes itself the same way everywhere — the grimoire, the
   // combat card's tooltip and the config window all read these.
   import { specLines, targetLabel } from '../lib/format';
@@ -85,7 +86,15 @@
   let sentence = $state<string[]>([]);
   const level = $derived(arcaneLevel(gs));
   const cap = $derived(maxSentenceWords(level));
-  const check = $derived(sentence.length ? checkSentence(gs, sentence) : null);
+  // checkInscription = legal speech AND not already written (the floor 0 word
+  // is in every new grimoire, and it is the first thing a newcomer tries).
+  const check = $derived(sentence.length ? checkInscription(gs, sentence) : null);
+  /** A sentence the pool cannot pay for inscribes fine and then never casts. */
+  const overPool = $derived.by(() => {
+    const cost = check?.ok ? (check.spec?.manaCost ?? 0) : 0;
+    const pool = trueMax(view.stats, 'mana');
+    return cost > pool ? { cost, pool } : null;
+  });
 
   /** The full lexicon, locked words included — a locked word is a goal. */
   const KIND_ORDER: ArcaneWordKind[] = ['noun', 'verb', 'adverb', 'conjunction', 'target'];
@@ -503,6 +512,12 @@
       {:else}
         <div class="small dim">The table is quiet.</div>
       {/if}
+      {#if overPool}
+        <div class="small out-of-reach too-wide">
+          💧 Costs <b>{overPool.cost}</b> mana and your pool holds <b>{overPool.pool}</b>. It can be
+          inscribed, but it will not cast until Intelligence raises the pool.
+        </div>
+      {/if}
     </div>
 
     <div class="bench-actions">
@@ -589,6 +604,12 @@
       with favor earned in their sight. Deeds done for others earn it today; deity-aligned
       deeds and altars will, in time. Hostile powers refuse to be <i>prepared</i> together.
     </div>
+    {#if floatingFavor(gs) > 0}
+      <!-- Later votive tokens (systems/consumables.ts): favor the player places. -->
+      <div class="small floating">
+        🕯️ Unassigned favor: <b>{floatingFavor(gs)}</b>. Open a god below and press "+1 favor" to place it.
+      </div>
+    {/if}
 
     <!-- Filters, in the bestiary's idiom: a tag ORs within its axis and ANDs
          across them, and the search reads names, epithets and character. -->
@@ -658,6 +679,9 @@
                     </div>
                     <div class="standing small">
                       <span>🕊️ Favor <b>{favorWith(gs, deity.id)}</b></span>
+                      {#if floatingFavor(gs) > 0}
+                        <button class="small" onclick={() => game.assignFloatingFavor(deity.id)}>+1 favor (unassigned)</button>
+                      {/if}
                       <span class="dim">·</span>
                       <span>🙏 Devotion <b>Lv {devotionLevel(gs)}</b></span>
                     </div>
@@ -971,6 +995,9 @@
 </div>
 
 <style>
+  .floating {
+    margin-top: 6px;
+  }
   .spellcraft {
     max-width: 520px;
     display: flex;

@@ -28,6 +28,14 @@ export function isIdle(state: GameState): boolean {
   );
 }
 
+/**
+ * Bank one tick unconditionally — a held world (the keeper's dare) is time
+ * the player was made to wait, so it is banked whatever they were doing.
+ */
+export function bankTick(state: GameState): void {
+  state.bonusTime.banked = Math.min(BONUS_CAP_TICKS, state.bonusTime.banked + 1);
+}
+
 /** Bank one tick if the player is idle right now. Called at the top of every advance. */
 export function accrueBonusTime(state: GameState): void {
   if (!isIdle(state)) return;

@@ -12,7 +12,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
     "verify": "svelte-check --tsconfig ./tsconfig.json && vitest run",
-    "names": "node scripts/names.mjs"
+    "names": "node scripts/names.mjs",
+    "pacing": "vite-node scripts/pacing.ts"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.3",

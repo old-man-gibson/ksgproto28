@@ -13,8 +13,13 @@ import {
 import { startTravel, tickTravel } from '../src/core/systems/locations';
 import type { GameState } from '../src/core/types';
 
-/** A fresh save standing wherever the game opens (the foot of the tower). */
-const fresh = (): GameState => createInitialState(0);
+/**
+ * A fresh save stood at the foot of the tower. The game itself opens one
+ * floor down, in the tutorial's holding cell (STARTING_SPOT); the ladder is
+ * a thing you walk to, so these tests start where it answers.
+ */
+const FOOT = 'ascent_foot';
+const fresh = (): GameState => createInitialState(0, FOOT);
 
 const bus = () => new EventBus();
 
@@ -28,7 +33,8 @@ function arrive(state: GameState, b: EventBus): void {
 describe('the sequential ascent', () => {
   it('opens exactly one rung to a fresh save', () => {
     const state = fresh();
-    expect(state.spot).toBe(STARTING_SPOT);
+    expect(state.spot).toBe(FOOT);
+    expect(STARTING_SPOT).toBe('f0_cell');
     expect(floorUnlocked(state, FLOORS.ascent_f1)).toBe(true);
     expect(floorUnlocked(state, FLOORS.ascent_f2)).toBe(false);
     expect(floorUnlocked(state, FLOORS.ascent_f3)).toBe(false);
@@ -70,7 +76,7 @@ describe('the sequential ascent', () => {
     // Down is always open: back to the hub from the floor.
     expect(climbTo(state, b, null)).toBe(true);
     arrive(state, b);
-    expect(state.spot).toBe(STARTING_SPOT);
+    expect(state.spot).toBe(FOOT);
   });
 
   it('the ladder only answers at the tower — not from a city district', () => {
@@ -93,7 +99,7 @@ describe('the hold (shut roads: Connection.requires)', () => {
   it('the door at the Foot refuses travel until the first prestige, and only outbound', () => {
     const state = fresh();
     const b = bus();
-    expect(state.spot).toBe(STARTING_SPOT);
+    expect(state.spot).toBe(FOOT);
     expect(startTravel(state, b, 'base_entrance')).toBe(false);
     expect(state.travel).toBeNull();
 
@@ -105,6 +111,6 @@ describe('the hold (shut roads: Connection.requires)', () => {
     // The mirror never carries `requires`: a save already inside can always
     // walk back out, counter or no counter — nobody is ever stranded.
     state.stats['prestige:count'] = 0;
-    expect(startTravel(state, b, STARTING_SPOT)).toBe(true);
+    expect(startTravel(state, b, FOOT)).toBe(true);
   });
 });

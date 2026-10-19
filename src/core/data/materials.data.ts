@@ -385,6 +385,107 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
       grants: [{ id: 'clear_headed', intensity: 1 }],
     },
   },
+  // Learned dishes (the stove's recipe outcomes) and the cards that teach
+  // them. Cards are read, not eaten (ConsumableSpec.teaches), and ungraded.
+  herb_rubbed_meat: {
+    id: 'herb_rubbed_meat',
+    name: 'Herb-Rubbed Meat',
+    icon: '🍖',
+    value: 16,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      restore: [{ resource: 'hp', ofMax: 0.15 }],
+      grants: [{ id: 'well_fed', intensity: 1 }],
+    },
+  },
+  fish_onion_pot: {
+    id: 'fish_onion_pot',
+    name: 'Fish and Onion Pot',
+    icon: '🐟',
+    value: 22,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      grants: [{ id: 'well_fed', intensity: 1 }, { id: 'steady_hand', intensity: 0.75 }],
+    },
+  },
+  lectory_porridge: {
+    id: 'lectory_porridge',
+    name: 'Lectory Porridge',
+    icon: '🥣',
+    value: 30,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      grants: [{ id: 'clear_headed', intensity: 1.5 }, { id: 'well_fed', intensity: 0.5 }],
+    },
+  },
+  recipe_herb_rubbed_meat: {
+    id: 'recipe_herb_rubbed_meat',
+    name: 'Recipe: Herb-Rubbed Meat',
+    icon: '📜',
+    value: 15,
+    consumable: { useVerb: 'Read', teaches: 'herb_rubbed_meat' },
+  },
+  recipe_fish_onion_pot: {
+    id: 'recipe_fish_onion_pot',
+    name: 'Recipe: Fish and Onion Pot',
+    icon: '📜',
+    value: 30,
+    consumable: { useVerb: 'Read', teaches: 'fish_onion_pot' },
+  },
+  recipe_lectory_porridge: {
+    id: 'recipe_lectory_porridge',
+    name: 'Recipe: Lectory Porridge',
+    icon: '📜',
+    value: 60,
+    consumable: { useVerb: 'Read', teaches: 'lectory_porridge' },
+  },
+  // District rare finds (ActivityDef.drops). Cards are read or offered for a
+  // one-time effect (ConsumableSpec), ungraded, and unmarked in play.
+  word_slip_stone: {
+    id: 'word_slip_stone',
+    name: 'Word Slip: Stone',
+    icon: '📝',
+    value: 40,
+    consumable: { useVerb: 'Read', unlocksWord: 'stone' },
+  },
+  votive_token: {
+    id: 'votive_token',
+    name: 'Votive Token',
+    icon: '🕯️',
+    value: 25,
+    consumable: { useVerb: 'Offer', votive: true },
+  },
+  drill_manual_riposte: {
+    id: 'drill_manual_riposte',
+    name: 'Drill Manual: Riposte',
+    icon: '📘',
+    value: 40,
+    consumable: { useVerb: 'Study', teachesTechnique: 'riposte' },
+  },
+  chancery_price_seal: {
+    id: 'chancery_price_seal',
+    name: 'Chancery Price Seal',
+    icon: '🔏',
+    value: 50,
+    consumable: { useVerb: 'Register', stamps: 'flag:chancery_seal' },
+  },
+  unclaimed_case_file: {
+    id: 'unclaimed_case_file',
+    name: 'Unclaimed Case File',
+    icon: '📁',
+    value: 20,
+    consumable: { useVerb: 'Read', stamps: 'flag:assize_case_file' },
+  },
+  smiths_pattern_bronze: {
+    id: 'smiths_pattern_bronze',
+    name: "Smith's Pattern: Bronze",
+    icon: '📐',
+    value: 45,
+    consumable: { useVerb: 'Study', stamps: 'flag:pattern_bronze' },
+  },
   travelers_ration: {
     id: 'travelers_ration',
     name: "Traveler's Ration",

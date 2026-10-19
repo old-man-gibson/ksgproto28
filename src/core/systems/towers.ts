@@ -39,7 +39,11 @@ export function currentFloor(state: GameState): FloorDef | null {
  */
 export function towerAt(state: GameState): TowerDef | null {
   const here = currentFloor(state);
-  if (here) return TOWERS[here.towerId] ?? null;
+  // A bandless floor is off the ladder in both directions: nothing counts it
+  // as a rung, and the ladder does not answer from it. Floor 0 (the tutorial)
+  // is reached by roads and left by its gate; without this the cell would
+  // offer a climb straight past the gate to floor 1.
+  if (here) return here.bandId === undefined ? null : (TOWERS[here.towerId] ?? null);
   return Object.values(TOWERS).find((t) => t.hubSpot === state.spot) ?? null;
 }
 

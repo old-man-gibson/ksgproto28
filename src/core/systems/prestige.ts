@@ -2,6 +2,7 @@ import type { EventBus } from '../engine/events';
 import type { AttributeId, GameState, HarvestLine, HarvestReport, PrestigeSourceDef } from '../types';
 import { PRESTIGE_BOONS, PRESTIGE_SOURCES, PRESTIGE_UNLOCK, TOWERS } from '../registry';
 import { createInitialState } from '../state';
+import { TUTORIAL_DONE_KEY, TUTORIAL_EXIT } from '../data/tutorial.data';
 import { conditionsMet } from './conditions';
 import { floorCleared, ladderFloors } from './towers';
 import { boonRank } from './legacy';
@@ -208,6 +209,11 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
     spentThisReview: 0,
   };
   next.stats['prestige:count'] = next.prestige.count;
+  // A second life skips the cell: the tutorial is stamped done and the run
+  // opens at the Foot, where the door to the hold has just come open.
+  next.stats[TUTORIAL_DONE_KEY] = 1;
+  next.spot = TUTORIAL_EXIT;
+  next.discovered = [TUTORIAL_EXIT];
   applyRunStart(next);
   return next;
 }

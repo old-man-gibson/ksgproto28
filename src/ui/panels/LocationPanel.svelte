@@ -1,4 +1,5 @@
 <script lang="ts">
+  import KeyItems from '../KeyItems.svelte';
   import { gs, game, ui, view } from '../state.svelte';
   import { getSpot, MATERIALS, RECIPES } from '../../core/registry';
   import { locationBreadcrumb } from '../../core/systems/locations';
@@ -20,6 +21,7 @@
     recipeCostText,
     recipeResultIcon,
     recipeResultName,
+    recipeHidden,
     recipeUnlocked,
   } from '../../core/systems/crafting';
   import { npcsAt, availableQuests, canTurnIn, hasMet } from '../../core/systems/quests';
@@ -86,7 +88,9 @@
   const nextFind = $derived(
     [...unclaimedFinds].sort((a, b) => a.at - b.at).find((f) => f.at > explorePct),
   );
-  const recipes = $derived((spot.recipes ?? []).map((rid) => RECIPES[rid]).filter(Boolean));
+  const recipes = $derived(
+    (spot.recipes ?? []).map((rid) => RECIPES[rid]).filter((r) => r && !recipeHidden(gs, r)),
+  );
   const npcs = $derived(npcsAt(gs.spot));
 
   /** How many of a ware you already hold — graded wares count only the grade on sale. */
@@ -110,7 +114,10 @@
       return [
         { label: 'slot', value: SLOT_NAMES[def.slot] },
         { label: 'quality', value: '—' },
-        { label: 'runes', value: lo === hi ? `${hi}` : `${lo}–${hi}` },
+        // Runes ride the runecarving shutter.
+        ...(subsystemUnlocked(gs, 'runecarving')
+          ? [{ label: 'runes', value: lo === hi ? `${hi}` : `${lo}–${hi}` }]
+          : []),
       ];
     }
     const def = MATERIALS[line.id];
@@ -176,6 +183,8 @@
     </div>
   {:else if act.kind === 'hunt'}
     <div class="tip-line">Seeks out monsters to fight here</div>
+  {:else if act.kind === 'search'}
+    <div class="tip-line">Repeatedly searches this room. Each completed search yields one result; some discoveries can only be found once.</div>
   {:else if act.kind === 'rest'}
     <div class="tip-line">Recovers HP steadily</div>
   {:else if act.kind === 'explore'}
@@ -237,6 +246,7 @@
     <h2>{spot.icon} {spot.name}</h2>
     <p class="dim">{spot.desc}</p>
 
+    <KeyItems />
     <h3>Activities</h3>
     <div class="btn-grid">
       {#each spot.activities as act}
@@ -368,7 +378,7 @@
                         <span class="ware-price">{price} 🪙</span>
                         <span class="ware-btns">
                           <button class="small" disabled={gs.gold < price} onclick={(e) => { e.stopPropagation(); game.buy(npc.id, i, 1); }}>Buy</button>
-                          {#if line.kind === 'material'}
+                          {#if line.kind === 'material' && !MATERIALS[line.id]?.consumable?.teaches}
                             <button class="small" disabled={gs.gold < price} onclick={(e) => { e.stopPropagation(); game.buy(npc.id, i, 5); }}>×5</button>
                           {/if}
                         </span>
@@ -447,7 +457,9 @@
               <span><span class="dim">wield</span> {WIELD_NAMES[wieldOf(def)]}</span>
             {/if}
             <span><span class="dim">quality</span> —</span>
-            <span><span class="dim">rune slots</span> {lo === hi ? hi : `${lo}–${hi}`} (rolled on purchase)</span>
+            {#if subsystemUnlocked(gs, 'runecarving')}
+              <span><span class="dim">rune slots</span> {lo === hi ? hi : `${lo}–${hi}`} (rolled on purchase)</span>
+            {/if}
           </div>
           <div class="section">Stats</div>
           {#if def.mods.length === 0 && !def.bonusDamage && !def.mainHand && !def.offHand}
@@ -498,7 +510,7 @@
         </span>
         <span class="ware-btns">
           <button class="small" disabled={gs.gold < price} onclick={() => game.buy(vendor.id, openWare!.index, 1)}>Buy</button>
-          {#if line.kind === 'material'}
+          {#if line.kind === 'material' && !MATERIALS[line.id]?.consumable?.teaches}
             <button class="small" disabled={gs.gold < price} onclick={() => game.buy(vendor.id, openWare!.index, 5)}>×5</button>
           {/if}
         </span>

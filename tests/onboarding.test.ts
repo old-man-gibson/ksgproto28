@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { EventBus } from '../src/core/engine/events';
 import { Game } from '../src/core/game';
-import { QUESTS } from '../src/core/registry';
+import { QUESTS, SPOTS } from '../src/core/registry';
+import { checkInscription } from '../src/core/systems/spellcraft';
 import { hasMet, metKey, objectiveProgress, talkTo } from '../src/core/systems/quests';
 import { checkSentence } from '../src/core/systems/arcane';
 import { grantFavorAll, favorWith } from '../src/core/systems/divine';
@@ -67,6 +68,33 @@ describe('meeting people (talk objectives)', () => {
     );
     game.bus.emit({ type: 'craft', recipe: 'iron_ingot' });
     expect(state.quests.a_taste_of_everything.progress[j]).toBe(0);
+  });
+});
+
+describe("the Warden's second quest, played from a tutorial save", () => {
+  it('the floor 0 word is refused before Inscribe is pressed; a new sentence counts', () => {
+    const g = new Game(fresh());
+    g.chooseTutorialSpell('fire');
+    // The first thing a newcomer types at the table is the word they hold.
+    const repeat = checkInscription(g.state, ['fire']);
+    expect(repeat.ok).toBe(false);
+    expect(repeat.reason).toBe(text('spellcraft.reason.already_inscribed'));
+    expect(g.inscribeArcane(['fire'])).toBeNull();
+    expect(g.state.stats['spells:inscribed'] ?? 0).toBe(0);
+
+    expect(checkInscription(g.state, ['ice']).ok).toBe(true);
+    expect(g.inscribeArcane(['ice'])).not.toBeNull();
+    expect(g.state.stats['spells:inscribed']).toBe(1);
+  });
+
+  it('the Nine Chapels, where the quest sends you, can teach a miracle', () => {
+    // The objective, the prior and the spot all say miracles are learned
+    // there; the Divine tab lives on the spellcrafting table.
+    expect(SPOTS.the_nine_chapels.benches ?? []).toContain('spelltable');
+    const i = QUESTS.a_taste_of_everything.objectives.findIndex(
+      (o) => o.type === 'stat' && o.key === 'miracles:learned',
+    );
+    expect(QUESTS.a_taste_of_everything.objectives[i].desc).toContain('Nine Chapels');
   });
 });
 

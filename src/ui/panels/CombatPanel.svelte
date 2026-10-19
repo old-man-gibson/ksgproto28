@@ -30,6 +30,9 @@
   import { GENE_ACTIVE, expressedGene, geneAbility } from '../../core/systems/mutagens';
   import { monsterMind, monsterStats } from '../../core/systems/monsterStats';
   import { resourceLock } from '../../core/systems/resources';
+  import { subsystemUnlocked } from '../../core/systems/unlocks';
+  import { huntRest, restTarget, restingForFight } from '../../core/systems/huntrest';
+  import { hpFraction } from '../../core/systems/health';
   import { escalationPrimed, statusForcingStyle, visibleStatuses } from '../../core/systems/statuses';
   import { STAT_NAMES, type MonsterInstance } from '../../core/types';
   import { styleUnlocked, styleSlots, effectiveStyleDef, stanceIdFor } from '../../core/systems/styles';
@@ -300,6 +303,10 @@
     const spell = uid ? findSpell(gs, uid) : null;
     return spell ? resolveSpell(spell) : null;
   });
+
+  /** Alpha shutter (systems/unlocks.ts): the position planner, loadouts,
+   *  drilling and the rotation editor show only once `martial` is open. */
+  const martialOpen = $derived(subsystemUnlocked(gs, 'martial'));
 
   // ---- Loadouts ----
   let loadoutName = $state('');
@@ -735,15 +742,21 @@
   {#if rotation.length === 0}
     <p class="dim small">No active skills learned yet — they manifest as you fight.</p>
   {:else}
-    <p class="dim small hint">
-      Fired top-down — drag a card to reorder. Click one to set when it fires; hover for the
-      details. 🏋️ drills a technique — {MAX_DRILLED} slots, and only drilled ones bank reps.
-      Benched techniques live under their skill in the Skills tab.
-    </p>
+    {#if !martialOpen}
+      <!-- Alpha shutter (systems/unlocks.ts, `martial`): the list is read-only. -->
+      <p class="dim small hint">Fired top-down, each one whenever it is ready. Hover for the details.</p>
+    {:else}
+      <p class="dim small hint">
+        Fired top-down — drag a card to reorder. Click one to set when it fires; hover for the
+        details. 🏋️ drills a technique — {MAX_DRILLED} slots, and only drilled ones bank reps.
+        Benched techniques live under their skill in the Skills tab.
+      </p>
+    {/if}
 
     <!-- Loadouts: a whole fighting identity under one name — order, bench
          switches, drills, trigger conditions, prepared spells and worn gear.
          Applying one grants nothing: unknown entries stay inert. -->
+    {#if martialOpen}
     <div class="loadouts small">
       <span class="dim">Loadouts:</span>
       {#each gs.loadouts as l (l.name)}
@@ -762,6 +775,7 @@
       />
       <button class="tiny" onclick={saveLoadout} disabled={!loadoutName.trim()}>Save current</button>
     </div>
+    {/if}
     <!-- One line per entry. Everything else — mastery, the baked reflex, the
          trigger editor — lives behind the card's tooltip and its config
          window, so a long rotation stays readable at a glance. -->
@@ -783,8 +797,8 @@
           class:drop-before={dropTarget === id && dragging !== id}
           style={tech ? flowGradient(tech) : undefined}
           role="listitem"
-          draggable="true"
-          ondragstart={() => (dragging = id)}
+          draggable={martialOpen}
+          ondragstart={() => { if (martialOpen) dragging = id; }}
           ondragend={() => { dragging = null; dropTarget = null; }}
           ondragover={(e) => { e.preventDefault(); dropTarget = id; }}
           ondragleave={() => { if (dropTarget === id) dropTarget = null; }}
@@ -795,7 +809,7 @@
                on the right of line 1 — nothing else has either. -->
           <div class="line1">
             <Tip>
-              <button class="skill-name" onclick={() => (configId = id)}>
+              <button class="skill-name" onclick={() => { if (martialOpen) configId = id; }}>
                 <span class="nm">{entry.icon} {entry.name}</span>
                 {#if tuned}<span class="tuned" title="You have set conditions on this">⚡</span>{/if}
               </button>
@@ -849,10 +863,14 @@
                     ].join(' · ')}
                   </div>
                 {/if}
-                <div class="tip-line tip-sub">Click to set when it fires · drag to reorder.</div>
+                {#if martialOpen}
+                  <div class="tip-line tip-sub">Click to set when it fires · drag to reorder.</div>
+                {/if}
               {/snippet}
             </Tip>
-            {#if tech}
+            {#if tech && !martialOpen}
+              {@render flowPills(tech)}
+            {:else if tech}
               {@render flowPills(tech)}
               <button
                 class="tiny drill"
@@ -911,7 +929,7 @@
 <!-- The same loadout, arranged on the position graph instead of in a list.
      Collapsed by default: the list above stays the working surface, and the
      graph is where you go to see how the pieces connect. -->
-<MartialPlanner />
+{#if martialOpen}<MartialPlanner />{/if}
 
 <!-- Encounter — always on screen, showing a search state between fights. -->
 <div class="panel" style="margin-top: 12px">
@@ -941,6 +959,9 @@
     <p class="dim small searching-note">
       {#if gs.recovering}
         💫 You're recovering from a knockout. Hunting resumes when you're steady.
+      {:else if gs.activity && canHunt && restingForFight(gs)}
+        🛌 Resting before the next fight: HP {Math.floor(hpFraction(gs, view.stats) * 100)}% of
+        {Math.round(restTarget(huntRest(gs)) * 100)}%.
       {:else if cleared}
         🏞️ {spot.name} is cleared — nothing left here wants to fight.
       {:else if nobodyLeft}
@@ -956,6 +977,34 @@
       {/if}
     </p>
   {/if}
+  <!-- The player's own rule between fights (systems/huntrest.ts). Applies to
+       hunts only: forced fights and the keeper's dare start regardless. -->
+  <div class="hunt-rest small">
+    <label>
+      Rest before the next fight when HP is below
+      <select
+        value={String(huntRest(gs).at)}
+        onchange={(e) => game.setHuntRest(Number(e.currentTarget.value), huntRest(gs).toFull)}
+      >
+        <option value="0">off</option>
+        {#each [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9] as v (v)}
+          <option value={String(v)}>{Math.round(v * 100)}%</option>
+        {/each}
+      </select>
+    </label>
+    {#if huntRest(gs).at > 0}
+      <label>
+        until
+        <select
+          value={huntRest(gs).toFull ? 'full' : 'at'}
+          onchange={(e) => game.setHuntRest(huntRest(gs).at, e.currentTarget.value === 'full')}
+        >
+          <option value="full">full HP</option>
+          <option value="at">the threshold</option>
+        </select>
+      </label>
+    {/if}
+  </div>
 </div>
 
 <!-- Fight feed — persists between encounters. Every line carrying a damage
@@ -1094,6 +1143,15 @@
 </div>
 
 <style>
+  .hunt-rest {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
   .notebook {
     list-style: none;
     margin: 0 0 10px;

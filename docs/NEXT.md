@@ -17,6 +17,79 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **Alpha slice narrowed; stats grouped (2026-10-17, save v55).**
+  - Locked: martial planner (`martial`), kitchen side-benches (`prep`), runes
+    (now ride `runecarving`). Details: plans/alpha-scope-locks.md.
+  - Sidebar: Combat Stats are four click-to-open groups with one summary each.
+    Offense = rough weapon DPS + crit. Defense = expected damage from a
+    20-damage physical hit (dodge, parry, armor, resistance, ward). Growth =
+    XP multipliers. Fortune & pace = loot, gold, travel, craft. Resistances
+    moved into Defense. Math: src/ui/lib/statSummary.ts.
+  - Open: v54 collision with `claude/kind-tesla-7sqw30`.
+
+- **Bred cage slimes, rest-before-fighting, recipe cards (2026-10-17, no save
+  migration).** User's answers to the playtest:
+  - **Bred slimes.** The Cages' slimes are bred with no armour or
+    resistances (`cage_slime`; the dare slime too, retuned to level 16, where
+    every tutorial pick wins 9–12 of 24). Rusty-sword first-visit knockouts
+    fell from 16/30 to 2/24.
+  - **Rest before fighting.** A player setting on the Combat tab (`huntRest`,
+    systems/huntrest.ts): below an HP share, a hunt rests in place at the rest
+    rate before its next fight, to full or to the threshold. It is off by
+    default and gates spawning only.
+  - **Recipe cards.** Bench outcomes can require a learned recipe; cards teach
+    them (CONTENT_GUIDE §"Recipe cards"). The chef sells Herb-Rubbed Meat
+    (works with the Warden's crate) and Fish and Onion Pot. Reading in the
+    Reading Hall drops Lectory Porridge about once in 1,250 reps
+    (`ActivityDef.drops`, drought-protected).
+  - **Then: one rare find per district** (user-approved list; CONTENT_GUIDE
+    §"The rare finds, for maintainers"). They are unmarked on purpose. The
+    votive token's first copy gives a standing +2 to every god (now and when
+    met). Later copies give floating favor you place on the Divine tab, each
+    twice as rare as the last. The Assize find earns the hidden title Friend of
+    the Court. The bronze recipes are secret until the Smith's Pattern is
+    studied. The Alembics gained the job Wash Out the Retorts, because the
+    district had no cycle activity to roll on.
+
+- **Quest 2 playtested from a fresh save (2026-10-17, no save change)** —
+  see the playtest section of
+  [plans/alpha-threshold-quests.md](plans/alpha-threshold-quests.md). It
+  completes from the Warden's crate. Fixed: the Nine Chapels now hold a
+  spellcrafting table (the miracle line pointed there); benches count two
+  slots of one grade against one stack; the spell table refuses a repeat
+  sentence in its preview and warns when a spell outcosts the mana pool; the
+  map card's bench rows queue "On arrival" once a walk has started. Then, on
+  the user's answer: the Cages keeper heals beginners between bouts and holds
+  play every 8 wins on a dare (the Suspiciously Large Slime). Held time is
+  banked as bonus time. Beating the slime earns the hidden title David and
+  Goslimath (new stat `vsLarger`). See CONTENT_GUIDE §"Training spots".
+
+- **Floors 2 and 3 get a second verb (2026-10-17, no save change)** — see
+  [plans/alpha-band-one-floors.md](plans/alpha-band-one-floors.md). The
+  sluice wheel drains the cistern (weaker table + a surprised back door), the
+  queen comes out for three burned egg sacs instead of a 30% roll, and the
+  gallery is four fights instead of six. Floor-3 knockouts per climb halved
+  (about 6 → 3). Also from the same playthrough: tile-map exit labels are
+  legible, the tutorial names the ❓ pins, and coinless kills drop "+0 gold".
+
+- **John, and band 1 retuned around him (2026-10-10, no save change).**
+  COMPLETABILITY §8's floor-build driver now exists for band 1
+  (`tests/john.ts`; `npm run pacing` prints the table; `tests/john.test.ts`
+  holds the bounds). What he measured, and the retune, are on
+  [plans/alpha-band-one-floors.md](plans/alpha-band-one-floors.md): floor 3
+  was 14–110 knockouts and up to two hours, ending on 6k–90k gold; band 1 is
+  now 13–19 minutes for every build. The toll collector became a real fight,
+  the gallery a brood that opens the den, the queen solitary with venom under
+  the rot cap, and floors 2 and 3 hand over their own answers on the explore
+  track (a club, a spear). Numbers stay the user's to retune.
+
+- **Flooded first floor (2026-09-17)** — see [FLOODED_FLOOR.md](FLOODED_FLOOR.md).
+  Supersedes the old toll hall keeper content: finite vermin section, repeatable
+  searches with capped rewards, key-item daybook, explored office key, 3×3
+  room-sequence directory, and a submerged collector with three spell reactions.
+  Spell-free victory awards a secret title. The existing floor/quest clear
+  counter is retained; no save migration or global skill-XP change.
+
 - **Shops (2026-09-12, no save change) — `systems/shops.ts`, CONTENT_GUIDE §4
   "NPC + quest" → Shop.** A vendor is an NPC with `shop.lines`; stock is
   data, prices derive from `value` × `BUY_MARKUP` (2), strangers pay
@@ -135,8 +208,8 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 **First real consumers landed 2026-09-06** — band 1 of the tower uses a
 `forced` spot (the Broken Cistern), two `once` bosses (the toll collector,
 the brood queen) and a `fightLimit` budget that doubles as a floor clear.
-Approaches and encounter `requires` still have no consumer; the Malgeri stubs
-remain the natural place once the world reopens. Forge support:
+Approaches and encounter `requires` got their first consumers on 2026-10-17
+(the drained cistern: the dry channel's surprised arrival, the stranded table). Forge support:
 forced/fightLimit/once have inspector UI; `approach` and encounter `requires`
 are displayed and validated but edited in the data file.
 

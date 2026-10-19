@@ -32,6 +32,8 @@ export function visibleBenches(state: GameState, spot: SpotDef): string[] {
   return (spot.benches ?? []).filter((id) => {
     if (id === 'mutagens') return state.mutagens.unlocked && subsystemUnlocked(state, 'genes');
     if (id === 'runecarving') return subsystemUnlocked(state, 'runecarving');
+    // The kitchen side-benches (alpha shutter, save v55): the stove stays.
+    if (id === 'preparing' || id === 'assembling') return subsystemUnlocked(state, 'prep');
     return true;
   });
 }

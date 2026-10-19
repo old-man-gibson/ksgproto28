@@ -48,6 +48,21 @@ export const RARITY_WEIGHTS: { id: string; weight: number }[] = [
 ];
 
 export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
+  toll_collector_golem: {
+    id: 'toll_collector_golem', name: 'The Toll Collector', icon: '🗿',
+    tags: ['inorganic', 'construct', 'earth', 'large'], tier: 'basic', damageType: 'bludgeoning',
+    // Tuned 2026-10-10 against a band-1 climb (`npm run pacing`): at 4/10 and
+    // armour 4 it died in ten seconds having landed one blow, so none of the
+    // three spell reactions ever mattered. Now a 20–35 s fight that wins
+    // about one first attempt in four, and the tutorial's spell moves those
+    // odds (docs/FLOODED_FLOOR.md has the per-spell numbers).
+    group: { max: 1 }, armor: 8,
+    resistances: { slashing: 0, piercing: 0, bludgeoning: 0, heat: 0, cold: 0, lightning: 0 },
+    attrs: { str: 6, dex: 4, con: 16, int: 1, wis: 1 },
+    growth: { str: 0.35, dex: 0.15, con: 0.7 },
+    xp: 30, gold: [35, 50],
+    loot: { rolls: 1, entries: [{ kind: 'material', id: 'iron_scrap', weight: 1, qty: [2, 4] }] },
+  },
   // ---------- Verdant Frontier natives ----------
   forest_rat: {
     id: 'forest_rat',
@@ -169,10 +184,14 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     damageType: 'poison',
     inflicts: [{ id: 'poison', intensity: 1, chance: 0.35 }],
     resistances: { poison: 0.5 },
-    attrs: { str: 8, dex: 11, con: 7, int: 3, wis: 4, cha: 0 },
+    // STR 8 → 6 (2026-10-17): a won fight cost about half a band-1
+    // climber's health. Fast and evasive is the identity; DEX stays.
+    attrs: { str: 6, dex: 11, con: 7, int: 3, wis: 4, cha: 0 },
     growth: { str: 1.3, dex: 1.5, con: 1.1, int: 0.75, wis: 0.75, cha: 0.75 },
     xp: 20,
-    gold: [6, 14],
+    // Kill gold scales with level × tier, so 6–14 paid ~170 a spider on the
+    // third floor and a band-1 climb ended holding 8k–90k gold.
+    gold: [1, 3],
     loot: {
       rolls: 1,
       entries: [
@@ -209,6 +228,39 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     },
   },
 
+  // ---------- Floor 0: the tutorial's training slime ----------
+  //
+  // Training equipment shaped like a slime. `fixedDamage: 1` is the whole
+  // identity: every landed blow is exactly 1, before crit, jitter or armour,
+  // so the fight can be read while it happens. Enough HP (12 + 7 × CON,
+  // jittered) to take three to five hits from a starting sword; `armor: 0`
+  // overrides what `inorganic` would otherwise imply, and the explicit zero
+  // resistances override what `slime` would, so every starter weapon lands
+  // for its listed number. Only spawns on floor 0.
+  slime_cell: {
+    id: 'slime_cell',
+    name: 'Cell Slime',
+    icon: '🟢',
+    tags: ['inorganic', 'slime', 'small'],
+    art: 'slime_base_basic.png',
+    tier: 'basic',
+    damageType: 'bludgeoning',
+    fixedDamage: 1,
+    armor: 0,
+    resistances: { slashing: 0, piercing: 0, bludgeoning: 0 },
+    attrs: { str: 0, dex: 2, con: 1.5, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0, dex: 0.2, con: 0.3, int: 0.2, wis: 0.2, cha: 0.2 },
+    xp: 4,
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'slime_gel', weight: 50 },
+        { kind: 'gold', weight: 30, qty: [1, 3] },
+        { kind: 'nothing', weight: 20 },
+      ],
+    },
+  },
+
   // ---------- Westlands (ported from proto26) ----------
   slime_base_basic: {
     id: 'slime_base_basic',
@@ -231,6 +283,55 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
       ],
     },
   },
+  // The Cages' stock (user, 2026-10-17): slimes BRED to take the same damage
+  // from everything. Explicit zeros and no armour override what `slime` and
+  // `inorganic` imply (monsterStats.ts), so no tutorial weapon pick is a
+  // hidden coin flip here. The wild slime keeps its resistances.
+  cage_slime: {
+    id: 'cage_slime',
+    name: 'Cage-Bred Slime',
+    icon: '🟢',
+    tags: ['inorganic', 'slime', 'small'],
+    art: 'slime_base_basic.png',
+    tier: 'basic',
+    damageType: 'bludgeoning',
+    armor: 0,
+    resistances: { slashing: 0, piercing: 0, bludgeoning: 0 },
+    attrs: { str: 4, dex: 4, con: 6, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0.6, dex: 0.5, con: 0.8, int: 0.4, wis: 0.4, cha: 0.4 },
+    xp: 6,
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'slime_gel', weight: 35 },
+        { kind: 'gold', weight: 20, qty: [1, 5] },
+        { kind: 'nothing', weight: 45 },
+      ],
+    },
+  },
+  // The cage keeper's dare (SpotDef.dare on the_cages): a cage slime grown one
+  // size past the player, bred like the rest — no armour, no resistances.
+  // Spawns nowhere on its own.
+  suspiciously_large_slime: {
+    id: 'suspiciously_large_slime',
+    name: 'Suspiciously Large Slime',
+    icon: '🟢',
+    tags: ['inorganic', 'slime', 'large'],
+    art: 'slime_base_basic.png',
+    tier: 'basic',
+    damageType: 'bludgeoning',
+    armor: 0,
+    resistances: { slashing: 0, piercing: 0, bludgeoning: 0 },
+    attrs: { str: 5, dex: 3, con: 8, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0.6, dex: 0.4, con: 1.0, int: 0.4, wis: 0.4, cha: 0.4 },
+    group: { max: 1 },
+    xp: 40,
+    gold: [2, 4],
+    loot: {
+      rolls: 1,
+      entries: [{ kind: 'material', id: 'slime_gel', weight: 100, qty: [2, 4] }],
+    },
+  },
   slime_base_advanced: {
     id: 'slime_base_advanced',
     name: 'Slimer',
@@ -243,6 +344,8 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     attrs: { str: 6, dex: 5, con: 8, int: 1, wis: 1, cha: 1 },
     growth: { str: 0.7, dex: 0.6, con: 1.0, int: 0.75, wis: 0.75, cha: 0.75 },
     xp: 10,
+    // A little coin, so the second floor pays toward the third floor's gate.
+    gold: [1, 2],
     loot: {
       rolls: 1,
       entries: [
@@ -520,6 +623,8 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     attrs: { str: 4, dex: 5, con: 6, int: 1, wis: 1, cha: 1 },
     growth: { str: 0.6, dex: 0.6, con: 0.85, int: 0.4, wis: 0.4, cha: 0.4 },
     xp: 8,
+    // A little coin, so the second floor pays toward the third floor's gate.
+    gold: [1, 3],
     loot: {
       rolls: 1,
       entries: [
@@ -1382,12 +1487,20 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     id: 'giant_spider_queen',
     name: 'Giant Spider Queen',
     icon: '🕷️',
-    tier: 'legendary',
+    // Band 1's last boss, reshaped 2026-10-10 (`npm run pacing`). As a
+    // legendary with intensity-50 venom she dealt ~25 a second from the poison
+    // alone, rode along as her own escort (four queens in one fight), and cost
+    // a band-1 climber 27–110 knockouts. Now: solitary, slow and very hard to
+    // wear down. Measured one-on-one at the attributes a climber arrives with
+    // (12): an old spear wins 39 fights in 40, a rusty sword 2 — and 36 in 40
+    // four levels later. A point is the answer; time is the other one.
+    tier: 'elite',
+    group: { max: 1 },
     tags: ['living', 'vermin', 'toxic', 'huge'],
     damageType: 'poison',
-    attrs: { str: 16, dex: 18, con: 15, int: 3, wis: 4, cha: 3 },
-    growth: { str: 1.3, dex: 1.5, con: 1.1, int: 0.3, wis: 0.4, cha: 0.25 },
-    resistances: { poison: 0.5, earth: 0.35, heat: -0.4, cold: -0.2, slashing: 0.67, bludgeoning: 0.35, piercing: -0.67 },
+    attrs: { str: 4, dex: 4, con: 14, int: 3, wis: 4, cha: 3 },
+    growth: { str: 0.4, dex: 0.4, con: 2.2, int: 0.3, wis: 0.4, cha: 0.25 },
+    resistances: { poison: 0.5, earth: 0.35, heat: -0.4, cold: -0.2, slashing: 0.4, bludgeoning: 0.2, piercing: -0.5 },
     xp: 200,
     gold: [6, 14],
     loot: {
@@ -1399,8 +1512,12 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
         { kind: 'nothing', weight: 95 },
       ],
     },
+    // Below poison's escalation cap (4) on purpose: at 4 and over her second
+    // bite turns septic, and the rot (≈1.2 × intensity a second for 45 s)
+    // finished most winners on the floor AFTER she died — a spear at 16 won 7
+    // fights in 40. At 3 she is still three spiders' worth of venom.
     inflicts: [
-      { id: 'poison', intensity: 50, chance: 0.85 },
+      { id: 'poison', intensity: 3, chance: 0.6 },
     ],
   },
 });

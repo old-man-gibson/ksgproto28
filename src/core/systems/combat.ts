@@ -1,3 +1,4 @@
+import { TOLL_GOLEM, TOLL_SPELL_FLAG, noteTollSpell, reactTollGolem, rewardTollGolem } from './floodedFloor';
 import type {
   ActiveSpec,
   CombatState,
@@ -67,6 +68,8 @@ import { grantMaterial } from './disciplines';
 import { QUALITY_TIERS } from '../data/quality.data';
 import { ELEMENTAL_TYPES, SIZE_LADDER, sizeRank } from '../types';
 import { monsterSizeRank } from './bestiary';
+import { holdNextFight } from './huntrest';
+import { subsystemUnlocked } from './unlocks';
 import {
   GENE_ACTIVE,
   SPLIT_SPLASH,
@@ -801,8 +804,12 @@ export function spotCleared(state: GameState, spot: SpotDef): boolean {
 export function spawnMonster(
   state: GameState,
   spot: SpotDef,
-  /** Mint a specific monster (escorts) instead of rolling the spot table. */
-  override?: { monsterId: string; level: number },
+  /**
+   * Mint a specific monster (escorts) instead of rolling the spot table.
+   * `plain` also skips the modifier and rarity rolls — a staged fight is the
+   * one the keeper described, not a champion that happened to roll.
+   */
+  override?: { monsterId: string; level: number; plain?: boolean },
 ): MonsterInstance {
   const table = eligibleEncounters(state, spot);
   // A rare thing that lives here is a drop like any other — "I have hunted this
@@ -826,13 +833,15 @@ export function spawnMonster(
   // different keys, because they are different complaints. A boss is something
   // this SPOT is refusing to hand over; an epic is the world at large refusing,
   // since the rarity weights are global and every fight anywhere rolls them.
-  const modifier =
-    MODIFIER_TIERS[
-      mercyPick(state, modifierWeights, (e, rate) => (mercyTracked(rate) ? `mod:${spot.id}:${e.id}` : null)).id
-    ];
+  const modifier = override?.plain
+    ? MODIFIER_TIERS.normal
+    : MODIFIER_TIERS[
+        mercyPick(state, modifierWeights, (e, rate) => (mercyTracked(rate) ? `mod:${spot.id}:${e.id}` : null)).id
+      ];
   const modifierMult = rollRange(state, modifier.multiplierRange);
-  const rarity =
-    RARITIES[mercyPick(state, RARITY_WEIGHTS, (e, rate) => (mercyTracked(rate) ? `rarity:${e.id}` : null)).id];
+  const rarity = override?.plain
+    ? RARITIES.common
+    : RARITIES[mercyPick(state, RARITY_WEIGHTS, (e, rate) => (mercyTracked(rate) ? `rarity:${e.id}` : null)).id];
 
   const statMult = tierMult * modifierMult * rarity.statMult;
   const rewardMult = tier.rewardMult * modifier.rewardMult * rarity.statMult;
@@ -994,10 +1003,16 @@ export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | 
   return slots;
 }
 
-function startEncounter(state: GameState, bus: EventBus, spot: SpotDef, forced = false): void {
-  const enemies = spawnGroup(state, spot);
+function startEncounter(
+  state: GameState,
+  bus: EventBus,
+  spot: SpotDef,
+  forced = false,
+  enemies: (MonsterInstance | null)[] = spawnGroup(state, spot),
+): void {
   state.combat = {
     enemies,
+    ...(enemies.some((e) => e?.defId === TOLL_GOLEM) ? { introTicks: 30 } : {}),
     playerBar: 0,
     momentum: 0,
     position: NEUTRAL_POSITION,
@@ -1051,7 +1066,11 @@ function startEncounter(state: GameState, bus: EventBus, spot: SpotDef, forced =
   const notable = group.some((m) => m.modifier !== 'normal' || m.rarity !== 'common');
   if (notable || group.length > 1) {
     const what = group.length > 1 ? `${lead.name} and ${group.length - 1} more` : lead.name;
-    bus.emit({ type: 'log', msg: text('combat.appears', { what, level: lead.level }), kind: 'combat' });
+    bus.emit({
+      type: 'log',
+      msg: text(group.length > 1 ? 'combat.appear_group' : 'combat.appears', { what, level: lead.level }),
+      kind: 'combat',
+    });
   }
   feed(
     state,
@@ -1078,6 +1097,25 @@ export function startForcedFight(state: GameState, bus: EventBus, spot: SpotDef)
   if (state.combat || spotCleared(state, spot) || !eligibleEncounters(state, spot).length) return;
   startEncounter(state, bus, spot, true);
   bus.emit({ type: 'log', msg: text('combat.ambushed'), kind: 'danger' });
+  feed(state, `⚔️ No retreat — this fight ends on its feet or on yours.`);
+}
+
+/**
+ * One named monster, alone, and no way out: the keeper's dare
+ * (systems/training.ts). Pinned like an escort, with no rolled modifier or
+ * rarity, so the fight is the one the player was warned about.
+ */
+export function startStagedFight(
+  state: GameState,
+  bus: EventBus,
+  spot: SpotDef,
+  monsterId: string,
+  level: number,
+): void {
+  if (state.combat) abandonCombat(state);
+  const slots: (MonsterInstance | null)[] = Array(ENCOUNTER_SLOTS).fill(null);
+  slots[0] = spawnMonster(state, spot, { monsterId, level, plain: true });
+  startEncounter(state, bus, spot, true, slots);
   feed(state, `⚔️ No retreat — this fight ends on its feet or on yours.`);
 }
 
@@ -1445,7 +1483,9 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         break;
       }
       case 'rune': {
-        grantRune(state, bus, pick.id!, qty);
+        // Runes ride the runecarving shutter: while it is shut, a rune line
+        // that comes up pays nothing (every other line's odds are untouched).
+        if (subsystemUnlocked(state, 'runecarving')) grantRune(state, bus, pick.id!, qty);
         break;
       }
       case 'item': {
@@ -1479,6 +1519,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   const monster = c.enemies[index]!;
   const tags = combatTags(state);
   const spot = SPOTS[state.spot];
+  if (monster.defId === TOLL_GOLEM) rewardTollGolem(state, bus);
 
   // A `once` kill goes on the spot's record the moment it happens — not at
   // the end of the fight, so a knockout after the deed still keeps the deed.
@@ -1507,7 +1548,12 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   bus.emit({ type: 'kill', monster });
   bus.emit({
     type: 'log',
-    msg: text('combat.defeated', { name: monster.name, level: monster.level, gold }),
+    // Slimes and slime spiders carry no coin; "+0 gold" on most of the first
+    // kills a new life makes read as a fault, so a coinless kill says nothing.
+    msg:
+      gold > 0
+        ? text('combat.defeated', { name: monster.name, level: monster.level, gold })
+        : text('combat.defeated_no_gold', { name: monster.name, level: monster.level }),
     kind: 'combat',
   });
 
@@ -1523,12 +1569,15 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
     if (spot?.fightLimit) {
       bumpStat(state, bus, fightsKey(spot.id));
       if (spotCleared(state, spot)) {
+        if (spot.id === 'f1_storerooms') bus.emit({ type: 'log', kind: 'explore', msg: 'The remaining vermin scurry beneath a fallen shelf. Their retreat reveals a passage to the records rooms.' });
         bus.emit({ type: 'log', msg: text('combat.spot_cleared', { spot: spot.name }), kind: 'combat' });
       }
     }
+    const forcedWin = !!c.forced;
     closeCombat(state);
     endFight(state, 'won');
     state.respawnTimer = RESPAWN_DELAY;
+    if (spot) bus.emit({ type: 'fight:won', spot: spot.id, forced: forcedWin });
     return;
   }
   if (index === 0) {
@@ -1890,6 +1939,9 @@ function castCraftedSelf(
   prepaid = false,
 ): boolean {
   const c = state.combat!;
+  // Any working that lands in the toll office counts against the spell-free
+  // title, a counterspell's prepaid payload included.
+  noteTollSpell(state, bus);
   if (!prepaid) {
     spendResource(state, 'mana', spec.manaCost * stats.manaEff);
     // A psionic working is paid for out of the mind's own pool, not the arcane
@@ -2788,6 +2840,7 @@ export function castCraftedAttack(
   opts: CastOptions = {},
 ): boolean {
   const c = state.combat!;
+  noteTollSpell(state, bus);
   const stats = getDerivedStats(state);
   if (!opts.spring) {
     /*
@@ -2953,6 +3006,11 @@ export function castCraftedAttack(
         total += landed.dealt;
         if (landed.dealt > 0) {
           landedAny = true;
+          const reacted = reactTollGolem(state, target, type);
+          if (reacted && h === 0) feed(state, type === 'heat'
+            ? '♨️ Water bursts into steam. The collector stamps blindly through the cloud.'
+            : type === 'cold' ? '🧊 Ice locks the collector in place and prises its armor apart.'
+            : '⚡ The collector stamps faster. Each stroke tears through its own mechanism.');
           for (const app of strike.inflicts ?? []) applyStatus(state, target, app, spec.name);
         }
       }
@@ -3439,11 +3497,20 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // A cleared spot spawns nothing, and neither does a table whose every
     // line is gated or already slain — the hunt simply finds no one.
     if (spotCleared(state, spot) || !eligibleEncounters(state, spot).length) return;
+    // The player's own rule: below the threshold, rest before the next one.
+    if (holdNextFight(state, bus)) return;
     startEncounter(state, bus, spot);
     return;
   }
 
   const c = state.combat;
+
+  if (c.introTicks && c.introTicks > 0) {
+    if (c.introTicks === 30 || c.introTicks === 20) feed(state, '“Please provide documents.”');
+    if (c.introTicks === 10) feed(state, '“Procedural flow is being impaired. Removing interrupting entity.”');
+    c.introTicks -= 1;
+    return;
+  }
 
   for (const id of Object.keys(c.cooldowns)) {
     if (c.cooldowns[id] > 0) c.cooldowns[id] -= 1;
@@ -3793,8 +3860,10 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         // weight is slow to gather it again.
         if (spec.selfDelay) c.playerBar = Math.max(0, c.playerBar - spec.selfDelay);
       } else if (skillActive && skillActive.spec.type === 'spell') {
+        noteTollSpell(state, bus);
         dmg = vs.spellPower * skillActive.spec.power;
         dmgType = skillActive.spec.damageType ?? 'arcane';
+        reactTollGolem(state, monster, dmgType);
         isWeaponHit = false;
         label = `${SKILLS[skillActive.id].icon} ${SKILLS[skillActive.id].name} scorches`;
         hitLabel = hitSource = SKILLS[skillActive.id].name;
@@ -3880,6 +3949,9 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       const smallerBy = stepsSmaller(state, monster.defId);
       const bully = 1 + vs.vsSmaller * smallerBy;
       if (bully !== 1) steps.push({ label: 'Looming over it', mult: bully });
+      // Being the SMALLER thing, for a body built for it (`vsLarger`).
+      const underdog = 1 + vs.vsLarger * stepsLarger(state, monster.defId);
+      if (underdog !== 1) steps.push({ label: 'Under its guard', mult: underdog });
       // …and the same gap read from ITS side. A thing far above you struggles
       // to be reached by you, exactly as the mirror rule already did to your
       // blows from something small. Floored at zero — never a heal.
@@ -3887,7 +3959,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       const looming = Math.max(0, 1 - theirs.fromSmaller * stepsLarger(state, monster.defId));
       if (looming !== 1) steps.push({ label: 'It looms over you', mult: looming });
       for (let h = 0; h < hits; h++) {
-        let hit = swing * bully * looming;
+        let hit = swing * bully * underdog * looming;
         // A named crit is not luck, so it neither pays the ledger nor is paid
         // by it — it skips the roll entirely (see PLAYER_CRIT).
         const crit = forced ? true : procChance(state, PLAYER_CRIT, vs.crit);
@@ -4353,6 +4425,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // the specimen rather than the player, so a genome that looms works for
     // whoever is wearing it (docs/plans/monster-stat-parity.md).
     const bully = 1 + es.vsSmaller * stepsLarger(state, e.defId);
+    // …and its `vsLarger`, when the player is the bigger one.
+    const underdog = 1 + es.vsLarger * stepsSmaller(state, e.defId);
     // A counter form gets between you and the blow: it comes off BEFORE armor,
     // so what the reflex took and what the harness took are one block, and a
     // `preventedMult` on the same move answers with all of it.
@@ -4397,10 +4471,23 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         critMult *
         looming *
         bully *
+        underdog *
         (0.9 + rand(state) * 0.2);
       thrown += one;
       const raw = counter ? one * (1 - counter.move.counter!.reduce) : one;
       const slice = incomingSlice(stats, type, e.name, raw, braced, ranged);
+      // Training equipment (MonsterDef.fixedDamage): the number that reaches
+      // the bar is pinned, whatever the roll, the armour or the counter did.
+      const fixed = MONSTERS[e.defId]?.fixedDamage;
+      if (fixed !== undefined) {
+        slice.raw = fixed;
+        slice.armor = 0;
+        slice.resisted = 0;
+        slice.dealt = fixed;
+        addSlice(slices, slice);
+        dmg += fixed;
+        continue;
+      }
       addSlice(slices, slice);
       dmg += Math.max(1, Math.round(slice.dealt * bite));
     }
@@ -4518,6 +4605,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
  * what you actually walk away carrying rather than what the fight was holding.
  */
 function closeCombat(state: GameState): void {
+  delete state.stats[TOLL_SPELL_FLAG];
   recoverGroundedWeapon(state);
   // A working held at the edge of release does not survive the fight it was
   // being held for. Its mana was spent when it was taken up; that is the cost.

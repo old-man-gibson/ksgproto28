@@ -21,7 +21,13 @@ export type PatchOp =
   | { op: 'add'; kind: string; key: string; value: unknown }
   | { op: 'rename'; kind: string; from: string; to: string }
   | { op: 'reorder'; kind: string; key: string; anchor: string; before: boolean }
-  | { op: 'note'; kind: string; key: string; marker: NoteMarker; text: string | null };
+  | { op: 'note'; kind: string; key: string; marker: NoteMarker; text: string | null }
+  /** A region's drawn map, written whole to `<region>.map.json`; `null` deletes it. */
+  | { op: 'tilemap'; region: string; map: TileMapDef | null };
+
+export type { TileMapDef } from '../../src/ui/lib/tilemaps/types';
+export type { PackInfo, SheetInfo, ExampleInfo } from '../server/tilemaps';
+export type { TmxMap, TmxTileset, TmxLayer } from '../server/tmx';
 
 export interface DiffLine {
   kind: 'ctx' | 'add' | 'del';
@@ -40,6 +46,10 @@ export interface FileChange {
   hunks: Hunk[];
   stat: { added: number; removed: number };
   unchanged: boolean;
+  /** The file is deleted by this write (a drawn map dropped). */
+  removed?: boolean;
+  /** The file does not exist yet (a region's first drawn map). */
+  created?: boolean;
 }
 
 export interface PatchResult {
@@ -78,4 +88,13 @@ export const api = {
   verify: () => call<VerifyResult>('/verify', {}),
   backups: () => call<{ backups: string[] }>('/backups'),
   restore: (backup: string, file: string) => call<{ ok: boolean }>('/restore', { backup, file }),
+  tiles: {
+    packs: () => call<{ packs: PackInfo[] }>('/tiles/packs'),
+    tmx: (dir: string, path: string) => call<{ map: TmxMap }>('/tiles/tmx', { dir, path }),
+    maps: () => call<{ maps: Record<string, TileMapDef> }>('/tiles/maps'),
+  },
 };
+
+import type { TileMapDef } from '../../src/ui/lib/tilemaps/types';
+import type { PackInfo } from '../server/tilemaps';
+import type { TmxMap } from '../server/tmx';

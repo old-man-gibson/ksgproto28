@@ -67,8 +67,8 @@ export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
     name: 'The First Ascent',
     giver: 'warden_of_the_foot',
     requirements: [{ type: 'quest', id: 'a_taste_of_everything' }],
-    // The same latch the floor's clear reads: any keeper pays it — the day
-    // hobgoblin, the night slime, or the ambush the player planned into.
+    // The collector pays the existing floor-clear latch when it yields the
+    // toll stamp. Older saves that already cleared this floor still count.
     objectives: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1, }],
     rewards: { gold: 350, favor: 1 },
   },

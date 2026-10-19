@@ -85,6 +85,18 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'mushroom_broth.desc': 'Drink: Clear-Headed ×1 for 8 minutes (+8% spell power, +5% skill XP, slow mana restore).',
 
+  'herb_rubbed_meat.desc': 'Eat: restores 15% of max HP at once, then Well Fed ×1. Learned dish: any meat + any herb on the Cooking Stove.',
+  'fish_onion_pot.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.75. Learned dish: any fish + any vegetable on the Cooking Stove.',
+  'lectory_porridge.desc': 'Eat: Clear Headed ×1.5 (spell power, skill XP, slow mana restore) and Well Fed ×0.5. Learned dish: any grain + any sweet ingredient on the Cooking Stove.',
+  'recipe_herb_rubbed_meat.desc': 'Read to learn Herb-Rubbed Meat: any meat + any herb on the Cooking Stove. Consumed when read. Sold at the Larder Door.',
+  'recipe_fish_onion_pot.desc': 'Read to learn Fish and Onion Pot: any fish + any vegetable on the Cooking Stove. Consumed when read. Sold at the Larder Door.',
+  'recipe_lectory_porridge.desc': 'Read to learn Lectory Porridge: any grain + any sweet ingredient (flour and honey) on the Cooking Stove. Consumed when read. Found only while reading in the Reading Hall.',
+  'word_slip_stone.desc': 'Read to learn the arcane word stone, outside the starting lexicon. Castable once Arcana reaches its level. Consumed when read.',
+  'votive_token.desc': 'Offer for favor. The first token offered gives +2 favor with every god you know and +2 starting favor with any god you meet later. Each later token gives 1 unassigned favor, placed on a god of your choice on the Divine tab.',
+  'drill_manual_riposte.desc': 'Study to learn Riposte in canonical form, or to perfect a rough one. Consumed when studied.',
+  'chancery_price_seal.desc': 'Register for a standing 10% discount at every counter in Threshold, never below what an item resells for. Consumed when registered.',
+  'unclaimed_case_file.desc': 'An Assize case file nobody collected. Read it. Consumed when read.',
+  "smiths_pattern_bronze.desc": "Study to add the copper, tin and bronze ingots and the bronze dagger to the Forges' recipes. Consumed when studied.",
   'travelers_ration.desc': 'Eat: Well Fed ×0.5.',
 
   'feast_platter.desc': 'Eat: restores 25% of max HP at once, plus Well Fed ×2 and Steady Hand ×1.5.',

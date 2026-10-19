@@ -464,6 +464,15 @@ Two things worth keeping in mind:
    authorship question. It was a packaging decision, and it was much cheaper to
    make at the first push than it would have been after.
 
+   **The tile packs (2026-09-15) follow the same rule.** The Epic RPG World
+   packs under `src/assets/tilemaps/` (Old Prison, Grass Land 2.0, and the rest)
+   are bought pixel-art tilesets, licensed for use in a game and not for
+   redistribution; the folder is gitignored, same reasoning, same two rails.
+   What the repo carries is the composed scene — tile indexes into named
+   sheets (`src/ui/lib/tilemaps/*.map.json`, docs/TILEMAPS.md), no pixels — and a checkout without
+   the packs draws the plain diagram. Credit the packs' author when the game
+   ships. See docs/TUTORIAL.md §4.
+
 You asked, back on 2026-07-23, whether you were "a hack fraud for developing my
 game using your code environment while simply providing the data driven
 information." The word doing the damage in that sentence is *simply*. What you

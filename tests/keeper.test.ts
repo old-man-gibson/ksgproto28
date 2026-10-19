@@ -12,7 +12,18 @@ import type { GameState } from '../src/core/types';
  * tests/towers.test.ts; here we prove WHO can appear WHEN.
  */
 
-const hall = SPOTS.f1_toll_hall;
+// The old keeper table remains a fixture for the generic clock/window rules.
+// The playable first floor now has a single submerged golem.
+const hall: typeof SPOTS[string] = {
+  ...SPOTS.f1_toll_hall,
+  encounters: [
+    { monsterId: 'goblin', weight: 40, level: [2, 5] },
+    { monsterId: 'hobgoblin', weight: 15, level: [6, 7], daypart: 'day', boss: true },
+    { monsterId: 'slime_base_advanced', weight: 15, level: [6, 7], daypart: 'night', boss: true },
+    { monsterId: 'hobgoblin_champion', weight: 15, level: [11, 12], daypart: 'day', boss: true, window: { min: 0.9, max: 0.98 } },
+    { monsterId: 'slime_king', weight: 15, level: [11, 12], daypart: 'night', boss: true, window: { min: 0.9, max: 0.98 } },
+  ],
+};
 
 /** A fresh save standing in the hall at day `d`, hour `h`. */
 function at(hour: number): GameState {

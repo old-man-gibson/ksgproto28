@@ -297,6 +297,8 @@ function baseStats(attr: (id: AttributeId) => number): DerivedStats {
     // nothing at all against your equals, and nothing against anything bigger.
     vsSmaller: 0,
     fromSmaller: 0,
+    // The mirror, read upward only: nothing against your equals or smaller.
+    vsLarger: 0,
     // Nothing back by default: a miss is ordinarily just a miss.
     missRefund: 0,
     // Only a body that knits itself has anything to douse.
@@ -701,6 +703,7 @@ export const BASE_FORMULA_TEXT: Record<StatKey, string> = {
   graze: '0 (share of a swing that lands anyway when it misses)',
   vsSmaller: '0 (added damage per size step the target is below you)',
   fromSmaller: '0 (damage reduction per size step the attacker is below you)',
+  vsLarger: '0 (added damage per size step the target is above you)',
   maxHp: '40 + 10 × CON',
   hpRegen: '1% of Max HP + 0.01 × CON /s',
   damage: '2 + 1.2 × STR',

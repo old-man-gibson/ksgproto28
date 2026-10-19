@@ -1,4 +1,4 @@
-import type { GameState, Loadout, SkillTrigger, TriggerCondition } from './types';
+import type { GameState, Loadout, SkillTrigger, TriggerCondition, TutorialWeapon } from './types';
 import { activeRotation } from './systems/combat';
 import { EventBus } from './engine/events';
 import { TPS } from './engine/loop';
@@ -7,7 +7,16 @@ import { registerSuperAttrListeners } from './systems/superattrs';
 import { acceptQuest, registerQuestListeners, talkTo, turnInQuest } from './systems/quests';
 import { buy } from './systems/shops';
 import { registerTitleListeners, setTitle } from './systems/titles';
+import {
+  chooseTutorialSpell,
+  chooseTutorialWeapon,
+  confirmTutorialStance,
+  registerTutorialListeners,
+  skipTutorial,
+} from './systems/tutorial';
 import { registerBestiaryListeners } from './systems/bestiary';
+import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
+import { setHuntRest } from './systems/huntrest';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
   socketRune,
@@ -43,7 +52,7 @@ import {
   shapePsionic,
 } from './systems/spellcraft';
 import { forgetPsiShape, memorizePsiShape } from './systems/psionic';
-import { learnMiracle } from './systems/divine';
+import { assignFloatingFavor, learnMiracle } from './systems/divine';
 import { chooseFork, toggleDrill, toggleSheathe } from './systems/martial';
 import { TECHNIQUES } from './data/martial.data';
 import type { Placement } from './systems/disciplines';
@@ -58,7 +67,7 @@ import {
   setJourneyIntent,
 } from './systems/locations';
 import { climbTo } from './systems/towers';
-import { accrueBonusTime, setBonusSpending, spendsBonusTick } from './systems/bonustime';
+import { accrueBonusTime, bankTick, setBonusSpending, spendsBonusTick } from './systems/bonustime';
 import {
   canEquip,
   equipItem,
@@ -129,6 +138,10 @@ export class Game {
     registerMutagenListeners(state, this.bus);
     // Titles last: their checks read counters the earlier listeners bump.
     registerTitleListeners(state, this.bus);
+    // The tutorial only watches arrivals at the Foot (its exit).
+    registerTutorialListeners(state, this.bus);
+    // Training spots heal and dare off a won fight (systems/training.ts).
+    registerTrainingListeners(state, this.bus);
     this.bus.on('log', (ev) => {
       if (this.suppressLog) return;
       appendLog(this.state, {
@@ -148,6 +161,13 @@ export class Game {
    */
   tick(): void {
     if (this.state.paused) return;
+    // A question the game is waiting on (the keeper's dare) holds the world.
+    // The wall time spent deciding is banked as bonus time, not lost — which
+    // is also what happens when the question lands while the player is away.
+    if (dareHolds(this.state)) {
+      bankTick(this.state);
+      return;
+    }
     this.advance();
     // Banked idle time, spent as a second tick. A whole extra advance, clock
     // included: double speed means the world runs double, not just the bar.
@@ -169,8 +189,12 @@ export class Game {
     for (const def of RESOURCE_LIST) this.lastLocks[def.id] = resourceLock(this.state, def.id);
   }
 
-  /** One tick, unconditionally. The pause check lives in `tick()`. */
+  /**
+   * One tick. The pause check lives in `tick()`; a held dare stops this too, so
+   * the step buttons cannot walk past the question (or bank time doing it).
+   */
   private advance(): void {
+    if (dareHolds(this.state)) return;
     this.state.totalTicks += 1;
     // Idleness is judged before anything moves, so the tick that starts or
     // ends work is not banked as time spent doing nothing.
@@ -470,6 +494,21 @@ export class Game {
     return learnMiracle(this.state, this.bus, miracleId);
   }
 
+  /** Place one unassigned favor (later votive tokens) with a known god. */
+  assignFloatingFavor(deityId: string) {
+    return assignFloatingFavor(this.state, this.bus, deityId);
+  }
+
+  /** Rest before the next fight below `at` (share of max HP, 0 = off), to full or to `at`. */
+  setHuntRest(at: number, toFull: boolean) {
+    setHuntRest(this.state, at, toFull);
+  }
+
+  /** Answer the keeper's waiting dare: fight it (true) or pass (false). */
+  answerDare(accept: boolean) {
+    return answerDare(this.state, this.bus, accept);
+  }
+
   /** Shape a psionic working from force/reach/grip points. */
   shapePsionic(shape: PsionicShape) {
     return shapePsionic(this.state, this.bus, shape);
@@ -536,6 +575,29 @@ export class Game {
         : text('game.exerting_off'),
       kind: 'combat',
     });
+  }
+
+  // ---------- The tutorial (floor 0) ----------
+
+  /** The rack in the holding cell: one weapon, a shield beside a one-handed pick. Once per life. */
+  chooseTutorialWeapon(weapon: TutorialWeapon, shield = false): boolean {
+    return chooseTutorialWeapon(this.state, this.bus, weapon, shield);
+  }
+
+  /** Set the stance through the real control, then stamp the tutorial's step. */
+  chooseTutorialStance(styleId: string): boolean {
+    this.setStyle(styleId);
+    return confirmTutorialStance(this.state, this.bus);
+  }
+
+  /** One word into the grimoire, prepared, with the Intelligence to cast it. Once per life. */
+  chooseTutorialSpell(word: string): boolean {
+    return chooseTutorialSpell(this.state, this.bus, word);
+  }
+
+  /** End the tutorial now: defaults for every choice not made, and the Foot. */
+  skipTutorial(): boolean {
+    return skipTutorial(this.state, this.bus);
   }
 
   // ---------- Active-skill rotation & triggers ----------

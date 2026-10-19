@@ -73,6 +73,7 @@ export const LOG_TEXT = {
   'combat.knocked_out_forced': '💫 {name} knocks you out.',
   'combat.knocked_out': '💫 {name} knocks you out. Recovering.',
   'combat.appears': '⚠️ {what} (Lv {level}) appears!',
+  'combat.appear_group': '⚠️ {what} (Lv {level}) appear!',
   'combat.ambushed': '⚔️ Ambushed. No escape from this fight.',
   'combat.scavenged_gold': '🪙 Scavenged {gold} gold.',
   'combat.loot_material': '📦 {icon} {name}{grade} ×{qty}',
@@ -80,6 +81,7 @@ export const LOG_TEXT = {
   'combat.unique_slain': '🏆 {name} slain. It will not return.',
   'combat.keeper_slain': '👑 Keeper of {spot} slain.',
   'combat.defeated': '☠️ Defeated {name} (Lv {level}): +{gold} gold',
+  'combat.defeated_no_gold': '☠️ Defeated {name} (Lv {level}).',
   'combat.spot_cleared': '🏞️ {spot} cleared. No encounters remain.',
   'combat.weapon_dropped': '⚡ Grip lost. {name} dropped.',
 
@@ -87,6 +89,15 @@ export const LOG_TEXT = {
   'consumables.reason.not_usable': 'Not usable',
   'consumables.reason.none_held': 'None held',
   'consumables.reason.cooldown': 'Ready in {seconds}s',
+  'consumables.reason.recipe_known': 'Recipe already known',
+  'consumables.reason.card_spent': 'Already done',
+  'consumables.word_learned': '📝 Word learned: {word}. It is on the Spellcrafting Table (castable once Arcana reaches its level).',
+  'consumables.technique_learned': '📘 Technique learned: {name} (canonical form).',
+  'consumables.card_used': '{icon} {verb}: {name}.',
+  'consumables.votive_first': '🕯️ Votive token offered. Gods you meet later start with +{amount} favor too.',
+  'consumables.votive_floating': '🕯️ Votive token offered: +1 unassigned favor. Place it on a god of your choice on the Divine tab.',
+  'divine.favor_assigned': '🕊️ 1 unassigned favor placed with {deity}.',
+  'consumables.recipe_learned': '📜 Recipe learned: {name}. It is listed on the bench that cooks it.',
   'consumables.used': '{icon} {verb} {grade} {name}.',
 
   // ---------- cooking ----------
@@ -100,6 +111,22 @@ export const LOG_TEXT = {
   'disciplines.reason.slot_empty': '{slot} is empty',
   'disciplines.reason.wrong_slot': '{name} does not belong in {slot}',
   'disciplines.reason.no_stock_at_grade': 'You have no {name} of that grade',
+  // ---------- activitydrops (systems/activitydrops.ts) ----------
+  'activitydrops.found': '🎁 Rare find ({activity}): {icon} {name}.',
+
+  // ---------- huntrest (systems/huntrest.ts) ----------
+  'huntrest.resting': '🛌 HP {hp}%, below your {at}% threshold: resting before the next fight, until {to}%.',
+  'huntrest.done': '⚔️ Rested. The hunt goes on.',
+  'huntrest.stuck': '⚔️ HP is not recovering (a condition blocks it). The hunt goes on without resting.',
+
+  // ---------- training (systems/training.ts) ----------
+  'training.patched_first': '🩹 Cage keeper: "Hey kid, here. Train safely." HP full; bleeds and poisons cleared. The keeper does this after every win here while your six attributes total {cap} or less.',
+  'training.patched': '🩹 The cage keeper patches you up: HP full.',
+  'training.dare_held': '⏸️ The cage keeper stops the cages: a {name} is up. Play is held until you answer; the time is banked as bonus time.',
+  'training.dare_taken': '⚔️ You step in with the {name}. No fleeing, and no patching up until it is over.',
+  'training.dare_declined': 'You pass on the {name}. The cages carry on; the keeper asks again after {every} more wins.',
+
+  'disciplines.reason.short_at_grade': 'You have {held} {name} of that grade; this layout uses {need}',
   'disciplines.reason.slot_locked': 'Slot locked',
   'disciplines.reason.no_outcome': 'No recipe matches these inputs',
 
@@ -136,10 +163,10 @@ export const LOG_TEXT = {
 
   // ---------- locations ----------
   'locations.heading': '🥾 Heading to {name}{via}...',
-  'locations.via': ' via {label}',
+  'locations.via': ' ({label})',
   'locations.setting_out': '🗺️ Setting out for {icon} {name}{legs}...',
   'locations.legs': ' ({legs} legs)',
-  'locations.unknown_place': 'Unknown place',
+  'locations.unknown_place': 'an undiscovered place',
   'locations.blocked': '🔒 Path locked.',
   'locations.discovered': '📍 Discovered: {icon} {name}',
   'locations.arrived': 'You arrive at {name}.',
@@ -259,7 +286,7 @@ export const LOG_TEXT = {
   'spellcraft.reason.not_enough_focus': 'Not enough focus',
   'spellcraft.prepared_cap': '🔒 Prepared spell limit is {cap}.',
   'spellcraft.prepare_conflict': '⚡ {conflict}',
-  'spellcraft.already_inscribed': '🔒 Sentence already in the grimoire.',
+  'spellcraft.reason.already_inscribed': 'Already in your grimoire. Change or add a word to inscribe a new spell',
   'spellcraft.inscribed': '{icon} Inscribed: {name}',
   'spellcraft.already_shaped': '🔒 Shape already held.',
   'spellcraft.recognition_locked': '🔒 Shape matches {recognition}, which needs a teacher.',
@@ -274,4 +301,12 @@ export const LOG_TEXT = {
 
   // ---------- towers ----------
   'towers.moving': '🗼 {verb} to {icon} {name}...',
+
+  // ---------- tutorial ----------
+  'tutorial.armed': '🎒 Taken from the rack and equipped: {list}.',
+  'tutorial.unarmed': '👊 Nothing taken from the rack. Fighting unarmed.',
+  'tutorial.stance': '🥋 Stance set: {icon} {name}. Change it on the Combat tab at any time.',
+  'tutorial.spell': '📖 "{word}" written into your grimoire and prepared. Intelligence 2: mana pool 2.',
+  'tutorial.skipped': '⏭️ Tutorial skipped. You stand at {icon} {name}.',
+  'tutorial.done': '✅ Tutorial complete. Its panels are on the Quests tab under Guide.',
 } as const;

@@ -1,3 +1,4 @@
+import { KEY_ITEMS } from '../../core/data/keyitems.data';
 import type {
   ActivityFactor,
   DamageReport,
@@ -156,6 +157,7 @@ export function condText(cond: UnlockCondition): string {
     case 'equippedTag':
       return `${cond.tag} equipped`;
     case 'stat':
+      if (cond.key.startsWith('flag:key_item:')) return `find ${KEY_ITEMS[cond.key.slice('flag:key_item:'.length)]?.name ?? 'the key item'}`;
       // The hold's door (locations.data.ts, the Foot). Prestige is unbuilt;
       // the door still has to say what opens it rather than print a counter.
       if (cond.key === 'prestige:count') {
