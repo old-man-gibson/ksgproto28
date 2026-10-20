@@ -38,7 +38,7 @@ export const AREAS: Record<string, AreaDef> = {
   // construction, and its door (ascent_foot → base_entrance) is the single
   // gate the prestige system will lift. `FloorDef.personal` / `.persists`
   // remain the declarations prestige must honour when it lands.
-  player_base_v1_area: { id: 'player_base_v1_area', name: 'Your Hold', regionId: 'the_hold' },
+  player_base_v1_area: { id: 'player_base_v1_area', name: 'Your Hold', regionId: 'the_hold', scene: 'hall' },
   // Threshold's eight districts. Each one has a SIGNATURE subsystem rather
   // than a monopoly on it — the Ironyard is where martial training is best
   // supported, not the only place a blade is welcome. Keeping them signatures
@@ -60,10 +60,10 @@ export const AREAS: Record<string, AreaDef> = {
   // boundary (linted, both layers) — the ladder is the only way on or off a
   // banded floor, which is what keeps every gate readable at one door.
   // Floor 0: off the ladder, closed behind the player by a one-way gate.
-  ascent_f0_area: { id: 'ascent_f0_area', name: 'The Holding Level', regionId: 'holding_level' },
-  ascent_f1_area: { id: 'ascent_f1_area', name: 'The Flooded Offices', regionId: 'the_ascent' },
-  ascent_f2_area: { id: 'ascent_f2_area', name: 'The Flooded Stair', regionId: 'the_ascent' },
-  ascent_f3_area: { id: 'ascent_f3_area', name: 'The Silk Gallery', regionId: 'the_ascent' },
+  ascent_f0_area: { id: 'ascent_f0_area', name: 'The Holding Level', regionId: 'holding_level', scene: 'hall' },
+  ascent_f1_area: { id: 'ascent_f1_area', name: 'The Flooded Offices', regionId: 'the_ascent', scene: 'hall' },
+  ascent_f2_area: { id: 'ascent_f2_area', name: 'The Flooded Stair', regionId: 'the_ascent', scene: 'cistern' },
+  ascent_f3_area: { id: 'ascent_f3_area', name: 'The Silk Gallery', regionId: 'the_ascent', scene: 'webs' },
 };
 
 /**

@@ -33,6 +33,14 @@ describe('region map after tower travel', () => {
     expect(nodes.every((n) => n.spot.areaId === 'ascent_f1_area')).toBe(true);
   });
 
+  it('draws the floor a tab picks instead of the one underfoot', () => {
+    const state = createInitialState(1, 'f1_landing');
+    state.discovered = Object.keys(SPOTS);
+    const nodes = mapNodes(state, 'the_ascent', 'ascent_f3_area');
+    expect(nodes.length).toBeGreaterThan(0);
+    expect(nodes.every((n) => n.spot.areaId === 'ascent_f3_area')).toBe(true);
+  });
+
   it('allows browsing Threshold from inside the tower', () => {
     const state = createInitialState(1, 'f1_landing');
     state.discovered.push('ascent_foot');

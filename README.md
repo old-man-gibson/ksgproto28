@@ -256,6 +256,16 @@ files it in the combat notebook to study while you plan the rematch, transcript
 and all. The ledger is a rollup rather than a recording: its size follows the
 number of things involved, never how long the fight ran.
 
+**Fights are drawn.** The Combat tab opens on a battle stage: the place painted
+behind the fight (the city, a torch-lit hall, the flooded cistern, the silk
+gallery…), you on the left and the formation on the right in its slots, with
+lunges, hit flashes, floating numbers and deaths read straight off the state
+between ticks. Every place's header on the Location tab uses the same art, and
+a spot with a fight budget shows it as a row of pips. A tower's map shows one
+floor at a time, fitted to that floor's rooms. Portraits appear on the stage
+wherever a monster has `art` and the licensed pack is present, and emoji
+otherwise.
+
 ## Roadmap (milestone 2+)
 
 - More quests & dialogue trees; NPC shops (charisma already affects prices)
