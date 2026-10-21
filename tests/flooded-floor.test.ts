@@ -14,6 +14,7 @@ import { OFFICE_PROGRESS, OFFICE_SEQUENCE, TOLL_REACTION_TICKS, TOLL_SPELL_FLAG 
 import { deserialize, serialize } from '../src/core/save/save';
 import { prestigeNow } from '../src/core/systems/prestige';
 import { addSpell } from '../src/core/systems/spellcraft';
+import { clearFloors } from './fixtures/floors';
 
 const fresh = (spot = 'f1_landing', seed = 42) => new Game(createInitialState(seed, spot));
 function walk(g: Game, id: string) {
@@ -259,7 +260,7 @@ describe('the submerged toll collector', () => {
     grantKeyItem(g.state, g.bus, 'toll_clerk_book');
     g.state.stats[searchKey('f1_archive', 'search')] = 4;
     g.state.stats[TOLL_SPELL_FLAG] = 1;
-    g.state.stats['slain:f3_brood_den:giant_spider_queen'] = 1;
+    clearFloors(g.state.stats, ['ascent_f3']);
     const next = prestigeNow(g.state)!;
     expect(next).not.toBeNull();
     expect(hasKeyItem(next, 'toll_clerk_book')).toBe(false);

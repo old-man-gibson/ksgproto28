@@ -9,6 +9,7 @@ export const MONSTERS_TEXT: ProseTable = {
   'filing_automaton.desc': 'Basic construct, armour 2. Strikes with a filing arm for bludgeoning damage. Takes 20% less slashing and piercing, 20% more bludgeoning and 50% more lightning damage. Appears in the Long Hall. Drops iron scrap.',
   'sorting_automaton.desc': 'Basic construct, quick. Slashes with sorting blades. Takes 20% less slashing and piercing, 20% more bludgeoning and 50% more lightning damage. Appears in the Long Hall. Drops iron scrap.',
   'living_doll.desc': 'Small basic construct, dark element. Stabs for piercing damage. Takes 30% less dark damage. Appears in the Long Hall.',
+  'puppet_bureaucrat.desc': 'Large elite construct, dark element, on three strings. Always fights alone. Strikes for bludgeoning damage. Takes 30% less slashing, piercing and dark damage, 35% more bludgeoning and 20% more heat. Level 12 with all three strings; each string anchor cut on the floor above takes a level off. Appears in the Hearing Room. 200 XP; rare drop: Lucky Charm.',
   'toll_collector_golem.desc': 'Water covers the collector’s legs. One hand turns a sodden form; the other brings the toll stamp down. Heat fills its sight with steam, cold locks its joints, and lightning drives its stamping arm beyond its limits.',
   'forest_rat.desc': 'Small basic beast. Bites for piercing damage. Appears in The Cages and The Undercrofts. Rare drop: Cloth Tunic.',
 

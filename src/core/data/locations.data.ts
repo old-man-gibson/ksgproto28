@@ -63,7 +63,7 @@ export const AREAS: Record<string, AreaDef> = {
   ascent_f0_area: { id: 'ascent_f0_area', name: 'The Holding Level', regionId: 'holding_level', scene: 'hall' },
   ascent_f1_area: { id: 'ascent_f1_area', name: 'The Flooded Offices', regionId: 'the_ascent', scene: 'hall' },
   ascent_f2_area: { id: 'ascent_f2_area', name: 'The Long Hall', regionId: 'the_ascent', scene: 'hall' },
-  ascent_f3_area: { id: 'ascent_f3_area', name: 'The Silk Gallery', regionId: 'the_ascent', scene: 'webs' },
+  ascent_f3_area: { id: 'ascent_f3_area', name: 'The Descent', regionId: 'the_ascent', scene: 'hall' },
 };
 
 /**
@@ -1324,111 +1324,161 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     connections: [],
   },
 
-  // --- Floor 3: the Silk Gallery (clear: kill the brood queen) ---
-  f3_landing: {
-    id: 'f3_landing',
-    name: 'The Hushed Landing',
+  // --- Floor 3: the Descent (plans/alpha-band-one-floors.md "One building").
+  // Inside the same building, going down a stairwell: three landings, a side
+  // room off each, and the Hearing Room at the bottom. Each side room's search
+  // finds the way to the next flight (a flag the landing's stair requires),
+  // one of the three string anchors the puppet bureaucrat hangs from, and
+  // something to carry. Every anchor cut takes a level off the bureaucrat
+  // (12 uncut, 9 with all three); it stays winnable uncut, only harder. All
+  // names are placeholders.
+  f3_stairhead: {
+    id: 'f3_stairhead',
+    name: 'The Stairwell Head',
     icon: '🪜',
     areaId: 'ascent_f3_area',
-    map: { x: 86, y: 68 },
+    map: { x: 50, y: 6 },
+    tags: ['indoor'],
     activities: [{ id: 'camp_f3', kind: 'rest', name: 'Camp on the Landing', icon: '🏕️' }],
     connections: [
-      { to: 'f3_web_gallery', ticks: 40 },
-      // The den is reached by thinning the brood first: the gallery's fight
-      // budget spent, the road appears. The same shape as the first floor's
-      // Records Passage, and what keeps the queen from being the first thing
-      // a newcomer to this floor meets.
+      { to: 'f3_mail_room', ticks: 15 },
       {
-        to: 'f3_brood_den',
-        ticks: 60,
-        label: 'Follow the Silk to the Den',
-        requires: [{ type: 'stat', key: 'fights:f3_web_gallery', value: 4 }],
-        revealWhen: [{ type: 'stat', key: 'fights:f3_web_gallery', value: 4 }],
+        to: 'f3_landing_2',
+        ticks: 30,
+        label: 'Down the Stairwell',
+        requires: [{ type: 'stat', key: 'flag:f3_stairs_1', value: 1 }],
+        revealWhen: [{ type: 'stat', key: 'flag:f3_stairs_1', value: 1 }],
       },
     ],
   },
-  f3_web_gallery: {
-    id: 'f3_web_gallery',
-    name: 'The Silk Gallery',
-    icon: '🕸️',
+  f3_mail_room: {
+    id: 'f3_mail_room',
+    name: 'The Mail Room',
+    icon: '📮',
     areaId: 'ascent_f3_area',
-    map: { x: 78, y: 62 },
-    exploreTicks: 480,
-    activities: [
-      { id: 'explore_f3', kind: 'explore', name: 'Cut Through the Webs', icon: '🔍' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt the Gallery', icon: '⚔️' },
-    ],
-    // The brood. Four wins spend it and open the road to the den; after that
-    // the gallery's hunt goes quiet and the den is where spiders are farmed.
-    // Six (2026-10-10) chained into knockouts: a won spider fight costs half
-    // a band-1 climber's health and the hunt rolls the next one straight
-    // away, so most falls came on the second or third fight in a row.
-    fightLimit: 4,
-    groupWeights: { 1: 80, 2: 20 },
-    // One level down from the 2026-10-10 table (5–7 / 6–8), which still put
-    // every build on the floor three to six times here.
-    encounters: [
-      { monsterId: 'cave_spider', weight: 60, level: [4, 6] },
-      { monsterId: 'slime_spider', weight: 40, level: [5, 7] },
-    ],
-    // The queen takes half again from a point and shrugs off a third of an
-    // edge; a spear cut out of the webs is the floor's answer to her, the way
-    // the sluice's club is the answer to the cistern.
+    map: { x: 24, y: 6 },
+    tags: ['indoor'],
+    exploreTicks: 360,
+    activities: [{ id: 'search_room', kind: 'explore', name: 'Sort Through the Sacks', icon: '🔍' }],
     finds: [
-      {
-        id: 'f3_webbed_spear',
-        at: 0.25,
-        item: 'old_spear',
-      },
-      {
-        id: 'f3_wrapped_valuables',
-        at: 0.5,
-        gold: [120, 180],
-      },
+      { id: 'f3_mail_plan', at: 0.3, stat: { key: 'flag:f3_stairs_1' } },
+      { id: 'f3_mail_purse', at: 0.5, gold: [60, 90] },
+      { id: 'f3_mail_string', at: 0.75, stat: { key: 'flag:f3_strings_cut' } },
     ],
     connections: [],
   },
-  f3_brood_den: {
-    id: 'f3_brood_den',
-    name: 'The Brood Den',
-    icon: '🕷️',
+  f3_landing_2: {
+    id: 'f3_landing_2',
+    name: 'The Second Landing',
+    icon: '🪜',
     areaId: 'ascent_f3_area',
-    map: { x: 94, y: 74 },
-    activities: [
-      { id: 'hunt', kind: 'hunt', name: 'Go to the Centre', icon: '⚔️' },
-      // The queen is drawn out, not rolled: burn three egg sacs and the next
-      // fight at the centre is hers. A search, so burning is never a fight —
-      // walking to the centre afterwards is the decision. Each sac requires
-      // the one before, so the three lines always arrive in order.
+    map: { x: 50, y: 27 },
+    tags: ['indoor'],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Landing', icon: '⚔️' }],
+    fightLimit: 2,
+    groupWeights: { 1: 100 },
+    encounters: [
+      { monsterId: 'living_doll', weight: 60, level: [6, 7] },
+      { monsterId: 'sorting_automaton', weight: 40, level: [6, 7] },
+    ],
+    connections: [
+      { to: 'f3_archive', ticks: 15 },
       {
-        id: 'burn_sacs',
-        kind: 'search',
-        name: 'Burn the Egg Sacs',
-        icon: '🔥',
-        ticksPer: 60,
-        rewards: [
-          { id: 'sac_1', weight: 1, limit: 1, stat: { key: 'flag:f3_sacs_burned' } },
-          { id: 'sac_2', weight: 1, limit: 1, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 1 }], stat: { key: 'flag:f3_sacs_burned' } },
-          { id: 'sac_3', weight: 1, limit: 1, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 2 }], stat: { key: 'flag:f3_sacs_burned' } },
-        ],
+        to: 'f3_landing_3',
+        ticks: 30,
+        label: 'Down the Stairwell',
+        requires: [{ type: 'stat', key: 'flag:f3_stairs_2', value: 1 }],
+        revealWhen: [{ type: 'stat', key: 'flag:f3_stairs_2', value: 1 }],
       },
     ],
-    // Pairs at most: the default table's packs of three and four were death
-    // sentences for a band-1 build and most of the old floor's knockouts.
-    groupWeights: { 1: 75, 2: 25 },
-    // Three states, one table each: the brood guards its eggs (sacs 0–2);
-    // the queen alone once the third burns; the brood again once she is
-    // dead, so the den stays a place to hunt spiders.
-    encounters: [
-      { monsterId: 'cave_spider', weight: 70, level: [6, 8], requires: [{ type: 'statMax', key: 'flag:f3_sacs_burned', value: 2 }] },
-      // The floor's clear: `once`, latching slain:f3_brood_den:giant_spider_queen.
-      // She is solitary (`group.max: 1` on the def), so she always comes alone
-      // and is never drafted into a spider's escort.
-      { monsterId: 'giant_spider_queen', weight: 30, level: [9, 9], once: true, requires: [{ type: 'stat', key: 'flag:f3_sacs_burned', value: 3 }] },
-      { monsterId: 'cave_spider', weight: 70, level: [6, 8], requires: [{ type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 }] },
+  },
+  f3_archive: {
+    id: 'f3_archive',
+    name: 'The Archive Stacks',
+    icon: '🗄️',
+    areaId: 'ascent_f3_area',
+    map: { x: 76, y: 27 },
+    tags: ['indoor'],
+    exploreTicks: 420,
+    activities: [{ id: 'search_room', kind: 'explore', name: 'Search the Stacks', icon: '🔍' }],
+    // The floor's own answer: the bureaucrat is a construct, and constructs
+    // take more from a blunt blow than from an edge or a point.
+    finds: [
+      { id: 'f3_archive_plan', at: 0.3, stat: { key: 'flag:f3_stairs_2' } },
+      { id: 'f3_archive_club', at: 0.5, item: 'oak_club' },
+      { id: 'f3_archive_string', at: 0.75, stat: { key: 'flag:f3_strings_cut' } },
     ],
     connections: [],
   },
+  f3_landing_3: {
+    id: 'f3_landing_3',
+    name: 'The Third Landing',
+    icon: '🪜',
+    areaId: 'ascent_f3_area',
+    map: { x: 50, y: 48 },
+    tags: ['indoor'],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Landing', icon: '⚔️' }],
+    fightLimit: 2,
+    groupWeights: { 1: 100 },
+    encounters: [
+      { monsterId: 'living_doll', weight: 50, level: [7, 8] },
+      { monsterId: 'filing_automaton', weight: 50, level: [7, 8] },
+    ],
+    connections: [
+      { to: 'f3_annex', ticks: 15 },
+      // The way to the Hearing Room is walked knowing: arriving is the fight.
+      {
+        to: 'f3_hearing_room',
+        ticks: 30,
+        label: 'Down to the Hearing Room',
+        requires: [{ type: 'stat', key: 'flag:f3_stairs_3', value: 1 }],
+        revealWhen: [{ type: 'stat', key: 'flag:f3_stairs_3', value: 1 }],
+      },
+    ],
+  },
+  f3_annex: {
+    id: 'f3_annex',
+    name: 'The Records Annex',
+    icon: '📂',
+    areaId: 'ascent_f3_area',
+    map: { x: 24, y: 48 },
+    tags: ['indoor'],
+    exploreTicks: 420,
+    activities: [{ id: 'search_room', kind: 'explore', name: 'Go Through the Files', icon: '🔍' }],
+    finds: [
+      { id: 'f3_annex_plan', at: 0.3, stat: { key: 'flag:f3_stairs_3' } },
+      { id: 'f3_annex_salve', at: 0.5, material: { id: 'healing_salve', qty: 2 } },
+      { id: 'f3_annex_string', at: 0.75, stat: { key: 'flag:f3_strings_cut' } },
+    ],
+    connections: [],
+  },
+  f3_hearing_room: {
+    id: 'f3_hearing_room',
+    name: 'The Hearing Room',
+    icon: '⚖️',
+    areaId: 'ascent_f3_area',
+    map: { x: 50, y: 69 },
+    tags: ['indoor'],
+    // The bureaucrat does not let anyone past: arriving is the fight, and it
+    // is the room's one fight. Won, the room is cleared and stops forcing.
+    // The floor's clear is the kill (slain:f3_hearing_room:puppet_bureaucrat),
+    // which is also what opens prestige.
+    forced: true,
+    fightLimit: 1,
+    groupWeights: { 1: 100 },
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Answer the Summons', icon: '⚔️' }],
+    // One table per anchor count: every cut string is a level off. `once`
+    // is what latches slain:f3_hearing_room:puppet_bureaucrat, the clear.
+    encounters: [
+      { monsterId: 'puppet_bureaucrat', weight: 1, once: true, level: [12, 12], requires: [{ type: 'statMax', key: 'flag:f3_strings_cut', value: 0 }] },
+      { monsterId: 'puppet_bureaucrat', weight: 1, once: true, level: [11, 11], requires: [{ type: 'stat', key: 'flag:f3_strings_cut', value: 1 }, { type: 'statMax', key: 'flag:f3_strings_cut', value: 1 }] },
+      { monsterId: 'puppet_bureaucrat', weight: 1, once: true, level: [10, 10], requires: [{ type: 'stat', key: 'flag:f3_strings_cut', value: 2 }, { type: 'statMax', key: 'flag:f3_strings_cut', value: 2 }] },
+      { monsterId: 'puppet_bureaucrat', weight: 1, once: true, level: [9, 9], requires: [{ type: 'stat', key: 'flag:f3_strings_cut', value: 3 }] },
+    ],
+    connections: [],
+  },
+
   // ---------- The Ascent: floor 0, the Holding Level (the tutorial) ----------
   //
   // Where a new life opens (STARTING_SPOT). Four spots in a line — cell,

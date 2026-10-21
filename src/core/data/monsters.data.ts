@@ -91,6 +91,33 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     xp: 10, gold: [1, 3],
     loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 1 }] },
   },
+  // ---- Floor 3, the Descent: band 1's last boss (the queen's successor as
+  // PRESTIGE_UNLOCK). A construct on strings at the bottom of the stairwell;
+  // each string anchor cut in the side rooms above is a level off (12 → 9,
+  // f3_hearing_room's table). Solitary and slow like the queen it replaced,
+  // but a construct: blunt blows are the answer (the Archive's oak club), and
+  // edges and points do less. First guesses, tuned against John.
+  puppet_bureaucrat: {
+    id: 'puppet_bureaucrat', name: 'The Puppet Bureaucrat', icon: '🎭', art: 'Boss Puppet Master.png',
+    tags: ['inorganic', 'construct', 'dark', 'large'], tier: 'elite', damageType: 'bludgeoning',
+    group: { max: 1 },
+    resistances: { slashing: 0.3, piercing: 0.3, bludgeoning: -0.35, heat: -0.2, dark: 0.3 },
+    // Tuned 2026-10-21 against John (a sweep of four stat sets): uncut, a
+    // plain John goes down about 3 times before he wins; with all three
+    // strings cut and the Archive’s club, under once. Preparation is the
+    // difference, which is the floor’s point.
+    attrs: { str: 8, dex: 4, con: 15, int: 3, wis: 3, cha: 3 },
+    growth: { str: 0.8, dex: 0.35, con: 2.4, int: 0.3, wis: 0.3, cha: 0.25 },
+    // Kill gold scales by level × tier: [20, 40] paid ~750 at level 12.
+    xp: 200, gold: [3, 6],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'item', id: 'lucky_charm', weight: 3 },
+        { kind: 'nothing', weight: 97 },
+      ],
+    },
+  },
   toll_collector_golem: {
     id: 'toll_collector_golem', name: 'The Toll Collector', icon: '🗿',
     tags: ['inorganic', 'construct', 'earth', 'large'], tier: 'basic', damageType: 'bludgeoning',

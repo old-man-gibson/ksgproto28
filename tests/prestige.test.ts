@@ -4,7 +4,7 @@ import { Game } from '../src/core/game';
 import { EventBus } from '../src/core/engine/events';
 import { migrate } from '../src/core/save/migrations';
 import { deserialize, serialize } from '../src/core/save/save';
-import { AREAS, PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, SPOTS, STARTING_SPOT } from '../src/core/registry';
+import { AREAS, FLOORS, PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, SPOTS, STARTING_SPOT } from '../src/core/registry';
 import { TUTORIAL_EXIT } from '../src/core/data/tutorial.data';
 import {
   buyBoon,
@@ -140,8 +140,8 @@ describe('the reset', () => {
     const s = bandOneCleared();
     s.createdAt = 12345;
     s.gold = 9999;
-    s.spot = 'f3_landing';
-    s.discovered.push('f3_landing');
+    s.spot = FLOORS.ascent_f3.landing!;
+    s.discovered.push(FLOORS.ascent_f3.landing!);
     s.stats['gold:earned'] = 500;
     const next = prestigeNow(s, 777)!;
     // A second life skips the tutorial cell: it opens at the Foot, done-flag stamped.
@@ -154,7 +154,7 @@ describe('the reset', () => {
     expect(STARTING_SPOT).not.toBe(TUTORIAL_EXIT);
     expect(next.gold).toBe(0);
     expect(next.stats['gold:earned']).toBeUndefined();
-    expect(next.stats['slain:f3_brood_den:giant_spider_queen']).toBeUndefined();
+    for (const key of Object.keys(clearFloors({}))) expect(next.stats[key]).toBeUndefined();
     expect(next.createdAt).toBe(12345);
     expect(next.lastSaved).toBe(777);
     expect(next.prestige.count).toBe(1);

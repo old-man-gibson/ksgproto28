@@ -11,13 +11,14 @@ import { PRESTIGE_BOONS_TEXT } from '../text/prestige.text';
  */
 
 /**
- * The button lights when this holds. Band 1 of the Ascent ends at the brood
- * queen (towers.data.ts, `ascent_f3.clear`) — the user's call 2026-09-12:
- * "show the tab when the player defeats the spider queen". Same latch the
+ * The button lights when this holds. Band 1 of the Ascent ends at its last
+ * boss (towers.data.ts, `ascent_f3.clear`) — the user's call 2026-09-12 was
+ * "show the tab when the player defeats the spider queen"; since the floors
+ * redesign (2026-10-21) that boss is the puppet bureaucrat. Same latch the
  * floor's clear reads, so the two can never disagree.
  */
 export const PRESTIGE_UNLOCK: UnlockCondition[] = [
-  { type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 },
+  { type: 'stat', key: 'slain:f3_hearing_room:puppet_bureaucrat', value: 1 },
 ];
 
 /**

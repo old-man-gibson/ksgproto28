@@ -622,20 +622,30 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     raw.levelXp = rest;
     raw.version = 56;
   },
-  // v56 → v57: floor 2 is the Long Hall (plans/alpha-band-one-floors.md "One
+  // v56 → v57: floors 2 and 3 rebuilt as one building. Floor 2 is the Long Hall (plans/alpha-band-one-floors.md "One
   // building"); the Flooded Stair went to the shelf (data/shelved/). A save
   // standing in the old floor wakes on the new landing. One that had cleared
   // it keeps the clear: the hall's far end is stamped spent, so floor 3 stays
   // open and the clear XP already paid is not paid twice (floorXpKey latch).
+  //
+  // Floor 3 the same day: the Descent replaced the Silk Gallery, and the
+  // puppet bureaucrat's kill replaced the spider queen's as the floor's clear
+  // and as PRESTIGE_UNLOCK. A save that killed the queen keeps both.
   56: (raw) => {
     const stats = (raw.stats as Record<string, number> | undefined) ?? {};
     raw.stats = stats;
-    if ((stats['fights:f2_cistern'] ?? 0) >= 8) {
-      for (const c of FLOORS.ascent_f2?.clear ?? []) {
+    const stampClear = (floorId: string) => {
+      for (const c of FLOORS[floorId]?.clear ?? []) {
         if (c.type === 'stat') stats[c.key] = Math.max(stats[c.key] ?? 0, c.value);
       }
-    }
-    pruneLostSpots(raw, (lost) => (lost.startsWith('f2_') && SPOTS.f2_stairhead ? 'f2_stairhead' : 'ascent_foot'));
+    };
+    if ((stats['fights:f2_cistern'] ?? 0) >= 8) stampClear('ascent_f2');
+    if ((stats['slain:f3_brood_den:giant_spider_queen'] ?? 0) >= 1) stampClear('ascent_f3');
+    pruneLostSpots(raw, (lost) => {
+      if (lost.startsWith('f2_') && SPOTS.f2_stairhead) return 'f2_stairhead';
+      if (lost.startsWith('f3_') && SPOTS.f3_stairhead) return 'f3_stairhead';
+      return 'ascent_foot';
+    });
     raw.version = 57;
   },
 };

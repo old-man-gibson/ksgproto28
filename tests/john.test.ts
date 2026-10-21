@@ -98,7 +98,7 @@ describe('pacing — band 1 by the obvious road, every rack weapon', () => {
   it('the long hall and the third floor knock a player down, not out of the game', () => {
     for (const r of [...john, ...rack]) {
       expect(r.knockouts.floor2, `${label(r)}: the long hall`).toBeLessThanOrEqual(6);
-      expect(r.knockouts.gallery + r.knockouts.floor3, `${label(r)}: floor 3`).toBeLessThanOrEqual(20);
+      expect(r.knockouts.descent + r.knockouts.floor3, `${label(r)}: floor 3`).toBeLessThanOrEqual(20);
     }
   });
 
@@ -121,8 +121,8 @@ describe('pacing — the floors hand over their own answers', () => {
    * (the trained edge roughly evens it for John in the cistern); the tool
    * itself must win. Counted in wins, not seconds — a lost fight is short.
    */
-  /** The den's queen only comes out once three egg sacs have burned. */
-  const SACS = { 'flag:f3_sacs_burned': 3 };
+  /** How many of the puppet bureaucrat's string anchors have been cut. */
+  const CUT = (n: number) => ({ 'flag:f3_strings_cut': n });
   /** `stats` is the spot state the fight needs before it can be rolled. */
   function duel(spotId: string, monsterId: string, weapon: string, level: number, stats: Record<string, number> = {}): number {
     let wins = 0;
@@ -155,14 +155,20 @@ describe('pacing — the floors hand over their own answers', () => {
     return wins;
   }
 
-  it("the gallery's spear out-fights the rusty sword against the queen", () => {
-    expect(SPOTS.f3_web_gallery.finds?.some((f) => f.item === 'old_spear')).toBe(true);
-    // At the attributes a climber arrives with, the point wins and the edge
-    // does not; the edge catches up with a few more levels (pacing, §6).
-    const sword = duel('f3_brood_den', 'giant_spider_queen', 'rusty_sword', 12, SACS);
-    const spear = duel('f3_brood_den', 'giant_spider_queen', 'old_spear', 12, SACS);
-    expect(spear, `spear ${spear}/20 against sword ${sword}/20`).toBeGreaterThanOrEqual(15);
-    expect(sword).toBeLessThanOrEqual(spear - 10);
-    expect(duel('f3_brood_den', 'giant_spider_queen', 'rusty_sword', 16, SACS), 'a rusty sword four levels on').toBeGreaterThanOrEqual(12);
+  it("the archive's club and the cut strings both answer the bureaucrat", () => {
+    expect(SPOTS.f3_archive.finds?.some((f) => f.item === 'oak_club')).toBe(true);
+    // Measured 2026-10-21 at attributes 16, no skills trained (wins of 20):
+    // sword uncut 0, sword with three cuts 8, club uncut 11, club with three
+    // cuts 20. Each answer is worth a lot on its own; both together win.
+    const at = (weapon: string, cuts: number) => duel('f3_hearing_room', 'puppet_bureaucrat', weapon, 16, CUT(cuts));
+    const sword0 = at('rusty_sword', 0);
+    const sword3 = at('rusty_sword', 3);
+    const club0 = at('oak_club', 0);
+    const club3 = at('oak_club', 3);
+    const table = `sword ${sword0}→${sword3}, club ${club0}→${club3} (uncut → three cuts)`;
+    expect(sword0, table).toBeLessThanOrEqual(3);
+    expect(sword3, `${table}: the cuts must count`).toBeGreaterThanOrEqual(sword0 + 5);
+    expect(club0, `${table}: the club must count`).toBeGreaterThanOrEqual(sword0 + 5);
+    expect(club3, table).toBeGreaterThanOrEqual(18);
   });
 });

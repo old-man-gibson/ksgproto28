@@ -40,7 +40,7 @@ const columns: [string, (r: ClimbReport) => string | number][] = [
   ['f2 KO', (r) => r.knockouts.floor2],
   ['floor 2', (r) => min(r.done.floor2)],
   ['gate wait', (r) => gap(r.done.floor2, r.done.gate3)],
-  ['gallery KO', (r) => r.knockouts.gallery],
+  ['descent KO', (r) => r.knockouts.descent],
   ['den KO', (r) => r.knockouts.floor3],
   ['band 1', (r) => min(r.done.floor3)],
   ['gold', (r) => r.goldEarned],

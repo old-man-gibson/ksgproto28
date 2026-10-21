@@ -151,14 +151,27 @@ export const SPOTS_TEXT: ProseTable = {
 
   'f2_hall_4.desc': 'Far end of the Long Hall. Clear the Stretch fights Living Dolls and Filing Automatons (levels 6 to 7), at most two at a time. The third win clears floor 2 and the stretch goes quiet.',
 
-  'f3_landing.desc': 'Landing of floor 3. Camp on the Landing is a rest activity, and the landing is a haven. Connects to the Silk Gallery; the road to the Brood Den appears once the gallery’s brood is driven off.',
+  'f3_stairhead.desc': 'Landing of floor 3, the top of the building’s stairwell. Camp on the Landing is a rest activity, and the landing is a haven. The Mail Room is off the landing; the next flight down opens once its floor plan is found there.',
 
-  'f3_web_gallery.desc': 'Cut Through the Webs explores the gallery (48 s) for two finds. Hunt the Gallery fights Cave Spiders and Slime Spiders (levels 4 to 7). The gallery holds 6 winnable fights; the sixth win opens the road to the Brood Den and empties the hunt.',
-  'f3_web_gallery.finds.f3_webbed_spear.desc': '🔱 An old spear bound into the webs. A spear deals piercing damage, which the Giant Spider Queen takes half again of.',
-  'f3_web_gallery.finds.f3_wrapped_valuables.desc': '💰 A cocooned satchel: 120 to 180 gold.',
+  'f3_mail_room.desc': 'Sort Through the Sacks explores the room (36 s) for three finds: the floor plan that opens the stairwell’s next flight, a purse, and one of the three string anchors the bureaucrat in the Hearing Room hangs from.',
+  'f3_mail_room.finds.f3_mail_plan.desc': '🗺️ A floor plan in a mail sack, the stairwell marked. The next flight down is open.',
+  'f3_mail_room.finds.f3_mail_purse.desc': '💰 An unclaimed parcel of coin: 60 to 90 gold.',
+  'f3_mail_room.finds.f3_mail_string.desc': '✂️ A string anchor bolted under the sorting table, its line running down through the floor. Cut: the bureaucrat below loses a string (one level).',
 
-  'f3_brood_den.desc': 'Den of floor 3. Go to the Centre fights Cave Spiders (levels 6 to 8), at most two at a time. Burn the Egg Sacs burns one sac per search (6 s); after the third, the next fight at the centre is the Giant Spider Queen (level 9), who always fights alone. Killing the queen clears the floor, and the spiders return.',
-  'f3_brood_den.activities.burn_sacs.rewards.sac_1.desc': '🔥 Egg sac burned (1 of 3).',
-  'f3_brood_den.activities.burn_sacs.rewards.sac_2.desc': '🔥 Egg sac burned (2 of 3).',
-  'f3_brood_den.activities.burn_sacs.rewards.sac_3.desc': '🔥 Egg sac burned (3 of 3). The Giant Spider Queen comes out: the next fight at the centre is hers.',
+  'f3_landing_2.desc': 'Second landing of the stairwell. Clear the Landing fights Living Dolls and Sorting Automatons (levels 6 to 7), one at a time; 2 wins and it goes quiet. The Archive Stacks are off the landing; the next flight down opens once their floor plan is found.',
+
+  'f3_archive.desc': 'Search the Stacks explores the room (42 s) for three finds: the floor plan for the next flight, an oak club, and a string anchor.',
+  'f3_archive.finds.f3_archive_plan.desc': '🗺️ A floor plan filed under the stairwell. The next flight down is open.',
+  'f3_archive.finds.f3_archive_club.desc': '🏏 An oak club wedged between two shelves. A club deals bludgeoning damage, which the bureaucrat, a construct, takes more of.',
+  'f3_archive.finds.f3_archive_string.desc': '✂️ A string anchor behind the end shelf. Cut: the bureaucrat below loses a string (one level).',
+
+  'f3_landing_3.desc': 'Third landing of the stairwell. Clear the Landing fights Living Dolls and Filing Automatons (levels 7 to 8), one at a time; 2 wins and it goes quiet. The Records Annex is off the landing; the way down to the Hearing Room opens once its floor plan is found.',
+
+  'f3_annex.desc': 'Go Through the Files explores the room (42 s) for three finds: the floor plan to the Hearing Room, two healing salves, and the last string anchor.',
+  'f3_annex.finds.f3_annex_plan.desc': '🗺️ A floor plan with the Hearing Room marked at the bottom of the stairwell. The way down is open.',
+  'f3_annex.finds.f3_annex_salve.desc': '🧴 Two healing salves in a first-aid drawer.',
+  'f3_annex.finds.f3_annex_string.desc': '✂️ The last string anchor, in the annex ceiling. Cut: the bureaucrat below loses a string (one level).',
+
+  'f3_hearing_room.desc': 'Bottom of the stairwell. Arriving starts a fight that cannot be fled: the Puppet Bureaucrat, alone. It is level 12 with all three strings, one level less for each string anchor cut in the side rooms above (level 9 with none left). Its kill clears floor 3 and the room goes quiet.',
+
 };

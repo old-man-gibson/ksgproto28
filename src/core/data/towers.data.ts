@@ -140,15 +140,17 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
   },
   ascent_f3: {
     id: 'ascent_f3',
-    name: 'The Silk Gallery',
+    name: 'The Descent',
     towerId: 'the_ascent',
     bandId: 'ascent_lower',
     index: 3,
     areaId: 'ascent_f3_area',
-    landing: 'f3_landing',
+    landing: 'f3_stairhead',
     gate: [{ type: 'stat', key: 'gold:earned', value: 600 }],
-    // A named kill again — the brood den's `once` queen.
-    clear: [{ type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 }],
+    // A named kill: the puppet bureaucrat at the bottom of the stairwell, the
+    // Hearing Room's one fight. (The Silk Gallery's queen held it until
+    // 2026-10-21; that floor is on the shelf.)
+    clear: [{ type: 'stat', key: 'slain:f3_hearing_room:puppet_bureaucrat', value: 1 }],
     clearXp: 200,
   },
 });
