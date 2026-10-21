@@ -1,7 +1,7 @@
 # Pixel icons: picks from the Clockwork Raven sheet
 
 Generated list for [../pixel-icons.md](../pixel-icons.md) §8. Numbers are files
-`src/assets/64x64/c<number>.png` in the main checkout (the full sheet; not in git).
+`src/assets/packs/clockwork-raven/64x64/c<number>.png` in the main checkout (the full sheet; not in git).
 First number = recommended; the rest are alternates. "—" = nothing in the sheet fits.
 Visual version: [picks.png](picks.png), from [picks.html](picks.html).
 

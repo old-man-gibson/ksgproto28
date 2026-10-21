@@ -489,11 +489,12 @@ Two things worth keeping in mind:
    - **41 are Ækashics** icon sheets in `combatStyleIcons/`, one per battler.
      Same terms as the battlers: no redistribution.
 
-   The whole Clockwork Raven sheet (8,256 icons, 29 MB) sits in `src/assets/64x64/`
-   in the main checkout as a library to pick from. 185 of the 209 committed files
+   The whole Clockwork Raven sheet (8,256 icons, 29 MB) sits in
+   `src/assets/packs/clockwork-raven/64x64/` in the main checkout as a library to
+   pick from. 185 of the 209 committed files
    are pixel-identical to cells of it; the rest are edited versions. Since
    2026-10-20 it is gitignored, together with the other icon packs kept whole in
-   `src/assets/`, all Clockwork Raven under the same licence (user, 2026-10-21):
+   `src/assets/packs/clockwork-raven/`, all Clockwork Raven under the same licence (user, 2026-10-21):
    four Raven Fantasy skill packs (Acolyte, Rogue, Warrior, Wizard; 1,060 icons),
    Epic Weapons 3 (192) and Trees and Logs (36). The screenshots under `docs/plans/pixel-icons/` show Clockwork
    Raven icons; the licence allows screenshots, but they go on the scrub list too.
@@ -502,9 +503,9 @@ Two things worth keeping in mind:
    included.** The licence would allow them in a private repo; the user chose the
    tile-pack rule anyway. Git holds `src/ui/lib/icons/manifest.json` (icon names and
    the file each points to); every pack sits whole in the gitignored
-   `src/assets/packs/`, and a checkout without it shows the emoji. The first icon
-   story moves the packs there and takes the 250 committed icon files out of the
-   tree, the Ækashics sheets included (docs/plans/pixel-icons.md §6).
+   `src/assets/packs/`, and a checkout without it shows the emoji. The packs were
+   moved there on 2026-10-21; the first icon story takes the 250 committed icon
+   files out of the tree, the Ækashics sheets included (docs/plans/pixel-icons.md §6).
 
    **Free packs follow the same rule (2026-10-21).** Idylwild's Runic Codex and
    Idylwild's Alchemical Codex (idylwild.itch.io) are free, and their store pages
