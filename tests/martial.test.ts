@@ -66,15 +66,17 @@ import {
   techniqueStatus,
   techniquesUnderSkill,
   toggleDrill,
+  lessonState,
 } from '../src/core/systems/martial';
-import { ITEMS, SKILLS } from '../src/core/registry';
+import { ITEMS, NPCS, SKILLS } from '../src/core/registry';
+import { subsystemUnlocked, unlockKey } from '../src/core/systems/unlocks';
 import { equippedTags } from '../src/core/systems/conditions';
 import { TRIGGER_EVENTS, evaluateTrigger, visibleTriggerSubjects } from '../src/core/systems/triggers';
 import { inscribeArcane, setPrepared } from '../src/core/systems/spellcraft';
 import { activeRotation } from '../src/core/systems/combat';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { exert } from '../src/core/systems/stamina';
-import type { CombatState, GameState, TechniqueDef, TechniqueForm } from '../src/core/types';
+import type { CombatState, GameState, TechniqueDef, TechniqueForm, TechniqueLesson } from '../src/core/types';
 
 const fresh = (seed = 1) => new Game(createInitialState(seed));
 
@@ -276,6 +278,7 @@ describe('the learned ledger', () => {
 
   it('self-learning crystallizes rough when the counter crosses, if eligible', () => {
     const g = fresh(3);
+    g.state.stats[unlockKey('martial')] = 1;
     g.state.stats['combat:attacks'] = 150;
     checkTechniqueLearning(g.state, g.bus);
     expect(techniqueForm(g.state, 'gather')).toBeUndefined(); // fighting too low
@@ -581,6 +584,104 @@ describe('technique status', () => {
   });
 });
 
+// ---------- The alpha shutter and the first teacher ----------
+
+describe('martial shut: teachers are the only way in', () => {
+  /** A teacher who exists only for this block: NPCS is the live registry. */
+  function withTeacher<T>(lessons: TechniqueLesson[], run: (npcId: string) => T): T {
+    const id = 'test_sensei';
+    NPCS[id] = {
+      id, name: 'Test Sensei', icon: '🥋', spotId: 'ascent_foot', desc: '', dialogue: ['…'], quests: [], teaches: lessons,
+    };
+    try {
+      return run(id);
+    } finally {
+      delete NPCS[id];
+    }
+  }
+
+  it('a fresh save is shut, and nothing crystallizes however much it fights', () => {
+    const g = fresh(31);
+    expect(subsystemUnlocked(g.state, 'martial')).toBe(false);
+    g.state.skills.fighting = { level: 20, xp: 0 };
+    g.state.stats['combat:attacks'] = 5000;
+    checkTechniqueLearning(g.state, g.bus);
+    expect(knownTechniques(g.state)).toEqual([]);
+
+    // The counters were kept: opening the shutter cashes them on the next check.
+    g.state.stats[unlockKey('martial')] = 1;
+    checkTechniqueLearning(g.state, g.bus);
+    expect(techniqueForm(g.state, 'gather')).toBe('rough');
+  });
+
+  it('a lesson teaches the canonical form, shutter shut and eligibility unmet', () => {
+    const g = fresh(32);
+    expect(eligibleToLearn(g.state, TECHNIQUES.lunge)).toBe(false); // fighting 0
+    withTeacher([{ technique: 'gather' }, { technique: 'lunge' }], (npc) => {
+      expect(g.learnFromTeacher(npc, 'gather')).toBe(true);
+      expect(g.learnFromTeacher(npc, 'lunge')).toBe(true);
+      expect(techniqueForm(g.state, 'gather')).toBe('canonical');
+      expect(techniqueForm(g.state, 'lunge')).toBe('canonical');
+      expect(g.state.log.some((l) => l.msg.includes('Test Sensei') && l.msg.includes('Lunge'))).toBe(true);
+      // Taught once: a second lesson is refused and says nothing.
+      const lines = g.state.log.length;
+      expect(g.learnFromTeacher(npc, 'gather')).toBe(false);
+      expect(g.state.log.length).toBe(lines);
+    });
+    // Known techniques join the rotation on their own; nothing else is needed.
+    expect(activeRotation(g.state)).toEqual(expect.arrayContaining(['technique:gather', 'technique:lunge']));
+  });
+
+  it('a lesson refines a rough form and keeps its practice', () => {
+    const g = fresh(33);
+    learn(g.state, 'gather', 'rough', 40);
+    withTeacher([{ technique: 'gather' }], (npc) => {
+      const lesson = NPCS[npc].teaches![0];
+      expect(lessonState(g.state, lesson)).toBe('open');
+      expect(g.learnFromTeacher(npc, 'gather')).toBe(true);
+      expect(lessonState(g.state, lesson)).toBe('taught');
+    });
+    expect(techniqueForm(g.state, 'gather')).toBe('canonical');
+    expect(techniqueExecutions(g.state, 'gather')).toBe(40);
+  });
+
+  it('refuses what the teacher does not teach, and holds a lesson until its requirement', () => {
+    const g = fresh(34);
+    withTeacher([{ technique: 'lunge', requires: [{ type: 'stat', key: 'fights:won', value: 3 }] }], (npc) => {
+      expect(g.learnFromTeacher(npc, 'gather')).toBe(false); // not on the list
+      expect(g.learnFromTeacher('no_such_npc', 'lunge')).toBe(false);
+      expect(lessonState(g.state, NPCS[npc].teaches![0])).toBe('held');
+      expect(g.learnFromTeacher(npc, 'lunge')).toBe(false);
+      g.state.stats['fights:won'] = 3;
+      expect(g.learnFromTeacher(npc, 'lunge')).toBe(true);
+    });
+  });
+
+  it('Gather and Lunge chain: neutral → coiled → extended, with no third move', () => {
+    expect(declaredPositions(TECHNIQUES.gather)).toEqual(['neutral']);
+    expect(TECHNIQUES.gather.to).toBe('coiled');
+    expect(declaredPositions(TECHNIQUES.lunge)).toEqual(['coiled']);
+    expect(TECHNIQUES.lunge.to).toBe('extended');
+    expect(TECHNIQUES.lunge.family).toBeUndefined(); // any weapon
+
+    const g = fresh(35);
+    learn(g.state, 'gather');
+    learn(g.state, 'lunge');
+    g.state.attrs.con.level = 30;
+    g.state.spot = 'woods_edge';
+    g.equip(1);
+    g.selectActivity('hunt');
+    let extended = false;
+    const sawLunge = () => g.state.combatFeed.some((f) => f.text.includes('Lunge'));
+    for (let i = 0; i < 6000 && !(extended && sawLunge()); i++) {
+      g.tick();
+      if (g.state.combat?.position === 'extended') extended = true;
+    }
+    expect(sawLunge()).toBe(true);
+    expect(extended).toBe(true);
+  });
+});
+
 // ---------- The fight composes the chain ----------
 
 describe('techniques in combat', () => {
@@ -607,6 +708,7 @@ describe('techniques in combat', () => {
 
   it('the fight itself teaches: enough swings crystallize Gather (rough)', () => {
     const g = fresh(23);
+    g.state.stats[unlockKey('martial')] = 1;
     g.state.skills.fighting = { level: 5, xp: 0 };
     g.state.attrs.con.level = 30;
     g.state.stats['combat:attacks'] = 99; // one swing away

@@ -178,6 +178,8 @@ export const LOG_TEXT = {
 
   // ---------- martial ----------
   'martial.technique_learned': '🥋 Technique learned (rough): {icon} {name}.',
+  'martial.technique_taught': '🥋 {teacher} teaches you {icon} {name} (canonical form).',
+  'martial.technique_refined': '🥋 {teacher} corrects your {icon} {name}: canonical form, practice kept.',
 
   // ---------- music ----------
   'music.stopped': '⏹️ Performance stopped{reason}.',

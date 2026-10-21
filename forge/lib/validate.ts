@@ -532,6 +532,15 @@ export function validate(store: S): Issue[] {
         warn('npc', npc.id, `'${line.id}' is priced under its worth`, [...path, 'price']);
       }
     });
+    // Lessons: each names a real technique, once (mirrors tests/content.test.ts).
+    const taught = new Set<string>();
+    (npc.teaches ?? []).forEach((lesson, i) => {
+      if (!store.all('technique')[lesson.technique]) {
+        err('npc', npc.id, `teaches unknown technique '${lesson.technique}'`, ['teaches', i, 'technique']);
+      }
+      if (taught.has(lesson.technique)) err('npc', npc.id, `teaches '${lesson.technique}' twice`, ['teaches', i]);
+      taught.add(lesson.technique);
+    });
   }
   for (const quest of Object.values(quests)) {
     if (!quest.giver) continue;

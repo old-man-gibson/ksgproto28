@@ -7,6 +7,7 @@ import type {
   TechniqueDef,
   TechniqueEntry,
   TechniqueForm,
+  TechniqueLesson,
   TechniqueMove,
   TechniqueState,
 } from '../types';
@@ -33,7 +34,8 @@ import { evaluateTrigger, type TriggerContext } from './triggers';
 import { weaponTechniqueMods } from './runes';
 import { preparedSpells, resolveSpell } from './spellcraft';
 import { resourceValue } from './resources';
-import { ITEMS } from '../registry';
+import { subsystemUnlocked } from './unlocks';
+import { ITEMS, NPCS } from '../registry';
 import { text } from '../text/log';
 
 /**
@@ -97,8 +99,14 @@ export function learnTechnique(
  * Autodidactic crystallization: an eligible, unknown technique with a
  * `learn.self` counter becomes known — ROUGH — the moment the counter
  * crosses. Called from combat wherever those counters are bumped.
+ *
+ * Off while the `martial` shutter is shut (systems/unlocks.ts, user
+ * 2026-10-21): in the alpha the only way into the system is a teacher. The
+ * counters keep counting, so opening the shutter later crystallizes whatever
+ * the fighting already earned on the next check.
  */
 export function checkTechniqueLearning(state: GameState, bus: EventBus): void {
+  if (!subsystemUnlocked(state, 'martial')) return;
   for (const def of TECHNIQUE_LIST) {
     const self = def.learn?.self;
     if (!self || techniqueKnown(state, def)) continue;
@@ -111,6 +119,46 @@ export function checkTechniqueLearning(state: GameState, bus: EventBus): void {
       kind: 'combat',
     });
   }
+}
+
+// ---------- Teachers ----------
+
+/**
+ * Where a lesson stands for this player: `taught` once the canonical form is
+ * held, `held` while the requirements are unmet, `open` when it can be taken.
+ * A rough form counts as open — the teacher refines it (MARTIAL.md §10).
+ */
+export type LessonState = 'open' | 'held' | 'taught';
+
+export function lessonState(state: GameState, lesson: TechniqueLesson): LessonState {
+  if (techniqueForm(state, lesson.technique) === 'canonical') return 'taught';
+  if (lesson.requires && !conditionsMet(state, lesson.requires)) return 'held';
+  return 'open';
+}
+
+/**
+ * Take a lesson from a teacher: the canonical form, or a rough one refined in
+ * place (executions kept). Refused for a technique this NPC does not teach,
+ * an unmet requirement, or one already canonical. Eligibility (`unlock`) is
+ * not checked: the teacher is the shortcut past it, the way a recipe card is.
+ * Teaching ignores the `martial` shutter.
+ */
+export function teachTechnique(state: GameState, bus: EventBus, npcId: string, techniqueId: string): boolean {
+  const lesson = NPCS[npcId]?.teaches?.find((l) => l.technique === techniqueId);
+  const def = TECHNIQUES[techniqueId];
+  if (!lesson || !def || lessonState(state, lesson) !== 'open') return false;
+  const refined = techniqueForm(state, def.id) === 'rough';
+  learnTechnique(state, def, 'canonical');
+  bus.emit({
+    type: 'log',
+    msg: text(refined ? 'martial.technique_refined' : 'martial.technique_taught', {
+      icon: def.icon,
+      name: def.name,
+      teacher: NPCS[npcId].name,
+    }),
+    kind: 'skill',
+  });
+  return true;
 }
 
 /** Whether the required weapon family is in hand (absent family = anything). */

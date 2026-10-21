@@ -9,8 +9,9 @@ import { grantFavor } from './deities';
  * Seven systems are shuttered for the alpha: their tabs, benches and school
  * pages simply do not render until the flag lifts. The last two (save v55,
  * user 2026-10-17): `martial` hides the position planner, loadouts, drilling
- * and the rotation editor — techniques still learn themselves and fire on
- * their own — and `prep` hides the kitchen side-benches (the Cutting Board
+ * and the rotation editor — known techniques still fire on their own, but
+ * since 2026-10-21 none learns itself while it is shut (`checkTechniqueLearning`):
+ * teachers are the only way in — and `prep` hides the kitchen side-benches (the Cutting Board
  * and the Cold Counter), leaving the Cooking Stove. Runes ride the
  * `runecarving` shutter: while it is shut, rune drops pay nothing and the
  * Equipment tab shows no runes or rune slots. The latch is an ordinary
@@ -22,7 +23,8 @@ import { grantFavor } from './deities';
  * player's own compositions would be a regression, not a lock.
  *
  * This is deliberately a UI shutter, not an engine gate: skills, statuses and
- * saved work behind a locked system keep functioning. Locking is about what a
+ * saved work behind a locked system keep functioning (the one engine effect is
+ * martial's self-learning, above). Locking is about what a
  * NEW player is invited into, never about confiscating state.
  */
 export const LOCKABLE_SUBSYSTEMS = ['runecarving', 'music', 'genes', 'psionics', 'wuxin', 'martial', 'prep'] as const;

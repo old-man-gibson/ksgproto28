@@ -4493,6 +4493,21 @@ export interface NpcDef {
    * shop is saved. See systems/shops.ts.
    */
   shop?: ShopDef;
+  /**
+   * Techniques this person teaches (MARTIAL.md §10, the teacher half). A
+   * lesson grants the CANONICAL form, or upgrades a rough one, through
+   * `teachTechnique` in systems/martial.ts. Teaching ignores the `martial`
+   * shutter on purpose: while it is shut, teachers are the only way in.
+   */
+  teaches?: TechniqueLesson[];
+}
+
+/** One lesson on a teacher's list. */
+export interface TechniqueLesson {
+  /** A TECHNIQUES id. */
+  technique: string;
+  /** Held back until these hold — a curriculum, not a price list. */
+  requires?: UnlockCondition[];
 }
 
 /**

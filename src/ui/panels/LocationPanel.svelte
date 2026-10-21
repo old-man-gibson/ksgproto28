@@ -52,6 +52,14 @@
   import { DISCIPLINES } from '../../core/data/disciplines.data';
   import { conditionsMet } from '../../core/systems/conditions';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
+  import { POSITIONS, TECHNIQUES } from '../../core/data/martial.data';
+  import { declaredPositions, lessonState, techniqueForm } from '../../core/systems/martial';
+
+  /** A position as the planner shows it: icon and name. */
+  function positionLabel(id: string): string {
+    const p = POSITIONS[id];
+    return p ? `${p.icon} ${p.name}` : id;
+  }
   import { tutorialScreen } from '../lib/tutorialFocus';
 
   /** Which workbench is open, if any. */
@@ -352,6 +360,43 @@
               </button>
             </div>
           {/each}
+          <!--
+            A teacher's lessons (NpcDef.teaches, systems/martial.ts). Each one
+            shows the positions it links, because the point of the first two is
+            that they chain: neutral → coiled, coiled → extended.
+          -->
+          {#if npc.teaches?.length}
+            <div class="lessons">
+              <b class="small">🥋 Training</b>
+              {#each npc.teaches as lesson (lesson.technique)}
+                {@const tech = TECHNIQUES[lesson.technique]}
+                {@const status = lessonState(gs, lesson)}
+                {#if tech}
+                  {@const from = declaredPositions(tech)}
+                  <div class="quest-row">
+                    <div>
+                      <b>{tech.icon} {tech.name}</b>
+                      <span class="dim small">
+                        {from === 'any' ? 'Any position' : from.map(positionLabel).join(' or ')}
+                        → {positionLabel(tech.to)}
+                      </span>
+                      <div class="dim small">{tech.desc}</div>
+                      {#if status === 'held'}
+                        <div class="dim small">Needs {condsText(lesson.requires)}</div>
+                      {/if}
+                    </div>
+                    {#if status === 'taught'}
+                      <span class="met small">✓ learned</span>
+                    {:else}
+                      <button class="small" disabled={status === 'held'} onclick={() => game.learnFromTeacher(npc.id, tech.id)}>
+                        {techniqueForm(gs, tech.id) === 'rough' ? 'Refine' : 'Learn'}
+                      </button>
+                    {/if}
+                  </div>
+                {/if}
+              {/each}
+            </div>
+          {/if}
           <!--
             The counter. Prices derive from value (systems/shops.ts); a stranger
             pays more, so the hello above is also the discount. Buying never
@@ -731,6 +776,13 @@
   }
 
   .shop {
+    margin-top: 8px;
+  }
+
+  .lessons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     margin-top: 8px;
   }
 

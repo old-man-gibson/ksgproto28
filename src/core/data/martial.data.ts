@@ -209,8 +209,9 @@ export const FORK_ARCHETYPE_LIST: readonly ForkArchetypeDef[] = Object.values(FO
  * a reflex answers on your next swing, not within the moment itself.
  *
  * `unlock` is eligibility, `learn.self` is the fight counter that
- * crystallizes the rough form once eligibility holds; teachers (future
- * content) grant the canonical form directly.
+ * crystallizes the rough form once eligibility holds, but only while the
+ * `martial` shutter is open (systems/unlocks.ts); teachers (`NpcDef.teaches`)
+ * grant the canonical form directly, shutter or not.
  */
 export const TECHNIQUES = prose<TechniqueDef>('TECHNIQUES', TECHNIQUES_TEXT, {
   gather: {
@@ -224,6 +225,20 @@ export const TECHNIQUES = prose<TechniqueDef>('TECHNIQUES', TECHNIQUES_TEXT, {
     unlock: [{ type: 'skill', id: 'fighting', level: 5 }],
     learn: { self: { stat: 'combat:attacks', count: 100 } },
     mastery: { 2: { name: 'Second Nature' } },
+  },
+  // The universal coiled → extended step: any weapon, no family. With Gather
+  // it is the first loop a player is taught (floor 2's tutor): Gather winds
+  // up, Lunge spends it, the next plain swing is back at neutral.
+  lunge: {
+    id: 'lunge',
+    name: 'Lunge',
+    icon: '🤺',
+    skill: 'fighting',
+    from: ['coiled'],
+    to: 'extended',
+    move: { damageMult: 1.3, staminaCost: 0.03, cooldown: 40 },
+    unlock: [{ type: 'skill', id: 'fighting', level: 8 }],
+    learn: { self: { stat: 'combat:attacks', count: 400 } },
   },
   heavy_blow: {
     id: 'heavy_blow',
