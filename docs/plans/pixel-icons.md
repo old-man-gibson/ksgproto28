@@ -10,20 +10,20 @@ updated: 2026-10-20
 invariants:
   - core-browser-free
   - emoji-fallback
-  - licensed-art-per-folder
+  - licensed-art-out-of-git
   - no-save-change
 done:
-  - Every def type with an icon accepts an optional art file; one Icon component resolves art, then the glyph table, then the emoji
+  - Every def type with an icon accepts an optional art name; one Icon component resolves art, then the glyph table, then the emoji
   - Log lines and string-built tooltips draw art through the glyph table, old saved lines included
-  - Licensed art sits in one folder per source, so a history scrub before any public release is one path filter; a checkout without a licensed folder shows the emoji
-  - A content test fails on a declared art file that does not exist
+  - No bought pixels in git; git holds the icon manifest, the art sits in gitignored src/assets/packs/, and a checkout without it shows the emoji
+  - A content test fails on an art name missing from the manifest, and on a missing file when the packs are present
   - Every converted group has art for every entry it shows (no mixed rows)
   - Provenance and credit of every icon folder recorded in docs/AUTHORSHIP.md §9
 ---
 
 # Pixel icons
 
-Plan only. No code yet. Story 1 waits on one decision: §7.1.
+Plan only. No code yet. Story 1 is ready to start (§6).
 
 - **What:** 1,142 `icon:` fields in `src/core/data` and about 750 emoji hard-coded
   in `src/ui` and `src/core` → pixel sprites.
@@ -36,8 +36,12 @@ Plan only. No code yet. Story 1 waits on one decision: §7.1.
 - **License:** the 32px set is Clockwork Raven, bought (user, 2026-10-20). Allowed in
   the game and in this private repo; not in a public one. 41 committed files in
   `combatStyleIcons/` are Ækashics icon sheets.
+- **Git:** no bought pixels in git, the icons the game uses included (user,
+  2026-10-21). Git holds a manifest of icon names and files; the art stays in a
+  gitignored `src/assets/packs/`, as the tile packs do (§4.2).
 - **First conversion:** attributes, resources and superattributes in the sidebar.
-  14 entries, 13 already have art, on screen all the time.
+  14 entries, all with art, on screen all the time. Story 1 also sets up the packs
+  folder and takes the committed icon folders out of git (§6).
 
 ![Before and after: inventory row, spell words, stance buttons, sidebar attributes, tab row, log line](pixel-icons/before-after.png)
 
@@ -216,7 +220,7 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
    | Question | Licence | Here |
    |---|---|---|
    | Use in a commercial game | Yes (§3a) | Fine |
-   | Raw files in this private repo | Not "distributed as a separate product"; the licence lets a team working on the project share them (§3b) | Fine |
+   | Raw files in this private repo | Not "distributed as a separate product"; the licence lets a team working on the project share them (§3b) | Allowed, but the user chose to keep them out of git anyway (2026-10-21, §4.2) |
    | Raw files in a public repo | Would be distributing the assets as they are (§3a, §3b) | Not allowed. Same scrub as point 1 before any public flip |
    | Crops, tints, recolours | Allowed; the edited file stays under the licence (§3c) | Rune tints are fine; edited files are no freer than the originals |
    | Screenshots | Allowed when tied to the project (FAQ a) | The mockup PNG is fine |
@@ -273,11 +277,12 @@ absent. This plan extends that to every icon.
                     3. def.icon              the emoji, as today
 ```
 
-- **`art?: string`** on every def type that has `icon`. A path under
-  `src/assets/icons/`. Defs are not saved, so no save change.
-- **`GLYPH_ART`** in `src/ui/lib/glyphArt.ts`: `{ '🔒': 'chrome/lock.png', '🔥':
-  'elements/fire.png', … }`. One entry fixes every def and every hard-coded string
-  that uses that emoji.
+- **`art?: string`** on every def type that has `icon`. The value is a name from the
+  icon manifest (§4.2), such as `iron_sword`, not a file path. Defs are not saved, so
+  no save change.
+- **`GLYPH_ART`** in `src/ui/lib/icons/glyphs.ts`: `{ '🔒': 'lock', '🔥': 'fire', … }`,
+  emoji → manifest name. One entry fixes every def and every hard-coded string that
+  uses that emoji.
 - **Why both layers.** The glyph table is the cheap one: 100 drawings cover 66% of
   fields, and it is the only thing that can reach text already stored in a save. The
   per-entry `art` covers the cases where one emoji stands for several things: four
@@ -285,14 +290,36 @@ absent. This plan extends that to every icon.
 
 ### 4.2 Files
 
-| File | Job |
-|---|---|
-| `src/assets/icons/<source>/<group>/` | One folder per art source, then per group: `own/` (drawn for this game, always committed), `clockwork-raven/` (committed or gitignored, §7.1), `epic-rpg-world/` (props, gitignored like the tile packs). One source per folder means a history scrub is one `git filter-repo --path` per source. A missing folder means the emoji shows, as tile maps fall back to the node diagram |
-| `src/assets/64x64/` | The full sheet, as a library to pick from. Never inside the `import.meta.glob`: Vite would copy all 8,256 files (29 MB) into every build, and a web build would serve the whole pack as loose files. Each picked icon is copied into `icons/clockwork-raven/<group>/` under a readable name (`iron_sword.png`); picks.md keeps the c-number. Gitignored, like the other packs kept whole in `src/assets/` (§3) |
-| `src/ui/lib/iconArt.ts` | One eager `import.meta.glob` over `src/assets/icons/**` (`?url`); `iconUrl(def)` and `glyphUrl(emoji)`. Core stays browser-free |
-| `src/ui/lib/Icon.svelte` | `<Icon of={def} size={16 \| 32} />`. Draws `<img>` with `image-rendering: pixelated` and `alt=""` (the name is printed beside it), else the emoji. Fixed box so rows do not shift |
-| `src/ui/lib/GlyphText.svelte` | Draws a string, replacing each emoji that has a `GLYPH_ART` entry with an `<img>`. Used by LogFeed, string-built tooltips and template messages. Old log lines in a save get art too, because the log stores text |
-| SVG sites | MapCard pins and the psionic chart draw `<image href>` in place of `<text>` when a URL resolves |
+**No licensed pixels in git (user, 2026-10-21).** Bought icons, the ones the game
+uses included, stay in a gitignored folder. Git holds only a manifest: icon names
+and the file each one points to. This is how tile maps already work: the repo
+carries tile indexes into named sheets, `forge/server/tilemaps.ts` writes
+`src/ui/lib/tilemaps/sheets.gen.ts` with an `import.meta.glob` over exactly the sheets
+in use, and a checkout without the packs draws the plain diagram.
+
+| File | In git | Job |
+|---|---|---|
+| `src/assets/packs/<source>/` | No (one `.gitignore` line) | Every bought pack, whole. `packs/clockwork-raven/` holds `64x64/`, the four Raven Fantasy skill packs, `Epic Weapons 3/`, `Trees and Logs/`, and `legacy/` (the folders that were committed before 2026-10-21: `attributes/`, `system/`, …). Story 1 moves them here |
+| `src/assets/icons/own/` | Yes | Icons drawn for this game (DNA, yin-yang, …) |
+| `src/ui/lib/icons/manifest.json` | Yes, text only | Icon name → file under `src/assets/`: `"iron_sword": "packs/clockwork-raven/64x64/c4457.png"`, `"strength": "packs/clockwork-raven/legacy/attributes/strength.png"`. picks.md is its first draft |
+| `src/ui/lib/icons/art.gen.ts` | Yes, generated | Written by `npm run icons` from the manifest: one eager `import.meta.glob([...], { query: '?url' })` listing exactly the manifest's files. Vite copies those files into a build and nothing else. A file missing on disk is simply absent from the result, so that icon shows its emoji. Never edited by hand |
+| `src/ui/lib/icons/iconArt.ts` | Yes | `iconUrl(def)` and `glyphUrl(emoji)`: name → manifest → URL from `art.gen.ts`. Core stays browser-free |
+| `src/ui/lib/icons/Icon.svelte` | Yes | `<Icon of={def} size={16 \| 32} />`. Draws `<img>` with `image-rendering: pixelated` and `alt=""` (the name is printed beside it), else the emoji. Fixed box so rows do not shift |
+| `src/ui/lib/icons/GlyphText.svelte` | Yes | Draws a string, replacing each emoji that has a `GLYPH_ART` entry with an `<img>`. Used by LogFeed, string-built tooltips and template messages. Old log lines in a save get art too, because the log stores text |
+| SVG sites | — | MapCard pins and the psionic chart draw `<image href>` in place of `<text>` when a URL resolves |
+
+Never point `import.meta.glob` at a whole pack: Vite would copy all 8,256 sheet files
+(29 MB) into every build, and a web build would serve the whole pack as loose files.
+
+**Who sees the art.** The main checkout, and any build made from it. A fresh clone
+or a worktree under `.claude/worktrees/` sees emoji until `src/assets/packs` is linked
+in. One junction per worktree, the same fix the enemy portraits need:
+
+```powershell
+New-Item -ItemType Junction -Path "<worktree>\src\assets\packs" -Target "D:\ksgproto28\src\assets\packs"
+```
+
+The junction sits under the ignored folder, so git never sees it.
 
 `title=` and `aria-label` text stays as it is.
 
@@ -312,12 +339,16 @@ One conversion = one registry's render sites switched from `{def.icon}` to
 
 ### 4.4 Tests and the forge
 
-- A content test: every declared `art` and every `GLYPH_ART` value resolves to a file
-  under `src/assets/icons/`. Same shape as "declared bestiary art exists on disk"
-  ([content.test.ts](../../tests/content.test.ts) :765). Paths under a gitignored
-  source folder are exempt, since a clone may not have them.
-- The forge edits `icon` as a plain string today. `art` starts as a plain text field;
-  a picker that shows the folder's sprites comes later.
+- **Always runs:** every declared `art` and every `GLYPH_ART` value is a name in the
+  manifest, and `art.gen.ts` matches the manifest (re-generate and compare). Text
+  only, so it passes in any clone.
+- **Runs when `src/assets/packs/` exists:** every manifest file is on disk. Skipped
+  with a message otherwise. The bestiary art test
+  ([content.test.ts](../../tests/content.test.ts) :765) fails in a worktree instead
+  of skipping; this one should not repeat that.
+- `icons/own/` files are committed, so their existence is always checked.
+- The forge edits `icon` as a plain string today. `art` starts as a plain text field
+  holding a manifest name; a picker that shows the sprites comes later.
 
 ### 4.5 Sizes
 
@@ -394,11 +425,34 @@ matching block (§3.2) but nobody has chosen icons from it.
 
 Each step is one story and one PR.
 
-1. **Mechanism + sidebar.** `Icon.svelte`, `iconArt.ts`, `art` on the attribute,
-   resource and superattribute defs; move `attributes/` to
-   `icons/clockwork-raven/attributes/` and copy Force (c2881) beside them; switch the
-   sidebar rows and attribute tooltips. 14 of 14 have art. Decide 16px vs 32px on the
-   real sidebar in both themes. Waits on §7.1.
+1. **Packs folder, mechanism, sidebar.** Story 1 is the largest because it sets up
+   the folder layout and the pipeline every later story uses. In order:
+   1. **Packs out of the way.** In the main checkout, move `64x64/`, the four
+      `Raven Fantasy - …/` packs, `Epic Weapons 3/` and `Trees and Logs/` into
+      `src/assets/packs/clockwork-raven/`. `.gitignore`: `src/assets/packs/`
+      replaces the per-pack lines (it is already listed). Nothing changes in git;
+      these folders were never committed.
+   2. **Committed licensed folders leave git.** `git rm -r --cached` on
+      `attributes/`, `system/`, `equipment_slot_placeholders/`, `weapons/`,
+      `books/`, `keys/`, `runes/` and `combatStyleIcons/`. The Clockwork Raven ones
+      (the seven `c…` files of `combatStyleIcons/` included) move into
+      `packs/clockwork-raven/legacy/`; the 41 Ækashics sheets move into
+      `packs/aekashics/combatStyleIcons/`, which matches the rule the battlers
+      already follow. The files stay on disk in the main checkout. No code uses
+      them, so nothing breaks; other checkouts lose them when they pull this
+      commit, which is the point. Git history still holds them until a scrub
+      (§7.1).
+   3. **Pipeline.** `src/ui/lib/icons/manifest.json` with the 14 sidebar entries
+      (13 `legacy/attributes/` files + Force c2881), the `npm run icons` generator
+      writing `art.gen.ts`, `iconArt.ts`, `Icon.svelte`.
+   4. **Data and UI.** `art` on the attribute, resource and superattribute defs
+      (manifest names); sidebar rows and attribute tooltips use `<Icon>`.
+   5. **Tests** from §4.4.
+   6. **Checks, by screenshot:** the main checkout shows the art in both themes; a
+      worktree without the junction shows emoji and no broken images; with the
+      junction, art. Decide 16px vs 32px on the real sidebar.
+   7. **Docs:** the junction command in docs/ENGINEERING.md beside the enemy
+      portraits; AUTHORSHIP §9 points at the manifest.
 2. **Tab row + `GlyphText` in the log.** 9 tabs from picks.md; Chromosome and Wuxin
    keep the emoji until drawn. Seed `GLYPH_ART` with 📦 ⚔️ ❓ 📖 📜 🏆.
 3. **Chrome glyphs and weather.** 14 of 15 chrome glyphs and 7 of 10 weather kinds
@@ -406,11 +460,11 @@ Each step is one story and one PR.
 4. **Element set.** The 14 arcane nouns from picks.md → arcane words, resistance
    skills, statuses, runes, reagents, through `GLYPH_ART`. Pick the statuses here.
 5. **Inventory.** All 39 items from picks.md; per-item `art` splits the four 🗡️
-   blades. Empty slots keep the committed silhouettes.
+   blades. Empty slots use the slot silhouettes in `packs/clockwork-raven/legacy/`.
 6. **Stances.** The nine generic stances from picks.md; pick the 12 schools from the
    skill blocks (2721–2840, 3601–4440).
-7. **Spots and activities.** Map pins become SVG images; props from the licensed
-   folder.
+7. **Spots and activities.** Map pins become SVG images; Epic RPG World props go in
+   `packs/epic-rpg-world/`.
 8. **The rest, by tier.**
 
 When a story ships: the system's doc gets a line on its `art` field, and
@@ -418,32 +472,25 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
 
 ## 7. Open questions
 
-1. **The icons the game uses: keep them committed while the repo is private, or
-   gitignore them like the tile packs?** Blocks story 1. (The whole packs are
-   settled: gitignored, see below.)
-   - *Keep committed (recommended).* The licence allows it (§3.1 point 2). Worktrees
-     and fresh clones get the art, so sessions can check the UI by screenshot. The
-     files are in history already, so gitignoring now would not avoid the scrub;
-     before any public flip, one `git filter-repo` removes `icons/clockwork-raven/`,
-     the old folder paths and the Ækashics files together.
-   - *Gitignore now.* Matches the battlers and tile packs. Every fresh clone and
-     worktree shows emoji until the folder is linked in by hand.
-   - *Either way, only the picked icons are copied into the game's folders.*
-2. **`combatStyleIcons/` (41 Ækashics files):** take them out of git (and rewrite
-   history before any public flip), or ask Ækashics? Outside this plan's code. The
-   icons no longer depend on it: the Clockwork Raven sheet covers the stances.
-3. **16px or 32px for inline rows** (sidebar, word pills, log)? Mockup §2 and §4.
-4. **Buy or draw the 14 the sheet lacks** (§5.1)?
-5. **The picks themselves** ([picks.png](pixel-icons/picks.png)): swap any that read
+1. **History scrub.** Story 1 takes the Clockwork Raven and Ækashics icon folders out
+   of the tree, but history keeps them. Before any public flip: `git filter-repo` on
+   those paths, or a yes from each author. Outside this plan's code; not needed
+   while the repo is private.
+2. **16px or 32px for inline rows** (sidebar, word pills, log)? Mockup §2 and §4;
+   decided on the real sidebar in story 1.
+3. **Buy or draw the 14 the sheet lacks** (§5.1)?
+4. **The picks themselves** ([picks.png](pixel-icons/picks.png)): swap any that read
    wrong. Each has alternates listed.
 
-Answered 2026-10-20:
-- The 32px set is Clockwork Raven, bought.
-- The full sheet is on disk: `src/assets/64x64/` in the main checkout.
-- The whole packs in `src/assets/` (`64x64/`, the Raven Fantasy skill packs, Epic
-  Weapons 3, Trees and Logs) are gitignored. Until this branch merges, the same
-  lines sit in the repo's local `.git/info/exclude` so they already apply in the
+Answered:
+- 2026-10-20: the 32px set is Clockwork Raven, bought. So are the full sheet, the
+  four Raven Fantasy skill packs, Epic Weapons 3 and Trees and Logs (2026-10-21).
+- 2026-10-20: the full sheet is on disk: `src/assets/64x64/` in the main checkout.
+- 2026-10-20: the whole packs are gitignored. Until this branch merges, the same
+  lines sit in the repo's local `.git/info/exclude`, so they already apply in the
   main checkout.
+- 2026-10-21: **no Clockwork Raven pixels in git, the icons the game uses
+  included.** Git holds the manifest; the art stays in `src/assets/packs/` (§4.2).
 
 ## 8. Picks from the full sheet
 

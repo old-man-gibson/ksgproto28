@@ -498,6 +498,14 @@ Two things worth keeping in mind:
    Epic Weapons 3 (192) and Trees and Logs (36). The screenshots under `docs/plans/pixel-icons/` show Clockwork
    Raven icons; the licence allows screenshots, but they go on the scrub list too.
 
+   **Decided 2026-10-21: no bought pixels in git, the icons the game uses
+   included.** The licence would allow them in a private repo; the user chose the
+   tile-pack rule anyway. Git holds `src/ui/lib/icons/manifest.json` (icon names and
+   the file each points to); every pack sits whole in the gitignored
+   `src/assets/packs/`, and a checkout without it shows the emoji. The first icon
+   story moves the packs there and takes the 250 committed icon files out of the
+   tree, the Ækashics sheets included (docs/plans/pixel-icons.md §6).
+
    So making the repo public is no longer a settings toggle. Before any public
    flip, either remove those paths from history with `git filter-repo` or get a
    yes from each author. Plan and options: docs/plans/pixel-icons.md §3.1 and §7.
