@@ -61,6 +61,7 @@
   import Tip from '../lib/Tip.svelte';
   import EntryConfigModal from '../lib/EntryConfigModal.svelte';
   import MartialPlanner from './MartialPlanner.svelte';
+  import { tutorialScreen } from '../lib/tutorialFocus';
 
   /**
    * The rows of an affliction total worth drawing.
@@ -320,6 +321,8 @@
   }
 
   const spot = $derived(getSpot(gs.spot));
+  /** Floor 0's fight steps scroll here (lib/tutorialFocus.ts); no glow over a running fight. */
+  const stageTarget = $derived(tutorialScreen(gs)?.target === 'stage');
   /** Actives in the order they'll actually be considered. */
   const rotation = $derived(activeRotation(gs));
   /**
@@ -504,7 +507,7 @@
 
 <!-- The fight, drawn — first on the tab, because it is what the tab is for.
      Between fights it stays up, showing the place and what it is waiting on. -->
-<div style="margin-bottom: 12px">
+<div style="margin-bottom: 12px" class:tutorial-target={stageTarget}>
   <BattleStage {spot} foeTip={enemyTip} />
   <!-- The player's own rule between fights (systems/huntrest.ts). Applies to
        hunts only: forced fights and the keeper's dare start regardless. -->

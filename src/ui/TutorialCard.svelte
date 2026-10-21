@@ -1,16 +1,17 @@
 <script lang="ts">
-  import { gs, game } from './state.svelte';
+  import { gs, game, importSave } from './state.svelte';
   import { ARCANE_WORDS } from '../core/data/spellcraft.data';
   import {
     TUTORIAL_RACK,
     TUTORIAL_SHIELD,
     TUTORIAL_SPELLS,
+    TUTORIAL_STANCES,
     TUTORIAL_STEP_LIST,
   } from '../core/data/tutorial.data';
   import { tutorialStep, tutorialStepIndex } from '../core/systems/tutorial';
   import { styleSlots, styleUnlocked } from '../core/systems/styles';
   import { specForSource } from '../core/systems/spellcraft';
-  import { ITEMS, SPOTS } from '../core/registry';
+  import { ITEMS } from '../core/registry';
   import type { TutorialWeapon } from '../core/types';
   import { describeMod, exertionLines, ticksToTime } from './lib/format';
   import Tip from './lib/Tip.svelte';
@@ -24,9 +25,14 @@
    * The choices call Game methods and nothing else; every step's completion
    * is read back from the save, never from a local "clicked" flag, which is
    * what makes the panel honest about a player who wandered ahead.
+   *
+   * `target` is the step's pointer (lib/tutorialFocus.ts); `choice` lights
+   * the widget on this card.
    */
+  let { target = null }: { target?: string | null } = $props();
 
   const step = $derived(tutorialStep(gs));
+  const pointed = $derived(target === 'choice');
   const index = $derived(tutorialStepIndex(gs));
   const total = TUTORIAL_STEP_LIST.length;
 
@@ -52,8 +58,14 @@
 
   const shieldDef = ITEMS[TUTORIAL_SHIELD];
 
-  // Stances: the same roster the Combat tab shows, unlocked ones only.
-  const slots = $derived(styleSlots(gs).filter((s) => styleUnlocked(gs, s.stance)));
+  // Stances: the card's short list (TUTORIAL_STANCES), in its order, from the
+  // same roster the Combat tab shows.
+  const slots = $derived(
+    TUTORIAL_STANCES.flatMap((id) => {
+      const slot = styleSlots(gs).find((s) => s.stance.id === id);
+      return slot && styleUnlocked(gs, slot.stance) ? [slot] : [];
+    }),
+  );
 
   // Spells: the three words, each resolved as the one-word sentence it becomes.
   const spells = $derived(
@@ -63,33 +75,34 @@
     }),
   );
 
-  // Skipping is two clicks: the second one is the real button.
+  /**
+   * The offer to a returning player: on the first step only, so it is seen
+   * once, on a new save, and gone with the first pick from the rack. Derived
+   * from the step like everything else here — nothing is stored. Skipping is
+   * two clicks; the second one is the real button. Import sits beside it
+   * because the top bar's save buttons wait for the end of the tutorial.
+   */
+  const offer = $derived(step?.id === TUTORIAL_STEP_LIST[0].id);
   let confirmingSkip = $state(false);
+  let fileInput = $state<HTMLInputElement>();
 
-  function pointer(spotId: string | undefined): string {
-    const spot = spotId ? SPOTS[spotId] : null;
-    if (!spot) return '';
-    return gs.spot === spot.id ? `You are here: ${spot.icon} ${spot.name}` : `Where: ${spot.icon} ${spot.name}`;
+  function onImportChange(ev: Event) {
+    const file = (ev.target as HTMLInputElement).files?.[0];
+    if (file) importSave(file);
+    (ev.target as HTMLInputElement).value = '';
   }
 </script>
 
 {#if step}
-  <div class="tutorial">
+  <section class="tutorial" aria-label="Floor 0, step {index} of {total}">
     <div class="head">
-      <span class="title">📘 Tutorial {index}/{total} — {step.title}</span>
-      <span class="dim small">{pointer(step.spot)}</span>
-      <span class="spacer"></span>
-      {#if confirmingSkip}
-        <button class="small danger" onclick={() => game.skipTutorial()}>Confirm skip</button>
-        <button class="small" onclick={() => (confirmingSkip = false)}>Keep going</button>
-      {:else}
-        <button class="small" onclick={() => (confirmingSkip = true)}>Skip tutorial</button>
-      {/if}
+      <span class="count">{index}/{total}</span>
+      <h3 class="title">{step.title}</h3>
     </div>
     <p class="body">{step.desc}</p>
 
     {#if step.choice === 'weapon'}
-      <div class="choice">
+      <div class="choice" class:tutorial-target={pointed} class:tutorial-glow={pointed}>
         <div class="row">
           {#each weapons as w (w)}
             <Tip>
@@ -112,7 +125,7 @@
         </div>
       </div>
     {:else if step.choice === 'stance'}
-      <div class="choice">
+      <div class="choice" class:tutorial-target={pointed} class:tutorial-glow={pointed}>
         <div class="row">
           {#each slots as slot (slot.stance.id)}
             <Tip>
@@ -130,7 +143,7 @@
         </div>
       </div>
     {:else if step.choice === 'spell'}
-      <div class="choice">
+      <div class="choice" class:tutorial-target={pointed} class:tutorial-glow={pointed}>
         <div class="row">
           {#each spells as s (s.word)}
             <Tip>
@@ -147,35 +160,77 @@
         </div>
       </div>
     {/if}
-  </div>
+
+    {#if offer}
+      <div class="offer small">
+        {#if confirmingSkip}
+          <span>Skip floor 0: you start at the Foot of the Ascent with a rusty sword in your pack.</span>
+          <button class="small danger" onclick={() => game.skipTutorial()}>Skip floor 0</button>
+          <button class="small" onclick={() => (confirmingSkip = false)}>Cancel</button>
+        {:else}
+          <span class="dim">Played before?</span>
+          <button class="small" onclick={() => (confirmingSkip = true)}>Skip floor 0</button>
+          <button class="small" onclick={() => fileInput?.click()}>Import a save</button>
+        {/if}
+        <input type="file" accept="application/json" bind:this={fileInput} onchange={onImportChange} hidden />
+      </div>
+    {/if}
+  </section>
 {/if}
 
 <style>
+  /* Not a panel: a heavier frame, a tinted ground and the step number in a
+     solid badge, so it does not read as one more block of the page. Sticky
+     for the narrow layout, where the page scrolls (App.svelte); inert in
+     the wide one, where only the tab body scrolls. Colours are app.css
+     tokens so the display themes restyle it. */
   .tutorial {
-    background: color-mix(in srgb, var(--accent) 8%, var(--bg-panel));
-    border: 1px solid var(--accent);
+    position: sticky;
+    top: 4px;
+    z-index: 4;
+    background: color-mix(in srgb, var(--accent) 16%, var(--bg-panel));
+    border: 2px solid var(--accent);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 10px 14px 12px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 45%);
   }
 
   .head {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
+  }
+
+  .count {
+    flex: none;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
   }
 
   .title {
-    font-weight: 600;
-  }
-
-  .spacer {
-    flex: 1;
+    margin: 0;
+    color: var(--accent);
   }
 
   .body {
-    margin: 8px 0 0;
-    line-height: 1.45;
+    margin: 6px 0 0;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .offer {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .choice {
