@@ -493,9 +493,9 @@ Two things worth keeping in mind:
    in the main checkout as a library to pick from. 185 of the 209 committed files
    are pixel-identical to cells of it; the rest are edited versions. Since
    2026-10-20 it is gitignored, together with the other icon packs kept whole in
-   `src/assets/`: four Raven Fantasy skill packs (Acolyte, Rogue, Warrior, Wizard;
-   Clockwork Raven, 1,060 icons), Epic Weapons 3 (192) and Trees and Logs (36). The
-   last two came without a licence file; their source is not recorded yet. The screenshots under `docs/plans/pixel-icons/` show Clockwork
+   `src/assets/`, all Clockwork Raven under the same licence (user, 2026-10-21):
+   four Raven Fantasy skill packs (Acolyte, Rogue, Warrior, Wizard; 1,060 icons),
+   Epic Weapons 3 (192) and Trees and Logs (36). The screenshots under `docs/plans/pixel-icons/` show Clockwork
    Raven icons; the licence allows screenshots, but they go on the scrub list too.
 
    So making the repo public is no longer a settings toggle. Before any public

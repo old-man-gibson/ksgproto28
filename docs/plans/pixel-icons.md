@@ -191,8 +191,8 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 | `deities/` | 0 | README only | `DeityDef.art` exists, nothing drawn | — |
 | `64x64/` (main checkout, gitignored) | 8,256 | The full Clockwork Raven sheet, `c1.png`…`c8256.png`, 29 MB. Index in §3.2 | Most of tiers 1–3; picks in [pixel-icons/picks.md](pixel-icons/picks.md) | Clockwork Raven; added by the user 2026-10-20 |
 | `Raven Fantasy - Pixel Art RPG Icons - {Acolyte, Rogue, Warrior, Wizard} Skills/` (main checkout, gitignored) | 1,060 | Class skill icons, 64×64, plus one sheet image each | Stances, techniques, spells, statuses. Not picked from yet | Clockwork Raven; added 2026-10-20 |
-| `Epic Weapons 3/` (main checkout, gitignored) | 192 | Weapons, 64×64, plus a sheet image | More weapon items | Not recorded; no licence file. Added 2026-10-20 |
-| `Trees and Logs/` (main checkout, gitignored) | 36 | Trees and logs, 64×64, plus a sheet image | Woodcutting, wood materials | Not recorded; no licence file. Added 2026-10-20 |
+| `Epic Weapons 3/` (main checkout, gitignored) | 192 | Weapons, 64×64, plus a sheet image | More weapon items | Clockwork Raven (user, 2026-10-21). Added 2026-10-20 |
+| `Trees and Logs/` (main checkout, gitignored) | 36 | Trees and logs, 64×64, plus a sheet image | Woodcutting, wood materials | Clockwork Raven (user, 2026-10-21). Added 2026-10-20 |
 | `react.svg` | 1 | Vite template leftover | — | Unused |
 
 ### 3.1 License findings
