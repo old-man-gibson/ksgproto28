@@ -28,6 +28,7 @@
   import TutorialCard from './TutorialCard.svelte';
   import { tutorialActive } from '../core/systems/tutorial';
   import { fmt } from './lib/format';
+  import { applyTheme, loadTheme, nextTheme, THEME_NAMES } from './lib/theme';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf } from '../core/systems/clock';
   import { CHRONOSENSE_ID, describeTimeSense } from '../core/systems/chronosense';
@@ -56,6 +57,12 @@
    */
   const DEV = import.meta.env.DEV;
   let showDebug = $state(false);
+
+  let theme = $state(loadTheme());
+  function cycleTheme() {
+    theme = nextTheme(theme);
+    applyTheme(theme);
+  }
 
   const activity = $derived(currentActivity(gs));
 
@@ -324,6 +331,9 @@
       <button onclick={exportSave}>Export</button>
       <button onclick={() => fileInput.click()}>Import</button>
       <button onclick={hardReset} class="danger">Reset</button>
+      <button onclick={cycleTheme} title="Display theme. Kept in this browser, not in the save.">
+        {THEME_NAMES[theme]}
+      </button>
       {#if DEV}
         <button onclick={() => (showDebug = !showDebug)} title="Developer tools">🐞</button>
       {/if}
@@ -462,8 +472,9 @@
   header {
     grid-area: header;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 16px;
+    gap: 8px 16px;
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: 10px;

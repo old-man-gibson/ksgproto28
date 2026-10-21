@@ -1,0 +1,129 @@
+/*
+ * Gothic display theme (prototype). Active while <html data-theme="gothic">
+ * (src/ui/lib/theme.ts). Presentation only: the tokens first, then the few
+ * shared shapes every panel is built from (.panel, buttons, bars, headings).
+ *
+ * A component that hard-codes a colour will not follow this file. Give the
+ * colour a token in app.css and override the token here, rather than adding a
+ * per-component rule.
+ */
+
+:root[data-theme='gothic'] {
+  --bg: #110e0b;
+  --bg-panel: #1a1511;
+  --bg-raised: #241d16;
+  --bg-hover: #30271d;
+  --bg-sunken: #0b0907;
+  --border: #4a3c2c;
+  --frame: #2c241b; /* the inner rule of a panel's double frame */
+  --text: #ddd1b6;
+  --text-dim: #9b8c72;
+  --accent: #c9a45c;
+  --hp: #b0362c;
+  --xp: #7f9a4c;
+  --skill: #9c84c0;
+  --stamina: #7f9f4f;
+  --stamina-winded: #55693a;
+  --stamina-exhausted: #9a9440;
+  --mana: #5279b0;
+  --manaburn: #b04aa8;
+  --spirit: #8a66b8;
+  --focus: #c8762f;
+  --danger: #c8493d;
+  --action: #d2b042;
+
+  --log-combat: #d39a8f;
+  --log-danger: #d0584c;
+  --log-loot: #c9a45c;
+  --log-skill: #a98bc9;
+  --log-achievement: #e0bf6a;
+  --log-fusion: #d08a4a;
+  --log-quest: #cdb878;
+  --log-travel: #8fa9c4;
+  --log-explore: #8fbfa8;
+  --log-plain: #9b8c72;
+
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 16.5px;
+  /* Garamond's default figures are old-style; stats need to line up. */
+  font-variant-numeric: lining-nums tabular-nums;
+  scrollbar-color: var(--border) var(--bg);
+}
+
+/* Square everything except the few shapes that are round on purpose:
+   the battle stage's floor shadow, rarity ring and aura, and status dots. */
+:root[data-theme='gothic'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 0 !important;
+}
+
+/* Cinzel is capitals only, so it stays on short titles. h4 is often a long
+   instruction line ("In the plan — drag to set priority"), which it would
+   turn into a shout. */
+:root[data-theme='gothic'] :is(h1, h2, h3) {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+:root[data-theme='gothic'] h4 {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme='gothic'] :is(.panel, .layout > header) {
+  border-color: var(--border);
+  box-shadow:
+    inset 0 0 0 3px var(--bg-panel),
+    inset 0 0 0 4px var(--frame);
+}
+
+:root[data-theme='gothic'] .layout > header h1 {
+  font-size: 19px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='gothic'] button {
+  border-color: #5a4a36;
+}
+
+:root[data-theme='gothic'] button:hover:not(:disabled) {
+  border-color: #7a6448;
+}
+
+:root[data-theme='gothic'] button.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-raised));
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* The main tab row reads as engraved labels, not pills. */
+:root[data-theme='gothic'] .tabs > button {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme='gothic'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 1px solid #5a4a36;
+}
+
+:root[data-theme='gothic'] :is(input, select, textarea)::placeholder {
+  color: var(--text-dim);
+}
+
+:root[data-theme='gothic'] input:is([type='checkbox'], [type='radio'], [type='range']) {
+  accent-color: var(--accent);
+}
+
+:root[data-theme='gothic'] .bar {
+  box-shadow: inset 0 0 0 1px var(--frame);
+}
+
+:root[data-theme='gothic'] .bar > .label {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 11.5px;
+}

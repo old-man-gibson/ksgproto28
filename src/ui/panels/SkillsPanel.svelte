@@ -327,7 +327,7 @@
               <span class="bar" style="height: 5px">
                 <span
                   class="fill"
-                  style="width: {(s.xp / skillXpNeeded(def.id, s.level)) * 100}%; background: #b58fe0"
+                  style="width: {(s.xp / skillXpNeeded(def.id, s.level)) * 100}%; background: var(--skill)"
                 ></span>
               </span>
               <!-- Talent under XP: one lap per 100% of bonus, a new colour
@@ -757,7 +757,7 @@
   .xp .bar {
     display: block;
     position: relative;
-    background: #0d1014;
+    background: var(--bg-sunken);
     border-radius: 3px;
     overflow: hidden;
   }
@@ -789,7 +789,7 @@
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 1.5px;
-    color: #b58fe0;
+    color: var(--skill);
   }
 
   .reqs {

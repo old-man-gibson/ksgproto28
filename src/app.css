@@ -3,12 +3,14 @@
   --bg-panel: #1a1f27;
   --bg-raised: #232a35;
   --bg-hover: #2c3542;
+  --bg-sunken: #0d1014; /* wells: bar tracks, the map's ground */
   --border: #303a48;
   --text: #d7dee8;
   --text-dim: #8b96a5;
   --accent: #e8b84b;
   --hp: #e05555;
   --xp: #4caf7d;
+  --skill: #b58fe0; /* skill XP bars and skill-side labels */
   --stamina: #5cbb6a; /* resource bar — physical exertion */
   --stamina-winded: #3f7a4a; /* spent to the reserve floor — refilling before it pays out again */
   --stamina-exhausted: #97a53a; /* bottomed out — sickly, slow, and dragging every action */
@@ -79,7 +81,7 @@ h1, h2, h3, h4 {
 .bar {
   position: relative;
   height: 14px;
-  background: #0d1014;
+  background: var(--bg-sunken);
   border-radius: 7px;
   overflow: hidden;
 }

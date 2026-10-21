@@ -10,7 +10,9 @@
   import { ARCANE_WORDS, PSI_AXIS_LIST } from '../../core/data/spellcraft.data';
   import { grantFavor } from '../../core/systems/deities';
   import { grantLevelXp } from '../../core/systems/levels';
-  import { wordUnlockKey } from '../../core/systems/unlocks';
+  import { recordKill } from '../../core/systems/bestiary';
+  import { MONSTERS } from '../../core/registry';
+  import { LOCKABLE_SUBSYSTEMS, unlockKey, wordUnlockKey } from '../../core/systems/unlocks';
   import { learnPsiAxis, raisePsiTier } from '../../core/systems/psionic';
   import { TECHNIQUES, TECHNIQUE_LIST } from '../../core/data/martial.data';
   import { learnTechnique, resetTechnique } from '../../core/systems/martial';
@@ -162,6 +164,24 @@
       for (let i = 0; i < uses; i++) counts[`arcane:${w.id},debugseed${i}`] = 1;
     }
     say(`every word credited with ${uses} distinct sentences — all tiers speakable`);
+  }
+
+  /**
+   * Kill every species `kills` times through `recordKill`, so the book fills
+   * the way hunting fills it: entries, facts at their `sureKills`, the log
+   * lines. Habitats stay empty — those come from sightings at a spot.
+   */
+  function recordAllCreatures(kills = 20) {
+    for (const id of Object.keys(MONSTERS)) {
+      for (let i = 0; i < kills; i++) recordKill(gs, game.bus, id);
+    }
+    say(`every creature recorded with ${kills} kills`);
+  }
+
+  /** Lift every alpha shutter (`flag:unlock_<id>`, unlocks.ts): tabs and benches appear. */
+  function openAllSubsystems() {
+    for (const id of LOCKABLE_SUBSYSTEMS) gs.stats[unlockKey(id)] = 1;
+    say(`opened ${LOCKABLE_SUBSYSTEMS.join(', ')}`);
   }
 
   /** Lift the starter-lexicon shutter for every word (`flag:word:<id>`, unlocks.ts). */
@@ -427,6 +447,8 @@
       <button onclick={() => giveGold(1_000_000)}>+1M gold</button>
       <button onclick={() => giveLevelXp(100)}>+100 level XP</button>
       <button onclick={() => giveLevelXp(1000)}>+1k level XP</button>
+      <button onclick={() => recordAllCreatures()}>Record every creature</button>
+      <button onclick={openAllSubsystems}>Open locked systems</button>
     </div>
   </div>
 
