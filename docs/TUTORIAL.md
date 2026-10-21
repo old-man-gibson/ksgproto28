@@ -111,6 +111,9 @@ nothing but the choice.
 Floor 0 is the first region drawn from tiles instead of the node diagram —
 `src/ui/lib/tilemaps/holding_level.map.json`, painted in the forge's Tiles
 mode. How drawn maps work, how they are edited and why the art is not in the
-repo is all in **[TILEMAPS.md](TILEMAPS.md)**. The one fact that matters here:
-spot `map` coordinates land on the picture as `x = tile / 32 × 100`,
-`y = tile / 24 × 75`, so moving a spot in the forge snaps it to a tile.
+repo is all in **[TILEMAPS.md](TILEMAPS.md)**; §4.1 there lists this map's
+layout, pins and tiles. The one fact that matters here: the map is 20 × 15
+tiles, so spot `map` coordinates land on the picture as `x = tile × 5`,
+`y = tile × 5`, and moving a spot in the forge snaps it to a tile. The map
+draws no road lines: the walk cell → corridor → yard door → path → gate is
+painted.

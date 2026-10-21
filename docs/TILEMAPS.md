@@ -32,8 +32,14 @@ Where things live:
 (`0 -6 100 84`), so a spot's `map: { x, y }` lands on tile
 `(x / 100 · width, y / 75 · height)` — the same projection the forge uses
 when it snaps a dragged spot to a tile centre. Labels go white with a dark
-stroke over tiles; roads go pale. A machine without the art packs (every fresh
-checkout) draws nothing and the plain diagram shows; nothing else changes.
+stroke over tiles. **Roads are not drawn on a tiled region**: a straight line
+between two pins cuts through whatever walls the picture has, so the picture
+carries the roads itself — paint the doors, gaps and paths a player walks
+through, and put each pin inside its room or at its door. A shut road keeps
+its 🔒 at the midpoint and a forced fight keeps the ⚔️ on its pin; the
+straight lines come back the moment the sheets fail to load. A machine without
+the art packs (every fresh checkout) draws nothing and the plain diagram
+shows; nothing else changes.
 
 ## 2. The file
 
@@ -124,8 +130,7 @@ then on; spots keep their coordinates.
 - **Example maps** — every pack ships one or two Tiled maps of its own tiles
   laid out properly. Drag a rectangle there and the stamp carries every
   checked layer at once, each landing on a layer **of the same name** in your
-  map (created if missing). This is how floor 0's cell block was made: a crop
-  of the Old Prison example beside a scattered grass fill.
+  map (created if missing). Floor 0's map is listed piece by piece in §4.1.
 
 **Layers**: click to make one active, double-click to rename, 👁 hides it while
 you work (an aid — hidden layers still ship), ▲▼ change paint order, ✕ deletes
@@ -142,6 +147,41 @@ whatever spot moves you made, in one diff.
 
 **Delete drawn map** removes the file; the region goes back to the diagram
 and its spots are untouched.
+
+### 4.1 Floor 0, piece by piece
+
+`holding_level.map.json` is 20 × 15 tiles (a tile is 5 map units, so a spot at
+tile `(tx, ty)` has `map: { x: tx × 5, y: ty × 5 }`). Left half: the cell
+block — three cells along the north wall, the player's open, two behind bars,
+over a corridor. Right half: the walled yard, a flagstone path from the yard
+door (the gap in the partition) up to a barred gate in the north wall.
+Painted 2026-10-20 to replace a prison crop beside a grass field.
+
+| pin | map | tile | sits |
+|---|---|---|---|
+| `f0_cell` | 15, 22 | 3, 4.4 | inside the open cell |
+| `f0_cellblock` | 27.5, 50 | 5.5, 10 | in the corridor |
+| `f0_field` | 67.5, 32.5 | 13.5, 6.5 | on the yard grass, beside the path |
+| `f0_gate` | 80, 11 | 16, 2.2 | in the gate's opening |
+
+The pieces, as (column, row) on each sheet — what to pick in the palette to
+extend or repair it:
+
+| layer | sheet | tiles |
+|---|---|---|
+| ground | Old Prison `wall-1- 3 tiles tall` | floor slabs (4–6, 19–21); one in five from (0–2, 19–21), (8–9, 20), (13, 19) |
+| ground (yard) | Cemetery `Tileset-Terrain` | dirt, the opaque middle of the Dirt2 blob: (33, 15), (32–34, 16), (33, 17) |
+| grass | Cemetery `Tileset-Terrain` | darker grass, no shade (44–46, 3–5) — over the dirt, so its gaps show dirt, not black |
+| path | Cemetery `Tileset-Terrain` | Stone path: full (45, 15), (44–46, 16), (45, 17); edge where grass is on one side: top (45, 14), bottom (45, 18), left (43, 16), right (47, 16); two sides: (43, 15), (47, 15), (43, 17), (47, 17); grass only diagonally: (44, 15), (46, 15), (44, 17), (46, 17) |
+| walls | Old Prison `wall-2- 3 tiles tall` | north wall: the face strip, rows 9–11, any of columns 0–5 and 7–12 per column; west edge (4, 2), east edge (0, 2); south band: top (2, 0) over fill (2, 2) |
+| walls | Old Prison `Tileset-Terrain-old prison` | the gate's arch (40–43, 17–19) |
+| cells | Old Prison `Tileset-Terrain-old prison` | cell divider (30, 18–20); where a divider meets the cell fronts (31, 19–21); front's end against the partition (41, 23) over (25, 15), (25, 16); the open cell's arch (40–43, 17–19); barred gate, two wide, see-through (17–18, 17–19) — also in the north gate's arch |
+| props | Old Prison `atlas-props-old prison` | banner (33, 32–33), candelabra (43, 30–31), barrels (27–28, 16–17), table (35–36, 19–20), bucket (37, 20), shackled skeleton (21–22, 1–2) |
+| props | Cemetery `atlas-Props` | the Gate Plaque (13, 12), stump (14–15, 4–5), lantern post (22–23, 33–35), stones (37, 8), (34, 8), (32, 9), (36, 10) |
+
+Walls in these packs are three tiles tall (top band, brick face, base), and
+only a wall's south face shows: a door in a north wall reads as a door, a door
+in a side wall is just a gap.
 
 ## 5. The art is not in the repo
 

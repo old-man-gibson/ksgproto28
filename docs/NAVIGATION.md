@@ -127,6 +127,11 @@ it said moved onto the map:
 | shut, with terms | dotted line with 🔒 at its midpoint; card "Shut: terms", Walk disabled |
 | roads into another region | the `→ Region` exit label, now clickable with its own card |
 
+- **Node labels** go under the pin unless that lands on another pin, badge,
+  exit or label; then above, right, left or a diagonal (`placeLabels` in
+  `lib/map.ts`). A crowded corner still needs its pins spread in the data:
+  `tests/map.test.ts` holds Threshold to zero overlaps. A drawn region
+  (docs/TILEMAPS.md §1) shows no road lines; its picture shows the way.
 - **Feature badge**: an icon above each known node for what stands there,
   cycling every 1.5 s, with a `+` when there are several (`spotFeatures`).
   Order: quests ready to turn in ✅, quests available 📜, shops 🪙, benches

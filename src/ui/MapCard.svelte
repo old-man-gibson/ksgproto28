@@ -10,7 +10,7 @@
   import { conditionsMet } from '../core/systems/conditions';
   import { condsText, fmt, ticksToTime } from './lib/format';
   import { routeInfo, spotFeatures, type SpotFeature } from './lib/navigation';
-  import { mapNodes } from './lib/map';
+  import { labelBox, mapNodes, placeLabels, type LabelPlace } from './lib/map';
   import type { SpotDef } from '../core/types';
   import TileMap from './lib/tilemaps/TileMap.svelte';
   import { TILEMAPS } from './lib/tilemaps';
@@ -142,6 +142,28 @@
     for (const n of nodes) if (n.known) out.set(n.spot.id, spotFeatures(gs, n.spot));
     return out;
   });
+
+  /** A region exit's text sits right of its spot, past the ⚡ when there is one. */
+  function exitPlace(exit: { from: SpotDef; offset: number }): LabelPlace {
+    const m = exit.from.map!;
+    return { x: m.x + (exit.from.waypoint ? 6.6 : 4), y: m.y - 3 + exit.offset * 3.2, anchor: 'start' };
+  }
+
+  /** Every name placed clear of the other pins, their badges, the exits and each other. */
+  const labelAt = $derived(
+    placeLabels(
+      nodes.map((n) => ({
+        id: n.spot.id,
+        x: n.spot.map!.x,
+        y: n.spot.map!.y,
+        text: n.known ? n.spot.name : '???',
+        badge: (features.get(n.spot.id)?.length ?? 0) > 0,
+        waypoint: n.known && !!n.spot.waypoint,
+        menace: !!n.spot.forced && !spotCleared(gs, n.spot),
+      })),
+      mapEdges.exits.map((e) => labelBox(`→ ${e.label}`, exitPlace(e), 2.6)),
+    ),
+  );
 
   // The badge shows one icon at a time and steps through the rest.
   let beat = $state(0);
@@ -288,18 +310,23 @@
     {/if}
     <svg {viewBox} class="map" class:tiled aria-label="Region map">
       {#each mapEdges.lines as e}
-        <line
-          x1={e.from.map!.x}
-          y1={e.from.map!.y}
-          x2={e.to.map!.x}
-          y2={e.to.map!.y}
-          class="edge"
-          class:oneway={e.oneWay}
-          class:forced={e.forced}
-          class:shut={!!e.shut}
-        >
-          {#if e.forced}<title>This way leads to a fight with no way out</title>{/if}
-        </line>
+        <!-- A drawn map shows its roads as the doors and paths in the
+             picture; a straight line between pins would cut through its
+             walls. The lock stays, and a forced fight keeps its ⚔️ on the pin. -->
+        {#if !tiled}
+          <line
+            x1={e.from.map!.x}
+            y1={e.from.map!.y}
+            x2={e.to.map!.x}
+            y2={e.to.map!.y}
+            class="edge"
+            class:oneway={e.oneWay}
+            class:forced={e.forced}
+            class:shut={!!e.shut}
+          >
+            {#if e.forced}<title>This way leads to a fight with no way out</title>{/if}
+          </line>
+        {/if}
         {#if e.shut}
           <text
             x={(e.from.map!.x + e.to.map!.x) / 2}
@@ -313,8 +340,8 @@
       {/each}
       {#each mapEdges.exits as exit}
         <text
-          x={exit.from.map!.x + 4}
-          y={exit.from.map!.y - 3 + exit.offset * 3.2}
+          x={exitPlace(exit).x}
+          y={exitPlace(exit).y}
           class="exit"
           class:clickable={!stuck}
           role="button"
@@ -333,6 +360,7 @@
       {#each nodes as node (node.spot.id)}
         {@const m = node.spot.map!}
         {@const feats = features.get(node.spot.id) ?? []}
+        {@const at = labelAt.get(node.spot.id) ?? { x: m.x, y: m.y + 6.4, anchor: 'middle' }}
         <g
           class="node"
           class:known={node.known}
@@ -354,7 +382,7 @@
           <text x={m.x} y={m.y + 1.3} text-anchor="middle" class="icon">
             {node.known ? node.spot.icon : '❓'}
           </text>
-          <text x={m.x} y={m.y + 6.4} text-anchor="middle" class="label">
+          <text x={at.x} y={at.y} text-anchor={at.anchor} class="label">
             {node.known ? node.spot.name : '???'}
           </text>
           {#if feats.length}
@@ -627,10 +655,6 @@
     paint-order: stroke;
     stroke: #0d1014;
     stroke-width: 0.8;
-  }
-
-  .map.tiled .edge {
-    stroke: rgba(255, 255, 255, 0.55);
   }
 
   /* An exit is the only way off a drawn region (floor 0's gate is the

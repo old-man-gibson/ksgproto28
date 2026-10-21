@@ -4,7 +4,7 @@ import { EventBus } from '../src/core/engine/events';
 import { AREAS, SPOTS } from '../src/core/registry';
 import { climbTo } from '../src/core/systems/towers';
 import { tickTravel, visibleEdges } from '../src/core/systems/locations';
-import { mapNodes } from '../src/ui/lib/map';
+import { labelBox, mapNodes, placeLabels, type MapBox } from '../src/ui/lib/map';
 
 describe('region map after tower travel', () => {
   it('shows Threshold districts after descending from the cleared first floor', () => {
@@ -45,5 +45,41 @@ describe('region map after tower travel', () => {
     const state = createInitialState(1, 'f1_landing');
     state.discovered.push('ascent_foot');
     expect(mapNodes(state, 'threshold').some((n) => n.spot.id === 'lectory_steps')).toBe(true);
+  });
+});
+
+describe('map labels', () => {
+  const overlap = (a: MapBox, b: MapBox) =>
+    Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+
+  it('places every Threshold name clear of the other pins and names, inside the map', () => {
+    const state = createInitialState(1, 'ascent_foot');
+    state.discovered = Object.keys(SPOTS);
+    const pins = mapNodes(state, 'threshold').map((n) => ({
+      id: n.spot.id,
+      x: n.spot.map!.x,
+      y: n.spot.map!.y,
+      text: n.spot.name,
+    }));
+    expect(pins.length).toBeGreaterThan(20);
+    const at = placeLabels(pins);
+    const boxes = pins.map((p) => ({ id: p.id, box: labelBox(p.text, at.get(p.id)!) }));
+    for (const { id, box } of boxes) {
+      expect(box.x0, id).toBeGreaterThanOrEqual(0);
+      expect(box.x1, id).toBeLessThanOrEqual(100);
+      for (const p of pins) {
+        if (p.id === id) continue;
+        const dot = { x0: p.x - 3.1, y0: p.y - 3.1, x1: p.x + 3.1, y1: p.y + 3.1 };
+        expect(overlap(box, dot), `${id} on the ${p.id} pin`).toBe(0);
+      }
+      for (const other of boxes) {
+        if (other.id !== id) expect(overlap(box, other.box), `${id} on ${other.id}`).toBe(0);
+      }
+    }
+  });
+
+  it('keeps a name under its pin when nothing is in the way', () => {
+    const at = placeLabels([{ id: 'a', x: 50, y: 30, text: 'Somewhere' }]);
+    expect(at.get('a')).toEqual({ x: 50, y: 36.4, anchor: 'middle' });
   });
 });
