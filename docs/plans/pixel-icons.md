@@ -1,0 +1,362 @@
+---
+id: pixel-icons
+title: Pixel icons — replace the emoji, one registry at a time
+kind: epic
+status: planning
+system: ui
+parent: ''
+save: ''
+updated: 2026-10-20
+invariants:
+  - core-browser-free
+  - emoji-fallback
+  - licensed-art-out-of-git
+  - no-save-change
+done:
+  - Every def type with an icon accepts an optional art file; one Icon component resolves art, then the glyph table, then the emoji
+  - Log lines and string-built tooltips draw art through the glyph table, old saved lines included
+  - No no-redistribution art in git; a fresh clone shows the emoji wherever art is licensed
+  - A content test fails on a declared art file that does not exist
+  - Every converted group has art for every entry it shows (no mixed rows)
+  - Provenance and credit of every icon folder recorded in docs/AUTHORSHIP.md §9
+---
+
+# Pixel icons
+
+Plan only. No code yet. Story 1 is blocked on the questions in §7.
+
+- **What:** 1,142 `icon:` fields in `src/core/data` and about 750 emoji hard-coded
+  in `src/ui` and `src/core` → pixel sprites.
+- **How:** one `<Icon>` component. Per-entry `art` file → emoji-keyed glyph table →
+  the emoji, as today. Registries switch one at a time.
+- **Art on hand:** about 250 committed icon files, all drawn on a 32px grid. No code
+  uses any of them today.
+- **License:** 48 of those files are Ækashics icon sheets and are already committed.
+  The source of the rest is not written down anywhere.
+- **First conversion:** attributes, resources and superattributes in the sidebar.
+  14 entries, 13 already have art, on screen all the time.
+
+![Before and after: inventory row, spell words, stance buttons, sidebar attributes, tab row, log line](pixel-icons/before-after.png)
+
+The image is a screenshot of [pixel-icons/mockup.html](pixel-icons/mockup.html):
+hand-placed sprites from `src/assets` on the gothic tokens. Open the HTML from the
+main checkout to see it at full size. Dashed boxes = no committable art yet.
+
+## 1. Census
+
+### 1.1 `icon:` fields by registry
+
+Counted on 2026-10-20 by loading every `src/core/data/*.data.ts` module through
+vite-node and walking its exports (throwaway script, not committed). Generated
+entries are counted where the registry holds them. `src/core/data/shelved/` (160
+more) is out of play and left out.
+
+| Registry | File | Fields | Distinct emoji (per registry) | Note |
+|---|---|---:|---:|---|
+| MATERIALS | materials | 177 | 115 | About 90 are generated at load from mutagen data (genes, mutagens, nucleases); 🧬 ×12 |
+| SKILLS | skills, wordskills | 94 | 72 | 40 are word skills that copy their arcane word's icon |
+| SPOTS | locations | 77 | 60 | |
+| SPOTS activities | locations | 64 | 42 | ⚔️ ×7, 🔍 ×5 |
+| STATUSES | statuses | 70 | 53 | |
+| MONSTERS | monsters | 59 | 46 | 39 already have an Ækashics portrait through `art` |
+| MUTATIONS | mutagens | 52 | 42 | |
+| MAIN_GENES + their abilities | mutagens | 30 + 26 | 28 + 15 | |
+| MONSTER_TAGS | bestiary | 49 | 49 | |
+| DEITY_TAGS | deities | 43 | 41 | |
+| ARCANE_WORDS | spellcraft | 40 | 39 | |
+| ITEMS | items | 39 | 30 | 🗡️ on four different blades |
+| TECHNIQUES | martial | 25 | 25 | |
+| MIRACLES | spellcraft | 24 | 16 | 📦 ×8 as a placeholder; a further 24 copies sit in `MIRACLES.*.spec` |
+| DISCIPLINES outcomes | disciplines | 24 | 18 | |
+| STYLES (stances) | styles | 21 | 21 | 9 generic stances, 12 schools |
+| REAGENTS | alchemy | 15 | 15 | |
+| MUSIC_ARCHETYPES | music | 13 | 13 | |
+| NPCS | npcs | 12 | 12 | |
+| WEAPON_FAMILIES | martial | 11 | 11 | |
+| RUNES | runes | 11 | 11 | |
+| ACHIEVEMENTS | achievements | 10 | 10 | |
+| PRESTIGE_BOONS | prestige | 10 | 10 | |
+| TITLES | titles | 9 | 9 | |
+| DEITIES | deities | 8 | 7 | `art` field exists; no portraits yet |
+| DISCIPLINES | disciplines | 8 | 8 | |
+| FORK_ARCHETYPES | martial | 8 | 7 | |
+| BESTIARY_FACTS | bestiary | 8 | 8 | |
+| PSI_AXES, PSI_QUANTITIES, PSI_RECOGNITIONS | spellcraft | 8 + 8 + 7 | 8 + 8 + 7 | |
+| BREW_FORMS, BREW_FORMULAS | alchemy | 7 + 4 | 7 + 4 | |
+| POSITIONS | martial | 7 | 7 | |
+| ATTRIBUTE_LIST | attributes | 6 | 6 | |
+| PRESTIGE_SOURCES | prestige | 6 | 6 | |
+| RESOURCES | resources | 5 | 5 | |
+| MUSIC_METERS | music | 4 | 4 | |
+| RUNE_PATTERNS, NAMED_RUNES | runes | 4 + 4 | 4 + 4 | |
+| KEY_ITEMS | keyitems | 3 | 3 | |
+| PREPS | preps | 3 | 3 | |
+| SUPERATTRS | superattrs | 3 | 3 | |
+| NUCLEASES, TOWERS | mutagens, towers | 1 + 1 | 1 + 1 | |
+| **Total** | | **1,142** | **321** | 1,118 in the rows above plus the 24 `MIRACLES.*.spec` copies. Distinct counted across all registries, variation selectors ignored |
+
+### 1.2 Emoji hard-coded outside the data
+
+| Where | Occurrences | Distinct | What they are |
+|---|---:|---:|---|
+| `src/ui` (37 files) | 480 | 155 | Tab names, lock badges, prices, buttons, fallbacks such as `def?.icon ?? '📦'` |
+| `src/core/text` | 112 | 60 | Log and message templates: `'📦 Loot: {icon} {item}'` |
+| `src/core/systems` | 160 | 75 | Feed lines built in code, weather icons |
+
+Most used in code: ⚠️ 41 (many in comments), ⚔️ 35, 🔒 35, 🪙 26, ⚡ 18, 📦 17, 🛡️ 15, 🧬 14, 🧠 14, 📜 13, ❓ 13, ✨ 13.
+Typographic marks (✕ ✓ ★ ✦ ♯ ♭ ♩, arrows) are left out: they are font glyphs and
+stay text in any theme.
+
+### 1.3 How many drawings
+
+- Data uses 321 distinct emoji; code uses 173; 120 are shared. **374 drawings would
+  replace every emoji in the game** at the glyph level.
+- The most-used emoji cover most fields: top 25 → 32% of the non-blank fields, top
+  50 → 48%, top 100 → 66%, top 200 → 88%.
+- One element set recurs everywhere: 🔥 ❄️ ⚡ 💧 🪨 💨 🌱 ☀️ 🌑 🔮 🧪 🐍 appear in
+  arcane words, resistance skills, statuses, runes, reagents and genes. About 14
+  sprites fill roughly 120 fields.
+
+## 2. Where each kind is drawn
+
+Three shapes of render site:
+
+- **Markup:** `{def.icon}` in a Svelte template. Swap for a component.
+- **String:** `${def.icon} ${def.name}` built into a tooltip line, a `title=`, or a log
+  message. Needs text rendering that recognises emoji (§4.2 `GlyphText`).
+- **SVG text:** map pins and the psionic chart draw the emoji as `<text>`. Needs
+  `<image>`.
+
+Line numbers as of 2026-10-20.
+
+| Kind | Main sites | Size today |
+|---|---|---|
+| Items | Inventory grid cell [EquipmentPanel.svelte](../../src/ui/panels/EquipmentPanel.svelte) :650; item window :1124; tooltips :759; shop wares [LocationPanel.svelte](../../src/ui/panels/LocationPanel.svelte) :376 | 24px in the grid |
+| Empty equipment slots | `SLOT_ICONS` [EquipmentPanel.svelte](../../src/ui/panels/EquipmentPanel.svelte) :88, drawn at :825 | 24px |
+| Materials | Material stacks EquipmentPanel :794, :1212; gather tooltip LocationPanel :179; bench ingredients in BenchPanel | 24px / inline |
+| Spots | Spot header LocationPanel :253; map pins [MapCard.svelte](../../src/ui/MapCard.svelte) :355 (SVG); destination lists MapCard :400, :419, :454; battle header [BattleStage.svelte](../../src/ui/lib/BattleStage.svelte) :244 | heading / pin |
+| Activities | Activity buttons LocationPanel :164; map card MapCard :519 | inline |
+| Monsters | Battle sprite: portrait or emoji BattleStage :342 (body/badge logic :216–227); combat list [CombatPanel.svelte](../../src/ui/panels/CombatPanel.svelte) :429; DareModal; BestiaryPanel | sprite / inline |
+| Stances | Stance button [CombatPanel.svelte](../../src/ui/panels/CombatPanel.svelte) :420; "You" line BattleStage :261 | 17px |
+| Techniques, positions | CombatPanel :476, :484, :646–672; MartialPlanner | inline |
+| Statuses | Sidebar afflictions; CombatPanel :453; BattleStage status row :315 | inline |
+| Arcane words | Lexicon pill [SpellcraftPanel.svelte](../../src/ui/panels/SpellcraftPanel.svelte) :547; sentence strip :494; tooltip :561 | inline |
+| Miracles, deities, deity tags | SpellcraftPanel :641–732 | inline / glyph |
+| Psionics | SpellcraftPanel :802 (SVG `<tspan>`), :814–860 | inline |
+| Skills | SkillsPanel; ability strip CombatPanel :166 | inline |
+| Attributes, superattributes | Sidebar rows [Sidebar.svelte](../../src/ui/panels/Sidebar.svelte) :412, :424; attribute tooltips :167, :261 | inline |
+| Resources | Sidebar bars print text labels (HP, Stamina, Mana); the icons appear in tooltips and log lines | inline |
+| Titles | Worn title Sidebar :268 | inline |
+| Alchemy, disciplines, preps, mutagens | BenchPanel, ChromosomePanel, flask EquipmentPanel :1009 | inline |
+| Runes | EquipmentPanel :611, :679, :1099 | inline |
+| Music | MusicPanel | inline |
+| NPCs, key items, quests, achievements, prestige | LocationPanel :317, KeyItems, own panels | inline |
+| Tab row | [App.svelte](../../src/ui/App.svelte) :103–115 | in the tab label |
+| Top bar | Pause, time sense, weather `WEATHER_ICONS` App.svelte:283–300 | inline |
+| Log | [LogFeed.svelte](../../src/ui/LogFeed.svelte) :27 prints `entry.msg`. The message is a **string stored in the save** (`LogEntry.msg`) with the emoji already inside, from 53 `{icon}` slots in `log.text.ts` and feed lines built in code (24 in combat.ts alone) | inline |
+
+## 3. Pixel art already in the repo
+
+None of the folders below is referenced by any code in `src/`, `forge/` or `tests/`
+today, so they can be moved or ignored without breaking anything.
+
+Every committed icon is on a **32px grid**: the 64×64 files are 32px art drawn at
+double size (checked by testing for uniform 2×2 blocks), and the Ækashics sheets are
+32px icons at ×1. One grid for everything: draw at 32px (×1) or 64px (×2).
+16px halves the art — sharp on a 2× screen, loses pixels on a 1× screen. 24px and
+48px are not clean multiples.
+
+| Folder | Files | What it shows | Fits | Source |
+|---|---:|---|---|---|
+| `attributes/` | 63 | 21 stats, each plain / `_buff` / `_debuff`: strength, dexterity, constitution, intelligence, wisdom, charisma, hp, mana, stamina, focus, soul, dominion, martial, endurance, luck, fate, crit, attack, DR, speed, 3 regeneration | ATTRIBUTE_LIST 6/6, RESOURCES 5/5 (spirit → soul), SUPERATTRS 2/3 (no Force), stat lines in tooltips | Not recorded. The names are this game's own concepts (dominion, martial, soul), so likely made for an earlier prototype |
+| `system/` | 41 | 20 actions, plain / `_disabled` / `_full`: achievement, ascension, combat, craft, disassemble, equipment, exit, fish, harvest, help, inventory, load, mine, rank, researchStage, rest, save, settings, skills, town, travel | Tab row 8/11; activities (mine, fish, harvest, rest); 📦 → inventory chest; ❓ → help | Not recorded |
+| `equipment_slot_placeholders/` | 20 | Empty-slot silhouettes: head, chest, hands, legs, feet, shoulders, neck, ring1, ring2, mainHand, offHand, artifact, emblem, eyes, relic, trinket, tool1–4 | Empty slots 9/13; stand-ins for plain armour | Not recorded |
+| `weapons/` | 14 | shortsword, longsword, greatsword, colossalSword, katana, dagger, axe, hatchet, battleaxe, greataxe, hammer, greathammer, staff, advancedStaff | 14 of 18 weapon items (no club, spear or bow), weapon skills, stance stand-ins | Not recorded |
+| `weapons/whips/` | 27 | Whips. The game has no whip | — | File names `c4507`…`c5394`: cells cut from a numbered sheet of 5,000+ icons |
+| `books/` | 16 | 12 books, 4 scrolls (`c1681`–`c1684`) | Key items (daybook, stamp), Bestiary tab, 📖 📜 📕 | Same numbered sheet |
+| `keys/` | 10 | Keys | Office key, 🗝️ | Same numbered sheet |
+| `runes/` | 11 | Grey rune stones with Elder Futhark marks, one broken | RUNES 11/11 by count; all the same grey, so tint per rune or redraw | Not recorded |
+| `combatStyleIcons/` | 48 | 39 sheets of nine 32px icons (slashes, claws, beams, gear), 7 single 64×64 swords and marks, 2 odd sheets | Stances, techniques, statuses, monster abilities | **Ækashics.** The 39 sheet names match battlers in `src/assets/enemies/` one for one (Scarlet King, Void Goddess, Sea Goddess, Tomb Reaper, Cosmos Xoer, Slime Dragon, …) |
+| `tilemaps/` (gitignored) | ~10,600 props | Epic RPG World props: barrels, crates, bones, rocks, webs, vases, blacksmith props, wells, ladders | Spot icons, some materials | Rafael Matos, bought; no redistribution (AUTHORSHIP §9) |
+| `enemies/` (gitignored) | 2,169 | Battlers | Already used through `MonsterDef.art` | Ækashics |
+| `deities/` | 0 | README only | `DeityDef.art` exists, nothing drawn | — |
+| `react.svg` | 1 | Vite template leftover | — | Unused |
+
+### 3.1 License findings
+
+1. **`combatStyleIcons/` is Ækashics content and is in git history** (since the import
+   commit `e2599ac`, 2026-08-24). The terms forbid redistribution, the same as the
+   battlers. AUTHORSHIP §9 says making the repo public is "a settings toggle" because
+   no Ækashics file was ever committed; these 48 files make that untrue. The repo is
+   private (checked 2026-10-20), so nothing has been published. Options, the user's
+   call and outside this plan's code: (a) `git rm --cached`, add to `.gitignore`, and
+   rewrite history with `git filter-repo` before any public flip; (b) ask Ækashics,
+   as §9 already suggests. Until then this plan uses none of them.
+2. **The other seven committed folders have no recorded source.** No readme, no
+   AUTHORSHIP entry; they arrived in the import commit. If they come from a bought
+   pack with no-redistribution terms, they get the tile-pack treatment (gitignored,
+   emoji in a fresh clone) and the same history question as point 1. If they were
+   made for the user, record that in AUTHORSHIP §9.
+3. **Epic RPG World props** can be used for icons only from a gitignored folder. A
+   cropped prop is an edited version and still may not be redistributed.
+
+## 4. Mechanism
+
+Precedent: `MonsterDef.art` + [enemyArt.ts](../../src/ui/lib/enemyArt.ts) and
+`DeityDef.art` + [deityArt.ts](../../src/ui/lib/deityArt.ts). An optional filename on
+the def, an `import.meta.glob` in `src/ui/lib`, and the emoji when the file is
+absent. This plan extends that to every icon.
+
+### 4.1 Resolution order
+
+```
+<Icon of={def} />   1. def.art               per-entry file; wins
+                    2. GLYPH_ART[def.icon]   one table, emoji → file
+                    3. def.icon              the emoji, as today
+```
+
+- **`art?: string`** on every def type that has `icon`. A path under
+  `src/assets/icons/`. Defs are not saved, so no save change.
+- **`GLYPH_ART`** in `src/ui/lib/glyphArt.ts`: `{ '🔒': 'chrome/lock.png', '🔥':
+  'elements/fire.png', … }`. One entry fixes every def and every hard-coded string
+  that uses that emoji.
+- **Why both layers.** The glyph table is the cheap one: 100 drawings cover 66% of
+  fields, and it is the only thing that can reach text already stored in a save. The
+  per-entry `art` covers the cases where one emoji stands for several things: four
+  blades on 🗡️, 📦 as a placeholder on 20 defs.
+
+### 4.2 Files
+
+| File | Job |
+|---|---|
+| `src/assets/icons/<group>/` | Committed art, one folder per group (chrome, attributes, weapons, elements, …). The existing folders move here once §7.1 is answered |
+| `src/assets/icons-licensed/` | Gitignored. Anything cut from a bought pack. A fresh clone falls back to the emoji, as tile maps fall back to the node diagram |
+| `src/ui/lib/iconArt.ts` | One eager `import.meta.glob` over both folders (`?url`); `iconUrl(def)` and `glyphUrl(emoji)`. Core stays browser-free |
+| `src/ui/lib/Icon.svelte` | `<Icon of={def} size={16 \| 32} />`. Draws `<img>` with `image-rendering: pixelated` and `alt=""` (the name is printed beside it), else the emoji. Fixed box so rows do not shift |
+| `src/ui/lib/GlyphText.svelte` | Draws a string, replacing each emoji that has a `GLYPH_ART` entry with an `<img>`. Used by LogFeed, string-built tooltips and template messages. Old log lines in a save get art too, because the log stores text |
+| SVG sites | MapCard pins and the psionic chart draw `<image href>` in place of `<text>` when a URL resolves |
+
+`title=` and `aria-label` text stays as it is.
+
+### 4.3 How a registry converts
+
+One conversion = one registry's render sites switched from `{def.icon}` to
+`<Icon of={def} />`, plus the art for that registry.
+
+- **A group switches only when every entry in it has art** — all nine generic stances,
+  all six attributes. A row that is half pixel, half emoji looks worse than either
+  (mockup §2 and §3 show it).
+- **The emoji stays in the data.** It is the fallback, the plain-text form for log
+  templates and forge pickers, and what a fresh clone shows for licensed art. Never
+  delete `icon`.
+- **Both themes get the art.** No toggle. (A "keep emoji" switch in `theme.ts` is
+  possible later if the default theme should keep them.)
+
+### 4.4 Tests and the forge
+
+- A content test: every declared `art` and every `GLYPH_ART` value resolves to a file
+  under `src/assets/icons/`. Same shape as "declared bestiary art exists on disk"
+  ([content.test.ts](../../tests/content.test.ts) :765). Paths under
+  `icons-licensed/` are exempt, since a clone may not have them.
+- The forge edits `icon` as a plain string today. `art` starts as a plain text field;
+  a picker that shows the folder's sprites comes later.
+
+### 4.5 Sizes
+
+| Site | Emoji today | Sprite |
+|---|---|---|
+| Inventory cell (56px tile) | 24px | 32px |
+| Stance button | 17px | 32px (button grows about 15px; check the phone layout) |
+| Inline text: sidebar rows, tooltips, log, word pills | about 15px | 16px (half the art; soft on a 1× screen) or 32px where the row can grow |
+| Map pins | SVG text | SVG image at pin size |
+
+The mockup shows the sidebar and the word pills at both 16px and 32px. 32px reads
+better and makes the sidebar about half again as tall.
+
+## 5. Coverage and what is missing
+
+Ordered by how often the thing is on screen. Tiers are judged from the layout, not
+measured.
+
+- **Tier 1, every screen:** tab row, sidebar (attributes, resources, worn title,
+  afflictions), top bar (pause, time, weather), log, and the chrome glyphs (🔒 lock,
+  🪙 coin, ⏳, ❓, ⚠️, ⚔️).
+- **Tier 2, the main loop:** Location (spot header, activities, map pins, NPCs),
+  Combat (stances, monsters, statuses, techniques), inventory (items, materials,
+  empty slots).
+- **Tier 3, tabs opened on purpose:** skills, spellcraft, benches, runes.
+- **Tier 4, rare:** bestiary tags, deity tags, music, achievements, titles, prestige,
+  key items, towers.
+
+"Covered" means a committed file fits, pending §7.1.
+
+| Tier | Kind | Entries | Covered now | Missing — draw or buy |
+|---|---|---:|---|---|
+| 1 | Tab row | 11 | 8: travel, combat, skills, inventory, a book (Bestiary), researchStage (Quests), achievement, ascension (Prestige) | 3: Chromosome 🧬, Music 🎼, Wuxin ☯️ |
+| 1 | Attributes, resources, superattributes | 14 | 13 | 1: Force 🌀 |
+| 1 | Chrome glyphs, top 15 | 15 | 3: ❓ help, 📦 inventory, ⚔️ combat | 🔒 lock, 🪙 coin, ⏳ hourglass, ⚠️ warning, ✨, 🚫, ☠️, 🥾, 🗺️, 🛡️, 🧠, 📜 |
+| 1 | Weather, time | 10 | 0 | ☀️ ☁️ 🌫️ 🌧️ ⛈️ 🌨️ ❄️ 🌪️ 🌦 🕰️ |
+| 1 | Statuses | 70 | 0 | 53 distinct; the element set covers part |
+| 1 | Titles | 9 | 0 | 9 |
+| 2 | Spots, activities | 141 | Activities: mine, fish, harvest, rest, combat (⚔️ ×7) | About 60 spot glyphs. Epic RPG World props can supply ladders, doors, wells, anvils (licensed folder) |
+| 2 | Monsters | 59 | 39 Ækashics portraits (local only) | 20 without a portrait; a small inline icon for lists and log |
+| 2 | Stances | 21 | 6 stand-ins: attack, greathammer, battleaxe, dagger, crit, DR | 15. The Ækashics sheets would fit but cannot be committed |
+| 2 | Techniques, positions, fork archetypes | 40 | 0 | 40 |
+| 2 | Items | 39 | 14 of 18 weapons; slot silhouettes as armour stand-ins | Two clubs, spear, bow, three shields, armour pieces, charms, rings, amulets: about 25 |
+| 2 | Materials | 177 | 0 | 115 distinct. About 90 are mutagen materials sharing 🧬 — one gene family of sprites |
+| 2 | Empty equipment slots | 13 | 9 (back uses shoulders) | Extra hands (🤚 ×4): reuse `hands` or draw |
+| 3 | Skills (authored) | 54 | About 8: weapon skills, fighting, mining, herbalism, smithing | About 46. The 40 word skills reuse the word art |
+| 3 | Arcane words | 40 | 4 stand-ins: cut, crush, ward, mend | 36: 14 nouns (mostly elements), 7 adverbs, 6 conjunctions, 6 verbs, 3 targets |
+| 3 | Miracles, deities, deity tags | 75 | 0 | 75 |
+| 3 | Psionics | 23 | 0 | 23 |
+| 3 | Alchemy | 26 | 0 | 26 |
+| 3 | Disciplines, outcomes, preps | 35 | 0 | 35 |
+| 3 | Mutagens | 109 | 0 | 109; many share 🧬 |
+| 3 | Runes | 19 | 11 grey stones | Tints per rune, or redraw |
+| 4 | Bestiary tags, facts | 57 | 0 | 57 |
+| 4 | Music | 17 | 0 | 17 |
+| 4 | Achievements, prestige, NPCs, key items, towers | 42 | Key items 3/3 (book, key, scroll) | About 39 |
+
+### 5.1 Buy or draw
+
+- **Buy** for generic needs: lock, coin, weather, elements, potions, food, ore,
+  armour, rings. Find out first where the current 32px set came from (§7.1). If it is
+  a pack, the same sheet matches the style exactly: the `c…` file numbers run past
+  5,000 and only about 60 cells were imported. Any pack with no-redistribution terms
+  goes in `icons-licensed/`.
+- **Draw** what no pack has: the 40 arcane words, psionic axes, techniques and
+  positions, stances, mutagen genes, Wuxin, Chromosome.
+
+## 6. Order of work
+
+Each step is one story and one PR.
+
+1. **Mechanism + sidebar.** `Icon.svelte`, `iconArt.ts`, `art` on the attribute,
+   resource and superattribute defs; move `attributes/` to `icons/attributes/`;
+   switch the sidebar rows and attribute tooltips. 13 of 14 drawn. Decide 16px vs
+   32px on the real sidebar in both themes. Blocked on §7.1.
+2. **Tab row + `GlyphText` in the log.** System icons for 8 tabs; 3 to draw. Seed
+   `GLYPH_ART` with 📦 ⚔️ ❓ 📖 📜 🏆.
+3. **Chrome glyphs.** About 15: lock, coin, hourglass, warning, …
+4. **Element set.** About 14 sprites → arcane nouns, resistance skills, statuses,
+   runes, reagents, through `GLYPH_ART`.
+5. **Inventory.** Weapons from `weapons/`, armour from the slot silhouettes, empty
+   slots; per-item `art` to split the four 🗡️ blades.
+6. **Stances.** The nine generic stances first, then the 12 schools. Needs drawing or
+   a cleared licence.
+7. **Spots and activities.** Map pins become SVG images; props from the licensed
+   folder.
+8. **The rest, by tier.**
+
+When a story ships: the system's doc gets a line on its `art` field, and
+docs/THEMES.md §4 points here instead of saying the emoji stay.
+
+## 7. Open questions
+
+1. **Where did `attributes/`, `system/`, `equipment_slot_placeholders/`, `weapons/`,
+   `books/`, `keys/` and `runes/` come from, and on what terms?** Blocks story 1.
+2. **`combatStyleIcons/` (Ækashics):** take it out of git (and rewrite history before
+   any public flip), or ask Ækashics? Outside this plan's code, but it decides what
+   stances and techniques can use.
+3. **16px or 32px for inline rows** (sidebar, word pills, log)? Mockup §2 and §4.
+4. **Buy a pack for the generic gaps, or draw everything?**

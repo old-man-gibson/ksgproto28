@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en" data-theme="gothic">
+<head>
+<meta charset="utf-8" />
+<title>Pixel icons: before and after</title>
+<!--
+  Static mockup for docs/plans/pixel-icons.md. Not game code: every sprite
+  here is placed by hand. Open this file in a browser from the repo checkout;
+  the images are the committed files under src/assets. Gothic tokens are
+  copied from src/themes/gothic.css (branch theme-gothic).
+-->
+<style>
+  @font-face { font-family: 'EB Garamond'; src: url('../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2'); }
+  @font-face { font-family: 'EB Garamond'; font-weight: 600; src: url('../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-600-normal.woff2'); }
+  @font-face { font-family: 'Cinzel'; font-weight: 600; src: url('../../../node_modules/@fontsource/cinzel/files/cinzel-latin-600-normal.woff2'); }
+  :root {
+    --bg: #110e0b; --bg-panel: #1a1511; --bg-raised: #241d16; --bg-sunken: #0b0907;
+    --border: #4a3c2c; --frame: #2c241b; --text: #ddd1b6; --text-dim: #9b8c72; --accent: #c9a45c;
+    --log-loot: #c9a45c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+    font-family: 'EB Garamond', Georgia, serif; font-size: 16.5px; font-variant-numeric: lining-nums tabular-nums; width: 1000px; }
+  h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 600; letter-spacing: 0.04em; margin: 0 0 8px; }
+  h1 { font-size: 20px; color: var(--accent); }
+  h2 { font-size: 14px; color: var(--text-dim); }
+  .case { border: 1px solid var(--border); outline: 1px solid var(--frame); outline-offset: -4px;
+    background: var(--bg-panel); padding: 12px 14px; margin-bottom: 12px; }
+  .pair { display: grid; grid-template-columns: 70px 1fr; gap: 6px 10px; align-items: center; }
+  .tag { font-family: 'Cinzel', Georgia, serif; font-size: 11px; color: var(--text-dim); letter-spacing: 0.06em; }
+  .note { font-size: 14px; color: var(--text-dim); margin-top: 6px; }
+  img.px { image-rendering: pixelated; vertical-align: middle; }
+  .s16 { width: 16px; height: 16px; }
+  .s32 { width: 32px; height: 32px; }
+  .emo16 { font-size: 15px; }
+
+  /* Inventory grid tile (EquipmentPanel .cell) */
+  .grid { display: flex; gap: 6px; }
+  .cell { position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--rar, var(--border)) 70%, transparent); background: var(--bg-raised); }
+  .cell .emo { font-size: 24px; line-height: 1; }
+  .cell .count { position: absolute; right: 2px; bottom: 2px; font-size: 11px; font-weight: 600; padding: 0 3px; background: rgb(0 0 0 / 60%); }
+  .cell .name { position: absolute; left: 0; right: 0; top: 58px; font-size: 11px; text-align: center; color: var(--text-dim); white-space: nowrap; }
+  .grid.named { padding-bottom: 16px; }
+
+  /* Spell word pill (SpellcraftPanel .tile) */
+  .words { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tile { padding: 4px 10px; border: 1px solid var(--tint, var(--border)); white-space: nowrap;
+    background: color-mix(in srgb, var(--tint, var(--border)) 12%, var(--bg-raised)); display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Stance button (CombatPanel button.stance) */
+  .stances { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+  .stance { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 3px; line-height: 1.15;
+    border: 1px solid var(--border); background: var(--bg-raised); font-size: 14px; }
+  .stance.sel { border-color: var(--accent); }
+  .stance .emo { font-size: 17px; height: 32px; display: flex; align-items: center; }
+  .stance.missing { border-style: dashed; color: var(--text-dim); }
+
+  /* Sidebar attribute rows */
+  .side { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .attrs { border: 1px solid var(--border); padding: 6px 8px; background: var(--bg-raised); }
+  .attr { display: flex; justify-content: space-between; padding: 2px 0; }
+  .attr span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* Tab row */
+  .tabs { display: flex; gap: 2px; flex-wrap: wrap; }
+  .tabs span { font-family: 'Cinzel', Georgia, serif; font-size: 12.5px; padding: 5px 8px; border: 1px solid var(--border);
+    background: var(--bg-raised); display: inline-flex; align-items: center; gap: 5px; }
+  .tabs span.missing { border-style: dashed; }
+
+  /* Log line */
+  .log { font-size: 15px; color: var(--log-loot); display: flex; align-items: center; gap: 4px; }
+</style>
+</head>
+<body>
+<h1>Pixel icons — before and after (gothic theme)</h1>
+
+<div class="case">
+  <h2>1 · Inventory row — items (Equipment tab)</h2>
+  <div class="pair">
+    <div class="tag">BEFORE</div>
+    <div class="grid named">
+      <div class="cell"><span class="emo">🗡️</span><span class="name">Rusty Sword</span></div>
+      <div class="cell"><span class="emo">⚔️</span><span class="name">Iron Sword</span></div>
+      <div class="cell"><span class="emo">🗡️</span><span class="name">Katana</span></div>
+      <div class="cell"><span class="emo">⚔️</span><span class="name">Greatsword</span></div>
+      <div class="cell"><span class="emo">🔪</span><span class="name">Iron Dagger</span><span class="count">3</span></div>
+      <div class="cell"><span class="emo">🔨</span><span class="name">Old Hammer</span></div>
+      <div class="cell"><span class="emo">🪄</span><span class="name">Oak Staff</span></div>
+    </div>
+    <div class="tag">AFTER</div>
+    <div class="grid">
+      <div class="cell"><img class="px s32" src="../../../src/assets/weapons/shortsword.png" alt="" /></div>
+      <div class="cell"><img class="px s32" src="../../../src/assets/weapons/longsword.png" alt="" /></div>
+      <div class="cell"><img class="px s32" src="../../../src/assets/weapons/katana.png" alt="" /></div>
+      <div class="cell"><img class="px s32" src="../../../src/assets/weapons/greatsword.png" alt="" /></div>
+      <div class="cell"><img class="px s32" src="../../../src/assets/weapons/dagger.png" alt="" /><span class="count">3</span></div>
+      <div class="cell"><img class="px s32" src="../../../src/assets/weapons/hammer.png" alt="" /></div>
+      <div class="cell"><img class="px s32" src="../../../src/assets/weapons/staff.png" alt="" /></div>
+    </div>
+  </div>
+  <div class="note">Rusty Sword, Katana, Uchigatana and Ember Knife all share 🗡️ today. Per-item art tells them apart. 32px, from src/assets/weapons.</div>
+</div>
+
+<div class="case">
+  <h2>2 · Spell words — arcane verbs (Spellcraft tab)</h2>
+  <div class="pair">
+    <div class="tag">BEFORE</div>
+    <div class="words">
+      <span class="tile">🔪 cut</span><span class="tile">🔨 crush</span><span class="tile">🛡️ ward</span><span class="tile">💚 mend</span>
+      <span class="tile">🔥 fire</span><span class="tile">❄️ ice</span>
+    </div>
+    <div class="tag">AFTER</div>
+    <div class="words">
+      <span class="tile"><img class="px s16" src="../../../src/assets/weapons/dagger.png" alt="" /> cut</span>
+      <span class="tile"><img class="px s16" src="../../../src/assets/weapons/hammer.png" alt="" /> crush</span>
+      <span class="tile"><img class="px s16" src="../../../src/assets/attributes/DR.png" alt="" /> ward</span>
+      <span class="tile"><img class="px s16" src="../../../src/assets/attributes/regeneration hp.png" alt="" /> mend</span>
+      <span class="tile">🔥 fire</span><span class="tile">❄️ ice</span>
+    </div>
+    <div class="tag">AFTER 32</div>
+    <div class="words">
+      <span class="tile"><img class="px s32" src="../../../src/assets/weapons/dagger.png" alt="" /> cut</span>
+      <span class="tile"><img class="px s32" src="../../../src/assets/weapons/hammer.png" alt="" /> crush</span>
+      <span class="tile"><img class="px s32" src="../../../src/assets/attributes/DR.png" alt="" /> ward</span>
+      <span class="tile"><img class="px s32" src="../../../src/assets/attributes/regeneration hp.png" alt="" /> mend</span>
+    </div>
+  </div>
+  <div class="note">Four of 40 words have a stand-in in the repo. Fire and ice (and the other nouns, adverbs, conjunctions) have no art: the row stays mixed until they are drawn. 16px inline vs 32px.</div>
+</div>
+
+<div class="case">
+  <h2>3 · Stance buttons — the nine generic stances (Combat tab)</h2>
+  <div class="pair">
+    <div class="tag">BEFORE</div>
+    <div class="stances">
+      <div class="stance sel"><span class="emo">⚖️</span>Neutral</div>
+      <div class="stance"><span class="emo">🐺</span>Frenzy</div>
+      <div class="stance"><span class="emo">🔨</span>Crush</div>
+      <div class="stance"><span class="emo">🪓</span>Cleave</div>
+      <div class="stance"><span class="emo">💨</span>Quick</div>
+      <div class="stance"><span class="emo">🌀</span>Evasive</div>
+      <div class="stance"><span class="emo">🎯</span>Finesse</div>
+      <div class="stance"><span class="emo">🐢</span>Brace</div>
+      <div class="stance"><span class="emo">🌪️</span>Flurry</div>
+    </div>
+    <div class="tag">AFTER</div>
+    <div class="stances">
+      <div class="stance sel"><img class="px s32" src="../../../src/assets/attributes/attack.png" alt="" />Neutral</div>
+      <div class="stance missing"><span class="emo">🐺</span>Frenzy</div>
+      <div class="stance"><img class="px s32" src="../../../src/assets/weapons/greathammer.png" alt="" />Crush</div>
+      <div class="stance"><img class="px s32" src="../../../src/assets/weapons/battleaxe.png" alt="" />Cleave</div>
+      <div class="stance"><img class="px s32" src="../../../src/assets/weapons/dagger.png" alt="" />Quick</div>
+      <div class="stance missing"><span class="emo">🌀</span>Evasive</div>
+      <div class="stance"><img class="px s32" src="../../../src/assets/attributes/crit.png" alt="" />Finesse</div>
+      <div class="stance"><img class="px s32" src="../../../src/assets/attributes/DR.png" alt="" />Brace</div>
+      <div class="stance missing"><span class="emo">🌪️</span>Flurry</div>
+    </div>
+  </div>
+  <div class="note">Six of nine have a stand-in in the repo. Dashed = no committable art (the matching Ækashics skill icons cannot be committed). 32px.</div>
+</div>
+
+<div class="case">
+  <h2>4 · Sidebar attributes — recommended first conversion</h2>
+  <div class="side">
+    <div>
+      <div class="tag">BEFORE</div>
+      <div class="attrs">
+        <div class="attr"><span>💪 Strength</span><span>14</span></div>
+        <div class="attr"><span>🤸 Dexterity</span><span>11</span></div>
+        <div class="attr"><span>🛡️ Constitution</span><span>12</span></div>
+        <div class="attr"><span>📖 Intelligence</span><span>9</span></div>
+        <div class="attr"><span>🦉 Wisdom</span><span>10</span></div>
+        <div class="attr"><span>🎭 Charisma</span><span>8</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="tag">AFTER · 16PX</div>
+      <div class="attrs">
+        <div class="attr"><span><img class="px s16" src="../../../src/assets/attributes/strength.png" alt="" />Strength</span><span>14</span></div>
+        <div class="attr"><span><img class="px s16" src="../../../src/assets/attributes/dexterity.png" alt="" />Dexterity</span><span>11</span></div>
+        <div class="attr"><span><img class="px s16" src="../../../src/assets/attributes/constitution.png" alt="" />Constitution</span><span>12</span></div>
+        <div class="attr"><span><img class="px s16" src="../../../src/assets/attributes/intelligence.png" alt="" />Intelligence</span><span>9</span></div>
+        <div class="attr"><span><img class="px s16" src="../../../src/assets/attributes/wisdom.png" alt="" />Wisdom</span><span>10</span></div>
+        <div class="attr"><span><img class="px s16" src="../../../src/assets/attributes/charisma.png" alt="" />Charisma</span><span>8</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="tag">AFTER · 32PX</div>
+      <div class="attrs">
+        <div class="attr"><span><img class="px s32" src="../../../src/assets/attributes/strength.png" alt="" />Strength</span><span>14</span></div>
+        <div class="attr"><span><img class="px s32" src="../../../src/assets/attributes/dexterity.png" alt="" />Dexterity</span><span>11</span></div>
+        <div class="attr"><span><img class="px s32" src="../../../src/assets/attributes/constitution.png" alt="" />Constitution</span><span>12</span></div>
+        <div class="attr"><span><img class="px s32" src="../../../src/assets/attributes/intelligence.png" alt="" />Intelligence</span><span>9</span></div>
+        <div class="attr"><span><img class="px s32" src="../../../src/assets/attributes/wisdom.png" alt="" />Wisdom</span><span>10</span></div>
+        <div class="attr"><span><img class="px s32" src="../../../src/assets/attributes/charisma.png" alt="" />Charisma</span><span>8</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="note">All six exist in src/assets/attributes, with _buff and _debuff variants. Always on screen.</div>
+</div>
+
+<div class="case">
+  <h2>5 · Tab row and a log line</h2>
+  <div class="pair">
+    <div class="tag">BEFORE</div>
+    <div class="tabs">
+      <span>🗺️ Location</span><span>⚔️ Combat</span><span>📜 Skills</span><span>🎒 Equipment</span><span>🧬 Chromosome</span>
+      <span>🎼 Music</span><span>☯️ Wuxin</span><span>📖 Bestiary</span><span>⭐ Quests</span><span>🏆 Achievements</span><span>♻️ Prestige</span>
+    </div>
+    <div class="tag">AFTER</div>
+    <div class="tabs">
+      <span><img class="px s16" src="../../../src/assets/system/travel.png" alt="" />Location</span>
+      <span><img class="px s16" src="../../../src/assets/system/combat.png" alt="" />Combat</span>
+      <span><img class="px s16" src="../../../src/assets/system/skills.png" alt="" />Skills</span>
+      <span><img class="px s16" src="../../../src/assets/system/inventory.png" alt="" />Equipment</span>
+      <span class="missing">🧬 Chromosome</span><span class="missing">🎼 Music</span><span class="missing">☯️ Wuxin</span>
+      <span><img class="px s16" src="../../../src/assets/books/c242.png" alt="" />Bestiary</span>
+      <span><img class="px s16" src="../../../src/assets/system/researchStage.png" alt="" />Quests</span>
+      <span><img class="px s16" src="../../../src/assets/system/achievement.png" alt="" />Achievements</span>
+      <span><img class="px s16" src="../../../src/assets/system/ascension.png" alt="" />Prestige</span>
+    </div>
+    <div class="tag">BEFORE</div>
+    <div class="log">📦 Loot: 🗡️ Rusty Sword</div>
+    <div class="tag">AFTER</div>
+    <div class="log"><img class="px s16" src="../../../src/assets/system/inventory.png" alt="" /> Loot: <img class="px s16" src="../../../src/assets/weapons/shortsword.png" alt="" /> Rusty Sword</div>
+  </div>
+  <div class="note">Log lines are saved as text with the emoji inside. The glyph table (section 4 of the plan) swaps them at draw time, old lines included.</div>
+</div>
+</body>
+</html>
