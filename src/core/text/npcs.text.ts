@@ -91,7 +91,7 @@ export const NPCS_TEXT: ProseTable = {
     'A stranger pays half again the price. Speaking to me once removes that.',
   ],
 
-  'hall_tutor.desc': 'Stands in the Cleared Office on floor 2. Teaches Gather (Neutral → Coiled) and Lunge (Coiled → Extended), free.',
+  'hall_tutor.desc': 'Stands in the Cleared Office on floor 2. Teaches Gather (Neutral → Coiled), then Lunge (Coiled → Extended) once you know a way into Coiled. Both free.',
   'hall_tutor.dialogue': [
     'Two moves. Gather winds you up. Lunge spends it. Then swing, and you are back where you started.',
     'Coiled, you have paid for the next blow already. Extended, you have reach. A plain swing puts you back at neutral.',

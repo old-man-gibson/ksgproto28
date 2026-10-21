@@ -9,7 +9,7 @@ import { applyStatus, fireStatusEvent, statusesOf } from './statuses';
 import { gradesHeld, knowsRecipe, recipeKey, recipeName, stockOf } from './disciplines';
 import { bumpStat } from './achievements';
 import { TECHNIQUES } from '../registry';
-import { learnTechnique } from './martial';
+import { learnTechnique, techniqueReachable } from './martial';
 import { wordUnlocked, wordUnlockKey } from './unlocks';
 import { checkTitleUnlocks } from './titles';
 import { grantFavorAll } from './divine';
@@ -115,6 +115,12 @@ export function canUse(state: GameState, id: string, quality: QualityTier): UseC
   if (held < 1) return { ok: false, reason: text('consumables.reason.none_held') };
   if (cardSpent(state, spec)) {
     return { ok: false, reason: text(spec.teaches ? 'consumables.reason.recipe_known' : 'consumables.reason.card_spent') };
+  }
+  // A technique nothing you know leads into is held back, not spent: the
+  // card keeps until a way into its position exists (martial.ts, Reach).
+  const tech = spec.teachesTechnique ? TECHNIQUES[spec.teachesTechnique] : undefined;
+  if (tech && !techniqueReachable(state, tech)) {
+    return { ok: false, reason: text('consumables.reason.technique_unreachable', { name: tech.name }) };
   }
   const left = cooldownLeft(state, id);
   if (left > 0) return { ok: false, reason: text('consumables.reason.cooldown', { seconds: (left / 10).toFixed(1) }) };

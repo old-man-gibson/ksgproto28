@@ -53,7 +53,7 @@
   import { conditionsMet } from '../../core/systems/conditions';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
   import { POSITIONS, TECHNIQUES } from '../../core/data/martial.data';
-  import { declaredPositions, lessonState, techniqueForm } from '../../core/systems/martial';
+  import { declaredPositions, lessonState, techniqueForm, unreachedEntries } from '../../core/systems/martial';
 
   /** A position as the planner shows it: icon and name. */
   function positionLabel(id: string): string {
@@ -382,7 +382,13 @@
                       </span>
                       <div class="dim small">{tech.desc}</div>
                       {#if status === 'held'}
-                        <div class="dim small">Needs {condsText(lesson.requires)}</div>
+                        {@const missing = unreachedEntries(gs, tech)}
+                        {#if lesson.requires && !conditionsMet(gs, lesson.requires)}
+                          <div class="dim small">Needs {condsText(lesson.requires)}</div>
+                        {/if}
+                        {#if missing.length}
+                          <div class="dim small">Needs a technique that leads into {missing.map(positionLabel).join(' or ')} first</div>
+                        {/if}
                       {/if}
                     </div>
                     {#if status === 'taught'}

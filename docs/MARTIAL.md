@@ -245,10 +245,27 @@ brands its **form**:
   `combat:hitsTaken`. Rough mechanics are all arm, no hips: **+25% stamina
   cost** (`ROUGH_STAMINA_MULT`) — but your own tricks internalize fast:
   **reps count double** on the ladder (`ROUGH_REP_MULT`).
-- **canonical** — taught the clean form (teacher content, future). No
-  surcharge, full thresholds. Re-learning never downgrades: rough → canonical
-  keeps banked reps; canonical never reverts.
+- **canonical** — taught the clean form: a teacher (`NpcDef.teaches`, the
+  floor-2 tutor is the first) or a drill manual (`ConsumableSpec.teachesTechnique`).
+  No surcharge, full thresholds. Re-learning never downgrades: rough →
+  canonical keeps banked reps; canonical never reverts.
 - **syncretic** — reserved (see §10).
+
+**Reach (user, 2026-10-21): nothing is learned that could never fire.** The
+positions a fighter can stand in are `neutral` plus the exit of every known
+technique that can itself be entered, to a fixpoint (`reachablePositions`;
+displacement adds nothing, §9a). A technique whose entry is not among them is
+*unreachable*: no teacher teaches it and no manual can be studied (both say
+which position is missing), and its self-learning count has not started.
+`state.learnFrom[id]` follows its counter while it is unreachable and stops
+once a way in exists, so `selfLearnProgress` counts from that moment; absent
+means reachable all along. Lunge (coiled → extended) is the worked case: held
+until Gather. Known gap: a fork or a rune that changes an exit is noticed on
+the next combat check, not at once.
+
+**The alpha shutter.** While `martial` is shut (systems/unlocks.ts) nothing
+self-learns; teachers and manuals still teach. The baselines keep moving, so
+opening the shutter cashes what a reachable technique already earned.
 
 **The ladder** is uniform and logarithmic — no per-technique thresholds:
 

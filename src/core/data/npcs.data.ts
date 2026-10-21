@@ -197,9 +197,9 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   //
   // The first teacher in the game (NpcDef.teaches, MARTIAL.md §10). A
   // placeholder person in a placeholder room: the user's brief is that the
-  // fiction need not explain a gym in an office. Both lessons are free and
-  // open on the first visit; the second needs nothing the first gives, so a
-  // player can take Lunge alone and wonder why it never fires.
+  // fiction need not explain a gym in an office. Both lessons are free. Lunge
+  // is held until something the player knows leads into Coiled — Gather,
+  // here (martial.ts, Reach): no technique is taught that could never fire.
   hall_tutor: {
     id: 'hall_tutor',
     name: 'Old Brannoc',

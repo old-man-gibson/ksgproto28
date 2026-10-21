@@ -5052,6 +5052,14 @@ export interface GameState {
   /** Techniques currently being drilled — only these advance their counters. */
   drilling: string[];
   /**
+   * Where each unknown technique's self-learning count starts: the value its
+   * `learn.self` counter had when the technique last became reachable
+   * (systems/martial.ts, Reach). Follows the counter while the technique is
+   * unreachable; absent means reachable all along. Not a counter, so not in
+   * `stats`: it moves on every swing and must not run achievement checks.
+   */
+  learnFrom: Record<string, number>;
+  /**
    * A weapon worn concealed instead of wielded (daggers). While sheathed you
    * are genuinely unarmed — tags, stats, schools all read bare hands — until
    * a hidden draw brings it out (see systems/martial.ts weapon states).

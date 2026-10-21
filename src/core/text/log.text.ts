@@ -91,6 +91,7 @@ export const LOG_TEXT = {
   'consumables.reason.cooldown': 'Ready in {seconds}s',
   'consumables.reason.recipe_known': 'Recipe already known',
   'consumables.reason.card_spent': 'Already done',
+  'consumables.reason.technique_unreachable': 'No technique you know leads into {name}’s position yet',
   'consumables.word_learned': '📝 Word learned: {word}. It is on the Spellcrafting Table (castable once Arcana reaches its level).',
   'consumables.technique_learned': '📘 Technique learned: {name} (canonical form).',
   'consumables.card_used': '{icon} {verb}: {name}.',

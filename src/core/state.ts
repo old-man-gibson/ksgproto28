@@ -52,6 +52,7 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     skillTriggers: {},
     techniques: {},
     drilling: [],
+    learnFrom: {},
     sheathed: null,
     loadouts: [],
 

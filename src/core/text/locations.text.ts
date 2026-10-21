@@ -138,7 +138,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'f2_hall_1.desc': 'First stretch of the Long Hall. Clear the Stretch fights Bound Ledgers and Filing Automatons (levels 3 to 4), one at a time; after 3 wins the way on down the hall opens and the stretch goes quiet. A door leads to the Cleared Office, where the tutor teaches.',
 
-  'f2_gym.desc': 'An office emptied out for training. The tutor here teaches two techniques for free: Gather (Neutral → Coiled) and Lunge (Coiled → Extended). Work the Heavy Bag trains Strength.',
+  'f2_gym.desc': 'An office emptied out for training. The tutor here teaches two techniques for free: Gather (Neutral → Coiled), then Lunge (Coiled → Extended) once you know a way into Coiled. Work the Heavy Bag trains Strength.',
 
   'f2_hall_2.desc': 'Second stretch of the Long Hall. Clear the Stretch fights Filing Automatons and Bound Ledgers (levels 4 to 5), at most two at a time; 3 wins open the way on. A door leads to the Quartermaster’s Cage.',
 

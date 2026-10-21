@@ -67,8 +67,13 @@ import {
   techniquesUnderSkill,
   toggleDrill,
   lessonState,
+  reachablePositions,
+  selfLearnProgress,
+  techniqueReachable,
+  unreachedEntries,
 } from '../src/core/systems/martial';
-import { ITEMS, NPCS, SKILLS } from '../src/core/registry';
+import { ITEMS, MATERIALS, NPCS, SKILLS } from '../src/core/registry';
+import { canUse } from '../src/core/systems/consumables';
 import { subsystemUnlocked, unlockKey } from '../src/core/systems/unlocks';
 import { equippedTags } from '../src/core/systems/conditions';
 import { TRIGGER_EVENTS, evaluateTrigger, visibleTriggerSubjects } from '../src/core/systems/triggers';
@@ -647,6 +652,7 @@ describe('martial shut: teachers are the only way in', () => {
 
   it('refuses what the teacher does not teach, and holds a lesson until its requirement', () => {
     const g = fresh(34);
+    learn(g.state, 'gather'); // a way into Coiled, so only the requirement holds Lunge
     withTeacher([{ technique: 'lunge', requires: [{ type: 'stat', key: 'fights:won', value: 3 }] }], (npc) => {
       expect(g.learnFromTeacher(npc, 'gather')).toBe(false); // not on the list
       expect(g.learnFromTeacher('no_such_npc', 'lunge')).toBe(false);
@@ -655,6 +661,74 @@ describe('martial shut: teachers are the only way in', () => {
       g.state.stats['fights:won'] = 3;
       expect(g.learnFromTeacher(npc, 'lunge')).toBe(true);
     });
+  });
+
+  it('reach: neutral always, then every exit a known technique can get to', () => {
+    const g = fresh(36);
+    expect([...reachablePositions(g.state)]).toEqual(['neutral']);
+    learn(g.state, 'lunge'); // coiled → extended, but nothing coils yet
+    expect([...reachablePositions(g.state)]).toEqual(['neutral']);
+    expect(techniqueReachable(g.state, TECHNIQUES.lunge)).toBe(false);
+    expect(unreachedEntries(g.state, TECHNIQUES.lunge)).toEqual(['coiled']);
+    learn(g.state, 'gather');
+    expect(reachablePositions(g.state)).toEqual(new Set(['neutral', 'coiled', 'extended']));
+    // An 'any' entry is always reachable, and its exit joins the set.
+    learn(g.state, 'sidestep');
+    expect(reachablePositions(g.state).has('guarded')).toBe(true);
+    expect(techniqueReachable(g.state, TECHNIQUES.flowing_shield)).toBe(true);
+  });
+
+  it('a teacher holds a lesson nothing you know leads into', () => {
+    const g = fresh(37);
+    withTeacher([{ technique: 'gather' }, { technique: 'lunge' }], (npc) => {
+      const [gather, lunge] = NPCS[npc].teaches!;
+      expect(lessonState(g.state, lunge)).toBe('held');
+      expect(g.learnFromTeacher(npc, 'lunge')).toBe(false);
+      expect(techniqueForm(g.state, 'lunge')).toBeUndefined();
+      expect(lessonState(g.state, gather)).toBe('open');
+      g.learnFromTeacher(npc, 'gather');
+      expect(lessonState(g.state, lunge)).toBe('open');
+      expect(g.learnFromTeacher(npc, 'lunge')).toBe(true);
+    });
+  });
+
+  it('an unreachable technique does not count toward self-learning until a way in exists', () => {
+    const g = fresh(38);
+    g.state.stats[unlockKey('martial')] = 1;
+    g.state.skills.fighting = { level: 20, xp: 0 };
+    g.state.stats['combat:attacks'] = 5000; // far past Lunge's 400
+    checkTechniqueLearning(g.state, g.bus);
+    // Gather starts from neutral: reachable from the first swing, all of it counts.
+    expect(techniqueForm(g.state, 'gather')).toBe('rough');
+    // Lunge only became reachable when Gather crystallized: nothing counted yet.
+    expect(techniqueForm(g.state, 'lunge')).toBeUndefined();
+    expect(selfLearnProgress(g.state, TECHNIQUES.lunge)).toBe(0);
+
+    g.state.stats['combat:attacks'] += 399;
+    checkTechniqueLearning(g.state, g.bus);
+    expect(selfLearnProgress(g.state, TECHNIQUES.lunge)).toBe(399);
+    expect(techniqueForm(g.state, 'lunge')).toBeUndefined();
+    g.state.stats['combat:attacks'] += 1;
+    checkTechniqueLearning(g.state, g.bus);
+    expect(techniqueForm(g.state, 'lunge')).toBe('rough');
+  });
+
+  it('a study card for an unreachable technique is held back, not spent', () => {
+    const g = fresh(39);
+    const id = 'test_drill_manual_lunge';
+    MATERIALS[id] = { ...MATERIALS.drill_manual_riposte, id, consumable: { useVerb: 'Study', teachesTechnique: 'lunge' } };
+    try {
+      g.state.materials[id] = 1;
+      const refused = canUse(g.state, id, 'c');
+      expect(refused.ok).toBe(false);
+      expect(refused.reason).toContain('Lunge');
+      learn(g.state, 'gather');
+      expect(canUse(g.state, id, 'c').ok).toBe(true);
+    } finally {
+      delete MATERIALS[id];
+    }
+    // Riposte starts from any position, so its own manual is never held back.
+    expect(techniqueReachable(fresh(40).state, TECHNIQUES.riposte)).toBe(true);
   });
 
   it('Gather and Lunge chain: neutral → coiled → extended, with no third move', () => {
