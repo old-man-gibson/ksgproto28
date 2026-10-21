@@ -631,7 +631,25 @@ happens and never rolls that line again (nor as an escort filler).
 and at the limit the spot is **cleared**: hunts find no one, and a `forced`
 spot stops forcing, so a guardian den is fight-your-way-in-once, pass freely
 after. Cleared forced spots also reopen to the auto-router and drop their ⚔️
-warnings.
+warnings. The budget is drawn as a row of pips in the spot's Location header
+and on the battle stage (`ui/lib/RaidTrack.svelte`).
+
+**How a place is drawn — `scene`.** The Location header and the Combat tab's
+battle stage paint the same backdrop behind a place. `scene` on an AREA sets
+it for every spot in the area; `scene` on a SPOT overrides its area's:
+
+```ts
+ascent_f2_area: { id: 'ascent_f2_area', name: 'The Flooded Stair', regionId: 'the_ascent', scene: 'cistern' },
+```
+
+The choices are `SceneId` in `types.ts`: `town` (the city under the tower),
+`hall` (torch-lit stone and banners), `crypt` (arches, cold candles, fog),
+`cistern` (arches over standing water) and `webs` (silk and cocoons). With no
+`scene` anywhere up the chain, `ui/lib/scenes.ts` picks from the place tags:
+`dark` → crypt, `indoor` → hall, anything else → town. The field is
+presentation only; nothing in the core reads it. A new backdrop is a new
+`SceneId` member plus a branch in `ui/lib/SceneBackdrop.svelte` (an 800×240
+SVG; keep the ground line near y=200 so combatants stand on it).
 
 **Training spots — a keeper and a dare** (`systems/training.ts`; the Cages
 are the first). Two spot fields:

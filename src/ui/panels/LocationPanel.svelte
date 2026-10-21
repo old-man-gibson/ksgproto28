@@ -40,6 +40,9 @@
   import { QUESTS } from '../../core/registry';
   import { ticksToTime, condsText, factorLabel, attrSplitText } from '../lib/format';
   import MapCard from '../MapCard.svelte';
+  import SceneBackdrop from '../lib/SceneBackdrop.svelte';
+  import RaidTrack from '../lib/RaidTrack.svelte';
+  import { sceneFor } from '../lib/scenes';
   import DestinationPreview from './DestinationPreview.svelte';
   import { visibleBenches } from '../lib/navigation';
   import BenchPanel from './BenchPanel.svelte';
@@ -241,9 +244,18 @@
   <!-- Where the journey ends, read ahead: plan the arrival while walking. -->
   <DestinationPreview />
 {:else}
-  <div class="panel" style="margin-top: 12px">
-    <div class="dim small">{locationBreadcrumb(gs.spot)}</div>
-    <h2>{spot.icon} {spot.name}</h2>
+  <div class="panel place" style="margin-top: 12px">
+    <!-- The place, painted: the same backdrop its fights are drawn against. -->
+    <div class="place-banner">
+      <SceneBackdrop scene={sceneFor(spot)} />
+      <div class="place-title">
+        <div class="small crumb">{locationBreadcrumb(gs.spot)}</div>
+        <h2>{spot.icon} {spot.name}</h2>
+      </div>
+      {#if spot.fightLimit}
+        <div class="place-raid"><RaidTrack {spot} /></div>
+      {/if}
+    </div>
     <p class="dim">{spot.desc}</p>
 
     <KeyItems />
@@ -575,6 +587,37 @@
 {/if}
 
 <style>
+  .place {
+    padding-top: 0;
+    overflow: hidden;
+  }
+  .place-banner {
+    position: relative;
+    height: 120px;
+    margin: 0 -14px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .place-title {
+    position: absolute;
+    left: 14px;
+    bottom: 8px;
+    z-index: 2;
+    text-shadow: 0 2px 4px #000, 0 0 10px #000;
+  }
+  .place-title h2 {
+    margin: 0;
+    font-size: 1.45rem;
+  }
+  .place-title .crumb {
+    color: color-mix(in srgb, var(--text) 80%, transparent);
+  }
+  .place-raid {
+    position: absolute;
+    right: 12px;
+    top: 10px;
+    z-index: 2;
+  }
+
   /* A bench reads as a piece of furniture in the room, not a menu item. */
   .bench-open {
     display: flex;

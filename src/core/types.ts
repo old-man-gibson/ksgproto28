@@ -3794,7 +3794,19 @@ export interface AreaDef {
   regionId: string;
   /** Place tags for every spot in the area — see `SpotDef.tags`. */
   tags?: string[];
+  /** The backdrop fights here are drawn against (see SceneId). */
+  scene?: SceneId;
 }
+
+/**
+ * Which backdrop the battle stage and the Location header paint behind a
+ * place. Presentation only — nothing in the core reads it — but it lives on
+ * the data so a place's look is authored where the place is, and a typo fails
+ * the typecheck rather than quietly painting the default. A spot's own
+ * `scene` wins over its area's; with neither, the UI picks from the place
+ * tags (ui/lib/scenes.ts).
+ */
+export type SceneId = 'town' | 'hall' | 'crypt' | 'cistern' | 'webs';
 
 /**
  * The opening a particular way into a fight buys — or costs. Declared on a
@@ -4095,6 +4107,8 @@ export interface SpotDef {
    * counter (see `SpotFind.stat`).
    */
   fightLimit?: number;
+  /** How the place is drawn (see SceneId). Overrides the area's. */
+  scene?: SceneId;
   /**
    * A menagerie: the fights here are staged, and so is the learning. Kills at
    * a caged spot skip the bestiary's insight roll — every fact unlocks

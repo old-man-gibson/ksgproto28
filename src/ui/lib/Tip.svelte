@@ -16,13 +16,24 @@
     y = Math.min(rect.top - 4, window.innerHeight - 260);
     show = true;
   }
+
+  /**
+   * The popup lives on <body>, not where the target is. `position: fixed` is
+   * only fixed to the viewport while no ancestor has a transform — and the
+   * battle stage positions and scales every combatant with one, which would
+   * pin a foe's card inside the stage and clip it. Moved out, it never can be.
+   */
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node);
+    return { destroy: () => node.remove() };
+  }
 </script>
 
 <span class="tip-target" class:block role="note" onmouseenter={enter} onmouseleave={() => (show = false)}>
   {@render children()}
 </span>
 {#if show}
-  <div class="tip-pop" style="left: {x}px; top: {y}px">
+  <div class="tip-pop" use:portal style="left: {x}px; top: {y}px">
     {@render tip()}
   </div>
 {/if}

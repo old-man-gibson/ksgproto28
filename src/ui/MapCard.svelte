@@ -2,7 +2,7 @@
   import OfficeDirectory from './OfficeDirectory.svelte';
   import { OFFICE_ROOMS } from '../core/systems/floodedFloor';
   import { gs, game, ui, view } from './state.svelte';
-  import { AREAS, RECIPES, REGIONS, SPOTS, getSpot } from '../core/registry';
+  import { AREAS, FLOOR_BY_AREA, RECIPES, REGIONS, SPOTS, getSpot } from '../core/registry';
   import { recipeHidden } from '../core/systems/crafting';
   import { visibleEdges, fastTravelCost, canFastTravel, journeyEnd } from '../core/systems/locations';
   import { spotActivities } from '../core/systems/actions';
@@ -20,8 +20,31 @@
   const shownRegion = $derived(regionOverride ?? currentRegion);
   const regionList = Object.values(REGIONS);
 
+  // A tower's region is a STACK, not a map: its floors are drawn one at a
+  // time, with a tab per floor you have set foot on. Every other region
+  // draws whole, as before.
+  let areaOverride = $state<string | null>(null);
+  const floorAreas = $derived(
+    Object.values(AREAS)
+      .filter((a) => a.regionId === shownRegion && FLOOR_BY_AREA.has(a.id))
+      .filter((a) => gs.discovered.some((id) => SPOTS[id]?.areaId === a.id))
+      .sort((a, b) => FLOOR_BY_AREA.get(a.id)!.index - FLOOR_BY_AREA.get(b.id)!.index),
+  );
+  const shownArea = $derived.by((): string | null => {
+    if (!floorAreas.length) return null;
+    if (areaOverride && floorAreas.some((a) => a.id === areaOverride)) return areaOverride;
+    const here = getSpot(gs.spot).areaId;
+    if (floorAreas.some((a) => a.id === here)) return here;
+    return floorAreas[floorAreas.length - 1].id;
+  });
+  // Walking onto another floor shows that floor again.
+  $effect(() => {
+    void gs.spot;
+    areaOverride = null;
+  });
+
   // Discovered spots plus "?" ghosts one visible edge away from a discovered spot.
-  const nodes = $derived(mapNodes(gs, shownRegion));
+  const nodes = $derived(mapNodes(gs, shownRegion, shownArea));
 
   const mapEdges = $derived.by(() => {
     const rendered = new Map(nodes.map((n) => [n.spot.id, n]));
@@ -72,6 +95,39 @@
   const tilemap = $derived(TILEMAPS[shownRegion] ?? null);
   let tilesFailed = $state(false);
   const tiled = $derived(!!tilemap && !tilesFailed);
+
+  /**
+   * A floor fitted to its own spots, at the canvas's aspect, and never zoomed
+   * past 1.5× — a three-spot floor should look small, not swollen. A tiled
+   * region keeps the fixed canvas, because its tiles are pinned to it.
+   */
+  const viewBox = $derived.by(() => {
+    if (!shownArea || tiled || nodes.length === 0) return '0 -6 100 84';
+    const xs = nodes.map((n) => n.spot.map!.x);
+    const ys = nodes.map((n) => n.spot.map!.y);
+    let x = Math.min(...xs) - 14;
+    let y = Math.min(...ys) - 11;
+    let w = Math.max(...xs) + 14 - x;
+    let h = Math.max(...ys) + 12 - y;
+    const aspect = 100 / 84;
+    if (w / h < aspect) {
+      const nw = h * aspect;
+      x -= (nw - w) / 2;
+      w = nw;
+    } else {
+      const nh = w / aspect;
+      y -= (nh - h) / 2;
+      h = nh;
+    }
+    if (w < 66) {
+      const k = 66 / w;
+      x -= (w * k - w) / 2;
+      y -= (h * k - h) / 2;
+      w *= k;
+      h *= k;
+    }
+    return `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
+  });
 
   const waypoints = $derived(
     Object.values(SPOTS).filter(
@@ -188,7 +244,10 @@
 
 <div class="panel">
   <button class="map-toggle" onclick={() => (ui.mapOpen = !ui.mapOpen)}>
-    {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {REGIONS[shownRegion].name}
+    {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {REGIONS[shownRegion].name}{shownArea &&
+    AREAS[shownArea].name !== REGIONS[shownRegion].name
+      ? `: ${AREAS[shownArea].name}`
+      : ''}
   </button>
 
   {#if ui.mapOpen}
@@ -204,7 +263,21 @@
       {/each}
     </div>
 
-    {#if shownRegion === currentRegion && OFFICE_ROOMS.includes(gs.spot)}
+    {#if floorAreas.length > 1}
+      <div class="region-switch floors">
+        {#each floorAreas as area (area.id)}
+          <button
+            class="small"
+            class:selected={shownArea === area.id}
+            onclick={() => (areaOverride = area.id)}
+          >
+            Floor {FLOOR_BY_AREA.get(area.id)!.index} · {area.name}
+          </button>
+        {/each}
+      </div>
+    {/if}
+
+    {#if shownRegion === currentRegion && OFFICE_ROOMS.includes(gs.spot) && (!shownArea || shownArea === getSpot(gs.spot).areaId)}
       <OfficeDirectory />
     {:else}
     <div class="map-wrap" class:tiled>
@@ -213,7 +286,7 @@
         <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} />
       {/key}
     {/if}
-    <svg viewBox="0 -6 100 84" class="map" class:tiled aria-label="Region map">
+    <svg {viewBox} class="map" class:tiled aria-label="Region map">
       {#each mapEdges.lines as e}
         <line
           x1={e.from.map!.x}
@@ -490,6 +563,15 @@
     display: flex;
     gap: 6px;
     margin: 8px 0;
+  }
+
+  .region-switch.floors {
+    flex-wrap: wrap;
+    margin-top: -2px;
+  }
+  .region-switch.floors button {
+    font-size: 11.5px;
+    padding: 3px 9px;
   }
 
   /*
