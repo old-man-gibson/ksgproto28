@@ -144,6 +144,41 @@ decision, not a build. Old saves that were standing out there woke at the
 Foot on load (save v49) with their spot-keyed counters intact; a revived map
 would find them waiting.
 
+## The Flooded Stair and the Silk Gallery (shelved 2026-10-21)
+
+Band 1's floors 2 and 3 from 2026-09-06: the forced cistern whose eight
+fights were the clear, with the sluice wheel that drains it and the oak club
+in the sluice; and the spider gallery whose brood opens the den, where three
+burned egg sacs draw out the Giant Spider Queen (the old prestige trigger).
+
+**Where it is.** [src/core/data/shelved/floors.shelved.ts](../src/core/data/shelved/floors.shelved.ts),
+verbatim except that the areas were renamed (`flooded_stair_area`,
+`silk_gallery_area`) so the live floors could keep `ascent_f2_area` and
+`ascent_f3_area`, and the prose was inlined. `SHELVED_FLOOR_ROADS` stands in
+for the ladder rung when tests mount the shelf. The monsters (water slime,
+slimer, cave and slime spiders, the queen) are still live: other content
+uses them, and the bestiary keeps them.
+
+**Why it was shelved.** The user's direction (plans/alpha-band-one-floors.md,
+"One building"): floors 1 to 3 are one office building with three different
+maps. A cistern and a spider nest do not read as the same building as the
+flooded offices. They are good floors for somewhere else.
+
+**Bringing one back** is a paste into `locations.data.ts`, the area renamed
+back or a new FloorDef pointing at it, and its prose moved to
+`locations.text.ts`. Save v57 moved anyone standing on them to the new
+landings and kept their clears.
+
+**Also superseded the same day:** branch `claude/kind-tesla-7sqw30` (and
+its `-mobile` twin, 2026-09-27), which made floor 2 the Wildwood: four nests
+and the Grand Elevator. Not merged. Its engine pieces are worth keeping if a
+forest floor comes back: fixed enemy formations (`SpotEncounter.party`,
+spear lines and shield walls with archers behind), a guaranteed final fight
+(`SpotEncounter.finale`, the Goblin King), pack bonuses
+(`MonsterDef.pack`), and a budget that must be won in one push
+(`SpotDef.streak`). The same branch holds a phone layout (one column, touch
+tooltips) that main does not have.
+
 ## Tile maps in the forge — autotile, the generator, fake doors (shelved 2026-09-15)
 
 What shipped stays: the Tiles mode (docs/TILEMAPS.md — palettes, painting,

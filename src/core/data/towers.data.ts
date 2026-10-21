@@ -133,7 +133,8 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     // fights. Accrues from acting at all.
     gate: [{ type: 'stat', key: 'gold:earned', value: 150 }],
     // The clear is the far end's fight budget: f2_hall_4's fightLimit and
-    // this number are the same dial and are linted to agree. (The Flooded
+    // this number are the same dial (linted: the clear may not ask for more
+    // fights than the limit allows). (The Flooded
     // Stair's cistern held it until 2026-10-21; it is on the shelf.)
     clear: [{ type: 'stat', key: 'fights:f2_hall_4', value: 3 }],
     clearXp: 150,

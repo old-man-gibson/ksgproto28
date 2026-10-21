@@ -2,7 +2,7 @@
 id: alpha-band-one-floors
 title: Three floors on band 1
 kind: story
-status: planning
+status: review
 system: meta
 parent: alpha-band-one
 save: ''
@@ -150,7 +150,7 @@ floor 3 a little weaker (stranded slimes pay less XP and coin), 48 gallery
 knockouts against the plain climb's 41. Draining is easier now and costs a
 little later, which is a choice, not a free win.
 
-# One building: floors 1–3 redesigned (2026-10-21, planned)
+# One building: floors 1–3 redesigned (2026-10-21, built)
 
 The user's direction: floors 1–3 are simple, and all three are the same
 office building, so the band reads as one place with three different maps.
@@ -233,3 +233,29 @@ The 2026-09-27 branch `claude/kind-tesla-7sqw30` made floor 2 the Wildwood.
 That floor is superseded by the hall; its engine pieces (fixed party
 formations, a finale boss, pack bonuses, streak budgets) are worth recording
 in LONGTERM.md before the branch is dropped.
+
+## Built (2026-10-21, branch floors-one-building)
+
+All four steps, one commit each; [ONE_BUILDING.md](../ONE_BUILDING.md) is the
+durable doc for floors 2 and 3, [FLOODED_FLOOR.md](../FLOODED_FLOOR.md) for
+floor 1, MARTIAL.md §6 for teachers and the reach rule.
+
+- **Step 1.** `NpcDef.teaches`, `teachTechnique`, the Training block; Lunge;
+  no self-learning while martial is shut.
+- **Between 2 and 3 (user, after seeing floor 2):** the reach rule. A
+  technique nothing the player knows leads into is never taught and does
+  not count toward self-learning. The tutor's Lunge is held until Gather.
+  The user accepted the hall being easier than the cistern.
+- **Step 2.** The Long Hall: four stretches of 3 fights, the tutor, the
+  quartermaster, the break room. Four new enemies from art on disk.
+- **Step 3.** The Descent: three landings, three side rooms (floor plan,
+  string anchor, loot), the Hearing Room's forced fight with the Puppet
+  Bureaucrat; its kill is the clear and PRESTIGE_UNLOCK.
+- **Step 4.** Floor 1's wrong doors let out into another office; save v57
+  (both floors); John retuned; docs; the shelf.
+
+Measured (John, 18 plain climbs): band 1 in 10.1–13.7 min, all finished;
+floor 2 knockouts 16 in total, floor 3 59 (about 3 each at the bureaucrat,
+under 1 each for attentive John). Placeholders still open for the user:
+every name and line of prose, the tutor's identity, the name *Lunge*, gates
+150 / 600.
