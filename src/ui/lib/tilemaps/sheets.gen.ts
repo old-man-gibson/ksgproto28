@@ -4,14 +4,15 @@
 
 /** Pack key → glob prefix of its folder. */
 export const PACKS: Record<string, string> = {
-  "grass_land_2_0": "../../../assets/tilemaps/ERW - Grass Land 2.0 v2.1/",
+  "cemetery": "../../../assets/tilemaps/EPIC RPG World Pack - Cemetery V 1.6/",
   "old_prison": "../../../assets/tilemaps/EPIC RPG World Pack - Old Prison V1.7.1/",
 };
 
 export const SHEETS = import.meta.glob(
   [
-    "../../../assets/tilemaps/ERW - Grass Land 2.0 v2.1/Props/Static props/fortress-front parts.png",
-    "../../../assets/tilemaps/ERW - Grass Land 2.0 v2.1/Tilesets/Tileset-Terrain-new grass.png",
+    "../../../assets/tilemaps/EPIC RPG World Pack - Cemetery V 1.6/Props/atlas-Props.png",
+    "../../../assets/tilemaps/EPIC RPG World Pack - Cemetery V 1.6/Tilesets/Tileset-Terrain.png",
+    "../../../assets/tilemaps/EPIC RPG World Pack - Old Prison V1.7.1/Props/atlas-props-old prison.png",
     "../../../assets/tilemaps/EPIC RPG World Pack - Old Prison V1.7.1/Tilesets/Tileset-Terrain-old prison.png",
     "../../../assets/tilemaps/EPIC RPG World Pack - Old Prison V1.7.1/Tilesets/wall-1- 3 tiles tall.png",
     "../../../assets/tilemaps/EPIC RPG World Pack - Old Prison V1.7.1/Tilesets/wall-2- 3 tiles tall.png",

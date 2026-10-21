@@ -179,6 +179,7 @@ describe('map files', () => {
     // Fixed folder names: the packs are not in version control, so the scan
     // cannot be the oracle here — the committed module must simply agree.
     const dirs = {
+      cemetery: 'EPIC RPG World Pack - Cemetery V 1.6',
       grass_land_2_0: 'ERW - Grass Land 2.0 v2.1',
       old_prison: 'EPIC RPG World Pack - Old Prison V1.7.1',
     };

@@ -504,7 +504,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     name: 'The Reading Hall',
     icon: '📖',
     areaId: 'scholars_quarter',
-    map: { x: 38, y: 5 },
+    map: { x: 38, y: 6 },
     tags: ['indoor'],
     activities: [
       // The hall's rare find (ActivityDef.drops): the one recipe no counter
@@ -823,7 +823,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     name: 'The Long Bench',
     icon: '🔣',
     areaId: 'wrights_ward',
-    map: { x: 7, y: 28 },
+    map: { x: 7, y: 31 },
     tags: ['indoor'],
     activities: [],
     benches: ['runecarving'],
@@ -1405,10 +1405,11 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     name: 'The Holding Cell',
     icon: '🔒',
     areaId: 'ascent_f0_area',
-    // Map coordinates on this floor are laid over the drawn scene
-    // (ui/lib/tilemaps/holding_level.map.json, 32 × 24 tiles): x = tile / 32 × 100,
-    // y = tile / 24 × 75. The cell is the room at the crop's left.
-    map: { x: 17, y: 25 },
+    // Map coordinates on this floor are laid over the drawn map
+    // (ui/lib/tilemaps/holding_level.map.json, 20 × 15 tiles): x = tile × 5,
+    // y = tile × 5. Each pin sits in its room (docs/TILEMAPS.md §4.1); the
+    // cell is the open one at the top left of the cell block.
+    map: { x: 15, y: 22 },
     tags: ['indoor'],
     // A haven: the tutorial's own knockouts (there should be none — the
     // slime deals 1) return here rather than to a city the player has not
@@ -1421,7 +1422,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     name: 'The Cellblock',
     icon: '🚪',
     areaId: 'ascent_f0_area',
-    map: { x: 35, y: 8 },
+    map: { x: 27.5, y: 50 },
     tags: ['indoor'],
     // One fight, then quiet: the Cell Slime is `once` (so the tutorial can
     // read `slain:f0_cellblock:slime_cell`) and the fightLimit clears the
@@ -1440,7 +1441,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     name: 'The Field',
     icon: '🌾',
     areaId: 'ascent_f0_area',
-    map: { x: 61, y: 44 },
+    map: { x: 67.5, y: 32.5 },
     // Three fights' worth of Cell Slimes, so the spell the tutorial hands
     // out has something to be cast at; then the field goes quiet too.
     fightLimit: 3,
@@ -1458,7 +1459,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     name: 'The Gate',
     icon: '🚧',
     areaId: 'ascent_f0_area',
-    map: { x: 80, y: 17 },
+    map: { x: 80, y: 11 },
     activities: [],
     // One way. The floor is a tutorial, not a place; once the player is in
     // the city there is nothing here to come back for, and the 'every spot
