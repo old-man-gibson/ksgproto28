@@ -14,6 +14,12 @@
       "runtimeArgs": [],
       "port": 5599,
       "autoPort": true
+    },
+    {
+      "name": "docs-static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", "D:\\ksgproto28"],
+      "port": 8765
     }
   ]
 }

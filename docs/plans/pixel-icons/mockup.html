@@ -5,15 +5,16 @@
 <title>Pixel icons: before and after</title>
 <!--
   Static mockup for docs/plans/pixel-icons.md. Not game code: every sprite
-  here is placed by hand. Open this file in a browser from the main checkout.
-  c<number>.png files are the full Clockwork Raven sheet in src/assets/64x64
-  (main checkout only, not in git); attributes/ files are committed.
+  here is placed by hand. c<number>.png files are the full Clockwork Raven sheet
+  in src/assets/64x64 (main checkout only, not in git); attributes/ files are
+  committed. Opened from a worktree (.claude/worktrees/<name>/), the script at
+  the bottom retries the sheet and the fonts three folders further up.
   Gothic tokens are copied from src/themes/gothic.css (branch theme-gothic).
 -->
 <style>
-  @font-face { font-family: 'EB Garamond'; src: url('../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2'); }
-  @font-face { font-family: 'EB Garamond'; font-weight: 600; src: url('../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-600-normal.woff2'); }
-  @font-face { font-family: 'Cinzel'; font-weight: 600; src: url('../../../node_modules/@fontsource/cinzel/files/cinzel-latin-600-normal.woff2'); }
+  @font-face { font-family: 'EB Garamond'; src: url('../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2'), url('../../../../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2'); }
+  @font-face { font-family: 'EB Garamond'; font-weight: 600; src: url('../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-600-normal.woff2'), url('../../../../../../node_modules/@fontsource/eb-garamond/files/eb-garamond-latin-600-normal.woff2'); }
+  @font-face { font-family: 'Cinzel'; font-weight: 600; src: url('../../../node_modules/@fontsource/cinzel/files/cinzel-latin-600-normal.woff2'), url('../../../../../../node_modules/@fontsource/cinzel/files/cinzel-latin-600-normal.woff2'); }
   :root {
     --bg: #110e0b; --bg-panel: #1a1511; --bg-raised: #241d16; --bg-sunken: #0b0907;
     --border: #4a3c2c; --frame: #2c241b; --text: #ddd1b6; --text-dim: #9b8c72; --accent: #c9a45c;
@@ -21,7 +22,7 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; padding: 16px; background: var(--bg); color: var(--text);
-    font-family: 'EB Garamond', Georgia, serif; font-size: 16.5px; font-variant-numeric: lining-nums tabular-nums; width: 1000px; }
+    font-family: 'EB Garamond', Georgia, serif; font-size: 16.5px; font-variant-numeric: lining-nums tabular-nums; max-width: 1000px; }
   h1, h2 { font-family: 'Cinzel', Georgia, serif; font-weight: 600; letter-spacing: 0.04em; margin: 0 0 8px; }
   h1 { font-size: 20px; color: var(--accent); }
   h2 { font-size: 14px; color: var(--text-dim); }
@@ -231,5 +232,18 @@
   </div>
   <div class="note">Dashed = nothing in the sheet fits (no DNA, no yin-yang). Log lines are saved as text with the emoji inside; the glyph table (§4 of the plan) swaps them at draw time, old lines included.</div>
 </div>
+<script>
+  // The full sheet exists only in the main checkout. From a worktree
+  // (.claude/worktrees/<name>/) the main checkout is three folders further up.
+  const retry = (img) => {
+    if (img.dataset.retried) return;
+    img.dataset.retried = '1';
+    img.src = img.getAttribute('src').replace('../../../src/', '../../../../../../src/');
+  };
+  for (const img of document.images) {
+    if (img.complete && img.naturalWidth === 0) retry(img);
+    else img.addEventListener('error', () => retry(img), { once: true });
+  }
+</script>
 </body>
 </html>

@@ -42,9 +42,14 @@ Plan only. No code yet. Story 1 waits on one decision: §7.1.
 ![Before and after: inventory row, spell words, stance buttons, sidebar attributes, tab row, log line](pixel-icons/before-after.png)
 
 The image is a screenshot of [pixel-icons/mockup.html](pixel-icons/mockup.html):
-hand-placed sprites from the Clockwork Raven sheet on the gothic tokens. Open the
-HTML from the main checkout, which has `src/assets/64x64/`. Dashed = nothing in the
-sheet fits.
+hand-placed sprites from the Clockwork Raven sheet on the gothic tokens. Dashed =
+nothing in the sheet fits.
+
+To view the HTML pages live: the app's browser pane shows a local HTML file as a
+snapshot with no images. Start the `docs-static` preview (`.claude/launch.json`); it
+serves the main checkout at `http://localhost:8765/`, so the pages find
+`src/assets/64x64/` from the main checkout or from a worktree under
+`.claude/worktrees/`. The PNGs need nothing.
 
 ## 1. Census
 
