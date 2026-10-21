@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
-import { TUTORIAL_EXIT, TUTORIAL_STEP_LIST } from '../src/core/data/tutorial.data';
+import { TUTORIAL_EXIT, TUTORIAL_STANCES, TUTORIAL_STEP_LIST } from '../src/core/data/tutorial.data';
+import { STYLES } from '../src/core/registry';
+import { styleUnlocked } from '../src/core/systems/styles';
 import { SCREEN_STEP_IDS, targetTab, tutorialScreen } from '../src/ui/lib/tutorialFocus';
 
 /** Run the current travel to arrival. */
@@ -85,6 +87,15 @@ describe('the floor 0 screen — what each step shows and points at', () => {
     walk(g);
     expect(tutorialScreen(g.state)!.stepId).toBe('fight');
     expect(tutorialScreen(g.state)!.target).toBe('spot:f0_cellblock');
+  });
+
+  it('offers step 2’s three stances, every one open on a new save', () => {
+    const s = createInitialState(13);
+    expect([...TUTORIAL_STANCES]).toEqual(['balanced', 'aggressive', 'defensive']);
+    for (const id of TUTORIAL_STANCES) {
+      expect(STYLES[id], id).toBeTruthy();
+      expect(styleUnlocked(s, STYLES[id]), id).toBe(true);
+    }
   });
 
   it('opens the tab a target is drawn on', () => {

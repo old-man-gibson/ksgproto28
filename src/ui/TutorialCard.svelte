@@ -5,6 +5,7 @@
     TUTORIAL_RACK,
     TUTORIAL_SHIELD,
     TUTORIAL_SPELLS,
+    TUTORIAL_STANCES,
     TUTORIAL_STEP_LIST,
   } from '../core/data/tutorial.data';
   import { tutorialStep, tutorialStepIndex } from '../core/systems/tutorial';
@@ -57,8 +58,14 @@
 
   const shieldDef = ITEMS[TUTORIAL_SHIELD];
 
-  // Stances: the same roster the Combat tab shows, unlocked ones only.
-  const slots = $derived(styleSlots(gs).filter((s) => styleUnlocked(gs, s.stance)));
+  // Stances: the card's short list (TUTORIAL_STANCES), in its order, from the
+  // same roster the Combat tab shows.
+  const slots = $derived(
+    TUTORIAL_STANCES.flatMap((id) => {
+      const slot = styleSlots(gs).find((s) => s.stance.id === id);
+      return slot && styleUnlocked(gs, slot.stance) ? [slot] : [];
+    }),
+  );
 
   // Spells: the three words, each resolved as the one-word sentence it becomes.
   const spells = $derived(

@@ -32,7 +32,7 @@ the current step uses (§5):
 | # | id | done when | choice |
 |---|---|---|---|
 | 1 | `arm` | `flag:tutorial_weapon` ≥ 1 | the rack: spear / sword / dagger / hammer / unarmed, shield beside a one-handed pick |
-| 2 | `stance` | `flag:tutorial_stance` ≥ 1 | any unlocked stance, through `setStyle` |
+| 2 | `stance` | `flag:tutorial_stance` ≥ 1 | Neutral, Frenzy or Brace (`TUTORIAL_STANCES`), through `setStyle` |
 | 3 | `cellblock` | stood in `f0_cellblock` | |
 | 4 | `fight` | `slain:f0_cellblock:slime_cell` ≥ 1 | |
 | 5 | `field` | stood in `f0_field` | |
@@ -110,6 +110,10 @@ nothing but the choice.
   `tests/tutorialfocus.test.ts` fails until it has one.
 - **The rack**: `TUTORIAL_RACK` maps a pick to an item id and how many hands
   it takes; the shield offer follows `hands === 'one'`.
+- **The stances**: `TUTORIAL_STANCES`, in display order. Since 2026-10-20 (user)
+  the card offers three — no modifiers, attack, defence, the wheel's up/down
+  axis — instead of all nine; the Combat tab still shows the whole wheel. Each
+  id must be a stance open on a new save (`tests/tutorialfocus.test.ts`).
 - **The spells**: `TUTORIAL_SPELLS`; `TUTORIAL_SPELL_INT` is the level the pick
   trains to.
 - **Retiring it**: point `STARTING_SPOT` back at `ascent_foot` and the panel
@@ -177,6 +181,6 @@ there (clip is not a scroll container, so the card can stick to the window). In
 the wide layout only the tab body scrolls and the card never leaves the top.
 Colours are `app.css` tokens, so the display themes (THEMES.md) restyle it.
 
-**Open (asked 2026-10-20):** step 2 still offers every unlocked stance (nine on a
-new save). Cutting that down, or changing which are shown, is the user's call.
+**Step 2 offers three stances** (user, 2026-10-20): Neutral, Frenzy and Brace. It
+used to list every unlocked stance — nine on a new save.
 

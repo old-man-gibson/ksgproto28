@@ -49,6 +49,13 @@ export const TUTORIAL_RACK: Record<string, { item: string | null; hands: 'one' |
 /** The shield that goes with a one-handed pick. */
 export const TUTORIAL_SHIELD = 'wooden_shield';
 
+/**
+ * The stances the card offers, in order: no modifiers, attack, defence — the
+ * wheel's up/down axis (user, 2026-10-20). The other six stay on the Combat
+ * tab; picking one there instead still sets the stance but not the stamp.
+ */
+export const TUTORIAL_STANCES = ['balanced', 'aggressive', 'defensive'] as const;
+
 /** The three words on offer; each becomes a one-word prepared sentence. */
 export const TUTORIAL_SPELLS = ['fire', 'ice', 'spark'] as const;
 
