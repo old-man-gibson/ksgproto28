@@ -119,11 +119,12 @@ h1, h2, h3, h4 {
  */
 .tutorial-glow {
   outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  animation: tutorial-glow 1.4s ease-in-out infinite;
+  outline-offset: 2px;
+  animation: tutorial-glow 1.4s ease-out infinite;
 }
 
+/* A steady outline, and a ring that widens off it: visible in every frame. */
 @keyframes tutorial-glow {
-  0%, 100% { outline-color: var(--accent); }
-  50% { outline-color: transparent; }
+  0% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 70%, transparent); }
+  100% { box-shadow: 0 0 0 12px transparent; }
 }

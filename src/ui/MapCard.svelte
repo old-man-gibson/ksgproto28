@@ -176,7 +176,14 @@
   function openCard(id: string, ev: Event) {
     clearTimeout(closeTimer);
     const rect = (ev.currentTarget as Element).getBoundingClientRect();
-    cardX = Math.max(8, Math.min(rect.right + 8, window.innerWidth - 310));
+    // Right of the pin, or left of it when that would run off the window.
+    // Clamping it inward instead slid the card over the pin it describes,
+    // so a click aimed at the pin landed on the card (narrow windows).
+    const width = 290;
+    cardX =
+      rect.right + 8 + width <= window.innerWidth - 8
+        ? rect.right + 8
+        : Math.max(8, rect.left - 8 - width);
     cardY = Math.max(8, Math.min(rect.top - 4, window.innerHeight - 360));
     cardFor = id;
   }
@@ -346,6 +353,14 @@
         >
           → {exit.label}
         </text>
+        {#if target === `exit:${exit.to}`}
+          <text
+            x={exit.from.map!.x + 5.2}
+            y={exit.from.map!.y - 6.6 + exit.offset * 3.2}
+            text-anchor="middle"
+            class="beacon-arrow">▼</text
+          >
+        {/if}
       {/each}
       {#each nodes as node (node.spot.id)}
         {@const m = node.spot.map!}
@@ -372,6 +387,7 @@
           {/if}
           {#if pointed}
             <circle cx={m.x} cy={m.y} r="5.4" class="beacon" />
+            <text x={m.x} y={m.y - 6.5} text-anchor="middle" class="beacon-arrow">▼</text>
           {/if}
           <circle cx={m.x} cy={m.y} r="3.1" class="dot" />
           <text x={m.x} y={m.y + 1.3} text-anchor="middle" class="icon">
@@ -801,9 +817,24 @@
     100% { transform: scale(1.5); opacity: 0; }
   }
 
+  /* The ring alone matches the "you are here" ring; the arrow says which. */
+  .beacon-arrow {
+    font-size: 3.4px;
+    fill: var(--accent);
+    paint-order: stroke;
+    stroke: #0d1014;
+    stroke-width: 0.5;
+    pointer-events: none;
+    animation: beacon-bob 0.9s ease-in-out infinite alternate;
+  }
+
+  @keyframes beacon-bob {
+    from { transform: translateY(-1px); }
+    to { transform: translateY(0.6px); }
+  }
+
   .map .exit.beacon-text {
     fill: var(--accent);
-    font-size: 3.2px;
     font-weight: 700;
     font-style: normal;
     animation: pulse 1.4s ease-in-out infinite;

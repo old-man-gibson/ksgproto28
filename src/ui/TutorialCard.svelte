@@ -77,7 +77,7 @@
    */
   const offer = $derived(step?.id === TUTORIAL_STEP_LIST[0].id);
   let confirmingSkip = $state(false);
-  let fileInput: HTMLInputElement;
+  let fileInput = $state<HTMLInputElement>();
 
   function onImportChange(ev: Event) {
     const file = (ev.target as HTMLInputElement).files?.[0];
@@ -163,7 +163,7 @@
         {:else}
           <span class="dim">Played before?</span>
           <button class="small" onclick={() => (confirmingSkip = true)}>Skip floor 0</button>
-          <button class="small" onclick={() => fileInput.click()}>Import a save</button>
+          <button class="small" onclick={() => fileInput?.click()}>Import a save</button>
         {/if}
         <input type="file" accept="application/json" bind:this={fileInput} onchange={onImportChange} hidden />
       </div>
