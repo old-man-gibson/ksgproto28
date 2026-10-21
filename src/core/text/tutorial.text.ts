@@ -19,13 +19,13 @@ export const TUTORIAL_TEXT: ProseTable = {
     'A stance adds modifiers to your fighting while it is held; hover one to read them. Neutral has none.',
 
   'cellblock.desc':
-    'Travel is done on the map. Click the ❓ pin joined to the cell; the road takes 2 s.',
+    'Travel is done on the map. Click the marked ❓ pin in the corridor; the road takes 2 s.',
 
   'fight.desc':
     'Start ⚔️ Fight the Cell Slime. You swing each time your action bar fills; the slime hits for exactly 1.',
 
   'field.desc':
-    'Kills pay XP and roll the monster’s loot; items and materials go to the Equipment tab. Click the ❓ pin joined to the Cellblock (3 s).',
+    'Kills pay XP and roll the monster’s loot; items and materials go to the Equipment tab. Click the marked ❓ pin in the yard (3 s).',
 
   'spell.desc':
     'Pick a one-word arcane spell; it costs 2 mana. Taking it raises Intelligence to 2, and mana is 1 per point of Intelligence.',
@@ -34,7 +34,7 @@ export const TUTORIAL_TEXT: ProseTable = {
     'Start ⚔️ Fight in the Field and win once. A prepared spell casts itself on a swing when you have the mana.',
 
   'gate.desc':
-    'Click the ❓ pin joined to the Field (3 s). Past the Gate is Threshold, the city at the Foot of the Ascent.',
+    'Click the marked ❓ pin on the gate (3 s). Past the Gate is Threshold, the city at the Foot of the Ascent.',
 
   'leave.desc':
     'Click → Threshold beside the Gate (3 s); the road is one-way and floor 0 closes behind you. The Warden of the Foot gives the next step, the floor 1 quest The First Ascent.',

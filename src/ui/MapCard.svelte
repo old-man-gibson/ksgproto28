@@ -166,7 +166,8 @@
         x: n.spot.map!.x,
         y: n.spot.map!.y,
         text: n.known ? n.spot.name : '???',
-        badge: (features.get(n.spot.id)?.length ?? 0) > 0,
+        // The tutorial's ▼ over a pin takes the badge's place.
+        badge: (features.get(n.spot.id)?.length ?? 0) > 0 || target === `spot:${n.spot.id}`,
         waypoint: n.known && !!n.spot.waypoint,
         menace: !!n.spot.forced && !spotCleared(gs, n.spot),
       })),
@@ -382,8 +383,8 @@
         </text>
         {#if target === `exit:${exit.to}`}
           <text
-            x={exit.from.map!.x + 5.2}
-            y={exit.from.map!.y - 6.6 + exit.offset * 3.2}
+            x={exitPlace(exit).x + 1.2}
+            y={exitPlace(exit).y - 3.6}
             text-anchor="middle"
             class="beacon-arrow">▼</text
           >
