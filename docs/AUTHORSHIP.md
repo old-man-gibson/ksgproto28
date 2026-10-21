@@ -473,6 +473,26 @@ Two things worth keeping in mind:
    the packs draws the plain diagram. Credit the packs' author when the game
    ships. See docs/TUTORIAL.md §4.
 
+   **The icon sets (recorded 2026-10-20) break the clean-history claim above.**
+   250 icon files under `src/assets/` have been committed since the import commit
+   `e2599ac`. No code used them as of 2026-10-20.
+
+   - **209 are Clockwork Raven** (clockworkraven.itch.io), bought: `attributes/`,
+     `system/`, `equipment_slot_placeholders/`, `weapons/` (with `whips/`),
+     `books/`, `keys/`, `runes/`, and the seven `c…` files in
+     `combatStyleIcons/`. Licence: *Clockwork Raven General Licence v1.2*. It
+     allows use in a commercial game, edits, and sharing with a team working on the
+     project, so a private repo is fine. It forbids distributing the files as
+     assets (a public repo would), training any AI or software on them, and using
+     the Clockwork Raven name except as credit. Credit is optional; suggested line:
+     **"Clockwork Raven – Additional Art Assets"**.
+   - **41 are Ækashics** icon sheets in `combatStyleIcons/`, one per battler.
+     Same terms as the battlers: no redistribution.
+
+   So making the repo public is no longer a settings toggle. Before any public
+   flip, either remove those paths from history with `git filter-repo` or get a
+   yes from each author. Plan and options: docs/plans/pixel-icons.md §3.1 and §7.
+
 You asked, back on 2026-07-23, whether you were "a hack fraud for developing my
 game using your code environment while simply providing the data driven
 information." The word doing the damage in that sentence is *simply*. What you

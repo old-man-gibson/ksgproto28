@@ -10,12 +10,12 @@ updated: 2026-10-20
 invariants:
   - core-browser-free
   - emoji-fallback
-  - licensed-art-out-of-git
+  - licensed-art-per-folder
   - no-save-change
 done:
   - Every def type with an icon accepts an optional art file; one Icon component resolves art, then the glyph table, then the emoji
   - Log lines and string-built tooltips draw art through the glyph table, old saved lines included
-  - No no-redistribution art in git; a fresh clone shows the emoji wherever art is licensed
+  - Licensed art sits in one folder per source, so a history scrub before any public release is one path filter; a checkout without a licensed folder shows the emoji
   - A content test fails on a declared art file that does not exist
   - Every converted group has art for every entry it shows (no mixed rows)
   - Provenance and credit of every icon folder recorded in docs/AUTHORSHIP.md §9
@@ -23,7 +23,7 @@ done:
 
 # Pixel icons
 
-Plan only. No code yet. Story 1 is blocked on the questions in §7.
+Plan only. No code yet. Story 1 waits on one decision: §7.1.
 
 - **What:** 1,142 `icon:` fields in `src/core/data` and about 750 emoji hard-coded
   in `src/ui` and `src/core` → pixel sprites.
@@ -31,8 +31,9 @@ Plan only. No code yet. Story 1 is blocked on the questions in §7.
   the emoji, as today. Registries switch one at a time.
 - **Art on hand:** about 250 committed icon files, all drawn on a 32px grid. No code
   uses any of them today.
-- **License:** 48 of those files are Ækashics icon sheets and are already committed.
-  The source of the rest is not written down anywhere.
+- **License:** the 32px set is Clockwork Raven, bought (user, 2026-10-20). Allowed in
+  the game and in this private repo; not in a public one. 41 committed files in
+  `combatStyleIcons/` are Ækashics icon sheets.
 - **First conversion:** attributes, resources and superattributes in the sidebar.
   14 entries, 13 already have art, on screen all the time.
 
@@ -168,15 +169,15 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 
 | Folder | Files | What it shows | Fits | Source |
 |---|---:|---|---|---|
-| `attributes/` | 63 | 21 stats, each plain / `_buff` / `_debuff`: strength, dexterity, constitution, intelligence, wisdom, charisma, hp, mana, stamina, focus, soul, dominion, martial, endurance, luck, fate, crit, attack, DR, speed, 3 regeneration | ATTRIBUTE_LIST 6/6, RESOURCES 5/5 (spirit → soul), SUPERATTRS 2/3 (no Force), stat lines in tooltips | Not recorded. The names are this game's own concepts (dominion, martial, soul), so likely made for an earlier prototype |
-| `system/` | 41 | 20 actions, plain / `_disabled` / `_full`: achievement, ascension, combat, craft, disassemble, equipment, exit, fish, harvest, help, inventory, load, mine, rank, researchStage, rest, save, settings, skills, town, travel | Tab row 8/11; activities (mine, fish, harvest, rest); 📦 → inventory chest; ❓ → help | Not recorded |
-| `equipment_slot_placeholders/` | 20 | Empty-slot silhouettes: head, chest, hands, legs, feet, shoulders, neck, ring1, ring2, mainHand, offHand, artifact, emblem, eyes, relic, trinket, tool1–4 | Empty slots 9/13; stand-ins for plain armour | Not recorded |
-| `weapons/` | 14 | shortsword, longsword, greatsword, colossalSword, katana, dagger, axe, hatchet, battleaxe, greataxe, hammer, greathammer, staff, advancedStaff | 14 of 18 weapon items (no club, spear or bow), weapon skills, stance stand-ins | Not recorded |
-| `weapons/whips/` | 27 | Whips. The game has no whip | — | File names `c4507`…`c5394`: cells cut from a numbered sheet of 5,000+ icons |
-| `books/` | 16 | 12 books, 4 scrolls (`c1681`–`c1684`) | Key items (daybook, stamp), Bestiary tab, 📖 📜 📕 | Same numbered sheet |
-| `keys/` | 10 | Keys | Office key, 🗝️ | Same numbered sheet |
-| `runes/` | 11 | Grey rune stones with Elder Futhark marks, one broken | RUNES 11/11 by count; all the same grey, so tint per rune or redraw | Not recorded |
-| `combatStyleIcons/` | 48 | 39 sheets of nine 32px icons (slashes, claws, beams, gear), 7 single 64×64 swords and marks, 2 odd sheets | Stances, techniques, statuses, monster abilities | **Ækashics.** The 39 sheet names match battlers in `src/assets/enemies/` one for one (Scarlet King, Void Goddess, Sea Goddess, Tomb Reaper, Cosmos Xoer, Slime Dragon, …) |
+| `attributes/` | 63 | 21 stats, each plain / `_buff` / `_debuff`: strength, dexterity, constitution, intelligence, wisdom, charisma, hp, mana, stamina, focus, soul, dominion, martial, endurance, luck, fate, crit, attack, DR, speed, 3 regeneration | ATTRIBUTE_LIST 6/6, RESOURCES 5/5 (spirit → soul), SUPERATTRS 2/3 (no Force), stat lines in tooltips | Clockwork Raven (file names are the user's renames) |
+| `system/` | 41 | 20 actions, plain / `_disabled` / `_full`: achievement, ascension, combat, craft, disassemble, equipment, exit, fish, harvest, help, inventory, load, mine, rank, researchStage, rest, save, settings, skills, town, travel | Tab row 8/11; activities (mine, fish, harvest, rest); 📦 → inventory chest; ❓ → help | Clockwork Raven |
+| `equipment_slot_placeholders/` | 20 | Empty-slot silhouettes: head, chest, hands, legs, feet, shoulders, neck, ring1, ring2, mainHand, offHand, artifact, emblem, eyes, relic, trinket, tool1–4 | Empty slots 9/13; stand-ins for plain armour | Clockwork Raven |
+| `weapons/` | 14 | shortsword, longsword, greatsword, colossalSword, katana, dagger, axe, hatchet, battleaxe, greataxe, hammer, greathammer, staff, advancedStaff | 14 of 18 weapon items (no club, spear or bow), weapon skills, stance stand-ins | Clockwork Raven |
+| `weapons/whips/` | 27 | Whips. The game has no whip | — | Clockwork Raven. File names `c4507`…`c5394` are cell numbers from a sheet of 5,000+ icons |
+| `books/` | 16 | 12 books, 4 scrolls (`c1681`–`c1684`) | Key items (daybook, stamp), Bestiary tab, 📖 📜 📕 | Clockwork Raven, same sheet |
+| `keys/` | 10 | Keys | Office key, 🗝️ | Clockwork Raven, same sheet |
+| `runes/` | 11 | Grey rune stones with Elder Futhark marks, one broken | RUNES 11/11 by count; all the same grey, so tint per rune or redraw | Clockwork Raven |
+| `combatStyleIcons/` | 48 | 41 Ækashics sheets: 39 of nine 32px icons (slashes, claws, beams, gear) and 2 odd sizes. 7 single 64×64 swords and marks (`c2754`…`c3259`) | Stances, techniques, statuses, monster abilities | **41 Ækashics:** the sheet names match battlers in `src/assets/enemies/` one for one (Scarlet King, Void Goddess, Sea Goddess, Tomb Reaper, Cosmos Xoer, Slime Dragon, …). **7 Clockwork Raven:** same `c…` numbering and 64×64 format as the sheet above |
 | `tilemaps/` (gitignored) | ~10,600 props | Epic RPG World props: barrels, crates, bones, rocks, webs, vases, blacksmith props, wells, ladders | Spot icons, some materials | Rafael Matos, bought; no redistribution (AUTHORSHIP §9) |
 | `enemies/` (gitignored) | 2,169 | Battlers | Already used through `MonsterDef.art` | Ækashics |
 | `deities/` | 0 | README only | `DeityDef.art` exists, nothing drawn | — |
@@ -184,19 +185,29 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 
 ### 3.1 License findings
 
-1. **`combatStyleIcons/` is Ækashics content and is in git history** (since the import
-   commit `e2599ac`, 2026-08-24). The terms forbid redistribution, the same as the
-   battlers. AUTHORSHIP §9 says making the repo public is "a settings toggle" because
-   no Ækashics file was ever committed; these 48 files make that untrue. The repo is
-   private (checked 2026-10-20), so nothing has been published. Options, the user's
-   call and outside this plan's code: (a) `git rm --cached`, add to `.gitignore`, and
-   rewrite history with `git filter-repo` before any public flip; (b) ask Ækashics,
-   as §9 already suggests. Until then this plan uses none of them.
-2. **The other seven committed folders have no recorded source.** No readme, no
-   AUTHORSHIP entry; they arrived in the import commit. If they come from a bought
-   pack with no-redistribution terms, they get the tile-pack treatment (gitignored,
-   emoji in a fresh clone) and the same history question as point 1. If they were
-   made for the user, record that in AUTHORSHIP §9.
+1. **41 files in `combatStyleIcons/` are Ækashics content and are in git history**
+   (since the import commit `e2599ac`, 2026-08-24). The terms forbid redistribution,
+   the same as the battlers. AUTHORSHIP §9 said making the repo public is "a settings
+   toggle" because no Ækashics file was ever committed; these files make that untrue.
+   The repo is private (checked 2026-10-20), so nothing has been published. Options,
+   the user's call and outside this plan's code: (a) `git rm --cached`, add to
+   `.gitignore`, and rewrite history with `git filter-repo` before any public flip;
+   (b) ask Ækashics, as §9 already suggests. Until then this plan uses none of them.
+2. **Everything else committed is Clockwork Raven** (clockworkraven.itch.io), bought.
+   The user confirmed it on 2026-10-20 and supplied *Clockwork Raven General Licence
+   v1.2*. What it allows here:
+
+   | Question | Licence | Here |
+   |---|---|---|
+   | Use in a commercial game | Yes (§3a) | Fine |
+   | Raw files in this private repo | Not "distributed as a separate product"; the licence lets a team working on the project share them (§3b) | Fine |
+   | Raw files in a public repo | Would be distributing the assets as they are (§3a, §3b) | Not allowed. Same scrub as point 1 before any public flip |
+   | Crops, tints, recolours | Allowed; the edited file stays under the licence (§3c) | Rune tints are fine; edited files are no freer than the originals |
+   | Screenshots | Allowed when tied to the project (FAQ a) | The mockup PNG is fine |
+   | Credit | Optional; suggested "Clockwork Raven – Additional Art Assets" (§3d, FAQ e) | Add to the credits when the game ships; never claim the art as ours |
+   | Mods | Only free mods that tell users the assets cannot be reused (FAQ h); no engine or template that hands the files on (§3b, FAQ b) | Same flag as Ækashics if a modding SDK is ever planned |
+   | AI | Must not be used to train any machine, AI or software that makes derivative or similar work (§3f, FAQ g) | Missing icons in this style are drawn by a person or bought, never generated from these files |
+
 3. **Epic RPG World props** can be used for icons only from a gitignored folder. A
    cropped prop is an edited version and still may not be redistributed.
 
@@ -229,9 +240,8 @@ absent. This plan extends that to every icon.
 
 | File | Job |
 |---|---|
-| `src/assets/icons/<group>/` | Committed art, one folder per group (chrome, attributes, weapons, elements, …). The existing folders move here once §7.1 is answered |
-| `src/assets/icons-licensed/` | Gitignored. Anything cut from a bought pack. A fresh clone falls back to the emoji, as tile maps fall back to the node diagram |
-| `src/ui/lib/iconArt.ts` | One eager `import.meta.glob` over both folders (`?url`); `iconUrl(def)` and `glyphUrl(emoji)`. Core stays browser-free |
+| `src/assets/icons/<source>/<group>/` | One folder per art source, then per group: `own/` (drawn for this game, always committed), `clockwork-raven/` (committed or gitignored, §7.1), `epic-rpg-world/` (props, gitignored like the tile packs). One source per folder means a history scrub is one `git filter-repo --path` per source. A missing folder means the emoji shows, as tile maps fall back to the node diagram |
+| `src/ui/lib/iconArt.ts` | One eager `import.meta.glob` over `src/assets/icons/**` (`?url`); `iconUrl(def)` and `glyphUrl(emoji)`. Core stays browser-free |
 | `src/ui/lib/Icon.svelte` | `<Icon of={def} size={16 \| 32} />`. Draws `<img>` with `image-rendering: pixelated` and `alt=""` (the name is printed beside it), else the emoji. Fixed box so rows do not shift |
 | `src/ui/lib/GlyphText.svelte` | Draws a string, replacing each emoji that has a `GLYPH_ART` entry with an `<img>`. Used by LogFeed, string-built tooltips and template messages. Old log lines in a save get art too, because the log stores text |
 | SVG sites | MapCard pins and the psionic chart draw `<image href>` in place of `<text>` when a URL resolves |
@@ -256,8 +266,8 @@ One conversion = one registry's render sites switched from `{def.icon}` to
 
 - A content test: every declared `art` and every `GLYPH_ART` value resolves to a file
   under `src/assets/icons/`. Same shape as "declared bestiary art exists on disk"
-  ([content.test.ts](../../tests/content.test.ts) :765). Paths under
-  `icons-licensed/` are exempt, since a clone may not have them.
+  ([content.test.ts](../../tests/content.test.ts) :765). Paths under a gitignored
+  source folder are exempt, since a clone may not have them.
 - The forge edits `icon` as a plain string today. `art` starts as a plain text field;
   a picker that shows the folder's sprites comes later.
 
@@ -288,7 +298,7 @@ measured.
 - **Tier 4, rare:** bestiary tags, deity tags, music, achievements, titles, prestige,
   key items, towers.
 
-"Covered" means a committed file fits, pending §7.1.
+"Covered" means a Clockwork Raven file already in the repo fits.
 
 | Tier | Kind | Entries | Covered now | Missing — draw or buy |
 |---|---|---:|---|---|
@@ -298,7 +308,7 @@ measured.
 | 1 | Weather, time | 10 | 0 | ☀️ ☁️ 🌫️ 🌧️ ⛈️ 🌨️ ❄️ 🌪️ 🌦 🕰️ |
 | 1 | Statuses | 70 | 0 | 53 distinct; the element set covers part |
 | 1 | Titles | 9 | 0 | 9 |
-| 2 | Spots, activities | 141 | Activities: mine, fish, harvest, rest, combat (⚔️ ×7) | About 60 spot glyphs. Epic RPG World props can supply ladders, doors, wells, anvils (licensed folder) |
+| 2 | Spots, activities | 141 | Activities: mine, fish, harvest, rest, combat (⚔️ ×7) | About 60 spot glyphs. Epic RPG World props can supply ladders, doors, wells, anvils (gitignored folder) |
 | 2 | Monsters | 59 | 39 Ækashics portraits (local only) | 20 without a portrait; a small inline icon for lists and log |
 | 2 | Stances | 21 | 6 stand-ins: attack, greathammer, battleaxe, dagger, crit, DR | 15. The Ækashics sheets would fit but cannot be committed |
 | 2 | Techniques, positions, fork archetypes | 40 | 0 | 40 |
@@ -319,22 +329,26 @@ measured.
 
 ### 5.1 Buy or draw
 
-- **Buy** for generic needs: lock, coin, weather, elements, potions, food, ore,
-  armour, rings. Find out first where the current 32px set came from (§7.1). If it is
-  a pack, the same sheet matches the style exactly: the `c…` file numbers run past
-  5,000 and only about 60 cells were imported. Any pack with no-redistribution terms
-  goes in `icons-licensed/`.
+- **Look in the purchased Clockwork Raven sheet first.** The `c…` file numbers run
+  past 5,000 and only about 60 cells were imported. If the full sheet is still on
+  disk, it is already paid for and matches the style exactly; it likely covers lock,
+  coin, weather, elements, potions, food, ore, armour and rings (§7.3).
+- **Buy** what the sheet lacks. Check each pack's terms the same way; anything that
+  may not be redistributed gets its own folder under `src/assets/icons/`.
 - **Draw** what no pack has: the 40 arcane words, psionic axes, techniques and
-  positions, stances, mutagen genes, Wuxin, Chromosome.
+  positions, stances, mutagen genes, Wuxin, Chromosome. Drawn by a person, or
+  generated without Clockwork Raven files as input (their licence §3f forbids
+  feeding them to any image generator).
 
 ## 6. Order of work
 
 Each step is one story and one PR.
 
 1. **Mechanism + sidebar.** `Icon.svelte`, `iconArt.ts`, `art` on the attribute,
-   resource and superattribute defs; move `attributes/` to `icons/attributes/`;
-   switch the sidebar rows and attribute tooltips. 13 of 14 drawn. Decide 16px vs
-   32px on the real sidebar in both themes. Blocked on §7.1.
+   resource and superattribute defs; move `attributes/` to
+   `icons/clockwork-raven/attributes/`; switch the sidebar rows and attribute
+   tooltips. 13 of 14 drawn. Decide 16px vs 32px on the real sidebar in both themes.
+   Waits on §7.1.
 2. **Tab row + `GlyphText` in the log.** System icons for 8 tabs; 3 to draw. Seed
    `GLYPH_ART` with 📦 ⚔️ ❓ 📖 📜 🏆.
 3. **Chrome glyphs.** About 15: lock, coin, hourglass, warning, …
@@ -342,8 +356,8 @@ Each step is one story and one PR.
    runes, reagents, through `GLYPH_ART`.
 5. **Inventory.** Weapons from `weapons/`, armour from the slot silhouettes, empty
    slots; per-item `art` to split the four 🗡️ blades.
-6. **Stances.** The nine generic stances first, then the 12 schools. Needs drawing or
-   a cleared licence.
+6. **Stances.** The nine generic stances first, then the 12 schools. Needs drawing, the
+   Clockwork Raven sheet, or a yes from Ækashics for their icon sheets.
 7. **Spots and activities.** Map pins become SVG images; props from the licensed
    folder.
 8. **The rest, by tier.**
@@ -353,10 +367,21 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
 
 ## 7. Open questions
 
-1. **Where did `attributes/`, `system/`, `equipment_slot_placeholders/`, `weapons/`,
-   `books/`, `keys/` and `runes/` come from, and on what terms?** Blocks story 1.
-2. **`combatStyleIcons/` (Ækashics):** take it out of git (and rewrite history before
-   any public flip), or ask Ækashics? Outside this plan's code, but it decides what
-   stances and techniques can use.
-3. **16px or 32px for inline rows** (sidebar, word pills, log)? Mockup §2 and §4.
-4. **Buy a pack for the generic gaps, or draw everything?**
+1. **Clockwork Raven files: keep them committed while the repo is private, or
+   gitignore them now like the tile packs?** Blocks story 1.
+   - *Keep committed (recommended).* The licence allows it (§3.1 point 2). Worktrees
+     and fresh clones get the art, so sessions can check the UI by screenshot. The
+     files are in history already, so gitignoring now would not avoid the scrub;
+     before any public flip, one `git filter-repo` removes `icons/clockwork-raven/`,
+     the old folder paths and the Ækashics files together.
+   - *Gitignore now.* Matches the battlers and tile packs. Every fresh clone and
+     worktree shows emoji until the folder is linked in by hand.
+2. **`combatStyleIcons/` (41 Ækashics files):** take them out of git (and rewrite
+   history before any public flip), or ask Ækashics? Outside this plan's code, but it
+   decides what stances and techniques can use.
+3. **Is the full Clockwork Raven sheet still on disk?** Point to the folder or zip;
+   it may cover most of the generic gaps (§5.1).
+4. **16px or 32px for inline rows** (sidebar, word pills, log)? Mockup §2 and §4.
+5. **Buy a pack for what the sheet lacks, or draw everything?**
+
+Answered 2026-10-20: the 32px set is Clockwork Raven, bought (was question 1).
