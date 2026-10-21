@@ -52,6 +52,7 @@
   import { DISCIPLINES } from '../../core/data/disciplines.data';
   import { conditionsMet } from '../../core/systems/conditions';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
+  import { tutorialScreen } from '../lib/tutorialFocus';
 
   /** Which workbench is open, if any. */
   let openBench = $state<string | null>(null);
@@ -69,6 +70,9 @@
   }
 
   const spot = $derived(getSpot(gs.spot));
+
+  /** Floor 0's pointer (lib/tutorialFocus.ts): `activity:<id>` lights that button. */
+  const tutorialTarget = $derived(tutorialScreen(gs)?.target ?? null);
 
   const visibleBenchIds = $derived(visibleBenches(gs, spot));
 
@@ -156,8 +160,11 @@
 </script>
 
 {#snippet actBtn(act: ActivityDef)}
+  {@const pointed = tutorialTarget === `activity:${act.id}`}
   <button
     class:selected={gs.activity === act.id}
+    class:tutorial-target={pointed}
+    class:tutorial-glow={pointed}
     disabled={gs.recovering || !!gs.combat?.forced}
     onclick={() => game.selectActivity(gs.activity === act.id ? null : act.id)}
   >

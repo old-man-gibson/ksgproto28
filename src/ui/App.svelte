@@ -27,6 +27,8 @@
   import DefeatModal from './DefeatModal.svelte';
   import TutorialCard from './TutorialCard.svelte';
   import { tutorialActive } from '../core/systems/tutorial';
+  import { targetTab, tutorialScreen } from './lib/tutorialFocus';
+  import { tick } from 'svelte';
   import { fmt } from './lib/format';
   import { applyTheme, loadTheme, nextTheme, THEME_NAMES } from './lib/theme';
   import DebugPanel from './panels/DebugPanel.svelte';
@@ -137,6 +139,34 @@
   const readyQuests = $derived(activeQuests(gs).filter((q) => questComplete(gs, q)).length);
 
   /**
+   * Floor 0 trims the screen to what the current step uses (lib/tutorialFocus.ts):
+   * tabs arrive as the steps name them, the sidebar with the first fight, and
+   * the clock, weather and save buttons after the tutorial. Null outside it.
+   */
+  const screen = $derived(tutorialScreen(gs));
+  const shownTabs = $derived(screen ? tabs.filter((t) => screen.tabs.has(t.id)) : tabs);
+  const target = $derived(screen?.target ?? null);
+
+  /**
+   * When the step points somewhere new, open the tab it is drawn on and
+   * scroll it into view (at 800 × 600 the activity buttons sit below the
+   * map). Fires on a change of target only, so a player who clicks to
+   * another tab is not dragged back until the next step.
+   */
+  let pointed: string | null = null;
+  $effect(() => {
+    const now = target;
+    if (now === pointed) return;
+    pointed = now;
+    if (!now) return;
+    const tab = targetTab(now);
+    if (tab) ui.tab = tab;
+    tick().then(() =>
+      document.querySelector('.tutorial-target')?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+    );
+  });
+
+  /**
    * Open the summary when a fight ends badly. Keyed on `endedAt` rather than on
    * identity so it fires once per knockout — and a win never raises it, though
    * the ledger is written all the same and can be opened from the Fight Feed.
@@ -243,13 +273,15 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<div class="layout" class:paused={gs.paused}>
+<div class="layout" class:paused={gs.paused} class:no-sidebar={screen && !screen.sidebar}>
   <header>
     <h1>Frontier Idle</h1>
 
     <!-- Transport controls. The pause is global — the whole world stops, not
          just the fight — so stepping through an exchange can't bank free time
-         anywhere else. Stepping implies pausing. -->
+         anywhere else. Stepping implies pausing. The keys still work on
+         floor 0; the buttons wait for the end of the tutorial. -->
+    {#if !screen}
     <div class="clock">
       <button
         class="pause"
@@ -286,6 +318,7 @@
         <span class="tickno" title="Ticks elapsed since this save began">t{gs.totalTicks}</span>
       {/if}
     </div>
+    {/if}
 
     <div class="status">{gs.paused ? '⏸️ Paused' : statusText()}</div>
     {#if timeSense}
@@ -293,7 +326,7 @@
         🕰️ {timeSense}
       </div>
     {/if}
-    {#if weather}
+    {#if weather && !screen}
       <!-- Same tooltip system as stats and resources. It grows with
            Weathersense: today only at first, the coming hours from level 1,
            the area's daily prognosis from 5. -->
@@ -325,15 +358,21 @@
         🌑 {dark >= 0.85 ? 'Blind dark' : dark >= 0.4 ? 'Dark' : 'Gloom'}
       </div>
     {/if}
-    <div class="gold">🪙 {fmt(gs.gold)}</div>
+    {#if !screen || screen.gold}
+      <div class="gold">🪙 {fmt(gs.gold)}</div>
+    {/if}
     <div class="actions small">
-      <button onclick={save} title="Autosaves every 30s">Save</button>
-      <button onclick={exportSave}>Export</button>
-      <button onclick={() => fileInput.click()}>Import</button>
-      <button onclick={hardReset} class="danger">Reset</button>
-      <button onclick={cycleTheme} title="Display theme. Kept in this browser, not in the save.">
-        {THEME_NAMES[theme]}
-      </button>
+      <!-- Autosave runs regardless. A new save offers Import on the floor 0
+           card instead (TutorialCard's "Played before?"). -->
+      {#if !screen}
+        <button onclick={save} title="Autosaves every 30s">Save</button>
+        <button onclick={exportSave}>Export</button>
+        <button onclick={() => fileInput.click()}>Import</button>
+        <button onclick={hardReset} class="danger">Reset</button>
+        <button onclick={cycleTheme} title="Display theme. Kept in this browser, not in the save.">
+          {THEME_NAMES[theme]}
+        </button>
+      {/if}
       {#if DEV}
         <button onclick={() => (showDebug = !showDebug)} title="Developer tools">🐞</button>
       {/if}
@@ -347,24 +386,29 @@
     </div>
   </header>
 
-  <aside class="sidebar">
-    <Sidebar />
-  </aside>
+  {#if !screen || screen.sidebar}
+    <aside class="sidebar">
+      <Sidebar combatStats={!screen} />
+    </aside>
+  {/if}
 
   <main>
-    <!-- Floor 0's commentary track, above the tabs so every step's pointer
-         ("click the map", "open the Combat tab") is readable from where it
-         sends you. Gone for good once flag:tutorial_done is stamped. -->
+    <!-- Floor 0's card, above the tabs so it stays in view from whichever
+         tab the step opens (sticky on a narrow screen, where the page
+         scrolls). Gone for good once flag:tutorial_done is stamped. -->
     {#if tutorialActive(gs)}
-      <TutorialCard />
+      <TutorialCard target={target} />
     {/if}
-    <nav class="tabs">
-      {#each tabs as tab}
-        <button class:selected={ui.tab === tab.id} onclick={() => (ui.tab = tab.id)}>
-          {tab.name}{tab.id === 'quests' && readyQuests > 0 ? ` (${readyQuests})` : ''}
-        </button>
-      {/each}
-    </nav>
+    <!-- One tab is no choice: the bar appears with the second. -->
+    {#if shownTabs.length > 1}
+      <nav class="tabs">
+        {#each shownTabs as tab}
+          <button class:selected={ui.tab === tab.id} onclick={() => (ui.tab = tab.id)}>
+            {tab.name}{tab.id === 'quests' && readyQuests > 0 ? ` (${readyQuests})` : ''}
+          </button>
+        {/each}
+      </nav>
+    {/if}
     <div class="tab-body">
       {#if ui.tab === 'location'}
         <LocationPanel />
@@ -627,6 +671,14 @@
     min-height: 0;
   }
 
+  /* Floor 0 before the first fight: no sidebar, so main takes its column. */
+  .layout.no-sidebar {
+    grid-template-columns: 1fr 320px;
+    grid-template-areas:
+      'header header'
+      'main log';
+  }
+
   @media (max-width: 1100px) {
     .layout {
       grid-template-columns: 240px 1fr;
@@ -637,6 +689,21 @@
       grid-template-rows: auto 1fr 220px;
       height: auto;
       min-height: 100vh;
+    }
+
+    .layout.no-sidebar {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        'header'
+        'main'
+        'log';
+    }
+
+    /* The page scrolls here, not the tab body. `clip` keeps the sideways
+       clipping without making main a scroll container, which is what lets
+       the tutorial card stick to the top of the window. */
+    main {
+      overflow: clip visible;
     }
   }
 </style>
