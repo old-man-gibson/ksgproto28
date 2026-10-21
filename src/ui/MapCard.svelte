@@ -14,6 +14,15 @@
   import type { SpotDef } from '../core/types';
   import TileMap from './lib/tilemaps/TileMap.svelte';
   import { TILEMAPS } from './lib/tilemaps';
+  import { tutorialScreen } from './lib/tutorialFocus';
+
+  /**
+   * Floor 0 (lib/tutorialFocus.ts): the map stays open, shows only the
+   * Holding Level, and wears a beacon on the pin or exit the step names.
+   */
+  const tutorial = $derived(!!tutorialScreen(gs));
+  const target = $derived(tutorialScreen(gs)?.target ?? null);
+  const mapOpen = $derived(ui.mapOpen || tutorial);
 
   let regionOverride = $state<string | null>(null);
   const currentRegion = $derived(AREAS[getSpot(gs.spot).areaId].regionId);
@@ -185,7 +194,7 @@
   // map or switching region must close its card by hand.
   $effect(() => {
     void shownRegion;
-    if (!ui.mapOpen) cardFor = null;
+    if (!mapOpen) cardFor = null;
     return () => (cardFor = null);
   });
 
@@ -243,25 +252,31 @@
 </script>
 
 <div class="panel">
-  <button class="map-toggle" onclick={() => (ui.mapOpen = !ui.mapOpen)}>
-    {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {REGIONS[shownRegion].name}{shownArea &&
-    AREAS[shownArea].name !== REGIONS[shownRegion].name
-      ? `: ${AREAS[shownArea].name}`
-      : ''}
-  </button>
+  {#if tutorial}
+    <div class="map-toggle">🗺️ Map — {REGIONS[shownRegion].name}</div>
+  {:else}
+    <button class="map-toggle" onclick={() => (ui.mapOpen = !ui.mapOpen)}>
+      {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {REGIONS[shownRegion].name}{shownArea &&
+      AREAS[shownArea].name !== REGIONS[shownRegion].name
+        ? `: ${AREAS[shownArea].name}`
+        : ''}
+    </button>
+  {/if}
 
-  {#if ui.mapOpen}
-    <div class="region-switch">
-      {#each regionList as region (region.id)}
-        <button
-          class="small"
-          class:selected={shownRegion === region.id}
-          onclick={() => (regionOverride = region.id === currentRegion ? null : region.id)}
-        >
-          {region.name}
-        </button>
-      {/each}
-    </div>
+  {#if mapOpen}
+    {#if !tutorial}
+      <div class="region-switch">
+        {#each regionList as region (region.id)}
+          <button
+            class="small"
+            class:selected={shownRegion === region.id}
+            onclick={() => (regionOverride = region.id === currentRegion ? null : region.id)}
+          >
+            {region.name}
+          </button>
+        {/each}
+      </div>
+    {/if}
 
     {#if floorAreas.length > 1}
       <div class="region-switch floors">
@@ -317,6 +332,8 @@
           y={exit.from.map!.y - 3 + exit.offset * 3.2}
           class="exit"
           class:clickable={!stuck}
+          class:tutorial-target={target === `exit:${exit.to}`}
+          class:beacon-text={target === `exit:${exit.to}`}
           role="button"
           tabindex="0"
           aria-label="Travel toward {exit.label}"
@@ -333,10 +350,13 @@
       {#each nodes as node (node.spot.id)}
         {@const m = node.spot.map!}
         {@const feats = features.get(node.spot.id) ?? []}
+        {@const pointed = target === `spot:${node.spot.id}`}
         <g
           class="node"
           class:known={node.known}
           class:clickable={node.spot.id !== gs.spot && !stuck}
+          class:pointed
+          class:tutorial-target={pointed}
           role="button"
           tabindex="0"
           aria-label={node.known ? `Travel to ${node.spot.name}` : 'Travel to unexplored place'}
@@ -349,6 +369,9 @@
         >
           {#if node.spot.id === gs.spot}
             <circle cx={m.x} cy={m.y} r="4.6" class="ring" />
+          {/if}
+          {#if pointed}
+            <circle cx={m.x} cy={m.y} r="5.4" class="beacon" />
           {/if}
           <circle cx={m.x} cy={m.y} r="3.1" class="dot" />
           <text x={m.x} y={m.y + 1.3} text-anchor="middle" class="icon">
@@ -383,6 +406,7 @@
     </div>
     {/if}
 
+    {#if !tutorial}
     <div class="fast small">
       <span class="dim">⚡ Caravan:</span>
       {#each waypoints as w (w.id)}
@@ -403,6 +427,7 @@
         <span class="dim">no other waypoints discovered yet</span>
       {/each}
     </div>
+    {/if}
   {:else}
     <!-- Folded map: the roads out of here stay one click away. -->
     <div class="roads small">
@@ -748,6 +773,40 @@
   @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
+  }
+
+  /* Floor 0's pointer (lib/tutorialFocus.ts). A ❓ pin is drawn faint until
+     visited; the one the step names is drawn full, with a widening ring. */
+  .node.pointed {
+    opacity: 1;
+  }
+
+  .node.pointed .dot {
+    stroke: var(--accent);
+    stroke-width: 0.8;
+  }
+
+  .beacon {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 0.9;
+    pointer-events: none;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: beacon 1.4s ease-out infinite;
+  }
+
+  @keyframes beacon {
+    0% { transform: scale(0.7); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+
+  .map .exit.beacon-text {
+    fill: var(--accent);
+    font-size: 3.2px;
+    font-weight: 700;
+    font-style: normal;
+    animation: pulse 1.4s ease-in-out infinite;
   }
 
   .fast,

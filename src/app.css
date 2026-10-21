@@ -110,3 +110,20 @@ h1, h2, h3, h4 {
 .small {
   font-size: 12.5px;
 }
+
+/*
+ * Floor 0's pointer (ui/lib/tutorialFocus.ts). `.tutorial-target` marks the
+ * element the current step is about and is what App.svelte scrolls to; it has
+ * no look of its own. `.tutorial-glow` is the look, for HTML controls; the
+ * map draws its own beacon in SVG.
+ */
+.tutorial-glow {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  animation: tutorial-glow 1.4s ease-in-out infinite;
+}
+
+@keyframes tutorial-glow {
+  0%, 100% { outline-color: var(--accent); }
+  50% { outline-color: transparent; }
+}
