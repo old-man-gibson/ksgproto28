@@ -39,6 +39,9 @@
   import { startingLevel } from '../../core/systems/legacy';
   import { LEVEL_ATTR_BONUS } from '../../core/data/levels.data';
 
+  /** Off on floor 0: the tutorial shows the bars, not the stat sheet (App.svelte). */
+  let { combatStats = true }: { combatStats?: boolean } = $props();
+
   const stats = $derived(view.stats);
 
   const barPct = (cur: number, max: number) => (max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0);
@@ -475,6 +478,7 @@
   number (statSummary.ts says what it leaves out); a click opens the full rows,
   and every row keeps its own breakdown tooltip.
 -->
+{#if combatStats}
 <div class="panel" style="margin-top: 12px">
   <h3>Combat Stats</h3>
   <table class="small">
@@ -580,6 +584,7 @@
     </tbody>
   </table>
 </div>
+{/if}
 
 {#snippet groupHead(id: StatGroup, name: string, summary: string, explain: string)}
   <tr class="stat-group-row">

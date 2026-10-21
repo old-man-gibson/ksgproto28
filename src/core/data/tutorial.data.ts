@@ -5,17 +5,19 @@ import { TUTORIAL_TEXT } from '../text/tutorial.text';
 /**
  * Floor 0, the tutorial (docs/TUTORIAL.md, plans/floor-zero-tutorial.md).
  *
- * Nine panels, read in order, shown one at a time above the tabs while the
- * tutorial is on. Each is DONE when the world says so — a counter, a spot
- * stood in — never when a button was clicked, so a player who does things
- * early or out of order is shown the first thing still undone and nothing
- * stale. Three of the panels carry a choice (the rack, the stance, the
- * spell); those stamp a `flag:tutorial_*` counter through a Game method and
- * the step reads that.
+ * Nine steps, read in order, shown one at a time on the card above the tabs
+ * while the tutorial is on; ui/lib/tutorialFocus.ts decides what else the
+ * screen shows and which control each step points at. Each is DONE when the
+ * world says so — a counter, a spot stood in — never when a button was
+ * clicked, so a player who does things early or out of order is shown the
+ * first thing still undone and nothing stale. Three of the panels carry a
+ * choice (the rack, the stance, the spell); those stamp a `flag:tutorial_*`
+ * counter through a Game method and the step reads that.
  *
  * Nothing here GATES anything. The floor's roads and fights work with every
- * panel ignored; the tutorial is a commentary track. `Skip tutorial` stamps
- * every flag at once and moves the player to the Foot (systems/tutorial.ts).
+ * panel ignored; the tutorial is a commentary track. The skip (offered once,
+ * on the first step) stamps every flag at once and moves the player to the
+ * Foot (systems/tutorial.ts).
  *
  * Words live in text/tutorial.text.ts. Numbers quoted there (road seconds,
  * the slime's 1 damage, the spell's mana) are the ones in the data files —
@@ -46,6 +48,13 @@ export const TUTORIAL_RACK: Record<string, { item: string | null; hands: 'one' |
 
 /** The shield that goes with a one-handed pick. */
 export const TUTORIAL_SHIELD = 'wooden_shield';
+
+/**
+ * The stances the card offers, in order: no modifiers, attack, defence — the
+ * wheel's up/down axis (user, 2026-10-20). The other six stay on the Combat
+ * tab; picking one there instead still sets the stance but not the stamp.
+ */
+export const TUTORIAL_STANCES = ['balanced', 'aggressive', 'defensive'] as const;
 
 /** The three words on offer; each becomes a one-word prepared sentence. */
 export const TUTORIAL_SPELLS = ['fire', 'ice', 'spark'] as const;
