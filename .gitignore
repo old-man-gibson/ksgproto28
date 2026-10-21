@@ -16,3 +16,13 @@ src/assets/enemies/
 # src/ui/lib/tilemaps/*.map.json are ours (tile INDEXES, no pixels); a checkout
 # without the packs draws the node diagram instead. See docs/TILEMAPS.md.
 src/assets/tilemaps/
+
+# Third-party icon packs, kept whole as a library to pick from: the full
+# Clockwork Raven sheet (64x64/), the Raven Fantasy skill packs, and the
+# rest. Bought, not for redistribution. Only the icons the game uses are
+# copied into its own folders. See docs/plans/pixel-icons.md and
+# docs/AUTHORSHIP.md §9.
+src/assets/64x64/
+src/assets/Raven Fantasy - */
+src/assets/Epic Weapons 3/
+src/assets/Trees and Logs/

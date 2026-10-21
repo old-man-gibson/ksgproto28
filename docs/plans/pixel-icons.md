@@ -189,7 +189,10 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 | `tilemaps/` (gitignored) | ~10,600 props | Epic RPG World props: barrels, crates, bones, rocks, webs, vases, blacksmith props, wells, ladders | Spot icons, some materials | Rafael Matos, bought; no redistribution (AUTHORSHIP §9) |
 | `enemies/` (gitignored) | 2,169 | Battlers | Already used through `MonsterDef.art` | Ækashics |
 | `deities/` | 0 | README only | `DeityDef.art` exists, nothing drawn | — |
-| `64x64/` (main checkout, untracked, not ignored) | 8,256 | The full Clockwork Raven sheet, `c1.png`…`c8256.png`, 29 MB. Index in §3.2 | Most of tiers 1–3; picks in [pixel-icons/picks.md](pixel-icons/picks.md) | Clockwork Raven; added by the user 2026-10-20 |
+| `64x64/` (main checkout, gitignored) | 8,256 | The full Clockwork Raven sheet, `c1.png`…`c8256.png`, 29 MB. Index in §3.2 | Most of tiers 1–3; picks in [pixel-icons/picks.md](pixel-icons/picks.md) | Clockwork Raven; added by the user 2026-10-20 |
+| `Raven Fantasy - Pixel Art RPG Icons - {Acolyte, Rogue, Warrior, Wizard} Skills/` (main checkout, gitignored) | 1,060 | Class skill icons, 64×64, plus one sheet image each | Stances, techniques, spells, statuses. Not picked from yet | Clockwork Raven; added 2026-10-20 |
+| `Epic Weapons 3/` (main checkout, gitignored) | 192 | Weapons, 64×64, plus a sheet image | More weapon items | Not recorded; no licence file. Added 2026-10-20 |
+| `Trees and Logs/` (main checkout, gitignored) | 36 | Trees and logs, 64×64, plus a sheet image | Woodcutting, wood materials | Not recorded; no licence file. Added 2026-10-20 |
 | `react.svg` | 1 | Vite template leftover | — | Unused |
 
 ### 3.1 License findings
@@ -285,7 +288,7 @@ absent. This plan extends that to every icon.
 | File | Job |
 |---|---|
 | `src/assets/icons/<source>/<group>/` | One folder per art source, then per group: `own/` (drawn for this game, always committed), `clockwork-raven/` (committed or gitignored, §7.1), `epic-rpg-world/` (props, gitignored like the tile packs). One source per folder means a history scrub is one `git filter-repo --path` per source. A missing folder means the emoji shows, as tile maps fall back to the node diagram |
-| `src/assets/64x64/` | The full sheet, as a library to pick from. Never inside the `import.meta.glob`: Vite would copy all 8,256 files (29 MB) into every build, and a web build would serve the whole pack as loose files. Each picked icon is copied into `icons/clockwork-raven/<group>/` under a readable name (`iron_sword.png`); picks.md keeps the c-number. Kept out of git (§7.1) |
+| `src/assets/64x64/` | The full sheet, as a library to pick from. Never inside the `import.meta.glob`: Vite would copy all 8,256 files (29 MB) into every build, and a web build would serve the whole pack as loose files. Each picked icon is copied into `icons/clockwork-raven/<group>/` under a readable name (`iron_sword.png`); picks.md keeps the c-number. Gitignored, like the other packs kept whole in `src/assets/` (§3) |
 | `src/ui/lib/iconArt.ts` | One eager `import.meta.glob` over `src/assets/icons/**` (`?url`); `iconUrl(def)` and `glyphUrl(emoji)`. Core stays browser-free |
 | `src/ui/lib/Icon.svelte` | `<Icon of={def} size={16 \| 32} />`. Draws `<img>` with `image-rendering: pixelated` and `alt=""` (the name is printed beside it), else the emoji. Fixed box so rows do not shift |
 | `src/ui/lib/GlyphText.svelte` | Draws a string, replacing each emoji that has a `GLYPH_ART` entry with an `<img>`. Used by LogFeed, string-built tooltips and template messages. Old log lines in a save get art too, because the log stores text |
@@ -415,8 +418,9 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
 
 ## 7. Open questions
 
-1. **Clockwork Raven files: keep them committed while the repo is private, or
-   gitignore them now like the tile packs?** Blocks story 1.
+1. **The icons the game uses: keep them committed while the repo is private, or
+   gitignore them like the tile packs?** Blocks story 1. (The whole packs are
+   settled: gitignored, see below.)
    - *Keep committed (recommended).* The licence allows it (§3.1 point 2). Worktrees
      and fresh clones get the art, so sessions can check the UI by screenshot. The
      files are in history already, so gitignoring now would not avoid the scrub;
@@ -424,10 +428,7 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
      the old folder paths and the Ækashics files together.
    - *Gitignore now.* Matches the battlers and tile packs. Every fresh clone and
      worktree shows emoji until the folder is linked in by hand.
-   - *Either way, the full sheet `src/assets/64x64/` stays out of git* (add it to
-     `.gitignore`). It is 8,256 files and 29 MB, and today it is untracked but not
-     ignored, so a `git add -A` in the main checkout would commit all of it. Only the
-     picked icons are copied into the game's folders.
+   - *Either way, only the picked icons are copied into the game's folders.*
 2. **`combatStyleIcons/` (41 Ækashics files):** take them out of git (and rewrite
    history before any public flip), or ask Ækashics? Outside this plan's code. The
    icons no longer depend on it: the Clockwork Raven sheet covers the stances.
@@ -439,6 +440,10 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
 Answered 2026-10-20:
 - The 32px set is Clockwork Raven, bought.
 - The full sheet is on disk: `src/assets/64x64/` in the main checkout.
+- The whole packs in `src/assets/` (`64x64/`, the Raven Fantasy skill packs, Epic
+  Weapons 3, Trees and Logs) are gitignored. Until this branch merges, the same
+  lines sit in the repo's local `.git/info/exclude` so they already apply in the
+  main checkout.
 
 ## 8. Picks from the full sheet
 

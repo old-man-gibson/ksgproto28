@@ -491,8 +491,11 @@ Two things worth keeping in mind:
 
    The whole Clockwork Raven sheet (8,256 icons, 29 MB) sits in `src/assets/64x64/`
    in the main checkout as a library to pick from. 185 of the 209 committed files
-   are pixel-identical to cells of it; the rest are edited versions. It belongs out of git, like
-   the tile packs. The screenshots under `docs/plans/pixel-icons/` show Clockwork
+   are pixel-identical to cells of it; the rest are edited versions. Since
+   2026-10-20 it is gitignored, together with the other icon packs kept whole in
+   `src/assets/`: four Raven Fantasy skill packs (Acolyte, Rogue, Warrior, Wizard;
+   Clockwork Raven, 1,060 icons), Epic Weapons 3 (192) and Trees and Logs (36). The
+   last two came without a licence file; their source is not recorded yet. The screenshots under `docs/plans/pixel-icons/` show Clockwork
    Raven icons; the licence allows screenshots, but they go on the scrub list too.
 
    So making the repo public is no longer a settings toggle. Before any public
