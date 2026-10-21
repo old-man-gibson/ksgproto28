@@ -625,7 +625,7 @@
     width: 100%;
     max-width: 560px;
     max-height: 340px;
-    background: #0d1014;
+    background: var(--bg-sunken);
     border: 1px solid var(--border);
     border-radius: 8px;
     margin-top: 4px;
@@ -666,7 +666,7 @@
   .map.tiled .label {
     fill: #fff;
     paint-order: stroke;
-    stroke: #0d1014;
+    stroke: var(--bg-sunken);
     stroke-width: 0.8;
   }
 
@@ -681,7 +681,7 @@
     fill: #fff;
     font-weight: 600;
     paint-order: stroke;
-    stroke: #0d1014;
+    stroke: var(--bg-sunken);
     stroke-width: 0.8;
   }
 
@@ -822,7 +822,7 @@
     font-size: 3.4px;
     fill: var(--accent);
     paint-order: stroke;
-    stroke: #0d1014;
+    stroke: var(--bg-sunken);
     stroke-width: 0.5;
     pointer-events: none;
     animation: beacon-bob 0.9s ease-in-out infinite alternate;

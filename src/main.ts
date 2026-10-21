@@ -1,6 +1,13 @@
 import { mount } from 'svelte';
+import '@fontsource/cinzel/400.css';
+import '@fontsource/cinzel/500.css';
+import '@fontsource/eb-garamond/400.css';
+import '@fontsource/eb-garamond/400-italic.css';
+import '@fontsource/eb-garamond/600.css';
 import './app.css';
+import './themes/gothic.css';
 import App from './ui/App.svelte';
+import { applyTheme, loadTheme } from './ui/lib/theme';
 import { boot, catchUp, game, save, timeAway, ui } from './ui/state.svelte';
 import { TickAccumulator } from './core/engine/loop';
 import { OFFLINE_MIN_MS } from './core/save/offline';
@@ -77,6 +84,8 @@ window.addEventListener('beforeunload', () => save());
 // before the frame is painted, the timeout fires after it.
 const away = timeAway();
 if (away >= OFFLINE_MIN_MS && !game.state.paused) ui.catchingUp = away;
+// Before mount, so the first paint is already in the stored theme.
+applyTheme(loadTheme());
 mount(App, { target: document.getElementById('app')! });
 if (ui.catchingUp !== null) {
   requestAnimationFrame(() =>
