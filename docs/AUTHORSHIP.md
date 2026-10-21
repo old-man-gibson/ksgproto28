@@ -506,6 +506,15 @@ Two things worth keeping in mind:
    story moves the packs there and takes the 250 committed icon files out of the
    tree, the Ækashics sheets included (docs/plans/pixel-icons.md §6).
 
+   **Free packs are the exception (2026-10-21).** Idylwild's Runic Codex and
+   Idylwild's Alchemical Codex (idylwild.itch.io) are free, and their store pages
+   grant copying, redistribution and adaptation for any purpose, commercial
+   included; the Alchemical Codex page names it Creative Commons Zero v1.0
+   Universal, and the author confirms CC0 in a reply on that page. Credit is
+   optional ("Idylwild's Runic Codex by Idylwild"). No licence file ships with
+   them, so the store pages are the record. CC0 art may live in git; where it
+   goes is docs/plans/pixel-icons.md §7.5.
+
    So making the repo public is no longer a settings toggle. Before any public
    flip, either remove those paths from history with `git filter-repo` or get a
    yes from each author. Plan and options: docs/plans/pixel-icons.md §3.1 and §7.
