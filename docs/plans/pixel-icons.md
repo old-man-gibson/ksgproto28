@@ -29,8 +29,10 @@ Plan only. No code yet. Story 1 waits on one decision: §7.1.
   in `src/ui` and `src/core` → pixel sprites.
 - **How:** one `<Icon>` component. Per-entry `art` file → emoji-keyed glyph table →
   the emoji, as today. Registries switch one at a time.
-- **Art on hand:** about 250 committed icon files, all drawn on a 32px grid. No code
-  uses any of them today.
+- **Art on hand:** about 250 committed icon files, all drawn on a 32px grid; no code
+  uses any of them today. The full Clockwork Raven sheet, 8,256 icons, is in
+  `src/assets/64x64/` in the main checkout (not in git). It has a pick for 111 of the
+  125 tier 1–3 concepts checked so far ([pixel-icons/picks.md](pixel-icons/picks.md)).
 - **License:** the 32px set is Clockwork Raven, bought (user, 2026-10-20). Allowed in
   the game and in this private repo; not in a public one. 41 committed files in
   `combatStyleIcons/` are Ækashics icon sheets.
@@ -40,8 +42,9 @@ Plan only. No code yet. Story 1 waits on one decision: §7.1.
 ![Before and after: inventory row, spell words, stance buttons, sidebar attributes, tab row, log line](pixel-icons/before-after.png)
 
 The image is a screenshot of [pixel-icons/mockup.html](pixel-icons/mockup.html):
-hand-placed sprites from `src/assets` on the gothic tokens. Open the HTML from the
-main checkout to see it at full size. Dashed boxes = no committable art yet.
+hand-placed sprites from the Clockwork Raven sheet on the gothic tokens. Open the
+HTML from the main checkout, which has `src/assets/64x64/`. Dashed = nothing in the
+sheet fits.
 
 ## 1. Census
 
@@ -172,7 +175,7 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 | `attributes/` | 63 | 21 stats, each plain / `_buff` / `_debuff`: strength, dexterity, constitution, intelligence, wisdom, charisma, hp, mana, stamina, focus, soul, dominion, martial, endurance, luck, fate, crit, attack, DR, speed, 3 regeneration | ATTRIBUTE_LIST 6/6, RESOURCES 5/5 (spirit → soul), SUPERATTRS 2/3 (no Force), stat lines in tooltips | Clockwork Raven (file names are the user's renames) |
 | `system/` | 41 | 20 actions, plain / `_disabled` / `_full`: achievement, ascension, combat, craft, disassemble, equipment, exit, fish, harvest, help, inventory, load, mine, rank, researchStage, rest, save, settings, skills, town, travel | Tab row 8/11; activities (mine, fish, harvest, rest); 📦 → inventory chest; ❓ → help | Clockwork Raven |
 | `equipment_slot_placeholders/` | 20 | Empty-slot silhouettes: head, chest, hands, legs, feet, shoulders, neck, ring1, ring2, mainHand, offHand, artifact, emblem, eyes, relic, trinket, tool1–4 | Empty slots 9/13; stand-ins for plain armour | Clockwork Raven |
-| `weapons/` | 14 | shortsword, longsword, greatsword, colossalSword, katana, dagger, axe, hatchet, battleaxe, greataxe, hammer, greathammer, staff, advancedStaff | 14 of 18 weapon items (no club, spear or bow), weapon skills, stance stand-ins | Clockwork Raven |
+| `weapons/` | 14 | shortsword, longsword, greatsword, colossalSword, katana, dagger, axe, hatchet, battleaxe, greataxe, hammer, greathammer, staff, advancedStaff | Superseded by the full sheet. The file names do not match the art: `longsword.png` is a katar (c4453) | Clockwork Raven |
 | `weapons/whips/` | 27 | Whips. The game has no whip | — | Clockwork Raven. File names `c4507`…`c5394` are cell numbers from a sheet of 5,000+ icons |
 | `books/` | 16 | 12 books, 4 scrolls (`c1681`–`c1684`) | Key items (daybook, stamp), Bestiary tab, 📖 📜 📕 | Clockwork Raven, same sheet |
 | `keys/` | 10 | Keys | Office key, 🗝️ | Clockwork Raven, same sheet |
@@ -181,6 +184,7 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 | `tilemaps/` (gitignored) | ~10,600 props | Epic RPG World props: barrels, crates, bones, rocks, webs, vases, blacksmith props, wells, ladders | Spot icons, some materials | Rafael Matos, bought; no redistribution (AUTHORSHIP §9) |
 | `enemies/` (gitignored) | 2,169 | Battlers | Already used through `MonsterDef.art` | Ækashics |
 | `deities/` | 0 | README only | `DeityDef.art` exists, nothing drawn | — |
+| `64x64/` (main checkout, untracked, not ignored) | 8,256 | The full Clockwork Raven sheet, `c1.png`…`c8256.png`, 29 MB. Index in §3.2 | Most of tiers 1–3; picks in [pixel-icons/picks.md](pixel-icons/picks.md) | Clockwork Raven; added by the user 2026-10-20 |
 | `react.svg` | 1 | Vite template leftover | — | Unused |
 
 ### 3.1 License findings
@@ -195,7 +199,11 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
    (b) ask Ækashics, as §9 already suggests. Until then this plan uses none of them.
 2. **Everything else committed is Clockwork Raven** (clockworkraven.itch.io), bought.
    The user confirmed it on 2026-10-20 and supplied *Clockwork Raven General Licence
-   v1.2*. What it allows here:
+   v1.2*. A pixel comparison against the full sheet the same day: 185 of the 209
+   files are identical to a sheet cell (`longsword.png` = c4453, `travel.png` = c24,
+   `ascension.png` = c1685, …). The other 24, mostly attribute buff/debuff variants,
+   match no cell exactly: edited versions, which the licence covers. What it allows
+   here:
 
    | Question | Licence | Here |
    |---|---|---|
@@ -210,6 +218,37 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 
 3. **Epic RPG World props** can be used for icons only from a gitignored folder. A
    cropped prop is an edited version and still may not be redistributed.
+
+### 3.2 Where things are in the full sheet
+
+The file number is the cell's position in the sheet, which is laid out by theme.
+Weapons and armour repeat each item across rows of 80, one row per colour.
+
+| Numbers | Contents |
+|---|---|
+| 1–60 | UI and system icons: save, load, settings, help, trophy, star, chest, map, book, helmet, sword; white silhouettes |
+| 61–160 | Map and place icons: houses, tents, castles, gates, towers, mountains, trees, waterfall, chapel, statues, wells; NPC and monster heads; an inn sign |
+| 161–400 | Bags, jars, goblets, keys (215–224), torches, lanterns, books, scrolls, sacks, chests and padlocks (273–288), flags, thread, quills, scales (332), anvil (333), tombstone (338), hourglasses (342–343), bowls, coins (369–372) |
+| 401–480 | Gems, statues, skulls, keys, mushrooms |
+| 481–960 | Ores, ingots, crystals, gems, in colour sets |
+| 961–1480 | Monster parts: skulls, horns, claws, teeth, eggs, feathers, scales, hides; mushrooms and herbs |
+| 1481–1680 | Potions and bottles |
+| 1681–1760 | Books, scrolls, rune stones, orbs, wands |
+| 1761–1880 | Modern objects (phones, tapes); not useful here |
+| 1881–2000 | Fish, sea creatures, shells, fishing gear, webs |
+| 2001–2440 | Food: fruit, vegetables, meat, bread, meals, drinks |
+| 2441–2660 | Stat icons with buff and debuff marks (the source of `attributes/`) |
+| 2661–2720 | Small status marks: sleep, poison, burn, stun |
+| 2721–2840 | Combat skills: crossed swords, slashes, holy crosses, spears, crosshair (2814) |
+| 2841–3040 | Elements: earth, ice, fire, water, wind, nature, blood, dark, in several shapes each |
+| 3041–3360 | Effects: volleys, orbs, hearts, clovers, holy light, eyes, paws, skulls, shield buffs, speed up and down, gathering and crafting actions, music notes (3329–3331) |
+| 3361–3600 | Effect sets per colour: crescents, sparkles, fire (3489–3500), ice and snow cloud (3505–3520), lightning and storm cloud (3521–3536), nature, wind, gold light, poison |
+| 3601–4440 | Framed skill icons, one colour set per row |
+| 4441–5480 | Weapons. Steel row 4449–4528, then gold 4529, blue 4609, purple 4689, teal 4769, red 4849, green 4929, dark 5009, bronze 5089 (same order within each row), then one-off weapons |
+| 5481–7480 | Armour by colour: shields, chest pieces, helmets, hats, greaves, gloves, bracers, boots, rings, amulets, belts, capes, masks. Leather set 6657–6688, iron set 6689–6720 |
+| 7481–7660 | Robes and clothes |
+| 7661–7960 | Orbs, badges, shields, banners, crystals, arrows |
+| 7961–8256 | Boots, gloves, rings and amulets by colour |
 
 ## 4. Mechanism
 
@@ -241,6 +280,7 @@ absent. This plan extends that to every icon.
 | File | Job |
 |---|---|
 | `src/assets/icons/<source>/<group>/` | One folder per art source, then per group: `own/` (drawn for this game, always committed), `clockwork-raven/` (committed or gitignored, §7.1), `epic-rpg-world/` (props, gitignored like the tile packs). One source per folder means a history scrub is one `git filter-repo --path` per source. A missing folder means the emoji shows, as tile maps fall back to the node diagram |
+| `src/assets/64x64/` | The full sheet, as a library to pick from. Never inside the `import.meta.glob`: Vite would copy all 8,256 files (29 MB) into every build, and a web build would serve the whole pack as loose files. Each picked icon is copied into `icons/clockwork-raven/<group>/` under a readable name (`iron_sword.png`); picks.md keeps the c-number. Kept out of git (§7.1) |
 | `src/ui/lib/iconArt.ts` | One eager `import.meta.glob` over `src/assets/icons/**` (`?url`); `iconUrl(def)` and `glyphUrl(emoji)`. Core stays browser-free |
 | `src/ui/lib/Icon.svelte` | `<Icon of={def} size={16 \| 32} />`. Draws `<img>` with `image-rendering: pixelated` and `alt=""` (the name is printed beside it), else the emoji. Fixed box so rows do not shift |
 | `src/ui/lib/GlyphText.svelte` | Draws a string, replacing each emoji that has a `GLYPH_ART` entry with an `<img>`. Used by LogFeed, string-built tooltips and template messages. Old log lines in a save get art too, because the log stores text |
@@ -298,47 +338,49 @@ measured.
 - **Tier 4, rare:** bestiary tags, deity tags, music, achievements, titles, prestige,
   key items, towers.
 
-"Covered" means a Clockwork Raven file already in the repo fits.
+"Picked" means a specific icon in the full sheet is chosen in
+[pixel-icons/picks.md](pixel-icons/picks.md). "Not picked yet" means the sheet has a
+matching block (§3.2) but nobody has chosen icons from it.
 
 | Tier | Kind | Entries | Covered now | Missing — draw or buy |
 |---|---|---:|---|---|
-| 1 | Tab row | 11 | 8: travel, combat, skills, inventory, a book (Bestiary), researchStage (Quests), achievement, ascension (Prestige) | 3: Chromosome 🧬, Music 🎼, Wuxin ☯️ |
-| 1 | Attributes, resources, superattributes | 14 | 13 | 1: Force 🌀 |
-| 1 | Chrome glyphs, top 15 | 15 | 3: ❓ help, 📦 inventory, ⚔️ combat | 🔒 lock, 🪙 coin, ⏳ hourglass, ⚠️ warning, ✨, 🚫, ☠️, 🥾, 🗺️, 🛡️, 🧠, 📜 |
-| 1 | Weather, time | 10 | 0 | ☀️ ☁️ 🌫️ 🌧️ ⛈️ 🌨️ ❄️ 🌪️ 🌦 🕰️ |
-| 1 | Statuses | 70 | 0 | 53 distinct; the element set covers part |
-| 1 | Titles | 9 | 0 | 9 |
-| 2 | Spots, activities | 141 | Activities: mine, fish, harvest, rest, combat (⚔️ ×7) | About 60 spot glyphs. Epic RPG World props can supply ladders, doors, wells, anvils (gitignored folder) |
-| 2 | Monsters | 59 | 39 Ækashics portraits (local only) | 20 without a portrait; a small inline icon for lists and log |
-| 2 | Stances | 21 | 6 stand-ins: attack, greathammer, battleaxe, dagger, crit, DR | 15. The Ækashics sheets would fit but cannot be committed |
-| 2 | Techniques, positions, fork archetypes | 40 | 0 | 40 |
-| 2 | Items | 39 | 14 of 18 weapons; slot silhouettes as armour stand-ins | Two clubs, spear, bow, three shields, armour pieces, charms, rings, amulets: about 25 |
-| 2 | Materials | 177 | 0 | 115 distinct. About 90 are mutagen materials sharing 🧬 — one gene family of sprites |
-| 2 | Empty equipment slots | 13 | 9 (back uses shoulders) | Extra hands (🤚 ×4): reuse `hands` or draw |
-| 3 | Skills (authored) | 54 | About 8: weapon skills, fighting, mining, herbalism, smithing | About 46. The 40 word skills reuse the word art |
-| 3 | Arcane words | 40 | 4 stand-ins: cut, crush, ward, mend | 36: 14 nouns (mostly elements), 7 adverbs, 6 conjunctions, 6 verbs, 3 targets |
-| 3 | Miracles, deities, deity tags | 75 | 0 | 75 |
-| 3 | Psionics | 23 | 0 | 23 |
-| 3 | Alchemy | 26 | 0 | 26 |
-| 3 | Disciplines, outcomes, preps | 35 | 0 | 35 |
-| 3 | Mutagens | 109 | 0 | 109; many share 🧬 |
-| 3 | Runes | 19 | 11 grey stones | Tints per rune, or redraw |
-| 4 | Bestiary tags, facts | 57 | 0 | 57 |
-| 4 | Music | 17 | 0 | 17 |
-| 4 | Achievements, prestige, NPCs, key items, towers | 42 | Key items 3/3 (book, key, scroll) | About 39 |
+| 1 | Tab row | 11 | **9 picked** | Chromosome 🧬 (no DNA), Wuxin ☯️ (no yin-yang) |
+| 1 | Attributes, resources, superattributes | 14 | **14**: the 13 committed files + Force c2881 | — |
+| 1 | Chrome glyphs, top 15 | 15 | **14 picked** | ⚠️ warning |
+| 1 | Weather | 10 | **7 picked** | still 🕳️, clear ☀️, overcast ☁️ (no plain sun or cloud) |
+| 1 | Statuses | 70 | Not picked yet. Buff/debuff stat icons (2441–2660), status marks (2661–2720) and the element set cover most | Check in story 4 |
+| 1 | Titles | 9 | Not picked yet | 9 |
+| 2 | Spots, activities | 141 | Activities: mine, fish, harvest, rest, combat. Place icons 61–160 cover many spots; not picked yet | Epic RPG World props for the rest (gitignored folder) |
+| 2 | Monsters | 59 | 39 Ækashics portraits (local only); monster heads 145–158 and monster parts for small icons | 20 without a portrait |
+| 2 | Stances | 21 | **9 generic picked**; 12 schools not picked yet | — |
+| 2 | Techniques, positions, fork archetypes | 40 | Not picked yet; skill icons 2721–2840, 3041–3360 | 40 to check |
+| 2 | Items | 39 | **39 picked** | — |
+| 2 | Materials | 177 | Not picked yet; ores, ingots, monster parts, herbs, food (481–1480, 2001–2440) | Gene family for the 🧬 materials |
+| 2 | Empty equipment slots | 13 | 9 committed silhouettes | Extra hands (🤚 ×4): reuse `hands` or draw |
+| 3 | Skills (authored) | 54 | About 8 obvious; gathering and crafting actions 3281–3345 add more | About 40 to check. The 40 word skills reuse the word art |
+| 3 | Arcane words | 40 | **32 picked** | undo ↩️, twice ✌️, then ⏭️, and 🤝, but 🔀, one 👤, others 👥, me 🙋 |
+| 3 | Miracles, deities, deity tags | 75 | Not picked yet; holy crosses, hearts, light (2791–2808, 3095–3168) | Pantheon-specific marks likely need drawing |
+| 3 | Psionics | 23 | Not picked yet; eyes, orbs, waves (3065–3094, 3175) | Likely some |
+| 3 | Alchemy | 26 | Not picked yet; potions and bottles (1481–1680), reagents in the material blocks | — |
+| 3 | Disciplines, outcomes, preps | 35 | Not picked yet; food (2001–2440), cooking pots and tools (3317–3325) | — |
+| 3 | Mutagens | 109 | Not picked yet | Gene and mutation marks likely need drawing; many share 🧬 |
+| 3 | Runes | 19 | 11 committed grey stones; 21 rune stones in 1706–1726 | Tints per rune |
+| 4 | Bestiary tags, facts | 57 | Not picked yet; monster parts, paws, eyes, skulls | Some |
+| 4 | Music | 17 | Not picked yet; notes 3329–3331 | Most need drawing |
+| 4 | Achievements, prestige, NPCs, key items, towers | 42 | Key items 3/3 (book, key, scroll); trophies, coins, NPC heads in 1–160 | Some |
 
 ### 5.1 Buy or draw
 
-- **Look in the purchased Clockwork Raven sheet first.** The `c…` file numbers run
-  past 5,000 and only about 60 cells were imported. If the full sheet is still on
-  disk, it is already paid for and matches the style exactly; it likely covers lock,
-  coin, weather, elements, potions, food, ore, armour and rings (§7.3).
-- **Buy** what the sheet lacks. Check each pack's terms the same way; anything that
-  may not be redistributed gets its own folder under `src/assets/icons/`.
-- **Draw** what no pack has: the 40 arcane words, psionic axes, techniques and
-  positions, stances, mutagen genes, Wuxin, Chromosome. Drawn by a person, or
-  generated without Clockwork Raven files as input (their licence §3f forbids
-  feeding them to any image generator).
+- **The purchased sheet comes first.** It is paid for and matches the committed set
+  exactly. For the 125 concepts checked so far it has a pick for 111.
+- **Missing so far (14):** Chromosome 🧬, Wuxin ☯️, warning ⚠️, still air 🕳️, clear
+  sky ☀️, overcast ☁️, and the abstract words undo, twice, then, and, but, one,
+  others, me. Expect more in mutagens, music and the pantheons when those are picked.
+- **Buy or draw** the missing ones. A bought pack gets its terms checked the same way
+  and its own folder under `src/assets/icons/`. Drawn icons go in `icons/own/`, drawn
+  by a person or generated without Clockwork Raven files as input (their licence §3f
+  forbids feeding them to any image generator). New art has to sit on the same 32px
+  grid with the same dark outline to match.
 
 ## 6. Order of work
 
@@ -346,18 +388,19 @@ Each step is one story and one PR.
 
 1. **Mechanism + sidebar.** `Icon.svelte`, `iconArt.ts`, `art` on the attribute,
    resource and superattribute defs; move `attributes/` to
-   `icons/clockwork-raven/attributes/`; switch the sidebar rows and attribute
-   tooltips. 13 of 14 drawn. Decide 16px vs 32px on the real sidebar in both themes.
-   Waits on §7.1.
-2. **Tab row + `GlyphText` in the log.** System icons for 8 tabs; 3 to draw. Seed
-   `GLYPH_ART` with 📦 ⚔️ ❓ 📖 📜 🏆.
-3. **Chrome glyphs.** About 15: lock, coin, hourglass, warning, …
-4. **Element set.** About 14 sprites → arcane nouns, resistance skills, statuses,
-   runes, reagents, through `GLYPH_ART`.
-5. **Inventory.** Weapons from `weapons/`, armour from the slot silhouettes, empty
-   slots; per-item `art` to split the four 🗡️ blades.
-6. **Stances.** The nine generic stances first, then the 12 schools. Needs drawing, the
-   Clockwork Raven sheet, or a yes from Ækashics for their icon sheets.
+   `icons/clockwork-raven/attributes/` and copy Force (c2881) beside them; switch the
+   sidebar rows and attribute tooltips. 14 of 14 have art. Decide 16px vs 32px on the
+   real sidebar in both themes. Waits on §7.1.
+2. **Tab row + `GlyphText` in the log.** 9 tabs from picks.md; Chromosome and Wuxin
+   keep the emoji until drawn. Seed `GLYPH_ART` with 📦 ⚔️ ❓ 📖 📜 🏆.
+3. **Chrome glyphs and weather.** 14 of 15 chrome glyphs and 7 of 10 weather kinds
+   from picks.md.
+4. **Element set.** The 14 arcane nouns from picks.md → arcane words, resistance
+   skills, statuses, runes, reagents, through `GLYPH_ART`. Pick the statuses here.
+5. **Inventory.** All 39 items from picks.md; per-item `art` splits the four 🗡️
+   blades. Empty slots keep the committed silhouettes.
+6. **Stances.** The nine generic stances from picks.md; pick the 12 schools from the
+   skill blocks (2721–2840, 3601–4440).
 7. **Spots and activities.** Map pins become SVG images; props from the licensed
    folder.
 8. **The rest, by tier.**
@@ -376,12 +419,31 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
      the old folder paths and the Ækashics files together.
    - *Gitignore now.* Matches the battlers and tile packs. Every fresh clone and
      worktree shows emoji until the folder is linked in by hand.
+   - *Either way, the full sheet `src/assets/64x64/` stays out of git* (add it to
+     `.gitignore`). It is 8,256 files and 29 MB, and today it is untracked but not
+     ignored, so a `git add -A` in the main checkout would commit all of it. Only the
+     picked icons are copied into the game's folders.
 2. **`combatStyleIcons/` (41 Ækashics files):** take them out of git (and rewrite
-   history before any public flip), or ask Ækashics? Outside this plan's code, but it
-   decides what stances and techniques can use.
-3. **Is the full Clockwork Raven sheet still on disk?** Point to the folder or zip;
-   it may cover most of the generic gaps (§5.1).
-4. **16px or 32px for inline rows** (sidebar, word pills, log)? Mockup §2 and §4.
-5. **Buy a pack for what the sheet lacks, or draw everything?**
+   history before any public flip), or ask Ækashics? Outside this plan's code. The
+   icons no longer depend on it: the Clockwork Raven sheet covers the stances.
+3. **16px or 32px for inline rows** (sidebar, word pills, log)? Mockup §2 and §4.
+4. **Buy or draw the 14 the sheet lacks** (§5.1)?
+5. **The picks themselves** ([picks.png](pixel-icons/picks.png)): swap any that read
+   wrong. Each has alternates listed.
 
-Answered 2026-10-20: the 32px set is Clockwork Raven, bought (was question 1).
+Answered 2026-10-20:
+- The 32px set is Clockwork Raven, bought.
+- The full sheet is on disk: `src/assets/64x64/` in the main checkout.
+
+## 8. Picks from the full sheet
+
+[pixel-icons/picks.md](pixel-icons/picks.md) lists a recommended icon and alternates
+for 125 concepts: the tab row, Force, the chrome glyphs, weather, the nine generic
+stances, all 39 items and all 40 arcane words. 111 have a pick.
+[pixel-icons/picks.png](pixel-icons/picks.png) shows each emoji beside its picks,
+generated from [pixel-icons/picks.html](pixel-icons/picks.html).
+
+![Picks: each emoji, the recommended icon at 64px, alternates at 32px](pixel-icons/picks.png)
+
+The remaining registries (statuses, spots, materials, skills, techniques, mutagens,
+pantheons) get picked in the story that converts them, using the index in §3.2.

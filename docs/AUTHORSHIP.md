@@ -489,6 +489,12 @@ Two things worth keeping in mind:
    - **41 are Ækashics** icon sheets in `combatStyleIcons/`, one per battler.
      Same terms as the battlers: no redistribution.
 
+   The whole Clockwork Raven sheet (8,256 icons, 29 MB) sits in `src/assets/64x64/`
+   in the main checkout as a library to pick from. 185 of the 209 committed files
+   are pixel-identical to cells of it; the rest are edited versions. It belongs out of git, like
+   the tile packs. The screenshots under `docs/plans/pixel-icons/` show Clockwork
+   Raven icons; the licence allows screenshots, but they go on the scrub list too.
+
    So making the repo public is no longer a settings toggle. Before any public
    flip, either remove those paths from history with `git filter-repo` or get a
    yes from each author. Plan and options: docs/plans/pixel-icons.md §3.1 and §7.
