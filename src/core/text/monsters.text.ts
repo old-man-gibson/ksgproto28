@@ -5,6 +5,10 @@ import type { ProseTable } from './prose';
 
 // ---------- MONSTERS ----------
 export const MONSTERS_TEXT: ProseTable = {
+  'ledger_tome.desc': 'Small basic construct. A bound ledger that opens and shuts on whatever comes near; the pages cut. Takes 25% less piercing and 50% more heat damage. Appears in the Long Hall.',
+  'filing_automaton.desc': 'Basic construct, armour 2. Strikes with a filing arm for bludgeoning damage. Takes 20% less slashing and piercing, 20% more bludgeoning and 50% more lightning damage. Appears in the Long Hall. Drops iron scrap.',
+  'sorting_automaton.desc': 'Basic construct, quick. Slashes with sorting blades. Takes 20% less slashing and piercing, 20% more bludgeoning and 50% more lightning damage. Appears in the Long Hall. Drops iron scrap.',
+  'living_doll.desc': 'Small basic construct, dark element. Stabs for piercing damage. Takes 30% less dark damage. Appears in the Long Hall.',
   'toll_collector_golem.desc': 'Water covers the collector’s legs. One hand turns a sodden form; the other brings the toll stamp down. Heat fills its sight with steam, cold locks its joints, and lightning drives its stamping arm beyond its limits.',
   'forest_rat.desc': 'Small basic beast. Bites for piercing damage. Appears in The Cages and The Undercrofts. Rare drop: Cloth Tunic.',
 

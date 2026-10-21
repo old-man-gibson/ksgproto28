@@ -26,15 +26,14 @@ import { attrBreakdown, attrValue, collectBaseMods } from '../src/core/systems/a
 import { preparedCap } from '../src/core/systems/spellcraft';
 import { startTravel } from '../src/core/systems/locations';
 import type { GameState } from '../src/core/types';
+import { clearFloors } from './fixtures/floors';
 
 const fresh = (): GameState => createInitialState(0);
 
 /** A run that has cleared band 1 — the brood queen is down. */
 function bandOneCleared(): GameState {
   const s = fresh();
-  s.stats['boss:f1_toll_hall'] = 1;
-  s.stats['fights:f2_cistern'] = 8;
-  s.stats['slain:f3_brood_den:giant_spider_queen'] = 1;
+  clearFloors(s.stats);
   return s;
 }
 
@@ -171,7 +170,7 @@ describe('the reset', () => {
 
   it('counts up across runs and keeps unspent points', () => {
     const first = prestigeNow(bandOneCleared(), 1)!;
-    const again = { ...first, stats: { ...first.stats, 'slain:f3_brood_den:giant_spider_queen': 1, 'boss:f1_toll_hall': 1, 'fights:f2_cistern': 8 } };
+    const again = { ...first, stats: clearFloors({ ...first.stats }) };
     const second = prestigeNow(again as GameState, 2)!;
     expect(second.prestige.count).toBe(2);
     expect(second.prestige.points).toBe(first.prestige.points + 3);

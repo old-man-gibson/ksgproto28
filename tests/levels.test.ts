@@ -18,6 +18,7 @@ import {
 import { buyBoon, prestigeNow } from '../src/core/systems/prestige';
 import { DEFAULT_QUEST_LEVEL_XP, LEVEL_ATTR_BONUS, LEVEL_XP_BASE } from '../src/core/data/levels.data';
 import type { SpotEncounter } from '../src/core/types';
+import { clearFloors } from './fixtures/floors';
 
 describe('the level curve', () => {
   it('level 1 → 2 costs the base; every next level costs more', () => {
@@ -136,9 +137,7 @@ describe('what pays level XP', () => {
 describe('Head Start (prestige)', () => {
   function bandOneCleared() {
     const s = createInitialState(1);
-    s.stats['boss:f1_toll_hall'] = 1;
-    s.stats['fights:f2_cistern'] = 8;
-    s.stats['slain:f3_brood_den:giant_spider_queen'] = 1;
+    clearFloors(s.stats);
     return s;
   }
 

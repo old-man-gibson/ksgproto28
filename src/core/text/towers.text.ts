@@ -23,7 +23,7 @@ export const FLOORS_TEXT: ProseTable = {
 
   "ascent_f1.desc": "Find the toll stamp in the flooded offices. Drive out the vermin, search for the clerk’s daybook, and follow its room sequence to the collector.",
 
-  'ascent_f2.desc': 'Floor 2. Gate: 150 gold earned in total. Cleared by winning 8 fights in the Broken Cistern, which forces a fight on arrival.',
+  'ascent_f2.desc': 'Floor 2, the same building one storey up. Gate: 150 gold earned in total. Fight down the Long Hall, four stretches of 3 fights each; the far end’s third win clears the floor. The tutor, the quartermaster and a break room are off the hall.',
 
   'ascent_f3.desc': 'Floor 3. Gate: 600 gold earned in total. Cleared by killing the Giant Spider Queen in the Brood Den.',
 };

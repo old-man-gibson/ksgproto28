@@ -4,7 +4,7 @@ import { TPS } from '../src/core/engine/loop';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { hasKeyItem } from '../src/core/systems/keyitems';
 import { xpToReach } from '../src/core/systems/levels';
-import { FLOORS, SPOTS } from '../src/core/registry';
+import { FLOORS, NPCS, SPOTS } from '../src/core/registry';
 import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
 
 /**
@@ -28,10 +28,10 @@ import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
  * builds the tutorial hands out.
  *
  * `attentive` adds exactly one habit: he looks around a floor before fighting
- * on it and uses what the floor hands over (the sluice's club and its wheel,
- * which drains the cistern, before wading in; the gallery's spear before the
- * den). Comparing the two is how the
- * floors' own answers are shown to be worth picking up.
+ * on it and uses what the floor hands over (the gallery's spear before the
+ * den). Comparing the two is how the floors' own answers are shown to be
+ * worth picking up. Floor 2's answer is the tutor, whom both Johns visit:
+ * the door is the first one off the hall and the lessons cost nothing.
  *
  * He reports; he never tunes. The judgement — how long a floor should take,
  * how often a boss may win — lives in tests/john.test.ts as the author's
@@ -39,6 +39,9 @@ import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
  *
  * Deterministic: everything rides the save's own seeded RNG.
  */
+
+/** Floor 2's corridor, in walking order: each stretch's budget opens the next. */
+const HALL = ['f2_hall_1', 'f2_hall_2', 'f2_hall_3', 'f2_hall_4'];
 
 /** The stretches a climb is cut into, in the order they are played. */
 export const SEGMENTS = ['tutorial', 'vermin', 'floor1', 'floor2', 'gate3', 'gallery', 'floor3'] as const;
@@ -247,20 +250,17 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   if (stat('boss:f1_toll_hall') < 1) return finish();
   mark('floor1', 'floor2');
 
-  // ---- Floor 2: the forced cistern's eight fights. ----
+  // ---- Floor 2: the Long Hall. The tutor's door is the first one off the
+  // hall, so even John walks in; the lessons are free. Then four stretches. ----
   if (!climbTo('ascent_f2')) return finish();
-  if (opts.attentive) {
-    persist('f2_sluice', 'explore_f2', () => found('f2_sluice', 'f2_snagged_club'));
-    wield('oak_club');
-    // The sluice's other answer: drain the cistern, then take the dry
-    // channel in (the walk below routes through it from here).
-    persist('f2_sluice', 'turn_wheel', () => stat('flag:f2_cistern_drained') >= 1);
+  walk('f2_gym');
+  for (const lesson of NPCS.hall_tutor.teaches ?? []) g.learnFromTeacher('hall_tutor', lesson.technique);
+  for (const stretch of HALL) {
+    if (!persist(stretch, 'hunt', () => stat(`fights:${stretch}`) >= SPOTS[stretch].fightLimit!)) return finish();
   }
-  if (!persist('f2_cistern', 'hunt', () => stat('fights:f2_cistern') >= SPOTS.f2_cistern.fightLimit!)) return finish();
-  // Every find on the floor, on the way out: the purse is most of the
-  // floor's coin.
-  const sluiceFinds = SPOTS.f2_sluice.finds?.length ?? 0;
-  persist('f2_sluice', 'explore_f2', () => (s.finds.f2_sluice ?? []).length >= sluiceFinds);
+  // The break room's cupboards, on the way out: most of the floor's coin.
+  const breakFinds = SPOTS.f2_break_room.finds?.length ?? 0;
+  persist('f2_break_room', 'explore_f2', () => (s.finds.f2_break_room ?? []).length >= breakFinds);
   mark('floor2', 'gate3');
 
   // ---- The third floor's gate, then the gallery's brood and the den. ----

@@ -81,7 +81,7 @@ export const NPCS_TEXT: ProseTable = {
   'row_apothecary.dialogue': [
     'I sell healing salve, mushroom broth, mendroot and spring water.',
     'The Alembics are 1 s up the row. The alchemy bench and Odri Venn’s reagent shelf are there.',
-    'Buy before the climb. No vendor stands on any floor of the tower.',
+    'Buy before the climb. The only vendor in the tower is the quartermaster on floor 2.',
   ],
 
   'granary_provisioner.desc': 'Vendor at the Granary Gate. The Cart sells cooked food: traveler’s ration, rustic loaf, charred roots, skewered fish, hearty stew, hearty sandwich and seared steak.',
@@ -89,5 +89,18 @@ export const NPCS_TEXT: ProseTable = {
     'Rations, loaves, roots, fish, stew, sandwiches and steak. All cooked, all ready to eat.',
     'Bryva Coll sells the raw ingredients in the Granary Kitchens, 1 s from here. Her stove cooks what my cart sells.',
     'A stranger pays half again the price. Speaking to me once removes that.',
+  ],
+
+  'hall_tutor.desc': 'Stands in the Cleared Office on floor 2. Teaches Gather (Neutral → Coiled) and Lunge (Coiled → Extended), free.',
+  'hall_tutor.dialogue': [
+    'Two moves. Gather winds you up. Lunge spends it. Then swing, and you are back where you started.',
+    'Coiled, you have paid for the next blow already. Extended, you have reach. A plain swing puts you back at neutral.',
+    'The rest of it I do not teach here. Not yet.',
+  ],
+
+  'hall_quartermaster.desc': 'Vendor in the Quartermaster’s Cage on floor 2. Sells healing salve, mushroom broth, traveler’s ration and rustic loaf.',
+  'hall_quartermaster.dialogue': [
+    'Salve, broth, rations, bread. Tower prices.',
+    'The hall runs four stretches. The break room is behind the third, with chairs.',
   ],
 };

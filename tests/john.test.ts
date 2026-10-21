@@ -95,9 +95,9 @@ describe('pacing — band 1 by the obvious road, every rack weapon', () => {
     expect(lost, 'the collector won most first attempts').toBeLessThanOrEqual(rack.length / 2);
   });
 
-  it('the forced cistern and the third floor knock a player down, not out of the game', () => {
+  it('the long hall and the third floor knock a player down, not out of the game', () => {
     for (const r of [...john, ...rack]) {
-      expect(r.knockouts.floor2, `${label(r)}: cistern`).toBeLessThanOrEqual(6);
+      expect(r.knockouts.floor2, `${label(r)}: the long hall`).toBeLessThanOrEqual(6);
       expect(r.knockouts.gallery + r.knockouts.floor3, `${label(r)}: floor 3`).toBeLessThanOrEqual(20);
     }
   });
@@ -154,15 +154,6 @@ describe('pacing — the floors hand over their own answers', () => {
     }
     return wins;
   }
-
-  it("the sluice's club out-fights the rusty sword in the cistern", () => {
-    expect(SPOTS.f2_sluice.finds?.some((f) => f.item === 'oak_club')).toBe(true);
-    for (const slime of ['slime_water', 'slime_base_advanced']) {
-      const sword = duel('f2_cistern', slime, 'rusty_sword', 6);
-      const club = duel('f2_cistern', slime, 'oak_club', 6);
-      expect(club, `${slime}: club ${club}/20 against sword ${sword}/20`).toBeGreaterThanOrEqual(sword + 5);
-    }
-  });
 
   it("the gallery's spear out-fights the rusty sword against the queen", () => {
     expect(SPOTS.f3_web_gallery.finds?.some((f) => f.item === 'old_spear')).toBe(true);

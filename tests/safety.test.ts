@@ -4,9 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState, SAVE_VERSION } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { deserialize } from '../src/core/save/save';
-import { SPOTS, STARTING_SPOT } from '../src/core/registry';
+import { FLOORS, SPOTS, STARTING_SPOT } from '../src/core/registry';
 import { canRestAt, isUnconditionalHaven, noteSafeSpot, retreatSpot, retreatToSafety } from '../src/core/systems/safety';
 import type { SpotDef } from '../src/core/types';
+import { BAND_ONE } from './fixtures/floors';
 
 /**
  * Where a fight you could not flee throws you. The invariant under test is
@@ -77,7 +78,7 @@ describe('safe spots', () => {
   });
 
   it('every tower landing is a camp, so a fall on a floor lands on that floor', () => {
-    for (const landing of ['f1_landing', 'f2_landing', 'f3_landing']) {
+    for (const landing of BAND_ONE.map((id) => FLOORS[id].landing!)) {
       const g = new Game(createInitialState(6));
       expect(isUnconditionalHaven(SPOTS[landing]), `${landing} has no camp`).toBe(true);
       noteSafeSpot(g.state, landing);

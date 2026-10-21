@@ -62,7 +62,7 @@ export const AREAS: Record<string, AreaDef> = {
   // Floor 0: off the ladder, closed behind the player by a one-way gate.
   ascent_f0_area: { id: 'ascent_f0_area', name: 'The Holding Level', regionId: 'holding_level', scene: 'hall' },
   ascent_f1_area: { id: 'ascent_f1_area', name: 'The Flooded Offices', regionId: 'the_ascent', scene: 'hall' },
-  ascent_f2_area: { id: 'ascent_f2_area', name: 'The Flooded Stair', regionId: 'the_ascent', scene: 'cistern' },
+  ascent_f2_area: { id: 'ascent_f2_area', name: 'The Long Hall', regionId: 'the_ascent', scene: 'hall' },
   ascent_f3_area: { id: 'ascent_f3_area', name: 'The Silk Gallery', regionId: 'the_ascent', scene: 'webs' },
 };
 
@@ -1178,109 +1178,148 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     ],
   },
 
-  // --- Floor 2: the Flooded Stair (clear: spend the cistern's fight budget) ---
-  f2_landing: {
-    id: 'f2_landing',
-    name: 'The Waterline',
+  // --- Floor 2: the Long Hall (plans/alpha-band-one-floors.md "One building").
+  // The same office building as floor 1, one storey up: a straight corridor
+  // of four stretches, each a small fight budget whose spending opens the
+  // next, with three rooms off it (the tutor, the quartermaster, a break
+  // room). The clear is the far end's budget. All names are placeholders.
+  f2_stairhead: {
+    id: 'f2_stairhead',
+    name: 'The Stairhead',
     icon: '🪜',
     areaId: 'ascent_f2_area',
-    map: { x: 18, y: 15 },
+    map: { x: 8, y: 50 },
+    tags: ['indoor'],
     activities: [{ id: 'camp_f2', kind: 'rest', name: 'Camp on the Landing', icon: '🏕️' }],
-    connections: [
-      { to: 'f2_sluice', ticks: 40 },
-      // The way to the cistern is walked knowing: the spot is forced, and the
-      // travel button says so before the click.
-      { to: 'f2_cistern', ticks: 50 },
-    ],
+    connections: [{ to: 'f2_hall_1', ticks: 25 }],
   },
-  f2_sluice: {
-    id: 'f2_sluice',
-    name: 'The Sluice Gallery',
-    icon: '🚰',
+  f2_hall_1: {
+    id: 'f2_hall_1',
+    name: 'The Mail Carts',
+    icon: '📬',
     areaId: 'ascent_f2_area',
-    map: { x: 8, y: 8 },
-    exploreTicks: 420,
-    activities: [
-      { id: 'explore_f2', kind: 'explore', name: 'Trace the Channels', icon: '🔍' },
-      { id: 'train_dex_sluice', kind: 'train', attr: 'dex', name: 'Cross the Wet Stones', icon: '👣' },
-      // The cistern's other answer: drain it. Three quarter-turns, and the
-      // fourth empties it — `drained` requires all three turns, so the
-      // search always takes exactly four and never pays early. Drained, the
-      // cistern rolls its stranded table and the dry channel below opens.
-      {
-        id: 'turn_wheel',
-        kind: 'search',
-        name: 'Turn the Sluice Wheel',
-        icon: '☸️',
-        ticksPer: 80,
-        rewards: [
-          { id: 'turn', weight: 1, limit: 3, stat: { key: 'flag:f2_wheel_turns' } },
-          {
-            id: 'drained',
-            weight: 1,
-            limit: 1,
-            requires: [{ type: 'stat', key: 'flag:f2_wheel_turns', value: 3 }],
-            stat: { key: 'flag:f2_cistern_drained', set: 1 },
-          },
-        ],
-      },
-    ],
-    // The floor hands over its own answer: the cistern's slimes shrug off
-    // blades and points but not a club. Found before the purse, so a player
-    // who looks around before wading in carries the right tool into the den.
-    finds: [
-      {
-        id: 'f2_snagged_club',
-        at: 0.2,
-        item: 'oak_club',
-      },
-      {
-        id: 'f2_drowned_purse',
-        at: 0.45,
-        gold: [70, 110],
-      },
-    ],
-    connections: [
-      // The drained cistern's back door, and the first consumer of
-      // `approach`: walked this way, the first slimes are caught from
-      // behind (surprised). One-way, so the cistern lists no road back up a
-      // channel that is not there yet; the front door is still forced.
-      {
-        to: 'f2_cistern',
-        ticks: 40,
-        oneWay: true,
-        label: 'Down the Dry Channel',
-        requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }],
-        revealWhen: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }],
-        approach: { enemies: [{ id: 'surprised' }] },
-      },
-    ],
-  },
-  f2_cistern: {
-    id: 'f2_cistern',
-    name: 'The Broken Cistern',
-    icon: '💧',
-    areaId: 'ascent_f2_area',
-    map: { x: 26, y: 22 },
-    // Arrival is an ambush by ANY route, and the fight budget is the floor's
-    // clear: fightLimit here and ascent_f2.clear name the same number (linted
-    // to agree). At the limit the cistern is CLEARED — it stops forcing, the
-    // hunts go quiet, and the stair above opens.
-    forced: true,
-    fightLimit: 8,
-    // Mostly one at a time: a forced spot cannot be walked away from, and a
-    // pair of slimers at the top of the old range knocked a blade-user out
-    // three to five times across the eight.
-    groupWeights: { 1: 80, 2: 20 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Wade In', icon: '⚔️' }],
-    // Flooded (the default) or drained (the sluice wheel): one table each,
-    // switched on the wheel's flag. Stranded slimes are the same species two
-    // levels down — out of the water, not a different monster.
+    map: { x: 26, y: 50 },
+    tags: ['indoor'],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Stretch', icon: '⚔️' }],
+    fightLimit: 3,
+    groupWeights: { 1: 100 },
     encounters: [
-      { monsterId: 'slime_water', weight: 60, level: [4, 6], requires: [{ type: 'statMax', key: 'flag:f2_cistern_drained', value: 0 }] },
-      { monsterId: 'slime_base_advanced', weight: 40, level: [5, 7], requires: [{ type: 'statMax', key: 'flag:f2_cistern_drained', value: 0 }] },
-      { monsterId: 'slime_water', weight: 60, level: [2, 4], requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }] },
-      { monsterId: 'slime_base_advanced', weight: 40, level: [3, 5], requires: [{ type: 'stat', key: 'flag:f2_cistern_drained', value: 1 }] },
+      { monsterId: 'ledger_tome', weight: 70, level: [3, 4] },
+      { monsterId: 'filing_automaton', weight: 30, level: [3, 4] },
+    ],
+    connections: [
+      // The tutor is the first door, open from the start: the lessons are
+      // meant to be in hand before the hall gets harder.
+      { to: 'f2_gym', ticks: 15 },
+      {
+        to: 'f2_hall_2',
+        ticks: 30,
+        label: 'On Down the Hall',
+        requires: [{ type: 'stat', key: 'fights:f2_hall_1', value: 3 }],
+        revealWhen: [{ type: 'stat', key: 'fights:f2_hall_1', value: 3 }],
+      },
+    ],
+  },
+  f2_gym: {
+    id: 'f2_gym',
+    name: 'The Cleared Office',
+    icon: '🥋',
+    areaId: 'ascent_f2_area',
+    map: { x: 26, y: 28 },
+    tags: ['indoor'],
+    activities: [{ id: 'train_str_gym', kind: 'train', attr: 'str', name: 'Work the Heavy Bag', icon: '🥊' }],
+    connections: [],
+  },
+  f2_hall_2: {
+    id: 'f2_hall_2',
+    name: 'The Filing Bays',
+    icon: '🗄️',
+    areaId: 'ascent_f2_area',
+    map: { x: 44, y: 50 },
+    tags: ['indoor'],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Stretch', icon: '⚔️' }],
+    fightLimit: 3,
+    groupWeights: { 1: 80, 2: 20 },
+    encounters: [
+      { monsterId: 'filing_automaton', weight: 60, level: [4, 5] },
+      { monsterId: 'ledger_tome', weight: 40, level: [4, 5] },
+    ],
+    connections: [
+      { to: 'f2_stores', ticks: 15 },
+      {
+        to: 'f2_hall_3',
+        ticks: 30,
+        label: 'On Down the Hall',
+        requires: [{ type: 'stat', key: 'fights:f2_hall_2', value: 3 }],
+        revealWhen: [{ type: 'stat', key: 'fights:f2_hall_2', value: 3 }],
+      },
+    ],
+  },
+  f2_stores: {
+    id: 'f2_stores',
+    name: 'The Quartermaster’s Cage',
+    icon: '📦',
+    areaId: 'ascent_f2_area',
+    map: { x: 44, y: 72 },
+    tags: ['indoor'],
+    activities: [],
+    connections: [],
+  },
+  f2_hall_3: {
+    id: 'f2_hall_3',
+    name: 'Copy Room Row',
+    icon: '🖨️',
+    areaId: 'ascent_f2_area',
+    map: { x: 62, y: 50 },
+    tags: ['indoor'],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Stretch', icon: '⚔️' }],
+    fightLimit: 3,
+    groupWeights: { 1: 80, 2: 20 },
+    encounters: [
+      { monsterId: 'sorting_automaton', weight: 50, level: [5, 6] },
+      { monsterId: 'living_doll', weight: 50, level: [5, 6] },
+    ],
+    connections: [
+      { to: 'f2_break_room', ticks: 15 },
+      {
+        to: 'f2_hall_4',
+        ticks: 30,
+        label: 'On Down the Hall',
+        requires: [{ type: 'stat', key: 'fights:f2_hall_3', value: 3 }],
+        revealWhen: [{ type: 'stat', key: 'fights:f2_hall_3', value: 3 }],
+      },
+    ],
+  },
+  f2_break_room: {
+    id: 'f2_break_room',
+    name: 'The Break Room',
+    icon: '☕',
+    areaId: 'ascent_f2_area',
+    map: { x: 62, y: 28 },
+    tags: ['indoor'],
+    exploreTicks: 300,
+    activities: [
+      { id: 'rest_break_room', kind: 'rest', name: 'Sit Down for a While', icon: '🪑' },
+      { id: 'explore_f2', kind: 'explore', name: 'Go Through the Cupboards', icon: '🔍' },
+    ],
+    // Most of the floor's coin: the next floor's gate wants gold earned.
+    finds: [{ id: 'f2_petty_cash', at: 0.4, gold: [70, 110] }],
+    connections: [],
+  },
+  f2_hall_4: {
+    id: 'f2_hall_4',
+    name: 'The Far End',
+    icon: '🚪',
+    areaId: 'ascent_f2_area',
+    map: { x: 80, y: 50 },
+    tags: ['indoor'],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Stretch', icon: '⚔️' }],
+    // The floor's clear: this number and ascent_f2.clear are the same dial.
+    fightLimit: 3,
+    groupWeights: { 1: 80, 2: 20 },
+    encounters: [
+      { monsterId: 'living_doll', weight: 50, level: [6, 7] },
+      { monsterId: 'filing_automaton', weight: 50, level: [6, 7] },
     ],
     connections: [],
   },

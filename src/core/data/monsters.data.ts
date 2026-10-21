@@ -48,6 +48,49 @@ export const RARITY_WEIGHTS: { id: string; weight: number }[] = [
 ];
 
 export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
+  // ---- Floor 2, the Long Hall (plans/alpha-band-one-floors.md "One
+  // building"). The office's own furniture, risen. Each answers one of the
+  // tutorial's three spells: heat burns the ledgers, lightning shorts the
+  // automatons, and the dolls (floor 3's puppets, small) have no answer but a
+  // blade. Stats sit beside the old cistern's slimes at the same levels;
+  // first guesses, tuned against John.
+  ledger_tome: {
+    id: 'ledger_tome', name: 'Bound Ledger', icon: '📕', art: 'Book Monster.png',
+    tags: ['inorganic', 'construct', 'non_elemental', 'small'], tier: 'basic', damageType: 'slashing',
+    resistances: { piercing: 0.25, heat: -0.5 },
+    attrs: { str: 4, dex: 6, con: 5, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0.6, dex: 0.7, con: 0.8, int: 0.4, wis: 0.4, cha: 0.4 },
+    xp: 8, gold: [1, 3],
+    loot: { rolls: 1, entries: [{ kind: 'material', id: 'leather', weight: 25 }, { kind: 'nothing', weight: 75 }] },
+  },
+  filing_automaton: {
+    id: 'filing_automaton', name: 'Filing Automaton', icon: '🤖', art: 'Assembling Automatons Automaton A.png',
+    tags: ['inorganic', 'construct', 'non_elemental', 'medium'], tier: 'basic', damageType: 'bludgeoning',
+    armor: 2,
+    resistances: { slashing: 0.2, piercing: 0.2, bludgeoning: -0.2, lightning: -0.5 },
+    attrs: { str: 5, dex: 3, con: 7, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0.7, dex: 0.4, con: 0.9, int: 0.4, wis: 0.4, cha: 0.4 },
+    xp: 9, gold: [1, 3],
+    loot: { rolls: 1, entries: [{ kind: 'material', id: 'iron_scrap', weight: 30 }, { kind: 'nothing', weight: 70 }] },
+  },
+  sorting_automaton: {
+    id: 'sorting_automaton', name: 'Sorting Automaton', icon: '⚙️', art: 'Assembling Automatons Automaton B.png',
+    tags: ['inorganic', 'construct', 'non_elemental', 'medium'], tier: 'basic', damageType: 'slashing',
+    resistances: { slashing: 0.2, piercing: 0.2, bludgeoning: -0.2, lightning: -0.5 },
+    attrs: { str: 4, dex: 7, con: 5, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0.6, dex: 0.8, con: 0.7, int: 0.4, wis: 0.4, cha: 0.4 },
+    xp: 9, gold: [1, 3],
+    loot: { rolls: 1, entries: [{ kind: 'material', id: 'iron_scrap', weight: 30 }, { kind: 'nothing', weight: 70 }] },
+  },
+  living_doll: {
+    id: 'living_doll', name: 'Living Doll', icon: '🪆', art: 'Demon Living Doll.png',
+    tags: ['inorganic', 'construct', 'dark', 'small'], tier: 'basic', damageType: 'piercing',
+    resistances: { dark: 0.3 },
+    attrs: { str: 5, dex: 7, con: 5, int: 1, wis: 1, cha: 1 },
+    growth: { str: 0.7, dex: 0.8, con: 0.8, int: 0.4, wis: 0.4, cha: 0.4 },
+    xp: 10, gold: [1, 3],
+    loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 1 }] },
+  },
   toll_collector_golem: {
     id: 'toll_collector_golem', name: 'The Toll Collector', icon: '🗿',
     tags: ['inorganic', 'construct', 'earth', 'large'], tier: 'basic', damageType: 'bludgeoning',

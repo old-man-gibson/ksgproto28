@@ -15,6 +15,40 @@ import { floorXpKey, levelFromXp, questLevelXp } from '../systems/levels';
 import { KILL_LEVEL_XP_RATE } from '../data/levels.data';
 
 /**
+ * A save standing on a place that no longer exists wakes at `wakeAt(lost)`
+ * with its journey cancelled; every list that names spots or quests is
+ * pruned to what the registry still knows. Content-agnostic on purpose: it
+ * reads the registry, so any removal is covered by the same rule. Counters
+ * keyed by old spot ids (`fights:*`, `explored`) are left alone — they are
+ * inert, and a revived map would want them back.
+ */
+function pruneLostSpots(raw: Record<string, unknown>, wakeAt: (lost: string) => string): void {
+  const known = (id: unknown): id is string => typeof id === 'string' && id in SPOTS;
+  const spotLost = !known(raw.spot);
+  if (spotLost) {
+    raw.spot = wakeAt(typeof raw.spot === 'string' ? raw.spot : '');
+    raw.activity = null;
+    raw.pendingApproach = null;
+  }
+  const travel = raw.travel as { from?: unknown; to?: unknown } | null | undefined;
+  if (travel && (!known(travel.from) || !known(travel.to))) raw.travel = null;
+  const plan = Array.isArray(raw.travelPlan) ? (raw.travelPlan as unknown[]) : [];
+  if (spotLost || raw.travel === null || !plan.every(known)) raw.travelPlan = [];
+  const discovered = Array.isArray(raw.discovered) ? (raw.discovered as unknown[]) : [];
+  const kept = discovered.filter(known);
+  if (!kept.includes(raw.spot as string)) kept.push(raw.spot as string);
+  raw.discovered = kept;
+  const safe = raw.safeSpots as { nearest?: unknown; unconditional?: unknown } | undefined;
+  if (safe) {
+    if (!known(safe.nearest)) safe.nearest = null;
+    if (!known(safe.unconditional)) safe.unconditional = null;
+  }
+  const quests = (raw.quests as Record<string, unknown> | undefined) ?? {};
+  for (const id of Object.keys(quests)) if (!(id in QUESTS)) delete quests[id];
+  raw.quests = quests;
+}
+
+/**
  * Save migrations. When SAVE_VERSION bumps, add an entry keyed by the OLD
  * version that upgrades a save to the next version. Applied in sequence.
  */
@@ -489,31 +523,9 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
   // Counters keyed by old spot ids (`fights:*`, `explored`) are left alone —
   // they are inert, and a revived map would want them back.
   48: (raw) => {
-    const known = (id: unknown): id is string => typeof id === 'string' && id in SPOTS;
-    const spotLost = !known(raw.spot);
-    if (spotLost) {
-      // The Foot, not STARTING_SPOT: since v53 a new life opens in the
-      // tutorial cell, and a save from the countryside has no business there.
-      raw.spot = 'ascent_foot';
-      raw.activity = null;
-      raw.pendingApproach = null;
-    }
-    const travel = raw.travel as { from?: unknown; to?: unknown } | null | undefined;
-    if (travel && (!known(travel.from) || !known(travel.to))) raw.travel = null;
-    const plan = Array.isArray(raw.travelPlan) ? (raw.travelPlan as unknown[]) : [];
-    if (spotLost || raw.travel === null || !plan.every(known)) raw.travelPlan = [];
-    const discovered = Array.isArray(raw.discovered) ? (raw.discovered as unknown[]) : [];
-    const kept = discovered.filter(known);
-    if (!kept.includes(raw.spot as string)) kept.push(raw.spot as string);
-    raw.discovered = kept;
-    const safe = raw.safeSpots as { nearest?: unknown; unconditional?: unknown } | undefined;
-    if (safe) {
-      if (!known(safe.nearest)) safe.nearest = null;
-      if (!known(safe.unconditional)) safe.unconditional = null;
-    }
-    const quests = (raw.quests as Record<string, unknown> | undefined) ?? {};
-    for (const id of Object.keys(quests)) if (!(id in QUESTS)) delete quests[id];
-    raw.quests = quests;
+    // The Foot, not STARTING_SPOT: since v53 a new life opens in the
+    // tutorial cell, and a save from the countryside has no business there.
+    pruneLostSpots(raw, () => 'ascent_foot');
     raw.version = 49;
   },
   // v49 → v50: prestige (systems/prestige.ts). The legacy block starts
@@ -609,6 +621,22 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     raw.level = level;
     raw.levelXp = rest;
     raw.version = 56;
+  },
+  // v56 → v57: floor 2 is the Long Hall (plans/alpha-band-one-floors.md "One
+  // building"); the Flooded Stair went to the shelf (data/shelved/). A save
+  // standing in the old floor wakes on the new landing. One that had cleared
+  // it keeps the clear: the hall's far end is stamped spent, so floor 3 stays
+  // open and the clear XP already paid is not paid twice (floorXpKey latch).
+  56: (raw) => {
+    const stats = (raw.stats as Record<string, number> | undefined) ?? {};
+    raw.stats = stats;
+    if ((stats['fights:f2_cistern'] ?? 0) >= 8) {
+      for (const c of FLOORS.ascent_f2?.clear ?? []) {
+        if (c.type === 'stat') stats[c.key] = Math.max(stats[c.key] ?? 0, c.value);
+      }
+    }
+    pruneLostSpots(raw, (lost) => (lost.startsWith('f2_') && SPOTS.f2_stairhead ? 'f2_stairhead' : 'ascent_foot'));
+    raw.version = 57;
   },
 };
 
