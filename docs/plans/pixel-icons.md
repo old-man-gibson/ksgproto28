@@ -15,7 +15,7 @@ invariants:
 done:
   - Every def type with an icon accepts an optional art name; one Icon component resolves art, then the glyph table, then the emoji
   - Log lines and string-built tooltips draw art through the glyph table, old saved lines included
-  - No bought pixels in git; git holds the icon manifest, the art sits in gitignored src/assets/packs/, and a checkout without it shows the emoji
+  - No third-party pixels in git, bought or free; git holds the icon manifest, the art sits in gitignored src/assets/packs/, and a checkout without it shows the emoji
   - A content test fails on an art name missing from the manifest, and on a missing file when the packs are present
   - Every converted group has art for every entry it shows (no mixed rows)
   - Provenance and credit of every icon folder recorded in docs/AUTHORSHIP.md §9
@@ -36,9 +36,9 @@ Plan only. No code yet. Story 1 is ready to start (§6).
 - **License:** the 32px set is Clockwork Raven, bought (user, 2026-10-20). Allowed in
   the game and in this private repo; not in a public one. 41 committed files in
   `combatStyleIcons/` are Ækashics icon sheets.
-- **Git:** no bought pixels in git, the icons the game uses included (user,
-  2026-10-21). Git holds a manifest of icon names and files; the art stays in a
-  gitignored `src/assets/packs/`, as the tile packs do (§4.2).
+- **Git:** no third-party pixels in git, bought or free, the icons the game uses
+  included (user, 2026-10-21). Git holds a manifest of icon names and files; the
+  art stays in a gitignored `src/assets/packs/`, as the tile packs do (§4.2).
 - **First conversion:** attributes, resources and superattributes in the sidebar.
   14 entries, all with art, on screen all the time. Story 1 also sets up the packs
   folder and takes the committed icon folders out of git (§6).
@@ -197,8 +197,8 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 | `Raven Fantasy - Pixel Art RPG Icons - {Acolyte, Rogue, Warrior, Wizard} Skills/` (main checkout, gitignored) | 1,060 | Class skill icons, 64×64, plus one sheet image each | Stances, techniques, spells, statuses. Not picked from yet | Clockwork Raven; added 2026-10-20 |
 | `Epic Weapons 3/` (main checkout, gitignored) | 192 | Weapons, 64×64, plus a sheet image | More weapon items | Clockwork Raven (user, 2026-10-21). Added 2026-10-20 |
 | `Trees and Logs/` (main checkout, gitignored) | 36 | Trees and logs, 64×64, plus a sheet image | Woodcutting, wood materials | Clockwork Raven (user, 2026-10-21). Added 2026-10-20 |
-| `Idylwild's Runic Codex/` (main checkout, untracked) | 672 + sheet, `.ase`, reference sheet | 224 runes (Futhark order first, then further runes and marks) in black, gold and white, **16×16**. The `.rtf` lists each rune's name, meaning and sound | Runes: one glyph per rune, stamped on a blank stone (§4.5) | **Idylwild, CC0** (idylwild.itch.io/idylwilds-runic-codex). Added 2026-10-21 |
-| `Idylwild's Alchemical Codex/` (main checkout, untracked) | 225 + sheet, `.ase` | 75 alchemy symbols (mercury, sulfur, salt, element triangles, planets, zodiac) in three colours, **16×16** | Alchemy reagents, brew forms and formulas | **Idylwild, CC0 v1.0** (idylwild.itch.io/idylwilds-alchemical-codex). Added 2026-10-21 |
+| `packs/idylwild/Idylwild's Runic Codex/` (main checkout, gitignored) | 672 + sheet, `.ase`, reference sheet | 224 runes (Futhark order first, then further runes and marks) in black, gold and white, **16×16**. The `.rtf` lists each rune's name, meaning and sound | Runes: one glyph per rune, stamped on a blank stone (§4.5) | **Idylwild, CC0** (idylwild.itch.io/idylwilds-runic-codex). Added 2026-10-21 |
+| `packs/idylwild/Idylwild's Alchemical Codex/` (main checkout, gitignored) | 225 + sheet, `.ase` | 75 alchemy symbols (mercury, sulfur, salt, element triangles, planets, zodiac) in three colours, **16×16** | Alchemy reagents, brew forms and formulas | **Idylwild, CC0 v1.0** (idylwild.itch.io/idylwilds-alchemical-codex). Added 2026-10-21 |
 | `react.svg` | 1 | Vite template leftover | — | Unused |
 
 ### 3.1 License findings
@@ -232,13 +232,14 @@ double size (checked by testing for uniform 2×2 blocks), and the Ækashics shee
 
 3. **Epic RPG World props** can be used for icons only from a gitignored folder. A
    cropped prop is an edited version and still may not be redistributed.
-4. **Idylwild's Runic Codex and Alchemical Codex are free to commit.** Both store
+4. **Idylwild's Runic Codex and Alchemical Codex are CC0.** Both store
    pages (read 2026-10-21) grant "Share — copy and redistribute the material in any
    medium or format" and "Adapt — … for any purpose, even commercially", with
    attribution optional. The Alchemical Codex page names the licence: Creative
    Commons Zero v1.0 Universal. No licence file ships in either folder, so these
    pages are the record. Credit line if wanted: "Idylwild's Runic Codex by
-   Idylwild". Unlike the bought packs, they can live in git (§7.5).
+   Idylwild". They could live in git; the user keeps them out like the bought
+   packs, in `src/assets/packs/idylwild/` (2026-10-21).
 
 ### 3.2 Where things are in the full sheet
 
@@ -299,7 +300,7 @@ absent. This plan extends that to every icon.
 
 ### 4.2 Files
 
-**No licensed pixels in git (user, 2026-10-21).** Bought icons, the ones the game
+**No third-party pixels in git (user, 2026-10-21).** Bought or free icons, the ones the game
 uses included, stay in a gitignored folder. Git holds only a manifest: icon names
 and the file each one points to. This is how tile maps already work: the repo
 carries tile indexes into named sheets, `forge/server/tilemaps.ts` writes
@@ -308,9 +309,8 @@ in use, and a checkout without the packs draws the plain diagram.
 
 | File | In git | Job |
 |---|---|---|
-| `src/assets/packs/<source>/` | No (one `.gitignore` line) | Every bought pack, whole. `packs/clockwork-raven/` holds `64x64/`, the four Raven Fantasy skill packs, `Epic Weapons 3/`, `Trees and Logs/`, and `legacy/` (the folders that were committed before 2026-10-21: `attributes/`, `system/`, …). Story 1 moves them here |
+| `src/assets/packs/<source>/` | No (one `.gitignore` line) | Every third-party pack, whole. `packs/idylwild/` holds the two Idylwild codices (moved 2026-10-21). `packs/clockwork-raven/` will hold `64x64/`, the four Raven Fantasy skill packs, `Epic Weapons 3/`, `Trees and Logs/`, and `legacy/` (the folders that were committed before 2026-10-21: `attributes/`, `system/`, …); story 1 moves them |
 | `src/assets/icons/own/` | Yes | Icons drawn for this game (DNA, yin-yang, …) |
-| `src/assets/icons/cc0/<pack>/` | Yes, if §7.5 says so | Free packs whose licence allows redistribution: Idylwild's Runic and Alchemical Codex (16×16 PNGs only, about 1.7 MB). Worktrees and clones get them without a junction |
 | `src/ui/lib/icons/manifest.json` | Yes, text only | Icon name → file under `src/assets/`: `"iron_sword": "packs/clockwork-raven/64x64/c4457.png"`, `"strength": "packs/clockwork-raven/legacy/attributes/strength.png"`. picks.md is its first draft |
 | `src/ui/lib/icons/art.gen.ts` | Yes, generated | Written by `npm run icons` from the manifest: one eager `import.meta.glob([...], { query: '?url' })` listing exactly the manifest's files. Vite copies those files into a build and nothing else. A file missing on disk is simply absent from the result, so that icon shows its emoji. Never edited by hand |
 | `src/ui/lib/icons/iconArt.ts` | Yes | `iconUrl(def)` and `glyphUrl(emoji)`: name → manifest → URL from `art.gen.ts`. Core stays browser-free |
@@ -384,7 +384,7 @@ strokes read thicker (strip A below). Rules:
   stone, which fixes "all the same grey". Done in the `Icon` component as two
   stacked images, so no edited file exists: a manifest entry may list layers,
   `"rune_of_might": ["packs/clockwork-raven/legacy/runes/rune big.png",
-  "icons/cc0/idylwild/runes/rune2.png"]`. The reference sheet's meanings make the
+  "packs/idylwild/Idylwild's Runic Codex/runes/rune2.png"]`. The reference sheet's meanings make the
   match: Might → Uruz (strength), Frost → Isa (ice), Thunder → Thurisaz,
   Swiftness → Raidho (journey), and so on.
 
@@ -509,10 +509,6 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
 3. **Buy or draw the 14 the sheet lacks** (§5.1)?
 4. **The picks themselves** ([picks.png](pixel-icons/picks.png)): swap any that read
    wrong. Each has alternates listed.
-5. **Commit the Idylwild packs?** CC0 allows it. Recommended: move them to
-   `src/assets/icons/cc0/idylwild/` and commit the 16×16 PNGs, so every checkout has
-   them. Until then they sit untracked in `src/assets/` (not ignored, so a
-   `git add -A` would commit them, which the licence permits).
 
 Answered:
 - 2026-10-20: the 32px set is Clockwork Raven, bought. So are the full sheet, the
@@ -523,6 +519,9 @@ Answered:
   main checkout.
 - 2026-10-21: **no Clockwork Raven pixels in git, the icons the game uses
   included.** Git holds the manifest; the art stays in `src/assets/packs/` (§4.2).
+- 2026-10-21: **free packs too.** The CC0 Idylwild packs stay out of git like the
+  bought ones; they were moved to `src/assets/packs/idylwild/` the same day. The
+  rule is now: no third-party pixels in git.
 
 ## 8. Picks from the full sheet
 
