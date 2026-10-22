@@ -482,8 +482,12 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
    wrong. Each has alternates listed.
 
 Answered:
+- 2026-10-22 (user, after story 1): drawn inside the bars, on the fill colour,
+  the resource icons were hard to read. **Each pool now has its own row: a 32px
+  icon left of a shorter bar**; the action bar is indented to line up. Two bars
+  per row was tried at both sizes: 32px wrapped the labels, 16px stayed small.
 - 2026-10-22 (story 1, on the real sidebar): **32px for attribute and
-  superattribute rows**, 16px inside the 16px resource bars and in tooltip lines.
+  superattribute rows**, 16px in tooltip lines.
   At 16px the attribute art was hard to read; 32px adds about 60px to the
   attribute block. Word pills and the log still to decide in their stories.
 - 2026-10-20: the 32px set is Clockwork Raven, bought. So are the full sheet, the
