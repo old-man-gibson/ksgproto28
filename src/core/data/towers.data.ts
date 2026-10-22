@@ -123,31 +123,35 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
   },
   ascent_f2: {
     id: 'ascent_f2',
-    name: 'The Flooded Stair',
+    name: 'The Long Hall',
     towerId: 'the_ascent',
     bandId: 'ascent_lower',
     index: 2,
     areaId: 'ascent_f2_area',
-    landing: 'f2_landing',
+    landing: 'f2_stairhead',
     // Pure accumulation: ~a dozen shifts at a Threshold job, or floor 1's
     // fights. Accrues from acting at all.
     gate: [{ type: 'stat', key: 'gold:earned', value: 150 }],
-    // The clear is a spent fight budget: the cistern's fightLimit and this
-    // number are the same dial and are linted to agree.
-    clear: [{ type: 'stat', key: 'fights:f2_cistern', value: 8 }],
+    // The clear is the far end's fight budget: f2_hall_4's fightLimit and
+    // this number are the same dial (linted: the clear may not ask for more
+    // fights than the limit allows). (The Flooded
+    // Stair's cistern held it until 2026-10-21; it is on the shelf.)
+    clear: [{ type: 'stat', key: 'fights:f2_hall_4', value: 3 }],
     clearXp: 150,
   },
   ascent_f3: {
     id: 'ascent_f3',
-    name: 'The Silk Gallery',
+    name: 'The Descent',
     towerId: 'the_ascent',
     bandId: 'ascent_lower',
     index: 3,
     areaId: 'ascent_f3_area',
-    landing: 'f3_landing',
+    landing: 'f3_stairhead',
     gate: [{ type: 'stat', key: 'gold:earned', value: 600 }],
-    // A named kill again — the brood den's `once` queen.
-    clear: [{ type: 'stat', key: 'slain:f3_brood_den:giant_spider_queen', value: 1 }],
+    // A named kill: the puppet bureaucrat at the bottom of the stairwell, the
+    // Hearing Room's one fight. (The Silk Gallery's queen held it until
+    // 2026-10-21; that floor is on the shelf.)
+    clear: [{ type: 'stat', key: 'slain:f3_hearing_room:puppet_bureaucrat', value: 1 }],
     clearXp: 200,
   },
 });

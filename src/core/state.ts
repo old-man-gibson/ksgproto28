@@ -3,7 +3,7 @@ import { STARTING_SPOT } from './data/locations.data';
 import { freshMutagenState } from './data/mutagens.data';
 import { freshPrestigeState } from './data/prestige.data';
 
-export const SAVE_VERSION = 56;
+export const SAVE_VERSION = 57;
 
 
 function freshAttrs(): Record<AttributeId, AttrState> {
@@ -52,6 +52,7 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     skillTriggers: {},
     techniques: {},
     drilling: [],
+    learnFrom: {},
     sheathed: null,
     loadouts: [],
 

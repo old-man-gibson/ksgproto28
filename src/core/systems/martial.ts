@@ -7,6 +7,7 @@ import type {
   TechniqueDef,
   TechniqueEntry,
   TechniqueForm,
+  TechniqueLesson,
   TechniqueMove,
   TechniqueState,
 } from '../types';
@@ -33,7 +34,8 @@ import { evaluateTrigger, type TriggerContext } from './triggers';
 import { weaponTechniqueMods } from './runes';
 import { preparedSpells, resolveSpell } from './spellcraft';
 import { resourceValue } from './resources';
-import { ITEMS } from '../registry';
+import { subsystemUnlocked } from './unlocks';
+import { ITEMS, NPCS } from '../registry';
 import { text } from '../text/log';
 
 /**
@@ -93,16 +95,87 @@ export function learnTechnique(
   return held;
 }
 
+// ---------- Reach ----------
+
 /**
- * Autodidactic crystallization: an eligible, unknown technique with a
- * `learn.self` counter becomes known — ROUGH — the moment the counter
- * crosses. Called from combat wherever those counters are bumped.
+ * The positions this fighter can actually stand in: neutral (every encounter
+ * starts there and every plain swing returns there), plus the exit of every
+ * known technique that can itself be entered, to a fixpoint. Displacement
+ * adds nothing: it only ever lands on dead ends (MARTIAL.md §9a).
+ */
+export function reachablePositions(state: GameState): Set<string> {
+  const known = knownTechniques(state);
+  const reach = new Set<string>([NEUTRAL_POSITION]);
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const def of known) {
+      const from = entryPositions(state, def);
+      if (from !== 'any' && !from.some((p) => reach.has(p))) continue;
+      const exit = techniqueExit(state, def);
+      if (!reach.has(exit)) {
+        reach.add(exit);
+        grew = true;
+      }
+    }
+  }
+  return reach;
+}
+
+/** The positions a technique starts from that this fighter cannot reach yet. */
+export function unreachedEntries(state: GameState, def: TechniqueDef, reach = reachablePositions(state)): string[] {
+  const from = entryPositions(state, def);
+  if (from === 'any' || from.some((p) => reach.has(p))) return [];
+  return from;
+}
+
+/**
+ * Whether a technique could ever fire for this fighter: it starts from
+ * anywhere, or from a position its known techniques reach. One that cannot is
+ * never taught and never counts toward self-learning (user, 2026-10-21):
+ * Lunge means nothing to a fighter who has no way to coil.
+ */
+export function techniqueReachable(state: GameState, def: TechniqueDef, reach = reachablePositions(state)): boolean {
+  return unreachedEntries(state, def, reach).length === 0;
+}
+
+/**
+ * Self-learning progress toward `learn.self.count`, counted from when the
+ * technique became reachable. `state.learnFrom[id]` is where the count
+ * starts: it follows the counter while the technique is unreachable, so the
+ * progress stays at zero, and stops moving once a way in exists. Absent means
+ * reachable all along, and the whole counter counts.
+ */
+export function selfLearnProgress(state: GameState, def: TechniqueDef): number {
+  const self = def.learn?.self;
+  if (!self) return 0;
+  return Math.max(0, (state.stats[self.stat] ?? 0) - (state.learnFrom?.[def.id] ?? 0));
+}
+
+/**
+ * Autodidactic crystallization: an eligible, reachable, unknown technique
+ * with a `learn.self` counter becomes known — ROUGH — once its progress
+ * (counted from when it became reachable) crosses. Called from combat
+ * wherever those counters are bumped.
+ *
+ * Off while the `martial` shutter is shut (systems/unlocks.ts, user
+ * 2026-10-21): in the alpha the only way into the system is a teacher. The
+ * baselines still move, so a technique reachable while the shutter is shut
+ * keeps counting, and opening it later crystallizes what was earned.
  */
 export function checkTechniqueLearning(state: GameState, bus: EventBus): void {
+  const reach = reachablePositions(state);
+  state.learnFrom ??= {};
+  for (const def of TECHNIQUE_LIST) {
+    const self = def.learn?.self;
+    if (!self || techniqueKnown(state, def) || techniqueReachable(state, def, reach)) continue;
+    state.learnFrom[def.id] = state.stats[self.stat] ?? 0;
+  }
+  if (!subsystemUnlocked(state, 'martial')) return;
   for (const def of TECHNIQUE_LIST) {
     const self = def.learn?.self;
     if (!self || techniqueKnown(state, def)) continue;
-    if ((state.stats[self.stat] ?? 0) < self.count) continue;
+    if (!techniqueReachable(state, def, reach)) continue;
+    if (selfLearnProgress(state, def) < self.count) continue;
     if (!eligibleToLearn(state, def)) continue;
     learnTechnique(state, def, 'rough');
     bus.emit({
@@ -111,6 +184,50 @@ export function checkTechniqueLearning(state: GameState, bus: EventBus): void {
       kind: 'combat',
     });
   }
+}
+
+// ---------- Teachers ----------
+
+/**
+ * Where a lesson stands for this player: `taught` once the canonical form is
+ * held, `held` while the requirements are unmet or the technique cannot be
+ * reached yet (nothing the player knows leads into its position), `open` when
+ * it can be taken. A rough form counts as open — the teacher refines it
+ * (MARTIAL.md §10).
+ */
+export type LessonState = 'open' | 'held' | 'taught';
+
+export function lessonState(state: GameState, lesson: TechniqueLesson): LessonState {
+  if (techniqueForm(state, lesson.technique) === 'canonical') return 'taught';
+  if (lesson.requires && !conditionsMet(state, lesson.requires)) return 'held';
+  const def = TECHNIQUES[lesson.technique];
+  if (def && !techniqueReachable(state, def)) return 'held';
+  return 'open';
+}
+
+/**
+ * Take a lesson from a teacher: the canonical form, or a rough one refined in
+ * place (executions kept). Refused for a technique this NPC does not teach,
+ * an unmet requirement, or one already canonical. Eligibility (`unlock`) is
+ * not checked: the teacher is the shortcut past it, the way a recipe card is.
+ * Teaching ignores the `martial` shutter.
+ */
+export function teachTechnique(state: GameState, bus: EventBus, npcId: string, techniqueId: string): boolean {
+  const lesson = NPCS[npcId]?.teaches?.find((l) => l.technique === techniqueId);
+  const def = TECHNIQUES[techniqueId];
+  if (!lesson || !def || lessonState(state, lesson) !== 'open') return false;
+  const refined = techniqueForm(state, def.id) === 'rough';
+  learnTechnique(state, def, 'canonical');
+  bus.emit({
+    type: 'log',
+    msg: text(refined ? 'martial.technique_refined' : 'martial.technique_taught', {
+      icon: def.icon,
+      name: def.name,
+      teacher: NPCS[npcId].name,
+    }),
+    kind: 'skill',
+  });
+  return true;
 }
 
 /** Whether the required weapon family is in hand (absent family = anything). */

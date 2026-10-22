@@ -16,10 +16,14 @@ the office section has a 3×3 directory of named rooms.
 - Explore reception fully to obtain the office key. Room doors are locked
   until then. Key items are unsellable and readable in Location and Quests.
 - Follow **Scribe → Auditor → Break Room → Scribe → Toll Collector**.
-  These are room choices, not compass directions. A wrong ordinary room is
-  still entered and shows "This is not the path to the toll collector."
-  The sequence resets; entering the scribe's office starts a new attempt.
-  Only an incorrect collector-office entry loops back to reception.
+  These are room choices, not compass directions. A wrong door shows "This
+  is not the path to the toll collector." and lets out into a different
+  office (user, 2026-10-21): never the one chosen, reception, the
+  collector's or the scribe's, picked by the save's RNG. Every office links
+  to every other and to reception, so no drop strands anyone. The sequence
+  resets; the scribe's door always opens where it says, and entering it
+  starts a new attempt. An incorrect collector-office entry loops back to
+  reception.
   The book, key, and searches are preserved.
   Partial sequence progress survives saves. Cleared offices stop looping.
 - The golem interrogates for three seconds before either side can act, then

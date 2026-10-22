@@ -815,6 +815,30 @@ with the Wayfinding boon).
 A ladder floor (`towers.data.ts`) pays `clearXp` level XP the first time
 its `clear` holds in a run. Band 1: 100 / 150 / 200.
 
+### Teacher (a `teaches` list on an `NpcDef`)
+
+A teacher hands out techniques in their canonical form (MARTIAL.md §6, §10).
+Nothing about a lesson is saved beyond the technique entering the ledger.
+
+```ts
+hall_tutor: {
+  ..., quests: [],
+  teaches: [
+    { technique: 'gather' },                                   // open on the first visit
+    { technique: 'lunge' },                                    // held until Gather: nothing else leads into Coiled
+    { technique: 'thrust', requires: [{ type: 'stat', key: 'fights:won', value: 50 }] }, // a curriculum gate
+  ],
+},
+```
+
+- A lesson grants the canonical form, or refines a rough one keeping its
+  practice (`teachTechnique`, systems/martial.ts). It ignores eligibility
+  (`unlock`) and the `martial` shutter: a teacher is the way past both.
+- **Reach.** A lesson is held while nothing the player knows leads into the
+  technique's position; the Training block says which position is missing.
+  Order lessons so each one's way in is taught first.
+- Both validation layers check that each lesson names a real technique, once.
+
 ### Shop (a `shop` on an `NpcDef`)
 
 A vendor is an NPC with wares. Nothing about a shop is saved: stock is

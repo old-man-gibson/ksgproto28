@@ -24,6 +24,7 @@ import { retreatSpot } from '../src/core/systems/safety';
 import { prestigeNow } from '../src/core/systems/prestige';
 import { towerAt } from '../src/core/systems/towers';
 import type { GameState } from '../src/core/types';
+import { clearFloors } from './fixtures/floors';
 
 /** Run the current travel to arrival. */
 function walk(g: Game): void {
@@ -239,9 +240,7 @@ describe('the tutorial and older saves', () => {
 
   it('a second life opens at the Foot with the tutorial already done', () => {
     const s = createInitialState(13);
-    s.stats['boss:f1_toll_hall'] = 1;
-    s.stats['fights:f2_cistern'] = 8;
-    s.stats['slain:f3_brood_den:giant_spider_queen'] = 1;
+    clearFloors(s.stats);
     s.stats['gold:earned'] = 1000;
     const next = prestigeNow(s, 99);
     expect(next).toBeTruthy();

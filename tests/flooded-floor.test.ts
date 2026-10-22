@@ -10,10 +10,11 @@ import { visibleEdges } from '../src/core/systems/locations';
 import { castCraftedAttack, startForcedFight, tickCombat } from '../src/core/systems/combat';
 import { findStatus, statusMissChance } from '../src/core/systems/statuses';
 import { monsterStats } from '../src/core/systems/monsterStats';
-import { OFFICE_PROGRESS, OFFICE_SEQUENCE, TOLL_REACTION_TICKS, TOLL_SPELL_FLAG } from '../src/core/systems/floodedFloor';
+import { OFFICE_PROGRESS, OFFICE_ROOMS, OFFICE_SEQUENCE, TOLL_REACTION_TICKS, TOLL_SPELL_FLAG } from '../src/core/systems/floodedFloor';
 import { deserialize, serialize } from '../src/core/save/save';
 import { prestigeNow } from '../src/core/systems/prestige';
 import { addSpell } from '../src/core/systems/spellcraft';
+import { clearFloors } from './fixtures/floors';
 
 const fresh = (spot = 'f1_landing', seed = 42) => new Game(createInitialState(seed, spot));
 function walk(g: Game, id: string) {
@@ -135,16 +136,21 @@ describe('the flooded floor route', () => {
     expect(g.state.discovered).not.toContain('f1_toll_hall');
   });
 
-  it('wrong ordinary rooms remain explorable, show a hint, and let the scribe restart the sequence', () => {
+  it('a wrong door lets out into another office, shows a hint, and the scribe restarts the sequence', () => {
     const g = fresh('f1_reception');
     grantKeyItem(g.state, g.bus, 'toll_clerk_book');
     exploreReception(g);
     walk(g, 'f1_scribe');
     walk(g, 'f1_registry');
-    expect(g.state.spot).toBe('f1_registry');
-    expect(g.state.discovered).toContain('f1_registry');
+    // Not the registry: somewhere else among the offices, never reception,
+    // the collector's or the scribe's.
+    const landed = g.state.spot;
+    expect(OFFICE_ROOMS).toContain(landed);
+    expect(['f1_registry', 'f1_reception', 'f1_toll_hall', 'f1_scribe']).not.toContain(landed);
+    expect(g.state.discovered).toContain(landed);
     expect(g.state.stats[OFFICE_PROGRESS]).toBe(0);
     expect(g.state.log.some((l) => l.msg === 'This is not the path to the toll collector.')).toBe(true);
+    expect(g.state.log.some((l) => l.msg.startsWith('The door lets out into') && l.msg.endsWith('not The Registry.'))).toBe(true);
     expect(hasKeyItem(g.state, 'toll_office_key')).toBe(true);
     for (const room of OFFICE_SEQUENCE) walk(g, room);
     expect(g.state.spot).toBe('f1_toll_hall');
@@ -259,7 +265,7 @@ describe('the submerged toll collector', () => {
     grantKeyItem(g.state, g.bus, 'toll_clerk_book');
     g.state.stats[searchKey('f1_archive', 'search')] = 4;
     g.state.stats[TOLL_SPELL_FLAG] = 1;
-    g.state.stats['slain:f3_brood_den:giant_spider_queen'] = 1;
+    clearFloors(g.state.stats, ['ascent_f3']);
     const next = prestigeNow(g.state)!;
     expect(next).not.toBeNull();
     expect(hasKeyItem(next, 'toll_clerk_book')).toBe(false);

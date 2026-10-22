@@ -9,7 +9,7 @@ export const POSITIONS_TEXT: ProseTable = {
 
   'coiled.desc': 'Wind-up position. Entered by Gather and Ginga; Heavy Blow and other heavy techniques start from here.',
 
-  'extended.desc': 'Reach position. Entered by Riposte and Crosscut; Thrust starts from here.',
+  'extended.desc': 'Reach position. Entered by Lunge, Riposte and Crosscut; Thrust starts from here.',
 
   'off_balance.desc': 'Incoming damage ×1.15 while here. Left in it by Heavy Blow, Weapon Drop and Overwhelming forks; Ginga and Meia Lua start from here.',
 
@@ -42,6 +42,8 @@ export const FORK_ARCHETYPES_TEXT: ProseTable = {
 // ---------- TECHNIQUES ----------
 export const TECHNIQUES_TEXT: ProseTable = {
   'gather.desc': 'Neutral → Coiled. 0.6× damage, +0.02 momentum, 3 s cooldown. Unlocks at Fighting 5; learned after 100 attacks.',
+
+  'lunge.desc': 'Coiled → Extended. Any weapon. 1.3× damage, costs 3% stamina, 4 s cooldown. Unlocks at Fighting 8; learned after 400 attacks.',
 
   'heavy_blow.desc': 'Coiled → Off Balance. 2.0× damage, costs 8% stamina, 6 s cooldown. Unlocks at Fighting 5 and Strength 8; learned after 50 crits. Perfected, it also starts from Neutral.',
 

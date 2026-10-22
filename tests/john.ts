@@ -4,7 +4,7 @@ import { TPS } from '../src/core/engine/loop';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { hasKeyItem } from '../src/core/systems/keyitems';
 import { xpToReach } from '../src/core/systems/levels';
-import { FLOORS, SPOTS } from '../src/core/registry';
+import { FLOORS, NPCS, SPOTS } from '../src/core/registry';
 import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
 
 /**
@@ -28,10 +28,11 @@ import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
  * builds the tutorial hands out.
  *
  * `attentive` adds exactly one habit: he looks around a floor before fighting
- * on it and uses what the floor hands over (the sluice's club and its wheel,
- * which drains the cistern, before wading in; the gallery's spear before the
- * den). Comparing the two is how the
- * floors' own answers are shown to be worth picking up.
+ * on it and uses what the floor hands over (floor 3's side rooms read out:
+ * every string anchor cut and the Archive's club in hand before the Hearing
+ * Room). Comparing the two is how the floors' own answers are shown to be
+ * worth picking up. Floor 2's answer is the tutor, whom both Johns visit:
+ * the door is the first one off the hall and the lessons cost nothing.
  *
  * He reports; he never tunes. The judgement — how long a floor should take,
  * how often a boss may win — lives in tests/john.test.ts as the author's
@@ -40,8 +41,18 @@ import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
  * Deterministic: everything rides the save's own seeded RNG.
  */
 
+/** Floor 2's corridor, in walking order: each stretch's budget opens the next. */
+const HALL = ['f2_hall_1', 'f2_hall_2', 'f2_hall_3', 'f2_hall_4'];
+
+/** Floor 3's stairwell, top down: each side room's plan opens the flight to `below`. */
+const DESCENT = [
+  { room: 'f3_mail_room', plan: 'flag:f3_stairs_1', below: 'f3_landing_2' },
+  { room: 'f3_archive', plan: 'flag:f3_stairs_2', below: 'f3_landing_3' },
+  { room: 'f3_annex', plan: 'flag:f3_stairs_3', below: null },
+];
+
 /** The stretches a climb is cut into, in the order they are played. */
-export const SEGMENTS = ['tutorial', 'vermin', 'floor1', 'floor2', 'gate3', 'gallery', 'floor3'] as const;
+export const SEGMENTS = ['tutorial', 'vermin', 'floor1', 'floor2', 'gate3', 'descent', 'floor3'] as const;
 export type ClimbSegment = (typeof SEGMENTS)[number];
 
 export interface ClimbOptions {
@@ -182,7 +193,6 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   };
   const stat = (key: string) => s.stats[key] ?? 0;
   const earned = () => stat('gold:earned');
-  const found = (spot: string, id: string) => (s.finds[spot] ?? []).includes(id);
   const wield = (defId: string) => {
     const item = s.inventory.find((i) => i.defId === defId);
     if (item) g.equip(item.uid, 'weapon');
@@ -247,34 +257,40 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   if (stat('boss:f1_toll_hall') < 1) return finish();
   mark('floor1', 'floor2');
 
-  // ---- Floor 2: the forced cistern's eight fights. ----
+  // ---- Floor 2: the Long Hall. The tutor's door is the first one off the
+  // hall, so even John walks in; the lessons are free. Then four stretches. ----
   if (!climbTo('ascent_f2')) return finish();
-  if (opts.attentive) {
-    persist('f2_sluice', 'explore_f2', () => found('f2_sluice', 'f2_snagged_club'));
-    wield('oak_club');
-    // The sluice's other answer: drain the cistern, then take the dry
-    // channel in (the walk below routes through it from here).
-    persist('f2_sluice', 'turn_wheel', () => stat('flag:f2_cistern_drained') >= 1);
+  walk('f2_gym');
+  for (const lesson of NPCS.hall_tutor.teaches ?? []) g.learnFromTeacher('hall_tutor', lesson.technique);
+  for (const stretch of HALL) {
+    if (!persist(stretch, 'hunt', () => stat(`fights:${stretch}`) >= SPOTS[stretch].fightLimit!)) return finish();
   }
-  if (!persist('f2_cistern', 'hunt', () => stat('fights:f2_cistern') >= SPOTS.f2_cistern.fightLimit!)) return finish();
-  // Every find on the floor, on the way out: the purse is most of the
-  // floor's coin.
-  const sluiceFinds = SPOTS.f2_sluice.finds?.length ?? 0;
-  persist('f2_sluice', 'explore_f2', () => (s.finds.f2_sluice ?? []).length >= sluiceFinds);
+  // The break room's cupboards, on the way out: most of the floor's coin.
+  const breakFinds = SPOTS.f2_break_room.finds?.length ?? 0;
+  persist('f2_break_room', 'explore_f2', () => (s.finds.f2_break_room ?? []).length >= breakFinds);
   mark('floor2', 'gate3');
 
-  // ---- The third floor's gate, then the gallery's brood and the den. ----
+  // ---- The third floor's gate, then the descent and the Hearing Room. ----
   if (!climbTo('ascent_f3')) return finish();
-  mark('gate3', 'gallery');
-  if (!persist('f3_web_gallery', 'hunt', () => stat('fights:f3_web_gallery') >= SPOTS.f3_web_gallery.fightLimit!)) return finish();
-  mark('gallery', 'floor3');
-  if (opts.attentive) {
-    persist('f3_web_gallery', 'explore_f3', () => found('f3_web_gallery', 'f3_webbed_spear'));
-    if (s.equipment.weapon?.defId !== 'old_spear') wield('old_spear');
+  mark('gate3', 'descent');
+  for (const { room, plan, below } of DESCENT) {
+    // Each side room's floor plan opens the next flight. John stops reading
+    // once he has it; attentive John reads the room out first (a string
+    // anchor, the coin, the club) — the bureaucrat's preparation.
+    if (!persist(room, 'search_room', () => stat(plan) >= 1)) return finish();
+    if (opts.attentive) {
+      const finds = SPOTS[room].finds?.length ?? 0;
+      persist(room, 'search_room', () => (s.finds[room] ?? []).length >= finds);
+    }
+    // The landing below holds a small fight budget on the way down.
+    if (below && SPOTS[below].fightLimit) {
+      if (!persist(below, 'hunt', () => stat(`fights:${below}`) >= SPOTS[below].fightLimit!)) return finish();
+    }
   }
-  // The queen comes out for the third burned egg sac, never on a roll.
-  if (!persist('f3_brood_den', 'burn_sacs', () => stat('flag:f3_sacs_burned') >= 3)) return finish();
-  if (!persist('f3_brood_den', 'hunt', () => stat('slain:f3_brood_den:giant_spider_queen') >= 1)) return finish();
+  if (opts.attentive && s.equipment.weapon?.defId !== 'oak_club') wield('oak_club');
+  mark('descent', 'floor3');
+  // The Hearing Room forces its one fight on arrival.
+  if (!persist('f3_hearing_room', 'hunt', () => stat('slain:f3_hearing_room:puppet_bureaucrat') >= 1)) return finish();
   mark('floor3', 'floor3');
   return finish();
 

@@ -3,6 +3,8 @@ import type { EventBus } from '../engine/events';
 import { applyStatus } from './statuses';
 import { grantKeyItem, hasKeyItem } from './keyitems';
 import { setStat } from './achievements';
+import { randInt } from '../engine/rng';
+import { SPOTS } from '../registry';
 
 export const TOLL_GOLEM = 'toll_collector_golem';
 export const TOLL_SPELL_FLAG = 'flag:toll_encounter_spell';
@@ -25,9 +27,10 @@ export function officeArrival(state: GameState, bus: EventBus, from: string, to:
     setStat(state, bus, OFFICE_PROGRESS, progress + 1);
     return to;
   }
-  // A wrong room is still a room the player can enter. The first room also
-  // starts a new attempt, so revisiting the scribe is enough to recover.
-  setStat(state, bus, OFFICE_PROGRESS, hasKeyItem(state, 'toll_office_key') && to === OFFICE_SEQUENCE[0] ? 1 : 0);
+  // The first room starts a new attempt, so walking into the scribe's office
+  // is enough to recover: that door opens where it says.
+  const restart = hasKeyItem(state, 'toll_office_key') && to === OFFICE_SEQUENCE[0];
+  setStat(state, bus, OFFICE_PROGRESS, restart ? 1 : 0);
   state.travelPlan = [];
   state.travelIntent = null;
   bus.emit({ type: 'log', kind: 'explore', msg: 'This is not the path to the toll collector.' });
@@ -35,7 +38,20 @@ export function officeArrival(state: GameState, bus: EventBus, from: string, to:
     bus.emit({ type: 'log', kind: 'explore', msg: 'The collector’s doorway leads back to reception. You still have the key and daybook.' });
     return 'f1_reception';
   }
-  return to;
+  if (restart) return to;
+  // Any other wrong door lets out somewhere else (user, 2026-10-21): another
+  // office, never the one chosen, reception, the collector's or the scribe's
+  // (which would read as a restart). Every office links to every other and to
+  // reception, so no drop strands anyone. The save's own RNG picks, so a run
+  // replays the same.
+  const drops = OFFICE_ROOMS.filter((r) => r !== to && r !== 'f1_reception' && r !== 'f1_toll_hall' && r !== OFFICE_SEQUENCE[0]);
+  const landed = drops[randInt(state, 0, drops.length - 1)];
+  bus.emit({
+    type: 'log',
+    kind: 'explore',
+    msg: `The door lets out into ${SPOTS[landed]?.name ?? 'another office'}, not ${SPOTS[to]?.name ?? 'the office it named'}.`,
+  });
+  return landed;
 }
 
 export function noteTollSpell(state: GameState, bus: EventBus): void {

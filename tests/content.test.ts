@@ -1089,6 +1089,15 @@ describe('npcs & quests', () => {
         expect(askingPrice(line, true), `${where}: asking price under value`).toBeGreaterThan(lineValue(line));
       }
     }
+    for (const npc of Object.values(NPCS)) {
+      // A teacher teaches techniques that exist, each once (systems/martial.ts).
+      const taught = (npc.teaches ?? []).map((l) => l.technique);
+      expect(new Set(taught).size, `${npc.id} teaches a technique twice`).toBe(taught.length);
+      for (const lesson of npc.teaches ?? []) {
+        expect(TECHNIQUES[lesson.technique], `${npc.id} teaches ${lesson.technique}`).toBeDefined();
+        checkConditions(`${npc.id} lesson ${lesson.technique}`, lesson.requires);
+      }
+    }
     for (const q of Object.values(QUESTS)) {
       expect(NPCS[q.giver], `${q.id} giver`).toBeDefined();
       expect(NPCS[q.giver].quests, `${q.id} listed by its giver`).toContain(q.id);

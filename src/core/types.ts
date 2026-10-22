@@ -4493,6 +4493,21 @@ export interface NpcDef {
    * shop is saved. See systems/shops.ts.
    */
   shop?: ShopDef;
+  /**
+   * Techniques this person teaches (MARTIAL.md §10, the teacher half). A
+   * lesson grants the CANONICAL form, or upgrades a rough one, through
+   * `teachTechnique` in systems/martial.ts. Teaching ignores the `martial`
+   * shutter on purpose: while it is shut, teachers are the only way in.
+   */
+  teaches?: TechniqueLesson[];
+}
+
+/** One lesson on a teacher's list. */
+export interface TechniqueLesson {
+  /** A TECHNIQUES id. */
+  technique: string;
+  /** Held back until these hold — a curriculum, not a price list. */
+  requires?: UnlockCondition[];
 }
 
 /**
@@ -5036,6 +5051,14 @@ export interface GameState {
   techniques: Record<string, TechniqueState>;
   /** Techniques currently being drilled — only these advance their counters. */
   drilling: string[];
+  /**
+   * Where each unknown technique's self-learning count starts: the value its
+   * `learn.self` counter had when the technique last became reachable
+   * (systems/martial.ts, Reach). Follows the counter while the technique is
+   * unreachable; absent means reachable all along. Not a counter, so not in
+   * `stats`: it moves on every swing and must not run achievement checks.
+   */
+  learnFrom: Record<string, number>;
   /**
    * A weapon worn concealed instead of wielded (daggers). While sheathed you
    * are genuinely unarmed — tags, stats, schools all read bare hands — until

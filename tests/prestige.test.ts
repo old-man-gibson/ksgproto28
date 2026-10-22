@@ -4,7 +4,7 @@ import { Game } from '../src/core/game';
 import { EventBus } from '../src/core/engine/events';
 import { migrate } from '../src/core/save/migrations';
 import { deserialize, serialize } from '../src/core/save/save';
-import { AREAS, PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, SPOTS, STARTING_SPOT } from '../src/core/registry';
+import { AREAS, FLOORS, PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, SPOTS, STARTING_SPOT } from '../src/core/registry';
 import { TUTORIAL_EXIT } from '../src/core/data/tutorial.data';
 import {
   buyBoon,
@@ -26,15 +26,14 @@ import { attrBreakdown, attrValue, collectBaseMods } from '../src/core/systems/a
 import { preparedCap } from '../src/core/systems/spellcraft';
 import { startTravel } from '../src/core/systems/locations';
 import type { GameState } from '../src/core/types';
+import { clearFloors } from './fixtures/floors';
 
 const fresh = (): GameState => createInitialState(0);
 
 /** A run that has cleared band 1 — the brood queen is down. */
 function bandOneCleared(): GameState {
   const s = fresh();
-  s.stats['boss:f1_toll_hall'] = 1;
-  s.stats['fights:f2_cistern'] = 8;
-  s.stats['slain:f3_brood_den:giant_spider_queen'] = 1;
+  clearFloors(s.stats);
   return s;
 }
 
@@ -141,8 +140,8 @@ describe('the reset', () => {
     const s = bandOneCleared();
     s.createdAt = 12345;
     s.gold = 9999;
-    s.spot = 'f3_landing';
-    s.discovered.push('f3_landing');
+    s.spot = FLOORS.ascent_f3.landing!;
+    s.discovered.push(FLOORS.ascent_f3.landing!);
     s.stats['gold:earned'] = 500;
     const next = prestigeNow(s, 777)!;
     // A second life skips the tutorial cell: it opens at the Foot, done-flag stamped.
@@ -155,7 +154,7 @@ describe('the reset', () => {
     expect(STARTING_SPOT).not.toBe(TUTORIAL_EXIT);
     expect(next.gold).toBe(0);
     expect(next.stats['gold:earned']).toBeUndefined();
-    expect(next.stats['slain:f3_brood_den:giant_spider_queen']).toBeUndefined();
+    for (const key of Object.keys(clearFloors({}))) expect(next.stats[key]).toBeUndefined();
     expect(next.createdAt).toBe(12345);
     expect(next.lastSaved).toBe(777);
     expect(next.prestige.count).toBe(1);
@@ -171,7 +170,7 @@ describe('the reset', () => {
 
   it('counts up across runs and keeps unspent points', () => {
     const first = prestigeNow(bandOneCleared(), 1)!;
-    const again = { ...first, stats: { ...first.stats, 'slain:f3_brood_den:giant_spider_queen': 1, 'boss:f1_toll_hall': 1, 'fights:f2_cistern': 8 } };
+    const again = { ...first, stats: clearFloors({ ...first.stats }) };
     const second = prestigeNow(again as GameState, 2)!;
     expect(second.prestige.count).toBe(2);
     expect(second.prestige.points).toBe(first.prestige.points + 3);

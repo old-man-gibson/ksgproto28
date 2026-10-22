@@ -6,7 +6,7 @@ status: review
 system: meta
 parent: alpha-band-one
 save: ''
-updated: 2026-10-17
+updated: 2026-10-21
 invariants:
 - completability
 - no-terminal-states
@@ -16,6 +16,12 @@ done:
 - A fresh save can climb floor 1 immediately; floors 2–3 gate on pure accumulation
 - Encounter levels and gate numbers reviewed and tuned by the user
 - Names and descs recaptioned by the user (all placeholders)
+- Floor 1's wrong office doors move the player into another office
+- Floor 2 is a long hall of the same building, fight segments with a tutor, a quartermaster and a break room off it
+- The tutor teaches Gather and a coiled-to-extended technique as canonical forms; no technique self-learns while martial is shut
+- Floor 3 descends through the building; what exploring finds weakens the puppet bureaucrat, whose kill clears the floor and unlocks prestige
+- The Flooded Stair and the Silk Gallery are shelved; saves that cleared them keep their clears
+- John retuned on the new floors 2 and 3
 ---
 
 # What was authored (2026-09-06)
@@ -143,3 +149,113 @@ A trade-off worth knowing: the attentive John who drains the cistern meets
 floor 3 a little weaker (stranded slimes pay less XP and coin), 48 gallery
 knockouts against the plain climb's 41. Draining is easier now and costs a
 little later, which is a choice, not a free win.
+
+# One building: floors 1–3 redesigned (2026-10-21, built)
+
+The user's direction: floors 1–3 are simple, and all three are the same
+office building, so the band reads as one place with three different maps.
+Floor 1 stays as built; floors 2 and 3 are replaced. Decisions taken the same
+day are marked *(user)*; everything else is a proposal to build and review.
+
+**Floor 1, the Flooded Offices: keep, plus one change.** A wrong office door
+now moves the player into a different office instead of only resetting the
+sequence *(user)*. `officeArrival` in `systems/floodedFloor.ts` already
+returns the real destination, so the teleport is returning another room:
+one of `OFFICE_ROOMS`, never the chosen one or the next correct one. The
+wrong collector door keeps sending the player back to reception.
+
+**Floor 2, the Long Hall (replaces the Flooded Stair).** One storey up in the
+same building. Combat first.
+
+- Shape: a straight corridor, landing at one end, four or five hall segments
+  in a row, the stair to floor 3 at the far end. Each segment is a finite
+  hunt (`fightLimit`), so the floor is mostly fighting and the clear is the
+  last segment's budget, the fight-budget flavour the cistern had.
+- Enemies from art already on disk: Book Monster, the Assembling Automatons
+  (A to D), Living Doll (which previews floor 3's puppets).
+- Side doors off the corridor *(user)*:
+  - **The tutor.** A gym coach or an old adventurer; the fiction does not
+    need to explain an office. Teaches **Gather** (neutral → coiled, exists)
+    and a new any-weapon **coiled → extended** technique, placeholder name
+    *Lunge*. Nothing existing fits that slot for every weapon: Whirl Kick is
+    unarmed only, Ground Draw needs a grounded weapon. A plain swing already
+    resets to neutral (MARTIAL.md §2), so the two make a loop with no third
+    move: Gather, Lunge, swing, Gather.
+  - **A quartermaster** selling potions and basics through `NpcDef.shop`.
+  - **A break room** with a rest activity: a haven halfway down the hall.
+- The tutor is the first teacher in the game: the smallest slice of
+  MARTIAL.md §10, `teaches` on the NPC and a Training section at the spot,
+  granting the canonical form through `learnTechnique`. Fallback if that
+  grows: the shipped `ConsumableSpec.teachesTechnique` (the riposte study
+  item), handed over as two drill sheets.
+
+**Martial stays shut except for the tutor *(user)*.**
+`checkTechniqueLearning` returns early while `martial` is shuttered, so
+fighting no longer self-learns Gather at Fighting 5 as it does today.
+Taught techniques fire as usual, and the Combat tab shows them in the active
+list. Saves that already self-learned something keep it: the ledger is never
+touched. Nothing lifts the lock in alpha yet *(user)*; the flag stays
+`flag:unlock_martial`.
+
+**Floor 3, the Descent (replaces the Silk Gallery).** Inside the building,
+going down: a stairwell spine with a landing per level and rooms branching
+off it (filing rooms, an archive, a mail room). Exploration first.
+
+- The map is drawn top to bottom, the hall's is drawn left to right, so the
+  two floors read as different maps of one building.
+- Preparation: the boss is a puppet worked on strings. Exploring the side
+  rooms finds the anchors; cutting each one weakens it, the way the egg sacs
+  draw out the queen and the collector's conditions open him up. The fight
+  stays winnable without any cut (no terminal states).
+- The boss: the **puppet bureaucrat**, art "Boss Puppet Master". It stands at
+  the bottom and the way on stays shut until it falls. Its kill clears the
+  floor and becomes `PRESTIGE_UNLOCK` (moved off the spider queen).
+
+**What goes.** The Flooded Stair and the Silk Gallery move to
+`src/core/data/shelved/` with a LONGTERM.md entry, like the countryside
+*(user)*. A save migration moves anyone standing there to the new floor's
+landing and stamps the new clears for saves that cleared the old floors, so
+no one replays a floor they finished.
+
+**Build order.**
+1. Martial lock and the tutor's teaching (testable alone).
+2. Floor 2: the hall, its enemies, the three rooms.
+3. Floor 3: the descent, the anchors, the bureaucrat, the prestige move.
+4. Shelve the old floors, the migration, floor 1's teleport, John retuned
+   (`npm run pacing`, `tests/john.test.ts` bounds), docs.
+
+Not decided yet, defaults in use: the second technique's name (*Lunge*),
+both lessons free on the first visit, the tutor's identity, gates kept at
+150 and 600 gold earned. All names and prose are placeholders for the user
+to recaption.
+
+The 2026-09-27 branch `claude/kind-tesla-7sqw30` made floor 2 the Wildwood.
+That floor is superseded by the hall; its engine pieces (fixed party
+formations, a finale boss, pack bonuses, streak budgets) are worth recording
+in LONGTERM.md before the branch is dropped.
+
+## Built (2026-10-21, branch floors-one-building)
+
+All four steps, one commit each; [ONE_BUILDING.md](../ONE_BUILDING.md) is the
+durable doc for floors 2 and 3, [FLOODED_FLOOR.md](../FLOODED_FLOOR.md) for
+floor 1, MARTIAL.md §6 for teachers and the reach rule.
+
+- **Step 1.** `NpcDef.teaches`, `teachTechnique`, the Training block; Lunge;
+  no self-learning while martial is shut.
+- **Between 2 and 3 (user, after seeing floor 2):** the reach rule. A
+  technique nothing the player knows leads into is never taught and does
+  not count toward self-learning. The tutor's Lunge is held until Gather.
+  The user accepted the hall being easier than the cistern.
+- **Step 2.** The Long Hall: four stretches of 3 fights, the tutor, the
+  quartermaster, the break room. Four new enemies from art on disk.
+- **Step 3.** The Descent: three landings, three side rooms (floor plan,
+  string anchor, loot), the Hearing Room's forced fight with the Puppet
+  Bureaucrat; its kill is the clear and PRESTIGE_UNLOCK.
+- **Step 4.** Floor 1's wrong doors let out into another office; save v57
+  (both floors); John retuned; docs; the shelf.
+
+Measured (John, 18 plain climbs): band 1 in 10.1–13.7 min, all finished;
+floor 2 knockouts 16 in total, floor 3 59 (about 3 each at the bureaucrat,
+under 1 each for attentive John). Placeholders still open for the user:
+every name and line of prose, the tutor's identity, the name *Lunge*, gates
+150 / 600.

@@ -12,6 +12,7 @@ import {
 } from '../src/core/systems/towers';
 import { startTravel, tickTravel } from '../src/core/systems/locations';
 import type { GameState } from '../src/core/types';
+import { clearFloors } from './fixtures/floors';
 
 /**
  * A fresh save stood at the foot of the tower. The game itself opens one
@@ -56,7 +57,7 @@ describe('the sequential ascent', () => {
     // Floor 3 still waits on floor 2's fight budget, whatever the gold says.
     state.stats['gold:earned'] = 10_000;
     expect(floorUnlocked(state, FLOORS.ascent_f3)).toBe(false);
-    state.stats['fights:f2_cistern'] = 8;
+    clearFloors(state.stats, ['ascent_f2']);
     expect(floorUnlocked(state, FLOORS.ascent_f3)).toBe(true);
   });
 

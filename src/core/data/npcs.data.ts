@@ -192,4 +192,38 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
       ],
     },
   },
+
+  // ---------- Floor 2, the Long Hall (plans/alpha-band-one-floors.md) ----------
+  //
+  // The first teacher in the game (NpcDef.teaches, MARTIAL.md §10). A
+  // placeholder person in a placeholder room: the user's brief is that the
+  // fiction need not explain a gym in an office. Both lessons are free. Lunge
+  // is held until something the player knows leads into Coiled — Gather,
+  // here (martial.ts, Reach): no technique is taught that could never fire.
+  hall_tutor: {
+    id: 'hall_tutor',
+    name: 'Old Brannoc',
+    icon: '🥋',
+    spotId: 'f2_gym',
+    quests: [],
+    teaches: [{ technique: 'gather' }, { technique: 'lunge' }],
+  },
+  hall_quartermaster: {
+    id: 'hall_quartermaster',
+    name: 'Quartermaster Pell',
+    icon: '📦',
+    spotId: 'f2_stores',
+    quests: [],
+    // The tower's one counter: salve and food, the things a climber runs out
+    // of between stretches. Same wares as town, same derived prices.
+    shop: {
+      name: 'The Cage',
+      lines: [
+        { kind: 'material', id: 'healing_salve' },
+        { kind: 'material', id: 'mushroom_broth' },
+        { kind: 'material', id: 'travelers_ration' },
+        { kind: 'material', id: 'rustic_loaf' },
+      ],
+    },
+  },
 });

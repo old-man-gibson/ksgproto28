@@ -54,7 +54,7 @@ import {
 } from './systems/spellcraft';
 import { forgetPsiShape, memorizePsiShape } from './systems/psionic';
 import { assignFloatingFavor, learnMiracle } from './systems/divine';
-import { chooseFork, toggleDrill, toggleSheathe } from './systems/martial';
+import { chooseFork, teachTechnique, toggleDrill, toggleSheathe } from './systems/martial';
 import { TECHNIQUES } from './data/martial.data';
 import type { Placement } from './systems/disciplines';
 import { tickAction, selectActivity } from './systems/actions';
@@ -411,6 +411,11 @@ export class Game {
   /** A first greeting with whoever is standing here (see systems/quests.ts). */
   talkTo(npcId: string): boolean {
     return talkTo(this.state, this.bus, npcId);
+  }
+
+  /** Take a lesson from a teacher (`NpcDef.teaches`); see systems/martial.ts. */
+  learnFromTeacher(npcId: string, techniqueId: string): boolean {
+    return teachTechnique(this.state, this.bus, npcId, techniqueId);
   }
 
   /** Buy from a vendor's shelf; see systems/shops.ts. Returns how many were bought. */
