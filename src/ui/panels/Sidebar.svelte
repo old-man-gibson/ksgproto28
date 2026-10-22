@@ -34,6 +34,7 @@
   import { RECOVERY_MULT, RESOURCES } from '../../core/data/resources.data';
   import { fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
   import Tip from '../lib/Tip.svelte';
+  import Icon from '../lib/icons/Icon.svelte';
   import { REFERENCE_BLOW, expectedHitTaken, roughDps } from '../lib/statSummary';
   import { levelAttrBonus, xpToNext } from '../../core/systems/levels';
   import { startingLevel } from '../../core/systems/legacy';
@@ -261,7 +262,7 @@
   <div class="tip-line tip-base">{sup.desc}</div>
   {#each sup.components as compId}
     {@const a = attrInfo(compId)}
-    <div class="tip-line">{a.icon} {a.name}: {fmt(eff[compId])}</div>
+    <div class="tip-line"><Icon of={a} /> {a.name}: {fmt(eff[compId])}</div>
   {/each}
   <div class="tip-line tip-total">{sup.name}: {fmt(attrValue(gs, sup.components[0]))}</div>
 {/snippet}
@@ -276,7 +277,7 @@
     <Tip block>
       <div class="bar res-bar">
         <div class="fill" style="width: {hpPct}%; background: var(--hp)"></div>
-        <div class="label">HP {pool('hp')}</div>
+        <div class="label"><Icon of={RESOURCES.hp} />HP {pool('hp')}</div>
       </div>
       {#snippet tip()}
         {@render resTip(`HP ${pool('hp')}`, 'maxHp', hpNotes, 'hpRegen')}
@@ -292,7 +293,7 @@
           <!-- Named, like every other pool. An unlabelled bar is read by its
                colour alone, which is how a full mana bar gets mistaken for a
                resource that was only just added. -->
-          <div class="label">{staminaMark}Stamina {pool('stamina')}</div>
+          <div class="label"><Icon of={RESOURCES.stamina} />{staminaMark}Stamina {pool('stamina')}</div>
         </div>
         {#snippet tip()}
           {@render poolTip(
@@ -310,7 +311,7 @@
         <div class="bar res-bar" class:burning={manaDebt > 0}>
           <div class="fill" style="width: {manaPct}%; background: {manaColor}"></div>
           <div class="label">
-            {manaDebt > 0 ? `−${fmt(manaDebt)} burned` : `Mana ${pool('mana')}`}
+            <Icon of={RESOURCES.mana} />{manaDebt > 0 ? `−${fmt(manaDebt)} burned` : `Mana ${pool('mana')}`}
           </div>
         </div>
         {#snippet tip()}
@@ -331,7 +332,7 @@
       <Tip block>
         <div class="bar res-bar">
           <div class="fill" style="width: {spiritPct}%; background: var(--spirit)"></div>
-          <div class="label">Spirit {pool('spirit')}</div>
+          <div class="label"><Icon of={RESOURCES.spirit} />Spirit {pool('spirit')}</div>
         </div>
         {#snippet tip()}
           {@render resTip(`Spirit ${pool('spirit')}`, 'maxSpirit', [
@@ -342,7 +343,7 @@
       <Tip block>
         <div class="bar res-bar">
           <div class="fill" style="width: {focusPct}%; background: var(--focus)"></div>
-          <div class="label">Focus {pool('focus')}</div>
+          <div class="label"><Icon of={RESOURCES.focus} />Focus {pool('focus')}</div>
         </div>
         {#snippet tip()}
           {@render resTip(`Focus ${pool('focus')}`, 'maxFocus', [
@@ -412,7 +413,7 @@
       <div class="super-head">
         <span>
           <Tip>
-            {sup.icon} {sup.name}
+            <Icon of={sup} size={32} /> {sup.name}
             {#snippet tip()}{@render superTip(sup)}{/snippet}
           </Tip>
         </span>
@@ -425,7 +426,7 @@
           <div class="attr-head">
             <span>
               <Tip>
-                {attr.icon} {attr.name}
+                <Icon of={attr} size={32} /> {attr.name}
                 {#snippet tip()}
                   {#each attrTipLines(gs, compId) as line, i}
                     <div class="tip-line" class:tip-base={i === 0}>{line}</div>
@@ -452,7 +453,7 @@
       <div class="attr-head">
         <span>
           <Tip>
-            {attr.icon} {attr.name}
+            <Icon of={attr} size={32} /> {attr.name}
             {#snippet tip()}
               {#each attrTipLines(gs, attr.id) as line, i}
                 <div class="tip-line" class:tip-base={i === 0}>{line}</div>
@@ -714,6 +715,11 @@
 
   .res-bar {
     height: 16px;
+  }
+
+  /* The pool's icon sits before its name; the bar is exactly one 16px icon tall. */
+  .res-bar .label {
+    gap: 3px;
   }
 
   .res-bar.action-bar {

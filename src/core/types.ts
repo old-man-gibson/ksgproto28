@@ -22,6 +22,8 @@ export interface SuperAttributeDef {
   id: SuperAttributeId;
   name: string;
   icon: string;
+  /** Pixel icon: a name in src/ui/lib/icons/manifest.json; `icon` is the fallback. */
+  art?: string;
   desc: string;
   components: [AttributeId, AttributeId];
   unlock: UnlockCondition[];
@@ -1039,6 +1041,8 @@ export interface ResourceDef {
   id: ResourceId;
   name: string;
   icon: string;
+  /** Pixel icon: a name in src/ui/lib/icons/manifest.json; `icon` is the fallback. */
+  art?: string;
   /** CSS custom property backing this pool's bar colour. */
   cssVar: string;
   /** Derived stat holding the pool's TRUE maximum. */

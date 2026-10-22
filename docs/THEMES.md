@@ -62,7 +62,8 @@ downloaded by the browser when a rule actually uses it.
 
 ## 4. Open
 
-- The emoji icons (about 1,100 `icon:` fields) stay as they are. They are the
-  loudest thing that does not match; replacing them with pixel icons is separate
-  work.
+- Pixel icons replace the emoji one group at a time, in both themes
+  ([plans/pixel-icons.md](plans/pixel-icons.md)). Story 1 (2026-10-22) did the
+  sidebar: attributes, superattributes and the resource bars. Everything else
+  still shows its emoji.
 - Gothic is a prototype. Whether it becomes the default is the user's call.

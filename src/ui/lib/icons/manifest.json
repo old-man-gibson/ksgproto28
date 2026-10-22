@@ -1,0 +1,16 @@
+{
+  "charisma": "packs/clockwork-raven/legacy/attributes/charisma.png",
+  "constitution": "packs/clockwork-raven/legacy/attributes/constitution.png",
+  "dexterity": "packs/clockwork-raven/legacy/attributes/dexterity.png",
+  "dominion": "packs/clockwork-raven/legacy/attributes/dominion.png",
+  "focus": "packs/clockwork-raven/legacy/attributes/focus.png",
+  "force": "packs/clockwork-raven/64x64/c2881.png",
+  "hp": "packs/clockwork-raven/legacy/attributes/hp.png",
+  "intelligence": "packs/clockwork-raven/legacy/attributes/intelligence.png",
+  "mana": "packs/clockwork-raven/legacy/attributes/mana.png",
+  "martial_prowess": "packs/clockwork-raven/legacy/attributes/martial.png",
+  "spirit": "packs/clockwork-raven/legacy/attributes/soul.png",
+  "stamina": "packs/clockwork-raven/legacy/attributes/stamina.png",
+  "strength": "packs/clockwork-raven/legacy/attributes/strength.png",
+  "wisdom": "packs/clockwork-raven/legacy/attributes/wisdom.png"
+}
