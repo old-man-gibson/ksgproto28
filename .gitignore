@@ -17,15 +17,13 @@ src/assets/enemies/
 # without the packs draws the node diagram instead. See docs/TILEMAPS.md.
 src/assets/tilemaps/
 
-# Third-party icon packs: Clockwork Raven (the full sheet in 64x64/, the
-# Raven Fantasy skill packs, Epic Weapons 3, Trees and Logs). Bought, not for
-# redistribution, and kept out of git entirely, the icons the game uses
-# included: git holds src/ui/lib/icons/manifest.json (names and file paths,
-# no pixels). src/assets/packs/ is where every pack goes; the per-pack lines
-# below cover them until they are moved there. See docs/plans/pixel-icons.md
+# Third-party icon packs, one folder per source under src/assets/packs/:
+# clockwork-raven/ (the full sheet in 64x64/, the Raven Fantasy skill packs,
+# Epic Weapons 3, Trees and Logs, and legacy/: the icon folders that were
+# committed until 2026-10-22), aekashics/ (the 41 icon sheets that sat in
+# combatStyleIcons/), idylwild/ (CC0, kept out the same way). Bought or not,
+# no pack pixels go in git, the icons the game uses included: git holds
+# src/ui/lib/icons/manifest.json (names and file paths, no pixels), and a
+# checkout without the packs shows the emoji. See docs/plans/pixel-icons.md
 # and docs/AUTHORSHIP.md §9.
 src/assets/packs/
-src/assets/64x64/
-src/assets/Raven Fantasy - */
-src/assets/Epic Weapons 3/
-src/assets/Trees and Logs/

@@ -409,3 +409,43 @@ of the implementation. The duplicate-key incident, the Mining-tagged-`craft` mis
 the bare `{ on: 'heal' }` trap are scar tissue. A greenfield spec that read this
 confidently would be missing exactly the parts that had to be discovered — and
 nothing in the prose would give that away.
+
+## 5. Gitignored art in other checkouts
+
+Licensed art never enters git (AUTHORSHIP §9): `src/assets/enemies/` (battler
+portraits), `src/assets/tilemaps/` (tile packs) and `src/assets/packs/` (icon
+packs). The main checkout `D:\ksgproto28` has all three. A fresh clone or a
+worktree under `.claude/worktrees/` has none, and shows emoji, the plain map
+diagram and missing portraits instead. Nothing breaks; tests that need a file
+either skip (icons) or fail with a clear message (bestiary art).
+
+**For tests** (`npm run verify`), link the folders in. A junction sits under an
+ignored path, so git never sees it:
+
+```powershell
+New-Item -ItemType Junction -Path "<worktree>\src\assets\enemies" -Target "D:\ksgproto28\src\assets\enemies"
+New-Item -ItemType Junction -Path "<worktree>\src\assets\packs" -Target "D:\ksgproto28\src\assets\packs"
+```
+
+**For the dev server, copy instead of linking.** Vite resolves a junction to its
+real path outside the worktree and serves the `?url` glob imports as raw files,
+so the art silently falls back (seen with the tile sheets, 2026-10-20). Copy only
+the files the game uses, then restart the server (globs resolve at startup):
+
+- tile sheets: the paths in `src/ui/lib/tilemaps/sheets.gen.ts`
+- icons: the files in `src/ui/lib/icons/manifest.json`, e.g.
+
+```powershell
+$m = Get-Content D:\ksgproto28\src\ui\lib\icons\manifest.json | ConvertFrom-Json
+foreach ($p in $m.PSObject.Properties) {
+  $dst = "<worktree>\src\assets\" + $p.Value
+  New-Item -ItemType Directory -Force (Split-Path $dst) | Out-Null
+  Copy-Item ("D:\ksgproto28\src\assets\" + $p.Value) $dst
+}
+```
+
+Icons are wired through `npm run icons` (scripts/icons.mjs), which writes
+`src/ui/lib/icons/art.gen.ts` from the manifest: one glob over exactly the listed
+files, so a build copies those and never a whole pack (the full Clockwork Raven
+sheet is 8,256 files). Rerun it after every manifest edit; `tests/icons.test.ts`
+fails when the two disagree.

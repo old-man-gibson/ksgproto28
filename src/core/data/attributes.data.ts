@@ -5,13 +5,15 @@ import { ATTRIBUTE_TRAINING_TEXT } from '../text/attributes.text';
 // Attribute content: display metadata and the training-rank tables.
 // The AttributeId union itself stays in types.ts (it's structural, not content).
 
-export const ATTRIBUTE_LIST: { id: AttributeId; name: string; icon: string }[] = [
-  { id: 'str', name: 'Strength', icon: '💪' },
-  { id: 'dex', name: 'Dexterity', icon: '🤸' },
-  { id: 'con', name: 'Constitution', icon: '🛡️' },
-  { id: 'int', name: 'Intelligence', icon: '📖' },
-  { id: 'wis', name: 'Wisdom', icon: '🦉' },
-  { id: 'cha', name: 'Charisma', icon: '🎭' },
+// `art` names a pixel icon in src/ui/lib/icons/manifest.json (docs/plans/pixel-icons.md);
+// the emoji stays as the fallback for a checkout without the packs.
+export const ATTRIBUTE_LIST: { id: AttributeId; name: string; icon: string; art?: string }[] = [
+  { id: 'str', name: 'Strength', icon: '💪', art: 'strength' },
+  { id: 'dex', name: 'Dexterity', icon: '🤸', art: 'dexterity' },
+  { id: 'con', name: 'Constitution', icon: '🛡️', art: 'constitution' },
+  { id: 'int', name: 'Intelligence', icon: '📖', art: 'intelligence' },
+  { id: 'wis', name: 'Wisdom', icon: '🦉', art: 'wisdom' },
+  { id: 'cha', name: 'Charisma', icon: '🎭', art: 'charisma' },
 ];
 
 /** One mastery rank of an attribute's training skill. */

@@ -506,6 +506,14 @@ Two things worth keeping in mind:
    story moves the packs there and takes the 250 committed icon files out of the
    tree, the Ækashics sheets included (docs/plans/pixel-icons.md §6).
 
+   **Done 2026-10-22 (icon story 1).** The 250 files left the tree. On disk in the
+   main checkout they now sit in `src/assets/packs/clockwork-raven/legacy/` (the 209
+   Clockwork Raven files, folder names kept) and
+   `src/assets/packs/aekashics/combatStyleIcons/` (the 41 Ækashics sheets), both
+   gitignored. Which icons the game uses, and from which file, is
+   `src/ui/lib/icons/manifest.json`; that list is the credit list when the game
+   ships.
+
    So making the repo public is no longer a settings toggle. Before any public
    flip, either remove those paths from history with `git filter-repo` or get a
    yes from each author. Plan and options: docs/plans/pixel-icons.md §3.1 and §7.
