@@ -137,6 +137,12 @@ John's critical-path number is set at build time and checked with
 Each posted idea is filed in §4 with these checks answered. A check the idea
 does not touch is left out of its entry.
 
+Per floor, an idea is also read against FLOOR_STANDARD.md (proposal,
+2026-10-23, uncommitted when this line was written): spine, wings, floor
+work, secrets, survey. That standard covers a floor's optional depth (H3);
+this review adds the band-wide checks it leaves open, chiefly H1, the loop
+that stays.
+
 ### 3.1 Narrative viability
 
 - **N1 Who runs it.** One sentence naming who profits from the place and who
