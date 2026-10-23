@@ -79,7 +79,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'chalk_yard.desc': 'Read the Old Working explores the yard (42 s). Copy Out a Proof trains Intelligence.',
   // Placeholder text for the find: replace with your own.
-  'chalk_yard.finds.chalk_old_working.desc': '🔠 A chalk working on the flagstones: 30 Arcana XP.',
+  'chalk_yard.finds.chalk_yard_purse.desc': '💰 A purse under the chalk working on the flagstones: 10 to 15 gold.',
 
   'temple_rise_gate.desc': 'Gate of Temple Rise. Walk the Stair trains Constitution. Connects to the Foot, the Nine Chapels, Censer Walk, the Lectory Steps and the Muster Gate.',
 

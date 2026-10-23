@@ -529,8 +529,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'train_int_chalk', kind: 'train', attr: 'int', name: 'Copy Out a Proof', icon: '✏️',
         drops: [{ material: 'word_slip_stone', chance: 0.0008 }] },
     ],
-    // PLACEHOLDER find (floor standard: every explore pays something).
-    finds: [{ id: 'chalk_old_working', at: 0.6, skillXp: { tags: ['arcane'], xp: 30 } }],
+    // PLACEHOLDER find (floor standard: every explore pays something). Gold,
+    // not skill XP: the only arcane skill unlocks at INT 10, and a find that
+    // pays nothing to a new player is no find.
+    finds: [{ id: 'chalk_yard_purse', at: 0.6, gold: [10, 15] }],
     connections: [],
   },
 
