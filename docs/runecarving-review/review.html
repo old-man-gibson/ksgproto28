@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Runecarving Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Same frame as the smithing, alembic and cooking reviews: report first,
+   then working mockups in the game's gothic panel. One model (the Ledger)
+   drives every mockup, so a number on this page has one source. */
+:root {
+  --bg: #110e0b; --panel: #1a1511; --raised: #241d16; --hover: #30271d; --sunken: #0b0907;
+  --border: #4a3c2c; --frame: #2c241b; --btn: #5a4a36; --btn-hi: #7a6448;
+  --text: #ddd1b6; --dim: #9b8c72; --accent: #c9a45c; --danger: #c8493d; --good: #7f9a4c; --skill: #9c84c0;
+  --q-e: #8b8b8b; --q-d: #e8edf4; --q-c: #4caf7d; --q-b: #42a5f5; --q-a: #ab6fd6; --q-s: #e8b84b;
+  --stone: #6e6a64; --stone-hi: #8d8880; --stone-lo: #4a4743;
+  --title: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --body: 'EB Garamond', Garamond, Georgia, serif;
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: var(--body); font-size: 17px; line-height: 1.5;
+  font-variant-numeric: lining-nums tabular-nums;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1100px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--title); font-weight: 500; letter-spacing: 0.06em; text-wrap: balance; margin: 0; }
+h1 { font-size: 26px; letter-spacing: 0.12em; text-transform: uppercase; }
+h2 { font-size: 19px; color: var(--accent); }
+h3 { font-size: 15px; letter-spacing: 0.08em; }
+p { margin: 0; max-width: 70ch; }
+.dim { color: var(--dim); } .small { font-size: 14.5px; } .tiny { font-size: 13px; }
+code, .mono { font-family: Consolas, 'Courier New', monospace; font-size: 0.86em; color: #d8c49a; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+.panel { background: var(--panel); border: 1px solid var(--border); box-shadow: inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--frame); padding: 20px 22px; min-width: 0; }
+.panel > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 14px; }
+.tag { font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); border: 1px solid var(--border); padding: 1px 7px; }
+.tag.later { color: var(--skill); border-color: color-mix(in srgb, var(--skill) 50%, var(--border)); }
+.tag.s1 { color: var(--good); border-color: color-mix(in srgb, var(--good) 50%, var(--border)); }
+.tag.bug { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); }
+button { font: inherit; font-size: 14.5px; color: var(--text); background: var(--raised); border: 1px solid var(--btn); padding: 4px 10px; cursor: pointer; border-radius: 0; }
+button:hover:not(:disabled) { border-color: var(--btn-hi); background: var(--hover); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--raised)); box-shadow: inset 0 -2px 0 var(--accent); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+select { font: inherit; font-size: 14.5px; color: var(--text); background: var(--sunken); border: 1px solid var(--btn); padding: 3px 6px; }
+input[type=range] { accent-color: var(--accent); }
+label { font-size: 14.5px; }
+
+.verdict { display: grid; gap: 14px; }
+.verdict .line { display: grid; grid-template-columns: 9.5em 1fr; gap: 4px 14px; }
+.verdict .line > b { color: var(--accent); font-weight: 600; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 3px 16px; margin: 0; }
+.facts dt { color: var(--dim); } .facts dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) { .verdict .line, .facts { grid-template-columns: 1fr; } .facts dd { margin-bottom: 6px; } }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--frame); vertical-align: top; }
+th { font-weight: 600; color: var(--dim); font-size: 13.5px; letter-spacing: 0.04em; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.three { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.list { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+.sev { display: inline-block; min-width: 4.6em; font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.sev.hi { color: var(--danger); } .sev.mid { color: var(--accent); } .sev.lo { color: var(--dim); }
+.ruling { color: var(--good); } .ruling.no { color: var(--dim); } .ruling.ask { color: var(--skill); }
+.note { border-left: 2px solid var(--accent); padding: 4px 10px; background: color-mix(in srgb, var(--accent) 5%, transparent); font-size: 14.5px; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font-size: 13px; border: 1px solid var(--border); padding: 0 7px; color: var(--dim); white-space: nowrap; }
+.chip.ok { color: var(--good); border-color: color-mix(in srgb, var(--good) 55%, var(--border)); }
+.chip.warn { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
+.chip.lit { color: var(--accent); border-color: var(--accent); }
+.box { background: var(--sunken); border: 1px solid var(--frame); padding: 10px 12px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; }
+.flow .step { flex: 1 1 150px; background: var(--sunken); border: 1px solid var(--frame); padding: 8px 10px; min-width: 0; }
+.flow .step b { display: block; font-family: var(--title); font-weight: 500; font-size: 13px; letter-spacing: 0.08em; color: var(--accent); }
+.flow .arrow { align-self: center; color: var(--dim); }
+@media (max-width: 560px) { .flow .arrow { display: none; } }
+
+/* glyphs: 16px art, drawn at whole multiples only */
+img.g { image-rendering: pixelated; display: inline-block; vertical-align: middle; }
+.g1 { width: 16px; height: 16px; } .g2 { width: 32px; height: 32px; } .g3 { width: 48px; height: 48px; }
+.uni { display: inline-grid; place-items: center; font-family: 'Segoe UI Historic', 'Noto Sans Runic', serif; }
+
+/* aspect chips and ledger */
+.asp { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; padding: 0 5px; border: 1px solid var(--frame); white-space: nowrap; }
+.asp i { width: 8px; height: 8px; display: inline-block; background: var(--c); }
+.ledger { display: grid; gap: 3px; }
+.lrow { display: grid; grid-template-columns: 4.6em 1fr 3.4em; gap: 8px; align-items: center; font-size: 14px; }
+.lrow .bar { position: relative; height: 12px; background: var(--sunken); border: 1px solid var(--frame); }
+.lrow .bar span { position: absolute; inset: 0 auto 0 0; background: var(--c); }
+.lrow .bar .raw { position: absolute; top: -1px; bottom: -1px; width: 0; border-left: 2px solid var(--text); }
+.lrow .bar .rungmark { position: absolute; top: -3px; bottom: -3px; width: 0; border-left: 1px dashed var(--dim); }
+.lrow.zero { opacity: 0.35; }
+.lrow.rung .nm { color: var(--accent); }
+.lrow .v { text-align: right; }
+
+/* bench */
+.bench { display: grid; grid-template-columns: minmax(230px, 280px) 1fr; gap: 18px; }
+@media (max-width: 760px) { .bench { grid-template-columns: 1fr; } }
+.slabwrap { display: grid; gap: 10px; align-content: start; }
+.slab { position: relative; aspect-ratio: 1 / 1; display: grid; place-items: center; }
+.slab svg.stone { position: absolute; inset: 0; width: 100%; height: 100%; }
+.slab .cuts { position: relative; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; gap: 4px; width: 62%; }
+.slab .gem { position: absolute; width: 14px; height: 14px; transform: rotate(45deg); border: 1px solid #0006; }
+.controls { display: grid; grid-template-columns: max-content 1fr; gap: 6px 10px; align-items: center; font-size: 14.5px; }
+.palette { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 4px; }
+.palette button { display: grid; grid-template-columns: 34px 1fr; gap: 0 6px; align-items: center; text-align: left; padding: 3px 6px; line-height: 1.15; min-height: 46px; }
+.palette button .nm { font-size: 14px; } .palette button .sub { font-size: 11.5px; color: var(--dim); }
+.palette button.locked { opacity: 0.45; }
+.cutslots { display: flex; flex-wrap: wrap; gap: 4px; }
+.cutslot { width: 46px; height: 46px; border: 1px dashed var(--btn); display: grid; place-items: center; background: var(--sunken); padding: 0; }
+.cutslot.full { border-style: solid; border-color: var(--btn-hi); }
+.cutslot.shut { opacity: 0.3; cursor: default; }
+.stations { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.station { background: var(--sunken); border: 1px solid var(--frame); padding: 6px 8px; display: grid; gap: 4px; }
+.station .cap { font-family: var(--title); font-size: 12px; letter-spacing: 0.08em; color: var(--dim); }
+.station .row { display: flex; gap: 4px; flex-wrap: wrap; }
+.readout { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.ctxtabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.reads { display: grid; gap: 2px; font-size: 15px; }
+.reads .src { color: var(--dim); font-size: 13px; }
+.spanbar { display: flex; gap: 2px; flex-wrap: wrap; align-items: center; }
+.spanbar i { width: 10px; height: 14px; background: var(--sunken); border: 1px solid var(--frame); display: inline-block; }
+.spanbar i.f { background: var(--accent); border-color: var(--accent); }
+.spanbar i.over { background: var(--danger); border-color: var(--danger); }
+.spanbar b { margin: 0 6px 0 4px; font-weight: 600; }
+.name-line { font-family: var(--title); font-size: 21px; letter-spacing: 0.05em; line-height: 1.2; }
+.keyline { font-size: 13px; }
+
+/* codex */
+.codex { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.cg { background: var(--sunken); border: 1px solid var(--frame); padding: 6px 8px; display: grid; grid-template-columns: 34px 1fr; gap: 2px 8px; align-items: center; }
+.cg .nm { font-size: 14.5px; } .cg .how { grid-column: 1 / -1; font-size: 12px; color: var(--dim); }
+.cg.unknown .nm { color: var(--dim); }
+.works { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.work { background: var(--sunken); border: 1px solid var(--frame); padding: 8px 10px; display: grid; gap: 4px; }
+.work.lit { border-color: var(--accent); }
+.work.unknown { color: var(--dim); }
+
+/* kit */
+.kit { display: grid; grid-template-columns: 1fr minmax(240px, 300px); gap: 18px; }
+@media (max-width: 760px) { .kit { grid-template-columns: 1fr; } }
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.eslot { background: var(--sunken); border: 1px solid var(--frame); padding: 8px 10px; display: grid; gap: 5px; align-content: start; }
+.eslot .hd { display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
+.eslot .hd b { font-family: var(--title); font-weight: 500; font-size: 13px; letter-spacing: 0.08em; color: var(--dim); }
+.sockets { display: flex; gap: 4px; flex-wrap: wrap; }
+.socket { width: 40px; height: 40px; border: 1px solid var(--btn); background: var(--raised); padding: 0; display: grid; place-items: center; border-radius: 50%; }
+.socket.filled { border-color: var(--accent); }
+.socket.wide { border-radius: 20px; }
+.pouch { display: grid; gap: 4px; }
+.pouch button { display: grid; grid-template-columns: auto 1fr; gap: 6px; align-items: center; text-align: left; padding: 4px 8px; }
+.pouch .gl { display: flex; gap: 1px; }
+.duel { display: grid; gap: 4px; }
+.duelbar { height: 14px; background: var(--sunken); border: 1px solid var(--frame); position: relative; }
+.duelbar span { position: absolute; inset: 0 auto 0 0; background: var(--good); }
+
+/* martial */
+.martial { display: grid; grid-template-columns: minmax(280px, 420px) 1fr; gap: 18px; }
+@media (max-width: 860px) { .martial { grid-template-columns: 1fr; } }
+.graph svg { width: 100%; height: auto; background: var(--sunken); border: 1px solid var(--frame); }
+.tcards { display: grid; gap: 6px; }
+.tcard { background: var(--sunken); border: 1px solid var(--frame); padding: 6px 10px; display: grid; gap: 2px; }
+.tcard.changed { border-color: var(--btn-hi); }
+.tcard .hd { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.tcard .hd b { font-weight: 600; }
+.tcard .delta { font-size: 14px; }
+.tcard .delta s { color: var(--dim); }
+.tcard .by { font-size: 12.5px; color: var(--dim); }
+.tcard.off { opacity: 0.45; }
+
+/* item card */
+.itemcard { max-width: 560px; background: var(--sunken); border: 1px solid var(--btn); box-shadow: inset 0 0 0 3px var(--sunken), inset 0 0 0 4px var(--frame); padding: 14px 16px; display: grid; gap: 8px; }
+.itemcard .nm { font-family: var(--title); font-size: 19px; letter-spacing: 0.05em; }
+.prov { display: grid; gap: 4px; }
+.prov .src { font-size: 12.5px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.06em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header style="display:grid; gap:10px">
+  <span class="tag" style="justify-self:start">Design review · 2026-10-23 · nothing built</span>
+  <h1>Runecarving</h1>
+  <p class="dim">Runes made of glyphs. A rune is the sum of its parts, read differently by the slot it sits in, and able to rewrite one technique card without writing a chain. Findings in today's code, the team's merged design, the objections raised against it, and six working mockups. Glyph art: Idylwild's Runic Codex (CC0).</p>
+  <nav class="chips small" aria-label="Sections"><a class="chip" href="#verdict">Verdict</a><a class="chip" href="#found">Found</a><a class="chip" href="#design">Design</a><a class="chip" href="#examples">Examples</a><a class="chip" href="#roles">Roles</a><a class="chip" href="#objections">Objections</a><a class="chip" href="#questions">Questions</a><a class="chip" href="#bench">Mockups</a></nav>
+</header>
+
+<section class="panel verdict" id="verdict">
+  <header><h2>Verdict</h2><span class="tag">team: 3 brainstormers, 1 design antagonist</span></header>
+  <div class="line"><b>Today</b><span>Four stat-bundle patterns, ten adornments, four exact-recipe named runes. Combinations are many but the outcomes are few: every carving is a scaled sum of about fourteen stat lines. Runes are behind the alpha shutter and their stones have no source. Carved runes cannot touch techniques. Six bugs, four of them breaking "same inputs, same rune".</span></div>
+  <div class="line"><b>Proposed</b><span>The <em>Ledger</em>. A rune is a multiset of glyphs from the codex. Each glyph is a small vector over thirteen aspects. The rune's ledger is the sum. Each aspect has one linear reading per slot, so one rune reads eight ways. One aspect reaching 4 lights a rung; one aspect reaching a higher bar lights a named work. The bench draws no dice.</span></div>
+  <div class="line"><b>Identity</b><span>"The sum of its elements", as you put it. Nothing reads order (alchemy), adjacency or pairs (mutagens), proportion or tallies of verbs (smithing), time (cooking) or a classifier (music). Every term reads one aspect. Today's named runes are the one exception, and question 1 asks you whether to keep it.</span></div>
+  <div class="line"><b>Equipment</b><span>Sockets become deterministic by size (1 / 2 / 3). Rune value reads its inputs. The slot is the reading: three Fair ward runes in a vest take the floor-3 boss duel from 0/20 to 14–18/20 at John's band-one end state (two probes, two kits); the same runes on the club give 0/20.</span></div>
+  <div class="line"><b>Martial</b><span>Runes select technique cards by printed properties (event, kind, entry, exit), never by id. Rungs tune cooldown and penetration and add an element's status to hits. Lending glyphs add a fork archetype to a card's Honed offering. Named works rewrite one named card. No edge lists; the planner draws what changed.</span></div>
+  <div class="line"><b>Core system</b><span>Yes for sustain in band one, once the unlock sits on floor 2 (measured twice). Damage supporting. Condition defence through element resistances. Access unmeasured.</span></div>
+  <div class="line"><b>Antagonist</b><span>Fix first: 13 objections. 12 accepted and folded in below, 1 sent to you. No terminal state, no gold loop, no edge list found.</span></div>
+  <div class="line"><b>Size</b><span>Six slices. Slice 1 is bug fixes with no design question. Slices 2–6 need the alpha freeze lifted for runecarving (question 2).</span></div>
+</section>
+
+<section class="panel" id="found">
+  <header><h2>Found in the current code</h2><span class="tag bug">checked 2026-10-23</span></header>
+  <div class="scroll"><table>
+    <thead><tr><th>Finding</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td><b>Pattern order changes the rune; the cache hides it.</b></td><td><code>carvedKey</code> sorts patterns, <code>composeCarved</code> shares them by first appearance (1, 1/1.6, 1/2.2). Reproduced: [warding, might] and [might, warding] give one key; the second resolves to the first one's numbers (armor 4 + 1.25 either way). After a reload the other order may win.</td></tr>
+      <tr><td><b>Adornment order drops an element.</b></td><td><code>mergeEffect</code> keeps the first of two different-type <code>bonusDamage</code>; the key sorts adornments. Warm then chilled gel gives heat 2; chilled then warm gives cold 2; same key, and the other element is lost either way. Reproduced by a brainstormer.</td></tr>
+      <tr><td><b>Different carvings stack as one item.</b></td><td><code>inventory.ts:113</code> <code>stackKey</code> sorts and joins <code>item.runes</code>. A carved rune is an object, so it joins as <code>[object Object]</code>. Two swords with different carvings share a stack.</td></tr>
+      <tr><td><b>The tool and the split make the product random.</b></td><td><code>upgradeChance</code> can lift the stone a grade; <code>failureChance</code> splits the slab. Same bench, different rune.</td></tr>
+      <tr><td><b>An F slab gives negative stats.</b></td><td>Mult −0.5: Rune of Might on F reads weapon damage −2, value 1.</td></tr>
+      <tr><td><b>Carved runes cannot carry technique surgery.</b></td><td><code>scaleEffect</code> copies only mods and the two damage riders; <code>mergeEffect</code> keeps the first <code>techniqueMods</code>. Only the three dropped runes (Gale, Earthbind, Umbral) do surgery.</td></tr>
+      <tr><td><b>The first socketed rune wins an exit.</b></td><td><code>techniqueExit</code> and <code>techniqueDisplayName</code> use <code>.find()</code>; two exit-rewriting runes resolve by socket order.</td></tr>
+      <tr><td><b>A rune-granted fork outlives the rune.</b></td><td><code>chosenFork</code> (<code>martial.ts:470</code>) reads the stored path and never checks that a rune still offers it. Socket Umbral, take Sweeping on Riposte, sell the rune: Sweeping stays. The Honed choice is permanent by design, so this is a question, not a bug.</td></tr>
+      <tr><td><b>No supply.</b></td><td>Blank runestones, ochre, verdigris, gold leaf, gems, chisel and burin appear in no live drop table, shop or find (only the shelved countryside). The Rune Table stands at Base Workshop and The Long Bench.</td></tr>
+      <tr><td><b>Monsters never bear runes.</b></td><td>20 drop lines hand out catalogue runes; no <code>MonsterDef</code> field wears one. The monster technique path (<code>combat.ts</code> ~4406) reads the raw move and exit.</td></tr>
+      <tr><td><b>Sockets are a lottery.</b></td><td>0–4 rolled at mint (means 0.7 / 1.3 / 1.9 by size). 68% of vests cannot hold three runes.</td></tr>
+      <tr><td><b>The docs disagree on the identity.</b></td><td><code>docs/PITFALLS.md</code> and your words in <code>AUTHORSHIP.md</code>: runecarving = sum. <code>docs/MUSIC.md</code>'s table: cooking = sum, runecarving = breadth.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="panel" id="design">
+  <header><h2>The merged design</h2><span class="tag">first-guess numbers</span></header>
+  <div class="flow" style="margin-bottom:16px">
+    <div class="step"><b>Glyphs</b><span class="small">Codex runes, each a small vector over 13 aspects and a stroke count.</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Slab</b><span class="small">A multiset of glyphs on a graded stone, plus adornments. No order, no dice.</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Ledger</b><span class="small">Sum of vectors × stone grade + adornment assays. Rungs at 4; works when the need is covered.</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Socket</b><span class="small">The slot reads the ledger: weapon, each armor slot, accessory. Span = sockets used.</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Cards</b><span class="small">Rungs, lends and brands rewrite matching technique cards, one node at a time.</span></div>
+  </div>
+  <div class="two">
+    <div style="display:grid; gap:10px; min-width:0">
+      <h3>The carving</h3>
+      <dl class="facts small">
+        <dt>Aspects</dt><dd>Might, Ward, Vital, Swift, Keen, Lore, Fortune, and six elements: Ember, Frost, Storm, Venom, Lumen, Gloam.</dd>
+        <dt>Glyphs</dt><dd>38 authored rows: the 24 Elder Futhark and 14 Anglo-Saxon additions (these supply the elements the Futhark is thin on: Ior storm, Þorn venom, Éar gloam). Each is 3 points (primary 2, secondary 1) chosen from its meaning, plus strokes from the drawn art. Variants (short-twig, long-branch) carry the parent's vector at half the strokes. Letter runes carry 1 point of the parent's primary at 1 stroke. Calendar marks stay unused (time is cooking's).</dd>
+        <dt>Ledger</dt><dd>Σ glyph vectors × stone grade + Σ adornment assays × each one's own grade. Adornments are one aspect each: gels are elements, gold leaf Fortune, bone dust Vital, ochre Might, verdigris Venom, garnet Keen, sapphire Lore.</dd>
+        <dt>Readings</dt><dd>One linear line per aspect per context (weapon, armor, accessory). Armor reads through a slot lens: chest ×1; head ×0.5 but Lore and Keen ×1.5; hands ×0.35 but Might and Swift ×1; feet ×0.35 but Swift ×1.5; legs ×0.7; offhand reads Ward as parry.</dd>
+        <dt>Rungs</dt><dd>One aspect's raw glyph points reaching 4 in one rune lights its rung: Swift (reflex cooldown ×0.85 / dodge +3pp), Ward (crit damage taken −10%), Keen (strike penetration +0.1). Each element's rung makes weapon hits inflict its status (Frost chilled, Ember on fire, Storm jolted, Venom poison, Lumen dazzled, Gloam blinded; 20%). A rung reads one aspect only.</dd>
+        <dt>Works</dt><dd>Recommended: a work is a named rung on one aspect at a higher bar (ledger 6–8 after grade, some with a minimum slab grade). Adding a glyph never unlights a work; all lit works apply. Unknown works show "?" on the chart until first lit or taught. Multi-aspect works (today's named runes) read two aspects together and break the guard: your ruling (question 1).</dd>
+        <dt>Bench</dt><dd>No split chance, no upgrade chance. F slabs and F adornments refused. Cut slots open at Runecarving 0 / 5 / 10 / 18 / 25 / 35.</dd>
+        <dt>Span</dt><dd>Sockets a rune takes = ceil(strokes ÷ hold). Hold by stone grade (E 4, D 6, C 8, B 11, A 15, S 20) + tool + level ÷ 10. Span over 3 (the largest item) is refused at the bench. Tools and skill buy density, not odds. A burin is needed for variants and letters.</dd>
+        <dt>Value</dt><dd>Half the sale value of the inputs at their grades. Glyphs add nothing.</dd>
+      </dl>
+    </div>
+    <div style="display:grid; gap:10px; min-width:0">
+      <h3>Equipment</h3>
+      <dl class="facts small">
+        <dt>Sockets</dt><dd>Small 1, medium 2, large 3. Legacy items keep their rolls. Item value reads the class constant, never the runes in it.</dd>
+        <dt>Swap</dt><dd>Unsocketing is free and returns the whole rune. Swapping is the versatility.</dd>
+        <dt>Supply</dt><dd>Data only: blank runestone (Fair, pinned) 24 gold at a shop counter and 10% from the floor-2 automatons; ochre, verdigris and a bronze chisel as shop lines; a steel burin line after floor 2; bone dust from the living doll; garnet from a floor-3 find; sapphire on the floor-3 boss's first clear. The unlock find sits on floor 2 (the break room), below the boss it helps with.</dd>
+        <dt>Knowledge</dt><dd>Four starter glyphs: Algiz, Uruz, Isaz, Fehu. A monster that bears a rune teaches its glyphs after five kills (a bestiary fact). Codex pages from finds teach the rest.</dd>
+        <dt>Presets</dt><dd>The eleven catalogue runes become fixed carvings that loot mints. Gale, Earthbind and Umbral become works that carry their surgery. Save v58 rewrites catalogue ids already socketed in items to their preset carvings, so nothing goes inert.</dd>
+        <dt>Monsters</dt><dd><code>MonsterDef.runes</code> per slot, through the same pure readers, all 13 aspects (Swift attack speed, Keen crit, Lore spell power included). The bestiary prints the exact carving.</dd>
+      </dl>
+      <h3 style="margin-top:6px">Martial</h3>
+      <dl class="facts small">
+        <dt>Selector</dt><dd>Printed-card properties: event, kind (strike, buff, counter), entry, exit, family. Never a technique id. Read on the printed card, so one pass and no order.</dd>
+        <dt>Reach</dt><dd>Weapon runes reach strikes. Armor, offhand and accessory runes reach buffs, counters and the onHit / onParry / onDodge answers. A buckler card belongs to the offhand, not the weapon.</dd>
+        <dt>Tunes</dt><dd>Rungs add to cooldown and penetration of matching cards; element rungs add their status to every weapon hit, technique strikes included. Summed, then clamped (cooldown −40%, penetration +0.3).</dd>
+        <dt>Lends</dt><dd>Some glyphs lend an existing fork archetype (weight 0.7 × grade). A total of 1.0 adds that archetype to the matching card's Honed offering while socketed, at tier III, before a path is taken. Taking it is permanent, like every Honed choice. Void if its exit is the card's own entry.</dd>
+        <dt>Works</dt><dd>A work may rewrite one named card while socketed in the weapon (Gale: Sidestep; Earthbind: Thrust's exit; Umbral: Riposte). Precedence for a card's exit and name: work, then the chosen fork, then the printed card; between works, registry order. One rewrite per card.</dd>
+        <dt>Planner</dt><dd>A badge on every rune-rewritten edge, naming the runes; a ghost line to the printed exit. Socketing refreshes learning at once.</dd>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="examples">
+  <header><h2>Worked examples</h2><span class="tag">computed by the model below</span></header>
+  <p class="small dim" style="margin-bottom:10px">Each row is a real carving, read in a weapon, a chest piece and an accessory. Click one to load it on the Rune Table (mockup 1).</p>
+  <div class="scroll"><table id="ex-table"></table></div>
+</section>
+
+<section class="panel" id="roles">
+  <header><h2>Runecarving as a core system</h2><span class="tag">COMPLETABILITY §6a</span></header>
+  <p class="small dim" style="margin-bottom:10px">Two probes against the floor-3 boss (<code>puppet_bureaucrat</code>), 20 seeded duels each, John's pacing end state (level 5, oak club, three strings cut). A Fair Rune of Warding in armor reads +4 armor today, the same as a Fair Algiz under the Ledger. Scratch tests, deleted after the run.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Role</th><th>Basic runecarving fills it?</th><th>Evidence</th></tr></thead>
+    <tbody>
+      <tr><td>Sustain</td><td>Yes, at Fair stones, unlocked on floor 2</td><td>Brainstormer (vest, cap, boots; base armor 8.5): 8.5 → 0/20; 18.5 → 11–12/20; 20.5 → 18/20; 24.5 → 19/20. Antagonist (vest only; base 6.8): 6.8 → 0/20; three Fair ward runes, 18.8 → 14/20; three Common ward runes, 14.0 → 1/20; the same with no strings cut, 0/20; with the rusty sword, 4/20. The swift rune adds nothing, so the claim rests on Algiz, a starter glyph. The runestone shop line pins Fair; a Common line would void the cell.</td></tr>
+      <tr><td>Damage</td><td>Supporting</td><td>Damage runes alone never flip the duel. Three armor runes 11/20, plus +16 damage 19/20.</td></tr>
+      <tr><td>Condition defence</td><td>Elements only</td><td>Each element aspect reads as its resistance in armor. No band-one attacker needs one.</td></tr>
+      <tr><td>Access</td><td>Unmeasured</td><td>A Might cell reading strength would let worn runes open a STR-gated item. Not designed further.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="panel" id="objections">
+  <header><h2>Objections and rulings</h2><span class="tag">antagonist verdict: fix first</span></header>
+  <p class="small dim" style="margin-bottom:10px">No terminal state, no gold loop, no edge list, no non-finite value found. The ledger is a pure sum and the caps in <code>derived.ts</code> bound every reading. Thirteen objections: twelve accepted and already in the design above, one sent to you. One more ruling came from the mockups.</p>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:4.6em">Severity</th><th>Objection</th><th>Ruling</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sev hi">high</span></td><td><b>Shut below the hurdle it claims.</b> The plan put every find on floor 3, the boss's own floor. A fresh save would see no socket or rune until then, so runecarving could not count for that hurdle under §6a.</td><td class="ruling">Accepted. The unlock find goes in the floor-2 break room, beside the automatons that drop runestones.</td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>Multi-aspect works are pair synergies.</b> A work needing {ward 4, frost 4} pays what two Algiz and two Isaz separately do not. The identity table in ALCHEMY.md and MUTAGENS.md says runecarving is "strictly additive, no pair synergies". Today's named runes already have this shape.</td><td class="ruling ask">Sent to you (question 1). Recommended: works read one aspect at a higher bar. The Works toggle in mockup 2 switches every mockup between the two.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Precedence gaps.</b> Two works lit at once, a work and a fork both rewriting one exit, brand against rungs against riders: no rule said which wins, the same class of bug as F1 and F7.</td><td class="ruling">Accepted. All lit works apply; at most one card rewrite per card, by work, then the chosen fork, then the printed card; between works, registry order.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Lends broke the permanent Honed choice, ten times early.</b> A tier-II lend replaced a chosen path while socketed; unsocketing was free, so a fork became a wardrobe toggle at a tenth of the practice.</td><td class="ruling">Accepted. A lend only adds to the Honed offering at tier III, before a path is taken. Taking it is permanent. This also answers F8: a rune-granted path outlives the rune by design.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Tumble fails the fork EV test.</b> <code>tests/martial.test.ts</code> needs every archetype's crude EV ≥ 1; tumble at ×0.95 scores 0.95.</td><td class="ruling">Accepted. Tumble is ×1.0; its cost is the dead-end exit, as Overwhelming's is.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Monster parity gaps.</b> Lends needed mastery monsters lack; the beast lens read Swift, Keen, Lore and Fortune as nothing; the monster path ignores a forced crit.</td><td class="ruling">Accepted. The beast lens reads all 13 aspects; a monster move names its fork archetype in data; the monster path honours <code>move.crit</code>.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Smithing disagrees on forged sockets, and the freeze is not lifted.</b> The smithing card gives forged items 0 slots; this plan gives them class sockets. Both rewrite <code>itemValue</code> and <code>stackKey</code>.</td><td class="ruling ask">Accepted, with two calls for you: amend the smithing card to class sockets from cells (question 4); lift the freeze for runecarving or not (question 2).</td></tr>
+      <tr><td><span class="sev lo">low–med</span></td><td><b>Socketed catalogue runes would go inert at v58.</b> The migration merged the pool but not string ids already inside items; Umbral in a weapon would become "Worn Rune".</td><td class="ruling">Accepted. v58 rewrites socketed strings to their preset carvings.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>The sustain cell depends on the grade.</b> Probe: three Fair ward runes 18.8 armor, 14/20; three Common, 1/20. The swift rune added nothing.</td><td class="ruling">Accepted. The runestone line pins Fair; a cell test pins the row; the claim drops the swift rune and uses the probe's 14/20 beside the brainstormer's 18/20.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>F adornments still subtract.</b></td><td class="ruling">Accepted. Refused like F slabs.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>Span over 3 has no home.</b> No new item has 4 sockets.</td><td class="ruling">Accepted. The bench refuses span over 3 and says why.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>The slot lens is a hidden table.</b></td><td class="ruling">Accepted. The socket picker prints the rune's reading in every slot before you commit (mockup 3).</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>The burin has no source</b>, so variants and letters would be unreachable.</td><td class="ruling">Accepted. A steel burin shop line after floor 2.</td></tr>
+      <tr><td><span class="sev mid">manager</span></td><td><b>Brand was degenerate.</b> Found in mockup 4: three plain Algiz in the chest summed Lumen 3 across armor runes and branded Riposte and Flowing Shield with light at 60% dazzle. The "dominant element" pick also compared aspects against each other.</td><td class="ruling">Brand removed. Each element has its own rung (4 raw points in one weapon rune): weapon hits, technique strikes included, inflict its status at 20%. Re-typing is dropped; the element readings already add typed damage.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="panel" id="slices">
+  <header><h2>Slices</h2><span class="tag">build order</span></header>
+  <div class="scroll"><table id="slice-table">
+    <thead><tr><th>#</th><th>Slice</th><th>Ships</th><th>Save change</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Fix first</td><td>Order-free shares (groups by copies, then id), adornment riders as a list, <code>stackKey</code> through <code>carvedKey</code>, deterministic exit and name resolution, F slab refused. A permutation test over every carving input.</td><td>No</td></tr>
+      <tr><td>2</td><td>The Ledger</td><td>Glyph registry, readings, rungs, works, span (refused over 3), the dice-free bench (F slabs and F adornments refused), the codex chart. Legacy patterns read as glyph aliases (Might = might 2, and so on), so old carvings keep their single-cut numbers.</td><td>No</td></tr>
+      <tr><td>3</td><td>Equipment</td><td>Deterministic sockets, slot lens with the per-slot preview, supply lines (runestone pinned at Fair, burin after floor 2), the unlock find on floor 2, starter glyphs, catalogue runes as preset carvings including those already socketed, the sustain cell test.</td><td>v58</td></tr>
+      <tr><td>4</td><td>Monsters</td><td><code>MonsterDef.runes</code> through a beast lens over all 13 aspects, the bestiary "carries" fact that teaches glyphs.</td><td>No</td></tr>
+      <tr><td>5</td><td>Martial I</td><td>Selectors, reach, rung tunes, element rungs on strikes, works' named rewrites with the precedence rule, planner badges, the learning refresh on socket. The monster technique path goes through the same function.</td><td>No</td></tr>
+      <tr><td>6</td><td>Martial II</td><td>Lends into the Honed offering, the <code>tumble</code> archetype (×1.0) and its dead-end seat, <code>move.crit</code> on the monster path, archetypes named on monster moves.</td><td>No</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="panel" id="questions">
+  <header><h2>Questions for you</h2><span class="tag">answer in fragments</span></header>
+  <ol class="list small" style="gap:10px">
+    <li><b>Works and the guard.</b> Works read one aspect at a higher bar (recommended; the guard holds), or keep multi-aspect needs and amend the "no pair synergies" line in ALCHEMY.md and MUTAGENS.md to admit works as the one exception?</li>
+    <li><b>The freeze.</b> Slice 1 is bug fixes and needs nothing from you. Slices 2–6 add band-one shop, drop and find lines and a save bump. Lift the alpha freeze for runecarving, or bank the design and build slice 1 only?</li>
+    <li><b>The glyph table.</b> The 24 Elder vectors are first guesses from the meanings (Naudiz = Gloam and Ward, Raido = Swift and Fortune, Gebo = Keen and Fortune, and so on; full table in mockup 2). Change any?</li>
+    <li><b>Forged items.</b> Amend the smithing card so forged items get class sockets from their cells (1 / 2 / 3) and no socket finish exists?</li>
+    <li><b>Lends are permanent once taken.</b> A rune adds an archetype to the Honed offering; taking it is permanent and outlives the rune. Keep that, or let a rune-granted path lapse when the rune leaves?</li>
+    <li><b>MUSIC.md.</b> Its identity table says cooking = sum and runecarving = breadth. Correct it to match PITFALLS.md (runecarving = sum, cooking = when)?</li>
+  </ol>
+</section>
+
+<!-- ======================= MOCKUPS ======================= -->
+
+<section class="panel" id="bench">
+  <header><h2>1 · The Rune Table</h2><span class="tag s1">slice 2 · the carving</span></header>
+  <p class="small dim" style="margin-bottom:12px">Pick glyphs into the cut slots, set the stone, adornments and tool. The ledger, the readings, the span and any lit works update as you go. Nothing on this bench rolls a die: what the preview shows is what you get.</p>
+  <div class="bench">
+    <div class="slabwrap">
+      <div class="slab" id="slab"></div>
+      <div class="controls">
+        <span class="dim">Stone</span><select id="sel-grade"></select>
+        <span class="dim">Tool</span><span style="display:flex; gap:4px; flex-wrap:wrap"><select id="sel-tool"><option value="none">bare hands</option><option value="chisel">bronze chisel</option><option value="burin">steel burin</option></select><select id="sel-toolq"></select></span>
+        <span class="dim">Runecarving</span><span style="display:flex; gap:8px; align-items:center"><input type="range" id="sel-level" min="0" max="50" value="12" style="flex:1"><b id="lvl-out">12</b></span>
+      </div>
+      <div class="box">
+        <div class="small dim">Span: sockets this rune takes</div>
+        <div class="spanbar" id="spanbar"></div>
+        <div class="tiny dim" id="span-text"></div>
+      </div>
+    </div>
+    <div class="readout">
+      <div style="display:grid; gap:4px">
+        <div class="name-line" id="rune-name">—</div>
+        <div class="keyline mono" id="rune-key"></div>
+      </div>
+      <div>
+        <div class="small dim" style="margin-bottom:4px">Cuts <span id="cut-count"></span> · click a cut to remove it</div>
+        <div class="cutslots" id="cutslots"></div>
+      </div>
+      <div>
+        <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:baseline; margin-bottom:4px">
+          <span class="small dim">Glyphs you know · click to cut</span>
+          <label class="tiny dim"><input type="checkbox" id="chk-all" checked> show taught glyphs as known</label>
+        </div>
+        <div class="palette" id="palette"></div>
+      </div>
+      <div class="stations" id="stations"></div>
+      <div class="two" style="gap:14px">
+        <div style="display:grid; gap:6px; min-width:0">
+          <h3>Ledger</h3>
+          <div class="tiny dim">Bar = ledger after grade. White tick = raw glyph points. Dashed line = rung at 4 raw points.</div>
+          <div class="ledger" id="ledger"></div>
+        </div>
+        <div style="display:grid; gap:8px; align-content:start; min-width:0">
+          <h3>Reads as</h3>
+          <div class="ctxtabs" id="ctx-tabs"></div>
+          <div class="reads" id="reads"></div>
+          <div id="lit"></div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap"><button id="btn-pouch">Carve into the pouch (mockup 3)</button><button id="btn-clear">Clear cuts</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="codex">
+  <header><h2>2 · The codex</h2><span class="tag s1">slice 2 · discovery and reference</span></header>
+  <p class="small dim" style="margin-bottom:10px">Every glyph you can cut, with its vector, strokes and how it was learned. Unknown glyphs show their silhouette and where they are taught. Below, the works chart: a work's need shows once it has been lit on this save or taught; the rest are "?" with the aspects they touch.</p>
+  <div class="chips small" id="codex-filter" style="margin-bottom:10px"></div>
+  <div class="codex" id="codex-grid"></div>
+  <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:baseline; margin:18px 0 8px">
+    <h3>Works</h3>
+    <span class="chips small" id="works-mode"><button class="chip on" data-wmode="one" style="cursor:pointer">one aspect (recommended)</button><button class="chip" data-wmode="multi" style="cursor:pointer">several aspects (question 1)</button></span>
+  </div>
+  <p class="tiny dim" id="works-note" style="margin-bottom:8px"></p>
+  <div class="works" id="works"></div>
+  <p class="tiny dim" style="margin-top:8px">The pack holds 224 glyphs: 24 Elder Futhark (shown), 8 short-twig variants (shown), Anglo-Saxon additions, phonetic variants, medieval letters, Franks Casket and Dalecarlian forms, punctuation and calendar marks. The 14 Anglo-Saxon rows still need their art indices checked against the reference sheet; this mockup draws only glyphs whose art was verified.</p>
+</section>
+
+<section class="panel" id="kit">
+  <header><h2>3 · Sockets and the kit</h2><span class="tag s1">slice 3 · equipment</span></header>
+  <p class="small dim" style="margin-bottom:12px">John's band-one kit with deterministic sockets. Pick a rune from the pouch, then a socket. Each slot reads the rune through its own lens. The duel line uses the measured armor curve against the floor-3 boss and ignores every other stat.</p>
+  <div class="kit">
+    <div style="display:grid; gap:10px; min-width:0">
+      <div class="slots" id="eslots"></div>
+      <div class="box">
+        <h3>Kit total</h3>
+        <div class="reads" id="kit-total"></div>
+      </div>
+    </div>
+    <div style="display:grid; gap:10px; align-content:start">
+      <div class="box">
+        <div style="display:flex; justify-content:space-between; gap:6px; align-items:baseline"><h3>Pouch</h3><span class="tiny dim" id="pouch-hint">pick a rune</span></div>
+        <div class="pouch" id="pouch"></div>
+      </div>
+      <div class="box duel">
+        <h3>Floor-3 boss duel</h3>
+        <div class="small" id="duel-text"></div>
+        <div class="duelbar"><span id="duel-bar"></span></div>
+        <div class="tiny dim">Measured points from both probes (armor → wins of 20): 8.5 → 0, 14.0 → 1, 18.5 → 11.5, 18.8 → 14, 19.9 → 16, 20.5 → 18, 24.5 → 19. Linear between them. The two probes used different kits, so read this as a trend, not a promise.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="martial">
+  <header><h2>4 · Runes on techniques</h2><span class="tag later">slices 5–6 · martial</span></header>
+  <p class="small dim" style="margin-bottom:12px">Reads the kit from mockup 3. Weapon runes reach strikes; armor and accessory runes reach buffs and the onHit / onParry / onDodge answers. Each card shows its printed values struck through where a rune changed them, the archetypes runes add to its Honed offering, and which runes did it. Only a work rewrites an exit; the graph draws it in gold with a ghost line to the printed one. Try the Earthbind rune (Uruz·Tiwaz, Fine, ochre) in the weapon with the sword selected.</p>
+  <div class="controls" style="margin-bottom:12px; max-width:560px">
+    <span class="dim">Weapon family</span><select id="sel-family"><option value="blunt">oak club (blunt)</option><option value="sword">iron sword (sword)</option><option value="katana">katana</option></select>
+    <span class="dim">Mastery</span><label><input type="checkbox" id="chk-tier" checked> every technique Honed (tier III), no path taken yet</label>
+  </div>
+  <div class="martial">
+    <div class="graph" id="graph"></div>
+    <div class="tcards" id="tcards"></div>
+  </div>
+  <div class="box" style="margin-top:12px">
+    <h3>Lending glyphs</h3>
+    <div class="small" id="lend-table"></div>
+  </div>
+</section>
+
+<section class="panel" id="card">
+  <header><h2>5 · The rune card</h2><span class="tag s1">slices 2–3 · tooltip</span></header>
+  <p class="small dim" style="margin-bottom:12px">Live from mockup 1. The card says what the rune is made of and where every number comes from, so anyone handed the rune can rebuild it.</p>
+  <div id="itemcard"></div>
+</section>
+
+<section class="panel" id="bestiary">
+  <header><h2>6 · Bestiary: what it carries</h2><span class="tag later">slice 4 · monsters</span></header>
+  <p class="small dim" style="margin-bottom:12px">A monster wears carvings through the same readers. The bestiary reveals the exact carving after enough kills and teaches its glyphs. That is also where glyph knowledge comes from.</p>
+  <div class="two" id="beasts"></div>
+</section>
+
+</div>
+
+<script>
+(() => {
+'use strict';
+
+// ---------------------------------------------------------------- glyph art
+// The committed page reads the gitignored pack by path; the published page
+// carries the few glyphs it draws inline (window.GLYPH_DATA). Either way, a
+// missing image falls back to the Unicode rune.
+const PACK = "../../src/assets/packs/idylwild/Idylwild's Runic Codex/runes/";
+const glyphSrc = (n) => (window.GLYPH_DATA && window.GLYPH_DATA['w' + n])
+  ? 'data:image/png;base64,' + window.GLYPH_DATA['w' + n]
+  : PACK + 'rune_white' + n + '.png';
+const IMG = {};          // art index -> HTMLImageElement (loaded) or null
+const TINT = new Map();  // `${n}|${color}|${style}` -> data URL
+
+function tinted(n, color, style) {
+  const key = n + '|' + color + '|' + (style || '');
+  if (TINT.has(key)) return TINT.get(key);
+  const img = IMG[n];
+  if (!img) return null;
+  const c = document.createElement('canvas');
+  c.width = 18; c.height = 18;
+  const x = c.getContext('2d');
+  const paint = (col, dx, dy) => {
+    const t = document.createElement('canvas'); t.width = 16; t.height = 16;
+    const tx = t.getContext('2d');
+    tx.drawImage(img, 0, 0);
+    tx.globalCompositeOperation = 'source-in';
+    tx.fillStyle = col; tx.fillRect(0, 0, 16, 16);
+    x.drawImage(t, dx, dy);
+  };
+  if (style === 'carved') { paint('#9d978c', 2, 2); paint(color, 1, 1); }
+  else paint(color, 1, 1);
+  const url = c.toDataURL();
+  TINT.set(key, url);
+  return url;
+}
+function glyphEl(g, size, color, style) {
+  const n = g.art;
+  const url = tinted(n, color || '#ddd1b6', style);
+  const px = size * 18;
+  if (url) return `<img class="g" src="${url}" width="${px}" height="${px}" style="width:${px}px;height:${px}px" alt="${g.name}">`;
+  return `<span class="uni" style="width:${px}px;height:${px}px;font-size:${size * 14}px;color:${color || 'var(--text)'}">${g.u}</span>`;
+}
+
+// ---------------------------------------------------------------- the model
+const ASPECTS = [
+  ['might', 'Might', '#c0704a'], ['ward', 'Ward', '#b8a582'], ['vital', 'Vital', '#7f9a4c'],
+  ['swift', 'Swift', '#d6b85a'], ['keen', 'Keen', '#d9d4c8'], ['lore', 'Lore', '#9c84c0'],
+  ['fortune', 'Fortune', '#e8b84b'], ['ember', 'Ember', '#d9643a'], ['frost', 'Frost', '#9cc0cc'],
+  ['storm', 'Storm', '#b9a6e6'], ['venom', 'Venom', '#97b23e'], ['lumen', 'Lumen', '#f2e6a6'], ['gloam', 'Gloam', '#8a70a2'],
+];
+const AID = ASPECTS.map((a) => a[0]);
+const ACOL = Object.fromEntries(ASPECTS.map((a) => [a[0], a[2]]));
+const ANAME = Object.fromEntries(ASPECTS.map((a) => [a[0], a[1]]));
+const ELEMENTS = ['ember', 'frost', 'storm', 'venom', 'lumen', 'gloam'];
+const ELEMENT_TYPE = { ember: 'heat', frost: 'cold', storm: 'lightning', venom: 'poison', lumen: 'light', gloam: 'dark' };
+const ELEMENT_STATUS = { ember: 'on fire', frost: 'chilled', storm: 'jolted', venom: 'poison', lumen: 'dazzled', gloam: 'blinded' };
+
+// 24 Elder Futhark (art indices verified against the pack) and 8 short-twig
+// variants. `how` is where an unknown glyph is taught.
+const GLYPHS = {
+  fehu:     { art: 1,  u: 'ᚠ', name: 'Fehu',     gloss: 'wealth',    v: { fortune: 2, vital: 1 }, s: 3, starter: true },
+  uruz:     { art: 2,  u: 'ᚢ', name: 'Uruz',     gloss: 'aurochs',   v: { might: 2, vital: 1 },   s: 3, starter: true },
+  thurisaz: { art: 3,  u: 'ᚦ', name: 'Thurisaz', gloss: 'thorn',     v: { venom: 2, might: 1 },   s: 2, how: 'bestiary: living doll', lend: ['overwhelm', { kind: ['strike'], enters: ['coiled'] }] },
+  ansuz:    { art: 4,  u: 'ᚨ', name: 'Ansuz',    gloss: 'god',       v: { lore: 2, storm: 1 },    s: 3, how: 'codex page, the Reading Hall' },
+  raido:    { art: 8,  u: 'ᚱ', name: 'Raido',    gloss: 'journey',   v: { swift: 2, fortune: 1 }, s: 3, how: 'bestiary: sorting automaton', lend: ['flowing', { enters: ['neutral'], exits: ['coiled'] }] },
+  kaunan:   { art: 9,  u: 'ᚲ', name: 'Kaunan',   gloss: 'torch',     v: { ember: 2, venom: 1 },   s: 2, how: 'bestiary: ember slime' },
+  gebo:     { art: 12, u: 'ᚷ', name: 'Gebo',     gloss: 'gift',      v: { keen: 2, fortune: 1 },  s: 2, how: 'codex page, floor 2', lend: ['split', { event: ['onCrit'] }] },
+  wunjo:    { art: 13, u: 'ᚹ', name: 'Wunjo',    gloss: 'joy',       v: { lumen: 2, vital: 1 },   s: 3, how: 'codex page, the chapel' },
+  hagalaz:  { art: 14, u: 'ᚺ', name: 'Hagalaz',  gloss: 'hail',      v: { storm: 2, frost: 1 },   s: 3, how: 'bestiary: storm slime', lend: ['sweep', { exits: ['extended'] }] },
+  naudiz:   { art: 18, u: 'ᚾ', name: 'Naudiz',   gloss: 'need',      v: { gloam: 2, ward: 1 },    s: 2, how: 'bestiary: puppet bureaucrat', lend: ['tumble', { exits: ['off_balance'] }] },
+  isaz:     { art: 20, u: 'ᛁ', name: 'Isaz',     gloss: 'ice',       v: { frost: 2, ward: 1 },    s: 1, starter: true },
+  jera:     { art: 21, u: 'ᛃ', name: 'Jera',     gloss: 'harvest',   v: { vital: 2, fortune: 1 }, s: 4, how: 'codex page, the Larder' },
+  eihwaz:   { art: 25, u: 'ᛇ', name: 'Eihwaz',   gloss: 'yew',       v: { ward: 2, gloam: 1 },    s: 3, how: 'bestiary: filing automaton' },
+  pertho:   { art: 26, u: 'ᛈ', name: 'Pertho',   gloss: 'lot-cup',   v: { keen: 2, gloam: 1 },    s: 4, how: 'codex page, floor 3 annex' },
+  algiz:    { art: 27, u: 'ᛉ', name: 'Algiz',    gloss: 'elk-sedge', v: { ward: 2, lumen: 1 },    s: 3, starter: true, lend: ['lasting', { kind: ['buff'] }] },
+  sowilo:   { art: 28, u: 'ᛊ', name: 'Sowilo',   gloss: 'sun',       v: { ember: 2, lumen: 1 },   s: 3, how: 'codex page, the chapel', lend: ['sudden', { kind: ['buff'] }] },
+  tiwaz:    { art: 31, u: 'ᛏ', name: 'Tiwaz',    gloss: 'Tyr',       v: { might: 2, keen: 1 },    s: 3, how: 'teacher: the drill yard' },
+  berkanan: { art: 33, u: 'ᛒ', name: 'Berkanan', gloss: 'birch',     v: { vital: 2, ward: 1 },    s: 3, how: 'codex page, the infirmary' },
+  ehwaz:    { art: 35, u: 'ᛖ', name: 'Ehwaz',    gloss: 'horse',     v: { swift: 2, vital: 1 },   s: 4, how: 'bestiary: sorting automaton', lend: ['economy', { kind: ['strike'], enters: ['any'] }] },
+  mannaz:   { art: 36, u: 'ᛗ', name: 'Mannaz',   gloss: 'man',       v: { lore: 2, keen: 1 },     s: 4, how: 'codex page, the Reading Hall' },
+  laguz:    { art: 40, u: 'ᛚ', name: 'Laguz',    gloss: 'water',     v: { frost: 2, lore: 1 },    s: 2, how: 'bestiary: chilled slime' },
+  ingwaz:   { art: 41, u: 'ᛜ', name: 'Ingwaz',   gloss: 'Ing',       v: { vital: 2, might: 1 },   s: 4, how: 'codex page, floor 2' },
+  dagaz:    { art: 43, u: 'ᛞ', name: 'Dagaz',    gloss: 'day',       v: { lumen: 2, swift: 1 },   s: 4, how: 'codex page, floor 3' },
+  othala:   { art: 44, u: 'ᛟ', name: 'Othala',   gloss: 'estate',    v: { fortune: 2, ward: 1 },  s: 4, how: 'quest: the inheritance' },
+  // variants: parent's vector at half the strokes; need a burin
+  oss_st:     { art: 7,  u: 'ᚭ', name: 'Óss',     gloss: 'short-twig Ansuz',    parent: 'ansuz' },
+  hagall_st:  { art: 17, u: 'ᚽ', name: 'Hagall',  gloss: 'short-twig Hagalaz',  parent: 'hagalaz' },
+  naudr_st:   { art: 19, u: 'ᚿ', name: 'Nauðr',   gloss: 'short-twig Naudiz',   parent: 'naudiz' },
+  ar_st:      { art: 24, u: 'ᛅ', name: 'Ár',      gloss: 'short-twig Jera',     parent: 'jera' },
+  sol_st:     { art: 30, u: 'ᛌ', name: 'Sól',     gloss: 'short-twig Sowilo',   parent: 'sowilo' },
+  tyr_st:     { art: 32, u: 'ᛐ', name: 'Týr',     gloss: 'short-twig Tiwaz',    parent: 'tiwaz' },
+  bjarkan_st: { art: 34, u: 'ᛓ', name: 'Bjarkan', gloss: 'short-twig Berkanan', parent: 'berkanan' },
+  madr_st:    { art: 39, u: 'ᛙ', name: 'Maðr',    gloss: 'short-twig Mannaz',   parent: 'mannaz' },
+};
+for (const [id, g] of Object.entries(GLYPHS)) {
+  g.id = id;
+  if (g.parent) {
+    const p = GLYPHS[g.parent];
+    g.v = p.v; g.s = Math.ceil(p.s / 2); g.tier = 'variant'; g.lend = p.lend;
+    g.how = 'needs a burin; ' + (p.starter ? 'known with its parent' : 'taught with ' + p.name);
+  } else g.tier = 'elder';
+}
+
+const GRADES = { e: ['Poor', 0.25, 4], d: ['Common', 0.6, 6], c: ['Fair', 1, 8], b: ['Fine', 1.6, 11], a: ['Superb', 2.5, 15], s: ['Divine', 4, 20] };
+const GRADE_ORDER = ['e', 'd', 'c', 'b', 'a', 's'];
+const gm = (q) => GRADES[q][1];
+
+const ADORN = {
+  warm_slime_gel:     { name: 'Warm gel',     station: 'inlay', a: 'ember',   value: 5 },
+  chilled_slime_gel:  { name: 'Chilled gel',  station: 'inlay', a: 'frost',   value: 5 },
+  charged_slime_gel:  { name: 'Charged gel',  station: 'inlay', a: 'storm',   value: 9 },
+  luminous_slime_gel: { name: 'Luminous gel', station: 'inlay', a: 'lumen',   value: 14 },
+  gold_leaf:          { name: 'Gold leaf',    station: 'inlay', a: 'fortune', value: 30 },
+  bone_dust:          { name: 'Bone dust',    station: 'inlay', a: 'vital',   value: 6 },
+  ochre_pigment:      { name: 'Ochre',        station: 'color', a: 'might',   value: 8, tint: '#c98a3a' },
+  verdigris_pigment:  { name: 'Verdigris',    station: 'color', a: 'venom',   value: 18, tint: '#4f9a7a' },
+  cut_garnet:         { name: 'Cut garnet',   station: 'gem',   a: 'keen',    value: 45, tint: '#b8324a' },
+  raw_sapphire:       { name: 'Raw sapphire', station: 'gem',   a: 'lore',    value: 60, tint: '#3d6fc4' },
+};
+const STATIONS = [['inlay', 'Inlay'], ['color', 'Color'], ['gem1', 'Gem'], ['gem2', 'Second gem']];
+const STONE_VALUE = 12;
+
+// one linear line per aspect per context, per ledger point (Fair = 1)
+const READ = {
+  might:   { W: [['damage', 2, '+']], A: [['armor', 1, '+']], X: [['damage', 1, '%']] },
+  ward:    { W: [['parry', 1, 'pp']], A: [['armor', 2, '+']], X: [['max HP', 6, '+']] },
+  vital:   { W: [['max HP', 5, '+']], A: [['max HP', 12, '+']], X: [['HP regen', 0.15, '/s']] },
+  swift:   { W: [['attack speed', 2, '%']], A: [['speed', 1, '%']], X: [['speed', 1.5, '%']] },
+  keen:    { W: [['crit', 1, 'pp'], ['crit damage', 5, '%']], A: [['dodge', 0.5, 'pp']], X: [['crit', 0.67, 'pp']] },
+  lore:    { W: [['spell power', 3, '+']], A: [['max mana', 4, '+']], X: [['mana regen', 0.05, '/s']] },
+  fortune: { W: [['loot', 1, '%']], A: [['gold gain', 1, '%']], X: [['gold gain', 2, '%']] },
+  ember:   { W: [['heat per hit', 2, '+']], A: [['heat resist', 5, 'pp']], X: [['heat resist', 4, 'pp']] },
+  frost:   { W: [['cold per hit', 2, '+']], A: [['cold resist', 5, 'pp']], X: [['cold resist', 4, 'pp']] },
+  storm:   { W: [['of hit as lightning', 6, '%']], A: [['lightning resist', 5, 'pp']], X: [['speed', 2, '%']] },
+  venom:   { W: [['poison per hit', 2, '+']], A: [['poison resist', 5, 'pp']], X: [['poison resist', 4, 'pp']] },
+  lumen:   { W: [['light per hit', 3, '+']], A: [['dark resist', 6, 'pp']], X: [['light resist', 5, 'pp']] },
+  gloam:   { W: [['dark per hit', 2, '+']], A: [['light resist', 6, 'pp']], X: [['dark resist', 5, 'pp']] },
+};
+// how each slot reads: which column, and the lens multiplier per aspect
+const SLOTS = {
+  weapon:    { name: 'Weapon',    col: 'W', lens: () => 1 },
+  offhand:   { name: 'Offhand',   col: 'A', lens: (a) => (a === 'ward' ? 'parry' : 0.7) },
+  head:      { name: 'Head',      col: 'A', lens: (a) => (a === 'lore' || a === 'keen' ? 1.5 : 0.5) },
+  chest:     { name: 'Chest',     col: 'A', lens: () => 1 },
+  legs:      { name: 'Legs',      col: 'A', lens: () => 0.7 },
+  hands:     { name: 'Hands',     col: 'A', lens: (a) => (a === 'might' || a === 'swift' ? 1 : 0.35) },
+  feet:      { name: 'Feet',      col: 'A', lens: (a) => (a === 'swift' ? 1.5 : 0.35) },
+  accessory: { name: 'Accessory', col: 'X', lens: () => 1 },
+};
+const CTX_TABS = [['weapon', 'Weapon'], ['chest', 'Chest'], ['head', 'Head'], ['hands', 'Hands'], ['feet', 'Feet'], ['legs', 'Legs'], ['offhand', 'Offhand'], ['accessory', 'Accessory']];
+
+// rungs: one aspect's RAW glyph points >= 4 in one rune
+const RUNG_AT = 4;
+const ELEMENT_RUNG = (e) => ({ W: `hits inflict ${ELEMENT_STATUS[e]} (20%)` });
+const RUNGS = {
+  swift: { W: 'reflex techniques: cooldown ×0.85', A: 'dodge +3pp' },
+  ward:  { A: 'crit damage taken −10%' },
+  keen:  { W: 'strikes: penetration +0.1' },
+  ...Object.fromEntries(ELEMENTS.map((e) => [e, ELEMENT_RUNG(e)])),
+};
+
+// Works. ONE: a named rung on one aspect (keeps the guard; recommended).
+// MULTI: today's shape, a need over several aspects (needs your ruling).
+// `tech` is a hand-authored rewrite of one named card, read from the weapon.
+const WORKS_ONE = [
+  { id: 'aegis',        name: 'Aegis',         need: { ward: 8 },  bonus: { A: 'armor +6, crit damage taken −5%' }, known: true },
+  { id: 'hearthward',   name: 'Hearthward',    need: { ember: 6 }, bonus: { A: 'heat resist +8pp' }, known: true },
+  { id: 'gale',         name: 'Gale',          need: { swift: 8 }, bonus: { W: 'Sidestep becomes Flash Step, cooldown ×0.55' }, tech: { id: 'sidestep', rename: 'Flash Step', cd: 0.55 }, known: true },
+  { id: 'earthbind',    name: 'Earthbind',     need: { might: 8 }, bonus: { W: 'Thrust becomes Rooted Thrust, exits coiled' }, tech: { id: 'thrust', rename: 'Rooted Thrust', exit: 'coiled' } },
+  { id: 'umbral',       name: 'Umbral',        need: { gloam: 8 }, bonus: { W: 'Riposte ×1.1; Sweeping joins its Honed offering' }, tech: { id: 'riposte', dmg: 1.1, offer: 'sweep' } },
+  { id: 'stormbrand',   name: 'Stormbrand',    need: { storm: 8 }, min: 'b', bonus: { W: '+8% of hit as lightning, crit damage +20%' } },
+  { id: 'winters_edge', name: "Winter's Edge", need: { frost: 8 }, min: 'a', bonus: { W: 'cold per hit +6, crit +3pp' } },
+];
+const WORKS_MULTI = [
+  { id: 'hearthward',   name: 'Hearthward',       need: { ward: 2, ember: 1 },            bonus: { A: 'heat resist +8pp' }, known: true },
+  { id: 'stormbrand',   name: 'Stormbrand',       need: { keen: 3, storm: 1, lore: 1 },   min: 'b', bonus: { W: '+8% of hit as lightning, crit damage +20%' }, known: true },
+  { id: 'winters_edge', name: "Winter's Edge",    need: { keen: 2, frost: 4 },            min: 'a', bonus: { W: 'cold per hit +6, crit +3pp' } },
+  { id: 'twiceforged',  name: 'Twiceforged Seal', need: { might: 2, ward: 2, fortune: 1 }, min: 'b', bonus: { W: 'damage ×6%', A: 'armor +5' } },
+  { id: 'gale',         name: 'Gale',             need: { swift: 4, storm: 1 },           bonus: { W: 'Sidestep becomes Flash Step, cooldown ×0.55' }, tech: { id: 'sidestep', rename: 'Flash Step', cd: 0.55 }, known: true },
+  { id: 'earthbind',    name: 'Earthbind',        need: { might: 3, ward: 2 },            bonus: { W: 'Thrust becomes Rooted Thrust, exits coiled' }, tech: { id: 'thrust', rename: 'Rooted Thrust', exit: 'coiled' } },
+  { id: 'umbral',       name: 'Umbral',           need: { gloam: 3, keen: 1 },            bonus: { W: 'Riposte ×1.1; Sweeping joins its Honed offering' }, tech: { id: 'riposte', dmg: 1.1, offer: 'sweep' } },
+  { id: 'aegis',        name: 'Aegis',            need: { ward: 6 },                      bonus: { A: 'armor +6, crit damage taken −5%' } },
+];
+let WORKS = WORKS_ONE;
+const litWorks = new Set(['aegis', 'hearthward', 'gale', 'stormbrand']);
+const MAX_SPAN = 3;
+
+const TOOLS = { none: [0, 'bare hands'], chisel: [1, 'bronze chisel'], burin: [2, 'steel burin'] };
+const toolBonus = (tool, tq) => (tool === 'none' ? 0 : TOOLS[tool][0] + Math.max(0, GRADE_ORDER.indexOf(tq) - 2));
+const cutSlotsAt = (lvl) => [0, 5, 10, 18, 25, 35].filter((l) => lvl >= l).length;
+
+/** The whole rune from its multiset. Sorting first is what makes it order-free. */
+function compose(r) {
+  const glyphs = [...r.glyphs].sort();
+  const mult = gm(r.grade);
+  const raw = {}, L = {};
+  let strokes = 0;
+  for (const id of glyphs) {
+    const g = GLYPHS[id];
+    strokes += g.s;
+    for (const [a, p] of Object.entries(g.v)) { raw[a] = (raw[a] || 0) + p; L[a] = (L[a] || 0) + p * mult; }
+  }
+  const adorn = (r.adorn || []).filter(Boolean).slice().sort((x, y) => (x.id + x.q).localeCompare(y.id + y.q));
+  for (const ad of adorn) { const a = ADORN[ad.id].a; L[a] = (L[a] || 0) + gm(ad.q); }
+  const hold = GRADES[r.grade][2] + toolBonus(r.tool || 'none', r.toolq || 'c') + Math.floor((r.level ?? 12) / 10);
+  const span = glyphs.length ? Math.ceil(strokes / hold) : 0;
+  const rungs = AID.filter((a) => (raw[a] || 0) >= RUNG_AT && RUNGS[a]);
+  const works = WORKS.filter((w) => (!w.min || GRADE_ORDER.indexOf(r.grade) >= GRADE_ORDER.indexOf(w.min))
+    && Object.entries(w.need).every(([a, n]) => (L[a] || 0) >= n - 1e-9));
+  const value = Math.floor(0.5 * (STONE_VALUE * Math.max(0.1, mult) + adorn.reduce((s, ad) => s + ADORN[ad.id].value * Math.max(0.1, gm(ad.q)), 0)));
+  const key = `${glyphs.join('+') || '∅'}@runestone_blank.${r.grade}${adorn.length ? '/' + adorn.map((a) => a.id + '.' + a.q).join('+') : ''}`;
+  const named = works.length ? works.map((w) => w.name).join(' · ') : null;
+  const plain = `${GRADES[r.grade][0]} ${glyphs.length ? [...new Set(glyphs)].map((id) => GLYPHS[id].name + (glyphs.filter((x) => x === id).length > 1 ? '×' + glyphs.filter((x) => x === id).length : '')).join('·') : 'blank'}`;
+  return { r, glyphs, mult, raw, L, strokes, hold, span, refused: span > MAX_SPAN, rungs, works, value, key, name: named || plain, plain };
+}
+
+const fmtNum = (x) => (Math.abs(x - Math.round(x)) < 1e-9 ? String(Math.round(x)) : (Math.abs(x) < 1 ? x.toFixed(2) : x.toFixed(1))).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
+/** Read a composed rune in one slot: [{label, value, unit, from}] */
+function readIn(c, slot) {
+  const S = SLOTS[slot];
+  const out = {};
+  for (const a of AID) {
+    const pts = c.L[a] || 0;
+    if (pts <= 0) continue;
+    let col = S.col, k = S.lens(a);
+    if (k === 'parry') { col = 'W'; k = 1; }
+    for (const [label, per, unit] of READ[a][col]) {
+      const key = label + '|' + unit;
+      out[key] ??= { label, unit, value: 0, from: [] };
+      out[key].value += per * pts * k;
+      out[key].from.push(ANAME[a]);
+    }
+  }
+  return Object.values(out);
+}
+const show = (l) => {
+  const v = l.value;
+  if (l.unit === '+') return `${l.label} +${fmtNum(v)}`;
+  if (l.unit === '%') return l.label.startsWith('of hit') ? `${fmtNum(v)}% ${l.label}` : `${l.label} +${fmtNum(v)}%`;
+  if (l.unit === 'pp') return `${l.label} +${fmtNum(v)}pp`;
+  if (l.unit === '/s') return `${l.label} +${fmtNum(v)}/s`;
+  return `${l.label} ${fmtNum(v)}`;
+};
+const rungText = (c, slot) => {
+  const col = SLOTS[slot].col;
+  return c.rungs.map((a) => RUNGS[a][col] ? `${ANAME[a]} rung: ${RUNGS[a][col]}${c.mult < 1 ? ` (×${c.mult})` : ''}` : null).filter(Boolean);
+};
+const workText = (c, slot) => {
+  const col = SLOTS[slot].col;
+  return c.works.map((w) => w.bonus[col] ? `${w.name}: ${w.bonus[col]}` : null).filter(Boolean);
+};
+const aspChip = (a, n) => `<span class="asp" style="--c:${ACOL[a]}"><i></i>${ANAME[a]}${n != null ? ' ' + fmtNum(n) : ''}</span>`;
+const vecChips = (v) => Object.entries(v).map(([a, n]) => aspChip(a, n)).join(' ');
+
+// ---------------------------------------------------------------- state
+const bench = { glyphs: ['algiz', 'isaz'], grade: 'c', tool: 'chisel', toolq: 'c', level: 12, adorn: [null, null, null, null], ctx: 'weapon' };
+const known = (g) => document.getElementById('chk-all').checked || g.starter || (g.parent && GLYPHS[g.parent].starter);
+
+// ---------------------------------------------------------------- 1 · bench
+function stoneSVG(grade, adorn) {
+  const rim = { e: '#4a4743', d: '#514e49', c: '#57534e', b: '#5d5953', a: '#645f58', s: '#6d665c' }[grade];
+  const q = getComputedStyle(document.documentElement).getPropertyValue('--q-' + grade).trim();
+  return `<svg class="stone" viewBox="0 0 100 100" aria-hidden="true">
+    <defs><radialGradient id="sg" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#7d7871"/><stop offset="0.7" stop-color="${rim}"/><stop offset="1" stop-color="#34312e"/></radialGradient></defs>
+    <path d="M18 14 L34 7 L60 6 L80 12 L92 28 L95 52 L90 74 L76 90 L52 96 L28 92 L12 78 L6 54 L8 30 Z" fill="url(#sg)" stroke="#2b2825" stroke-width="2"/>
+    <path d="M22 18 L36 12 L58 11 L76 16" fill="none" stroke="#a7a198" stroke-width="1.5" opacity="0.5"/>
+    <g fill="#00000033"><circle cx="70" cy="70" r="1.2"/><circle cx="30" cy="62" r="0.9"/><circle cx="62" cy="24" r="1"/><circle cx="20" cy="44" r="0.8"/><circle cx="82" cy="46" r="1"/></g>
+    <rect x="4" y="4" width="10" height="10" fill="${q}" opacity="0.9"/>
+  </svg>`;
+}
+function glyphColor(r) {
+  const inlay = r.adorn[0], color = r.adorn[1];
+  if (inlay && inlay.id === 'gold_leaf') return '#e8c25a';
+  if (color) return ADORN[color.id].tint;
+  if (inlay) return ACOL[ADORN[inlay.id].a];
+  return '#24211e';
+}
+function renderBench() {
+  const c = compose(bench);
+  const slots = cutSlotsAt(bench.level);
+  if (bench.glyphs.length > slots) bench.glyphs.length = slots;
+  const col = glyphColor(bench);
+  // slab
+  const n = bench.glyphs.length;
+  const size = n <= 2 ? 3 : 2;
+  const gems = bench.adorn.slice(2).filter(Boolean);
+  document.getElementById('slab').innerHTML = stoneSVG(bench.grade) +
+    `<div class="cuts">${bench.glyphs.map((id) => glyphEl(GLYPHS[id], size, col, 'carved')).join('')}</div>` +
+    gems.map((gem, i) => `<span class="gem" style="background:${ADORN[gem.id].tint}; ${i ? 'right:16%; bottom:14%' : 'left:16%; bottom:14%'}"></span>`).join('');
+  document.getElementById('lvl-out').textContent = bench.level;
+  // cuts
+  document.getElementById('cut-count').textContent = `${bench.glyphs.length} of ${slots} open (6 at Runecarving 35)`;
+  let cs = '';
+  for (let i = 0; i < 6; i++) {
+    const id = bench.glyphs[i];
+    if (i >= slots) cs += `<button class="cutslot shut" disabled title="opens at Runecarving ${[0, 5, 10, 18, 25, 35][i]}">🔒</button>`;
+    else if (id) cs += `<button class="cutslot full" data-cut="${i}" title="${GLYPHS[id].name}: remove">${glyphEl(GLYPHS[id], 2)}</button>`;
+    else cs += `<button class="cutslot" disabled></button>`;
+  }
+  document.getElementById('cutslots').innerHTML = cs;
+  // palette
+  const pal = Object.values(GLYPHS).map((g) => {
+    const isKnown = known(g);
+    const needBurin = g.tier === 'variant' && bench.tool !== 'burin';
+    const full = bench.glyphs.length >= slots;
+    const dis = !isKnown || needBurin || full;
+    const why = !isKnown ? `unknown: ${g.how}` : needBurin ? 'variants need a steel burin' : full ? 'no open cut' : `${g.name} (${g.gloss}): ${Object.entries(g.v).map(([a, p]) => ANAME[a] + ' ' + p).join(', ')}, ${g.s} strokes`;
+    return `<button data-glyph="${g.id}" ${dis ? 'disabled' : ''} class="${!isKnown || needBurin ? 'locked' : ''}" title="${why}">
+      ${isKnown ? glyphEl(g, 2) : glyphEl(g, 2, '#4a3c2c')}
+      <span><span class="nm">${g.name}${g.starter ? ' <span class="tiny dim">·start</span>' : ''}</span><br><span class="sub">${Object.entries(g.v).map(([a, p]) => ANAME[a].slice(0, 4) + ' ' + p).join(' ')} · ${g.s}✎</span></span></button>`;
+  }).join('');
+  document.getElementById('palette').innerHTML = pal;
+  // stations
+  document.getElementById('stations').innerHTML = STATIONS.map(([st, label], i) => {
+    const kind = st.startsWith('gem') ? 'gem' : st;
+    const cur = bench.adorn[i];
+    const opts = Object.entries(ADORN).filter(([, a]) => a.station === kind);
+    return `<div class="station"><span class="cap">${label}</span>
+      <div class="row"><select data-st="${i}"><option value="">—</option>${opts.map(([id, a]) => `<option value="${id}" ${cur && cur.id === id ? 'selected' : ''}>${a.name} (${ANAME[a.a]})</option>`).join('')}</select>
+      <select data-stq="${i}" ${cur ? '' : 'disabled'}>${GRADE_ORDER.map((q) => `<option value="${q}" ${(cur ? cur.q : 'c') === q ? 'selected' : ''}>${q.toUpperCase()}</option>`).join('')}</select></div></div>`;
+  }).join('');
+  // ledger
+  const max = Math.max(8, ...AID.map((a) => c.L[a] || 0));
+  document.getElementById('ledger').innerHTML = AID.map((a) => {
+    const v = c.L[a] || 0, raw = c.raw[a] || 0;
+    const rung = raw >= RUNG_AT && RUNGS[a];
+    return `<div class="lrow ${v ? '' : 'zero'} ${rung ? 'rung' : ''}" style="--c:${ACOL[a]}">
+      <span class="nm">${ANAME[a]}${rung ? ' ◆' : ''}</span>
+      <span class="bar"><span style="width:${(v / max) * 100}%"></span>${raw ? `<span class="raw" style="left:${(raw / max) * 100}%"></span>` : ''}${RUNGS[a] ? `<span class="rungmark" style="left:${(RUNG_AT / max) * 100}%"></span>` : ''}</span>
+      <span class="v">${v ? fmtNum(v) : ''}</span></div>`;
+  }).join('');
+  // span
+  const sockets = 3;
+  let sb = '';
+  for (let i = 0; i < Math.max(c.span, sockets); i++) sb += `<i class="${i < c.span ? (c.refused ? 'over' : 'f') : ''}"></i>`;
+  document.getElementById('spanbar').innerHTML = `<b>${c.span}</b>${sb}`;
+  document.getElementById('span-text').textContent = c.glyphs.length
+    ? `${c.strokes} strokes ÷ hold ${c.hold} (stone ${GRADES[bench.grade][2]}, tool ${toolBonus(bench.tool, bench.toolq)}, level ${Math.floor(bench.level / 10)}) → ${c.span} socket${c.span === 1 ? '' : 's'}.${c.refused ? ` Refused: no item has more than ${MAX_SPAN} sockets. A better stone, tool or level raises the hold.` : ' A vest has 3.'}`
+    : 'No cuts yet.';
+  const pb = document.getElementById('btn-pouch');
+  pb.disabled = !c.glyphs.length || c.refused;
+  // readout
+  document.getElementById('rune-name').textContent = c.name;
+  document.getElementById('rune-key').textContent = c.key;
+  document.getElementById('ctx-tabs').innerHTML = CTX_TABS.map(([k, l]) => `<button data-ctx="${k}" class="${bench.ctx === k ? 'on' : ''}">${l}</button>`).join('');
+  const lines = readIn(c, bench.ctx);
+  document.getElementById('reads').innerHTML = lines.length
+    ? lines.map((l) => `<div>${show(l)} <span class="src">· ${[...new Set(l.from)].join(', ')}</span></div>`).join('')
+    : '<div class="dim">Nothing yet.</div>';
+  const rt = rungText(c, bench.ctx), wt = workText(c, bench.ctx);
+  document.getElementById('lit').innerHTML =
+    (rt.length ? `<div class="chips" style="margin-bottom:4px">${rt.map((t) => `<span class="chip lit">◆ ${t}</span>`).join('')}</div>` : '') +
+    (c.works.length ? `<div class="chips">${c.works.map((w) => `<span class="chip lit" title="${Object.entries(w.bonus).map(([k, v]) => k + ': ' + v).join('; ')}">✦ ${w.name}${w.bonus[SLOTS[bench.ctx].col] ? '' : ' (nothing in this slot)'}</span>`).join('')}</div>` : '') +
+    (wt.length ? `<div class="small" style="margin-top:4px">${wt.join('<br>')}</div>` : '');
+  c.works.forEach((w) => litWorks.add(w.id));
+  renderCard(c);
+  renderCodex();
+}
+function bindBench() {
+  const gs = document.getElementById('sel-grade');
+  gs.innerHTML = GRADE_ORDER.map((q) => `<option value="${q}">${GRADES[q][0]} (${q.toUpperCase()}, ×${GRADES[q][1]})</option>`).join('') + '<option value="f" disabled>Refuse (F): refused</option>';
+  gs.value = bench.grade;
+  const tq = document.getElementById('sel-toolq');
+  tq.innerHTML = GRADE_ORDER.map((q) => `<option value="${q}">${q.toUpperCase()}</option>`).join('');
+  tq.value = bench.toolq;
+  document.getElementById('sel-tool').value = bench.tool;
+  gs.addEventListener('change', (e) => { bench.grade = e.target.value; renderBench(); });
+  document.getElementById('sel-tool').addEventListener('change', (e) => {
+    bench.tool = e.target.value;
+    if (bench.tool !== 'burin') bench.glyphs = bench.glyphs.filter((id) => GLYPHS[id].tier !== 'variant');
+    renderBench();
+  });
+  tq.addEventListener('change', (e) => { bench.toolq = e.target.value; renderBench(); });
+  document.getElementById('sel-level').addEventListener('input', (e) => { bench.level = +e.target.value; renderBench(); });
+  document.getElementById('chk-all').addEventListener('change', () => { renderBench(); });
+  document.getElementById('bench').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.glyph) { bench.glyphs.push(b.dataset.glyph); renderBench(); }
+    else if (b.dataset.cut) { bench.glyphs.splice(+b.dataset.cut, 1); renderBench(); }
+    else if (b.dataset.ctx) { bench.ctx = b.dataset.ctx; renderBench(); }
+    else if (b.id === 'btn-clear') { bench.glyphs = []; renderBench(); }
+    else if (b.id === 'btn-pouch') {
+      if (!bench.glyphs.length) return;
+      pouch.push({ glyphs: [...bench.glyphs], grade: bench.grade, adorn: bench.adorn.slice(), tool: bench.tool, toolq: bench.toolq, level: bench.level });
+      selectedRune = pouch.length - 1;
+      renderKit();
+      b.textContent = 'In the pouch ✓';
+      setTimeout(() => { b.textContent = 'Carve into the pouch (mockup 3)'; }, 1200);
+    }
+  });
+  document.getElementById('stations').addEventListener('change', (e) => {
+    const t = e.target;
+    if (t.dataset.st != null) { const i = +t.dataset.st; bench.adorn[i] = t.value ? { id: t.value, q: bench.adorn[i]?.q || 'c' } : null; }
+    if (t.dataset.stq != null) { const i = +t.dataset.stq; if (bench.adorn[i]) bench.adorn[i] = { ...bench.adorn[i], q: t.value }; }
+    renderBench();
+  });
+}
+function loadOnBench(r) {
+  Object.assign(bench, { glyphs: [...r.glyphs], grade: r.grade, adorn: (r.adorn || []).concat([null, null, null, null]).slice(0, 4), tool: r.tool || bench.tool, toolq: r.toolq || bench.toolq, level: Math.max(bench.level, [0, 5, 10, 18, 25, 35][r.glyphs.length - 1] || 0) });
+  document.getElementById('sel-grade').value = bench.grade;
+  document.getElementById('sel-tool').value = bench.tool;
+  document.getElementById('sel-level').value = bench.level;
+  renderBench();
+  document.getElementById('bench').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ---------------------------------------------------------------- 2 · codex
+let codexTier = 'all';
+function renderCodex() {
+  document.getElementById('codex-filter').innerHTML = [['all', 'All drawn'], ['elder', 'Elder Futhark'], ['variant', 'Short-twig variants'], ['known', 'Known'], ['unknown', 'Unknown']]
+    .map(([k, l]) => `<button class="chip ${codexTier === k ? 'on' : ''}" data-tier="${k}" style="cursor:pointer">${l}</button>`).join('');
+  const list = Object.values(GLYPHS).filter((g) => codexTier === 'all' || g.tier === codexTier || (codexTier === 'known' && known(g)) || (codexTier === 'unknown' && !known(g)));
+  document.getElementById('codex-grid').innerHTML = list.map((g) => {
+    const k = known(g);
+    return `<div class="cg ${k ? '' : 'unknown'}" title="${g.gloss}">
+      ${k ? glyphEl(g, 2, '#e8c25a') : glyphEl(g, 2, '#3a3026')}
+      <span><span class="nm">${g.name}</span> <span class="tiny dim">${g.gloss}</span><br>${vecChips(g.v)} <span class="tiny dim">${g.s}✎</span></span>
+      <span class="how">${g.starter ? 'starter' : k ? 'learned · ' + g.how : 'taught by ' + g.how}${g.lend ? ` · lends ${g.lend[0]}` : ''}</span></div>`;
+  }).join('');
+  document.getElementById('works').innerHTML = WORKS.map((w) => {
+    const seen = w.known || litWorks.has(w.id);
+    const now = compose(bench).works.some((x) => x.id === w.id);
+    return `<div class="work ${now ? 'lit' : ''} ${seen ? '' : 'unknown'}">
+      <div style="display:flex; justify-content:space-between; gap:6px"><b>${seen ? w.name : '?'}</b>${now ? '<span class="chip lit">lit on the bench</span>' : ''}</div>
+      <div>${seen ? vecChips(w.need) : Object.keys(w.need).map((a) => aspChip(a)).join(' ') + ' <span class="tiny dim">amounts unknown</span>'}${w.min ? ` <span class="tiny dim">· ${GRADES[w.min][0]} slab or better</span>` : ''}</div>
+      <div class="small ${seen ? '' : 'dim'}">${seen ? Object.entries(w.bonus).map(([k, v]) => `${{ W: 'Weapon', A: 'Armor', X: 'Accessory' }[k]}: ${v}`).join('<br>') : 'Light it once, or learn it, to read it.'}</div></div>`;
+  }).join('');
+}
+document.getElementById('codex-filter').addEventListener('click', (e) => { const b = e.target.closest('[data-tier]'); if (b) { codexTier = b.dataset.tier; renderCodex(); } });
+const WORKS_NOTE = {
+  one: 'Each work reads one aspect of the ledger after grade. It is a rung with a name and a higher bar, so the guard "no term reads two elements" holds. Every mockup on this page follows this setting.',
+  multi: "Today's shape: a work needs several aspects at once, so its bonus depends on two aspects together. That is a pair synergy, which the identity table in ALCHEMY.md and MUTAGENS.md forbids. Every mockup on this page follows this setting.",
+};
+function setWorksMode(mode) {
+  WORKS = mode === 'multi' ? WORKS_MULTI : WORKS_ONE;
+  document.querySelectorAll('[data-wmode]').forEach((b) => b.classList.toggle('on', b.dataset.wmode === mode));
+  document.getElementById('works-note').textContent = WORKS_NOTE[mode];
+  renderBench(); renderExamples(); renderKit(); renderBeasts();
+}
+document.getElementById('works-mode').addEventListener('click', (e) => { const b = e.target.closest('[data-wmode]'); if (b) setWorksMode(b.dataset.wmode); });
+
+// ---------------------------------------------------------------- 3 · kit
+const KIT = [
+  ['weapon', 'Oak Club', 'medium', 2], ['offhand', 'Plank Buckler', 'medium', 2], ['head', 'Leather Cap', 'medium', 2],
+  ['chest', 'Leather Vest', 'large', 3], ['legs', 'Wool Trousers', 'large', 3], ['hands', 'Work Gloves', 'medium', 2],
+  ['feet', 'Leather Boots', 'medium', 2], ['accessory', 'Copper Ring', 'small', 1],
+];
+const BASE_ARMOR = 8.5;
+const WEAPON_NAME = { blunt: 'Oak Club', sword: 'Iron Sword', katana: 'Katana' };
+const pouch = [
+  { glyphs: ['algiz'], grade: 'c', adorn: [] }, { glyphs: ['algiz'], grade: 'c', adorn: [] }, { glyphs: ['algiz'], grade: 'c', adorn: [] },
+  { glyphs: ['isaz', 'laguz'], grade: 'b', adorn: [{ id: 'chilled_slime_gel', q: 'c' }] },
+  { glyphs: ['ehwaz', 'raido'], grade: 'c', adorn: [] },
+  { glyphs: ['ehwaz', 'ehwaz'], grade: 'c', adorn: [] },
+  { glyphs: ['uruz', 'tiwaz'], grade: 'b', adorn: [null, { id: 'ochre_pigment', q: 'b' }] },
+  { glyphs: ['hagalaz', 'hagalaz', 'ansuz'], grade: 'b', adorn: [] },
+  { glyphs: ['algiz', 'algiz', 'naudiz'], grade: 'b', adorn: [] },
+  { glyphs: ['naudiz', 'naudiz'], grade: 'b', adorn: [] },
+];
+const sockets = Object.fromEntries(KIT.map(([s, , , n]) => [s, []])); // slot -> [pouch index]
+let selectedRune = null;
+const placedIn = (i) => Object.entries(sockets).find(([, list]) => list.includes(i))?.[0];
+const usedSockets = (slot) => sockets[slot].reduce((s, i) => s + compose(pouch[i]).span, 0);
+function duelWins(armor) {
+  const P = [[8.5, 0], [14, 1], [18.5, 11.5], [18.8, 14], [19.9, 16], [20.5, 18], [24.5, 19], [40, 20]];
+  if (armor <= P[0][0]) return 0;
+  for (let i = 1; i < P.length; i++) if (armor <= P[i][0]) {
+    const [x0, y0] = P[i - 1], [x1, y1] = P[i];
+    return y0 + ((armor - x0) / (x1 - x0)) * (y1 - y0);
+  }
+  return 20;
+}
+function kitReads() {
+  const total = {};
+  for (const [slot] of KIT) for (const i of sockets[slot]) {
+    for (const l of readIn(compose(pouch[i]), slot)) {
+      const k = l.label + '|' + l.unit;
+      total[k] ??= { ...l, value: 0, from: [] };
+      total[k].value += l.value; total[k].from.push(SLOTS[slot].name);
+    }
+  }
+  return Object.values(total);
+}
+function renderKit() {
+  document.getElementById('pouch').innerHTML = pouch.map((r, i) => {
+    const c = compose(r), at = placedIn(i);
+    return `<button data-pouch="${i}" class="${selectedRune === i ? 'on' : ''}" title="${c.key}">
+      <span class="gl">${c.glyphs.map((id) => glyphEl(GLYPHS[id], 1, '#e8c25a')).join('')}</span>
+      <span class="small">${c.name} <span class="tiny dim">· span ${c.span}${at ? ' · in ' + SLOTS[at].name.toLowerCase() : ''}</span></span></button>`;
+  }).join('');
+  document.getElementById('pouch-hint').textContent = selectedRune == null ? 'pick a rune' : 'now pick a socket';
+  document.getElementById('eslots').innerHTML = KIT.map(([slot, item, size, n]) => {
+    const used = usedSockets(slot);
+    let socks = '';
+    for (const i of sockets[slot]) {
+      const c = compose(pouch[i]);
+      socks += `<button class="socket filled ${c.span > 1 ? 'wide' : ''}" data-unsock="${slot}:${i}" style="${c.span > 1 ? `width:${c.span * 40 + (c.span - 1) * 4}px` : ''}" title="${c.name}: click to unsocket">${c.glyphs.slice(0, 3).map((id) => glyphEl(GLYPHS[id], 1, '#e8c25a')).join('')}</button>`;
+    }
+    for (let k = used; k < n; k++) socks += `<button class="socket" data-sock="${slot}" title="empty socket" ${selectedRune == null ? '' : ''}></button>`;
+    const reads = sockets[slot].flatMap((i) => readIn(compose(pouch[i]), slot));
+    const rl = sockets[slot].flatMap((i) => rungText(compose(pouch[i]), slot).concat(workText(compose(pouch[i]), slot)));
+    // The picked rune's reading in THIS slot, before committing (the lens is never a hidden table).
+    let would = '';
+    if (selectedRune != null && placedIn(selectedRune) !== slot) {
+      const c = compose(pouch[selectedRune]);
+      const fits = usedSockets(slot) + c.span <= n;
+      would = `<div class="tiny dim">${fits ? 'would read' : `needs ${c.span} free socket${c.span > 1 ? 's' : ''}; would read`}: ${readIn(c, slot).map(show).concat(rungText(c, slot), workText(c, slot)).join(', ') || 'nothing'}</div>`;
+    }
+    const itemName = slot === 'weapon' ? WEAPON_NAME[document.getElementById('sel-family').value] : item;
+    return `<div class="eslot"><div class="hd"><b>${SLOTS[slot].name}</b><span class="tiny dim">${itemName} · ${size} · ${n} socket${n > 1 ? 's' : ''}</span></div>
+      <div class="sockets">${socks}</div>
+      <div class="small">${reads.length ? mergeLines(reads).map(show).join(', ') : '<span class="dim">no runes</span>'}</div>
+      ${rl.length ? `<div class="tiny" style="color:var(--accent)">${rl.join('<br>')}</div>` : ''}${would}</div>`;
+  }).join('');
+  const tot = kitReads();
+  document.getElementById('kit-total').innerHTML = tot.length ? tot.map((l) => `<div>${show(l)} <span class="src">· ${[...new Set(l.from)].join(', ')}</span></div>`).join('') : '<div class="dim">No runes socketed.</div>';
+  const armor = BASE_ARMOR + tot.filter((l) => l.label === 'armor').reduce((s, l) => s + l.value, 0);
+  const w = duelWins(armor);
+  document.getElementById('duel-text').innerHTML = `Total armor <b>${fmtNum(armor)}</b> (kit ${BASE_ARMOR} + runes ${fmtNum(armor - BASE_ARMOR)}) → about <b>${Math.round(w)}/20</b> wins`;
+  document.getElementById('duel-bar').style.width = (w / 20) * 100 + '%';
+  renderMartial();
+}
+function mergeLines(lines) {
+  const m = {};
+  for (const l of lines) { const k = l.label + '|' + l.unit; m[k] ??= { ...l, value: 0 }; m[k].value += l.value; }
+  return Object.values(m);
+}
+document.getElementById('kit').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.pouch != null) { const i = +b.dataset.pouch; selectedRune = selectedRune === i ? null : i; renderKit(); return; }
+  if (b.dataset.unsock) { const [slot, i] = b.dataset.unsock.split(':'); sockets[slot] = sockets[slot].filter((x) => x !== +i); renderKit(); return; }
+  if (b.dataset.sock && selectedRune != null) {
+    const slot = b.dataset.sock, i = selectedRune, span = compose(pouch[i]).span;
+    const n = KIT.find((k) => k[0] === slot)[3];
+    const from = placedIn(i);
+    if (from) sockets[from] = sockets[from].filter((x) => x !== i);
+    if (usedSockets(slot) + span > n) { if (from) sockets[from].push(i); b.title = `needs ${span} free sockets`; b.style.borderColor = 'var(--danger)'; return; }
+    sockets[slot].push(i); selectedRune = null; renderKit();
+  }
+});
+
+// ---------------------------------------------------------------- 4 · martial
+const POS = { neutral: [200, 150], coiled: [80, 60], extended: [320, 60], off_balance: [80, 250], guarded: [320, 250], tumbling: [200, 280] };
+const POS_NAME = { neutral: 'neutral', coiled: 'coiled', extended: 'extended', off_balance: 'off balance', guarded: 'guarded', tumbling: 'tumbling' };
+const ARCH = {
+  split: { name: 'Split', kind: 'strike', dmg: 0.65, hits: 2 }, overwhelm: { name: 'Overwhelming', kind: 'strike', dmg: 1.6, exit: 'off_balance' },
+  exposing: { name: 'Exposing', kind: 'strike', dmg: 1.3, exit: 'wide_open' }, economy: { name: 'Economical', kind: 'strike', dmg: 0.9, cd: 0.6 },
+  sweep: { name: 'Sweeping', kind: 'strike', dmg: 0.9, splash: 0.35 }, flowing: { name: 'Flowing', kind: 'strike', exit: 'extended' },
+  lasting: { name: 'Lasting', kind: 'buff', dur: 1.6 }, sudden: { name: 'Sudden', kind: 'buff', cd: 0.65 },
+  tumble: { name: 'Tumbling', kind: 'strike', dmg: 1.0, exit: 'tumbling', isNew: true },
+};
+const ARCH_ORDER = Object.keys(ARCH);
+const TECH = [
+  { id: 'gather', name: 'Gather', kind: 'strike', from: ['neutral'], to: 'coiled', dmg: 0.6, cd: 30 },
+  { id: 'lunge', name: 'Lunge', kind: 'strike', from: ['coiled'], to: 'extended', dmg: 1.3, cd: 40 },
+  { id: 'heavy_blow', name: 'Heavy Blow', kind: 'strike', from: ['coiled'], to: 'off_balance', dmg: 2.0, cd: 60 },
+  { id: 'riposte', name: 'Riposte', kind: 'strike', event: 'onDodge', from: 'any', to: 'extended', dmg: 1.4, cd: 40 },
+  { id: 'sidestep', name: 'Sidestep', kind: 'buff', event: 'onHit', from: 'any', to: 'guarded', cd: 120, dur: 30 },
+  { id: 'thrust', name: 'Thrust', kind: 'strike', family: 'sword', from: ['extended'], to: 'neutral', dmg: 1.5, cd: 30, pen: 0.15 },
+  { id: 'crosscut', name: 'Crosscut', kind: 'strike', family: 'sword', event: 'onCrit', from: ['neutral', 'extended'], to: 'extended', dmg: 1.3, cd: 50, splash: 0.3 },
+  { id: 'iai_draw', name: 'Iai Draw', kind: 'strike', family: 'katana', event: 'onEncounterStart', from: ['neutral'], to: 'extended', dmg: 1.9, cd: 300, pen: 0.1 },
+  { id: 'deflecting_moon', name: 'Deflecting Moon', kind: 'buff', family: 'katana', event: 'onParry', from: 'any', to: 'coiled', cd: 100, dur: 30 },
+  { id: 'flowing_shield', name: 'Flowing Shield', kind: 'strike', family: 'buckler', event: 'onParry', from: ['guarded'], to: 'coiled', dmg: 1, cd: 70 },
+];
+const ANSWERS = ['onHit', 'onParry', 'onDodge'];
+const matches = (sel, t) =>
+  (!sel.kind || sel.kind.includes(t.kind)) &&
+  (!sel.event || sel.event.includes(t.event)) &&
+  (!sel.enters || sel.enters.some((p) => (p === 'any' ? t.from === 'any' : Array.isArray(t.from) && t.from.includes(p)))) &&
+  (!sel.exits || sel.exits.includes(t.to)) &&
+  (!sel.family || sel.family.includes(t.family));
+/** Which socketed runes reach a printed card. Weapon: strikes. Elsewhere: buffs, counters and answers. */
+function reachingRunes(t) {
+  const out = [];
+  for (const [slot] of KIT) for (const i of sockets[slot]) {
+    // A buckler card is the offhand's, not the weapon's.
+    const shieldCard = t.family === 'buckler';
+    const reaches = slot === 'weapon'
+      ? t.kind === 'strike' && !shieldCard
+      : (slot === 'offhand' && shieldCard) || t.kind !== 'strike' || ANSWERS.includes(t.event);
+    if (reaches) out.push({ slot, i, c: compose(pouch[i]) });
+  }
+  return out;
+}
+const CLAMP = { dmg: 0.35, cd: 0.4 };
+function surgery(t, tierOK) {
+  const reach = reachingRunes(t);
+  const res = { card: { ...t }, notes: [], by: new Set(), offers: [] };
+  // lends: sum weight per archetype over every glyph that lends and matches
+  const w = {};
+  for (const { slot, c } of reach) for (const id of c.glyphs) {
+    const g = GLYPHS[id];
+    if (!g.lend) continue;
+    const [arch, sel] = g.lend;
+    if (!matches(sel, t)) continue;
+    w[arch] ??= { total: 0, from: [] };
+    w[arch].total += 0.7 * c.mult;
+    w[arch].from.push(`${g.name} (${SLOTS[slot].name.toLowerCase()}, ${c.r.grade.toUpperCase()})`);
+  }
+  // Lends widen the Honed offering (tier III, no path taken). They never
+  // replace a path: the Honed choice stays permanent.
+  const offers = Object.entries(w).filter(([a, v]) => v.total >= 1 - 1e-9 && ARCH[a].kind === (t.kind === 'buff' ? 'buff' : 'strike')
+    && !(ARCH[a].exit && Array.isArray(t.from) && t.from.length === 1 && t.from[0] === ARCH[a].exit) && !(ARCH[a].exit && ARCH[a].exit === t.to))
+    .sort((x, y) => ARCH_ORDER.indexOf(x[0]) - ARCH_ORDER.indexOf(y[0]));
+  const pending = Object.entries(w).filter(([, v]) => v.total < 1 - 1e-9).map(([a, v]) => `${ARCH[a].name} ${fmtNum(v.total)} of 1`);
+  for (const [a, v] of offers) { res.offers.push({ a, total: v.total, from: v.from }); v.from.forEach((f) => res.by.add(f)); }
+  if (offers.length && !tierOK) res.notes.push('offering opens at tier III');
+  if (pending.length) res.notes.push('short: ' + pending.join(', '));
+  // Works: a hand-authored rewrite of one named card, from the weapon. One
+  // rewrite per card; between works, registry order.
+  const fromWeapon = sockets.weapon.map((i) => compose(pouch[i]));
+  const ws = WORKS.filter((wk) => wk.tech && wk.tech.id === t.id && fromWeapon.some((c) => c.works.includes(wk)));
+  if (ws.length) {
+    const T = ws[0].tech;
+    if (T.rename) res.card.name = T.rename;
+    if (T.cd) res.card.cd = Math.round(t.cd * T.cd);
+    if (T.dmg) res.card.dmg = +(t.dmg * T.dmg).toFixed(3);
+    if (T.exit) res.card.to = T.exit;
+    if (T.offer) res.offers.push({ a: T.offer, total: null, from: [ws[0].name] });
+    res.by.add(`${ws[0].name} (work)`);
+    if (ws.length > 1) res.notes.push(`${ws.slice(1).map((x) => x.name).join(', ')} lose to ${ws[0].name} (registry order)`);
+  }
+  // Tunes from rungs, summed then clamped.
+  let cdm = 0, pen = 0;
+  const inflicts = [];
+  for (const { slot, c } of reach) {
+    if (slot !== 'weapon') continue;
+    if (c.rungs.includes('swift') && t.event) { cdm += 0.15 * Math.min(1, c.mult); res.by.add(`${c.name} (Swift rung)`); }
+    if (c.rungs.includes('keen') && t.kind === 'strike') { pen += 0.1 * Math.min(1, c.mult); res.by.add(`${c.name} (Keen rung)`); }
+    for (const e of ELEMENTS) if (c.rungs.includes(e) && t.kind === 'strike') { inflicts.push(`${ELEMENT_STATUS[e]} 20%`); res.by.add(`${c.name} (${ANAME[e]} rung)`); }
+  }
+  if (cdm) { res.card.cd = Math.round(res.card.cd * (1 - Math.min(CLAMP.cd, cdm))); res.notes.push(`cooldown −${Math.round(Math.min(CLAMP.cd, cdm) * 100)}%`); }
+  if (pen) res.card.pen = +((t.pen || 0) + Math.min(0.3, pen)).toFixed(2);
+  if (inflicts.length) res.card.inflict = [...new Set(inflicts)].join(', ');
+  return res;
+}
+function renderMartial() {
+  const fam = document.getElementById('sel-family').value;
+  const tierOK = document.getElementById('chk-tier').checked;
+  const results = TECH.map((t) => ({ t, s: surgery(t, tierOK), usable: !t.family || t.family === fam || (t.family === 'buckler') }));
+  // graph
+  let svg = `<svg viewBox="0 0 400 310" role="img" aria-label="Position graph">
+    <defs><marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#9b8c72"/></marker>
+    <marker id="ahg" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#c9a45c"/></marker></defs>`;
+  const edge = (a, b, cls, label, i) => {
+    const [x1, y1] = POS[a], [x2, y2] = POS[b];
+    const mx = (x1 + x2) / 2 + (i % 2 ? 14 : -14) * ((y2 - y1) / 200 || 1), my = (y1 + y2) / 2 + (i % 2 ? -14 : 14) * ((x2 - x1) / 240 || 1);
+    const stroke = cls === 'gold' ? '#c9a45c' : cls === 'ghost' ? '#9b8c7255' : '#6f6250';
+    return `<path d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}" fill="none" stroke="${stroke}" stroke-width="${cls === 'gold' ? 2.2 : 1.4}" ${cls === 'ghost' ? 'stroke-dasharray="4 4"' : ''} marker-end="url(#${cls === 'gold' ? 'ahg' : 'ah'})"/>` +
+      (label ? `<text x="${mx}" y="${my - 3}" fill="${cls === 'gold' ? '#c9a45c' : '#9b8c72'}" font-size="10" text-anchor="middle" font-family="EB Garamond, serif">${label}</text>` : '');
+  };
+  let k = 0;
+  for (const { t, s, usable } of results) {
+    if (!usable || t.from === 'any') continue;
+    for (const f of t.from) {
+      if (s.card.to !== t.to) { svg += edge(f, t.to, 'ghost', '', k); svg += edge(f, s.card.to, 'gold', '⚒ ' + t.name, k); }
+      else svg += edge(f, t.to, '', t.name, k);
+      k++;
+    }
+  }
+  for (const [p, [x, y]] of Object.entries(POS)) {
+    if (p === 'tumbling' && !results.some(({ s }) => s.card.to === 'tumbling')) {
+      svg += `<g opacity="0.35"><rect x="${x - 40}" y="${y - 12}" width="80" height="24" fill="none" stroke="#9b8c72" stroke-dasharray="3 3"/><text x="${x}" y="${y + 4}" fill="#9b8c72" font-size="11" text-anchor="middle" font-family="Cinzel, serif">tumbling</text></g>`;
+      continue;
+    }
+    const rune = p === 'tumbling';
+    svg += `<g><rect x="${x - 42}" y="${y - 12}" width="84" height="24" fill="#1a1511" stroke="${rune ? '#c9a45c' : '#5a4a36'}" ${rune ? 'stroke-dasharray="4 2"' : ''}/><text x="${x}" y="${y + 4}" fill="${rune ? '#c9a45c' : '#ddd1b6'}" font-size="11" text-anchor="middle" font-family="Cinzel, serif">${POS_NAME[p]}</text></g>`;
+  }
+  svg += `<text x="8" y="302" fill="#9b8c72" font-size="10" font-family="EB Garamond, serif">"any"-entry answers (Riposte, Sidestep, Deflecting Moon) are listed on the right; dashed = printed exit</text></svg>`;
+  document.getElementById('graph').innerHTML = svg;
+  // cards
+  document.getElementById('tcards').innerHTML = results.map(({ t, s, usable }) => {
+    const c = s.card;
+    const d = [];
+    const cmp = (label, a, b, f = (x) => x) => { if (a === undefined && b === undefined) return; d.push(a !== b ? `${label} <s>${a === undefined ? '—' : f(a)}</s> ${f(b)}` : `${label} ${f(a)}`); };
+    if (t.kind === 'strike') cmp('×', t.dmg, c.dmg, (x) => fmtNum(x));
+    cmp('cd', t.cd, c.cd, (x) => x + 't');
+    if (t.dur || c.dur) cmp('buff', t.dur, c.dur, (x) => x + 't');
+    if (t.splash || c.splash) cmp('splash', t.splash, c.splash, (x) => fmtNum(x));
+    if (t.pen || c.pen) cmp('pen', t.pen, c.pen, (x) => fmtNum(x));
+    cmp('exit', t.to, c.to, (x) => POS_NAME[x] || x);
+    if (c.inflict) d.push(`hits inflict <b>${c.inflict}</b>`);
+    const offer = s.offers.length
+      ? `<div class="small">Honed offering ${tierOK ? '+' : '(tier III) +'} ${s.offers.map((o) => `<b>${ARCH[o.a].name}</b>${ARCH[o.a].isNew ? ' (new)' : ''} <span class="tiny dim">${o.total != null ? fmtNum(o.total) + ' from ' : 'from '}${o.from.join(', ')}</span>`).join('; ')}</div>` : '';
+    const changed = s.by.size > 0;
+    return `<div class="tcard ${changed ? 'changed' : ''} ${usable ? '' : 'off'}">
+      <div class="hd"><b>${c.name}${changed ? ' ⚒' : ''}</b><span class="tiny dim">${t.kind}${t.event ? ' · ' + t.event : ''} · ${t.from === 'any' ? 'any' : t.from.join('/')} → ${POS_NAME[t.to]}${t.family ? ' · ' + t.family : ''}${usable ? '' : ' · not held'}</span></div>
+      <div class="delta">${d.join(' · ')}</div>${offer}
+      ${s.notes.length ? `<div class="by">${s.notes.join('; ')}</div>` : ''}
+      ${changed ? `<div class="by">by ${[...s.by].join(', ')}</div>` : ''}</div>`;
+  }).join('');
+  document.getElementById('lend-table').innerHTML = Object.values(GLYPHS).filter((g) => g.lend && !g.parent).map((g) =>
+    `<div style="display:flex; gap:8px; align-items:center; padding:2px 0">${glyphEl(g, 1, '#e8c25a')} <b>${g.name}</b> lends <b>${ARCH[g.lend[0]].name}</b>${ARCH[g.lend[0]].isNew ? ' (new)' : ''} to <span class="mono">${JSON.stringify(g.lend[1]).replace(/"/g, '')}</span> <span class="dim">· 0.7 × grade per copy</span></div>`).join('') +
+    '<div class="tiny dim" style="margin-top:6px">A total of 1.0 adds the archetype to the card\'s Honed offering while socketed. Taking it is permanent, like every Honed choice. Tumbling is a new archetype (damage ×1.0, so it passes the fork EV test) and a new dead-end seat: nothing enters from it; the next strike from it is ×0.7 and a forced crit that does not count as a crit for triggers or learning. Monsters have no ledger, so a monster move names its archetype in data.</div>';
+}
+document.getElementById('sel-family').addEventListener('change', renderKit);
+document.getElementById('chk-tier').addEventListener('change', renderMartial);
+
+// ---------------------------------------------------------------- 5 · card
+function renderCard(c) {
+  const adorn = (c.r.adorn || []).filter(Boolean);
+  const per = (slot) => readIn(c, slot).map(show).concat(rungText(c, slot), workText(c, slot));
+  document.getElementById('itemcard').innerHTML = `<div class="itemcard">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">${c.glyphs.map((id) => glyphEl(GLYPHS[id], 2, '#e8c25a')).join('')}<span class="nm">${c.name}</span></div>
+    <div class="mono">${c.key}</div>
+    <div class="prov">
+      <div><span class="src">Made of</span><div class="small">${c.glyphs.length ? [...new Set(c.glyphs)].map((id) => { const g = GLYPHS[id], n = c.glyphs.filter((x) => x === id).length; return `${g.name}${n > 1 ? ' ×' + n : ''} (${Object.entries(g.v).map(([a, p]) => ANAME[a] + ' ' + p * n).join(', ')})`; }).join(' + ') : '—'} on a ${GRADES[c.r.grade][0]} slab (×${c.mult})${adorn.length ? ' + ' + adorn.map((a) => `${ADORN[a.id].name} ${a.q.toUpperCase()} (${ANAME[ADORN[a.id].a]} ${fmtNum(gm(a.q))})`).join(' + ') : ''}</div></div>
+      <div><span class="src">Ledger</span><div>${AID.filter((a) => c.L[a]).map((a) => aspChip(a, c.L[a])).join(' ') || '—'}</div></div>
+      <div><span class="src">Weapon</span><div class="small">${per('weapon').join(' · ') || '—'}</div></div>
+      <div><span class="src">Chest</span><div class="small">${per('chest').join(' · ') || '—'}</div></div>
+      <div><span class="src">Accessory</span><div class="small">${per('accessory').join(' · ') || '—'}</div></div>
+      <div><span class="src">Footprint</span><div class="small">${c.strokes} strokes, span ${c.span} at hold ${c.hold}</div></div>
+      <div><span class="src">Worth</span><div class="small">${c.value} gold: half of the stone and adornments at their grades. The cuts add nothing.</div></div>
+    </div></div>`;
+}
+
+// ---------------------------------------------------------------- 6 · bestiary
+const BEASTS = [
+  { name: 'Sorting Automaton', facts: 'medium · floor 2 · level 3 · 11 kills', slot: 'chest', rune: { glyphs: ['ehwaz', 'raido'], grade: 'c', adorn: [] }, drop: 8, teaches: ['ehwaz', 'raido'] },
+  { name: 'Puppet Bureaucrat', facts: 'large · floor 3 boss · level 6 · 3 kills', slot: 'weapon', rune: { glyphs: ['naudiz', 'naudiz', 'eihwaz'], grade: 'b', adorn: [{ id: 'bone_dust', q: 'c' }] }, drop: 0, teaches: ['naudiz', 'eihwaz'] },
+];
+function renderBeasts() {
+  document.getElementById('beasts').innerHTML = BEASTS.map((b, bi) => {
+    const c = compose(b.rune);
+    const kills = +b.facts.match(/(\d+) kills/)[1];
+    const beastLens = [];
+    if (c.L.ward || c.L.might) beastLens.push(`armor +${fmtNum((c.L.ward || 0) * 2 + (c.L.might || 0))}`);
+    if (c.L.vital) beastLens.push(`regen +${fmtNum(c.L.vital * 0.15)}/s`);
+    if (c.L.swift) beastLens.push(`attack speed +${fmtNum(c.L.swift * 2)}%`);
+    if (c.L.keen) beastLens.push(`crit +${fmtNum(c.L.keen)}pp`);
+    if (c.L.lore) beastLens.push(`spell power +${fmtNum(c.L.lore * 3)}`);
+    if (c.L.fortune) beastLens.push(`drops +${fmtNum(c.L.fortune)}%`);
+    for (const e of ELEMENTS) if (c.L[e]) beastLens.push(`${ELEMENT_TYPE[e]} resist +${fmtNum(c.L[e] * 5)}pp`);
+    for (const a of c.rungs) if (RUNGS[a]) beastLens.push(ELEMENTS.includes(a) ? `blows inflict ${ELEMENT_STATUS[a]} (20%)` : `${ANAME[a]} rung`);
+    return `<div class="box">
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline"><h3>${b.name} · Carries</h3><span class="tiny dim">${b.facts}</span></div>
+      <div style="display:flex; gap:6px; align-items:center">${c.glyphs.map((id) => glyphEl(GLYPHS[id], 2, '#e8c25a')).join('')}</div>
+      <div class="small">${kills >= 5 ? `${c.name} in its ${SLOTS[b.slot].name.toLowerCase()}` : '? (fact at 5 kills)'}</div>
+      <div class="mono">${kills >= 5 ? c.key : '…'}</div>
+      <div class="small">Reads on it: ${kills >= 5 ? beastLens.join(', ') : '?'}</div>
+      <div class="small">Teaches: ${b.teaches.map((id) => `${GLYPHS[id].name} ${kills >= 5 ? '✓' : `(${kills}/5)`}`).join(', ')}</div>
+      <div class="small dim">${b.drop ? `Drops this rune at ${b.drop}% per kill.` : 'Does not drop it; carve it yourself.'}</div>
+      <div><button data-beast="${bi}" ${kills >= 5 ? '' : 'disabled'}>Open on the Rune Table</button></div></div>`;
+  }).join('');
+}
+document.getElementById('beasts').addEventListener('click', (e) => { const b = e.target.closest('[data-beast]'); if (b) loadOnBench(BEASTS[+b.dataset.beast].rune); });
+
+// ---------------------------------------------------------------- examples table
+const EXAMPLES = [
+  ['Starter ward', { glyphs: ['algiz'], grade: 'c', adorn: [] }],
+  ['Frost pair, chilled inlay', { glyphs: ['isaz', 'laguz'], grade: 'b', adorn: [{ id: 'chilled_slime_gel', q: 'c' }] }],
+  ['Horse and journey', { glyphs: ['ehwaz', 'raido'], grade: 'c', adorn: [] }],
+  ['Stormbrand, two hails and a god', { glyphs: ['hagalaz', 'hagalaz', 'ansuz'], grade: 'b', adorn: [] }],
+  ['Earthbind, ochre colour', { glyphs: ['uruz', 'tiwaz'], grade: 'b', adorn: [null, { id: 'ochre_pigment', q: 'b' }] }],
+  ['Aegis on a Superb slab', { glyphs: ['algiz', 'algiz', 'eihwaz', 'othala'], grade: 'a', adorn: [] }],
+];
+function renderExamples() {
+  document.getElementById('ex-table').innerHTML = '<thead><tr><th>Carving</th><th>Ledger</th><th>Weapon</th><th>Chest</th><th>Accessory</th><th>Span · worth</th></tr></thead><tbody>' +
+    EXAMPLES.map(([label, r], i) => {
+      const c = compose({ ...r, tool: 'chisel', toolq: 'c', level: 12 });
+      const cell = (slot) => readIn(c, slot).map(show).concat(rungText(c, slot).map((t) => '◆ ' + t), workText(c, slot).map((t) => '✦ ' + t)).join('<br>');
+      return `<tr style="cursor:pointer" data-ex="${i}"><td><b>${label}</b><br><span class="small">${c.glyphs.map((id) => GLYPHS[id].name).join(' + ')} · ${GRADES[r.grade][0]}${(r.adorn || []).filter(Boolean).map((a) => ' + ' + ADORN[a.id].name).join('')}</span></td>
+        <td class="small">${AID.filter((a) => c.L[a]).map((a) => `${ANAME[a]} ${fmtNum(c.L[a])}`).join('<br>')}</td>
+        <td class="small">${cell('weapon')}</td><td class="small">${cell('chest')}</td><td class="small">${cell('accessory')}</td>
+        <td class="small">${c.strokes} strokes → span ${c.span}<br>${c.value} gold</td></tr>`;
+    }).join('') + '</tbody>';
+}
+document.getElementById('ex-table').addEventListener('click', (e) => { const tr = e.target.closest('[data-ex]'); if (tr) loadOnBench(EXAMPLES[+tr.dataset.ex][1]); });
+
+// ---------------------------------------------------------------- boot
+const ARTS = [...new Set(Object.values(GLYPHS).map((g) => g.art))];
+Promise.all(ARTS.map((n) => new Promise((res) => {
+  const img = new Image();
+  img.onload = () => { IMG[n] = img; res(); };
+  img.onerror = () => { IMG[n] = null; res(); };
+  img.src = glyphSrc(n);
+}))).then(() => {
+  // the opening kit: three Fair ward runes in the vest (the sustain cell),
+  // the frost pair in the weapon so the martial mockup has a rung to show
+  sockets.chest = [0, 1, 2]; sockets.weapon = [3];
+  bindBench(); setWorksMode('one');
+});
+})();
+</script>
+</body>
+</html>
