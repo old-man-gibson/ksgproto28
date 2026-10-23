@@ -124,7 +124,9 @@ function partOf(
   placed: PlacedPart | undefined,
   kinds: Record<string, PartKindDef>,
 ): Part | undefined {
-  const kind = placed ? kinds[placed.kind] : undefined;
+  // Own keys only: a stored kind of '__proto__' or 'constructor' must not resolve to an Object.prototype member.
+  const kind =
+    placed && Object.prototype.hasOwnProperty.call(kinds, placed.kind) ? kinds[placed.kind] : undefined;
   if (!placed || !kind) return undefined;
   // Clamped rather than refused: a stale or hand-edited quantity must still
   // resolve (the resolver is total). `placementProblem` is what refuses it.
@@ -156,11 +158,24 @@ export function partsOf(placement: Placement): ForgedPart[] {
   return parts;
 }
 
-/** The inverse of `partsOf`. Later entries for the same slot win. A missing list reads as an empty anvil. */
-export function placementOf(parts: readonly ForgedPart[] | undefined): Placement {
+/**
+ * The inverse of `partsOf`. Later entries for the same slot win.
+ *
+ * The argument is `unknown` on purpose: it is read off a save, and a stored
+ * spec that is not a list (`{}`, `5`, `[null]`) must read as an empty anvil.
+ * It is called for every equipped piece on every stat read, so a throw here
+ * would make the save unbootable. Entries that are not objects with a known
+ * slot and string kind and mat are skipped.
+ */
+export function placementOf(parts: unknown): Placement {
   const placement: Placement = {};
-  for (const p of parts ?? []) {
-    placement[p.slot] = { kind: p.kind, mat: p.mat, ...(p.qty !== undefined ? { qty: p.qty } : {}) };
+  if (!Array.isArray(parts)) return placement;
+  for (const entry of parts as unknown[]) {
+    if (!entry || typeof entry !== 'object') continue;
+    const { slot, kind, mat, qty } = entry as Partial<Record<keyof ForgedPart, unknown>>;
+    if (typeof slot !== 'string' || !(FORGE_SLOTS as readonly string[]).includes(slot)) continue;
+    if (typeof kind !== 'string' || typeof mat !== 'string') continue;
+    placement[slot as ForgeSlot] = { kind, mat, ...(typeof qty === 'number' ? { qty } : {}) };
   }
   return placement;
 }
@@ -502,14 +517,24 @@ export function forgedDef(spec: ForgedSpec): ItemDef {
   // A material's own character rides along once per material that makes up a
   // head, whatever the size of the head: bronze carries its will, a bronze
   // guard on an iron blade does not.
+  //
+  // Tags follow the same rule: the class tags plus the craft tags of the head
+  // materials, so a sword on a hardwood handle is not a wooden weapon. A piece
+  // with no head at all (club, quarterstaff, stick) is its haft, and takes the
+  // haft material's tags instead; otherwise `requiresTag: 'wood'` mods would
+  // apply to the shop's Oak Club and not to a forged hardwood one.
   const tags = [...cls.tags];
+  const addTags = (matId: string) => {
+    for (const t of MATERIALS[matId]?.craftTags ?? []) if (!tags.includes(t)) tags.push(t);
+  };
   const seen = new Set<string>();
   for (const h of rig.heads) {
     if (seen.has(h.mat)) continue;
     seen.add(h.mat);
     for (const m of MATERIALS[h.mat]?.smith?.mods ?? []) mods.push({ ...m });
-    for (const t of MATERIALS[h.mat]?.craftTags ?? []) if (!tags.includes(t)) tags.push(t);
+    addTags(h.mat);
   }
+  if (!rig.heads.length && rig.haft) addTags(rig.haft.mat);
 
   const def: ItemDef = {
     id: forgedIdOf(cls.id),

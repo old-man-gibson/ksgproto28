@@ -11,7 +11,9 @@ import {
 } from '../forge/server/edit';
 import { printValue } from '../forge/server/print';
 import { diffLines, diffStat } from '../forge/server/diff';
-import { findReferences } from '../forge/lib/refs';
+import { findReferences, refKindFor } from '../forge/lib/refs';
+import { ITEM_CLASSES, MATERIALS, PART_KINDS, RECIPES } from '../src/core/registry';
+import type { PlacedPart, Placement } from '../src/core/types';
 
 /**
  * The forge writes to the real content files. These tests exist for one
@@ -674,5 +676,56 @@ describe('finding the references a rename must move', () => {
   it('kills:tag counters name a tag, not a monster', () => {
     const d = { achievement: { a: { id: 'a', statKey: 'kills:tag:wolf' } } };
     expect(findReferences(d, 'monster', 'wolf')).toEqual([]);
+  });
+});
+
+describe('placed parts are references a rename must move', () => {
+  // The real registries: every class exemplar and every recipe line names
+  // parts and materials, so renaming either must carry them all.
+  const DATA = { itemClass: ITEM_CLASSES, recipe: RECIPES, part: PART_KINDS, material: MATERIALS };
+  const placedIn = (p: Placement | undefined) =>
+    Object.values(p ?? {}).filter((x): x is PlacedPart => !!x);
+
+  it('renaming a material reaches every exemplar and every recipe placement', () => {
+    const sites = findReferences(DATA, 'material', 'iron_ingot');
+    const ofKind = (k: string) => sites.filter((s) => s.kind === k);
+    // Counted straight off the data: one site per placed part made of iron.
+    const exemplarParts = Object.values(ITEM_CLASSES).flatMap((c) => placedIn(c.exemplar)).filter((p) => p.mat === 'iron_ingot');
+    const recipeParts = Object.values(RECIPES).flatMap((r) => placedIn(r.forge)).filter((p) => p.mat === 'iron_ingot');
+    expect(exemplarParts.length).toBeGreaterThanOrEqual(40);
+    expect(ofKind('itemClass')).toHaveLength(exemplarParts.length);
+    expect(ofKind('recipe')).toHaveLength(recipeParts.length);
+    expect([...new Set(ofKind('recipe').map((s) => s.id))].sort()).toEqual(
+      ['iron_breastplate', 'iron_dagger', 'iron_sword', 'katana', 'parrying_dagger', 'rapier'].sort(),
+    );
+    // Every site is a `mat` inside the placement, ready for a store op.
+    for (const s of ofKind('itemClass')) expect([s.path[0], s.path.at(-1)]).toEqual(['exemplar', 'mat']);
+    for (const s of ofKind('recipe')) expect([s.path[0], s.path.at(-1)]).toEqual(['forge', 'mat']);
+    // The material's own entry is not a reference to itself.
+    expect(ofKind('material')).toEqual([]);
+  });
+
+  it('renaming a part kind reaches the exemplars and recipe lines that use it, and not its own entry', () => {
+    const sites = findReferences(DATA, 'part', 'long');
+    const keys = sites.map((s) => `${s.kind}:${s.id}:${s.path.join('.')}`).sort();
+    expect(keys).toEqual([
+      'itemClass:sword:exemplar.head.kind',
+      'itemClass:twin_blade:exemplar.head.kind',
+      'itemClass:twin_blade:exemplar.head2.kind',
+      'recipe:iron_sword:forge.head.kind',
+    ]);
+  });
+
+  it('`kind` and `mat` are only references inside the placement', () => {
+    // A recipe's result.kind is 'item' | 'material' | 'rune'; a class's
+    // match.head.mat lists material TAGS ('wood'). Neither is a part or a material id.
+    expect(findReferences(DATA, 'part', 'item')).toEqual([]);
+    expect(findReferences(DATA, 'material', 'wood')).toEqual([]);
+    expect(refKindFor('recipe', 'kind', 'result', ['result', 'kind'])).toBeUndefined();
+    expect(refKindFor('itemClass', 'mat', 'head', ['match', 'head', 'mat'])).toBeUndefined();
+    expect(refKindFor('itemClass', 'mat', 'head', ['exemplar', 'head', 'mat'])).toBe('material');
+    expect(refKindFor('itemClass', 'kind', 'guard', ['exemplar', 'guard', 'kind'])).toBe('part');
+    expect(refKindFor('recipe', 'mat', 'haft', ['forge', 'haft', 'mat'])).toBe('material');
+    expect(refKindFor('recipe', 'kind', 'head', ['forge', 'head', 'kind'])).toBe('part');
   });
 });

@@ -66,6 +66,23 @@ export const REF_KIND_BY_OWNER: Record<string, Record<string, string>> = {
   // only the six styles something already replaces — you could not supersede
   // anything else, which is precisely what a new style usually wants to do.
   style: { replaces: 'style' },
+  // A placed part (`itemClass.exemplar.head`, `recipe.forge.guard`): which part
+  // kind, in which material. Only under the owner's placement subtree, see
+  // REF_ONLY_UNDER — `recipe.result.kind` is 'item' | 'material' | 'rune', and
+  // `itemClass.match.head.mat` names material TAGS, not materials.
+  itemClass: { mat: 'material', kind: 'part' },
+  recipe: { mat: 'material', kind: 'part' },
+};
+
+/**
+ * Owners whose `REF_KIND_BY_OWNER` entries are references only inside one
+ * subtree of the entry, named by the first step of the path. Where the caller
+ * knows the path (the editor and `findReferences` do) a field outside it is
+ * not a reference.
+ */
+export const REF_ONLY_UNDER: Record<string, string> = {
+  itemClass: 'exemplar',
+  recipe: 'forge',
 };
 
 /**
@@ -79,10 +96,20 @@ export const REF_SENTINELS: Record<string, string[]> = {
 };
 
 /** The registry `key` points into, for a field owned by `kind`. */
-export function refKindFor(kind: string, key: string, parentKey?: string): string | undefined {
+export function refKindFor(
+  kind: string,
+  key: string,
+  parentKey?: string,
+  path?: readonly (string | number)[],
+): string | undefined {
   if (key === 'parent') return kind === 'skill' ? 'skill' : undefined;
   const owned = REF_KIND_BY_OWNER[kind];
-  if (owned?.[key]) return owned[key];
+  if (owned?.[key]) {
+    const root = REF_ONLY_UNDER[kind];
+    // Outside the subtree it is something else: no registry, and no fallback to the flat table.
+    if (root && path && path[0] !== root) return undefined;
+    return owned[key];
+  }
   if (key === 'id' && parentKey) return owned?.[parentKey] ?? REF_KIND[parentKey];
   return REF_KIND[key];
 }
@@ -163,7 +190,7 @@ export function findReferences(
         if (typeof value === 'string') {
           if (value === targetId) {
             if (kind === targetKind && path.length === 1 && key === 'id') return;
-            if (refKindFor(kind, key, parentKey) === targetKind) sites.push({ kind, id, path });
+            if (refKindFor(kind, key, parentKey, path) === targetKind) sites.push({ kind, id, path });
             return;
           }
           if (COUNTER_KEY_FIELDS.has(key)) {
