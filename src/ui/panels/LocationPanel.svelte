@@ -46,6 +46,10 @@
   import DestinationPreview from './DestinationPreview.svelte';
   import { visibleBenches } from '../lib/navigation';
   import BenchPanel from './BenchPanel.svelte';
+  import AnvilPanel from './AnvilPanel.svelte';
+  import { loadOnAnvil } from '../lib/anvil.svelte';
+  import { placementText } from '../lib/anvilView';
+  import type { Placement as ForgePlacement } from '../../core/types';
   import SpellcraftPanel from './SpellcraftPanel.svelte';
   import AscentPanel from './AscentPanel.svelte';
   import Modal from '../lib/Modal.svelte';
@@ -83,6 +87,15 @@
   const tutorialTarget = $derived(tutorialScreen(gs)?.target ?? null);
 
   const visibleBenchIds = $derived(visibleBenches(gs, spot));
+  /** The assembling bench standing here, if any: a recipe line can be opened on it. */
+  const anvilId = $derived(visibleBenchIds.find((id) => DISCIPLINES[id]?.assembles));
+
+  /** "Open on anvil": load a recipe line's parts and open the bench. */
+  function openOnAnvil(forge: ForgePlacement) {
+    if (!anvilId) return;
+    loadOnAnvil(forge);
+    openBench = anvilId;
+  }
 
   // "Go & open" from the map: open the bench once standing at its spot. Any
   // other stop (a cancelled or redirected journey) drops the request.
@@ -606,7 +619,11 @@
         <div class="win-title">{bench.icon} {bench.benchName ?? bench.name}</div>
         <div class="small dim">{bench.desc}</div>
       {/snippet}
-      <BenchPanel disciplineId={openBench} large />
+      {#if bench.assembles}
+        <AnvilPanel />
+      {:else}
+        <BenchPanel disciplineId={openBench} large />
+      {/if}
     </Modal>
   {/if}
 
@@ -617,24 +634,36 @@
         {#each recipes as recipe (recipe.id)}
           {@const unlocked = recipeUnlocked(gs, recipe)}
           {@const affordable = canAfford(gs, recipe)}
-          <button
-            class="recipe"
-            class:selected={gs.activity === `craft_${recipe.id}`}
-            disabled={!unlocked || gs.recovering || !!gs.combat?.forced}
-            title={unlocked ? '' : `Requires ${condsText(recipe.unlock)}`}
-            onclick={() =>
-              game.selectActivity(
-                gs.activity === `craft_${recipe.id}` ? null : `craft_${recipe.id}`,
-              )}
-          >
-            <span>
-              {unlocked ? recipeResultIcon(recipe) : '🔒'}
-              {recipeResultName(recipe)}
-            </span>
-            <span class="small cost" class:short={!affordable}>
-              {unlocked ? recipeCostText(gs, recipe) : `Requires ${condsText(recipe.unlock)}`}
-            </span>
-          </button>
+          <!-- A line with parts shows them under the button; the button stays the craft. -->
+          <div class="recipe-card">
+            <button
+              class="recipe"
+              class:selected={gs.activity === `craft_${recipe.id}`}
+              disabled={!unlocked || gs.recovering || !!gs.combat?.forced}
+              title={unlocked ? '' : `Requires ${condsText(recipe.unlock)}`}
+              onclick={() =>
+                game.selectActivity(
+                  gs.activity === `craft_${recipe.id}` ? null : `craft_${recipe.id}`,
+                )}
+            >
+              <span>
+                {unlocked ? recipeResultIcon(recipe) : '🔒'}
+                {recipeResultName(recipe)}
+              </span>
+              <span class="small cost" class:short={!affordable}>
+                {unlocked ? recipeCostText(gs, recipe) : `Requires ${condsText(recipe.unlock)}`}
+              </span>
+            </button>
+            {#if recipe.forge}
+              {@const forge = recipe.forge}
+              <div class="recipe-parts small">
+                <span class="dim">{placementText(forge)}</span>
+                {#if anvilId}
+                  <button class="small" onclick={() => openOnAnvil(forge)}>Open on anvil</button>
+                {/if}
+              </div>
+            {/if}
+          </div>
         {/each}
       </div>
     </div>
@@ -737,12 +766,33 @@
     gap: 8px;
   }
 
+  /* A card is as tall as its own lines: a recipe with no parts is not stretched to its neighbour's. */
+  .recipe-card {
+    display: flex;
+    flex-direction: column;
+    align-self: start;
+    gap: 4px;
+  }
+
   .recipe {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
     text-align: left;
+  }
+
+  /* The parts a recipe line is made of, and the way onto the anvil with them. */
+  .recipe-parts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 0 2px;
+  }
+
+  .recipe-parts button {
+    padding: 2px 7px;
   }
 
   .cost {

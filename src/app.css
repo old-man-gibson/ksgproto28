@@ -25,6 +25,15 @@
   --focus: #e07b39;
   --danger: #ff6b6b;
   --action: #f2d024; /* action bars — time until the next action fires */
+  /* Materials, as the anvil's silhouette draws them (ui/lib/anvilView.ts reads
+     these by a material's craft tag). Identity colours like the resource hues,
+     the same in every theme: iron is grey wherever it is drawn. */
+  --mat-iron: #8e9096;
+  --mat-steel: #c3cad2;
+  --mat-bronze: #b3773b;
+  --mat-metal: #9aa0a8; /* a metal with no token of its own */
+  --mat-wood: #a07a46;
+  --mat-leather: #7a4a3a;
 
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 15px;

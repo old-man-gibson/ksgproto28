@@ -308,6 +308,40 @@ Calibration (measured headless on the mockup's kernel):
   (recipe crafts count too), "?" otherwise. It is the durable reference
   (Invariant B).
 
+### The anvil screen (built, slice 1)
+
+`LocationPanel` opens `AnvilPanel.svelte` for any bench whose discipline has
+`assembles: true`; every other bench still opens `BenchPanel`. Two views in one
+window, kept by `ui/lib/anvil.svelte.ts` (UI-only: the layout survives closing
+the window, not a reload, and nothing touches the save).
+
+- **Anvil view.** Silhouette (`lib/ForgeSilhouette.svelte`, geometry in
+  `lib/anvilView.ts`: weapons stack head, guard, haft; armour lays pieces side
+  by side; a bow is an arc), the resolved name with slot, hands, family and
+  degenerate chips (a family no combat skill claims is flagged), the kernel's
+  stat lines at Fair quality, the bill (units, cells, held) and the job time,
+  "one change away" (`neighbours`, one button per distinct product, "?" until
+  that form is known), then the five slot pickers. A shut slot shows its
+  Smithing level. Forge, ×N (up to 5, as many as the pack pays for) and "until
+  out of stock" call `Game.forge`.
+- **Material choices.** Each part lists the forgeable materials it accepts that
+  the pack holds, plus the one already in the slot. When nothing accepted is
+  held, one stand-in per accepted tag (iron for metal) so a picker is never
+  empty. A new part takes the first material it lists (a haft is hardwood), not
+  whatever is held.
+- **Form chart** (`panels/FormChart.svelte`). Head kind by haft kind; guard,
+  binding and head count (1, 2, 4, 8) are selectors. A cell shows the form its
+  parts resolve to once `formKnown`, "?" before; a head accepting wood and metal
+  can resolve to two forms (bow, shin guard) and shows both. Forms using a
+  second head (twin-blade, bladed shield) are not on the grid; the "Forms
+  found" list under it carries every found form, so they are reachable there
+  (a test pins that nothing else is missing from the grid). Clicking a known
+  cell, or a found form, loads it on the anvil in the anvil's own materials
+  where that does not change the form.
+- **Recipe lines.** A recipe with `forge` shows its parts under its button,
+  with "Open on anvil" where an assembling bench stands.
+- Material colours are `--mat-*` tokens in `app.css`, picked by craft tag.
+
 ## Layer 2 — Finishing (slice 2)
 
 The item stores `fin = { n: Partial<Record<VerbId, number>>, t: number,
