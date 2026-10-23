@@ -404,7 +404,23 @@ Measured 2026-10-23 with 20-seed duels against the floor-3 boss
 | condition defence | physical only | bleeding, punctured, concussed via slash/pierce/bludgeon resist |
 | access | yes, no new engine | a forged tool carries a tag; `equippedTag` requires already exist; no hurdle uses it yet |
 
-CHAIN_MAIL_RESULT
+**Chain mail measured (user ruling 4, 2026-10-23).** 20 seeds per row, same
+duel as `tests/john.test.ts`, John's pacing end state (level 5):
+
+| attributes trained | weapon | chest | strings cut | wins |
+|---|---|---|---|---|
+| 1 (STR 5) | rusty sword or oak club | none, chain mail (armour 7), heavy mail (armour 10) | 0 or 3 | 0 |
+| 1 (STR 5) | oak club | breastplate with its STR requirement removed | 3 | 1 |
+| 4 (STR 8) | oak club | chain mail | 3 | 0 |
+| 4 (STR 8) | rusty sword | iron breastplate | 3 | 3 |
+| 4 (STR 8) | oak club | iron breastplate | 3 | 16 |
+
+Chain mail does not fill sustain. At STR 5 nothing does; the character is the
+bottleneck, not the armour. With STR trained to 4 at the Forges' sledge (a base
+verb, not a system), the breastplate is the difference between 0 and 16 wins.
+So the band-1 sustain cell is **the breastplate plus a little STR**, not a
+STR-free armour form. The kernel gives the forged breastplate STR 7, inside
+that reach. A cell test should pin this row.
 
 ## Slices
 
