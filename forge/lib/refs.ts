@@ -117,6 +117,7 @@ const COUNTER_KEY_FIELDS = new Set(['key', 'statKey']);
 const COUNTER_SEGMENTS: Record<string, string[]> = {
   kills: ['monster'],
   gather: ['material'],
+  forged: ['itemClass'],
   fights: ['spot'],
   slain: ['spot', 'monster'],
 };

@@ -1,11 +1,13 @@
 import type { GameState, ItemDef, ItemInstance, SlotId, WieldClass } from '../types';
-import { ITEMS, SKILLS } from '../registry';
+import { SKILLS } from '../registry';
+import { itemDefOf } from './assembly';
 import { sizeRank } from '../types';
 
 /**
  * How held gear occupies your hands, and what it costs to hold something where
  * it doesn't belong. Kept free of other systems so both the equipment commands
- * and the modifier pipeline can read it.
+ * and the modifier pipeline can read it. (`itemDefOf` is the one import: the
+ * resolver half of smithing reads only the registries, never a GameState.)
  */
 
 /**
@@ -155,7 +157,7 @@ export function twoHandedWeapon(
   grants: ReadonlySet<string>,
 ): ItemInstance | null {
   const weapon = state.equipment.weapon;
-  const def = weapon ? ITEMS[weapon.defId] : undefined;
+  const def = weapon ? itemDefOf(weapon) : undefined;
   if (!def || wieldOf(def) !== 'two_handed') return null;
   return armsFrom(grants) - armsUsed(state, grants) >= 1 ? null : weapon!;
 }
@@ -304,7 +306,7 @@ export function armsUsed(state: GameState, grants: ReadonlySet<string>): number 
   let used = 0;
   for (const slot of HAND_SLOTS) {
     const worn = state.equipment[slot];
-    const def = worn ? ITEMS[worn.defId] : undefined;
+    const def = worn ? itemDefOf(worn) : undefined;
     if (def) used += armCost(grants, def, slot);
   }
   return used;
@@ -358,7 +360,7 @@ export function familySkillFor(tag: string): string | undefined {
 
 export function oversizeForgiveness(state: GameState): number {
   const weapon = state.equipment.weapon;
-  const def = weapon ? ITEMS[weapon.defId] : undefined;
+  const def = weapon ? itemDefOf(weapon) : undefined;
   if (!def) return 0;
   let level = 0;
   for (const tag of def.tags ?? []) {

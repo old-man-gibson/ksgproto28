@@ -35,7 +35,8 @@ import { weaponTechniqueMods } from './runes';
 import { preparedSpells, resolveSpell } from './spellcraft';
 import { resourceValue } from './resources';
 import { subsystemUnlocked } from './unlocks';
-import { ITEMS, NPCS } from '../registry';
+import { NPCS } from '../registry';
+import { itemDefOf } from './assembly';
 import { text } from '../text/log';
 
 /**
@@ -604,7 +605,7 @@ export function weaponStateGate(
   if (def.requiresImpaled && !state.combat?.impaled) return 'impaled';
   if (def.requiresReadiedSpell && !state.combat?.readiedSpell) return 'readied';
   if (def.requiresSheathed) {
-    const tags = state.sheathed ? (ITEMS[state.sheathed.defId]?.tags ?? []) : [];
+    const tags = state.sheathed ? (itemDefOf(state.sheathed)?.tags ?? []) : [];
     if (!tags.includes(def.requiresSheathed)) return 'sheathed';
   }
   return null;
@@ -731,7 +732,7 @@ export function toggleSheathe(state: GameState): boolean {
   }
   const weapon = state.equipment.weapon;
   if (!weapon) return false;
-  if (!(ITEMS[weapon.defId]?.tags ?? []).includes('dagger')) return false;
+  if (!(itemDefOf(weapon)?.tags ?? []).includes('dagger')) return false;
   state.sheathed = weapon;
   delete state.equipment.weapon;
   return true;

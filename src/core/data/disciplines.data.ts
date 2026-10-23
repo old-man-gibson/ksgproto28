@@ -753,6 +753,77 @@ export const DISCIPLINES = prose<CraftDisciplineDef>('DISCIPLINES', DISCIPLINES_
       },
     ],
   },
+
+  /*
+   * ---------- Forging ----------
+   *
+   * The fifth shape: an ASSEMBLING bench, smithing's own. Runecarving adds
+   * elements, cooking reads time, alchemy reads order, mutagens read a graph;
+   * the anvil reads PROPORTIONS — the sizes of the parts name the product
+   * (systems/assembly.ts, data/itemclasses.data.ts).
+   *
+   * Not `assembling`: that id is cooking's Cold Counter.
+   *
+   * No outcomes and no stack placement: what goes in the slots is a part kind
+   * and a material (a `Placement`, types.ts), and what comes out is derived
+   * from the cells. The slots here only declare which positions exist and the
+   * Smithing level each opens at.
+   */
+  forging: {
+    id: 'forging',
+    name: 'Forging',
+    benchName: 'Anvil',
+    icon: '🔨',
+    verb: 'Forge',
+    skill: 'smithing',
+    tag: 'smithing',
+    assembles: true,
+    // The clock is 100 ticks plus 15 per cell of the placement (forgeTicks);
+    // this is the nominal figure for a bench that ignores it.
+    ticks: 100,
+    xp: 8,
+    slots: [
+      {
+        id: 'head',
+        name: 'Head',
+        role: 'base',
+        accepts: ['metal', 'wood'],
+        optional: true,
+      },
+      {
+        id: 'head2',
+        name: 'Second Head',
+        role: 'component',
+        accepts: ['metal', 'wood'],
+        optional: true,
+        unlockLevel: 15,
+      },
+      {
+        id: 'guard',
+        name: 'Guard',
+        role: 'component',
+        accepts: ['metal'],
+        optional: true,
+        unlockLevel: 5,
+      },
+      {
+        id: 'haft',
+        name: 'Haft',
+        role: 'component',
+        accepts: ['wood', 'metal'],
+        optional: true,
+      },
+      {
+        id: 'bind',
+        name: 'Binding',
+        role: 'component',
+        accepts: ['leather'],
+        optional: true,
+        unlockLevel: 3,
+      },
+    ],
+    outcomes: [],
+  },
 });
 
 export const DISCIPLINE_LIST: CraftDisciplineDef[] = Object.values(DISCIPLINES);

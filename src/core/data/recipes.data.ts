@@ -24,6 +24,10 @@ export const RECIPES: Record<string, RecipeDef> = {
     ],
     ticks: 220,
     xp: 8,
+    // A recipe line is a placement with a fixed set of parts: the cost above is
+    // what the cells derive (tests/content.test.ts), and each craft also
+    // counts toward the form chart. It still mints the dagger below.
+    forge: { head: { kind: 'short', mat: 'iron_ingot' }, haft: { kind: 'h3', mat: 'hardwood' } },
   },
   iron_sword: {
     id: 'iron_sword',
@@ -36,15 +40,22 @@ export const RECIPES: Record<string, RecipeDef> = {
     ticks: 300,
     xp: 12,
     unlock: [{ type: 'skill', id: 'smithing', level: 3 }],
+    forge: { head: { kind: 'long', mat: 'iron_ingot' }, haft: { kind: 'h3', mat: 'hardwood' } },
   },
   iron_breastplate: {
     id: 'iron_breastplate',
     tags: ['smithing'],
     result: { kind: 'item', id: 'iron_breastplate' },
-    cost: [{ id: 'iron_ingot', qty: 4 }],
+    // Was 4 ingots. A wide plate is 16 cells (3 ingots) and the strap is 3
+    // cells of leather: the cost now follows the parts.
+    cost: [
+      { id: 'iron_ingot', qty: 3 },
+      { id: 'leather', qty: 1 },
+    ],
     ticks: 500,
     xp: 25,
     unlock: [{ type: 'skill', id: 'smithing', level: 8 }],
+    forge: { head: { kind: 'plate_w', mat: 'iron_ingot' }, bind: { kind: 'strap', mat: 'leather' } },
   },
   leather_cap: {
     id: 'leather_cap',
@@ -99,13 +110,20 @@ export const RECIPES: Record<string, RecipeDef> = {
     id: 'rapier',
     tags: ['smithing'],
     result: { kind: 'item', id: 'rapier' },
+    // Was 3 ingots. A thin blade (6 cells) and a swept guard (6 cells) are
+    // 12 cells of iron: 2 ingots.
     cost: [
-      { id: 'iron_ingot', qty: 3 },
+      { id: 'iron_ingot', qty: 2 },
       { id: 'hardwood', qty: 1 },
     ],
     ticks: 400,
     xp: 18,
     unlock: [{ type: 'skill', id: 'smithing', level: 8 }],
+    forge: {
+      head: { kind: 'thin', mat: 'iron_ingot' },
+      guard: { kind: 'swept', mat: 'iron_ingot' },
+      haft: { kind: 'h3', mat: 'hardwood' },
+    },
   },
   parrying_dagger: {
     id: 'parrying_dagger',
@@ -118,6 +136,11 @@ export const RECIPES: Record<string, RecipeDef> = {
     ticks: 340,
     xp: 15,
     unlock: [{ type: 'skill', id: 'smithing', level: 8 }],
+    forge: {
+      head: { kind: 'short', mat: 'iron_ingot' },
+      guard: { kind: 'cross', mat: 'iron_ingot' },
+      haft: { kind: 'h3', mat: 'hardwood' },
+    },
   },
   uchigatana: {
     id: 'uchigatana',
@@ -143,6 +166,7 @@ export const RECIPES: Record<string, RecipeDef> = {
     ticks: 200,
     xp: 10,
     unlock: [{ type: 'skill', id: 'smithing', level: 6 }],
+    forge: { head: { kind: 'curved', mat: 'iron_ingot' }, haft: { kind: 'h3', mat: 'hardwood' } },
   },
   wolf_cloak: {
     id: 'wolf_cloak',

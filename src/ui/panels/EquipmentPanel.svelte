@@ -1,7 +1,8 @@
 <script lang="ts">
   import { resolveRune } from '../../core/systems/runes';
   import { gs, game, ui, view } from '../state.svelte';
-  import { ITEMS, MATERIALS, RARITIES, STATUSES } from '../../core/registry';
+  import { MATERIALS, RARITIES, STATUSES } from '../../core/registry';
+  import { itemDefOf } from '../../core/systems/assembly';
   import { QUALITY_TIERS, QUALITY_ORDER, qualityRank } from '../../core/data/quality.data';
   import type { StackRef } from '../../core/systems/equipment';
   import { RESOURCES } from '../../core/data/resources.data';
@@ -348,7 +349,7 @@
 
   /** Slots this piece could go into — more than one only for hand gear. */
   function equipTargets(item: ItemInstance): SlotId[] {
-    return allowedSlots(ITEMS[item.defId], armsFrom(grants));
+    return allowedSlots(itemDefOf(item), armsFrom(grants));
   }
 
   /** The other hand(s) an already-equipped piece could move to. */
@@ -358,7 +359,7 @@
 
   /** "(60%)" when a hand isn't where the piece belongs; '' at full effect. */
   function fitNote(item: ItemInstance, slot: SlotId): string {
-    const scale = wieldScale(ITEMS[item.defId], slot);
+    const scale = wieldScale(itemDefOf(item), slot);
     return scale < 1 ? ` (${Math.round(scale * 100)}%)` : '';
   }
 
@@ -576,7 +577,7 @@
 </script>
 
 {#snippet itemTip(item: ItemInstance, count = 1)}
-  {@const def = ITEMS[item.defId]}
+  {@const def = itemDefOf(item)}
   {@const context = runeContextFor(def.slot)}
   {@const empty = (item.slots ?? 0) - (item.runes?.length ?? 0)}
   <div class="tip-line tip-base">
@@ -633,7 +634,7 @@
   onopen: () => void,
   ontoggle: () => void,
 )}
-  {@const def = ITEMS[item.defId]}
+  {@const def = itemDefOf(item)}
   {@const peak = isMaxRarity(item)}
   <Tip block>
     <button
@@ -667,7 +668,7 @@
 
 <!-- Rune sockets, editable. Used inside the detail window. -->
 {#snippet sockets(item: ItemInstance)}
-  {@const def = ITEMS[item.defId]}
+  {@const def = itemDefOf(item)}
   {@const context = runeContextFor(def.slot)}
   {@const socketed = item.runes ?? []}
   {#if runesOpen && (item.slots ?? 0) > 0}
@@ -710,7 +711,7 @@
 
 <!-- Shared body of the item window: identity, mods, requirements, sockets. -->
 {#snippet itemDetail(item: ItemInstance, worn: SlotId | null = null)}
-  {@const def = ITEMS[item.defId]}
+  {@const def = itemDefOf(item)}
   {#if def.desc}<p class="small dim desc">{def.desc}</p>{/if}
   {#if HAND_SLOTS.includes(def.slot)}
     <div class="small dim wield">
@@ -754,7 +755,7 @@
 {/snippet}
 
 {#snippet itemTitle(item: ItemInstance, count: number)}
-  {@const def = ITEMS[item.defId]}
+  {@const def = itemDefOf(item)}
   <div class="win-title" style="color: {rarityColor(item)}">
     {def.icon}
     {itemName(item)}{count > 1 ? ` ×${count}` : ''}
@@ -837,7 +838,7 @@
             {/if}
             {#if twoHander}
               <div class="tip-line tip-sub">
-                Taken by {ITEMS[twoHander.defId]?.name} — it needs both hands.
+                Taken by {itemDefOf(twoHander)?.name} — it needs both hands.
               </div>
             {:else if fits > 0}
               <div class="tip-line tip-sub">Empty — {fits} piece{fits > 1 ? 's' : ''} fit. Click to equip.</div>
@@ -1252,7 +1253,7 @@
     {:else}
       <div class="pick-list">
         {#each candidates as s (s.key)}
-          {@const d = ITEMS[s.item.defId]}
+          {@const d = itemDefOf(s.item)}
           {@const ok = canEquip(gs, s.item)}
           <button class="pick" disabled={!ok} onclick={() => equipInto(s.item, slot)}>
             <span class="icon-sm" style="color: {rarityColor(s.item)}">{d.icon}</span>

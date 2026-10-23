@@ -1,4 +1,11 @@
-import type { GameState, Loadout, SkillTrigger, TriggerCondition, TutorialWeapon } from './types';
+import type {
+  GameState,
+  Loadout,
+  Placement as ForgePlacement,
+  SkillTrigger,
+  TriggerCondition,
+  TutorialWeapon,
+} from './types';
 import { activeRotation } from './systems/combat';
 import { EventBus } from './engine/events';
 import { TPS } from './engine/loop';
@@ -462,6 +469,16 @@ export class Game {
 
   stopBenchWork(): void {
     stopBenchWork(this.state, this.bus);
+  }
+
+  /**
+   * Start forging at the anvil: one placement, `count` pieces (null = until the
+   * stock runs out). Nothing is spent until a piece lands, and leaving or
+   * fighting cancels the job at no cost. Refused, with the reason logged, when
+   * the placement is not forgeable right now (`previewForge` says why first).
+   */
+  forge(placement: ForgePlacement, count: number | null = 1): boolean {
+    return startBenchWork(this.state, this.bus, 'forging', {}, { count, forge: placement });
   }
 
   /** Eat, drink or apply something from stock. */

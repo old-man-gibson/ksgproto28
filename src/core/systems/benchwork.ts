@@ -1,10 +1,12 @@
-import type { CraftDisciplineDef, GameState } from '../types';
+import type { CraftDisciplineDef, GameState, Placement as ForgePlacement } from '../types';
 import type { EventBus } from '../engine/events';
 import { DISCIPLINES } from '../data/disciplines.data';
 import { getDerivedStats } from './derived';
 import { cook, previewCook } from './cooking';
 import { brew, previewBrew } from './alchemy';
 import { previewRefine, refineOnce } from './mutagens';
+import { forgeOnce, previewForge } from './forging';
+import { clonePlacement, forgeTicks } from './assembly';
 import { placed, type Placement } from './disciplines';
 import { text } from '../text/log';
 
@@ -44,16 +46,22 @@ export function benchPace(craftSpeed: number, baseTicks: number): { ticksPer: nu
  *  - `per: 'ingredient'` (the cold counter) adds a helping of `ticks` per
  *    filled slot — more layers, more time;
  *  - `skillScaled` benches divide by craftSpeed, floored, with speed past
- *    the floor converting into several crafts per pass.
+ *    the floor converting into several crafts per pass;
+ *  - an ASSEMBLING bench (the anvil) takes the placement's own length of
+ *    work, `forgeTicks`, and is skill-scaled like any other.
  */
 export function benchJobTicks(
   state: GameState,
   disc: CraftDisciplineDef,
   placement: Placement,
   duration?: number,
+  forge?: ForgePlacement,
 ): { ticksPer: number; batch: number } {
   let base: number;
-  if (disc.timeline) {
+  if (disc.assembles) {
+    // The anvil's clock is the work: 100 ticks and 15 per cell of the parts.
+    base = forgeTicks(forge ?? {});
+  } else if (disc.timeline) {
     base = (duration ?? disc.timeline.default) * UNIT_TICKS;
   } else {
     base = disc.ticks;
@@ -73,7 +81,9 @@ function benchPreview(
   disc: CraftDisciplineDef,
   placement: Placement,
   duration?: number,
+  forge?: ForgePlacement,
 ): { ok: boolean; reason?: string } {
+  if (disc.assembles) return previewForge(state, forge ?? {});
   if (disc.refines) return previewRefine(state, placement);
   return disc.ordered ? previewBrew(state, placement, disc) : previewCook(state, placement, disc, duration);
 }
@@ -85,7 +95,9 @@ function benchCraft(
   disc: CraftDisciplineDef,
   placement: Placement,
   duration?: number,
+  forge?: ForgePlacement,
 ): unknown {
+  if (disc.assembles) return forgeOnce(state, bus, forge ?? {});
   if (disc.refines) return refineOnce(state, bus, placement);
   return disc.ordered ? brew(state, bus, placement, disc) : cook(state, bus, placement, disc, duration);
 }
@@ -95,6 +107,8 @@ export interface BenchWorkStart {
   count: number | null;
   /** Duration for a timed bench, in units. */
   duration?: number;
+  /** An assembling bench (the anvil): the parts to forge. The graded-stack placement is unused there. */
+  forge?: ForgePlacement;
 }
 
 /**
@@ -111,7 +125,7 @@ export function startBenchWork(
 ): boolean {
   const disc = DISCIPLINES[disciplineId];
   if (!disc) return false;
-  const check = benchPreview(state, disc, placement, opts.duration);
+  const check = benchPreview(state, disc, placement, opts.duration, opts.forge);
   if (!check.ok) {
     if (check.reason) bus.emit({ type: 'log', msg: text('common.locked', { reason: check.reason }), kind: 'danger' });
     return false;
@@ -122,7 +136,7 @@ export function startBenchWork(
   state.activityProgress = 0;
   state.performance = null;
 
-  const { ticksPer, batch } = benchJobTicks(state, disc, placement, opts.duration);
+  const { ticksPer, batch } = benchJobTicks(state, disc, placement, opts.duration, opts.forge);
   state.benchWork = {
     disciplineId,
     spot: state.spot,
@@ -132,6 +146,8 @@ export function startBenchWork(
     ticksPer,
     batch,
     duration: opts.duration,
+    // A plain copy: the job outlives the panel's working layout.
+    ...(opts.forge ? { forge: clonePlacement(opts.forge) } : {}),
     done: 0,
   };
   // A single craft announces itself when it lands; only a RUN is news now.
@@ -183,7 +199,7 @@ export function tickBenchWork(state: GameState, bus: EventBus): void {
 
   const disc = DISCIPLINES[job.disciplineId];
   for (let i = 0; i < job.batch; i++) {
-    const made = benchCraft(state, bus, disc, job.placement, job.duration);
+    const made = benchCraft(state, bus, disc, job.placement, job.duration, job.forge);
     if (!made) {
       // The bench already logged why (out of stock, usually).
       stopBenchWork(state, bus, 'out of stock');
