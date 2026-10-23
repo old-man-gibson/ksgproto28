@@ -39,7 +39,8 @@ On a peaceful final arrival, in order:
    chosen there, restarts.
 
 Either is skipped if the activity cannot start now (`canStartActivity`: it
-exists at the spot; a craft is unlocked and affordable).
+exists at the spot; a craft is unlocked and affordable; a search has a reward
+left to pay, `searchSpent`).
 
 `resumeActivity` is written by `selectActivity`: choosing an activity records
 it, and deselecting by hand deletes the entry, so a spot left idle on purpose
