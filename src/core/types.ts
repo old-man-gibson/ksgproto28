@@ -5854,7 +5854,8 @@ export type GameEvent =
   | { type: 'attr:levelup'; attr: AttributeId; level: number }
   | { type: 'superattr:unlock'; id: SuperAttributeId }
   | { type: 'encounter'; spot: string; monsterIds: string[] }
-  | { type: 'kill'; monster: MonsterInstance }
+  /** `xp`: what the kill earned after the level-gap cut (killXp, levels.ts). */
+  | { type: 'kill'; monster: MonsterInstance; xp: number }
   /** The last enemy of a fight fell. `forced`: it was a fight that could not be fled. */
   | { type: 'fight:won'; spot: string; forced: boolean }
   | { type: 'defeat'; monster: MonsterInstance }
