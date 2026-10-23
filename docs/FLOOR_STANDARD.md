@@ -1,8 +1,9 @@
 # The floor standard: what every floor holds
 
-*Proposal, 2026-10-23, not built. Piloted on floor 2 (the Long Hall). Written
-by the team loop (.claude/TEAM.md): three brainstorms, one design attack, the
-rulings in §6. All names and prose are placeholders for you to recaption.*
+*Proposal, 2026-10-23. Step 1 of §4 (the rules and lints) is built; steps 2
+to 6 are not. Piloted on floor 2 (the Long Hall). Written by the team loop
+(.claude/TEAM.md): three brainstorms, one design attack, the rulings in §6.
+All names and prose are placeholders for you to recaption.*
 
 Your direction, verbatim: "if a floor doesn't have enough areas to go around, a
 3-4 spot floor is easily finished. there needs to be something to do per
@@ -49,19 +50,52 @@ fields:
 | Hidden | `Connection.hidden` | the source room is explored to 100% |
 | Far side | `oneWay`, revealed by a flag | the wing's last find fires |
 
-Rules, each linted in both validation layers:
+The spine is computed, never declared. The clear spots are the spots named by
+the counters in `FloorDef.clear` (`fights:<spot>`, `slain:<spot>:<monster>`,
+`boss:<spot>`). The spine is the set of spots on every road from the landing to
+a clear spot (their dominators), over the full adjacency with every condition
+ignored. Everything else on the floor is a wing. A floor whose clear names no
+spot (a quest turn-in) skips the rules marked (spine) and gets a forge warning;
+no floor does today.
 
-- **No skips.** A wing never brings a player nearer the clear spot than the
-  room it leaves. The lint runs over mirrored adjacency, because the registry
-  mirrors every edge without its `requires` (src/core/registry.ts:127–129). A wing
-  whose far end touches the spine near the landing exits by a `oneWay` edge.
-- **Wings loop.** A wing's far end has a return edge toward the landing, so a
-  wing costs one trip.
-- **Three hops.** Every room is within 3 hops of the landing or of a shortcut
-  end.
-- **The clear spot keeps one plain line.** At least one encounter line with no
-  `requires`, `statMax`, `daypart` or `window`, so no gauge can empty the
-  table the clear counts on (generalizes the windowless-boss rule).
+Rules. All five are **enforced** since step 1. Each is a pure function in
+`src/core/systems/floorRules.ts`. `tests/content.test.ts` runs them on the live
+registry, `forge/lib/validate.ts:298–314` runs the same functions on the staged
+copy (imported, so the two layers cannot drift), and `tests/floorrules.test.ts`
+breaks each rule on a fixture to show it fails.
+
+- **No skips** (spine). `floorGates` (floorRules.ts:195) and `skipIssues`
+  (floorRules.ts:240); content.test.ts:2049. A floor-local gate is an authored
+  edge inside the floor whose `requires` or `revealWhen` reads a counter written
+  on this floor: `fights:`, `slain:` or `boss:` of a floor spot, a `flag:` set by
+  a find or search reward at a floor spot, or a key item granted at one. Gates
+  with identical condition sets form a group. For each group, assume every
+  other condition holds (other gates, attribute, skill, quest and equipment
+  conditions, hidden edges), remove the group's edges, and none of its target
+  spots may be reachable from the landing. A `oneWay` edge back to a spot that
+  every road to its source passes through (a shortcut home) is not a gate. The
+  walk runs over the mirrored adjacency, because the registry mirrors every
+  non-`oneWay` edge without its `requires` (src/core/registry.ts:127–129).
+- **Three hops** (spine). `wingIssues` (floorRules.ts:276); content.test.ts:2053.
+  Every spot of the floor is within 3 hops of a spine spot. (The first draft
+  measured from the landing; floor 2's far end is 4 hops from it.)
+- **Wings loop** (spine). `wingIssues` (floorRules.ts:276); content.test.ts:2057.
+  A wing is a connected component of the off-spine spots. A wing of 3 or more
+  spots joins the spine at 2 or more spots, or has a `oneWay` edge out to a
+  spine spot, so a wing costs one trip. Floor 1's office block passes: it joins
+  the reception and the toll hall.
+- **The clear spot's table never empties** (spine). `clearTableIssues`
+  (floorRules.ts:361); content.test.ts:2061. Replaces the first draft's "one
+  plain line" with a coverage rule. Sample every counter the clear spot's lines
+  read in `requires` (`stat` and `statMax`) at 0, at each threshold and at
+  threshold + 1. At every sample at least one line with no `daypart` and no
+  `window` is eligible. A line with a condition that is not a counter does not
+  count; `once` history is ignored. Floor 3's Hearing Room partitions
+  `flag:f3_strings_cut` into four lines and passes.
+- **Every explore pays something.** `exploreIssues` (floorRules.ts:451);
+  content.test.ts:578. An `explore` activity's spot has a `finds` entry or a
+  `hidden` connection. Live content only; the shelf (`src/core/data/shelved/`)
+  is not held to it.
 
 ### 2.3 Floor work (chores)
 
@@ -72,7 +106,13 @@ Finite labour native to the floor's theme, as `search` activities.
   limited documents. **The documents carry the floor's clues** (§2.4), so
   working a chore is how a player reads the floor.
 - Each gauge has a cap (`limit`). A spent chore refuses to start
-  (`canStartActivity`), so resume-on-return does not restart it.
+  (`canStartActivity`), so resume-on-return does not restart it. **Enforced**
+  since step 1: a search is spent when no reward is eligible (`searchSpent`,
+  src/core/systems/search.ts:24); `canStartActivity` refuses it
+  (actions.ts:123); a running search stops on the cycle that finds nothing,
+  as a starved craft stops (actions.ts:412). Picking a spent search by hand
+  still starts it and stops it after one cycle. Tests:
+  tests/searchspent.test.ts.
 - Gauge thresholds are read by existing levers: room doors, shop lines,
   teacher lessons, quest requirements and `stat` objectives, encounter
   lines.
@@ -183,10 +223,16 @@ Time:
 
 One builder at a time, each attacked by `antagonist-code` before it lands.
 
-1. **Rules.** The wing lints over mirrored adjacency (no skip, loop, three
-   hops), the clear-spot-plain-line lint, every explore has a find (gives the
-   Chalk Yard and Undercrofts one find each, as SLICE_REVIEW A3 planned), a
-   spent search refuses to start. No content.
+1. **Rules.** *Built 2026-10-23.* The wing lints over mirrored adjacency (no
+   skip, loop, three hops), the clear-spot table coverage lint, every explore
+   has a find (gives the Chalk Yard and Undercrofts one placeholder find each,
+   as SLICE_REVIEW A3 planned), a spent search refuses to start. No floor
+   content. Enforced in: src/core/systems/floorRules.ts (the five floor rules
+   and the explore rule), src/core/systems/search.ts:24 and actions.ts:123, :412
+   (the spent search), tests/content.test.ts:578 and :2038–2063 (live
+   content), forge/lib/validate.ts:298–314 (the live layer),
+   tests/floorrules.test.ts and tests/searchspent.test.ts (the failing
+   fixtures). Per rule: §2.2, §2.3.
 2. **Floor 2 wings, chores and residents.** Everything in §3 except the
    secrets. Existing machinery only. Rerun `npm run pacing`.
 3. **Secrets engine, then floor 2's secrets.** `daypartOf`; the three
