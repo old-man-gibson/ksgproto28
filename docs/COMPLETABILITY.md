@@ -401,7 +401,8 @@ column (the grammar) stays optional.
 A **hurdle** is anything on the critical path the climb asks the player to get
 past: a boss, a fight stretch, a condition the floor inflicts, a shut way. A
 hurdle names **roles**, never systems. A **role table** records which roles
-each core system fills at its basic level.
+each core system fills at its basic level: [ROLES.md](ROLES.md), surveyed
+2026-10-23.
 
 Roles (proposal, Q5):
 

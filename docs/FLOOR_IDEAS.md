@@ -181,7 +181,8 @@ that stays.
   is safe to leave running.
 - **H8 A use for each system.** What each open core system does on this band:
   the roles it fills on the band's hurdles (as floor 1's spells answer the
-  collector), a material it consumes, a teacher. Picking which systems to
+  collector; today's fills are in ROLES.md), a material it consumes, a
+  teacher. Picking which systems to
   focus on is planning, and planning counts as hands-on time; a band where
   only one system helps removes the choice and fails L7.
 
