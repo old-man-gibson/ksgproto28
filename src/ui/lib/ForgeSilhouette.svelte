@@ -33,11 +33,11 @@
 >
   {#each sil.shapes as s, i (i)}
     {#if s.t === 'rect'}
-      <rect x={s.x * C} y={s.y * C} width={s.w * C} height={s.h * C} style="fill: {s.fill}" class="cell" />
+      <rect x={s.x * C} y={s.y * C} width={s.w * C} height={s.h * C} style="fill: {s.fill}" class="piece-cell" />
     {:else if s.t === 'ring'}
       <circle cx={s.cx * C} cy={s.cy * C} r={s.r * C} style="stroke: {s.stroke}" class="loop" />
     {:else if s.t === 'poly'}
-      <polygon points={s.points.map(([x, y]) => `${x * C},${y * C}`).join(' ')} style="fill: {s.fill}" class="cell" />
+      <polygon points={s.points.map(([x, y]) => `${x * C},${y * C}`).join(' ')} style="fill: {s.fill}" class="piece-cell" />
     {:else if s.t === 'line'}
       <line x1={s.x1 * C} y1={s.y1 * C} x2={s.x2 * C} y2={s.y2 * C} style="stroke: {s.stroke}" class="cord" />
     {:else}
@@ -52,8 +52,10 @@
     height: auto;
   }
 
-  /* The outline is the well colour, so cells read as separate in any theme. */
-  .cell {
+  /* The outline is the well colour, so cells read as separate in any theme.
+     Not `.cell`: a rect takes its width from CSS when any rule sets one, and
+     several panels style a `.cell` of their own. */
+  .piece-cell {
     stroke: var(--bg-sunken);
     stroke-width: 1;
   }

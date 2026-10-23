@@ -349,6 +349,53 @@ which covers a hard reset, an import and a prestige without hooking any of them.
   with "Open on anvil" where an assembling bench stands.
 - Material colours are `--mat-*` tokens in `app.css`, picked by craft tag.
 
+### Slice 1 as built (2026-10-23)
+
+Where the code differs from or adds to the spec above. The code is the
+authority; this list says where to look.
+
+- **Files.** Data: `data/parts.data.ts` (PART_KINDS, FORGE_SLOTS),
+  `data/itemclasses.data.ts` (ITEM_CLASSES, 44 classes, priorities 440 → 10),
+  `text/itemclasses.text.ts` (degenerate descs). Pure resolver:
+  `systems/assembly.ts`. Bench job and preview: `systems/forging.ts` (a separate
+  file because the job needs skills.ts, which imports derived.ts, which imports
+  assembly.ts). Shared lint body: `systems/assemblyValidation.ts`, called by
+  `tests/content.test.ts` (every material) and `forge/lib/validate.ts`
+  (materials by tag). UI: `ui/panels/AnvilPanel.svelte`,
+  `ui/panels/FormChart.svelte`, `ui/lib/ForgeSilhouette.svelte`,
+  `ui/lib/anvilView.ts`, `ui/lib/anvil.svelte.ts`.
+- **Materials match by tag.** Parts accept `MaterialDef.craftTags` (metal,
+  iron, bronze, wood, leather), and `ClassMatch.head.mat` matches tags, not
+  ids. `SmithProfile` gained `unitCells` (cells per unit) and `label` ("Iron").
+- **A class may list several clauses** (`match: ClassMatch | ClassMatch[]`, any
+  one matches): the greatsword is `l ≥ 9` or `area ≥ 18`. Open upper bounds
+  are written 99.
+- **Tags.** A forged item carries the class tags plus its head materials'
+  craftTags; a piece with no head carries its haft material's instead (a forged
+  club is `blunt, wood`, like the oak club). Material `smith.mods` apply once
+  per distinct head material.
+- **Damage type.** `ItemDef.damageType` is new and read first by
+  `playerDamageType`. Axe, halberd and sickle slash.
+- **Quality and XP.** `rollQuality(state, 1 + smithing / 20)`, as cooking's
+  prep. XP = 8 + 0.2 × base ticks (an iron sword ≈ 73, the recipe line 72).
+  Novelty key `forging:<classId>`. The anvil also counts `crafts`.
+- **Corrupt specs read as an empty anvil.** `placementOf` keeps only entries
+  with a known slot and string kind and mat; a save holding a mangled spec
+  still boots (test: `tests/assembly.test.ts`).
+- **Forge renames move placements.** `forge/lib/refs.ts` treats `mat` and
+  `kind` under an exemplar or a recipe's `forge` as material and part
+  references. Recipe `cost[].id` is still not a reference (pre-existing).
+- **Debug.** `createItem('forged:<class>')` mints the class exemplar at grade C,
+  so the debug "one of every item" still gives numbers.
+- **Silhouette class.** The SVG cells use class `piece-cell`, not `cell`: an
+  SVG rect takes its width from CSS whenever any rule sets one, and several
+  panels style a `.cell` of their own.
+- **Recipe cost changes.** Rapier 3 → 2 iron ingots + 1 hardwood; iron
+  breastplate 4 iron ingots → 3 + 1 leather. Uchigatana keeps its authored
+  cost (no placement).
+- **Not built yet.** No real-grade preview (the anvil draws at Fair), no tool
+  that caps quality, no steel.
+
 ## Layer 2 — Finishing (slice 2)
 
 The item stores `fin = { n: Partial<Record<VerbId, number>>, t: number,
