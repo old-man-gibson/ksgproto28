@@ -28,6 +28,13 @@ new pillar widens the game; none of them may narrow the road through it.
 > never become **unable** to finish, and everything the road demands must be
 > **learnable in-game and re-openable**. See §4 and §6.
 
+> **Revised 2026-10-23: the climb requires the core systems.** Grinding with
+> no subsystem no longer clears the climb. The player uses roughly half the
+> core systems at a basic level and picks which; mastery stays optional and
+> optimal play only accelerates. Archetype 2 changes with it: John now uses
+> about half the core systems at their simplest. §6a is the rule and wins
+> where §3, §6 and §8 disagree.
+
 ---
 
 ## 1. What the three compress to
@@ -316,6 +323,9 @@ quit, more reliably than difficulty does.
 > lives in optional content only (§5): off-ladder floors, side stacks, chase
 > items, hidden rooms. The final-band rule above is kept as the record of
 > what this replaced.
+>
+> **Narrowed 2026-10-23 (§6a):** grinding wins inside the core systems the
+> player picked. Grinding with none of them does not.
 
 ⚠️ **Quest-count gates are the one gate kind that strains archetype 1.** Gold,
 skill-total, kill-count and discovery-count all accrue from acting at all.
@@ -337,6 +347,99 @@ moves, because the game reads their actions rather than their intentions.
 
 **Preserve this property in every new system.** A system that only pays out
 when used *correctly* has quietly made itself mandatory to understand.
+
+---
+
+## 6a. The core-systems requirement (2026-10-23)
+
+The user, verbatim: *"I have discarded the notion that the player can grind it
+out without touching subsystems, there will be requirements to learn how to
+use them to some degree, optimal play will simply accelerate the player and
+their experience. Not every system will be required, but the player will have
+to touch and involve themselves with roughly half of the core systems (magic,
+martial, psionics, cooking, smithing, mutagens, possibly one or two others),
+but it'll be up to them which ones they pick and focus on."* And: *"divine
+magic is also a core system."*
+
+> **The climb requires basic use of roughly half the core systems. The player
+> picks which. Mastery stays optional; optimal play only accelerates.**
+
+**The core systems:** arcane magic, divine magic, martial, psionics, cooking,
+smithing, mutagens. One or two more may join; candidates are alchemy, music,
+runecarving and wuxia (§6a Q3).
+
+**What this replaces.** Where §3, §6 and §8 say otherwise, this section wins.
+
+- **Archetype 2.** John no longer refuses every subsystem. He picks about half
+  the core systems and uses each at its basic level: he follows recipes, casts
+  the spells he is handed, prays to the gods he knows and fires the
+  techniques he is taught. He never composes.
+- **The tuning target (§6).** The critical path is tuned to that build, basic
+  use of any qualifying set of systems, not to a build that touches nothing.
+  Every other build is width that makes the same road faster, as before.
+- **The 2026-10-22 ruling** reads: a mediocre player wins by grinding inside
+  the systems they picked.
+
+**What holds unchanged.** Invariant A (no terminal state), Invariant C
+(arithmetic holds), both clauses of Invariant B (every required system is
+taught in game and re-openable), and §5 with the 2026-10-22 ruling: a
+generative grammar is never required on the ladder, only in optional content.
+The required level is the right column of §3's table (usage); the middle
+column (the grammar) stays optional.
+
+### The five rules that keep the choice the player's
+
+1. **Count, never name.** A requirement counts core systems ("basic
+   competence in 3 core systems"), or offers one route per core system. It
+   never names one system without alternatives: that makes the system
+   mandatory, which "up to them which ones they pick" forbids. The shipped
+   lint *no rung is gated or cleared on a named discipline*
+   (`tests/content.test.ts`, `forge/lib/validate.ts`) is the first half of
+   this rule and stays. A count needs a new condition kind:
+   [`conditionsMet`](../src/core/systems/conditions.ts) is a pure AND and has
+   none today.
+2. **The choice is real.** A gate that counts *k* systems has more than *k*
+   open and taught before it. Shut systems do not count toward the choice. In
+   the alpha today four of the seven are open (arcane, divine, cooking,
+   smithing), martial only through the floor 2 tutor, and psionics and
+   mutagens are shut (`systems/unlocks.ts`).
+3. **Taught before needed.** Each core system has a teacher or guide the
+   player reaches without passing the gate that counts it, and a re-openable
+   reference (Invariant B, and the circular-lock trap in §8).
+4. **No lock-in.** A pick is never permanent. Any system can be started later
+   and counted, because skills manifest from doing. A player who picked badly
+   loses time, never the road (Invariant A).
+5. **Competence is measured, not judged.** "Basic competence" is a number the
+   game already keeps, such as the system's skill level, and it accrues from
+   doing at all (§6, "acting at all, not acting correctly").
+
+### John, revised
+
+The quantifier trap in §8 comes back in a new form: "every choice of half the
+systems clears the climb" is a claim over subsets, 35 of them for four of
+seven. Rule 1 keeps the test linear. While gates only count, walk **one John
+per core system**: each uses that one system at its basic level and nothing
+else, and asserts that it reaches the competence mark in bounded time. Any
+set of *k* then clears by construction. Seven walks, not thirty-five.
+
+Band 1 asks for no system today, so the shipped John (`tests/john.ts`) stays
+valid for it. The per-system Johns arrive with the first gate that counts.
+
+### Open (user)
+
+Each has a default, used until answered.
+
+1. **"To some degree."** Default: the system's own verbs at their simplest,
+   following a recipe, a teacher or a known prayer, measured by the system's
+   skill level. Buying or looting a system's output does not count: a
+   dropped sword is not smithing.
+2. **"Roughly half", by when.** Default: the count ramps with the climb. Band 1
+   asks for none (as built); later bands raise it, reaching about half of the
+   open core systems.
+3. **The other core systems.** Default: the seven named. Alchemy, music,
+   runecarving and wuxia stay outside the count until you name them.
+4. **Across prestige.** Skills and stats reset with the run, so the count is
+   earned again each run. Default: earned again; a boon may carry it later.
 
 ---
 
@@ -379,7 +482,7 @@ The invariants are lint rules, not just prose here. Content rules live in
 | **Non-finite values never serialize** — `serialize` clamps on the way out; player-controlled exponents are bounded at the `Math.pow` sites | `save.ts` + `completability.test.ts` | C | **unbuilt** (§4b) |
 | **Every subsystem-naming critical gate has a teacher** — an NPC or guide that hands over the combination, **reachable without passing the gate it teaches** | `content.test.ts` + forge mirror | B | **unbuilt** (§3) |
 | **Optional is computed, not declared** — derived from the critical-path closure; an author-set flag is cross-checked against it, never trusted | `content.test.ts` | B, §5 | **unbuilt** |
-| **John** — a directed floor-build driver clears bands 1..N−1 | `tests/john.ts` + `.test.ts`, `npm run pacing` | tuning target | **shipped** for band 1 (2026-10-10) |
+| **John** — a directed floor-build driver clears every band; from the first counting gate, one John per core system (§6a) | `tests/john.ts` + `.test.ts`, `npm run pacing` | tuning target | **shipped** for band 1 (2026-10-10); per-system Johns not built |
 
 ### The goldfish is not a completion oracle
 
@@ -446,6 +549,8 @@ And the comprehension floor is then a parameter rather than a mood:
 
 *Revised 2026-10-22 (§6):* with no final band, John asserts through every
 band on the ladder. A band John cannot clear by grinding is a bug.
+*Revised 2026-10-23 (§6a):* John uses about half the core systems at their
+basic level, and is walked once per system.
 
 **Built 2026-10-10 for band 1** (`tests/john.ts`). John is Skip tutorial —
 rusty sword, Neutral, no spell — walking the floors in order, hunting and

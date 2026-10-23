@@ -104,7 +104,7 @@ John's critical-path number is set at build time and checked with
 
 | Constraint | Source |
 |---|---|
-| A band's critical path may ask for subsystem *usage*, never *invention*. A mediocre player wins by grinding; mastery of a generative grammar (arcane sentences, mutagen topology, alchemy sequence, the martial graph) gates optional content only | COMPLETABILITY §3, §6 (revised 2026-10-22) |
+| The climb requires basic use of roughly half the core systems (arcane, divine, martial, psionics, cooking, smithing, mutagens), the player's pick. A requirement counts systems or offers a route per system; it never names one. Mastery of a generative grammar (arcane sentences, mutagen topology, alchemy sequence, the martial graph) gates optional content only | COMPLETABILITY §6a (2026-10-23), §5 |
 | Gates on accumulation; a power check sits at John's floor | COMPLETABILITY §6 |
 | Shut in alpha: runecarving, music, genes, psionics, wuxin; martial except the floor 2 tutor. An idea that needs one names how it opens (a Doors boon, a teacher on the floor) | plans/alpha-scope-locks.md, SLICE_REVIEW.md §6 step 2 |
 | Shelved, not re-pitched: the countryside, tile autotile / generator / fake doors, arcane compound words | LONGTERM.md |
@@ -179,6 +179,11 @@ that stays.
   returning player knows, a hidden floor behind `prestige:count`.
 - **H7 Idle form.** What the band pays while the player is away, and that it
   is safe to leave running.
+- **H8 A use for each system.** What each open core system does on this band:
+  a boss answer (as floor 1's spells answer the collector), a material it
+  consumes, a teacher. Picking which systems to focus on is planning, and
+  planning counts as hands-on time; a band where only one system helps
+  removes the choice.
 
 ### 3.3 Laws
 
@@ -188,7 +193,12 @@ that stays.
 - **L3 Failure is recoverable.** A loss costs time, never a path.
 - **L4 Usage, not invention** on the critical path. Mastery gates optional
   content only (§5.1 Q6).
-- **L5 No power gates.** Every critical-path fight is winnable by grinding.
+- **L5 No power gates.** Every critical-path fight is winnable by grinding
+  inside the systems the player picked (§5.1 Q7).
+- **L7 Count, never name.** A system requirement counts core systems or
+  offers one route per open core system; it never names one
+  (COMPLETABILITY §6a rule 1). More systems are open and taught before the
+  gate than it counts (rule 2).
 - **L6 Shelf and shutters** (§1.4).
 
 ### 3.4 Verdicts
@@ -263,6 +273,16 @@ Band: · Floors: · Verdict:
    critical-path fight is winnable by grinding. Mastery gates optional
    content: off-ladder floors, side stacks, chase items, hidden rooms.
    COMPLETABILITY.md §6 revised to match.
+7. **Core systems are required (2026-10-23).** *"I have discarded the notion
+   that the player can grind it out without touching subsystems, there will
+   be requirements to learn how to use them to some degree, optimal play will
+   simply accelerate the player and their experience. Not every system will
+   be required, but the player will have to touch and involve themselves with
+   roughly half of the core systems (magic, martial, psionics, cooking,
+   smithing, mutagens, possibly one or two others), but it'll be up to them
+   which ones they pick and focus on."* Divine magic is also core. Narrows Q6:
+   grinding wins inside the picked systems. COMPLETABILITY.md §6a holds the
+   rule and its open questions.
 
 ### 5.2 Open
 
