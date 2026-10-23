@@ -58,6 +58,7 @@
     'kills:*': 'per monster — e.g. kills:forest_rat',
     'kills:tag:*': 'per monster tag — e.g. kills:tag:beast',
     'gather:*': 'per material — e.g. gather:common_herb',
+    'forged:*': 'per item class, forged at the anvil or by a recipe line — e.g. forged:sword',
     'attr:*': 'highest level reached, per attribute — e.g. attr:str',
     'used:*': 'per weapon family — e.g. used:sword',
   };

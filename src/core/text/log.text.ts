@@ -108,6 +108,17 @@ export const LOG_TEXT = {
   'cooking.reason.technique_level': 'Technique needs Cooking {level}',
   'cooking.reason.not_preppable': 'Not a preppable ingredient',
 
+  // ---------- forging (systems/assembly.ts, systems/forging.ts) ----------
+  'forging.reason.empty': 'Nothing is on the anvil',
+  'forging.reason.unknown_part': 'No such part: {part}',
+  'forging.reason.wrong_slot': '{part} does not go in the {slot} slot',
+  'forging.reason.material': '{part} cannot be made of {material}',
+  'forging.reason.graded': '{material} is graded stock and cannot be forged',
+  'forging.reason.qty': '{part}: quantity must be 1 to {max}',
+  'forging.reason.slot_locked': 'The {slot} slot opens at Smithing {level}',
+  'forging.reason.short': 'Short of {material}: {held} held, {need} needed',
+  'forging.forged': '🔨 Forged:',
+
   // ---------- disciplines ----------
   'disciplines.reason.slot_empty': '{slot} is empty',
   'disciplines.reason.wrong_slot': '{name} does not belong in {slot}',

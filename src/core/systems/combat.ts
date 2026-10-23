@@ -55,6 +55,7 @@ import { attrValue, grantAttrXp } from './attributes';
 import { checkDiscovery, grantSkillXp, isUnlocked } from './skills';
 import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from './exposure';
 import { itemName, unequipSlot } from './equipment';
+import { itemDefOf } from './assembly';
 import { effectiveStyleDef, effectiveStyleId } from './styles';
 import { bumpStat } from './achievements';
 import { monsterTagSet } from './bestiary';
@@ -341,7 +342,7 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
   if (!c.floating) c.floating = { bar: 0, nth: 0, run: 0 };
   const slot = slots[c.floating.nth % slots.length];
   const item = state.equipment[slot];
-  const def = item ? ITEMS[item.defId] : undefined;
+  const def = item ? itemDefOf(item) : undefined;
   if (!item || !def) return false;
 
   /*
@@ -1126,11 +1127,11 @@ function combatTags(state: GameState): string[] {
   // survived teaches the same craft as a fight sought out.
   const tags = ['combat', 'hunt'];
   const weapon = state.equipment.weapon;
-  if (weapon) for (const t of ITEMS[weapon.defId]?.tags ?? []) tags.push(t);
+  if (weapon) for (const t of itemDefOf(weapon)?.tags ?? []) tags.push(t);
   else tags.push('unarmed');
   // A shield is fought with too, so its family trains alongside the weapon's.
   const offhand = state.equipment.offhand;
-  if (offhand) for (const t of ITEMS[offhand.defId]?.tags ?? []) tags.push(t);
+  if (offhand) for (const t of itemDefOf(offhand)?.tags ?? []) tags.push(t);
   // Fighting in a stance is how its school skills manifest and level.
   tags.push(`style:${effectiveStyleId(state)}`);
   return tags;
@@ -1157,7 +1158,7 @@ const WEAPON_DAMAGE_TYPES: Record<string, DamageType> = {
 function trackWeaponFamily(state: GameState, bus: EventBus): void {
   const weapon = state.equipment.weapon;
   if (!weapon) return;
-  const tags = ITEMS[weapon.defId]?.tags ?? [];
+  const tags = itemDefOf(weapon)?.tags ?? [];
   const family = tags.find((t) => t in WEAPON_DAMAGE_TYPES) ?? tags[0];
   if (!family || state.stats[`used:${family}`]) return;
   bumpStat(state, bus, `used:${family}`);
@@ -1183,7 +1184,11 @@ export function playerDamageType(state: GameState, slot: SlotId = 'weapon'): Dam
   if (routed) return routed;
   const weapon = state.equipment[slot];
   if (!weapon) return 'bludgeoning';
-  for (const t of ITEMS[weapon.defId]?.tags ?? []) {
+  const def = itemDefOf(weapon);
+  // A forged axe or halberd names its own type (its class says so); the family
+  // tag would have called it a spear or nothing at all.
+  if (def?.damageType) return def.damageType;
+  for (const t of def?.tags ?? []) {
     const type = WEAPON_DAMAGE_TYPES[t];
     if (type) return type;
   }
@@ -1403,7 +1408,8 @@ function monsterCritKey(defId: string): string {
 
 /** What the player's weapon damage is credited to in a tooltip. */
 function weaponSource(state: GameState): string {
-  return ITEMS[state.equipment.weapon?.defId ?? '']?.name ?? 'Bare hands';
+  const weapon = state.equipment.weapon;
+  return (weapon ? itemDefOf(weapon)?.name : undefined) ?? 'Bare hands';
 }
 
 function resNote(res: number): string {
@@ -3165,7 +3171,7 @@ function applyBarDamage(state: GameState, bus: EventBus, when: 'onFill' | 'onDep
       state.equipment.weapon &&
       resourceValue(state, 'hp') < availableMax(state, stats, 'hp') * hit.dropWeaponBelow
     ) {
-      const name = ITEMS[state.equipment.weapon.defId]?.name ?? 'your weapon';
+      const name = itemDefOf(state.equipment.weapon)?.name ?? 'your weapon';
       unequipSlot(state, 'weapon');
       bus.emit({ type: 'log', msg: text('combat.weapon_dropped', { name }), kind: 'danger' });
       feed(state, `⚡ You drop ${name}!`);
@@ -3981,7 +3987,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         // Weapon enchants and socketed runes add their own typed damage per hit.
         if (isWeaponHit) {
           const typed: { type: DamageType; value: number; source: string }[] = [];
-          const wdef = ITEMS[state.equipment.weapon?.defId ?? ''];
+          const wielded = state.equipment.weapon;
+          const wdef = wielded ? itemDefOf(wielded) : undefined;
           if (wdef?.bonusDamage) typed.push({ ...wdef.bonusDamage, source: wdef.name });
           const runeBonus = weaponRuneBonuses(state);
           for (const b of runeBonus.flat) typed.push(b as { type: DamageType; value: number; source: string });

@@ -3,16 +3,19 @@ import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { KEY_ITEMS } from '../src/core/data/keyitems.data';
 import { searchContentIssues } from '../src/core/systems/searchValidation';
+import { smithingContentIssues } from '../src/core/systems/assemblyValidation';
 import {
   ACHIEVEMENTS,
   ADJACENCY,
   AREAS,
   BESTIARY_FACTS,
   ITEMS,
+  ITEM_CLASSES,
   MATERIALS,
   MONSTERS,
   MONSTER_TAGS,
   NPCS,
+  PART_KINDS,
   QUESTS,
   RECIPES,
   REGIONS,
@@ -117,6 +120,9 @@ function statCounterValid(key: string): boolean {
   }
   if (key.startsWith('kills:')) return key.slice(6) in MONSTERS;
   if (key.startsWith('gather:')) return key.slice(7) in MATERIALS;
+  // `forged:<class>` is bumped when the anvil makes a piece of that class, and
+  // by a recipe line whose parts resolve to it (systems/forging.ts, actions.ts).
+  if (key.startsWith('forged:')) return key.slice(7) in ITEM_CLASSES;
   if (key.startsWith('attr:')) return VALID_ATTRS.has(key.slice(5) as never);
   // `flag:*` is content's own namespace (SpotFind.stat): real only when some
   // find or search reward writes it, by bump or by set.
@@ -917,7 +923,7 @@ describe('skills & styles', () => {
   it('registry keys match their def ids', () => {
     // Lookups go through the KEY, so a def whose `id` disagrees is invisible to
     // every `{ type: 'skill', id }` reference — silently, at runtime.
-    for (const [registry, defs] of Object.entries({ SKILLS, STYLES, ITEMS, MONSTERS, QUESTS, RUNES })) {
+    for (const [registry, defs] of Object.entries({ SKILLS, STYLES, ITEMS, MONSTERS, QUESTS, RUNES, PART_KINDS, ITEM_CLASSES })) {
       for (const [key, def] of Object.entries(defs as Record<string, { id: string }>)) {
         expect(def.id, `${registry}['${key}'] has id '${def.id}'`).toBe(key);
       }
@@ -933,10 +939,14 @@ describe('skills & styles', () => {
       REGIONS, AREAS, SPOTS, NPCS, QUESTS, MONSTERS, ITEMS, MATERIALS, RECIPES,
       SKILLS, STYLES, STATUSES, RUNES, ACHIEVEMENTS, TITLES, DISCIPLINES,
       REAGENTS, TECHNIQUES, POSITIONS, GENERA, MAIN_GENES, MUTATIONS, LAYOUTS,
-      DEITIES, MIRACLES,
+      DEITIES, MIRACLES, PART_KINDS, ITEM_CLASSES,
     };
     for (const [registry, defs] of Object.entries(registries)) {
-      for (const key of Object.keys(defs)) {
+      for (const rawKey of Object.keys(defs)) {
+        // `ITEMS['forged:<classId>']` stubs are generated from ITEM_CLASSES: the
+        // prefix is the one sanctioned colon, and the class id after it is
+        // held to the same shape (and is checked as an ITEM_CLASSES key too).
+        const key = registry === 'ITEMS' ? rawKey.replace(/^forged:/, '') : rawKey;
         expect(
           /^[a-z][a-z0-9_]*$/.test(key),
           `${registry}['${key}'] — ids are lowercase snake_case: a letter first, then letters, digits and _`,
@@ -1358,12 +1368,17 @@ describe('crafting disciplines', () => {
     // (cooking), choose an ORDER (alchemy — one outcome, but the sequence it is
     // read in is the decision), or choose a SUBJECT (mutagens — one slot and no
     // outcome table, because the decision is which of the things you hold is
-    // worth two copies and a pile of biomatter). A discipline with none of the
-    // four is a button, not a bench.
+    // worth two copies and a pile of biomatter), or choose PARTS (the anvil — no
+    // outcome table either, because the proportions of the parts name the
+    // product). A discipline with none of the five is a button, not a bench.
     for (const disc of DISCIPLINE_LIST) {
       const designs = disc.slots.filter((s) => s.picks === 'design');
       const choosable =
-        designs.length > 0 || disc.outcomes.length > 1 || !!disc.ordered || !!disc.refines;
+        designs.length > 0 ||
+        disc.outcomes.length > 1 ||
+        !!disc.ordered ||
+        !!disc.refines ||
+        !!disc.assembles;
       expect(choosable, `${disc.id} has nothing to decide`).toBe(true);
       // An ordered bench needs room for an order to exist in the first place.
       if (disc.ordered) {
@@ -1453,6 +1468,82 @@ describe('crafting disciplines', () => {
         (spec.restore?.length ?? 0) + (spec.grants?.length ?? 0) + (spec.cures?.length ?? 0) > 0 ||
         isCard(spec);
       expect(doesSomething, `${mat.id} is usable but does nothing`).toBe(true);
+    }
+  });
+});
+
+describe('modular smithing content', () => {
+  // The rules live in systems/assemblyValidation.ts and are mirrored live in
+  // forge/lib/validate.ts by calling the same function. Run once here with the
+  // exhaustive enumeration (every part × every accepted material × both head
+  // slots × every quantity, ~1.3M placements); one `it` per rule so a failure
+  // names the rule.
+  let cached: ReturnType<typeof smithingContentIssues> | undefined;
+  const issuesOf = () => {
+    if (!cached) {
+      cached = smithingContentIssues(
+        { parts: PART_KINDS, classes: ITEM_CLASSES, materials: MATERIALS, recipes: RECIPES },
+        { materials: 'all' },
+      );
+    }
+    return cached;
+  };
+  const report = (rule: string) =>
+    issuesOf()
+      .filter((i) => i.rule === rule)
+      .map((i) => `${i.kind} ${i.id}: ${i.message}`);
+
+  it('parts, smith profiles and class rules are well formed', () => {
+    expect(report('parts')).toEqual([]);
+    expect(report('materials')).toEqual([]);
+    expect(report('classes')).toEqual([]);
+  });
+
+  it('every class exemplar resolves to its own class', () => {
+    expect(report('exemplars')).toEqual([]);
+    for (const cls of Object.values(ITEM_CLASSES)) expect(cls.exemplar, `${cls.id} has no exemplar`).toBeDefined();
+  });
+
+  it('every class is reachable from the catalogue', () => {
+    // A class no placement can produce is a dead rule, or a part that was
+    // never authored (the odachi waited on the long curved blade).
+    expect(report('reachable')).toEqual([]);
+  });
+
+  it('the resolver is total: the last class matches everything and no placement falls through', () => {
+    expect(report('last-class')).toEqual([]);
+    expect(report('total')).toEqual([]);
+  });
+
+  it("a recipe's listed cost equals the cost its parts derive", () => {
+    expect(report('recipes')).toEqual([]);
+    // And the lint has something to chew on: the recipe lines of slice 1.
+    const placed = Object.values(RECIPES).filter((r) => r.forge).map((r) => r.id);
+    expect(placed.sort()).toEqual(
+      ['iron_breastplate', 'iron_dagger', 'iron_sword', 'katana', 'parrying_dagger', 'rapier'].sort(),
+    );
+  });
+
+  it('every class has a generated item stub, and the stub carries no numbers', () => {
+    for (const cls of Object.values(ITEM_CLASSES)) {
+      const stub = ITEMS[`forged:${cls.id}`];
+      expect(stub, `ITEMS['forged:${cls.id}']`).toBeDefined();
+      expect(stub.slot, cls.id).toBe(cls.slot);
+      expect(stub.tags, cls.id).toEqual(cls.tags);
+      expect(stub.mods, `${cls.id}: a stub grants nothing`).toEqual([]);
+    }
+  });
+
+  it('forging is the Forges bench; the Cold Counter stays in the kitchen', () => {
+    expect(SPOTS.the_forges.benches).toEqual(['forging']);
+    expect(DISCIPLINES.forging.assembles).toBe(true);
+    expect(DISCIPLINES.forging.skill).toBe('smithing');
+    expect(DISCIPLINES.assembling.assembles).toBeUndefined();
+  });
+
+  it('the Forges list the five smithing recipes that had no counter', () => {
+    for (const id of ['rapier', 'parrying_dagger', 'katana', 'uchigatana', 'iron_breastplate']) {
+      expect(SPOTS.the_forges.recipes, id).toContain(id);
     }
   });
 });

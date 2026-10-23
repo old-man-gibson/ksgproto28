@@ -42,6 +42,8 @@ export const CATALOG: CatalogEntry[] = [
   { kind: 'monster', label: 'Monsters', icon: '🐺', file: 'src/core/data/monsters.data.ts', root: 'MONSTERS', keyOrder: 'monster', exportName: 'MONSTERS' },
   { kind: 'item', label: 'Items', icon: '⚔️', file: 'src/core/data/items.data.ts', root: 'ITEMS', keyOrder: 'item', exportName: 'ITEMS' },
   { kind: 'material', label: 'Materials', icon: '🪵', file: 'src/core/data/materials.data.ts', root: 'MATERIALS', keyOrder: 'material', exportName: 'MATERIALS' },
+  { kind: 'part', label: 'Smith Parts', icon: '🔩', file: 'src/core/data/parts.data.ts', root: 'PART_KINDS', keyOrder: 'part', exportName: 'PART_KINDS', hint: 'A rectangle of cells, width × length as written: a dagger blade is 2×3, a sword blade 2×6. The cells are the metal bill, and the proportions of the parts name the item (Item Classes). `accepts` names material tags, not materials.' },
+  { kind: 'itemClass', label: 'Item Classes', icon: '🗡️', file: 'src/core/data/itemclasses.data.ts', root: 'ITEM_CLASSES', keyOrder: 'itemClass', exportName: 'ITEM_CLASSES', hint: 'What the anvil can make. Classes are tried highest `priority` first and the first `match` that accepts the placement wins; the last class has an empty match so every combination resolves. Ranges are inclusive and 99 means no upper bound. Classes carry no numbers — the kernel reads the parts.' },
   { kind: 'recipe', label: 'Recipes', icon: '⚒️', file: 'src/core/data/recipes.data.ts', root: 'RECIPES', keyOrder: 'recipe', exportName: 'RECIPES' },
   { kind: 'skill', label: 'Skills', icon: '📈', file: 'src/core/data/skills.data.ts', root: 'SKILLS', exportName: 'SKILLS' },
   { kind: 'style', label: 'Styles', icon: '🥋', file: 'src/core/data/styles.data.ts', root: 'STYLES', exportName: 'STYLES' },

@@ -1,6 +1,6 @@
 import type { ItemInstance, RarityId, SlotId } from '../types';
 import { SLOT_NAMES } from '../types';
-import { ITEMS } from '../registry';
+import { forgeKey, itemDefOf } from './assembly';
 import { itemName, itemValue } from './equipment';
 import { maxRuneSlots } from './runes';
 
@@ -40,7 +40,7 @@ const CATEGORY_TAGS: ItemCategory[] = [
 ];
 
 export function itemCategory(item: ItemInstance): ItemCategory {
-  const def = ITEMS[item.defId];
+  const def = itemDefOf(item);
   if (def) {
     for (const cat of CATEGORY_TAGS) if (def.tags.includes(cat.key)) return cat;
     return { key: `slot:${def.slot}`, label: SLOT_NAMES[def.slot] };
@@ -96,7 +96,7 @@ export function itemRarity(item: ItemInstance): RarityId {
  * though a breastplate can carry four.
  */
 export function isMaxRarity(item: ItemInstance): boolean {
-  const def = ITEMS[item.defId];
+  const def = itemDefOf(item);
   if (!def || !item.affix) return false;
   return (item.slots ?? 0) >= maxRuneSlots(def);
 }
@@ -108,10 +108,15 @@ export function isMaxRarity(item: ItemInstance): boolean {
  * item with the same affix, the same rune-slot count, and the same runes
  * socketed — so "Vest (2 slots)" is one stack and "Swift Dagger (1 rune)" and
  * "Swift Dagger (3 runes)" are two.
+ *
+ * A forged item adds its `forgeKey` (its parts and its grade): two different
+ * swords never stack, two identical ones do. Static items key as they always
+ * did.
  */
 export function stackKey(item: ItemInstance): string {
   const runes = [...(item.runes ?? [])].sort().join(',');
-  return `${item.defId}|${item.affix?.name ?? ''}|${item.slots ?? 0}|${runes}`;
+  const forged = item.forged ? `|${forgeKey(item.forged)}` : '';
+  return `${item.defId}|${item.affix?.name ?? ''}|${item.slots ?? 0}|${runes}${forged}`;
 }
 
 export interface ItemStack {
@@ -155,7 +160,7 @@ export const SORT_LABELS: Record<SortMode, string> = {
 const SLOT_ORDER = Object.keys(SLOT_NAMES) as SlotId[];
 
 function slotRank(item: ItemInstance): number {
-  const def = ITEMS[item.defId];
+  const def = itemDefOf(item);
   const idx = def ? SLOT_ORDER.indexOf(def.slot) : -1;
   return idx < 0 ? SLOT_ORDER.length : idx;
 }

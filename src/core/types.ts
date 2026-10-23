@@ -2376,6 +2376,29 @@ export interface MaterialDef {
    * better grade of the same thing.
    */
   consumable?: ConsumableSpec;
+  /**
+   * How the anvil reads this material. Absent = it cannot be forged. Parts
+   * accept a material by its `craftTags`; this is the numbers.
+   */
+  smith?: SmithProfile;
+}
+
+/** A material's contribution to the forging kernel (systems/assembly.ts). */
+export interface SmithProfile {
+  /** Density: weight per cell. Drives attack speed and the STR requirement. */
+  rho: number;
+  /** Hardness: damage per cell of an edge, point or mass head. */
+  hard: number;
+  /** Toughness: armour per cell. */
+  tough: number;
+  /** Bent parts of this material still strike (a bow limb, not a greave). */
+  springy?: boolean;
+  /** Cells one unit of the material covers: the bill is `ceil(cells / unitCells)` units. */
+  unitCells: number;
+  /** The name a forged item wears: "Iron" in "Iron Sword". */
+  label: string;
+  /** Carried by every forged item that has a head of this material. */
+  mods?: Modifier[];
 }
 
 // ---------- Consumables ----------
@@ -2518,6 +2541,16 @@ export interface CraftDisciplineDef {
    */
   refines?: boolean;
   /**
+   * An ASSEMBLING bench: it takes a part kind and a material per slot, and
+   * the proportions of the parts name what comes out (systems/assembly.ts).
+   * The discipline's slots only say which positions exist and at what skill
+   * level they open; what goes in them is a forging `Placement` (a part kind
+   * and a material per slot), not graded stacks.
+   *
+   * Smithing's axis, the way `ordered` is alchemy's and `timeline` is cooking's.
+   */
+  assembles?: boolean;
+  /**
    * How the bench keeps time when worked as a job (see systems/benchwork.ts).
    * `per: 'ingredient'` makes each filled slot add a full helping of `ticks`
    * (assembly: more layers, more time). `skillScaled: false` pins the clock —
@@ -2647,6 +2680,8 @@ export interface BenchWork {
   batch: number;
   /** Chosen duration for a timed bench, in units. */
   duration?: number;
+  /** An assembling bench: the parts being forged, repeated each craft. */
+  forge?: Placement;
   /** Crafts finished so far. */
   done: number;
 }
@@ -2882,6 +2917,12 @@ export interface RecipeDef {
   /** Smithing XP granted per completed craft. */
   xp: number;
   unlock?: UnlockCondition[];
+  /**
+   * The parts this recipe is made of. When present, `cost` must equal the cost
+   * the cells derive (tests/content.test.ts), and each craft also counts
+   * `forged:<class>` for the form chart. The result stays the declared item.
+   */
+  forge?: Placement;
 }
 
 // ---------- Items & equipment ----------
@@ -2968,6 +3009,11 @@ export interface ItemDef {
   /** Extra typed damage dealt on every weapon hit (enchants like the Ember Knife). */
   bonusDamage?: { type: DamageType; value: number };
   /**
+   * The damage type this weapon's blows deal, overriding what its family tag
+   * implies (`playerDamageType`). Set on forged axes and halberds.
+   */
+  damageType?: DamageType;
+  /**
    * Rune-slot size class override. Inferred when absent: daggers/accessories
    * roll small (fewer slots), chests/legs/greatswords large, the rest medium.
    */
@@ -2997,6 +3043,144 @@ export interface ItemInstance {
    * just another hammer.
    */
   size?: SizeTag;
+  /**
+   * Set on an item built at the anvil: the parts it was assembled from and the
+   * quality it came out at. Everything else about it (class, mods, value,
+   * requirements) is DERIVED from this on read — `itemDefOf` in
+   * systems/assembly.ts — and `defId` is only the class stub `forged:<classId>`.
+   * Absent on every other item.
+   */
+  forged?: ForgedSpec;
+}
+
+// ---------- Modular smithing (docs/plans/blueprint-weaponsmithing.md) ----------
+
+/** What a part is FOR: the slot family it goes in. */
+export type PartRole = 'head' | 'guard' | 'haft' | 'bind';
+
+/** The geometry class of a part. Class rules and the stat kernel read this, never a part id. */
+export type PartShape = 'edge' | 'point' | 'mass' | 'plate' | 'bent' | 'ring' | 'bar' | 'guard' | 'cord';
+
+/**
+ * One kind of part the anvil can place (data/parts.data.ts). A part is a
+ * rectangle of cells: `w` across the item axis, `l` along it, so a part costs
+ * `w × l` cells of its material.
+ */
+export interface PartKindDef {
+  id: string;
+  name: string;
+  icon: string;
+  role: PartRole;
+  shape: PartShape;
+  /** Width across the item axis. */
+  w: number;
+  /** Length along the item axis. */
+  l: number;
+  /** Mounted across the haft (axe, maul) rather than along it. */
+  cross?: boolean;
+  curved?: boolean;
+  /** Most copies one slot takes (rings 8, bent plates 2). Absent = 1. */
+  qtyMax?: number;
+  /** Material tags (`MaterialDef.craftTags`) this part may be made of. */
+  accepts: string[];
+}
+
+/** The five places a part can go on the anvil. */
+export type ForgeSlot = 'head' | 'head2' | 'guard' | 'haft' | 'bind';
+
+/** One placed part: which kind, in which material (a MaterialDef id), how many. */
+export interface PlacedPart {
+  kind: string;
+  mat: string;
+  qty?: number;
+}
+
+/** What is laid out on the anvil, slot by slot. Fill order is never read. */
+export interface Placement {
+  head?: PlacedPart;
+  head2?: PlacedPart;
+  guard?: PlacedPart;
+  haft?: PlacedPart;
+  bind?: PlacedPart;
+}
+
+/** A placed part as stored on an item: its slot is explicit. */
+export interface ForgedPart extends PlacedPart {
+  slot: ForgeSlot;
+}
+
+/** The stored form of a forged item (`ItemInstance.forged`). */
+export interface ForgedSpec {
+  parts: ForgedPart[];
+  q: QualityTier;
+}
+
+/**
+ * The test a class applies to a placement. Every field given must hold; ranges
+ * are INCLUSIVE `[min, max]`, and 99 stands for "no upper bound" so the data
+ * stays plain JSON. An empty match accepts everything.
+ */
+export interface ClassMatch {
+  /**
+   * 'none': the placement has no head part at all. An object: there is a head
+   * and its FIRST one (the `head` slot, else `head2`) satisfies every field
+   * given. Omitted: the head is not examined.
+   */
+  head?:
+    | {
+        shape?: PartShape[];
+        /** Length range of the first head. */
+        l?: [number, number];
+        /** Width range of the first head. */
+        w?: [number, number];
+        /** Cell range of the first head (w × l, one copy). */
+        area?: [number, number];
+        cross?: boolean;
+        curved?: boolean;
+        /** Material tags (`MaterialDef.craftTags`): the first head's material carries at least one. */
+        mat?: string[];
+        /** Total head parts, summed over both head slots and their quantities. */
+        count?: [number, number];
+      }
+    | 'none';
+  /** Some head, in either slot, has one of these shapes. */
+  anyHead?: PartShape[];
+  /** 'none': no haft; 'any': a haft of any size; an object: a haft within these ranges. */
+  haft?: { l?: [number, number]; w?: [number, number] } | 'none' | 'any';
+  /** The guard slot is filled (true) or empty (false). */
+  guard?: boolean;
+  /** The binding slot is filled (true) or empty (false). */
+  bind?: boolean;
+}
+
+/**
+ * A kind of finished item the anvil can produce (data/itemclasses.data.ts).
+ * Classes are tried in `priority` order, highest first; the first whose
+ * `match` accepts the placement names the product. The last class has an empty
+ * match, so every placement resolves to something. Numbers never come from the
+ * class: the kernel in systems/assembly.ts reads the parts.
+ */
+export interface ItemClassDef {
+  id: string;
+  name: string;
+  icon: string;
+  slot: SlotId;
+  wield?: WieldClass;
+  /** Family tag FIRST (it picks the combat skill and the martial family), then sub-families. */
+  tags: string[];
+  /** Overrides the family's default damage type (axe, halberd). */
+  damageType?: DamageType;
+  /** Higher is tried first. Unique within the registry. */
+  priority: number;
+  /** One clause, or a list of clauses of which any one suffices. */
+  match: ClassMatch | ClassMatch[];
+  /** Kernel × 0.6. The class exists so the placement resolves, not because it is a good product. */
+  degenerate?: boolean;
+  /** Armour only: the share of the body this piece covers. Absent = grants no armour. */
+  cover?: number;
+  /** A placement that must resolve to this class (lint). */
+  exemplar: Placement;
+  desc?: string;
 }
 
 // ---------- Runes ----------

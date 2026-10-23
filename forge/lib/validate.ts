@@ -8,7 +8,8 @@
 
 import type { store as Store } from './store.svelte';
 import { searchContentIssues } from '../../src/core/systems/searchValidation';
-import type { ActivityDrop, Connection, CraftDisciplineDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, QuestDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
+import { smithingContentIssues } from '../../src/core/systems/assemblyValidation';
+import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
 import { MUSIC_AXES } from '../../src/core/data/music.data';
@@ -1031,6 +1032,26 @@ export function validate(store: S): Issue[] {
     if (!(meter.unlockLevel >= 0)) err('musicMeter', id, 'unlockLevel must be 0 or higher', ['unlockLevel']);
   }
 
+  // ---------- Modular smithing ----------
+  //
+  // Mirrors the 'modular smithing content' block of tests/content.test.ts by
+  // calling the SAME rules (systems/assemblyValidation.ts) on the staged
+  // copies, so a part, class, smith profile or forge recipe edited here is
+  // checked as it stands. The enumeration is the lighter 'tags' one — one
+  // material per accepted tag, every distinct classification — because this
+  // runs on every keystroke; the test runs the exhaustive one.
+  for (const issue of smithingContentIssues(
+    {
+      parts: store.all<PartKindDef>('part'),
+      classes: store.all<ItemClassDef>('itemClass'),
+      materials: store.all<MaterialDef>('material'),
+      recipes: store.all<RecipeDef>('recipe'),
+    },
+    { materials: 'tags' },
+  )) {
+    err(issue.kind, issue.id, `${issue.rule}: ${issue.message}`);
+  }
+
   // ---------- Duplicate ids ----------
   for (const cat of store.catalog) {
     for (const [key, def] of Object.entries(store.all<{ id?: string }>(cat.kind))) {
@@ -1045,7 +1066,11 @@ export function validate(store: S): Issue[] {
   // what is already on disk — an id gets typed into counter keys, save files
   // and cross-references, so one casing everywhere is not a style preference.
   for (const cat of store.catalog) {
-    for (const key of Object.keys(store.all(cat.kind))) {
+    for (const rawKey of Object.keys(store.all(cat.kind))) {
+      // `forged:<classId>` item stubs are generated from ITEM_CLASSES (the
+      // prefix is the one sanctioned colon); the class id after it is held to
+      // the shape here and is an ITEM_CLASSES key, checked in its own right.
+      const key = cat.kind === 'item' ? rawKey.replace(/^forged:/, '') : rawKey;
       if (!ID_SHAPE.test(key)) {
         warn(cat.kind, key, `id '${key}' is not lowercase snake_case — rename it before anything else points here`);
       }

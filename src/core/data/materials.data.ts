@@ -89,7 +89,14 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     craftTags: ['herb', 'ingredient', 'raw'],
     graded: true,
   },
-  hardwood: { id: 'hardwood', name: 'Hardwood', icon: '🪵', value: 4 },
+  hardwood: {
+    id: 'hardwood',
+    name: 'Hardwood',
+    icon: '🪵',
+    value: 4,
+    craftTags: ['wood'],
+    smith: { rho: 0.4, hard: 1, tough: 0.45, springy: true, unitCells: 4, label: 'Hardwood' },
+  },
   raw_meat: {
     id: 'raw_meat',
     name: 'Raw Meat',
@@ -109,6 +116,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     name: 'Iron Ingot',
     icon: '🧱',
     value: 8,
+    // The anvil reads these (systems/assembly.ts): parts accept a material by
+    // its craftTags, and `smith` is the numbers. Iron is the reference metal.
+    craftTags: ['metal', 'iron'],
+    smith: { rho: 1, hard: 1, tough: 1, unitCells: 6, label: 'Iron' },
   },
   // TODO: intended: a vendor or quest that trades for boss tokens. Nothing consumes them yet; dropped from the desc.
   boss_token: {
@@ -705,8 +716,31 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     name: 'Bronze Ingot',
     icon: '🧱',
     value: 5,
+    craftTags: ['metal', 'bronze'],
+    smith: {
+      rho: 1.1,
+      hard: 0.9,
+      tough: 0.9,
+      unitCells: 6,
+      label: 'Bronze',
+      // The metal's own will, which bronze_dagger carries as well (items.data.ts):
+      // it biases the psionic quantities. A forged piece with a bronze head
+      // carries it once, whatever the head's size.
+      mods: [
+        { value: 0.15, stat: 'psiAcuity', op: 'mult' },
+        { value: 0.1, stat: 'psiCoherence', op: 'mult' },
+      ],
+    },
   },
-  leather: { id: 'leather', name: 'Leather', icon: '📦', value: 0, craftTags: [], graded: false },
+  leather: {
+    id: 'leather',
+    name: 'Leather',
+    icon: '📦',
+    value: 0,
+    craftTags: ['leather'],
+    graded: false,
+    smith: { rho: 0.3, hard: 0, tough: 0.5, unitCells: 3, label: 'Leather' },
+  },
 });
 
 /*

@@ -1,6 +1,7 @@
 import type { GameState, ItemInstance, QualityTier, SlotId } from '../types';
 import type { EventBus } from '../engine/events';
-import { ITEMS, MATERIALS } from '../registry';
+import { MATERIALS } from '../registry';
+import { itemDefOf } from './assembly';
 import { getDerivedStats } from './derived';
 import { conditionsMet } from './conditions';
 import { HAND_SLOTS, armCost, armsFrom, armsUsed, wieldNote, wieldScale } from './wield';
@@ -45,9 +46,14 @@ export const RUNE_SLOT_VALUE_MULT = 0.3;
  * What an item is worth before the seller's charisma is applied. Socketed
  * runes add nothing — selling pries them out and keeps them — but the slots
  * themselves are what makes a piece worth hoarding, so they carry the price.
+ *
+ * A forged item is worth its parts and nothing else: no affix multiplier, no
+ * rune-slot multiplier, and no finish will ever add one. Sockets that raised
+ * the price would turn the anvil into a mint (72 gold of inputs sold as 156).
  */
 export function itemValue(item: ItemInstance): number {
-  const def = ITEMS[item.defId];
+  const def = itemDefOf(item);
+  if (item.forged) return def?.value ?? 1;
   const affix = item.affix ? AFFIX_VALUE_MULT : 1;
   return (def?.value ?? 1) * affix * (1 + RUNE_SLOT_VALUE_MULT * (item.slots ?? 0));
 }
@@ -66,13 +72,13 @@ export function sellPrice(
 }
 
 export function itemName(item: ItemInstance): string {
-  const def = ITEMS[item.defId];
+  const def = itemDefOf(item);
   const base = def ? def.name : item.defId;
   return item.affix ? `${item.affix.name} ${base}` : base;
 }
 
 export function canEquip(state: GameState, item: ItemInstance): boolean {
-  const def = ITEMS[item.defId];
+  const def = itemDefOf(item);
   return !!def && (!def.requirements || conditionsMet(state, def.requirements));
 }
 
@@ -85,7 +91,7 @@ export function equipItem(state: GameState, bus: EventBus, uid: number, slot?: S
   const idx = state.inventory.findIndex((i) => i.uid === uid);
   if (idx < 0) return false;
   const item = state.inventory[idx];
-  const def = ITEMS[item.defId];
+  const def = itemDefOf(item);
   if (!def) return false;
   if (!canEquip(state, item)) {
     bus.emit({
