@@ -307,7 +307,8 @@ a library is not a contradiction; it is a tower.
 - ~~No floors on the ladder~~ **Band 1 has three floors (2026-09-06,
   plans/alpha-band-one-floors.md)** — sequential ascent, `FloorDef.clear`,
   `climbTo`, the AscentPanel ladder. The runtime the registry waited for is
-  `systems/towers.ts`. Bands 2–3 are still empty scaffolding, and
+  `systems/towers.ts`. Bands 2–3 are still empty scaffolding (ideas for them,
+  with a review of each: [FLOOR_IDEAS.md](FLOOR_IDEAS.md)), and
   `clearsToAdvance` is now UNREAD (the sequential decision retired it —
   fate undecided, flagged in types.ts).
 - ~~Two lints cannot be written~~ **Landed in sequential form**: "hidden

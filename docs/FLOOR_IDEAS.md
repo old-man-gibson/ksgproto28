@@ -1,0 +1,242 @@
+# Floor ideas — the bank
+
+*Ideas for future floors and floor groups, as the user posts them, with a
+review of each. Started 2026-10-22.*
+
+A bank, not a plan. The freeze rule in
+[plans/alpha-band-one.md](plans/alpha-band-one.md) still holds, so nothing
+here is a plan card, and [SLICE_REVIEW.md](SLICE_REVIEW.md) §8 Q7 puts band 2
+after its steps 1–3. An idea leaves this file by becoming a card once band 1's
+epic closes. An idea the user drops moves to [LONGTERM.md](LONGTERM.md).
+
+Every idea gets the same review (§3), so ideas posted on different days can be
+compared. §1 and §2 are the frame the review reads against. The band 1 numbers
+come from SLICE_REVIEW.md (2026-10-22), which was uncommitted when this file
+started; they are copied here so this file stands alone.
+
+---
+
+## 1. What a floor group has to do
+
+"Floor group" here means a **band**: floors sharing a theme, cleared in order
+(`BandDef` in `towers.data.ts`). The Ascent has three bands. Band 1, the Lower
+Reaches, holds floors 1–3. Band 2 (the Middle Galleries) and band 3 (the
+Upper Reaches) are empty scaffolding.
+
+### 1.1 Band 1 today, as the yardstick
+
+| Measure | Band 1 |
+|---|---|
+| Hands-on time, first run | ~40 min (estimate, SLICE_REVIEW.md §2) |
+| John's critical path | 10.1–13.7 min |
+| Floor 1, hands-on | ~7 min |
+| Build cost | ~1 session per floor |
+| After the clear | every tower hunt empty; the Cages are the only repeatable fight |
+| Run 2 | the same climb on the same clock (11.8 vs 12.3 min) |
+
+### 1.2 The target
+
+"A few hours per floor group", read as **2–4 hours hands-on for an engaged
+first-time player** (§5 Q2). That is 3–6× band 1.
+
+The arithmetic decides the design:
+
+- At today's rate a floor's authored path gives 7–15 hands-on minutes. Three
+  floors give 20–45 minutes.
+- The other 2–3 hours cannot come from a longer authored path. Authored
+  linearly, a 3-hour band costs about 20 floors of build sessions.
+- So the hours come from what a band **leaves running**: loops that stay open
+  after the clear, optional depth off the path, and materials that feed the
+  systems already shipped.
+
+Proposed budget per band (engaged first-timer):
+
+| Layer | Minutes | Made of |
+|---|---|---|
+| Critical path | 45–60 | three floors, one idea each, a boss with preparation |
+| Optional depth | 45–60 | side rooms, mimics, a hidden off-ladder floor, chase items, bestiary facts, titles |
+| The band's loop | 60+ | endless dens, a work site, a band material a bench consumes |
+| Gate waits | inside the loop | the next gate reads a counter the band's loop produces |
+
+John's critical-path number is set at build time and checked with
+`npm run pacing`, as for band 1.
+
+### 1.3 Five findings from band 1
+
+1. **Band 1 passes the narrative half and fails the hours half.** §2 runs it
+   through the review. Ideas for bands 2+ are judged mostly on hours.
+2. **Gates should be paid inside the band.** Floor 3's gate (600 gold earned)
+   is waited out at a town job: 4.2 of John's ~14 minutes, on no floor. A gate
+   reading a band counter (kills at the band's dens, a band material, band
+   species in the bestiary) puts the wait on the floors. COMPLETABILITY §2:
+   that source must be endless, never a `fightLimit` or `once` spot.
+3. **The post-clear problem is the band problem.** A band with no endless spot
+   per floor is empty the minute it is cleared. This touches the held
+   idle-combat decision (SLICE_REVIEW.md §8 Q3: refill or idle nodes).
+4. **The tower has no climb premise.** `the_ascent.desc` says only that floors
+   are cleared in order. A band's story stands alone, which is the design
+   (NEXT.md §0: "Floor 30 a drowned city and floor 31 a library is not a
+   contradiction; it is a tower").
+5. **Band 1 has a reusable shape.** An institution still running its
+   procedures with no one left to serve: a toll stamp still in use,
+   automatons still filing, a puppet still holding hearings. Each floor is one
+   procedure; the boss owns the process; the player's preparation is reading
+   the procedure. That is VOICE.md §4 (explain a place by its incentive
+   structure) as level design. Ideas do not have to use it; it is the
+   default when an idea has no frame yet.
+
+### 1.4 Constraints every idea meets
+
+| Constraint | Source |
+|---|---|
+| Band 2 may ask for subsystem *usage*, not *invention*. Only the final band may require a generative grammar (arcane sentences, mutagen topology, alchemy sequence, the martial graph) | COMPLETABILITY §3, §6 |
+| Gates on accumulation; a power check sits at John's floor | COMPLETABILITY §6 |
+| Shut in alpha: runecarving, music, genes, psionics, wuxin; martial except the floor 2 tutor. An idea that needs one names how it opens (a Doors boon, a teacher on the floor) | plans/alpha-scope-locks.md, SLICE_REVIEW.md §6 step 2 |
+| Shelved, not re-pitched: the countryside, tile autotile / generator / fake doors, arcane compound words | LONGTERM.md |
+| Monsters never get unique abilities | plans/unique-abilities.md |
+| Art is not the limit: 2,169 enemy sheets on disk, 79 monster definitions, 51 unplaced. The Ækashics art is never redistributed | README.md (art), PITFALLS.md |
+
+---
+
+## 2. Calibration: band 1 through the review
+
+| Check | Band 1 | Result |
+|---|---|---|
+| N1 Who runs it | an office still collecting tolls and holding hearings, staff gone (implied, never stated in prose) | pass |
+| N2 One idea per floor | the remembered route (1), the corridor with a teacher (2), exploration weakens the boss (3) | pass |
+| N3 One place | one building, three maps | pass |
+| N5 Boss preparation | collector: spell conditions; bureaucrat: strings and the oak club | pass |
+| N6 Someone proposes terms | floor 2 has the tutor and the quartermaster; floors 1 and 3 have no NPCs | partial |
+| H1 The loop that stays | none; every hunt empty after the clear | fail |
+| H2 Gate paid inside | gold earned, waited at a town job | fail |
+| H3 Optional depth | mimics designed (SLICE_REVIEW.md step 1 A2), none shipped | thin |
+| H4 What it feeds | goblin furs, slime gel, ledger leather: no consumer | fail |
+| H5 Novelty | 12 species; floors 2–3 run on 4 definitions | thin |
+| H6 Re-climb | run 2 is run 1 | fail |
+| H7 Idle form | floor 1 searches are safe to leave; hunts are not | partial |
+
+---
+
+## 3. The review
+
+Each posted idea is filed in §4 with these checks answered. A check the idea
+does not touch is left out of its entry.
+
+### 3.1 Narrative viability
+
+- **N1 Who runs it.** One sentence naming who profits from the place and who
+  pays. If it cannot be written, the place has no incentive structure yet.
+- **N2 One idea per floor.** The floor's mechanic as a verb on existing
+  machinery: search, a room route, `fightLimit` stretches, a forced fight, a
+  preparation flag, a teacher, a shop, a work site.
+- **N3 One place per band.** The floors read as one site with different maps,
+  as band 1 does. A deliberate break is the user's call.
+- **N4 Panels.** Each spot drawable in one sentence; the spot graph is the
+  zoom (VOICE.md §5).
+- **N5 The boss and its preparation.** What exploring finds that weakens it;
+  winnable without any of it.
+- **N6 Someone proposes terms.** A quest giver, vendor or teacher on the band.
+  A quest is a deal (VOICE.md §8).
+- **N7 Lore stays subordinate.** The backstory fits in dependent clauses. No
+  exposition.
+
+### 3.2 Hours
+
+- **H1 The loop that stays.** What is still worth doing after the band's
+  clear, and for how long.
+- **H2 The gate paid inside.** What counter the next floor's gate reads, and
+  that its source is endless.
+- **H3 Optional depth.** Skill-locked content off the path (allowed,
+  COMPLETABILITY §5): a hidden off-ladder floor (no `bandId`), mimics, chase
+  items, titles, bestiary facts.
+- **H4 What it feeds.** Which shipped system consumes the band's drops:
+  smithing, cooking, alchemy reagents, benches. A material with no consumer is
+  a dead end.
+- **H5 Novelty.** Species count and facts to pin; the bestiary domain pays
+  discovery XP for each new species (NOVELTY_DOMAINS.md).
+- **H6 Re-climb.** What differs on run 2+: a Doors payoff, a route only a
+  returning player knows, a hidden floor behind `prestige:count`.
+- **H7 Idle form.** What the band pays while the player is away, and that it
+  is safe to leave running.
+
+### 3.3 Laws
+
+- **L1 No stranding.** Every spot gets home; one-way edges listed.
+- **L2 No exhaustion on the path.** No `once` or `fightLimit` source under a
+  gate or clear that needs more than it holds.
+- **L3 Failure is recoverable.** A loss costs time, never a path.
+- **L4 Usage, not invention**, unless the idea is for the final band.
+- **L5 No power gates.**
+- **L6 Shelf and shutters** (§1.4).
+
+### 3.4 Verdicts
+
+| Verdict | Means |
+|---|---|
+| Build next | passes N and L; has answers for H1 and H2 |
+| Bank | viable; the missing answer is named in the entry |
+| Rework | breaks a law; the break and a fix are named |
+| Shelf | the user's call only; moves to LONGTERM.md |
+
+### 3.5 How a post is handled
+
+1. The user posts ideas, in any form. Fragments are fine.
+2. The manager files each idea in §4, keeping the user's words under
+   *As posted*.
+3. Two `brainstormer` agents in parallel: one on the narrative (the place,
+   its procedures, the boss and its preparation), one on the hours (the loop
+   that stays, the gate paid inside, what it feeds).
+4. `antagonist-design` attacks the merged review, given the entry only.
+5. The manager writes the verdict, the checks, the rulings on objections and
+   the open questions into the entry, commits, and reports in chat.
+
+---
+
+## 4. Ideas
+
+| # | Posted | Name | Band | Verdict |
+|---|---|---|---|---|
+| — | — | none yet | — | — |
+
+### Entry template
+
+```
+### N. <name> (posted YYYY-MM-DD)
+
+Band: · Floors: · Verdict:
+
+**As posted.** <the user's words, unedited>
+
+**The place in one line.** <who profits, who pays>
+
+| Floor | One idea (mechanism) | Boss / preparation | Spots |
+|---|---|---|---|
+
+**Hours.** H1–H7, the ones it touches.
+
+**Laws.** L1–L6, the ones it touches.
+
+**Feedback.** label: fact lines.
+
+**Objections and rulings.** from antagonist-design.
+
+**Open questions.** each with a default.
+```
+
+---
+
+## 5. Open questions for the user
+
+Each has a default, used if skipped.
+
+1. **Floor group = band?** A band of three floors, like band 1. Default: yes;
+   band size can differ if an idea needs it.
+2. **"A few hours", measured how?** Default: 2–4 hours hands-on for an engaged
+   first-time player, with the critical path about a third of it.
+3. **One place per band?** Band 1 is one building. Default: yes, each band is
+   one site.
+4. **Is the Ascent three bands?** If so, band 3 is the final band, the only
+   one allowed to require a generative grammar. Default: yes until bands are
+   added.
+5. **Team per post?** Two brainstormers and one antagonist per post (§3.5),
+   about three agents. Default: yes; write "quick" for a manager-only review.
