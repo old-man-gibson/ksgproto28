@@ -18,7 +18,7 @@ import type {
 import { ITEMS, ITEM_CLASSES, MATERIALS, PART_KINDS } from '../registry';
 import { FORGE_SLOTS, runeClassForCells } from '../data/parts.data';
 import { classIdOfForged, forgedIdOf } from '../data/itemclasses.data';
-import { qualityMult } from '../data/quality.data';
+import { QUALITY_TIERS, qualityMult } from '../data/quality.data';
 import { text } from '../text/log';
 
 /**
@@ -92,7 +92,9 @@ const MOD_EPSILON = 0.0005;
 
 /** The quality factor on damage, armour and value: Fair is 1, the ends are bounded. */
 export function qualityFactor(q: QualityTier): number {
-  return Math.max(0.7, 1 + 0.2 * (qualityMult(q) - 1));
+  // An unknown grade (a hand-edited or corrupt save) reads as Fair rather than throwing in every stat read.
+  const mult = QUALITY_TIERS[q] ? qualityMult(q) : 1;
+  return Math.max(0.7, 1 + 0.2 * (mult - 1));
 }
 
 // ---------- Placements and their stored form ----------
@@ -154,10 +156,10 @@ export function partsOf(placement: Placement): ForgedPart[] {
   return parts;
 }
 
-/** The inverse of `partsOf`. Later entries for the same slot win. */
-export function placementOf(parts: readonly ForgedPart[]): Placement {
+/** The inverse of `partsOf`. Later entries for the same slot win. A missing list reads as an empty anvil. */
+export function placementOf(parts: readonly ForgedPart[] | undefined): Placement {
   const placement: Placement = {};
-  for (const p of parts) {
+  for (const p of parts ?? []) {
     placement[p.slot] = { kind: p.kind, mat: p.mat, ...(p.qty !== undefined ? { qty: p.qty } : {}) };
   }
   return placement;

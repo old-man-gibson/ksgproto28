@@ -6,7 +6,8 @@ import { sizeRank } from '../types';
 /**
  * How held gear occupies your hands, and what it costs to hold something where
  * it doesn't belong. Kept free of other systems so both the equipment commands
- * and the modifier pipeline can read it.
+ * and the modifier pipeline can read it. (`itemDefOf` is the one import: the
+ * resolver half of smithing reads only the registries, never a GameState.)
  */
 
 /**

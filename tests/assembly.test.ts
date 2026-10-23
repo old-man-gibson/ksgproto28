@@ -254,6 +254,10 @@ describe('the resolver is total and finite', () => {
     expect(classifyPlacement({ head: part('ring', IRON, 99) }).id).toBe('chain_mail');
     expect(classifyPlacement({}).id).toBe('paperweight');
     expect(Number.isFinite(forgeStats({ head: part('ring', IRON, -3) }, 'c').weight)).toBe(true);
+    // A corrupt stored spec reads as an empty anvil at Fair grade, not as a crash in every stat read.
+    const corrupt = { parts: undefined, q: 'zz' } as unknown as Parameters<typeof forgedDef>[0];
+    expect(forgedDef(corrupt).id).toBe('forged:paperweight');
+    expect(typeof forgeKey(corrupt)).toBe('string');
   });
 
   it('the last class is the lowest priority and accepts every placement', () => {
