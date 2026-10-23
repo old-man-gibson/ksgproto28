@@ -3,6 +3,8 @@ import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { KEY_ITEMS } from '../src/core/data/keyitems.data';
 import { searchContentIssues } from '../src/core/systems/searchValidation';
+import { exploreIssues, floorStructureIssues, type FloorRule } from '../src/core/systems/floorRules';
+import { SHELVED_WORLD } from '../src/core/data/shelved';
 import {
   ACHIEVEMENTS,
   ADJACENCY,
@@ -571,6 +573,15 @@ describe('world graph', () => {
         }
       }
     }
+  });
+
+  it('every explore activity pays something — a find, or a hidden road to open', () => {
+    // Mirrored live in forge/lib/validate.ts (both run floorRules.exploreIssues).
+    // The shelf is not held to this: it is parked content, and the rule is
+    // about what a player can reach today.
+    const shelved = new Set(Object.keys(SHELVED_WORLD.spots));
+    const live = Object.values(SPOTS).filter((s) => !shelved.has(s.id));
+    expect(exploreIssues(live).map((i) => `${i.spot}: ${i.message}`)).toEqual([]);
   });
 
   it('exploration gates sit inside the search and can be met', () => {
@@ -2005,5 +2016,49 @@ describe('towers, bands & floors', () => {
         }
       }
     }
+  });
+
+  /**
+   * THE FLOOR STANDARD, step 1 (docs/FLOOR_STANDARD.md §2.2). The checks are
+   * pure functions in systems/floorRules.ts, run here on the live registry and
+   * mirrored live in forge/lib/validate.ts (which imports the same functions).
+   * tests/floorrules.test.ts breaks each rule on a fixture to show it bites.
+   * The mirrored adjacency is the registry's ADJACENCY: every non-oneWay edge
+   * comes back without its conditions, so a gated road is a free road home.
+   */
+  const reports = () =>
+    Object.values(FLOORS)
+      .filter((f) => f.bandId !== undefined)
+      .map((f) => ({ floor: f, report: floorStructureIssues(f, SPOTS, ADJACENCY) }));
+  const issuesOf = (rule: FloorRule) =>
+    reports().flatMap(({ report }) =>
+      report.issues.filter((i) => i.rule === rule).map((i) => `${i.floor}: ${i.message}`),
+    );
+
+  it('every banded floor has a spine: its clear names a spot to measure from', () => {
+    // A floor whose clear is a quest turn-in names no spot and skips the spine
+    // rules below. None does today; list it here when one is added, so the
+    // exemption is a decision and not an accident.
+    const skipped = reports()
+      .filter(({ report }) => report.skipped !== undefined)
+      .map(({ floor, report }) => `${floor.id} (${report.skipped})`);
+    expect(skipped, 'floors whose spine rules did not run').toEqual([]);
+    expect(issuesOf('spine')).toEqual([]);
+  });
+
+  it('no skip: every floor-local gate is necessary', () => {
+    expect(issuesOf('no-skip')).toEqual([]);
+  });
+
+  it('wing depth: every spot is within 3 hops of the spine', () => {
+    expect(issuesOf('wing-depth')).toEqual([]);
+  });
+
+  it('wings loop: a wing of 3 or more spots joins the spine twice, or has a oneWay way back', () => {
+    expect(issuesOf('wing-loop')).toEqual([]);
+  });
+
+  it("a clear spot's encounter table never empties", () => {
+    expect(issuesOf('clear-table')).toEqual([]);
   });
 });
