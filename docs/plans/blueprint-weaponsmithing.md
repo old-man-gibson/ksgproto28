@@ -355,23 +355,92 @@ rites?: string[] }` (optional field).
   the same `resolveFinish`; a lint caps the sum at cap(declared quality);
   Line is locked for monsters (no parry or riposte stats).
 
-### Magic — OPEN (user ruling 7)
+### Magic (user ruling 7; designed 2026-10-23)
 
-Rites as ledger edits stay (thunder-set: storm, outdoors, cap +3;
-moon-anneal: 22:00–04:00, clear, refund 2; cold-set: a cold spot or freezing,
-bind one axis). The user also wants **magical finishes with effects of their
-own**, distinct from runecarving. Being designed 2026-10-23; the answer goes
-here before slice 2 builds. Constraints known so far:
+Two brainstorms (world as source, materials as source) and one antagonist
+pass. Rulings below; the deferred parts stay designed here.
 
-- Runecarving owns sockets, rune elements summed, per-context rune effects
-  (mods, flat or % typed bonus damage, technique graph surgery). Runecarving
-  is due a major overhaul, so distinctness must not lean on its current
-  details.
-- Alchemy owns temporary coatings measured in blows (oils). Divine owns
-  favor and miracles; arcane owns words; music owns the analysis of a
-  composition. Never borrow another school's signature condition.
-- Cut as poaching (2026-10-23): consecrating at a shrine, quenching in an
-  alchemical solvent, resonance tuning, a word spoken over the anvil.
+**The distinctness rule** (it must survive the runecarving overhaul, so it
+rests on what a rune *is*, not on today's rune code):
+
+- **A rune is an object.** It sits in a pool, sockets and unsockets, sells,
+  has its own value, and can be handed to somebody else (CarvedRune).
+- **A finish is a property of the piece.** Sealed in at the anvil, worth 0,
+  cannot be removed or moved, cleared only by melting.
+- **A medium (deferred) converts the piece.** Every medium effect subtracts
+  something from the host.
+- Guards, linted: no rite or medium field may hold bonusDamage,
+  bonusDamagePct, typed damage, re-typing, inflicts, techniqueMods, hand
+  bonuses or tags (registry scan); a finish magnitude must read the host (a
+  bare constant is a rune); finishes add 0 to value.
+
+**Sky rites.** `RiteDef { id, name, when: SkyCond[], fits, cost, minQuality?,
+effect }`; `SkyCond { kind?, band?, hours?, tags? }` — never a duration or
+exposure field (that is cooking's identity). The sky is read once, on the
+tick the rite strikes, as the weather bucket at the bench's region
+(`weatherAt` is a pure function of seed, region and tick). Never read at use
+time; derived.ts and combat.ts never import weather for rites.
+
+Per piece: **one ledger rite and one lens rite**, each id once, stored as
+`fin.rites: { id, at }[]` (`at` = the strike tick, for the birth line).
+
+| id | sky | fits | cost | effect |
+|---|---|---|---|---|
+| night_anneal | clear, 22:00–04:00, not indoors | any | — | ledger: temper budget +2 (renamed from moon-anneal: the world has no moon) |
+| cold_set | freezing band, or spot tag `cold` | any | — | ledger: binds the axis with the largest net; its tier cannot fall, anneal skips it, and its attribute marks drop to 2 / 5 / 8 |
+| rain_hard | rain | weapon | 2 temper | lens: penetration +1 pp per Edge+ point, max 4 |
+| frost_knit | freezing | armour, shield | 2 temper | lens: elemental resist +1 pp per Body+ point, max 5, × slot share |
+| snow_pack | snow or blizzard | armour, shield | 2 temper | lens: damage from smaller attackers −1% per Heft+ point and size step, max 5 |
+
+- A lens pays `per × max(0, min(max, read))`: never a penalty on the
+  opposite pole.
+- Lens stats are ones no rune, item or mundane reading uses (penetration,
+  resElemental, fromSmaller). Typed damage and riders stay runes.
+- Lens rites need quality C or better (cap 6).
+- Weapon lenses are locked for monsters: monsters deliberately have no
+  penetration (combat.ts, "nothing erodes the player's"). Armour lenses and
+  ledger rites go through `MonsterDef.finish` like the verbs.
+
+**Idle shape: the job waits.** A rite is a flag in the plan. The job applies
+the verbs, then strikes the rite on the first tick the sky holds at the bench.
+Nothing is spent until it strikes. Travel or combat cancels the unstruck part
+for free. The piece stays in inventory flagged "on the anvil"; the job
+holds only its uid, so a cancel can never lose it.
+
+- Fix with it: `bonustime.isIdle` is false while `state.benchWork` exists, so
+  a job waiting on the sky banks nothing and, with spending on, burns the
+  bank 2:1. A job waiting on the sky counts as idle.
+- Measured waits at the Forges (Threshold, 300 seeds, real minutes): freezing
+  median 8, p90 512; rain median 81; snow median 87; clear night median 127.
+  Seasons matter (seed 0: freezing 42% / 6% / 14% / 63% by quarter). The
+  Rites tab prints the next window from a one-year scan for every rite, and
+  refuses a rite whose sky holds under 1% of hours at that bench.
+
+**Deferred, designed:**
+
+- **thunder_set** (storm, not indoors; budget +3). Storm holds under 1% of the
+  year on 12 of 300 seeds, and the seed survives prestige, so those saves
+  would never see it. Ships with **commission mode**: the piece stays on the
+  anvil and the rite strikes whenever the sky holds, player present or not
+  (+1 state key, save bump).
+- **Media (imprint).** `fin.medium` — one creature material, sealed. On
+  armour only: `depth = clamp(net Body / 6, 0, 1)`, `spent = depth × 0.5 ×
+  armour`, and for each elemental type `res += spent × RATE × hide`, where
+  `hide` is derived from the dropper's TAG_RESISTANCES row with its weakness
+  (warm gel: heat +, cold −). RATE first guess 0.04: a C breastplate gives
+  +10.7 pp heat, −10.7 pp cold, armour 16 → 10.7. Waits because **no live
+  spawn drops an elemental gel**: every dropper is in the shelved
+  countryside. Also open: warm gel is already a rune inlay; one material in
+  two lanes needs the user's call. Monster side when it ships:
+  `MonsterDef.finish.medium` reading its own armour.
+
+**Cut** (do not re-pitch): use-time weather, soak (hours under the sky — that
+is cooking), per-sky tallies summed (runes), elemental riders by sky (the
+Stormbrand, Winter's Edge, Thunder and Frost runes own them), bottled sky,
+blooding on kills (farmable), tag edits (mutagen bodies key on tags),
+socket-granting rites, echo (one verb counting as another), bane vs a monster
+tag (achievements ship it; the player has no tags, so no parity), home sky per
+verb (no effect of its own; strongest "when" overlap).
 
 ## Layer 3 — World
 
@@ -427,7 +496,7 @@ that reach. A cell test should pin this row.
 | # | slice | ships | save |
 |---|---|---|---|
 | 1 | Assembly | PART_KINDS, ITEM_CLASSES, smith profiles, systems/assembly.ts, `itemDefOf` seam, the `forging` bench at the Forges (Cold Counter removed), recipe placements, unplaced recipes placed, anvil panel, form chart, lints and tests | none |
-| 2 | Finishing | ledger, verbs, temper, anneal, rites, magical finishes (once designed), tooltip with sources, `MonsterDef.finish` | none |
+| 2 | Finishing | ledger, verbs, temper, anneal, night-anneal, cold-set, three lens rites, the sky wait and the idle fix, tooltip with sources and birth line, `MonsterDef.finish` | none |
 | 3 | Monster arms | `MonsterDef.kit`, bestiary arms fact, exact-item drops, pacing rerun | none |
 | 4 | Melt and souls | melting, soul materials, soul slot | none |
 | 5 | Tools and access | tool forms with tags, one access hurdle, role cell tests | none |
