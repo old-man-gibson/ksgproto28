@@ -3,12 +3,17 @@
 The main session (Opus) manages. Four agent definitions live in
 `.claude/agents/`:
 
-| Agent | Model | Writes code | Job |
-|---|---|---|---|
-| `builder` | sonnet | yes, in its own worktree | build one scoped brief, verify, commit to its branch |
-| `brainstormer` | sonnet | no | 2–4 mechanism-first options per problem, plus a pick |
-| `antagonist-design` | fable | no | attack a plan against the laws and as the troll player |
-| `antagonist-code` | fable | scratch repro files only | attack a branch's diff and reproduce the bugs |
+| Agent | Model | Effort | Writes code | Job |
+|---|---|---|---|---|
+| `builder` | sonnet | xhigh | yes, in its own worktree | build one scoped brief, verify, commit to its branch |
+| `brainstormer` | sonnet | xhigh | no | 2–4 mechanism-first options per problem, plus a pick |
+| `antagonist-design` | fable | max | no | attack a plan against the laws and as the troll player |
+| `antagonist-code` | fable | max | scratch repro files only, in its own worktree | attack a branch's diff and reproduce the bugs |
+
+Effort is set in each file's frontmatter (user, 2026-10-23: weekly usage
+allows high effort). The antagonists get the top level because a missed
+failure costs more than the tokens. `builder` and `antagonist-code` declare
+`isolation: worktree`, so the manager does not have to pass it.
 
 ## The loop
 

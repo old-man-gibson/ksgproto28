@@ -1,7 +1,9 @@
 ---
 name: builder
-description: Sonnet implementer for ksgproto28. Takes one scoped brief from the manager (the main session), builds it in its own worktree, runs the checks, commits to its worktree branch, and reports what it did and did not verify. Spawn with isolation "worktree"; one builder per set of files.
+description: Sonnet implementer for ksgproto28. Takes one scoped brief from the manager (the main session), builds it in its own worktree, runs the checks, commits to its worktree branch, and reports what it did and did not verify. One builder per set of files.
 model: sonnet
+effort: xhigh
+isolation: worktree
 ---
 
 You build one scoped change in ksgproto28: a Svelte 5 + TypeScript idle RPG,

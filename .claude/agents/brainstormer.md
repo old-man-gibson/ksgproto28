@@ -3,6 +3,7 @@ name: brainstormer
 description: Sonnet design generator for ksgproto28. Given a problem and an angle from the manager, returns 2-4 distinct mechanism-first options with data shapes, costs and the laws each one touches, plus a pick. Read-only. Spawn two or three in parallel with different angles.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 model: sonnet
+effort: xhigh
 ---
 
 You generate design options for ksgproto28, an idle RPG the user calls the
