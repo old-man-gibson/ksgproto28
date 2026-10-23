@@ -64,38 +64,56 @@ registry, `forge/lib/validate.ts:298–314` runs the same functions on the stage
 copy (imported, so the two layers cannot drift), and `tests/floorrules.test.ts`
 breaks each rule on a fixture to show it fails.
 
-- **No skips** (spine). `floorGates` (floorRules.ts:195) and `skipIssues`
-  (floorRules.ts:240); content.test.ts:2049. A floor-local gate is an authored
+- **No skips** (spine). `floorGates` (floorRules.ts:213) and `skipIssues`
+  (floorRules.ts:262); content.test.ts:2050. A floor-local gate is an authored
   edge inside the floor whose `requires` or `revealWhen` reads a counter written
   on this floor: `fights:`, `slain:` or `boss:` of a floor spot, a `flag:` set by
   a find or search reward at a floor spot, or a key item granted at one. Gates
   with identical condition sets form a group. For each group, assume every
   other condition holds (other gates, attribute, skill, quest and equipment
   conditions, hidden edges), remove the group's edges, and none of its target
-  spots may be reachable from the landing. A `oneWay` edge back to a spot that
-  every road to its source passes through (a shortcut home) is not a gate. The
-  walk runs over the mirrored adjacency, because the registry mirrors every
-  non-`oneWay` edge without its `requires` (src/core/registry.ts:127–129).
-- **Three hops** (spine). `wingIssues` (floorRules.ts:276); content.test.ts:2053.
+  spots may be reachable from the landing. Edges whose conditions imply the
+  group's are removed with it: the same terms plus more, or the same counter at
+  a higher minimum (`>= 20` goes with `>= 10`) or a lower maximum. So two doors
+  into one room at `>= 10` and `>= 20` raise one issue, on the `>= 20` gate,
+  which the `>= 10` door bypasses. The walk runs over the mirrored adjacency,
+  because the registry mirrors every non-`oneWay` edge without its `requires`
+  (src/core/registry.ts:127–129).
+
+  A `oneWay` edge back to a spot that every road to its source passes through
+  (a shortcut home) is not a gate. So a far-side exit (the table above) must
+  land on a spot that every road into its wing passes through; the landing
+  always qualifies. An exit into another wing, or onto a spine spot the wing
+  can be entered without passing, is read as a gate on a room already open and
+  fails.
+- **Three hops** (spine). `wingIssues` (floorRules.ts:298); content.test.ts:2054.
   Every spot of the floor is within 3 hops of a spine spot. (The first draft
-  measured from the landing; floor 2's far end is 4 hops from it.)
-- **Wings loop** (spine). `wingIssues` (floorRules.ts:276); content.test.ts:2057.
+  measured from the landing; floor 2's far end is 4 hops from it.) Hops count
+  from the spine, not from the wing's first room: a side room is 1, the room
+  past it 2, the next 3, and a fourth room in the chain fails. The Boiler Room
+  wing (Break Room, Boiler Room, Pump Closet) is exactly at the limit.
+- **Wings loop** (spine). `wingIssues` (floorRules.ts:298); content.test.ts:2058.
   A wing is a connected component of the off-spine spots. A wing of 3 or more
   spots joins the spine at 2 or more spots, or has a `oneWay` edge out to a
   spine spot, so a wing costs one trip. Floor 1's office block passes: it joins
   the reception and the toll hall.
 - **The clear spot's table never empties** (spine). `clearTableIssues`
-  (floorRules.ts:361); content.test.ts:2061. Replaces the first draft's "one
+  (floorRules.ts:383); content.test.ts:2062. Replaces the first draft's "one
   plain line" with a coverage rule. Sample every counter the clear spot's lines
   read in `requires` (`stat` and `statMax`) at 0, at each threshold and at
   threshold + 1. At every sample at least one line with no `daypart` and no
   `window` is eligible. A line with a condition that is not a counter does not
   count; `once` history is ignored. Floor 3's Hearing Room partitions
   `flag:f3_strings_cut` into four lines and passes.
-- **Every explore pays something.** `exploreIssues` (floorRules.ts:451);
+- **Every explore pays something.** `exploreIssues` (floorRules.ts:473);
   content.test.ts:578. An `explore` activity's spot has a `finds` entry or a
   `hidden` connection. Live content only; the shelf (`src/core/data/shelved/`)
-  is not held to it.
+  is not held to it. As of 2026-10-23, 3 of the shelf's 14 explore spots
+  (`old_path`, `deep_forest_w`, `malgeri_peak`) would fail it. The find has to
+  pay a new player: the lint cannot see that, so check the payload by hand (a
+  skill-XP find under a skill that unlocks at INT 10 pays nothing at the
+  start; `tests/floorrules.test.ts` explores the Chalk Yard and the
+  Undercrofts from a fresh save and checks what arrives).
 
 ### 2.3 Floor work (chores)
 
@@ -229,7 +247,7 @@ One builder at a time, each attacked by `antagonist-code` before it lands.
    as SLICE_REVIEW A3 planned), a spent search refuses to start. No floor
    content. Enforced in: src/core/systems/floorRules.ts (the five floor rules
    and the explore rule), src/core/systems/search.ts:24 and actions.ts:123, :412
-   (the spent search), tests/content.test.ts:578 and :2038–2063 (live
+   (the spent search), tests/content.test.ts:578 and :2039–2064 (live
    content), forge/lib/validate.ts:298–314 (the live layer),
    tests/floorrules.test.ts and tests/searchspent.test.ts (the failing
    fixtures). Per rule: §2.2, §2.3.

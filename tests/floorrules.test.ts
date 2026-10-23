@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import * as registry from '../src/core/registry';
 import { FLOORS, SPOTS, buildAdjacency, declaredConnections } from '../src/core/registry';
+import { Game } from '../src/core/game';
+import { createInitialState } from '../src/core/state';
+import { isExplored } from '../src/core/systems/actions';
 import {
   clearTableIssues,
   exploreIssues,
@@ -188,6 +191,57 @@ describe('no skip: each floor-local gate is necessary', () => {
     expect(skips).toHaveLength(1);
     expect(skips[0]).toContain('[fights:f2_hall_1 >= 3 & flag:f2_lever >= 1]');
   });
+
+  describe('two thresholds of one counter', () => {
+    const sortedFlag = (s: Spots) => {
+      s.f2_break_room.finds = [...(s.f2_break_room.finds ?? []), { id: 'f2_sorted_find', at: 0.9, stat: { key: 'flag:f2_sorted' } }];
+    };
+    const at = (type: 'stat' | 'statMax', value: number) => ({ type, key: 'flag:f2_sorted', value });
+
+    // Two doors into one room, from different rooms, at a weak and a strong
+    // threshold of the same counter (>= 10 and >= 20; <= 5 and <= 2). The strong
+    // door implies the weak one, so shutting the weak group shuts both. Before
+    // that was counted, each group reported the other's door as a bypass.
+    it.each([
+      ['stat', 10, 20, '>='],
+      ['statMax', 5, 2, '<='],
+    ] as const)('%s %i and %i into one room: only the stronger gate is named', (type, weak, strong, op) => {
+      const r = run('ascent_f2', (s) => {
+        sortedFlag(s);
+        addSpot(s, 'f2_dlo', F2);
+        s.f2_hall_1.connections.push(link('f2_dlo', { requires: [at(type, weak)] }));
+        s.f2_stairhead.connections.push(link('f2_dlo', { requires: [at(type, strong)] }));
+      });
+      // The weak door lets a player below the strong threshold in, so the
+      // strong gate is bypassed: the same shape as a door at fights >= 1 around
+      // a >= 3 budget, which the rule has to keep catching.
+      const skips = messages(r, 'no-skip');
+      expect(skips).toEqual([expect.stringContaining(`[flag:f2_sorted ${op} ${strong}]`)]);
+      expect(skips.join('\n')).not.toContain(`[flag:f2_sorted ${op} ${weak}]`);
+    });
+
+    it('a room behind both doors in series raises no issue; a free two-way room into it is still named', () => {
+      const doors = (s: Spots) => {
+        sortedFlag(s);
+        addSpot(s, 'f2_dlo_a', F2);
+        addSpot(s, 'f2_dlo', F2);
+        s.f2_hall_1.connections.push(link('f2_dlo_a', { requires: [at('stat', 10)] }));
+        s.f2_dlo_a.connections.push(link('f2_dlo', { requires: [at('stat', 20)] }));
+      };
+      expect(run('ascent_f2', doors).issues).toEqual([]);
+
+      const skips = messages(
+        run('ascent_f2', (s) => {
+          doors(s);
+          addSpot(s, 'f2_free', F2, [link('f2_stairhead'), link('f2_dlo')]);
+        }),
+        'no-skip',
+      );
+      expect(skips).toHaveLength(2);
+      expect(skips.join('\n')).toContain('[flag:f2_sorted >= 10]');
+      expect(skips.join('\n')).toContain('[flag:f2_sorted >= 20]');
+    });
+  });
 });
 
 describe('wing depth', () => {
@@ -310,6 +364,28 @@ describe('every explore pays something', () => {
       expect(SPOTS[id].finds).toHaveLength(1);
       expect(exploreIssues([{ ...SPOTS[id], finds: undefined }]).map((i) => i.spot)).toEqual([id]);
     }
+  });
+
+  it('a fresh save that explores either one to 100% receives the payload', () => {
+    // A find that pays nothing to a new player passes the lint and is no find:
+    // the first draft paid Arcana XP, and the only arcane skill unlocks at INT 10.
+    const explore = (spot: string, activity: string) => {
+      const g = new Game(createInitialState(42, spot));
+      const before = { gold: g.state.gold, flour: flourOf(g) };
+      g.selectActivity(activity);
+      for (let i = 0; i < 5000 && !isExplored(g.state, spot); i++) g.tick();
+      expect(isExplored(g.state, spot)).toBe(true);
+      expect(g.state.finds[spot]).toEqual([SPOTS[spot].finds![0].id]);
+      return { g, before };
+    };
+    const flourOf = (g: Game) => Object.values(g.state.stock.rough_flour ?? {}).reduce((n, q) => n + (q ?? 0), 0);
+
+    const chalk = explore('chalk_yard', 'explore_chalk');
+    // At least the find's minimum: exploring also drops the odd coin of its own.
+    expect(chalk.g.state.gold - chalk.before.gold).toBeGreaterThanOrEqual(SPOTS.chalk_yard.finds![0].gold![0]);
+
+    const cellar = explore('the_undercrofts', 'explore_undercrofts');
+    expect(flourOf(cellar.g) - cellar.before.flour).toBe(SPOTS.the_undercrofts.finds![0].material!.qty);
   });
 });
 

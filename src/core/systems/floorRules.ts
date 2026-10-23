@@ -146,15 +146,33 @@ function spineOf(floor: RuledFloor, adj: FloorAdjacency, within: ReadonlySet<str
 
 // ---------- 2. No skip ----------
 
+/** One floor-local condition: a counter held at or above (`stat`) or at or below (`statMax`) a value. */
+interface Term {
+  key: string;
+  type: 'stat' | 'statMax';
+  value: number;
+  text: string;
+}
+
 interface Gate {
   from: string;
   to: string;
-  /** The floor-local conditions on the edge, as sorted, deduplicated text. */
-  terms: string[];
+  /** The floor-local conditions on the edge, deduplicated and sorted by text. */
+  terms: Term[];
 }
 
-const termOf = (c: Extract<UnlockCondition, { type: 'stat' | 'statMax' }>): string =>
-  `${c.key} ${c.type === 'stat' ? '>=' : '<='} ${c.value}`;
+const termOf = (c: Extract<UnlockCondition, { type: 'stat' | 'statMax' }>): Term => ({
+  key: c.key,
+  type: c.type,
+  value: c.value,
+  text: `${c.key} ${c.type === 'stat' ? '>=' : '<='} ${c.value}`,
+});
+
+/** Whenever `strict` holds, `weak` holds: the same counter at a higher minimum or a lower maximum. */
+const implies = (strict: Term, weak: Term): boolean =>
+  strict.key === weak.key &&
+  strict.type === weak.type &&
+  (weak.type === 'stat' ? strict.value >= weak.value : strict.value <= weak.value);
 
 /**
  * A predicate for the counters this floor writes: `fights:`, `slain:` and
@@ -217,13 +235,15 @@ function floorGates(
     if (!within.has(from)) continue;
     for (const edge of edges) {
       if (!within.has(edge.to)) continue;
-      const terms = new Set<string>();
+      const terms = new Map<string, Term>();
       for (const c of [...(edge.requires ?? []), ...(edge.revealWhen ?? [])]) {
-        if ((c.type === 'stat' || c.type === 'statMax') && isFloorCounter(c.key)) terms.add(termOf(c));
+        if ((c.type !== 'stat' && c.type !== 'statMax') || !isFloorCounter(c.key)) continue;
+        const term = termOf(c);
+        terms.set(term.text, term);
       }
       if (!terms.size) continue;
       if (edge.oneWay && reachable.has(from) && dominates(edge.to, from)) continue;
-      gates.push({ from, to: edge.to, terms: [...terms].sort() });
+      gates.push({ from, to: edge.to, terms: [...terms.values()].sort((a, b) => (a.text < b.text ? -1 : 1)) });
     }
   }
   return gates;
@@ -234,8 +254,10 @@ function floorGates(
  * for each group, every other condition is assumed to hold (other gates,
  * attribute, skill, quest and equipment conditions, hidden edges), the group's
  * edges are removed, and none of the group's targets may still be reachable
- * from the landing. Edges that carry all of the group's terms and more are
- * removed with it: with the group shut they are shut too.
+ * from the landing. Edges whose terms imply all of the group's are removed with
+ * it, because with the group shut they are shut too: an edge that carries the
+ * group's terms and more, or the same counter at a higher minimum (`>= 20`
+ * behind a `>= 10` group) or a lower maximum.
  */
 function skipIssues(
   floor: RuledFloor,
@@ -245,7 +267,7 @@ function skipIssues(
 ): FloorIssue[] {
   const groups = new Map<string, Gate[]>();
   for (const g of gates) {
-    const key = g.terms.join(' & ');
+    const key = g.terms.map((t) => t.text).join(' & ');
     const members = groups.get(key);
     if (members) members.push(g);
     else groups.set(key, [g]);
@@ -254,7 +276,7 @@ function skipIssues(
   for (const [name, members] of groups) {
     const terms = members[0].terms;
     const shut = new Set(
-      gates.filter((g) => terms.every((t) => g.terms.includes(t))).map((g) => `${g.from}>${g.to}`),
+      gates.filter((g) => terms.every((t) => g.terms.some((u) => implies(u, t)))).map((g) => `${g.from}>${g.to}`),
     );
     const w = walk(adj, [floor.landing!], within, (from, e) => shut.has(`${from}>${e.to}`));
     const open = [...new Set(members.map((m) => m.to))].filter((t) => w.dist.has(t));

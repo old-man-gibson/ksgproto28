@@ -578,7 +578,8 @@ describe('world graph', () => {
   it('every explore activity pays something — a find, or a hidden road to open', () => {
     // Mirrored live in forge/lib/validate.ts (both run floorRules.exploreIssues).
     // The shelf is not held to this: it is parked content, and the rule is
-    // about what a player can reach today.
+    // about what a player can reach today. As of 2026-10-23, 3 of its 14
+    // explore spots would fail it (old_path, deep_forest_w, malgeri_peak).
     const shelved = new Set(Object.keys(SHELVED_WORLD.spots));
     const live = Object.values(SPOTS).filter((s) => !shelved.has(s.id));
     expect(exploreIssues(live).map((i) => `${i.spot}: ${i.message}`)).toEqual([]);
