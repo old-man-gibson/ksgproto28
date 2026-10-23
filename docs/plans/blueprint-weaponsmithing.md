@@ -318,7 +318,7 @@ rites?: string[] }` (optional field).
 - **Reading:** each net point adds a small linear mod; |net| ≥ 3 adds the
   pole's attribute, ≥ 6 twice, ≥ 9 three times (only reachable with cap ≥ 9).
 - **Temper:** one per application. Cap = floor(6 × qualityMult): F 0, E 1,
-  D 3, C 6, B 9, A 15, S 24. `t` never decreases except by a refund rite.
+  D 3, C 6, B 9, A 15, S 24. `t` never decreases; rites raise the budget instead (§Magic).
   **Anneal** zeroes one axis for 2 temper. A plan is a target counter map;
   the preview refuses plans over cap − t, so application order never matters.
 - Applied one verb at a time on the benchwork clock; an interrupted job keeps
