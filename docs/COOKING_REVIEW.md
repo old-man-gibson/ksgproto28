@@ -2,8 +2,10 @@
 
 *2026-10-23. A design review, not a spec: nothing here is built. Run as a
 `team:` task: three brainstormers (kitchen depth, hunting into the kitchen,
-presentation), one design antagonist, rulings by the manager (§6). Mockups:
-[cooking-review/mockups.html](cooking-review/mockups.html). Open it from disk,
+presentation), one design antagonist, rulings by the manager (§6). The same
+review as a page with six working mockups:
+[cooking-review/review.html](cooking-review/review.html), published privately
+as https://claude.ai/artifact/T7dMezzkmjuLohn368PZNZ. Open the file from disk,
 or serve the repo root with the `docs-static` launch config.*
 
 The ask, in three lines: make cooking more visually appealing and more
@@ -253,8 +255,9 @@ then selection (what comes to you), then yield (how well you take it).
 
 ## 5. UI
 
-Mockups: [cooking-review/mockups.html](cooking-review/mockups.html), both
-themes. All of it reads app.css tokens; no new colour token, no bought pixels.
+Mockups: [cooking-review/review.html](cooking-review/review.html), in the
+gothic palette. The game version reads app.css tokens; no new colour token, no
+bought pixels.
 
 ### 5.1 Heat track (round 1; mockup A)
 

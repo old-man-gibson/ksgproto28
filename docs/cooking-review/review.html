@@ -1,0 +1,625 @@
+<meta charset="utf-8">
+<title>Cooking and Hunting Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one long column, same frame as the smithing and alembic reviews.
+   Report first, then six mockups in the game's gothic panel frame. The
+   stove mockups run the formulas from src/core/systems/cooking.ts plus the
+   proposed heat windows and judgement cap. Source of record:
+   docs/COOKING_REVIEW.md on branch docs/cooking-review. */
+:root {
+  --bg: #110e0b;
+  --panel: #1a1511;
+  --raised: #241d16;
+  --hover: #30271d;
+  --sunken: #0b0907;
+  --border: #4a3c2c;
+  --frame: #2c241b;
+  --btn: #5a4a36;
+  --btn-hi: #7a6448;
+  --text: #ddd1b6;
+  --dim: #9b8c72;
+  --accent: #c9a45c;
+  --danger: #c8493d;
+  --good: #7f9a4c;
+  --skill: #9c84c0;
+  --hp: #b0362c;
+  --focus: #c8762f;
+  --action: #d2b042;
+  --q-f: #5a5a5a; --q-e: #8b8b8b; --q-d: #e8edf4; --q-c: #4caf7d; --q-b: #42a5f5; --q-a: #ab6fd6; --q-s: #e8b84b;
+  --title: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --body: 'EB Garamond', Garamond, Georgia, serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.5;
+  font-variant-numeric: lining-nums tabular-nums;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--title); font-weight: 500; letter-spacing: 0.06em; text-wrap: balance; margin: 0; }
+h1 { font-size: 26px; letter-spacing: 0.12em; text-transform: uppercase; }
+h2 { font-size: 19px; color: var(--accent); }
+h3 { font-size: 15px; letter-spacing: 0.08em; }
+p { margin: 0; max-width: 68ch; }
+.dim { color: var(--dim); }
+.small { font-size: 14.5px; }
+.tiny { font-size: 13px; }
+code { font-family: Consolas, 'Courier New', monospace; font-size: 0.86em; color: #d8c49a; }
+a { color: var(--accent); }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--frame);
+  padding: 20px 22px;
+  min-width: 0;
+}
+.panel > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; margin-bottom: 14px; }
+.tag { font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); border: 1px solid var(--border); padding: 1px 7px; }
+.tag.later { color: var(--skill); border-color: color-mix(in srgb, var(--skill) 50%, var(--border)); }
+.tag.r1 { color: var(--good); border-color: color-mix(in srgb, var(--good) 50%, var(--border)); }
+.tag.held { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); }
+
+button {
+  font: inherit; font-size: 14.5px; color: var(--text);
+  background: var(--raised); border: 1px solid var(--btn);
+  padding: 4px 10px; cursor: pointer; border-radius: 0;
+}
+button:hover:not(:disabled) { border-color: var(--btn-hi); background: var(--hover); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--raised)); box-shadow: inset 0 -2px 0 var(--accent); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+input[type=range] { accent-color: var(--accent); }
+
+/* report */
+.verdict { display: grid; gap: 14px; }
+.verdict .line { display: grid; grid-template-columns: 9.5em 1fr; gap: 4px 14px; }
+.verdict .line > b { color: var(--accent); font-weight: 600; }
+@media (max-width: 560px) { .verdict .line { grid-template-columns: 1fr; } }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 3px 16px; margin: 0; }
+.facts dt { color: var(--dim); }
+.facts dd { margin: 0; min-width: 0; }
+@media (max-width: 560px) { .facts { grid-template-columns: 1fr; } .facts dd { margin-bottom: 6px; } }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--frame); vertical-align: top; }
+th { font-weight: 600; color: var(--dim); font-size: 13.5px; letter-spacing: 0.04em; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+.sev { display: inline-block; min-width: 4.6em; font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.sev.hi { color: var(--danger); } .sev.mid { color: var(--accent); } .sev.lo { color: var(--dim); }
+.ruling { color: var(--good); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font-size: 13px; border: 1px solid var(--border); padding: 0 7px; color: var(--dim); white-space: nowrap; text-decoration: none; }
+a.chip:hover { color: var(--text); border-color: var(--btn-hi); }
+.note { border-left: 2px solid var(--accent); padding: 4px 10px; background: color-mix(in srgb, var(--accent) 5%, transparent); font-size: 14.5px; }
+
+/* flow strip */
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; }
+.flow .step { flex: 1 1 140px; background: var(--sunken); border: 1px solid var(--frame); padding: 8px 10px; min-width: 0; }
+.flow .step b { display: block; font-family: var(--title); font-weight: 500; font-size: 13px; letter-spacing: 0.08em; color: var(--accent); }
+.flow .step.later b { color: var(--skill); }
+.flow .arrow { align-self: center; color: var(--dim); }
+@media (max-width: 560px) { .flow .arrow { display: none; } }
+
+/* controls row shared by the mockups */
+.ctl { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-bottom: 6px; }
+.ctl > .lab { min-width: 8em; color: var(--dim); font-size: 14px; }
+
+/* mockup 1: today's stove */
+.today-grid { display: grid; grid-template-columns: 1fr 1.4fr 1fr; grid-template-rows: auto auto; gap: 10px; background: var(--sunken); border: 1px solid var(--frame); padding: 12px; max-width: 460px; }
+.st { display: grid; justify-items: center; gap: 2px; font-size: 12.5px; color: var(--dim); }
+.cell { width: 34px; height: 34px; border: 1px solid var(--btn); background: var(--bg); display: grid; place-items: center; font-size: 18px; color: var(--dim); }
+.pot { grid-row: 1 / 3; grid-column: 2; border: 1px solid var(--btn); padding: 8px; display: grid; justify-items: center; gap: 6px; align-content: start; }
+.pot .ttl { font-size: 14px; color: var(--text); }
+.today-notes { counter-reset: n; display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.today-notes li { display: grid; grid-template-columns: 1.6em 1fr; font-size: 14.5px; }
+.today-notes li::before { counter-increment: n; content: counter(n); color: var(--danger); font-weight: 600; }
+.pin { display: inline-grid; place-items: center; width: 1.25em; height: 1.25em; font-size: 11px; font-weight: 600; color: var(--bg); background: var(--danger); margin-left: 3px; }
+
+/* mockup 1: heat track */
+.track { --uw: 20px; background: var(--sunken); border: 1px solid var(--frame); padding: 8px 10px; min-width: max-content; }
+.axis, .lane, .winrow { display: grid; grid-template-columns: 120px calc(18 * var(--uw)) 200px; align-items: center; column-gap: 8px; }
+.axis { height: 18px; color: var(--dim); font-size: 11.5px; }
+.ticks, .area, .wins { position: relative; height: 100%; }
+.ticks b { position: absolute; top: 0; font-weight: 400; transform: translateX(-50%); }
+.lane { height: 36px; border-top: 1px dashed color-mix(in srgb, var(--border) 70%, transparent); }
+.lane .nm { font-size: 13.5px; line-height: 1.1; }
+.lane .nm small { display: block; color: var(--dim); font-size: 11.5px; }
+.seg { position: absolute; top: 12px; height: 12px; width: calc(var(--uw) - 2px); }
+.seg.raw { background: repeating-linear-gradient(135deg, var(--dim) 0 2px, transparent 2px 4px); border: 1px solid var(--dim); }
+.seg.ready { background: var(--accent); border: 1px solid var(--accent); }
+.seg.burnt { background: repeating-linear-gradient(135deg, var(--danger) 0 2px, var(--sunken) 2px 4px); border: 1px solid var(--danger); }
+.endcap { position: absolute; top: 8px; height: 20px; width: 3px; background: var(--text); z-index: 1; }
+.cellb { position: absolute; top: 3px; width: 30px; height: 30px; display: grid; place-items: center; font-size: 17px;
+  background: color-mix(in srgb, var(--tint) 22%, var(--bg)); border: 1px solid var(--tint); z-index: 2; }
+.cellb.empty { background: var(--bg); border: 1px dashed var(--border); color: var(--dim); font-size: 13px; }
+.cellb.locked { border: 1px dashed var(--border); background: repeating-linear-gradient(135deg, transparent 0 3px, var(--raised) 3px 6px); color: var(--dim); font-size: 11px; }
+.tail { font-size: 13.5px; white-space: nowrap; }
+.ok { color: var(--accent); }
+.winrow { height: 44px; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; }
+.win { position: absolute; top: 4px; height: 15px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 18%, var(--sunken)); font-size: 11px; line-height: 13px; padding: 0 4px; color: var(--c); overflow: hidden; white-space: nowrap; }
+.win.on { background: color-mix(in srgb, var(--c) 45%, var(--sunken)); color: var(--text); }
+.mark { position: absolute; top: 0; height: 23px; width: 2px; background: var(--text); z-index: 2; }
+.mark::after { content: '▲'; position: absolute; top: 21px; left: -5px; font-size: 10px; color: var(--text); }
+.outside { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: 13.5px; color: var(--dim); }
+.hint { margin-top: 8px; font-size: 15px; min-height: 2.8em; }
+
+/* mockup 2: ledger */
+.ruler { position: relative; height: 46px; margin: 6px 0 4px; }
+.ruler .blk { position: absolute; top: 15px; height: 12px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 22%, var(--sunken)); opacity: 0.55; }
+.ruler .blk.on { opacity: 1; background: color-mix(in srgb, var(--c) 55%, var(--sunken)); }
+.ruler .lbl { position: absolute; top: 0; font-size: 12px; color: var(--c); }
+.ruler .val { position: absolute; top: 30px; font-size: 11.5px; color: var(--dim); }
+.ruler .at { position: absolute; top: 10px; height: 22px; width: 4px; background: var(--text); z-index: 2; }
+.ledger { font-size: 15px; }
+.ledger td.n { text-align: right; white-space: nowrap; padding-right: 0; }
+.ledger tr.sum td { border-top: 1px solid var(--border); font-weight: 600; }
+.was { color: var(--dim); text-decoration: line-through; margin-right: 6px; font-weight: 400; }
+
+/* mockup 3: plate card */
+.stamp { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; border: 1px solid var(--tint); background: color-mix(in srgb, var(--tint) 10%, var(--raised)); padding: 10px 14px; max-width: 620px; }
+.stamp .plate { width: 56px; height: 56px; border: 2px solid var(--tint); background: var(--bg); display: grid; place-items: center; font-size: 28px;
+  box-shadow: inset 0 0 0 3px var(--bg), inset 0 0 0 4px color-mix(in srgb, var(--tint) 50%, transparent); }
+.stamp .grade { font-family: var(--title); color: var(--tint); font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.1; }
+.stamp .side { margin-left: auto; text-align: right; font-size: 14px; }
+.pip { display: inline-block; width: 9px; height: 9px; transform: rotate(45deg); border: 1.5px solid color-mix(in srgb, var(--accent) 60%, transparent); margin: 0 4px 0 2px; }
+.pip.on { background: var(--accent); }
+
+/* mockup 4: book */
+table.book { min-width: 600px; font-size: 15px; }
+table.book td { white-space: nowrap; }
+table.book tr.bench td { color: var(--dim); font-family: var(--title); font-size: 12.5px; letter-spacing: 0.08em; padding-top: 12px; }
+.sq { display: inline-block; width: 12px; height: 12px; margin-right: 3px; border: 1px solid var(--c); vertical-align: -1px; }
+.sq.made { background: var(--c); }
+.sq.next { border-style: dashed; }
+.sq.none { border-color: var(--frame); }
+.gh { display: inline-block; width: 15px; text-align: center; }
+.sil { display: inline-block; width: 130px; height: 10px; vertical-align: middle; border: 1px dashed var(--border); background: repeating-linear-gradient(135deg, transparent 0 3px, var(--raised) 3px 6px); }
+.sig { color: var(--accent); font-size: 13.5px; }
+
+/* mockup 5 and 6: bestiary and bait */
+.box { background: var(--sunken); border: 1px solid var(--frame); padding: 12px 14px; display: grid; gap: 8px; align-content: start; min-width: 0; max-width: 680px; }
+.box h3 { color: var(--text); }
+.fact { border-top: 1px solid var(--frame); padding-top: 6px; display: grid; gap: 4px; }
+.fact b { font-weight: 600; }
+table.parts { font-size: 14.5px; }
+table.parts td { white-space: nowrap; }
+.share { display: flex; height: 26px; border: 1px solid var(--frame); }
+.share > div { display: grid; place-items: center; font-size: 13px; color: var(--bg); font-weight: 600; transition: flex-basis 160ms; overflow: hidden; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .share > div { transition: none; } }
+</style>
+
+<div class="wrap">
+
+<header style="display:grid; gap:10px">
+  <span class="tag" style="justify-self:start">Design review · 2026-10-23 · nothing built</span>
+  <h1>Cooking and Hunting</h1>
+  <p class="dim">How to make cooking distinct and worth mastering while it keeps its identity, how hunting can feed it, and what the stove should look like. Findings from the code, the team's plan in rounds, the objections raised against it, and six working mockups.</p>
+  <nav class="chips small" aria-label="Sections"><a class="chip" href="#verdict">Verdict</a><a class="chip" href="#findings">Findings</a><a class="chip" href="#design">Design</a><a class="chip" href="#roles">Roles</a><a class="chip" href="#objections">Objections</a><a class="chip" href="#questions">Questions</a><a class="chip" href="#stove">Mockups</a></nav>
+</header>
+
+<section class="panel verdict" id="verdict">
+  <header><h2>Verdict</h2><span class="tag">team: 3 brainstormers, 1 design antagonist</span></header>
+  <div class="line"><b>Identity</b><span>Cooking stays <em>when</em>. Today timing decides how good a dish is. The plan makes timing also decide <em>which</em> dish it is. Later, each part of an animal arrives with its own cook time, so the quarry tells the cook when it goes in. No pair synergies (mutagens), no order rules (alchemy), no summed effects (runecarving).</span></div>
+  <div class="line"><b>Fix first</b><span>The stove mints gold. At Cooking 45, Fair Larder ingredients worth about 10 gold make a Divine stew that sells for 56, every 12 seconds, and bench runs keep going offline: about 110k gold a night against about 1k held at the end of band 1. A cap on the cook's skill bonus fixes the worst of it.</span></div>
+  <div class="line"><b>Round 1</b><span>Cap the skill bonus at +2.00; heat windows (same pot, different cook time, different dish); the stove UI fixes; a heat track and a grade ledger on the stove. No save version change.</span></div>
+  <div class="line"><b>Hunting</b><span>Designed, held back. The tower spawns slimes and constructs; the only animals that drop meat live on the shelved maps. Carcass parts and the Palate fact wait for living quarry on a live floor, or for your answer on whether slimes are food.</span></div>
+  <div class="line"><b>Roles</b><span>Basic cooking would fill sustain (stews), damage (Seared Stew), and maybe condition defence (Steeped Broth, unproven). Access only in optional content.</span></div>
+  <div class="line"><b>Where</b><span><code>docs/COOKING_REVIEW.md</code> and this page's source, on branch <code>docs/cooking-review</code>. Not merged.</span></div>
+</section>
+
+<section class="panel" id="findings">
+  <header><h2>Found in the current code</h2><span class="tag">checked 2026-10-23</span></header>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:5em">Weight</th><th>Finding</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sev hi">high</span></td><td><b>The stove mints gold.</b> Judgement is level ÷ 15, uncapped. Fair inputs make Fine at 9, Superb at 23, Divine at 45. A stew sells for 14 × the grade multiplier: 14, 22, 35, 56. Bench runs repeat, and offline catch-up runs ordinary ticks for up to 8 hours: about 2400 stews, +29k gold at Cooking 15, +110k at 45.</td><td class="tiny"><code>cooking.ts</code> 199–203, <code>equipment.ts</code> 223, <code>save/offline.ts</code></td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>Hunting feeds no pot in the alpha.</b> Raw meat drops from the young wolf, wolf, boar and cliff hawk, all four on shelved maps only. Live animals: forest rats and goblins in the Cages and one floor room. All food comes from the Larder Door.</td><td class="tiny"><code>monsters.data.ts</code>, <code>shelved/locations.shelved.ts</code></td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>Fifteen dishes, three effects.</b> Every dish grants some mix of Well Fed, Steady Hand and Clear-Headed. Cooking is one of the eight core systems but fills one role, weakly.</td><td class="tiny"><code>materials.data.ts</code> 196–520</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Timing does nothing in the alpha.</b> Unprepped food fits a band of 3–16 units and the cutting board is shut, so below Cooking 8 every layout lands in band. From 8, the late slot at Quick simmer falls short; the fourth slot can only lower the grade.</td><td class="tiny"><code>cooking.ts</code> 78–83, <code>unlocks.ts</code></td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Mastery stops at Cooking 45.</b> Past Divine, levels buy nothing. The skill's only other effect is craft speed, which the stove ignores. No milestones.</td><td class="tiny"><code>skills.data.ts</code> 830–846</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>The stove hides its rules.</b> See mockup 1 for the list: the heat band is tooltip-only, slots sit out of time order, the preview's grade colour is never drawn, the picker shows no grades, cookware counts in the mean unsaid, and reopening mid-cook shows an empty pot.</td><td class="tiny"><code>BenchPanel.svelte</code> 80, 291–298, 643–647, ~1104</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>Hunting's knowledge has no use.</b> Bestiary facts are read, never acted on. Hunting levels buy small loot and gold multipliers.</td><td class="tiny"><code>skills.data.ts</code> ~84</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="panel" id="flow">
+  <header><h2>The loop, end to end</h2><span class="tag">overview</span></header>
+  <div class="flow">
+    <div class="step later"><b>Quarry</b><span class="small">A kill drops parts by its tags. The Palate fact says what each is for. Later.</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Pot</b><span class="small">Each slot enters the pot at a fixed point; the duration sets how long every part cooks.</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Dish</b><span class="small">The tagged parts' time on the heat picks the dish inside its window. Round 1.</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Grade</b><span class="small">Ingredient grade × fit, plus the cook's judgement, capped at +2.00. Round 1.</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Eaten</b><span class="small">A status: sustain, damage or resistance, scaled by grade.</span></div>
+    <span class="arrow" aria-hidden="true">→</span>
+    <div class="step later"><b>Book</b><span class="small">Count and best grade per dish; windows pinned at 25 cooks, Signature at 100.</span></div>
+  </div>
+</section>
+
+<section class="panel" id="design">
+  <header><h2>The plan</h2><span class="tag">first-guess numbers</span></header>
+  <div class="two">
+    <div style="display:grid; gap:10px; min-width:0">
+      <h3>The kitchen</h3>
+      <dl class="facts small">
+        <dt>Heat windows</dt><dd>A stove outcome may declare windows on a tag. It matches when the mean time on the heat of the parts carrying that tag falls inside. The window-less dish stays the fallback for its ingredients, so a player without the card, or outside every window, cooks exactly what they cook today.</dd>
+        <dt>First set</dt><dd>Meat + vegetable: <b>Seared Stew</b> when meat cooks under 6 units (grants Stoked: +5% damage and +5% crit damage per intensity, 5 min); <b>Hearty Stew</b> otherwise (Well Fed); <b>Braised Meat</b> at 14 or more (Well Fed ×1.5, 15 min). Mushroom + herb: <b>Steeped Broth</b> when the herb cooks 8 or more (poison and acid resistance); <b>Mushroom Broth</b> otherwise.</dd>
+        <dt>Reachable</dt><dd>At Cooking 1, two slots, unprepped food. Seared: meat midway at Quick simmer (5.4 units). Braised: meat first at Long braise (16). Steady stew with meat first stays Hearty (12).</dd>
+        <dt>Judgement cap</dt><dd>min(L, 15) ÷ 15, then + (L − 15) ÷ 45, capped at +2.00 (reached at 60). Fair inputs top out at Superb; Divine needs Superb ingredients. Levels 15–60 still pay, 0.022 each.</dd>
+        <dt>Milestones</dt><dd>Round 2. Every 10 levels food lasts 6% longer; every 20, 5% stronger. Both capped at ×1.5, because cooking has no level cap.</dd>
+        <dt>Signatures</dt><dd>Round 2. 25 cooks of a dish pins its window in the Cook's Book. 100 makes it a Signature: eating it also grants a second, smaller status.</dd>
+        <dt>Cook's Book</dt><dd>Round 2. One row per dish: grades made, count, best, window, Signature. Unmade dishes show as a blank row with no gate printed.</dd>
+        <dt>Crocks</dt><dd>After base building. A bench on the world clock: start a pickle, collect later; the grade reads time at rest with the stove's own fit curve. A save change.</dd>
+      </dl>
+    </div>
+    <div style="display:grid; gap:10px; min-width:0">
+      <h3>The hunt</h3>
+      <dl class="facts small">
+        <dt>Carcass parts</dt><dd>Held. A kill rolls parts from the monster's tags instead of a per-monster meat line: tender cut, sinew, offal for living beasts; marrow for large ones. Zero authoring per monster; a monster may override.</dd>
+        <dt>Parts' windows</dt><dd>Each part has its own cook band: tender cut 3–9, sinew 12–16, offal 2–5, marrow 10–16. The animal decides which slot each part belongs in.</dd>
+        <dt>Glands</dt><dd>A species with innate elemental resistance of 0.25 or more drops a gland; gland + herb makes a broth that resists that element.</dd>
+        <dt>Palate</dt><dd>A new bestiary fact (4 kills minimum): the species' parts, their windows, its glands, and a Load Pot button that fills the stove with a layout that lands every part in band.</dd>
+        <dt>Bait</dt><dd>Later. Each species has a diet from its tags. A bait dish multiplies the encounter weight of matching species, up to ×3, growing with Hunting. At Hunting 40, rare quarry answers only bait (optional content).</dd>
+        <dt>Offering</dt><dd>Later. Feeding the front enemy a dish it eats makes it Sated: it stops attacking until hit or until a timer runs out. Optional content only.</dd>
+        <dt>Dressing</dt><dd>Later, low priority. How it died shifts its parts' grade: bleeding +1, poisoned −2.</dd>
+      </dl>
+    </div>
+  </div>
+  <div class="scroll" style="margin-top:16px"><table>
+    <thead><tr><th>Hunting level</th><th>Today</th><th>With the hunt half</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>novelty XP, +0.4% loot</td><td>Palate in about 17 kills (the Cages: 4); parts by tag</td></tr>
+      <tr><td>25</td><td>+10% loot</td><td>Palate in about 9 kills; more parts from living quarry; stronger bait</td></tr>
+      <tr><td>40</td><td>+16% loot</td><td>rare quarry answers bait</td></tr>
+      <tr><td>60</td><td>+24% loot</td><td>bait at its ×3 cap; dressing costs 1 tick a part</td></tr>
+    </tbody>
+  </table></div>
+  <p class="small dim" style="margin-top:10px">Hunting moves from a passive multiplier to knowledge (what a species is for), then selection (what comes to you), then yield (how well you take it).</p>
+</section>
+
+<section class="panel" id="roles">
+  <header><h2>Cooking as a core system</h2><span class="tag">COMPLETABILITY §6a</span></header>
+  <p class="small dim" style="margin-bottom:10px">The climb asks for basic use of about half the eight core systems; hurdles name roles. These are the roles basic cooking (following a recipe card) would fill on a fresh save.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>Role</th><th>Delivered by</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Sustain</td><td>Hearty Stew, Braised Meat (Well Fed)</td><td>Exists; Braised is stronger.</td></tr>
+      <tr><td>Damage</td><td>Seared Stew (Stoked)</td><td>New. Needs a cell test: the base climber plus a Fair Seared Stew against a hurdle he fails bare.</td></tr>
+      <tr><td>Condition defence</td><td>Steeped Broth (Steeped)</td><td><span class="sev hi">unproven</span> At Fair it trims poison by 8%; no test would credit that. Strength is question 2.</td></tr>
+      <tr><td>Access</td><td>none</td><td>Bait and Sated are optional content only.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="panel" id="objections">
+  <header><h2>Objections and rulings</h2><span class="tag">antagonist verdict: fix first</span></header>
+  <p class="small dim" style="margin-bottom:10px">No state the player cannot leave: no critical path touches parts or windows, every food source is endless, prestige re-earns per run, and the identity guards hold. Seven objections, all accepted. The plan above includes each ruling.</p>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:4.6em">Severity</th><th>Objection</th><th>Ruling</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sev hi">high</span></td><td><b>The first rewrite of the skill bonus was still uncapped.</b> Fair reached Divine at Cooking 105 instead of 45, so the mint survived. Cooking has no level cap. Measured.</td><td class="ruling">Accepted. Capped at +2.00. Windowed dishes sell for no more than Hearty Stew.</td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>Windows could make the default stew worse.</b> Recipe and level filters run before ingredient matching, so a long braise without the Braised card fell through to Traveler's Ration, where today it makes a Hearty Stew.</td><td class="ruling">Accepted. The window-less dish stays the fallback; a lint checks every layout matches something no worse than today.</td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>Carcass parts claimed three roles; only one has a source.</b> No live animal is large (no marrow) and none has 0.25 resistance (no glands). Only the rat's tender cut exists, from the Cages.</td><td class="ruling">Accepted. The hunt half is held; no role claimed for it.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Food potency was uncapped</b> while duration was capped, on a skill with no level cap.</td><td class="ruling">Accepted. Both capped at ×1.5.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Steeped Broth is not condition defence.</b> −8% poison at Fair; a cell test would not credit it.</td><td class="ruling">Accepted. Role unclaimed until a test passes. Question 2.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>The gland broth's status was named ward_*,</b> which is arcane magic's verb and an existing stat.</td><td class="ruling">Accepted. Renamed at build time.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>A cooking novelty domain needs a seeding migration,</b> or existing saves get one windfall per dish.</td><td class="ruling">Accepted. The domain ships on its own with its migration.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>Later: two Sated sides never end a fight.</b></td><td class="ruling">Accepted. Sated gets a timer.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="panel" id="slices">
+  <header><h2>Rounds</h2><span class="tag">build order</span></header>
+  <div class="scroll"><table>
+    <thead><tr><th>Round</th><th>Ships</th><th>Waits on</th><th>Save change</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Skill bonus capped at +2.00. Heat windows and the first five dishes, two new statuses. Stove fixes: preview colour, layout restored mid-cook, grades on picker cells. Heat track and grade ledger.</td><td>Your go-ahead</td><td>No</td></tr>
+      <tr><td>2</td><td>Milestones (duration, potency), per-dish counts, Signatures, Cook's Book, plate card. Cooking novelty domain.</td><td>Questions 5, 6</td><td>Only the novelty domain</td></tr>
+      <tr><td>3</td><td>Carcass parts, glands, the Palate fact and Load Pot.</td><td>Living quarry on a live floor, or question 3</td><td>No</td></tr>
+      <tr><td>4</td><td>Diets, bait, rare quarry that answers bait, offerings.</td><td>Round 3</td><td>No</td></tr>
+      <tr><td>5</td><td>Crocks.</td><td>Base building</td><td>Yes</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section class="panel" id="questions">
+  <header><h2>Questions for you</h2><span class="tag">answer in fragments</span></header>
+  <ol class="list small" style="gap:10px">
+    <li><b>Is cooking a gold source?</b> After the cap, Fair inputs still make Superb stews worth 3.5× their cost, and bench runs replay offline. Default: the cap alone. Alternative: dish resale stops scaling with grade past Fair, so a dish's worth is eating it.</li>
+    <li><b>How strong may a cooking status be against poison?</b> (a) A resistance a test passes, about +0.25 at Fair. (b) Poison cannot land at all while Steeped is held (monsters can wear it too). (c) Cooking does not claim condition defence. Default: (a), tested.</li>
+    <li><b>Are slimes food?</b> 37 of 64 species are slimes, and they are the tower's main quarry. Yes makes slime jelly the alpha's hunt-to-pot link. Default: no until you say; the hunt half waits for living quarry.</li>
+    <li><b>Are goblins food?</b> Default: no, humanoids are excluded.</li>
+    <li><b>Does the Cook's Book survive prestige?</b> Default: it resets per run like recipe cards; a prestige boon may carry it later.</li>
+    <li><b>Is a 100-cook Signature grind wanted?</b> Default: yes; the numbers are data.</li>
+    <li><b>Round 1 scope.</b> Default: as in the table above.</li>
+  </ol>
+</section>
+
+<section class="panel" id="stove">
+  <header><h2>1 · The stove: today and the heat track</h2><span class="tag r1">round 1 · heat windows + UI</span></header>
+  <div class="two" style="margin-bottom:16px">
+    <div style="display:grid; gap:8px; min-width:0">
+      <h3>Today</h3>
+      <div class="today-grid" aria-label="Today's stove layout">
+        <div class="st"><div class="cell">+</div>late addition<span class="pin">1</span></div>
+        <div class="pot"><span class="ttl">First Into the Pot</span><div class="cell">🧅</div><div class="cell">🥩</div><span class="tiny dim">midway sits above first<span class="pin">1</span></span></div>
+        <div class="st"><div class="cell">+</div>finishing touch<span class="pin">1</span></div>
+        <div class="st"><div class="cell">🧂</div>seasoning</div>
+        <div class="st"><div class="cell">🍳</div>cookware<span class="pin">4</span></div>
+      </div>
+      <div class="small" style="border:1px solid var(--border); background:var(--raised); padding:3px 8px; max-width:460px">🍲 Fair Hearty Stew <span class="pin">3</span></div>
+    </div>
+    <div style="display:grid; gap:8px; min-width:0">
+      <h3>What it hides</h3>
+      <ol class="today-notes">
+        <li>Slots sit out of time order: the midway slot is above the first one, slots 3 and 4 are in the corners.</li>
+        <li>The heat band appears only in a filled cell's tooltip, so you cannot see where a part should go before placing it.</li>
+        <li>The dish preview is one line, with no reason and no grade colour (it sets one; the style never reads it).</li>
+        <li>Cookware's grade is averaged in like an ingredient, and nothing says so.</li>
+        <li>The picker shows every grade of an onion as the same icon. The review run put a Refuse onion in by accident.</li>
+        <li>Reopening the stove mid-cook shows an empty pot beside a running bar.</li>
+      </ol>
+    </div>
+  </div>
+  <h3 style="margin-bottom:8px">Proposed</h3>
+  <p class="small dim" style="margin-bottom:10px">Each slot is a lane on the time axis. The bar under a part runs from its entry to the end of the cook: hatched is raw, filled is inside its band, red hatch is burnt. The strip under the lanes shows the stew's dish windows and where the meat lands. Change the cook time or the meat's slot and watch the dish change.</p>
+  <div class="ctl"><span class="lab">Cook for</span><span id="c-dur"></span></div>
+  <div class="ctl"><span class="lab">Meat goes in</span><span id="c-slot"></span></div>
+  <div class="ctl"><span class="lab">Ingredients</span><span id="c-grade"></span></div>
+  <div class="ctl"><span class="lab">Cooking level</span><input id="c-lvl" type="range" min="1" max="80" value="20" style="width:180px" aria-label="Cooking level"><b id="c-lvlv">20</b></div>
+  <div class="scroll"><div class="track" id="track"></div></div>
+  <div class="hint" id="hint"></div>
+</section>
+
+<section class="panel" id="ledger-panel">
+  <header><h2>2 · The grade ledger</h2><span class="tag r1">round 1 · preview</span></header>
+  <p class="small dim" style="margin-bottom:10px">The dish preview opens to show why the dish lands where it does. Live from mockup 1. Struck-through numbers are today's formula; the plan caps the cook's judgement at +2.00, so at high levels only better ingredients close the gap. In the game it is collapsed to one line until opened.</p>
+  <div id="ledger"></div>
+</section>
+
+<section class="panel" id="plate-panel">
+  <header><h2>3 · The plate card</h2><span class="tag later">round 2 · completion</span></header>
+  <p class="small dim" style="margin-bottom:10px">Shown at the bench when a cook finishes, instead of only a log line: grade stamp in the grade's colour, the score, and the dish's count and best grade from the Cook's Book. Live from mockup 1.</p>
+  <div id="plate"></div>
+</section>
+
+<section class="panel" id="book-panel">
+  <header><h2>4 · The Cook's Book</h2><span class="tag later">round 2 · reference</span></header>
+  <p class="small dim" style="margin-bottom:10px">The re-openable reference the completability law asks for. A square per grade (filled: made at that grade; dashed: the next grade up from your best), count, the window once pinned, the Signature once earned. Dishes not yet made show as a blank row with no gate printed, so the stove keeps its discovery. Example save.</p>
+  <div class="scroll"><table class="book" id="book"></table></div>
+</section>
+
+<section class="panel" id="palate-panel">
+  <header><h2>5 · Bestiary: the Palate fact</h2><span class="tag held">held · needs living quarry</span></header>
+  <p class="small dim" style="margin-bottom:10px">What a species yields for the pot and where each part fits on the stove. Load Pot fills the stove with a layout that lands every part in its band.</p>
+  <div class="box">
+    <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline"><h3>Forest Rat</h3><span class="tiny dim">living · beast · tiny</span></div>
+    <div class="fact"><b>Field Notes</b><span class="tiny dim">known</span></div>
+    <div class="fact"><b>Palate</b><span class="tiny dim">learned at kill 6 · the Cages teach it at kill 4</span>
+      <div class="scroll"><table class="parts">
+        <tr><td>Tender Cut</td><td class="dim">12% per kill</td><td>wants 3–9 units</td><td class="dim">midway at Quick simmer, or first in at Quick simmer</td></tr>
+        <tr><td>Sinew</td><td class="dim">8% per kill</td><td>wants 12–16 units</td><td class="dim">first in at Steady stew or Long braise</td></tr>
+        <tr><td>Offal</td><td class="dim">6% per kill</td><td>wants 2–5 units</td><td class="dim">late addition (Cooking 8)</td></tr>
+      </table></div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center"><button disabled title="Mockup">Load pot: sinew first, tender cut late</button><span class="tiny dim">Long braise: sinew cooks 16 units, the tender cut 5.4 (late slot, Cooking 8).</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" id="bait-panel">
+  <header><h2>6 · Bait: the kitchen feeds the hunt</h2><span class="tag later">round 4 · encounter weights</span></header>
+  <p class="small dim" style="margin-bottom:10px">A bait dish raises the encounter weight of species whose diet matches, by 1 + 0.5 + Hunting ÷ 40, capped at ×3. Example: the floor-1 storerooms roll rats 75 and slimes 25. Slimes eat sweet things; rats do not.</p>
+  <div class="ctl"><span class="lab">Bait</span><span id="b-bait"></span></div>
+  <div class="ctl"><span class="lab">Hunting</span><span id="b-hunt"></span></div>
+  <div class="box" style="max-width:560px">
+    <div class="share" id="b-share" aria-label="Encounter share"></div>
+    <div class="small" id="b-text"></div>
+  </div>
+</section>
+
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s) => document.querySelector(s);
+const Q = {
+  f: { n: 'Refuse', m: -0.5, c: 'var(--q-f)' }, e: { n: 'Poor', m: 0.25, c: 'var(--q-e)' }, d: { n: 'Common', m: 0.6, c: 'var(--q-d)' },
+  c: { n: 'Fair', m: 1, c: 'var(--q-c)' }, b: { n: 'Fine', m: 1.6, c: 'var(--q-b)' }, a: { n: 'Superb', m: 2.5, c: 'var(--q-a)' }, s: { n: 'Divine', m: 4, c: 'var(--q-s)' },
+};
+const ORDER = ['f', 'e', 'd', 'c', 'b', 'a', 's'];
+const WHOLE = { band: [3, 16], peak: 1 };
+const SLOTS = [
+  { id: 'main', name: 'First Into the Pot', at: 0, lvl: 0 },
+  { id: 'second', name: 'Added Midway', at: 0.33, lvl: 0 },
+  { id: 'third', name: 'Late Addition', at: 0.66, lvl: 8 },
+  { id: 'fourth', name: 'Finishing Touch', at: 0.9, lvl: 20 },
+];
+// Proposed windows on the meat tag. Hearty Stew stays the window-less fallback.
+const DISH = {
+  seared: { n: 'Seared Stew', i: '🥘', from: 0, to: 6, c: 'var(--focus)', eat: (g) => `Stoked ×${g} for 5:00: +${(5 * g).toFixed(1)}% damage, +${(5 * g).toFixed(1)}% crit damage` },
+  hearty: { n: 'Hearty Stew', i: '🍲', from: 6, to: 14, c: 'var(--accent)', eat: (g) => `Well Fed ×${g} for 10:00: +${(8 * g).toFixed(1)} max HP, +${Math.round(10 * g)}% stamina regen` },
+  braised: { n: 'Braised Meat', i: '🍖', from: 14, to: 99, c: 'var(--hp)', eat: (g) => `Well Fed ×${(1.5 * g).toFixed(2)} for 15:00: +${(12 * g).toFixed(1)} max HP, +${Math.round(15 * g)}% stamina regen` },
+};
+const VALUE = 14;
+const UW = 20;
+let D = 12, meatSlot = 'main', grade = 'c', level = 20;
+
+const fit = (e, p) => {
+  const [lo, hi] = p.band;
+  if (e >= lo && e <= hi) return p.peak;
+  if (e < lo) return 0.5 + (p.peak - 0.5) * (e / lo);
+  return Math.max(0.5, p.peak - ((e - hi) / (hi - lo)) * (p.peak - 0.5));
+};
+const tierFor = (v) => { let b = 'f'; for (const k of ORDER) if (Q[k].m <= v + 1e-9) b = k; return b; };
+const judgeToday = (L) => L / 15;
+const judgeNew = (L) => Math.min(2, Math.min(L, 15) / 15 + Math.max(0, L - 15) / 45);
+const dishFor = (exp) => (exp < DISH.seared.to ? 'seared' : exp >= DISH.braised.from ? 'braised' : 'hearty');
+const sell = (g) => Math.max(1, Math.round(VALUE * Math.max(0.1, Q[g].m)));
+
+function buttons(el, labels, current, onPick) {
+  el.innerHTML = '';
+  labels.forEach((label, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = label;
+    if (i === current) b.className = 'on';
+    b.style.margin = '0 4px 4px 0';
+    b.addEventListener('click', () => onPick(i));
+    el.appendChild(b);
+  });
+}
+
+function compute() {
+  const onionSlot = meatSlot === 'main' ? 'second' : 'main';
+  const rows = SLOTS.map((s) => {
+    const entry = D * s.at;
+    if (level < s.lvl) return { s, entry, locked: true };
+    const who = s.id === meatSlot ? 'meat' : s.id === onionSlot ? 'onion' : null;
+    if (!who) return { s, entry };
+    const exp = D * (1 - s.at);
+    const f = fit(exp, WHOLE);
+    return { s, entry, who, exp, f, icon: who === 'meat' ? '🥩' : '🧅', name: who === 'meat' ? 'Raw Meat' : 'Wild Onion', contrib: Q[grade].m * f };
+  });
+  const parts = rows.filter((r) => r.who);
+  const mean = parts.reduce((a, r) => a + r.contrib, 0) / parts.length;
+  const meat = parts.find((r) => r.who === 'meat');
+  return { rows, parts, mean, meat, dish: dishFor(meat.exp), today: mean + judgeToday(level), now: mean + judgeNew(level) };
+}
+
+function renderTrack(C) {
+  let h = `<div class="axis"><span>unit</span><div class="ticks">`;
+  for (let u = 0; u <= 18; u += 2) h += `<b style="left:${u * UW}px">${u}</b>`;
+  h += `</div><span></span></div>`;
+  for (const r of C.rows) {
+    const nm = `<div class="nm">${r.s.name}<small>enters at unit ${r.entry.toFixed(1)}</small></div>`;
+    let area = '', tail = '';
+    if (r.locked) { area = `<div class="cellb locked" style="left:${r.entry * UW}px">lock</div>`; tail = `<span class="dim">opens at Cooking ${r.s.lvl}</span>`; }
+    else if (!r.who) { area = `<div class="cellb empty" style="left:${r.entry * UW}px">+</div>`; tail = `<span class="dim">empty</span>`; }
+    else {
+      const start = Math.floor(r.entry);
+      // One segment per unit of the cook; onHeat is this part's time in the pot mid-unit.
+      for (let i = 0; i < D - start; i++) {
+        const onHeat = start + i + 0.5 - r.entry;
+        if (onHeat < 0) continue;
+        const z = onHeat < WHOLE.band[0] ? 'raw' : onHeat <= WHOLE.band[1] ? 'ready' : 'burnt';
+        area += `<i class="seg ${z}" style="left:${(start + i) * UW}px"></i>`;
+      }
+      area += `<i class="endcap" style="left:${D * UW - 1}px"></i>`;
+      area += `<div class="cellb" style="left:${r.entry * UW}px;--tint:${Q[grade].c}">${r.icon}</div>`;
+      tail = `<span class="ok">×${r.f.toFixed(2)} in band</span> <span class="dim tiny">${r.exp.toFixed(1)} of 3–16</span>`;
+    }
+    h += `<div class="lane">${nm}<div class="area">${area}</div><div class="tail">${tail}</div></div>`;
+  }
+  h += `<div class="winrow"><div class="nm">Meat on the heat<small>picks the dish</small></div><div class="wins">`;
+  for (const k of ['seared', 'hearty', 'braised']) {
+    const d = DISH[k], to = Math.min(18, d.to);
+    h += `<span class="win${C.dish === k ? ' on' : ''}" style="--c:${d.c};left:${d.from * UW}px;width:${(to - d.from) * UW - 2}px">${d.n}</span>`;
+  }
+  h += `<i class="mark" style="left:${C.meat.exp * UW - 1}px"></i></div><div class="tail">${DISH[C.dish].i} <b>${DISH[C.dish].n}</b> <span class="dim tiny">${C.meat.exp.toFixed(1)} units</span></div></div>`;
+  h += `<div class="outside"><span>OUTSIDE TIME</span><span>🧂 Seasoning: none</span><span>🍳 Cookware: none</span></div>`;
+  $('#track').innerHTML = h;
+  const d = DISH[C.dish];
+  const other = C.dish === 'hearty'
+    ? 'Quick simmer with the meat midway makes Seared Stew. Long braise with the meat first makes Braised Meat.'
+    : C.dish === 'seared' ? 'Under 6 units. Any longer and it is a Hearty Stew.' : '14 units or more. Any less and it is a Hearty Stew.';
+  $('#hint').innerHTML = `▸ Meat cooks ${C.meat.exp.toFixed(1)} units → <b>${d.n}</b>. ${other}`;
+}
+
+function renderLedger(C) {
+  const d = DISH[C.dish];
+  const pc = (v) => ((Math.min(4.9, v) + 0.5) / 5.5) * 100;
+  const t = tierFor(C.now), tToday = tierFor(C.today), next = ORDER[ORDER.indexOf(t) + 1];
+  let r = `<div style="display:flex; gap:10px; align-items:baseline; flex-wrap:wrap"><h3>${d.i} ${d.n}</h3><span style="color:${Q[t].c}">${Q[t].n}</span></div><div class="ruler">`;
+  ORDER.forEach((k, i) => {
+    const m = Q[k].m, nx = ORDER[i + 1] ? Q[ORDER[i + 1]].m : 5;
+    r += `<i class="blk${k === t ? ' on' : ''}" style="--c:${Q[k].c};left:${pc(m)}%;width:${pc(nx) - pc(m)}%"></i><span class="lbl" style="--c:${Q[k].c};left:${pc(m)}%">${k.toUpperCase()}</span><span class="val" style="left:${pc(m)}%">${m}</span>`;
+  });
+  r += `<i class="at" style="left:calc(${pc(C.now)}% - 2px)"></i></div>`;
+  if (next) {
+    const short = Q[next].m - C.now;
+    const capped = judgeNew(level) >= 2;
+    r += `<p class="small" style="margin-bottom:6px">${Q[next].n} needs ${Q[next].m.toFixed(2)}: ${short.toFixed(2)} short. ${capped ? 'Judgement is at its cap; only better ingredients close the gap.' : `Each Cooking level adds ${level < 15 ? '0.07' : '0.02'}.`}</p>`;
+  }
+  r += `<div class="scroll"><table class="ledger"><thead><tr><th>part</th><th>grade</th><th style="text-align:right">fit</th><th style="text-align:right">adds</th></tr></thead><tbody>`;
+  for (const p of C.parts) r += `<tr><td>${p.icon} ${p.name} <span class="dim tiny">${p.s.name.toLowerCase()}</span></td><td style="color:${Q[grade].c}">${Q[grade].n}</td><td class="n">×${p.f.toFixed(2)}</td><td class="n">${p.contrib.toFixed(2)}</td></tr>`;
+  r += `<tr><td colspan="3" class="dim">mean of ${C.parts.length} parts</td><td class="n">${C.mean.toFixed(2)}</td></tr>`;
+  r += `<tr><td colspan="3">+ judgement <span class="dim tiny">Cooking ${level}: first 15 levels ÷ 15, then ÷ 45, cap 2.00</span></td><td class="n"><span class="was">+${judgeToday(level).toFixed(2)}</span>+${judgeNew(level).toFixed(2)}</td></tr>`;
+  r += `<tr><td colspan="3">+ bench fit <span class="dim tiny">the stove likes diced food; the cutting board is shut in the alpha</span></td><td class="n">+0.00</td></tr>`;
+  r += `<tr class="sum"><td colspan="3">score</td><td class="n"><span class="was">${C.today.toFixed(2)} ${Q[tToday].n}</span>${C.now.toFixed(2)} ${Q[t].n}</td></tr></tbody></table></div>`;
+  r += `<p class="small" style="margin-top:8px">Eaten at ${Q[t].n}: ${d.eat(Q[t].m)}</p>`;
+  r += `<p class="small dim">Sells for <span class="was">${sell(tToday)}</span>${sell(t)} gold. Inputs at the Larder Door: 10 gold after the hello.</p>`;
+  $('#ledger').innerHTML = r;
+  $('#plate').innerHTML = `<div class="stamp" style="--tint:${Q[t].c}"><div class="plate">${d.i}</div><div><div class="grade">${Q[t].n}</div><div>${d.n}</div><div class="tiny dim">score ${C.now.toFixed(2)} · whole food, so no roll</div></div><div class="side"><div>made 26 · best ${Q[t].n}</div><div class="sig">window pinned in the Cook's Book</div><div style="margin-top:4px"><span class="pip on"></span><span class="pip on"></span><span class="pip on"></span><span class="pip"></span><span class="pip"></span></div></div></div>`;
+}
+
+function renderBook() {
+  const rows = [
+    { bench: 'Stove' },
+    { i: '🍲', n: 'Hearty Stew', made: 'cdb', best: 'b', count: 141, win: 'meat 6–14 (fallback)', sig: 'Signature: + Stoked ×0.5' },
+    { i: '🥘', n: 'Seared Stew', made: 'dc', best: 'c', count: 26, win: 'meat under 6' },
+    { i: '🍖', n: 'Braised Meat', made: 'c', best: 'c', count: 9, win: null },
+    { i: '🍵', n: 'Mushroom Broth', made: 'edc', best: 'c', count: 31, win: 'herb under 8 (fallback)' },
+    { i: '🥖', n: "Traveler's Ration", made: 'fedc', best: 'c', count: 44, win: 'any' },
+    { i: '🥘', n: 'Scorched Mess', made: 'f', best: 'f', count: 3, win: 'any, all Refuse' },
+    { blank: true }, { blank: true },
+    { bench: 'Oven · Grill · Counter (the hold, after the first prestige)' },
+    { i: '🍢', n: 'Skewered Fish', made: 'c', best: 'c', count: 4, win: null },
+    { blank: true },
+  ];
+  let h = `<thead><tr><th>dish</th><th>${ORDER.map((k) => `<span class="gh">${k.toUpperCase()}</span>`).join('')}</th><th>made</th><th>window</th><th></th></tr></thead><tbody>`;
+  for (const r of rows) {
+    if (r.bench) { h += `<tr class="bench"><td colspan="5">${r.bench}</td></tr>`; continue; }
+    if (r.blank) { h += `<tr><td><i class="sil"></i></td><td>${ORDER.map(() => `<i class="sq none"></i>`).join('')}</td><td class="dim">0</td><td class="dim">not yet made</td><td></td></tr>`; continue; }
+    const up = ORDER[ORDER.indexOf(r.best) + 1];
+    const strip = ORDER.map((k) => {
+      const cls = r.made.includes(k) ? 'made' : k === up ? 'next' : 'none';
+      return `<i class="sq ${cls}" style="--c:${cls === 'none' ? 'var(--frame)' : Q[k].c}"></i>`;
+    }).join('');
+    h += `<tr><td>${r.i} ${r.n}</td><td>${strip}</td><td>${r.count}</td><td>${r.win ?? '<span class="dim">pinned at 25 cooks</span>'}</td><td class="sig">${r.sig ?? ''}</td></tr>`;
+  }
+  $('#book').innerHTML = h + '</tbody>';
+}
+
+let bait = 1, hunt = 0;
+const HUNT = [1, 25, 60];
+function renderBait() {
+  const mult = bait ? Math.min(3, 1 + 0.5 + HUNT[hunt] / 40) : 1;
+  const rat = 75, slime = 25 * mult, total = rat + slime;
+  const sp = (slime / total) * 100;
+  $('#b-share').innerHTML = `<div style="flex-basis:${100 - sp}%; background:var(--dim)">Rat ${(100 - sp).toFixed(0)}%</div><div style="flex-basis:${sp}%; background:var(--q-c)">Slime ${sp.toFixed(0)}%</div>`;
+  $('#b-text').textContent = bait
+    ? `Sweet bait at Hunting ${HUNT[hunt]}: slime weight ×${mult.toFixed(2)}${mult >= 3 ? ' (cap)' : ''}. Rats are unaffected.`
+    : 'No bait: the table as authored.';
+}
+
+function render() { const C = compute(); renderTrack(C); renderLedger(C); }
+function controls() {
+  buttons($('#c-dur'), ['Quick simmer 8', 'Steady stew 12', 'Long braise 16'], [8, 12, 16].indexOf(D), (i) => { D = [8, 12, 16][i]; controls(); render(); });
+  buttons($('#c-slot'), ['First into the pot', 'Added midway'], meatSlot === 'main' ? 0 : 1, (i) => { meatSlot = i ? 'second' : 'main'; controls(); render(); });
+  buttons($('#c-grade'), ['Fair', 'Fine', 'Superb'], ['c', 'b', 'a'].indexOf(grade), (i) => { grade = ['c', 'b', 'a'][i]; controls(); render(); });
+  buttons($('#b-bait'), ['None', 'Sweet bait'], bait, (i) => { bait = i; controls(); renderBait(); });
+  buttons($('#b-hunt'), HUNT.map(String), hunt, (i) => { hunt = i; controls(); renderBait(); });
+}
+$('#c-lvl').addEventListener('input', (e) => { level = +e.target.value; $('#c-lvlv').textContent = level; render(); });
+controls(); render(); renderBook(); renderBait();
+})();
+</script>
