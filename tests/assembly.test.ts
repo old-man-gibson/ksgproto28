@@ -25,6 +25,8 @@ import { itemValue, sellPrice, canEquip } from '../src/core/systems/equipment';
 import { groupItems, stackKey } from '../src/core/systems/inventory';
 import { createItem } from '../src/core/systems/runes';
 import { getDerivedStats } from '../src/core/systems/derived';
+import { equippedTags } from '../src/core/systems/attributes';
+import { deserialize, serialize } from '../src/core/save/save';
 import { playerDamageType } from '../src/core/systems/combat';
 import { buyPrice } from '../src/core/systems/shops';
 import { runeClassOf } from '../src/core/systems/runes';
@@ -153,6 +155,32 @@ describe('calibration: the kernel reproduces the numbers the shop items already 
     expect(ITEMS.bronze_dagger.mods.find((m) => m.stat === 'psiAcuity')?.value).toBe(0.15);
   });
 
+  it('tags are the class tags plus the head materials’; a piece with no head takes its haft’s', () => {
+    // The shop's Oak Club is ['blunt', 'wood'], and `requiresTag: 'wood'` mods
+    // (mutagens.data.ts) key off it: the forged club and staff must carry it too.
+    expect(ITEMS.oak_club.tags).toContain('wood');
+    const club = forgedDef(spec({ haft: part('club', WOOD) }));
+    expect(club.name).toBe('Hardwood Club');
+    expect(club.tags).toEqual(['blunt', 'wood']);
+    const staff = forgedDef(spec({ haft: part('h6', WOOD) }));
+    expect(staff.name).toBe('Hardwood Quarterstaff');
+    expect(staff.tags).toEqual(['staff', 'wood']);
+    // The same shapes in iron are metal, not wood.
+    expect(forgedDef(spec({ haft: part('club', IRON) })).tags).toEqual(['blunt', 'metal', 'iron']);
+    // An iron sword on a hardwood handle is an iron weapon: the handle is not its body.
+    const handled = forgedDef(spec(sword));
+    expect(handled.tags).toEqual(['sword', 'metal', 'iron']);
+    expect(handled.tags).not.toContain('wood');
+    // A wooden head is the body: bow limb and shield plate.
+    expect(forgedDef(spec(ITEM_CLASSES.bow.exemplar)).tags).toEqual(['bow', 'ranged', 'wood']);
+    // And the tag reaches the wield check the mods read.
+    const g = new Game(createInitialState(9));
+    g.state.equipment.weapon = forgedItem(g.state, { haft: part('club', WOOD) });
+    expect(equippedTags(g.state).has('wood')).toBe(true);
+    g.state.equipment.weapon = forgedItem(g.state, sword);
+    expect(equippedTags(g.state).has('wood')).toBe(false);
+  });
+
   it('rune size follows the cells: ≤9 small, 10–17 medium, ≥18 large', () => {
     const runeOf = (p: Placement) => forgedDef(spec(p)).runeClass;
     expect(runeOf({ head: part('short', IRON), haft: part('h3', WOOD) })).toBe('small'); // 9
@@ -272,6 +300,62 @@ describe('the resolver is total and finite', () => {
     expect(by('curved')).toBe('katana');
     expect(by('curved_l')).toBe('odachi');
     expect(by('thin')).toBe('estoc');
+  });
+});
+
+describe('a corrupt stored spec cannot make a save unbootable', () => {
+  // `forged` comes off a save, and every stat read (the cache fingerprint, the
+  // modifier pass) reads it for each equipped piece, so one malformed item that
+  // throws there would be a save that never loads again. Each shape below
+  // threw a TypeError in placementOf before it was made total.
+  const SHAPES: [string, unknown][] = [
+    ['parts is an object', {}],
+    ['parts is a number', 5],
+    ['parts holds a null', [null]],
+    ['parts holds a bare string and a half-part', ['head', { slot: 'head' }, { slot: 'nowhere', kind: 'long', mat: IRON }]],
+  ];
+
+  it.each(SHAPES)('boots and ticks with an equipped piece whose %s', (_name, parts) => {
+    const g = new Game(createInitialState(8));
+    const item = createItem(g.state, 'forged:sword');
+    g.state.inventory.push(item);
+    g.equip(item.uid);
+    // A second, unequipped copy in the pack, so grouping and stacking read it too.
+    g.state.inventory.push({ ...createItem(g.state, 'forged:sword'), forged: { parts: parts as never, q: 'c' } });
+
+    const raw = JSON.parse(serialize(g.state));
+    raw.equipment.weapon.forged = { parts, q: 'c' };
+    const loaded = deserialize(JSON.stringify(raw));
+    const worn = loaded.equipment.weapon!;
+
+    expect(typeof forgeKey(worn.forged!)).toBe('string');
+    expect(itemDefOf(worn).id).toBe('forged:paperweight'); // an empty anvil: nothing the parts could name
+    expect(() => stackKey(worn)).not.toThrow();
+    expect(() => groupItems(loaded.inventory)).not.toThrow();
+
+    const game = new Game(loaded);
+    expect(() => getDerivedStats(loaded)).not.toThrow();
+    expect(() => game.tick()).not.toThrow();
+    expect(loaded.equipment.weapon).toBeDefined(); // still worn: the save did not eat it
+  });
+
+  it('keeps the entries it can read and drops the ones it cannot', () => {
+    const mixed = [
+      null,
+      { slot: 'head', kind: 'long', mat: IRON },
+      { slot: 'head', kind: 7, mat: IRON },
+      { slot: 'haft', kind: 'h3', mat: WOOD, qty: 'many' },
+      'junk',
+    ];
+    expect(placementOf(mixed)).toEqual(sword);
+    expect(placementOf({})).toEqual({});
+    expect(placementOf(undefined)).toEqual({});
+  });
+
+  it('a stored part named like an Object.prototype member does not resolve to it', () => {
+    const p: Placement = { head: part('__proto__', IRON), haft: part('constructor', WOOD) };
+    expect(classifyPlacement(p).id).toBe('paperweight');
+    expect(Number.isFinite(forgeStats(p, 'c').value)).toBe(true);
   });
 });
 
