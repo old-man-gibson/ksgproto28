@@ -18,10 +18,12 @@ started; they are copied here so this file stands alone.
 
 ## 1. What a floor group has to do
 
-"Floor group" here means a **band**: floors sharing a theme, cleared in order
-(`BandDef` in `towers.data.ts`). The Ascent has three bands. Band 1, the Lower
-Reaches, holds floors 1–3. Band 2 (the Middle Galleries) and band 3 (the
-Upper Reaches) are empty scaffolding.
+"Floor group" here means a **band**: floors linked by a theme, usually one
+site, cleared in order (`BandDef` in `towers.data.ts`). A band holds one
+floor, three (the default), or about ten as a megastructure (§5.1). The tower
+is open-ended. Three bands are defined today: band 1, the Lower Reaches,
+holds floors 1–3; band 2 (the Middle Galleries) and band 3 (the Upper
+Reaches) are empty scaffolding.
 
 ### 1.1 Band 1 today, as the yardstick
 
@@ -36,8 +38,9 @@ Upper Reaches) are empty scaffolding.
 
 ### 1.2 The target
 
-"A few hours per floor group", read as **2–4 hours hands-on for an engaged
-first-time player** (§5 Q2). That is 3–6× band 1.
+**2–4 hours hands-on per band** (§5.1): discovery, reading, picking spots to
+explore and fight at, planning, crafting. Idle and offline time does not
+count. That is 3–6× band 1.
 
 The arithmetic decides the design:
 
@@ -49,14 +52,26 @@ The arithmetic decides the design:
   after the clear, optional depth off the path, and materials that feed the
   systems already shipped.
 
-Proposed budget per band (engaged first-timer):
+Proposed budget per band (engaged first-timer, three floors):
 
 | Layer | Minutes | Made of |
 |---|---|---|
 | Critical path | 45–60 | three floors, one idea each, a boss with preparation |
 | Optional depth | 45–60 | side rooms, mimics, a hidden off-ladder floor, chase items, bestiary facts, titles |
-| The band's loop | 60+ | endless dens, a work site, a band material a bench consumes |
+| The band's loop | 60+ | choices that repeat: which den for which drop, crafting with band materials, preparing for the boss |
 | Gate waits | inside the loop | the next gate reads a counter the band's loop produces |
+
+Because idle time does not count, the loop counts only where the player is
+choosing. An endless den left running is a bonus; picking which den to hunt
+for which material, then crafting with it, is the hours.
+
+Floor count changes the split, not the total:
+
+| Band size | Per floor | Shape |
+|---|---|---|
+| 1 floor | 2–4 h | a hub-sized floor; the loop and the optional depth sit on one map |
+| 3 floors | 40–80 min | the budget above |
+| ~10 floors (megastructure) | 12–24 min | floors as short as band 1's; the loop is band-wide, fed by every floor |
 
 John's critical-path number is set at build time and checked with
 `npm run pacing`, as for band 1.
@@ -89,7 +104,7 @@ John's critical-path number is set at build time and checked with
 
 | Constraint | Source |
 |---|---|
-| Band 2 may ask for subsystem *usage*, not *invention*. Only the final band may require a generative grammar (arcane sentences, mutagen topology, alchemy sequence, the martial graph) | COMPLETABILITY §3, §6 |
+| A band's critical path may ask for subsystem *usage*, not *invention*. COMPLETABILITY allows a generative grammar (arcane sentences, mutagen topology, alchemy sequence, the martial graph) only in the final band; an open-ended tower has none. Until §5.2 Q6 is ruled, no band's critical path requires a grammar | COMPLETABILITY §3, §6 |
 | Gates on accumulation; a power check sits at John's floor | COMPLETABILITY §6 |
 | Shut in alpha: runecarving, music, genes, psionics, wuxin; martial except the floor 2 tutor. An idea that needs one names how it opens (a Doors boon, a teacher on the floor) | plans/alpha-scope-locks.md, SLICE_REVIEW.md §6 step 2 |
 | Shelved, not re-pitched: the countryside, tile autotile / generator / fake doors, arcane compound words | LONGTERM.md |
@@ -104,7 +119,7 @@ John's critical-path number is set at build time and checked with
 |---|---|---|
 | N1 Who runs it | an office still collecting tolls and holding hearings, staff gone (implied, never stated in prose) | pass |
 | N2 One idea per floor | the remembered route (1), the corridor with a teacher (2), exploration weakens the boss (3) | pass |
-| N3 One place | one building, three maps | pass |
+| N3 One theme | one building, three maps | pass |
 | N5 Boss preparation | collector: spell conditions; bureaucrat: strings and the oak club | pass |
 | N6 Someone proposes terms | floor 2 has the tutor and the quartermaster; floors 1 and 3 have no NPCs | partial |
 | H1 The loop that stays | none; every hunt empty after the clear | fail |
@@ -129,8 +144,8 @@ does not touch is left out of its entry.
 - **N2 One idea per floor.** The floor's mechanic as a verb on existing
   machinery: search, a room route, `fightLimit` stretches, a forced fight, a
   preparation flag, a teacher, a shop, a work site.
-- **N3 One place per band.** The floors read as one site with different maps,
-  as band 1 does. A deliberate break is the user's call.
+- **N3 One theme per band.** The floors share a theme at the least, and
+  usually read as one site with different maps, as band 1 does.
 - **N4 Panels.** Each spot drawable in one sentence; the spot graph is the
   zoom (VOICE.md §5).
 - **N5 The boss and its preparation.** What exploring finds that weakens it;
@@ -165,7 +180,7 @@ does not touch is left out of its entry.
 - **L2 No exhaustion on the path.** No `once` or `fightLimit` source under a
   gate or clear that needs more than it holds.
 - **L3 Failure is recoverable.** A loss costs time, never a path.
-- **L4 Usage, not invention**, unless the idea is for the final band.
+- **L4 Usage, not invention** on the critical path (§5.2 Q6).
 - **L5 No power gates.**
 - **L6 Shelf and shutters** (§1.4).
 
@@ -225,18 +240,31 @@ Band: · Floors: · Verdict:
 
 ---
 
-## 5. Open questions for the user
+## 5. Questions
+
+### 5.1 Answered (user, 2026-10-22)
+
+1. **Band size.** One floor, three, or ten as a "megastructure". Default 3.
+2. **"A few hours".** 2–4 hours hands-on: discovery, reading, picking spots
+   to explore and fight at, planning, crafting.
+3. **One place per band.** Usually; always linked by a theme at the least.
+4. **Tower length.** Open-ended, in theory and as a goal.
+5. **Team per post.** Yes.
+
+### 5.2 Open
 
 Each has a default, used if skipped.
 
-1. **Floor group = band?** A band of three floors, like band 1. Default: yes;
-   band size can differ if an idea needs it.
-2. **"A few hours", measured how?** Default: 2–4 hours hands-on for an engaged
-   first-time player, with the critical path about a third of it.
-3. **One place per band?** Band 1 is one building. Default: yes, each band is
-   one site.
-4. **Is the Ascent three bands?** If so, band 3 is the final band, the only
-   one allowed to require a generative grammar. Default: yes until bands are
-   added.
-5. **Team per post?** Two brainstormers and one antagonist per post (§3.5),
-   about three agents. Default: yes; write "quick" for a manager-only review.
+6. **Where may a band demand a grammar, now that no band is final?**
+   COMPLETABILITY §6 allows a generative grammar on the critical path only in
+   the final band, because nothing lies past it. In an open-ended tower every
+   band has content above it, so a grammar gate on band N stops John below
+   band N+1 for good.
+   - (a) Never on the ladder. Grammar demands live on optional floors (off
+     the ladder, no `bandId`) or a side stack off the hub; the main climb asks
+     only for usage.
+   - (b) Revise the law: a band may demand a grammar if the same band teaches
+     it (a teacher on the floor and a re-openable reference). This is a change
+     to COMPLETABILITY.md, not a reading of it.
+
+   Default: (a). COMPLETABILITY.md is unchanged either way until you rule.
