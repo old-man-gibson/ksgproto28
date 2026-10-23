@@ -1,0 +1,1065 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mutagen Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: one long column in the frame of the cooking, smithing and alembic
+   reviews. Report first, then mockups in the game's gothic panel frame. Every
+   chromosome number below comes from the real engine (resolveChromosome,
+   armDelivery, contributionWeight) run on the test body; the body-layer and
+   figure numbers come from the formulas in docs/MUTAGENS_REVIEW.md. Source of
+   record: docs/MUTAGENS_REVIEW.md on branch docs/mutagens-review. */
+:root {
+  --bg: #110e0b;
+  --panel: #1a1511;
+  --raised: #241d16;
+  --hover: #30271d;
+  --sunken: #0b0907;
+  --border: #4a3c2c;
+  --frame: #2c241b;
+  --btn: #5a4a36;
+  --btn-hi: #7a6448;
+  --text: #ddd1b6;
+  --dim: #9b8c72;
+  --accent: #c9a45c;
+  --danger: #c8493d;
+  --good: #7f9a4c;
+  --skill: #9c84c0;
+  --q-f: #5a5a5a; --q-e: #8b8b8b; --q-d: #e8edf4; --q-c: #4caf7d; --q-b: #42a5f5; --q-a: #ab6fd6; --q-s: #e8b84b;
+  /* element hues (proposed --el-* tokens; gothic values) */
+  --el-heat: #d0632c; --el-cold: #67b2c8; --el-lightning: #e3cf4e; --el-earth: #8f6c45; --el-wind: #a8c3b4;
+  --el-water: #4a7fc0; --el-acid: #5c9a4e; --el-arcane: #a07ad2; --el-light: #efe6b0; --el-dark: #7a64a8;
+  --el-poison: #a6c03c; --el-none: #b9ab8e;
+  --title: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --body: 'EB Garamond', Garamond, Georgia, serif;
+  --mono: Consolas, 'Courier New', monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.5;
+  font-variant-numeric: lining-nums tabular-nums;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 64px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--title); font-weight: 500; letter-spacing: 0.06em; text-wrap: balance; margin: 0; }
+h1 { font-size: 26px; letter-spacing: 0.12em; text-transform: uppercase; }
+h2 { font-size: 19px; color: var(--accent); }
+h3 { font-size: 15px; letter-spacing: 0.08em; }
+p { margin: 0; max-width: 68ch; }
+.dim { color: var(--dim); }
+.small { font-size: 14.5px; }
+.tiny { font-size: 13px; }
+code { font-family: var(--mono); font-size: 0.86em; color: #d8c49a; }
+a { color: var(--accent); }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 0 0 3px var(--panel), inset 0 0 0 4px var(--frame);
+  padding: 20px 22px;
+  min-width: 0;
+  display: grid; gap: 14px;
+}
+.panel > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.tag { font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dim); border: 1px solid var(--border); padding: 1px 7px; white-space: nowrap; }
+.tag.r1 { color: var(--good); border-color: color-mix(in srgb, var(--good) 50%, var(--border)); }
+.tag.later { color: var(--skill); border-color: color-mix(in srgb, var(--skill) 50%, var(--border)); }
+.tag.held { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 50%, var(--border)); }
+button {
+  font: inherit; font-size: 14.5px; color: var(--text);
+  background: var(--raised); border: 1px solid var(--btn);
+  padding: 4px 10px; cursor: pointer; border-radius: 0;
+}
+button:hover:not(:disabled) { border-color: var(--btn-hi); background: var(--hover); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--raised)); box-shadow: inset 0 -2px 0 var(--accent); }
+.ctl { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.ctl > .lab { min-width: 7em; color: var(--dim); font-size: 14px; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--frame); vertical-align: top; }
+th { font-weight: 600; color: var(--dim); font-size: 13.5px; letter-spacing: 0.04em; }
+.list { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; }
+.note { border-left: 2px solid var(--accent); padding: 4px 10px; background: color-mix(in srgb, var(--accent) 5%, transparent); font-size: 14.5px; }
+.verdict { display: grid; gap: 10px; }
+.verdict .line { display: grid; grid-template-columns: 9.5em 1fr; gap: 4px 14px; }
+.verdict .line > b { color: var(--accent); font-weight: 600; }
+@media (max-width: 560px) { .verdict .line { grid-template-columns: 1fr; } }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: stretch; }
+.flow .step { flex: 1 1 150px; background: var(--sunken); border: 1px solid var(--frame); padding: 8px 10px; min-width: 0; font-size: 14.5px; }
+.flow .step b { display: block; font-family: var(--title); font-weight: 500; font-size: 13px; letter-spacing: 0.08em; color: var(--accent); }
+.flow .step.later b { color: var(--skill); }
+.sev { display: inline-block; min-width: 4.4em; font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+.sev.hi { color: var(--danger); } .sev.mid { color: var(--accent); } .sev.lo { color: var(--dim); }
+.ruling { color: var(--good); }
+.ruling.no { color: var(--danger); }
+.ruling.ask { color: var(--skill); }
+
+/* pixel art */
+svg.px { shape-rendering: crispEdges; display: block; }
+.hatch-bg { background-image: repeating-linear-gradient(135deg, color-mix(in srgb, var(--dim) 55%, transparent) 0 2px, transparent 2px 5px); }
+
+/* chromosome mockup */
+.chromo { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 820px) { .chromo { grid-template-columns: 1fr; } }
+.band { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 250px); gap: 12px 16px; align-items: center; background: var(--sunken); border: 1px solid var(--frame); padding: 10px 12px; }
+@media (max-width: 720px) { .band { grid-template-columns: auto minmax(0, 1fr); } .band .capbox { grid-column: 1 / -1; } }
+.band .name { font-family: var(--title); font-size: 19px; letter-spacing: 0.05em; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.gchip { font-family: var(--body); font-size: 13px; padding: 0 7px; border: 1px solid currentColor; letter-spacing: 0.04em; }
+.profile { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 4px; }
+.profile div { display: grid; }
+.profile small { font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); }
+.profile span { font-size: 16px; }
+.capbar { display: flex; height: 10px; background: var(--raised); border: 1px solid var(--border); }
+.capbar i { display: block; height: 100%; }
+.capbox .tiny { display: flex; justify-content: space-between; gap: 8px; }
+.diagram { background: var(--sunken); border: 1px solid var(--frame); padding: 6px; display: grid; gap: 6px; }
+.diagram svg.graph { width: 100%; max-width: 560px; margin: 0 auto; display: block; }
+.keyline { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; font-size: 13px; color: var(--dim); padding: 2px 4px; }
+.keyline span { display: inline-flex; gap: 5px; align-items: center; }
+.rail { display: grid; gap: 8px; align-content: start; }
+.door { background: var(--raised); border: 1px solid var(--border); padding: 8px 10px; display: grid; gap: 5px; }
+.door.hl { border-color: var(--accent); }
+.door .head { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.door .head b { font-family: var(--title); font-weight: 500; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; }
+.gauge { position: relative; height: 10px; background: var(--sunken); border: 1px solid var(--frame); display: flex; overflow: hidden; }
+.gauge i { display: block; height: 100%; border-right: 1px solid var(--sunken); }
+.gauge i.clamp { background-image: repeating-linear-gradient(135deg, rgba(0,0,0,0.55) 0 2px, transparent 2px 4px); }
+.gauge i.ghost { background: transparent !important; outline: 1px dashed var(--accent); outline-offset: -1px; }
+.gauge .cap { position: absolute; top: -1px; bottom: -1px; width: 0; border-left: 1px dashed var(--accent); }
+.wt { font-size: 15px; min-width: 3.4em; text-align: right; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.chip { font-size: 13px; border: 1px solid var(--border); padding: 0 6px; color: var(--dim); white-space: nowrap; }
+.chip.strong { color: var(--text); border-color: var(--btn); }
+.chip.live { color: var(--good); border-color: color-mix(in srgb, var(--good) 45%, var(--border)); }
+.chip.inert { color: var(--dim); border-style: dashed; }
+.chip.inert.hatch-bg { color: var(--text); }
+.lbl { font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); margin-right: 2px; }
+.route { display: grid; grid-template-columns: minmax(0, 1fr) 64px auto; gap: 8px; align-items: center; padding: 2px 4px; cursor: pointer; border: 1px solid transparent; }
+.route:hover, .route.pin { border-color: var(--btn); background: var(--hover); }
+.route.pin { border-color: var(--accent); }
+.route .chain { display: flex; align-items: center; gap: 3px; font-size: 13.5px; min-width: 0; flex-wrap: wrap; }
+.rbar { position: relative; height: 7px; background: var(--sunken); border: 1px solid var(--frame); }
+.rbar i { position: absolute; left: 0; top: 0; bottom: 0; }
+.rbar em { position: absolute; top: -1px; bottom: -1px; left: 100%; width: 14px; background-image: repeating-linear-gradient(135deg, var(--danger) 0 1px, transparent 1px 3px); border: 1px solid color-mix(in srgb, var(--danger) 60%, transparent); }
+.route .sub { grid-column: 1 / -1; font-size: 13px; color: var(--dim); padding-left: 2px; }
+.toolcard { background: var(--raised); border: 1px solid var(--border); padding: 10px 12px; display: grid; gap: 6px; }
+.formula { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14.5px; }
+.formula .t { border: 1px solid var(--border); padding: 0 6px; background: var(--sunken); }
+.formula .big { font-family: var(--title); font-size: 28px; line-height: 1; }
+.strike { text-decoration: line-through; color: var(--dim); }
+
+/* fitting */
+.fit { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 820px) { .fit { grid-template-columns: 1fr; } }
+.picker { background: var(--raised); border: 1px solid var(--border); display: grid; align-content: start; max-height: 560px; overflow-y: auto; }
+.picker .ph { position: sticky; top: 0; background: var(--raised); padding: 8px 10px; border-bottom: 1px solid var(--frame); display: grid; gap: 6px; z-index: 1; }
+.picker .grp { font-family: var(--title); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); padding: 8px 10px 2px; display: flex; gap: 8px; align-items: center; }
+.prow { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 4px 10px; cursor: pointer; border-top: 1px solid transparent; border-bottom: 1px solid transparent; }
+.prow:hover, .prow.sel { background: var(--hover); border-color: var(--frame); }
+.prow.sel { box-shadow: inset 2px 0 0 var(--accent); }
+.prow .nm { font-size: 15px; }
+.prow .here { font-size: 12.5px; color: var(--dim); }
+.prow .here .warn { color: var(--danger); }
+.prow .here .ok { color: var(--good); }
+.chan { display: inline-grid; grid-template-columns: repeat(3, 7px); gap: 2px; }
+.chan i { width: 7px; height: 7px; border: 1px solid var(--btn); }
+.chan i.on { background: var(--text); border-color: var(--text); }
+.preview { background: var(--sunken); border: 1px solid var(--frame); padding: 10px 12px; display: grid; gap: 8px; align-content: start; }
+.mini { display: grid; grid-template-columns: auto 6.5em minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 14px; }
+.ladder { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.ladder div { border: 1px solid var(--frame); background: var(--raised); padding: 3px 2px; text-align: center; font-size: 12px; display: grid; gap: 2px; }
+.ladder div.held { border-color: var(--btn); }
+.ladder div.at { border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+.ladder div.to { border-color: var(--good); }
+.ladder b { font-weight: 600; font-size: 13px; }
+.swap { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.swap > div { background: var(--raised); border: 1px solid var(--border); padding: 8px 10px; display: grid; gap: 4px; font-size: 14.5px; align-content: start; }
+.swap > div.no { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); }
+.swap h3 { font-size: 14px; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; }
+.kv dt { color: var(--dim); } .kv dd { margin: 0; text-align: right; }
+
+/* crest + stage */
+.crests { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; }
+.crests figure { margin: 0; display: grid; gap: 4px; justify-items: center; font-size: 13px; color: var(--dim); }
+.sidebar { width: min(300px, 100%); background: var(--panel); border: 1px solid var(--border); padding: 8px; display: grid; gap: 5px; }
+.rbar2 { height: 14px; font-size: 11px; line-height: 14px; text-align: center; color: #f2ead8; }
+.bodystrip { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; background: var(--sunken); border: 1px solid var(--frame); padding: 4px 6px; cursor: pointer; }
+.bodystrip .nm { font-family: var(--title); font-size: 12.5px; letter-spacing: 0.05em; }
+.stage { display: flex; gap: 30px; align-items: flex-end; background: linear-gradient(var(--sunken), #16110c); border: 1px solid var(--frame); padding: 14px 18px 10px; flex-wrap: wrap; }
+.stage figure { margin: 0; display: grid; justify-items: center; gap: 4px; font-size: 13px; color: var(--dim); }
+
+/* book */
+.matrix { border-collapse: separate; border-spacing: 3px; width: auto; }
+.matrix th, .matrix td { border: 0; padding: 0; vertical-align: middle; }
+.matrix th { font-family: var(--title); font-weight: 500; font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dim); text-align: center; padding: 0 2px 4px; }
+.matrix th.row { text-align: left; font-family: var(--body); font-size: 14px; letter-spacing: 0; text-transform: none; color: var(--text); padding-right: 10px; white-space: nowrap; }
+.cell { width: 52px; height: 52px; background: var(--sunken); border: 1px solid var(--frame); display: grid; place-items: center; position: relative; }
+.cell.un { border-style: dashed; color: var(--btn); font-family: var(--title); font-size: 18px; }
+.cell .n { position: absolute; right: 2px; bottom: 0; font-size: 11px; color: var(--dim); }
+.cell.hl { border-color: var(--accent); }
+.tray { display: grid; gap: 4px; }
+.tray div { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 8px; align-items: center; background: var(--raised); border: 1px solid var(--border); padding: 3px 8px; font-size: 14.5px; }
+.new { font-size: 11.5px; letter-spacing: 0.1em; color: var(--bg); background: var(--accent); padding: 0 5px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+
+/* body sheet */
+.attrs { display: grid; gap: 6px; }
+.arow { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 4.2em; gap: 10px; align-items: center; font-size: 15px; }
+.abar { display: flex; height: 14px; background: var(--sunken); border: 1px solid var(--frame); }
+.abar i { display: block; height: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--dim); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { display: inline-block; width: 12px; height: 10px; }
+.figs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.fig { background: var(--raised); border: 1px solid var(--border); padding: 8px; display: grid; gap: 4px; font-size: 13.5px; align-content: start; }
+.fig.got { border-color: var(--accent); }
+.fig.un { border-style: dashed; color: var(--dim); }
+.fig b { font-family: var(--title); font-weight: 500; font-size: 12.5px; letter-spacing: 0.08em; }
+@media (prefers-reduced-motion: no-preference) { .flash { animation: flash 0.6s steps(4) 1; } @keyframes flash { 50% { background: var(--accent); } } }
+</style>
+
+<div class="wrap">
+
+<header class="panel">
+  <div>
+    <h1>Mutagen Review</h1>
+    <p class="dim small">2026-10-23 · design review, nothing built · team run: three brainstormers, one design antagonist, rulings by the manager · source of record <code>docs/MUTAGENS_REVIEW.md</code> on branch <code>docs/mutagens-review</code></p>
+  </div>
+  <div class="verdict">
+  <div class="line"><b>The ask</b><span>Make mutagens more visually appealing and more rewarding to master past their current scope; keep the identity while making it distinct; make mutagens a bottom-up system that writes a character's base stats and attributes.</span></div>
+  <div class="line"><b>State today</b><span>The engine is complete and well tested. The system is shut in the alpha with nothing to open it; its drops leak past the shutter and burn their discovery XP; one gene source spawns live; it writes no attributes (bare writes 0); its mastery pays a skill level and shows nothing else.</span></div>
+  <div class="line"><b>Identity kept</b><span>Topology: you place things, and order and adjacency fall out of the placement. Nothing proposed adds an order field, a duration, a pair table or an enemy-keyed effect.</span></div>
+  <div class="line"><b>Bottom-up</b><span>The gene grants G = 8 × coefficient attribute points, split by its lean. Each attribute belongs to one door; an arm expresses its attributes at 50% unfed and 100% fed. Points enter the base attribute layer, under gear, level and skills (D).</span></div>
+  <div class="line"><b>Mastery</b><span>Figures: twelve named graph patterns, each stamped once per run for discovery XP and +1.5 capacity (E). Later, monsters show their genome in the bestiary and a Copy button lays it out (Anatomy).</span></div>
+  <div class="line"><b>Looks</b><span>Code-drawn pixel plates (shape = leg, hue = element, pips = grade); edges as 3 μm beads; per-route gauges at each door; a picker that previews before you place; a crest that carries the body to the sidebar and the stage; a specimen book (A–C, F, G).</span></div>
+  <div class="line"><b>Antagonist</b><span>Fix first: no terminal state, arithmetic holds; eight objections, all accepted (rulings below). The biggest: the Vivarium find could not fire, and discoveries pay nobody until Geneshaping manifests, which harvesting never does.</span></div>
+  <div class="line"><b>Your call</b><span>Eight questions, each with a default (open questions below). Nothing is built.</span></div>
+</div>
+<h3 style="margin-top:6px">Findings, checked against the code</h3>
+<div class="scroll"><table>
+  <tr><th>#</th><th>Finding</th><th>Where</th></tr>
+  <tr><td>F1</td><td>Shut in the alpha (<code>genes</code> shutter); nothing sets <code>flag:unlock_genes</code>. §6a counts mutagens as a core system a fresh save cannot pick.</td><td><code>systems/unlocks.ts</code></td></tr>
+  <tr><td>F2</td><td>Drops ignore the shutter: 3000 fresh-save kills banked 1494 biomatter and 118 mutagens and printed log lines for a hidden tab. Every discovery pays nobody until Geneshaping manifests, and harvesting never manifests it (20/20 seeds).</td><td><code>harvestKill</code>, <code>discover</code>, <code>grantDiscoveryXp</code></td></tr>
+  <tr><td>F3</td><td>One live gene source (Slime, floor 1 storerooms, 2%/kill). 20 of 29 genes name a species that does not exist. 10 of 41 mutagens have a live carrier; no fire, ice or toxic carrier spawns.</td><td><code>locations.data.ts</code></td></tr>
+  <tr><td>F4–F5</td><td>Bare writes 0 to all six attributes; no gene writes any. The seam is split: <code>attrValue</code> reads base mods only, chromosome mods enter later, so an attribute write would miss the sidebar and attribute checks.</td><td><code>attributes.ts</code>, <code>derived.ts</code></td></tr>
+  <tr><td>F6</td><td>A routed modifier ignores its door: Bedrock gives Earth Res. through Attacks. Doors matter only for types and grants.</td><td><code>resolveChromosome</code></td></tr>
+  <tr><td>F7</td><td>Geneshaping pays capacity, drop chance and craft speed; tier names unlock nothing; the catalogue and the discovery payout are never shown.</td><td><code>skills.data.ts</code></td></tr>
+  <tr><td>F8</td><td>16 of 29 genes cost more capacity at Fair than a run that catalogues everything can hold (66.5 at Geneshaping 31).</td><td><code>mainCost</code>, §12</td></tr>
+  <tr><td>F9</td><td>Panel: flat picker with <code>Di44</code> chips; no cost at the socket; edge length shown only as stroke width; arm weight passes the per-route cap undrawn; 52 mutagens on 42 emoji; stale "not wired yet" and "placeholder" strings.</td><td><code>ChromosomePanel.svelte</code>, <code>format.ts</code></td></tr>
+  <tr><td>F10–F11</td><td>Offline harvest is silent; the body is invisible outside the tab (sidebar, stage).</td><td><code>save/offline.ts</code>, <code>BattleStage</code></td></tr>
+  <tr><td>F12</td><td>Doc drift: §12 calls the Attacks retype inert (a test shows it live); §9 lists "tier raising" at 60 and says tier is fixed.</td><td><code>docs/MUTAGENS.md</code></td></tr>
+</table></div>
+<h3 style="margin-top:6px">Order</h3>
+<div class="flow">
+  <div class="step"><b>0 · Fixes</b>attribute seam; harvest off while shut and Geneshaping manifests on first harvest; offline line; bestiary names drops; doc and string drift</div>
+  <div class="step"><b>1 · Lift</b>the Vivarium gets an explore with the find that opens the tab, and a caged hunt of three shelved slimes (fire, ice, toxic)</div>
+  <div class="step"><b>2 · Body</b>Allotment with expression; Genesis boon; lint on <code>lean</code></div>
+  <div class="step"><b>3 · Diagram</b>plates, beads, door gauges, header profile (A, B)</div>
+  <div class="step"><b>4 · Figures</b>twelve patterns, Stability capacity (E)</div>
+  <div class="step"><b>5 · Fitting</b>preview at the point of choice (C)</div>
+  <div class="step later"><b>6 · Crest, book</b>sidebar, stage, specimen book (F, G)</div>
+  <div class="step later"><b>Later</b>Anatomy (monster genomes in the bestiary), Karyotypes (alternate door maps), Slope (held)</div>
+</div>
+
+</header>
+
+<section class="panel" id="m-plates">
+  <header><h2>A. Plate grammar</h2><span class="tag r1">round 1 · UI</span></header>
+  <p class="small">Code-drawn 14×14 plates, no bought pixels. Shape = what the mutagen does to what passes (its leg, derived from the def's fields, never authored). Hue = element. Pips = grade. Hatch = inert or clamped. The 52 mutagens share 42 emoji today; all 11 fused ones are 🧬.</p>
+  <div class="scroll"><div id="plates"></div></div>
+  <div class="keyline" id="armkey"></div>
+</section>
+
+<section class="panel" id="m-chromo">
+  <header><h2>B. Chromosome tab, redrawn</h2><span class="tag r1">round 1 · UI</span></header>
+  <p class="small">Test body from the live panel: Fire Slime Gene (Fine); d Resonant (Superb), e Rime Edge (Fine), f Frostbite Brand (Fair), g Bedrock (Fine), h Fleet (Common), i Vigorous (Fair). Every number is the engine's. One bead = 3 μm, so distance is counted, not guessed from line thickness. Click a route row or a plate to pin it.</p>
+  <div class="ctl"><span class="lab">State</span>
+    <button data-state="body" class="on">Test body</button>
+    <button data-state="cut">Cut d–◉</button>
+    <button data-state="empty">Bare, starting kit</button>
+  </div>
+  <div class="band" id="band"></div>
+  <div class="chromo">
+    <div style="display:grid; gap:10px; align-content:start">
+      <div class="diagram"><svg class="graph px" id="graph" viewBox="-6 -6 112 112" role="img" aria-label="Chromosome diagram"></svg><div class="keyline" id="gkey"></div></div>
+      <div class="toolcard" id="tool"></div>
+    </div>
+    <div class="rail" id="rail"></div>
+  </div>
+</section>
+
+<section class="panel" id="m-fit">
+  <header><h2>C. Fitting: the picker previews before you place</h2><span class="tag later">round 2 · UI</span></header>
+  <p class="small">Today: one flat list of 41 mutagens, each with seven chips such as <code>Di44 Su44 Fi44</code>, no cost shown, refusal learned from a log line. Proposed: grouped by leg, each row says what it would deliver at this socket and what stays inert there. Hover a row to preview; the preview is the same resolution the commit runs.</p>
+  <div class="ctl"><span class="lab">Socket</span><button data-sock="j" class="on">j (ring, ties)</button><button data-sock="c">c (cluster)</button></div>
+  <div class="fit"><div class="picker" id="picker"></div><div class="preview" id="pview"></div></div>
+  <h3>Centromere swap: compare before you pay</h3>
+  <div class="swap" id="swap"></div>
+</section>
+
+<section class="panel" id="m-body">
+  <header><h2>D. The body layer: the gene writes your attributes</h2><span class="tag r1">round 1 · system</span></header>
+  <p class="small">Rule: the expressed gene grants <b>G = 8 × its coefficient</b> attribute points, split by the gene's <code>lean</code>. Each attribute belongs to one door, the same assignment bare already uses (Str and Dex: Attacks; Con: Defenses; Int and Wis: Active; Cha: Special). An arm <b>expresses</b> its attributes at 50% unfed and 100% once the routes into it carry one per-route cap of graded weight. Routing into one arm never moves another arm's attributes. Points enter the base attribute layer, so the sidebar, attribute checks and every formula see them.</p>
+  <div class="ctl"><span class="lab">Body</span>
+    <button data-body="bare0">Bare, Genesis 0</button>
+    <button data-body="bare1">Bare, Genesis 1</button>
+    <button data-body="slimeC">Slime Fair, gene alone</button>
+    <button data-body="body" class="on">Test body</button>
+    <button data-body="cut">Test body, cut d–◉</button>
+  </div>
+  <div class="ctl"><span class="lab">Under it</span>
+    <button data-base="john" class="on">End of band 1 (John, level 5)</button>
+    <button data-base="fresh">Fresh save</button>
+  </div>
+  <div class="two">
+    <div class="attrs" id="attrs"></div>
+    <div style="display:grid;gap:8px;align-content:start" id="expr"></div>
+  </div>
+</section>
+
+<section class="panel" id="m-figures">
+  <header><h2>E. Figures: patterns the graph pays for</h2><span class="tag later">round 2 · system</span></header>
+  <p class="small">A closed list of named patterns, each a test over the resolved chromosome. The first time your own chromosome meets one in a run, it is stamped: discovery XP, and <b>+1.5 capacity</b> for the rest of the run (Stability, capped at +18). The test text is always shown; the example build appears once stamped. Placement is free, so the reward is for finding a pattern once, never for holding it. Switch bodies below: stamps stay for the run.</p>
+  <div class="ctl"><span class="lab">Chromosome</span>
+    <button data-fig="body" class="on">Test body</button>
+    <button data-fig="cut">Cut d–◉</button>
+    <button data-fig="empty">Bare, starting kit</button>
+    <button data-fig="reset">New run</button>
+  </div>
+  <div class="mini" id="stab"></div>
+  <div class="figs" id="figs"></div>
+</section>
+
+<section class="panel" id="m-crest">
+  <header><h2>F. Crest: the body outside the tab</h2><span class="tag later">round 3 · UI</span></header>
+  <p class="small">One emblem derived from the resolution. Quarters sit where the doors sit (special up-left, active up-right, attacks low-left, defenses low-right). Fill = arm weight ÷ per-route cap. Hue = the loudest arriving type, else the heaviest route's element. Brass top row = a route in that arm is capped. Centre = genus mark, rim in the grade colour.</p>
+  <div class="crests" id="crests"></div>
+  <div class="two">
+    <div><h3 style="margin-bottom:6px">Sidebar strip</h3><div class="sidebar" id="sidebar"></div></div>
+    <div><h3 style="margin-bottom:6px">Battle stage</h3><div class="stage" id="stage"></div><p class="tiny dim" style="margin-top:4px">The hero's shield takes the crest quarters; the hero scales by <code>playerSizeRank</code> through the enemy size table (0.85 / 1 / 1.15 / 1.3). BattleStage reads neither today.</p></div>
+  </div>
+</section>
+
+<section class="panel" id="m-book">
+  <header><h2>G. Specimen book</h2><span class="tag later">round 3 · UI</span></header>
+  <p class="small"><code>state.mutagens.known</code> is written on every discovery and read by nothing in the UI. The book draws the tables the system already has: the elemental tripartition as a matrix, genes as range bars, grade as a ladder. Example state: what floors 1–3 can drop.</p>
+  <div class="note" id="disc"></div>
+  <div class="two">
+    <div><h3 style="margin-bottom:6px">Return tray</h3><div class="tray" id="tray"></div></div>
+    <div><h3 style="margin-bottom:6px">Grade ladder (bench)</h3><div id="gladder"></div></div>
+  </div>
+  <div class="scroll"><table class="matrix" id="matrix"></table></div>
+  <h3>Genes: tier buys the ceiling, grade buys the approach</h3>
+  <div class="scroll"><div id="ranges"></div></div>
+</section>
+
+<section class="panel" id="rulings">
+  <header><h2>Antagonist objections and rulings</h2><span class="tag">design antagonist · verdict: fix first</span></header>
+  <p class="small">No reachable terminal state; the arithmetic holds; Law 2 intact; no other discipline's identity duplicated. Eight objections, ranked:</p>
+  <div class="scroll"><table>
+    <tr><th>#</th><th>Objection</th><th>Ruling</th></tr>
+    <tr><td><span class="sev hi">1</span></td><td>The Vivarium has no explore activity, and finds only fire from exploring. A caged hunt never advances <code>explored</code>, so the find never fires and the tab stays shut.</td><td class="ruling">Accepted. The Vivarium gets <code>exploreTicks</code> and an explore activity carrying the find; one guide line names the Vivarium.</td></tr>
+    <tr><td><span class="sev hi">2</span></td><td>Discoveries pay nobody until Geneshaping manifests, and harvesting never manifests it, lift or no lift. Ran 20 seeds × 300 kills: 5 discoveries each, 0 XP.</td><td class="ruling">Accepted; it corrects F2's cause. <code>harvestKill</code> calls <code>checkDiscovery</code> for <code>geneshaping</code> before rolling, and the lift find grants Geneshaping XP. The test asserts XP, not <code>known</code>.</td></tr>
+    <tr><td><span class="sev hi">3</span></td><td>Normalising shares across six attributes couples the arms: four Wards on the ring cut a slime king's mind attributes from 4.13 to 0.71 each. §4: arms are coupled by content, never by the engine.</td><td class="ruling">Accepted, different fix. No normalisation: each attribute belongs to one door (bare's own mapping), and an arm only sets its own attributes' expression (50% to 100%). Routing into one arm never moves another. No §4 ruling needed.</td></tr>
+    <tr><td><span class="sev mid">4</span></td><td>The Genesis boon is read in <code>collectBaseMods</code> but not keyed in <code>modFingerprint</code>; buying it mid-run leaves the derived stats stale.</td><td class="ruling">Accepted. Genesis rank joins the <code>T</code> token.</td></tr>
+    <tr><td><span class="sev mid">5</span></td><td>A <code>figures:found</code> prestige source pays only the player who picked mutagens; every other build harvests less for an equal climb.</td><td class="ruling">Accepted. Dropped; figures reach prestige through Geneshaping levels and discovery XP.</td></tr>
+    <tr><td><span class="sev mid">6</span></td><td>After Allotment every gene writes attributes, which inverts §8's "attributes = bare's generalist channel" and the comment on bare.</td><td class="ruling">Accepted. §8 and the bare comment are rewritten in the same change.</td></tr>
+    <tr><td><span class="sev lo">7</span></td><td>A <code>lean</code> summing to 0 divides by zero and NaN spreads through the stat block.</td><td class="ruling">Accepted. Lint in both validation layers (Σ = 1 within ε, every entry ≥ 0) and a 1/6 fallback.</td></tr>
+    <tr><td><span class="sev lo">8</span></td><td>The order shipped the body layer into a shut system, and mastery was mostly deferred.</td><td class="ruling">Accepted. The lift goes first; expression (the graph's part of the body layer) ships with slice 1, so the body is a mastery lever from the start.</td></tr>
+  </table></div>
+</section>
+
+<section class="panel" id="roles">
+  <header><h2>Roles under COMPLETABILITY §6a</h2></header>
+  <p class="small">What mutagens fill at basic use (slot a dropped gene, place what drops) on a fresh save after the lift. A role counts only after a cell test passes: base John plus one system.</p>
+  <div class="scroll"><table>
+    <tr><th>Role</th><th>Delivered by</th><th>Status</th></tr>
+    <tr><td>Sustain</td><td>Body Con (Slime Fair, gene alone: +1.8 Con = +18 Max HP before multipliers); Vigorous +8% Max HP</td><td>needs a cell test</td></tr>
+    <tr><td>Damage</td><td>Slime Bounce or Flaming Bounce; Edges +5% Damage; body Str and Dex</td><td>needs a cell test</td></tr>
+    <tr><td>Condition defence</td><td>Wards from the Vivarium stock: Ember (heat), Chill (cold), Tainting (poison)</td><td>unproven; same strength question as the cooking review's Q2</td></tr>
+    <tr><td>Access</td><td>none</td><td>—</td></tr>
+  </table></div>
+</section>
+
+<section class="panel" id="questions">
+  <header><h2>Open questions</h2><span class="tag held">your call</span></header>
+  <p class="small">Each has a default, used until you answer.</p>
+  <ol class="list">
+    <li><b>Body layer shape.</b> Default: Allotment with expression (D). Alternative: Slope, where the body redistributes the +1-per-level gain instead of adding points (bare stays identical; a slime body loses about 0.9 points a level to clamping). Or both.</li>
+    <li><b>Body budget.</b> G = 8 × coefficient: Slime Fair 9, Fire Slime Fine 10, Slime King Divine 24.8, Surtr Divine 44.8. Default: these, then tuned with <code>npm run pacing</code>.</li>
+    <li><b>Genesis boon.</b> Default: yes, +6 bare points per rank, always fully expressed, costs 2/3/4/5/6. At rank 1 it equals Head Start for a player with no graph.</li>
+    <li><b>Figures pay capacity.</b> Default: +1.5 per figure, cap +18, resets with the run. Alternative: discovery XP only.</li>
+    <li><b>Vivarium stock.</b> Default: three shelved species in a caged hunt with no fight limit: Fire Slime (fire; also the Fire Slime gene), Ice Slime (ice), Slime Spider (toxic). Alternative: new species.</li>
+    <li><b>Drops while shut.</b> Default: none until the lift. Alternative: bank silently, no log lines.</li>
+    <li><b>The capacity curve (F8).</b> Default: leave §12 open; uniques are catalogue capstones, not bodies. Alternative: lower <code>TIER_COST_EXPONENT</code> from 1.35.</li>
+    <li><b>Round 1 scope.</b> Default: fixes, lift, body layer, diagram (steps 0–3).</li>
+  </ol>
+</section>
+
+<section class="panel" id="dropped">
+  <header><h2>Weighed and dropped</h2></header>
+  <ul class="list small">
+    <li>Training-XP multipliers per attribute: worth 6.2 × ln(m) trained levels (×2 = +4.3); nearly invisible.</li>
+    <li>Attribute caps from the body: flatten growth and strand attribute-gated content.</li>
+    <li>Global share normalisation across six attributes: couples the arms (objection 3).</li>
+    <li>A wear-time skill per genus discounting gene cost: no topology, and no gene supply to wear.</li>
+    <li>A prestige source for figures (objection 5).</li>
+    <li>A catalogue keyed on arrangements: placement is free, so an unbounded key is farmable; figures are the finite key.</li>
+    <li>Animated flow particles, a force-directed graph, a "best layout" button, per-mutagen bespoke icons (109 entries, no art budget), a chromosome mastery % bar.</li>
+    <li>Sever (cutting the enemy's edges in a fight) and two-centromere chimeras: enemy-keyed or undefined.</li>
+  </ul>
+</section>
+
+
+</div>
+
+<script type="application/json" id="data">{"layout":{"centre":{"x":50,"y":50},"sockets":[{"id":"a","x":22,"y":12},{"id":"b","x":50,"y":5},{"id":"c","x":78,"y":12},{"id":"d","x":34,"y":31},{"id":"e","x":50,"y":35},{"id":"f","x":66,"y":31},{"id":"g","x":24,"y":69},{"id":"h","x":50,"y":63},{"id":"i","x":76,"y":69},{"id":"j","x":50,"y":90}],"edges":[["a","b",3,null,3],["b","c",3,null,3],["a","d",3,null,3],["c","f",3,null,3],["d","e",3,null,3],["e","f",3,null,3],["d","@",3,"special",3],["f","@",3,"active",3],["g","h",6,null,6],["h","i",6,null,6],["g","j",6,null,6],["j","i",6,null,6],["g","@",9,"attacks",9],["i","@",9,"defenses",9]]},"approach":{"f":0.5,"e":0.583,"d":0.667,"c":0.75,"b":0.833,"a":0.917,"s":1},"states":{"body":{"ceiling":3.748,"capacity":{"main":10.7,"mutations":12.46,"cuts":0,"total":23.16},"stranded":[],"main":["fire_slime_gene","b"],"placed":{"d":["resonance","a"],"e":["rime_edge","b"],"f":["frostbite_brand","c"],"g":["bedrock","b"],"h":["fleet","d"],"i":["vigorous","c"]},"established":["a|b","b|c","a|d","c|f","d|e","e|f","@|d","@|f","g|h","h|i","g|j","i|j","@|g","@|i"],"cut":[],"arms":{"special":{"weight":2.458,"delivers":["+6.1% Damage"],"types":["cold"],"grants":[],"routes":[{"from":"d","id":"resonance","through":[],"hops":1,"distance":3,"gain":1,"share":1,"magnitude":1,"weight":1,"clamped":false,"delivered":[],"type":null,"grants":[]},{"from":"e","id":"rime_edge","through":["d"],"hops":2,"distance":6,"gain":1.458,"share":0.5,"magnitude":2.917,"weight":1.458,"clamped":false,"delivered":["+6.1% Damage"],"type":"cold","grants":[]}]},"active":{"weight":2,"delivers":["+4.2% Damage"],"types":["cold"],"grants":[{"text":"leaves Chilled","live":true}],"routes":[{"from":"e","id":"rime_edge","through":["f"],"hops":2,"distance":6,"gain":1,"share":0.5,"magnitude":2,"weight":1,"clamped":false,"delivered":["+4.2% Damage"],"type":"cold","grants":["leaves Chilled"]},{"from":"f","id":"frostbite_brand","through":[],"hops":1,"distance":3,"gain":1,"share":1,"magnitude":1,"weight":1,"clamped":false,"delivered":[],"type":null,"grants":["leaves Chilled"]}]},"attacks":{"weight":4.874,"delivers":["+15% Earth Res.","+5.0% Speed"],"types":[],"grants":[],"routes":[{"from":"g","id":"bedrock","through":[],"hops":1,"distance":9,"gain":1,"share":1,"magnitude":3,"weight":3,"clamped":false,"delivered":["+15% Earth Res."],"type":null,"grants":[]},{"from":"h","id":"fleet","through":["g"],"hops":2,"distance":15,"gain":1,"share":0.5,"magnitude":5,"weight":1.874,"clamped":true,"delivered":["+5.0% Speed"],"type":null,"grants":[]}]},"defenses":{"weight":4.874,"delivers":["+5.0% Speed","+18% Max HP"],"types":[],"grants":[],"routes":[{"from":"h","id":"fleet","through":["i"],"hops":2,"distance":15,"gain":1,"share":0.5,"magnitude":5,"weight":1.874,"clamped":true,"delivered":["+5.0% Speed"],"type":null,"grants":[]},{"from":"i","id":"vigorous","through":[],"hops":1,"distance":9,"gain":1,"share":1,"magnitude":3,"weight":3,"clamped":false,"delivered":["+18% Max HP"],"type":null,"grants":[]}]}}},"cut":{"ceiling":3.748,"capacity":{"main":10.7,"mutations":12.46,"cuts":1.5,"total":24.66},"stranded":[],"main":["fire_slime_gene","b"],"placed":{"d":["resonance","a"],"e":["rime_edge","b"],"f":["frostbite_brand","c"],"g":["bedrock","b"],"h":["fleet","d"],"i":["vigorous","c"]},"established":["a|b","b|c","a|d","c|f","d|e","e|f","@|d","@|f","g|h","h|i","g|j","i|j","@|g","@|i"],"cut":["@|d"],"arms":{"special":{"weight":0,"delivers":[],"types":[],"grants":[],"routes":[]},"active":{"weight":6,"delivers":["+8.3% Damage"],"types":["cold"],"grants":[{"text":"leaves Chilled","live":true}],"routes":[{"from":"d","id":"resonance","through":["e","f"],"hops":3,"distance":9,"gain":1,"share":1,"magnitude":3,"weight":3,"clamped":false,"delivered":[],"type":"cold","grants":["leaves Chilled"]},{"from":"e","id":"rime_edge","through":["f"],"hops":2,"distance":6,"gain":1,"share":1,"magnitude":2,"weight":2,"clamped":false,"delivered":["+8.3% Damage"],"type":"cold","grants":["leaves Chilled"]},{"from":"f","id":"frostbite_brand","through":[],"hops":1,"distance":3,"gain":1,"share":1,"magnitude":1,"weight":1,"clamped":false,"delivered":[],"type":null,"grants":["leaves Chilled"]}]},"attacks":{"weight":4.874,"delivers":["+15% Earth Res.","+5.0% Speed"],"types":[],"grants":[],"routes":[{"from":"g","id":"bedrock","through":[],"hops":1,"distance":9,"gain":1,"share":1,"magnitude":3,"weight":3,"clamped":false,"delivered":["+15% Earth Res."],"type":null,"grants":[]},{"from":"h","id":"fleet","through":["g"],"hops":2,"distance":15,"gain":1,"share":0.5,"magnitude":5,"weight":1.874,"clamped":true,"delivered":["+5.0% Speed"],"type":null,"grants":[]}]},"defenses":{"weight":4.874,"delivers":["+5.0% Speed","+18% Max HP"],"types":[],"grants":[],"routes":[{"from":"h","id":"fleet","through":["i"],"hops":2,"distance":15,"gain":1,"share":0.5,"magnitude":5,"weight":1.874,"clamped":true,"delivered":["+5.0% Speed"],"type":null,"grants":[]},{"from":"i","id":"vigorous","through":[],"hops":1,"distance":9,"gain":1,"share":1,"magnitude":3,"weight":3,"clamped":false,"delivered":["+18% Max HP"],"type":null,"grants":[]}]}}},"empty":{"ceiling":2.25,"capacity":{"main":0,"mutations":0,"cuts":0,"total":0},"stranded":[],"main":null,"placed":{},"established":["@|d","@|g"],"cut":[],"arms":{"special":{"weight":0,"delivers":[],"types":[],"grants":[],"routes":[]},"active":{"weight":0,"delivers":[],"types":[],"grants":[],"routes":[]},"attacks":{"weight":0,"delivers":[],"types":[],"grants":[],"routes":[]},"defenses":{"weight":0,"delivers":[],"types":[],"grants":[],"routes":[]}}}},"mutagens":[{"id":"chill","name":"Chill Mutation","leg":"ward","el":"cold","from":"ice","native":"defenses","lines":["+5% Cold Res."]},{"id":"ember","name":"Ember Mutation","leg":"ward","el":"heat","from":"fire","native":"defenses","lines":["+5% Heat Res."]},{"id":"crystal","name":"Crystal Mutation","leg":"ward","el":"light","from":"earth","native":"defenses","lines":["+12% Light Res.","−6% Bludgeon Res."]},{"id":"tainting","name":"Tainting Mutation","leg":"ward","el":"poison","from":"toxic","native":"defenses","lines":["+10% Poison Res."]},{"id":"resonance","name":"Resonant Mutation","leg":"conduit","el":null,"from":"arcane","native":"special","lines":["Routed through it: ×1.50 to what passes"]},{"id":"catalyst","name":"Catalytic Mutation","leg":"catalyst","el":null,"from":"incorporeal","native":"special","lines":["Nothing yet — a placeholder."]},{"id":"elastic","name":"Elastic Mutation","leg":"stat","el":null,"from":"slime","native":"attacks","lines":["+3% Crit Chance","✦ the ability cannot be dodged","Routed through it: ×1.15 to what passes"]},{"id":"bouncing","name":"Bouncing Mutation","leg":"stat","el":null,"from":"vermin","native":"attacks","lines":["✦ the ability carries into every flanker","Routed through it: picks up the ability carries into every flanker"]},{"id":"vigorous","name":"Vigorous Mutation","leg":"stat","el":null,"from":"beast","native":"defenses","lines":["+8% Max HP"]},{"id":"studious","name":"Studious Mutation","leg":"stat","el":null,"from":"construct","native":"special","lines":["+5% Skill XP"]},{"id":"fleet","name":"Fleet Mutation","leg":"stat","el":null,"from":"wind","native":"special","lines":["+4% Speed","Routed through it: ×1.10 to what passes"]},{"id":"searing_edge","name":"Searing Edge","leg":"edge","el":"heat","from":"fire","native":"attacks","lines":["+5% Damage","Carries heat — not wired yet","Routed through it: rewritten as heat — not wired yet"]},{"id":"kindling_brand","name":"Kindling Brand","leg":"brand","el":"heat","from":"fire","native":"active","lines":["🔥 the ability leaves On Fire","Routed through it: picks up 🔥 the ability leaves On Fire"]},{"id":"rime_edge","name":"Rime Edge","leg":"edge","el":"cold","from":"ice","native":"attacks","lines":["+5% Damage","Carries cold — not wired yet","Routed through it: rewritten as cold — not wired yet"]},{"id":"frostbite_brand","name":"Frostbite Brand","leg":"brand","el":"cold","from":"ice","native":"active","lines":["🥶 the ability leaves Chilled","Routed through it: picks up 🥶 the ability leaves Chilled"]},{"id":"storm_edge","name":"Storm Edge","leg":"edge","el":"lightning","from":"lightning","native":"attacks","lines":["+5% Damage","Carries lightning — not wired yet","Routed through it: rewritten as lightning — not wired yet"]},{"id":"arcing_brand","name":"Arcing Brand","leg":"brand","el":"lightning","from":"lightning","native":"active","lines":["⚡ the ability leaves Jolted","Routed through it: picks up ⚡ the ability leaves Jolted"]},{"id":"grounding","name":"Grounding Mutation","leg":"ward","el":"lightning","from":"lightning","native":"defenses","lines":["+6% Lightning Res."]},{"id":"grit_edge","name":"Grit Edge","leg":"edge","el":"earth","from":"earth","native":"attacks","lines":["+5% Damage","Carries earth — not wired yet","Routed through it: rewritten as earth — not wired yet"]},{"id":"tremor_brand","name":"Tremor Brand","leg":"brand","el":"earth","from":"earth","native":"active","lines":["🪨 the ability leaves Shardbound","Routed through it: picks up 🪨 the ability leaves Shardbound"]},{"id":"bedrock","name":"Bedrock Mutation","leg":"ward","el":"earth","from":"earth","native":"defenses","lines":["+6% Earth Res."]},{"id":"gale_edge","name":"Gale Edge","leg":"edge","el":"wind","from":"wind","native":"attacks","lines":["+5% Damage","Carries wind — not wired yet","Routed through it: rewritten as wind — not wired yet"]},{"id":"buffet_brand","name":"Buffet Brand","leg":"brand","el":"wind","from":"wind","native":"active","lines":["🍃 the ability leaves Buffeted","Routed through it: picks up 🍃 the ability leaves Buffeted"]},{"id":"streamlined","name":"Streamlined Mutation","leg":"ward","el":"wind","from":"wind","native":"defenses","lines":["+6% Wind Res."]},{"id":"tide_edge","name":"Tide Edge","leg":"edge","el":"water","from":"water","native":"attacks","lines":["+5% Damage","Carries water — not wired yet","Routed through it: rewritten as water — not wired yet"]},{"id":"drench_brand","name":"Drench Brand","leg":"brand","el":"water","from":"water","native":"active","lines":["💧 the ability leaves Wet","Routed through it: picks up 💧 the ability leaves Wet"]},{"id":"sealskin","name":"Sealskin Mutation","leg":"ward","el":"water","from":"water","native":"defenses","lines":["+6% Water Res."]},{"id":"thorn_edge","name":"Thorn Edge","leg":"edge","el":"acid","from":"nature","native":"attacks","lines":["+5% Damage","Carries acid — not wired yet","Routed through it: rewritten as acid — not wired yet"]},{"id":"seeding_brand","name":"Seeding Brand","leg":"brand","el":"poison","from":"nature","native":"active","lines":["🌱 the ability leaves Seeded","Routed through it: picks up 🌱 the ability leaves Seeded"]},{"id":"barkskin","name":"Barkskin Mutation","leg":"ward","el":"acid","from":"nature","native":"defenses","lines":["+6% Acid Resistance"]},{"id":"runic_edge","name":"Runic Edge","leg":"edge","el":"arcane","from":"arcane","native":"attacks","lines":["+5% Damage","Carries arcane — not wired yet","Routed through it: rewritten as arcane — not wired yet"]},{"id":"unravelling_brand","name":"Unravelling Brand","leg":"brand","el":"arcane","from":"arcane","native":"active","lines":["🧵 the ability leaves Unravelling","Routed through it: picks up 🧵 the ability leaves Unravelling"]},{"id":"warded","name":"Warded Mutation","leg":"ward","el":"arcane","from":"arcane","native":"defenses","lines":["+6% Arcane Res."]},{"id":"radiant_edge","name":"Radiant Edge","leg":"edge","el":"light","from":"light","native":"attacks","lines":["+5% Damage","Carries light — not wired yet","Routed through it: rewritten as light — not wired yet"]},{"id":"dazzle_brand","name":"Dazzle Brand","leg":"brand","el":"light","from":"light","native":"active","lines":["😑 the ability leaves Dazzled","Routed through it: picks up 😑 the ability leaves Dazzled"]},{"id":"gleam","name":"Gleam Mutation","leg":"ward","el":"light","from":"light","native":"defenses","lines":["+6% Light Res."]},{"id":"umbral_edge","name":"Umbral Edge","leg":"edge","el":"dark","from":"dark","native":"attacks","lines":["+5% Damage","Carries dark — not wired yet","Routed through it: rewritten as dark — not wired yet"]},{"id":"taint_brand","name":"Tainting Brand","leg":"brand","el":"dark","from":"dark","native":"active","lines":["🌑 the ability leaves Tainted","Routed through it: picks up 🌑 the ability leaves Tainted"]},{"id":"nightsight","name":"Nightsight Mutation","leg":"ward","el":"dark","from":"dark","native":"defenses","lines":["+6% Dark Res."]},{"id":"venom_edge","name":"Venom Edge","leg":"edge","el":"poison","from":"toxic","native":"attacks","lines":["+5% Damage","Carries poison — not wired yet","Routed through it: rewritten as poison — not wired yet"]},{"id":"miasma_brand","name":"Miasma Brand","leg":"brand","el":"poison","from":"toxic","native":"active","lines":["🤢 the ability leaves Poisoned","Routed through it: picks up 🤢 the ability leaves Poisoned"]},{"id":"vuln_cold","name":"Cold Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to cold — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_heat","name":"Heat Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to heat — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_light","name":"Light Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to light — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_poison","name":"Poison Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to poison — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_lightning","name":"Lightning Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to lightning — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_earth","name":"Earth Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to earth — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_wind","name":"Wind Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to wind — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_water","name":"Water Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to water — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_acid","name":"Acid Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to acid — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_arcane","name":"Arcane Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to arcane — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]},{"id":"vuln_dark","name":"Dark Vulnerability","leg":"fused","el":null,"from":null,"native":"defenses","lines":["Rewrites a weakness of this body to dark — the same size, pointed elsewhere","Nearest to the centromere rewrites the first; a body with no weakness is untouched"]}],"genes":[{"id":"bare","name":"Bare","genus":"bare","tier":0,"coefF":0.5,"coefS":1,"costC":4,"swapC":2},{"id":"slime_gene","name":"Slime","genus":"slimoid","tier":0,"coefF":0.75,"coefS":1.5,"costC":10,"swapC":6},{"id":"slimer_gene","name":"Slimer","genus":"slimoid","tier":1,"coefF":0.95,"coefS":1.9,"costC":26.9,"swapC":16},{"id":"slimest_gene","name":"Slimest","genus":"slimoid","tier":2,"coefF":1.15,"coefS":2.3,"costC":70.5,"swapC":42},{"id":"slime_guardian_gene","name":"Slime Guardian","genus":"slimoid","tier":3,"coefF":1.35,"coefS":2.7,"costC":142.8,"swapC":86},{"id":"slime_golem_gene","name":"Slime Golem","genus":"slimoid","tier":3,"coefF":1.35,"coefS":2.7,"costC":142.8,"swapC":86},{"id":"slime_king_gene","name":"Slime King","genus":"slimoid","tier":4,"coefF":1.55,"coefS":3.1,"costC":275.7,"swapC":165},{"id":"fire_slime_gene","name":"Fire Slime","genus":"slimoid","tier":0,"coefF":0.75,"coefS":1.5,"costC":10,"swapC":6},{"id":"flame_slime_gene","name":"Flame Slime","genus":"slimoid","tier":1,"coefF":0.95,"coefS":1.9,"costC":26.9,"swapC":16},{"id":"blaze_slime_gene","name":"Blaze Slime","genus":"slimoid","tier":2,"coefF":1.15,"coefS":2.3,"costC":70.5,"swapC":42},{"id":"troll","name":"Troll","genus":"gigantoid","tier":1,"coefF":0.8,"coefS":1.6,"costC":10,"swapC":6},{"id":"rock_giant","name":"Rock Giant","genus":"gigantoid","tier":1,"coefF":0.8,"coefS":1.6,"costC":10,"swapC":6},{"id":"hill_giant","name":"Hill Giant","genus":"gigantoid","tier":2,"coefF":1,"coefS":2,"costC":25.5,"swapC":15},{"id":"forest_giant","name":"Forest Giant","genus":"gigantoid","tier":2,"coefF":1,"coefS":2,"costC":25.5,"swapC":15},{"id":"jotunn","name":"Jötunn","genus":"gigantoid","tier":3,"coefF":1.25,"coefS":2.5,"costC":65,"swapC":39},{"id":"fomorian","name":"Fomorian","genus":"gigantoid","tier":3,"coefF":1.25,"coefS":2.5,"costC":65,"swapC":39},{"id":"storm_giant","name":"Storm Giant","genus":"gigantoid","tier":4,"coefF":1.5,"coefS":3,"costC":165.6,"swapC":99},{"id":"balor","name":"Balor","genus":"gigantoid","tier":4,"coefF":2.2,"coefS":4.4,"costC":223.9,"swapC":134},{"id":"surtr","name":"Surtr","genus":"gigantoid","tier":5,"coefF":2.8,"coefS":5.6,"costC":422.2,"swapC":253},{"id":"wyrmling","name":"Wyrmling","genus":"draconoid","tier":0,"coefF":0.85,"coefS":1.7,"costC":10,"swapC":6},{"id":"drake","name":"Drake","genus":"draconoid","tier":1,"coefF":1,"coefS":2,"costC":21.7,"swapC":13},{"id":"wyvern","name":"Wyvern","genus":"draconoid","tier":2,"coefF":1.2,"coefS":2.4,"costC":46.3,"swapC":28},{"id":"dragon","name":"Dragon","genus":"draconoid","tier":3,"coefF":1.45,"coefS":2.9,"costC":98.5,"swapC":59},{"id":"dvibahu","name":"Dvibahu","genus":"asuroid","tier":0,"coefF":0.8,"coefS":1.6,"costC":10,"swapC":6},{"id":"asura","name":"Asura","genus":"asuroid","tier":1,"coefF":1.3,"coefS":2.6,"costC":70.5,"swapC":42},{"id":"asurendra_tarunavak","name":"Asurendra Tarunavak","genus":"asuroid","tier":5,"coefF":2.4,"coefS":4.8,"costC":476.5,"swapC":286},{"id":"asurendra_vashkara","name":"Asurendra Vashkara","genus":"asuroid","tier":5,"coefF":2.4,"coefS":4.8,"costC":476.5,"swapC":286},{"id":"asurendra_anupama","name":"Asurendra Anupama","genus":"asuroid","tier":5,"coefF":2.4,"coefS":4.8,"costC":476.5,"swapC":286},{"id":"asurendra_niraksha","name":"Asurendra Niraksha","genus":"asuroid","tier":5,"coefF":2.4,"coefS":4.8,"costC":476.5,"swapC":286},{"id":"asurendra_kritavya","name":"Asurendra Kritavya","genus":"asuroid","tier":5,"coefF":2.4,"coefS":4.8,"costC":476.5,"swapC":286}],"genera":{"slimoid":{"id":"slimoid","name":"Slimoid","gradesPerStep":2,"tiers":["slime_gene","fire_slime_gene","slimer_gene","flame_slime_gene","slimest_gene","blaze_slime_gene","slime_guardian_gene","slime_golem_gene","slime_king_gene"]},"gigantoid":{"id":"gigantoid","name":"Gigantoid","gradesPerStep":4,"tiers":["troll","rock_giant","hill_giant","forest_giant","jotunn","fomorian","storm_giant","balor","surtr"]},"draconoid":{"id":"draconoid","name":"Draconoid","gradesPerStep":2,"tiers":["wyrmling","drake","wyvern","dragon"]},"asuroid":{"id":"asuroid","name":"Asuroid","gradesPerStep":5,"tiers":["dvibahu","asura"]}},"fitting":{"j":[{"id":"chill","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Cold Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Cold Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"ember","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Heat Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Heat Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"crystal","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+17% Light Res.","−8.4% Bludgeoning Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+17% Light Res.","−8.4% Bludgeoning Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"tainting","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+14% Poison Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+14% Poison Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"resonance","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":[]},"grants":[]}}},{"id":"catalyst","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":7.311,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":7.311,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":[]},"grants":[]}}},{"id":"elastic","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+4.2% Crit Chance"],"type":null,"grants":["cannot be dodged"]},"grants":[{"text":"cannot be dodged","live":true}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+4.2% Crit Chance"],"type":null,"grants":["cannot be dodged"]},"grants":[{"text":"cannot be dodged","live":false}]}}},{"id":"bouncing","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["carries into every flanker"]},"grants":[{"text":"carries into every flanker","live":true}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["carries into every flanker"]},"grants":[{"text":"carries into every flanker","live":false}]}}},{"id":"vigorous","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+11% Max HP"],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+11% Max HP"],"type":null,"grants":[]},"grants":[]}}},{"id":"studious","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Skill XP"],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Skill XP"],"type":null,"grants":[]},"grants":[]}}},{"id":"fleet","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+5.6% Speed"],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+5.6% Speed"],"type":null,"grants":[]},"grants":[]}}},{"id":"searing_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"heat","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"heat","grants":[]},"grants":[]}}},{"id":"kindling_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves On_fire"]},"grants":[{"text":"leaves On_fire","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves On_fire"]},"grants":[{"text":"leaves On_fire","live":false}]}}},{"id":"rime_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"cold","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"cold","grants":[]},"grants":[]}}},{"id":"frostbite_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":false}]}}},{"id":"storm_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"lightning","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"lightning","grants":[]},"grants":[]}}},{"id":"arcing_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Jolted"]},"grants":[{"text":"leaves Jolted","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Jolted"]},"grants":[{"text":"leaves Jolted","live":false}]}}},{"id":"grounding","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Lightning Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Lightning Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"grit_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"earth","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"earth","grants":[]},"grants":[]}}},{"id":"tremor_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Shardbound"]},"grants":[{"text":"leaves Shardbound","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Shardbound"]},"grants":[{"text":"leaves Shardbound","live":false}]}}},{"id":"bedrock","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Earth Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Earth Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"gale_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"wind","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"wind","grants":[]},"grants":[]}}},{"id":"buffet_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Buffeted"]},"grants":[{"text":"leaves Buffeted","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Buffeted"]},"grants":[{"text":"leaves Buffeted","live":false}]}}},{"id":"streamlined","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Wind Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Wind Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"tide_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"water","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"water","grants":[]},"grants":[]}}},{"id":"drench_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Wet"]},"grants":[{"text":"leaves Wet","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Wet"]},"grants":[{"text":"leaves Wet","live":false}]}}},{"id":"sealskin","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Water Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Water Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"thorn_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"acid","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"acid","grants":[]},"grants":[]}}},{"id":"seeding_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Seeded"]},"grants":[{"text":"leaves Seeded","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Seeded"]},"grants":[{"text":"leaves Seeded","live":false}]}}},{"id":"barkskin","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Acid Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Acid Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"runic_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"arcane","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"arcane","grants":[]},"grants":[]}}},{"id":"unravelling_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Unravelling"]},"grants":[{"text":"leaves Unravelling","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Unravelling"]},"grants":[{"text":"leaves Unravelling","live":false}]}}},{"id":"warded","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Arcane Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Arcane Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"radiant_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"light","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"light","grants":[]},"grants":[]}}},{"id":"dazzle_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Dazzled"]},"grants":[{"text":"leaves Dazzled","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Dazzled"]},"grants":[{"text":"leaves Dazzled","live":false}]}}},{"id":"gleam","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Light Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Light Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"umbral_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"dark","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"dark","grants":[]},"grants":[]}}},{"id":"taint_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Tainted"]},"grants":[{"text":"leaves Tainted","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Tainted"]},"grants":[{"text":"leaves Tainted","live":false}]}}},{"id":"nightsight","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Dark Res."],"type":null,"grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+8.4% Dark Res."],"type":null,"grants":[]},"grants":[]}}},{"id":"venom_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"poison","grants":[]},"grants":[]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":["+7.0% Damage"],"type":"poison","grants":[]},"grants":[]}}},{"id":"miasma_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":2,"route":null,"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Poison"]},"grants":[{"text":"leaves Poison","live":false}]},"defenses":{"before":4.874,"after":6.748,"route":{"weight":1.874,"clamped":true,"share":0.5,"distance":15,"hops":2,"delivered":[],"type":null,"grants":["leaves Poison"]},"grants":[{"text":"leaves Poison","live":false}]}}}],"c":[{"id":"chill","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Cold Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"ember","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Heat Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"crystal","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+18% Light Res.","−9.0% Bludgeoning Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"tainting","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+15% Poison Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"resonance","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"catalyst","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4.375,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"elastic","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+4.5% Crit Chance"],"type":null,"grants":["cannot be dodged","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"cannot be dodged","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"bouncing","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["carries into every flanker","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"carries into every flanker","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"vigorous","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+12% Max HP"],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"studious","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Skill XP"],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"fleet","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+6.0% Speed"],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"searing_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"heat","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"kindling_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves On_fire","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves On_fire","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"rime_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"cold","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"frostbite_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Chilled","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"storm_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"lightning","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"arcing_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Jolted","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Jolted","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"grounding","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+9.0% Lightning Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"grit_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"earth","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"tremor_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Shardbound","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Shardbound","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"bedrock","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+9.0% Earth Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"gale_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"wind","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"buffet_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Buffeted","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Buffeted","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"streamlined","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+9.0% Wind Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"tide_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"water","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"drench_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Wet","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Wet","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"sealskin","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+9.0% Water Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"thorn_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"acid","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"seeding_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Seeded","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Seeded","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"barkskin","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+9.0% Acid Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"runic_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"arcane","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"unravelling_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Unravelling","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Unravelling","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"warded","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+9.0% Arcane Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"radiant_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"light","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"dazzle_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Dazzled","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Dazzled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"gleam","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+9.0% Light Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"umbral_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"dark","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"taint_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Tainted","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Tainted","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"nightsight","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+9.0% Dark Res."],"type":null,"grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"venom_edge","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":["+7.5% Damage"],"type":"poison","grants":["leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}},{"id":"miasma_brand","capAfter":25.16,"arms":{"special":{"before":2.458,"after":2.458,"route":null,"grants":[]},"active":{"before":2,"after":4,"route":{"weight":2,"clamped":false,"share":1,"distance":6,"hops":2,"delivered":[],"type":null,"grants":["leaves Poison","leaves Chilled"]},"grants":[{"text":"leaves Chilled","live":true},{"text":"leaves Poison","live":true}]},"attacks":{"before":4.874,"after":4.874,"route":null,"grants":[]},"defenses":{"before":4.874,"after":4.874,"route":null,"grants":[]}}}]},"swap":{"fire_slime_gene:b":{"ceiling":3.75,"capacity":23.2,"main":10.7,"coef":1.249,"biomatter":6,"ability":"Flaming Bounce","base":{"defenses":["+6.0% Slashing Res.","+10% Heat Res."],"special":["−20% Crit Damage Taken"],"attacks":["+50% Damage × Heat Res."]},"arms":{"special":2.46,"active":2,"attacks":4.87,"defenses":4.87}},"troll:b":{"ceiling":4,"capacity":23.2,"main":10.7,"coef":1.333,"biomatter":6,"ability":"Troll Bite","base":{"special":["+0.4% HP Regen × Max HP"],"attacks":["+50% Damage × Bludgeoning Res.","+15% Damage"],"defenses":["+16% Slashing Res.","+12% Piercing Res.","−25% Heat Res."]},"arms":{"special":2.46,"active":2,"attacks":5,"defenses":5}},"slime_king_gene:c":{"ceiling":6.98,"capacity":288.1,"main":275.7,"coef":2.325,"biomatter":165,"ability":null,"base":{"defenses":["+20% Slashing Res.","+16% Piercing Res.","+12% Bludgeoning Res.","+6.0% Res Elemental"],"attacks":["+18% Damage"]},"arms":{"special":2.46,"active":2,"attacks":5.5,"defenses":5.5}},"jotunn:f":{"ceiling":3.75,"capacity":64.4,"main":52,"coef":1.25,"biomatter":31,"ability":"Mountain Crusher","base":{"attacks":["+35% Damage","+9.0% Vs Smaller","+15% Attack Speed"],"defenses":["+24% Bludgeoning Res.","+24% Cold Res.","+18% Wind Res."],"special":["+40% Max HP","+10% From Smaller"]},"arms":{"special":2.46,"active":2,"attacks":4.88,"defenses":4.88}}}}</script>
+<script>
+(() => {
+const D = JSON.parse(document.getElementById('data').textContent);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const MUT = Object.fromEntries(D.mutagens.map((m) => [m.id, m]));
+const GENE = Object.fromEntries(D.genes.map((g) => [g.id, g]));
+const ARMS = ['special', 'active', 'attacks', 'defenses'];
+const ARM_NAME = { special: 'Special', active: 'Active', attacks: 'Attacks', defenses: 'Defenses' };
+const GRADES = ['f', 'e', 'd', 'c', 'b', 'a', 's'];
+const GRADE_NAME = { f: 'Refuse', e: 'Poor', d: 'Common', c: 'Fair', b: 'Fine', a: 'Superb', s: 'Divine' };
+const gradeColor = (q) => css('--q-' + q);
+const READS_TYPE = { active: true, attacks: true, special: false, defenses: false };
+
+// ---------- colour ----------
+function hex(c) { c = c.replace('#', ''); return [0, 2, 4].map((i) => parseInt(c.slice(i, i + 2), 16)); }
+function mix(a, b, t) { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
+const hue = (el) => css('--el-' + (el || 'none')) || css('--el-none');
+function ramp(el) {
+  const m = hue(el);
+  const lum = hex(m).reduce((s, v, i) => s + v * [0.299, 0.587, 0.114][i], 0) / 255;
+  return { o: css('--sunken'), d: mix(m, '#000000', 0.42), m, l: mix(m, '#ffffff', 0.32), c: lum > 0.62 ? '#1a1511' : '#efe6d2' };
+}
+
+// ---------- masks ----------
+const M = {
+  edge: ['......oo......', '.....oddo.....', '....odmmdo....', '...odmmmmdo...', '..odmmllmmdo..', '.odmmllllmmdo.', 'odmmllllllmmdo', 'odmmmllllmmmdo', '.odmmmllmmmdo.', '..odmmmmmmdo..', '...oddmmddo...', '....oddddo....', '.....oddo.....', '......oo......'],
+  brand: ['....oooooooooo', '...ollllllllmo', '..ollllllllmmo', '.ollmmmmmmmmdo', 'ollmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'ommmmmmmmmmmdo', 'ommmmmmmmmmmdo', 'ommmmmmmmmmmdo', 'ommmmmmmmmmmdo', 'odmmmmmmmmmmdo', 'oddmmmmmmmmddo', 'oddddddddddddo', 'oooooooooooooo'],
+  ward: ['oooooooooooooo', 'ollllllllllllo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'odmmmmmmmmmmdo', '.odmmmmmmmmdo.', '.odmmmmmmmmdo.', '..odmmmmmmdo..', '...odmmmmdo...', '....oddddo....', '.....oooo.....'],
+  oct: ['....oooooo....', '...ollllllo...', '..olmmmmmmlo..', '.olmmmmmmmmdo.', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'odmmmmmmmmmmdo', '.odmmmmmmmmdo.', '..oddmmmmddo..', '...oddddddo...', '....oooooo....'],
+  stat: ['.oooooooooooo.', 'ollllllllllllo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'olmmmmmmmmmmdo', 'odmmmmmmmmmmdo', 'oddddddddddddo', '.oooooooooooo.'],
+};
+const CH = {
+  heat: ['..c...', '..cc..', '.ccc..', '.cccc.', 'cc.ccc', '.cccc.'],
+  cold: ['c.cc.c', '.cccc.', 'cccccc', 'cccccc', '.cccc.', 'c.cc.c'],
+  lightning: ['...cc.', '..cc..', '.cccc.', '..cc..', '.cc...', '.c....'],
+  earth: ['......', '..cc..', '.cccc.', 'cccccc', 'cccccc', '......'],
+  wind: ['cccc..', '......', '.ccccc', '......', 'ccc.cc', '......'],
+  water: ['..cc..', '..cc..', '.cccc.', 'cccccc', 'cccccc', '.cccc.'],
+  acid: ['....cc', '..cccc', '.cccc.', '.ccc..', 'c.c...', 'c.....'],
+  arcane: ['..cc..', '.c..c.', 'c.cc.c', 'c.cc.c', '.c..c.', '..cc..'],
+  light: ['c.cc.c', '..cc..', 'cccccc', 'cccccc', '..cc..', 'c.cc.c'],
+  dark: ['..ccc.', '.cc...', 'cc....', 'cc....', '.cc...', '..ccc.'],
+  poison: ['.cccc.', 'cc..cc', 'cccccc', '.c..c.', '.cccc.', '......'],
+  plus: ['..cc..', '..cc..', 'cccccc', 'cccccc', '..cc..', '..cc..'],
+  spark: ['..c...', 'c.c.c.', '.ccc..', 'ccccc.', '.ccc..', 'c.c.c.'],
+  slime: ['..cc..', '.cccc.', 'cccccc', 'cccccc', 'c.cc.c', '.c..c.'],
+  giant: ['cccccc', 'cccccc', '.c..c.', '.c..c.', '.c..c.', '.c..c.'],
+  strands: ['c....c', '.c..c.', '..cc..', '..cc..', '.c..c.', 'c....c'],
+};
+const ARM_MARK = {
+  special: ['...c...', '...c...', '..ccc..', 'ccccccc', '..ccc..', '...c...', '...c...'],
+  active: ['....cc.', '...cc..', '..cc...', '.ccccc.', '...cc..', '..cc...', '.cc....'],
+  attacks: ['c.....c', '.c...c.', '..c.c..', '...c...', '.......', 'ccccccc', 'ccccccc'],
+  defenses: ['ccccccc', 'c.....c', 'c.....c', 'c.....c', '.c...c.', '..c.c..', '...c...'],
+};
+for (const [k, v] of Object.entries(M)) if (v.length !== 14 || v.some((r) => r.length !== 14)) throw new Error('mask ' + k);
+
+function runs(grid, colors) {
+  // grid: array of strings; colors: char -> fill. One path per colour of 1×1 runs.
+  const paths = {};
+  grid.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      const ch = row[x];
+      if (!colors[ch]) { x++; continue; }
+      let w = 1; while (row[x + w] === ch) w++;
+      (paths[ch] ??= []).push(`M${x} ${y}h${w}v1h-${w}z`);
+      x += w;
+    }
+  });
+  return Object.entries(paths).map(([ch, p]) => `<path fill="${colors[ch]}" d="${p.join('')}"/>`).join('');
+}
+function stamp(base, over, ox, oy, ch) {
+  const g = base.map((r) => r.split(''));
+  over.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') g[oy + y][ox + x] = ch ?? c; }));
+  return g.map((r) => r.join(''));
+}
+const LEG_SHAPE = { edge: 'edge', brand: 'brand', ward: 'ward', conduit: 'oct', catalyst: 'oct', stat: 'stat', fused: 'edge' };
+function plateGrid(leg, el) {
+  let g = M[LEG_SHAPE[leg]];
+  if (leg === 'conduit') g = g.map((r, y) => (y === 6 || y === 7 ? r.replace(/[lmd]/g, 'o') : r));
+  const charge = leg === 'catalyst' ? CH.spark : leg === 'stat' && !el ? CH.plus : el ? CH[el] : leg === 'conduit' ? null : CH.plus;
+  if (charge) g = stamp(g, charge, 4, 4, 'c');
+  if (leg === 'fused') g = g.map((r, y) => r.split('').map((c, x) => (x + y === 13 && c !== '.' ? 'o' : c)).join(''));
+  return g;
+}
+// plate(): returns an inner <svg> at x,y with size s (in parent units)
+function plate(leg, el, opts = {}) {
+  const r = ramp(el);
+  const g = plateGrid(leg, el);
+  const s = opts.size ?? 28;
+  const fill = opts.empty ? { o: css('--btn') } : { o: r.o, d: r.d, m: r.m, l: r.l, c: r.c };
+  const grid = opts.empty ? M[LEG_SHAPE[leg]].map((row) => row.replace(/[lmd]/g, '.')) : g;
+  const at = opts.x !== undefined ? ` x="${opts.x}" y="${opts.y}"` : '';
+  let pips = '';
+  if (opts.grade) {
+    const k = GRADES.indexOf(opts.grade) + 1;
+    for (let i = 0; i < 7; i++) {
+      const filled = i < k;
+      pips += `<rect x="${i * 2}" y="15" width="1.5" height="1.5" fill="${filled ? (opts.grade === 'f' ? 'none' : gradeColor(opts.grade)) : css('--frame')}" ${filled && opts.grade === 'f' ? `stroke="${css('--q-e')}" stroke-width="0.3"` : ''}/>`;
+    }
+  }
+  const hatch = opts.hatch ? `<rect x="0" y="0" width="14" height="14" fill="url(#hatch)" />` : '';
+  const vb = opts.grade ? '0 0 14 17' : '0 0 14 14';
+  const h = opts.grade ? s * 17 / 14 : s;
+  const title = opts.title ? `<title>${esc(opts.title)}</title>` : '';
+  return `<svg class="px"${at} width="${s}" height="${h}" viewBox="${vb}" shape-rendering="crispEdges">${title}${runs(grid, fill)}${hatch}${pips}</svg>`;
+}
+function mark(grid, color, size, at = '') {
+  const w = grid[0].length, h = grid.length;
+  return `<svg class="px"${at} width="${size}" height="${size * h / w}" viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">${runs(grid, { c: color })}</svg>`;
+}
+const armMark = (arm, size = 14, color) => mark(ARM_MARK[arm], color ?? css('--text'), size);
+const plateFor = (id, opts = {}) => { const m = MUT[id]; return plate(m.leg, m.el, { title: m.name, ...opts }); };
+const HATCH_DEF = `<defs><pattern id="hatch" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="0.7" height="2" fill="rgba(0,0,0,0.55)"/></pattern></defs>`;
+
+// ---------- A. plate sheet ----------
+(function plates() {
+  const legs = [['edge', 'Edge · re-types what passes'], ['brand', 'Brand · adds a condition'], ['ward', 'Ward · resists, nothing else'], ['fused', 'Fused · rekeys a weak point']];
+  const els = ['heat', 'cold', 'lightning', 'earth', 'wind', 'water', 'acid', 'arcane', 'light', 'dark', 'poison'];
+  let h = `<svg width="0" height="0" style="position:absolute">${HATCH_DEF}</svg><table class="matrix"><tr><th></th>${els.map((e) => `<th>${e}</th>`).join('')}</tr>`;
+  for (const [leg, name] of legs) h += `<tr><th class="row">${name}</th>${els.map((e) => `<td>${plate(leg, e, { size: 34, title: `${leg} · ${e}` })}</td>`).join('')}</tr>`;
+  h += `<tr><th class="row">Other legs</th><td>${plate('conduit', null, { size: 34, title: 'Conduit: multiplies what passes through' })}</td><td>${plate('catalyst', null, { size: 34, title: 'Catalyst: multiplies the socket it feeds' })}</td><td>${plate('stat', null, { size: 34, title: 'Stat: sends a magnitude' })}</td>`;
+  h += `<td colspan="2" class="tiny dim" style="padding-left:6px">conduit · catalyst · stat</td>`;
+  h += `<td>${plate('edge', 'cold', { size: 34, grade: 'f' })}</td><td>${plate('edge', 'cold', { size: 34, grade: 'c' })}</td><td>${plate('edge', 'cold', { size: 34, grade: 's' })}</td><td>${plate('ward', 'earth', { size: 34, hatch: true })}</td><td>${plate('ward', 'earth', { size: 34, empty: true })}</td><td></td></tr>`;
+  h += `<tr><th class="row"></th><td colspan="3"></td><td colspan="2"></td><td class="tiny dim" style="text-align:center">F</td><td class="tiny dim" style="text-align:center">C</td><td class="tiny dim" style="text-align:center">S</td><td class="tiny dim" style="text-align:center">inert</td><td class="tiny dim" style="text-align:center">empty</td></tr></table>`;
+  $('plates').innerHTML = h;
+  $('armkey').innerHTML = ARMS.map((a) => `<span>${armMark(a, 14)} ${ARM_NAME[a]}</span>`).join('') + `<span class="dim">Arm marks replace ✨ ⚡ ⚔️ 🛡️; 7×7, never hued.</span>`;
+})();
+
+// ---------- B. chromosome ----------
+const L = D.layout;
+const POS = Object.fromEntries(L.sockets.map((s) => [s.id, s]));
+POS['@'] = { id: '@', x: L.centre.x, y: L.centre.y };
+const ekey = (a, b) => [a, b].sort().join('|');
+const DOOR = { d: 'special', f: 'active', g: 'attacks', i: 'defenses' };
+let curState = 'body';
+let pinned = null; // { arm, idx } or { socket }
+
+function allRoutes(st) { return ARMS.flatMap((arm) => st.arms[arm].routes.map((r, idx) => ({ ...r, arm, idx }))); }
+function routePath(r) { return [r.from, ...r.through, '@']; }
+function profile(st) {
+  const rs = allRoutes(st);
+  const inert = ARMS.reduce((n, a) => n + (READS_TYPE[a] ? 0 : st.arms[a].types.length) + st.arms[a].grants.filter((g) => !g.live).length, 0);
+  return [
+    ['Depth', rs.length ? Math.max(...rs.map((r) => r.hops)) : 0, 'most hops any route crosses: hops buy character'],
+    ['Span', (rs.length ? Math.max(...rs.map((r) => r.distance)) : 0) + ' μm', 'longest distance any route travels: distance buys magnitude'],
+    ['Fed', ARMS.filter((a) => st.arms[a].routes.length).length + '/4', 'arms with at least one route'],
+    ['Splits', rs.filter((r) => r.share < 1).length, 'routes that tied and divided'],
+    ['Capped', rs.filter((r) => r.clamped).length, 'routes the gene ceiling clamped'],
+    ['Inert', inert, 'things arriving where nothing reads them'],
+  ];
+}
+function geneOf(st) { return st.main ? { def: GENE[st.main[0]], q: st.main[1] } : null; }
+
+function renderBand(st) {
+  const g = geneOf(st);
+  const cap = st.capacity, lim = 80;
+  const name = g ? `${g.def.name} Gene <span class="gchip" style="color:${gradeColor(g.q)}">${GRADE_NAME[g.q]}</span> <span class="tiny dim">tier ${g.def.tier} · coefficient ×${(g.def.coefF * 2 * D.approach[g.q]).toFixed(2)} · per-route cap ×${st.ceiling.toFixed(2)}</span>` : `Bare Sequence <span class="tiny dim">gradeless · writes 0 to all six attributes · per-route cap ×${st.ceiling.toFixed(2)}</span>`;
+  const seg = (v, c, cls = '') => `<i class="${cls}" style="width:${(v / lim) * 100}%;background:${c}" title="${v.toFixed(1)}"></i>`;
+  $('band').innerHTML = `<div>${crestSVG(st, 3)}</div>
+    <div style="min-width:0"><div class="name">${name}</div>
+      <div class="profile">${profile(st).map(([k, v, t]) => `<div title="${esc(t)}"><small>${k}</small><span>${v}</span></div>`).join('')}</div></div>
+    <div class="capbox"><div class="tiny"><span class="dim">Capacity</span><span>${cap.total.toFixed(1)} / ${lim.toFixed(1)}</span></div>
+      <div class="capbar">${seg(cap.main, css('--accent'))}${seg(cap.mutations, css('--text'))}${seg(cap.cuts, css('--danger'), 'hatch-bg')}</div>
+      <div class="tiny dim"><span>gene ${cap.main.toFixed(1)} · mutagens ${cap.mutations.toFixed(1)} · cuts ${cap.cuts.toFixed(1)}</span></div>
+      <div class="tiny dim">Geneshaping 40 · Master Geneshaper</div></div>`;
+}
+
+function renderGraph(st) {
+  const P = (id) => POS[id];
+  const pinRoutes = pinned ? (pinned.socket ? allRoutes(st).filter((r) => r.from === pinned.socket) : [st.arms[pinned.arm].routes[pinned.idx] && { ...st.arms[pinned.arm].routes[pinned.idx], arm: pinned.arm }].filter(Boolean)) : [];
+  const lit = {}; // edge key -> { color, hollow: count from origin side, origin }
+  for (const r of pinRoutes) {
+    const path = routePath(r);
+    const el = MUT[r.id]?.el;
+    let excess = r.clamped ? Math.round(r.magnitude - st.ceiling) : 0;
+    for (let k = 0; k < path.length - 1; k++) {
+      const key = ekey(path[k], path[k + 1]);
+      const len = L.edges.find((e) => ekey(e[0], e[1]) === key)[2] / 3;
+      const hollow = Math.min(excess, len); excess -= hollow;
+      lit[key] = { color: hue(el), hollow, from: path[k] };
+    }
+  }
+  let s = HATCH_DEF;
+  // edges + beads
+  for (const [a, b, len, arm, hist] of L.edges) {
+    const key = ekey(a, b);
+    const est = st.established.includes(key), cut = st.cut.includes(key);
+    const A = P(a), B = P(b);
+    const dx = B.x - A.x, dy = B.y - A.y, dist = Math.hypot(dx, dy);
+    const ra = a === '@' ? 7.5 : 5, rb = b === '@' ? 7.5 : 5;
+    const x1 = A.x + dx * ra / dist, y1 = A.y + dy * ra / dist, x2 = B.x - dx * rb / dist, y2 = B.y - dy * rb / dist;
+    const L2 = lit[key];
+    if (!est) {
+      s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${css('--btn')}" stroke-width="0.35" stroke-dasharray="1 1.4"/>`;
+      s += `<text x="${(x1 + x2) / 2 + 1.5}" y="${(y1 + y2) / 2 - 1}" font-size="2.6" fill="${css('--dim')}" font-family="EB Garamond, serif">${hist} histones</text>`;
+      continue;
+    }
+    if (cut) {
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, ux = dx / dist, uy = dy / dist;
+      s += `<line x1="${x1}" y1="${y1}" x2="${mx - ux * 2.5}" y2="${my - uy * 2.5}" stroke="${css('--btn')}" stroke-width="0.35"/><line x1="${mx + ux * 2.5}" y1="${my + uy * 2.5}" x2="${x2}" y2="${y2}" stroke="${css('--btn')}" stroke-width="0.35"/>`;
+      s += `<rect x="${mx - ux * 2.5 - 0.6}" y="${my - uy * 2.5 - 0.6}" width="1.2" height="1.2" fill="${css('--danger')}"/><rect x="${mx + ux * 2.5 - 0.6}" y="${my + uy * 2.5 - 0.6}" width="1.2" height="1.2" fill="${css('--danger')}"/>`;
+      s += `<text x="${mx + 1.6}" y="${my - 1.2}" font-size="2.6" fill="${css('--danger')}" font-family="EB Garamond, serif">cut</text>`;
+      continue;
+    }
+    s += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${L2 ? L2.color : css('--border')}" stroke-width="${L2 ? 0.7 : 0.35}"/>`;
+    const n = len / 3;
+    for (let k = 0; k < n; k++) {
+      // beads run from the origin end when lit, so hollow ones sit at the origin side
+      const t = (k + 0.5) / n;
+      const fromA = !L2 || L2.from === a;
+      const tt = fromA ? t : 1 - t;
+      const bx = x1 + (x2 - x1) * tt, by = y1 + (y2 - y1) * tt;
+      const hollow = L2 && k < L2.hollow;
+      const fill = L2 ? (hollow ? css('--sunken') : L2.color) : css('--dim');
+      s += `<rect x="${(bx - 0.9).toFixed(2)}" y="${(by - 0.9).toFixed(2)}" width="1.8" height="1.8" fill="${fill}" ${hollow ? `stroke="${L2.color}" stroke-width="0.35"` : ''}/>`;
+    }
+  }
+  // door arm marks
+  for (const [sock, arm] of Object.entries(DOOR)) {
+    const A = P(sock), C = P('@');
+    const x = C.x + (A.x - C.x) * 0.42, y = C.y + (A.y - C.y) * 0.42;
+    const ox = sock === 'd' || sock === 'g' ? -4.6 : 1.6;
+    s += `<g><title>${ARM_NAME[arm]} door: what arrives on this edge lands in ${ARM_NAME[arm]}</title>${mark(ARM_MARK[arm], css('--text'), 3.2, ` x="${x + ox}" y="${y - 1.6}"`)}</g>`;
+  }
+  // sockets
+  for (const so of L.sockets) {
+    const held = st.placed[so.id];
+    const stranded = st.stranded.includes(so.id);
+    const isPin = pinRoutes.some((r) => routePath(r).includes(so.id));
+    const size = 9;
+    const inner = held ? plateFor(held[0], { size, grade: held[1], hatch: stranded, x: so.x - size / 2, y: so.y - size / 2 }) : plate('stat', null, { empty: true, size, x: so.x - size / 2, y: so.y - size / 2 });
+    s += `<g class="sock" data-sock="${so.id}" style="cursor:pointer">${inner}`;
+    if (isPin) s += `<rect x="${so.x - 5.6}" y="${so.y - 5.6}" width="11.2" height="${held ? 13.6 : 11.2}" fill="none" stroke="${css('--accent')}" stroke-width="0.4"/>`;
+    s += `<text x="${so.x < 50 ? so.x - 7.8 : so.x + 5.4}" y="${so.y - 2.6}" font-size="4.4" fill="${css('--dim')}" font-family="EB Garamond, Georgia, serif" font-style="italic">${so.id}</text></g>`;
+  }
+  // centromere
+  const g = geneOf(st), C = P('@');
+  const cs = 13;
+  const cgrid = stamp(M.oct, g ? (g.def.genus === 'gigantoid' ? CH.giant : CH.slime) : CH.strands, 4, 4, 'c');
+  const rim = g ? gradeColor(g.q) : css('--btn');
+  const cr = g ? ramp(g.def.id.includes('fire') ? 'heat' : 'acid') : { d: css('--raised'), m: css('--raised'), l: css('--hover'), c: css('--dim') };
+  s += `<g><title>${g ? g.def.name + ' Gene, ' + GRADE_NAME[g.q] : 'Bare Sequence'}</title><rect x="${C.x - cs / 2 - 0.8}" y="${C.y - cs / 2 - 0.8}" width="${cs + 1.6}" height="${cs + 1.6}" fill="none" stroke="${rim}" stroke-width="0.6"/>`;
+  s += `<svg x="${C.x - cs / 2}" y="${C.y - cs / 2}" width="${cs}" height="${cs}" viewBox="0 0 14 14" shape-rendering="crispEdges">${runs(cgrid, { o: css('--sunken'), d: cr.d, m: cr.m, l: cr.l, c: cr.c })}</svg></g>`;
+  // per-hop chips for pinned routes
+  for (const r of pinRoutes) {
+    const chips = hopChips(st, r);
+    for (const [sock, text, color] of chips) {
+      const A = P(sock);
+      s += `<g><rect x="${A.x + 4.6}" y="${A.y + 1.2}" width="${text.length * 1.55 + 1.6}" height="4" fill="${css('--sunken')}" stroke="${color}" stroke-width="0.3"/><text x="${A.x + 5.4}" y="${A.y + 4.2}" font-size="3" fill="${color}" font-family="EB Garamond, serif">${esc(text)}</text></g>`;
+    }
+  }
+  $('graph').innerHTML = s;
+  $('graph').querySelectorAll('.sock').forEach((el) => el.addEventListener('click', () => {
+    const so = el.dataset.sock;
+    pinned = pinned && pinned.socket === so ? null : st.placed[so] ? { socket: so } : null;
+    renderChromo();
+  }));
+  $('gkey').innerHTML = `<span>${mark(['cc', 'cc'], css('--dim'), 6)} 1 bead = 3 μm</span><span>${mark(['oo', 'oo'].map((r) => r.replace(/o/g, 'c')), css('--accent'), 6)} hollow bead = distance past the cap, lost</span><span>${armMark('special', 10, css('--dim'))}${armMark('active', 10, css('--dim'))}${armMark('attacks', 10, css('--dim'))}${armMark('defenses', 10, css('--dim'))} doors</span><span>letters stay on the diagram, so a route reads <code>e → d → ◉</code></span>`;
+}
+function hopChips(st, r) {
+  const out = [];
+  if (r.share < 1) out.push([r.from, '½ split', css('--dim')]);
+  for (const s of r.through) {
+    const m = MUT[st.placed[s][0]];
+    if (m.leg === 'conduit') out.push([s, `× ${r.gain.toFixed(2)} conduit`, css('--accent')]);
+    else if (m.leg === 'brand') out.push([s, `+ ${r.grants[r.grants.length - 1] ?? 'condition'}`, hue(m.el)]);
+    else if (m.leg === 'edge') out.push([s, `→ ${m.el}`, hue(m.el)]);
+  }
+  if (r.clamped) out.push([r.through.length ? r.through[r.through.length - 1] : r.from, `capped ×${st.ceiling.toFixed(2)}`, css('--danger')]);
+  return out;
+}
+
+const BODY_LINES = {
+  body: { special: ['−20% Crit Damage Taken'], active: [], attacks: ['+50% Damage × Heat Res. → +19.2% Damage'], defenses: ['+6% Slashing Res.', '+10% Heat Res.'] },
+  empty: { special: ['+0 Cha'], active: ['+0 Int', '+0 Wis'], attacks: ['+0 Str', '+0 Dex'], defenses: ['+0 Con'] },
+};
+BODY_LINES.cut = BODY_LINES.body;
+
+function renderRail(st) {
+  const axis = Math.max(2 * st.ceiling, ...ARMS.map((a) => st.arms[a].weight)) || 1;
+  let h = '';
+  for (const arm of ARMS) {
+    const a = st.arms[arm];
+    const segs = a.routes.map((r) => `<i class="${r.clamped ? 'clamp' : ''}" style="width:${(r.weight / axis) * 100}%;background:${hue(MUT[r.id]?.el)}" title="${r.from}: ×${r.weight.toFixed(2)}"></i>`).join('');
+    const hl = pinned && (pinned.arm === arm || (pinned.socket && a.routes.some((r) => r.from === pinned.socket)));
+    h += `<div class="door${hl ? ' hl' : ''}"><div class="head">${armMark(arm, 14)}<b>${ARM_NAME[arm]}</b><div class="gauge" title="axis = 2 × the per-route cap">${segs}<span class="cap" style="left:${(st.ceiling / axis) * 100}%" title="one route's cap"></span></div><span class="wt">×${a.weight.toFixed(2)}</span></div>`;
+    const body = (BODY_LINES[curState] ?? {})[arm] ?? [];
+    if (body.length) h += `<div class="chips"><span class="lbl">Body</span>${body.map((t) => `<span class="chip">${esc(t)}</span>`).join('')}</div>`;
+    const inertTypes = READS_TYPE[arm] ? [] : a.types;
+    const liveTypes = READS_TYPE[arm] ? a.types : [];
+    if (a.delivers.length || a.grants.length || a.types.length) {
+      h += `<div class="chips"><span class="lbl">Delivers</span>${a.delivers.map((t) => `<span class="chip strong">${esc(t)}</span>`).join('')}`;
+      h += liveTypes.map((t) => `<span class="chip live">${arm === 'active' ? 'ability' : 'swing'} re-typed → ${t}</span>`).join('');
+      h += a.grants.map((g) => `<span class="chip ${g.live ? 'live' : 'inert hatch-bg'}">${esc(g.text)}${g.live ? '' : ' · read by nothing here'}</span>`).join('');
+      h += inertTypes.map((t) => `<span class="chip inert hatch-bg">${t} type arriving · read by nothing in ${ARM_NAME[arm]}</span>`).join('');
+      h += `</div>`;
+    } else if (!a.routes.length) h += `<div class="tiny dim">Nothing reaches this door.</div>`;
+    a.routes.forEach((r, idx) => {
+      const m = MUT[r.id];
+      const chain = [r.from, ...r.through].map((s) => `${plateFor(st.placed[s][0], { size: 16 })}<span>${s}</span><span class="dim">→</span>`).join('') + '<span>◉</span>';
+      const fill = Math.min(r.magnitude, st.ceiling) / st.ceiling;
+      const isPin = pinned && ((pinned.arm === arm && pinned.idx === idx) || pinned.socket === r.from);
+      const chips = [r.gain !== 1 ? `amp ×${r.gain.toFixed(2)}` : '', r.share < 1 ? '½' : '', r.clamped ? 'capped' : ''].filter(Boolean).map((c) => `<span class="chip">${c}</span>`).join('');
+      h += `<div class="route${isPin ? ' pin' : ''}" data-arm="${arm}" data-idx="${idx}" title="${esc(m.name)} · ${r.hops} hops · ${r.distance} μm">
+        <div class="chain">${chain}${chips}</div>
+        <div class="rbar"><i style="width:${fill * 100}%;background:${hue(m.el)}"></i>${r.clamped ? '<em title="distance past the cap"></em>' : ''}</div>
+        <b class="wt">×${r.weight.toFixed(2)}</b>
+        <div class="sub">${r.delivered.length ? esc(r.delivered.join(' · ')) : r.grants.length ? esc(r.grants.join(' · ')) : 'carries no stat'}${r.type ? ` · ${r.type} arriving` : ''}</div></div>`;
+    });
+    h += `</div>`;
+  }
+  $('rail').innerHTML = h;
+  $('rail').querySelectorAll('.route').forEach((el) => el.addEventListener('click', () => {
+    const arm = el.dataset.arm, idx = +el.dataset.idx;
+    pinned = pinned && pinned.arm === arm && pinned.idx === idx ? null : { arm, idx };
+    renderChromo();
+  }));
+}
+
+function renderTool(st) {
+  if (!st.main) {
+    $('tool').innerHTML = `<b style="font-family:var(--title);font-weight:500">No ability</b><div class="small dim">Bare has no headline ability; its Active arm holds only the resource pools. Effects routed at an empty centromere land on the bare body.</div>`;
+    return;
+  }
+  const retyped = st.arms.active.types.length;
+  const chilled = st.arms.active.grants.some((g) => g.text === 'leaves Chilled');
+  $('tool').innerHTML = `<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b style="font-family:var(--title);font-weight:500">Flaming Bounce</b><span class="tiny dim">every 7 s · from the combat rotation</span></div>
+    <div class="formula"><span class="t">60 base</span>×<span class="t">1.12 Speed (56)</span>×<span class="t">1.38 Heat Res. 38.4%</span>=<span class="big" style="color:${hue(retyped ? 'cold' : 'heat')}">93</span><span>${retyped ? 'cold' : 'heat'}</span></div>
+    <div class="chips"><span class="lbl">Graph</span>${retyped ? `<span class="chip live"><span class="strike">heat</span> → cold</span>` : ''}${chilled ? `<span class="chip live">+ leaves Chilled</span>` : ''}<span class="chip">costs the target 2 ticks</span></div>
+    <div class="chips"><span class="lbl">Reach</span><span class="chip live">type: live</span><span class="chip live">conditions: live</span><span class="chip">stats → the sheet only, never the ability</span></div>`;
+}
+
+function renderChromo() {
+  const st = D.states[curState];
+  renderBand(st); renderGraph(st); renderRail(st); renderTool(st);
+}
+document.querySelectorAll('[data-state]').forEach((b) => b.addEventListener('click', () => {
+  curState = b.dataset.state; pinned = null;
+  document.querySelectorAll('[data-state]').forEach((x) => x.classList.toggle('on', x === b));
+  renderChromo();
+}));
+
+// ---------- F. crest ----------
+function crestData(st) {
+  const g = geneOf(st);
+  const q = {};
+  for (const arm of ARMS) {
+    const a = st.arms[arm];
+    const heaviest = [...a.routes].sort((x, y) => y.weight - x.weight)[0];
+    const el = a.types[0] ?? (heaviest ? MUT[heaviest.id].el : null);
+    q[arm] = { el, fill: st.ceiling ? Math.min(1, a.weight / st.ceiling) : 0, capped: a.routes.some((r) => r.clamped), any: a.routes.length > 0,
+      inertOnly: a.routes.length > 0 && !a.delivers.length && !a.grants.some((x) => x.live) && !(READS_TYPE[arm] && a.types.length) };
+  }
+  return { q, g };
+}
+function crestSVG(st, scale) {
+  const { q, g } = crestData(st);
+  const W = 15, H = 17;
+  const grid = [];
+  const inShield = (x, y) => { if (y < 12) return true; const inset = y - 11; return x >= inset && x <= W - 1 - inset; };
+  for (let y = 0; y < H; y++) { let r = ''; for (let x = 0; x < W; x++) r += inShield(x, y) ? 'k' : '.'; grid.push(r.split('')); }
+  // outline
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (grid[y][x] !== 'k') continue;
+    const edge = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => !inShield(x + dx, y + dy) || x + dx < 0 || x + dx >= W || y + dy < 0 || y + dy >= H);
+    if (edge || x === 7 || y === 8) grid[y][x] = 'o';
+  }
+  const colors = { o: css('--sunken'), k: css('--raised') };
+  const quads = { special: [1, 6, 1, 7], active: [8, 13, 1, 7], attacks: [1, 6, 9, 15], defenses: [8, 13, 9, 15] };
+  let ci = 0;
+  for (const arm of ARMS) {
+    const [x0, x1, y0, y1] = quads[arm], d = q[arm];
+    const cells = []; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (grid[y][x] === 'k') cells.push([x, y]);
+    const rows = [...new Set(cells.map((c) => c[1]))].sort((a, b) => b - a);
+    const n = Math.round(d.fill * rows.length);
+    const fillRows = new Set(rows.slice(0, n));
+    const ch = String.fromCharCode(65 + ci++), cap = String.fromCharCode(97 + ci);
+    colors[ch] = d.inertOnly ? mix(hue(d.el), '#000000', 0.5) : hue(d.el);
+    colors[cap] = css('--accent');
+    const top = Math.min(...fillRows);
+    for (const [x, y] of cells) if (fillRows.has(y)) grid[y][x] = d.capped && y === top ? cap : ch;
+  }
+  // centre octagon 5×5 at (5..9, 6..10)
+  const rim = g ? gradeColor(g.q) : css('--btn');
+  colors.r = rim; colors.z = css('--text');
+  const cen = ['.rrr.', 'rzzzr', 'rz.zr', 'rzzzr', '.rrr.'];
+  cen.forEach((row, y) => [...row].forEach((c, x) => { if (c !== '.') grid[6 + y][5 + x] = c; }));
+  const rowsS = grid.map((r) => r.join(''));
+  return `<svg class="px" width="${W * scale}" height="${H * scale}" viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges"><title>Crest</title>${runs(rowsS, colors)}</svg>`;
+}
+(function crests() {
+  const st = D.states.body;
+  $('crests').innerHTML = [[1, '×1 inline'], [2, '×2 sidebar'], [3, '×3 header'], [5, '×5 detail']].map(([s, t]) => `<figure>${crestSVG(st, s)}<figcaption>${t}</figcaption></figure>`).join('')
+    + `<figure>${crestSVG(D.states.cut, 3)}<figcaption>cut d–◉: special empty, active full</figcaption></figure><figure>${crestSVG(D.states.empty, 3)}<figcaption>bare, starting kit</figcaption></figure>`;
+  const bar = (label, v, max, c) => `<div class="rbar2" style="background:linear-gradient(90deg, ${c} ${(v / max) * 100}%, var(--sunken) 0); border:1px solid var(--frame)">${label} ${v} / ${max}</div>`;
+  $('sidebar').innerHTML = bar('HP', 54, 59, '#9b2f26') + bar('Stamina', 11, 11, '#6f8a3e') + bar('Mana', 1, 1, '#3e6aa8')
+    + `<div class="bodystrip" title="Opens the Chromosome tab">${crestSVG(st, 2)}<div><div class="nm">Fire Slime Gene <span class="gchip" style="color:${gradeColor('b')}">Fine</span></div><div class="tiny dim">23.2 / 80 capacity · ×3.75 cap</div></div></div>`
+    + `<div class="tiny dim" style="text-align:center;border:1px solid var(--frame);padding:1px">Level 5 · 410 / 1230 XP</div>`;
+  const hero = (scale, label) => {
+    const fig = ['....oooo....', '...ommmmo...', '...ommmmo...', '....oooo....', '..oooooooo..', '.ommmmmmmmo.', 'ommommmmommo', 'ommommmmommo', 'ommommmmommo', 'oo.ommmmo.oo', '...ommmmo...', '...om..mo...', '...om..mo...', '...om..mo...', '..oom..moo..', '..ooo..ooo..'];
+    const s = 6 * scale;
+    return `<figure><div style="position:relative;width:${12 * s}px;height:${16 * s}px">${mark(fig.map((r) => r.replace(/m/g, 'c').replace(/o/g, 'c')), '#5a4d3c', 12 * s)}
+      <div style="position:absolute;left:${-1 * s}px;top:${5 * s}px">${crestSVG(st, Math.max(1, Math.round(s * 0.42)))}</div></div><figcaption>${label}</figcaption></figure>`;
+  };
+  $('stage').innerHTML = hero(1, 'medium body ×1.00') + hero(1.3, 'huge body (Jötunn) ×1.30');
+})();
+
+// ---------- C. fitting ----------
+let fitSock = 'j', fitSel = null;
+const LEG_GROUP = [['edge', 'Edge · re-types what passes'], ['brand', 'Brand · adds a condition'], ['ward', 'Ward · resists'], ['conduit', 'Conduit'], ['catalyst', 'Catalyst'], ['stat', 'Stat']];
+const SOCK_ADDR = {
+  j: 'j · ring · ties both ways: ½ to Attacks via g, ½ to Defenses via i · 15 μm each (×5.00, capped at ×3.75)',
+  c: 'c · cluster · 2 hops to Active via f (Frostbite Brand rewrites what passes) · 6 μm (×2.00)',
+};
+function hereLine(row) {
+  const parts = [];
+  for (const arm of ARMS) {
+    const a = row.arms[arm];
+    if (!a.route) continue;
+    const r = a.route;
+    let t = `<b>${ARM_NAME[arm]}</b> ${r.share < 1 ? '½ ' : ''}×${r.weight.toFixed(2)}${r.clamped ? ' capped' : ''}: `;
+    const bits = [...r.delivered];
+    if (r.type) bits.push(READS_TYPE[arm] ? `<span class="ok">re-types → ${r.type}</span>` : `<span class="warn">${r.type} read by nothing here</span>`);
+    for (const gname of r.grants) {
+      const live = a.grants.find((g) => g.text === gname)?.live;
+      bits.push(live ? `<span class="ok">${esc(gname)}</span>` : `<span class="warn">${esc(gname)}: read by nothing here</span>`);
+    }
+    t += bits.length ? bits.join(' · ') : 'no stat';
+    parts.push(t);
+  }
+  return parts.join('<br>');
+}
+function renderPicker() {
+  const rows = D.fitting[fitSock];
+  let h = `<div class="ph"><div class="small">${esc(SOCK_ADDR[fitSock])}</div>
+    <div class="chips"><span class="lbl">Filter</span>${LEG_GROUP.slice(0, 3).map(([l]) => `<span class="chip strong">${l}</span>`).join('')}<span class="chip">heat</span><span class="chip">cold</span><span class="chip">earth</span><span class="chip">…held only</span><span class="lbl" style="margin-left:6px">Sort</span><span class="chip strong">delivered here</span></div></div>`;
+  for (const [leg, title] of LEG_GROUP) {
+    const items = rows.filter((r) => MUT[r.id].leg === leg);
+    if (!items.length) continue;
+    h += `<div class="grp">${plate(leg, leg === 'edge' || leg === 'brand' || leg === 'ward' ? 'none' : null, { size: 14 })}${title}</div>`;
+    for (const r of items) {
+      const m = MUT[r.id];
+      const ch = [true, m.leg === 'edge' || m.leg === 'brand' || m.leg === 'conduit', m.leg === 'catalyst'];
+      h += `<div class="prow${fitSel === r.id ? ' sel' : ''}" data-id="${r.id}">${plateFor(r.id, { size: 26 })}<div style="min-width:0"><div class="nm">${esc(m.name)} <span class="tiny dim">${m.from ? 'drops from ' + m.from : ''}</span></div><div class="here">${hereLine(r)}</div></div>
+        <span class="chan" title="sends · rewrites · amplifies">${ch.map((on) => `<i class="${on ? 'on' : ''}"></i>`).join('')}</span></div>`;
+    }
+  }
+  $('picker').innerHTML = h;
+  $('picker').querySelectorAll('.prow').forEach((el) => {
+    el.addEventListener('mouseenter', () => renderPreview(el.dataset.id));
+    el.addEventListener('click', () => { fitSel = el.dataset.id; renderPicker(); renderPreview(fitSel); });
+  });
+  renderPreview(fitSel ?? (fitSock === 'j' ? 'chill' : 'bouncing'));
+}
+function renderPreview(id) {
+  const row = D.fitting[fitSock].find((r) => r.id === id);
+  const m = MUT[id];
+  const st = D.states.body;
+  const axis = 2 * st.ceiling + 3;
+  let h = `<div style="display:flex;gap:10px;align-items:center">${plateFor(id, { size: 40, grade: 'c' })}<div><b style="font-family:var(--title);font-weight:500">${esc(m.name)}</b> <span class="tiny dim">at ${fitSock}, Fair</span><div class="tiny dim">${esc(m.lines.join(' · '))}</div></div></div>`;
+  for (const arm of ARMS) {
+    const a = row.arms[arm];
+    const before = a.before, after = a.after, dlt = after - before;
+    h += `<div class="mini">${armMark(arm, 12)}<span>${ARM_NAME[arm]}</span><div class="gauge"><i style="width:${(before / axis) * 100}%;background:var(--btn)"></i>${dlt > 0.001 ? `<i class="ghost" style="width:${(dlt / axis) * 100}%"></i>` : ''}</div><span class="wt">${dlt > 0.001 ? `×${before.toFixed(2)} → <b>×${after.toFixed(2)}</b>` : `×${before.toFixed(2)}`}</span></div>`;
+  }
+  const capB = st.capacity.total, capA = row.capAfter, lim = 80;
+  h += `<div class="mini"><span></span><span>Capacity</span><div class="capbar"><i style="width:${(capB / lim) * 100}%;background:var(--accent)"></i><i class="ghost" style="width:${((capA - capB) / lim) * 100}%;outline:1px dashed var(--accent);outline-offset:-1px"></i></div><span class="wt">${capB.toFixed(1)} → <b>${capA.toFixed(1)}</b> / 80</span></div>`;
+  h += `<div class="small">${hereLine(row) || '<span class="dim">No live route from this socket.</span>'}</div>`;
+  const held = { f: 0, e: 1, d: 0, c: 3, b: 1, a: 0, s: 0 };
+  h += `<div class="tiny dim">Grade (example stock): the best held grade that fits is preselected.</div><div class="ladder">${GRADES.map((q) => `<div class="${held[q] ? 'held' : ''} ${q === 'c' ? 'at' : ''}"><b style="color:${gradeColor(q)}">${GRADE_NAME[q]}</b><span>${Math.round(D.approach[q] * 100)}%</span><span class="dim">×${held[q]}</span></div>`).join('')}</div>`;
+  $('pview').innerHTML = h;
+}
+document.querySelectorAll('[data-sock]').forEach((b) => b.addEventListener('click', () => {
+  fitSock = b.dataset.sock; fitSel = null;
+  document.querySelectorAll('[data-sock]').forEach((x) => x.classList.toggle('on', x === b));
+  renderPicker();
+}));
+(function swap() {
+  const S = D.swap;
+  const cur = S['fire_slime_gene:b'];
+  const col = (key, title, verdict, ok) => {
+    const v = S[key];
+    const rows = [['Per-route cap', `×${cur.ceiling.toFixed(2)} → ×${v.ceiling.toFixed(2)}`], ['Gene capacity', `${cur.main} → ${v.main}`], ['Total', `${v.capacity} / 80`], ['Biomatter', v.biomatter], ['Settling', '600 ticks (60 s)'], ['Ability', v.ability ?? 'none written'], ...ARMS.map((a) => [ARM_NAME[a], `×${cur.arms[a].toFixed(2)} → ×${v.arms[a].toFixed(2)}`])];
+    const base = v.base ? Object.entries(v.base).flatMap(([a, ms]) => ms.map((m) => `${ARM_NAME[a]}: ${m}`)) : [];
+    return `<div class="${ok ? '' : 'no'}"><h3>${title}</h3><div class="small ${ok ? 'ruling' : 'ruling no'}">${verdict}</div><dl class="kv">${rows.map(([k, x]) => `<dt>${k}</dt><dd>${x}</dd>`).join('')}</dl>${base.length ? `<div class="tiny dim">Body: ${esc(base.join(' · '))}</div>` : ''}</div>`;
+  };
+  $('swap').innerHTML = col('troll:b', 'Fire Slime Fine → Troll Fine', 'fits · the two clamped ring routes gain', true)
+    + col('jotunn:f', 'Fire Slime Fine → Jötunn Refuse', 'fits at 64.4 / 80 · same cap as a Fine slime', true)
+    + col('slime_king_gene:c', 'Fire Slime Fine → Slime King Fair', 'refused · needs 288.1 of 80 capacity', false);
+})();
+
+// ---------- G. book ----------
+(function book() {
+  const els = [['heat', 'fire'], ['cold', 'ice'], ['lightning', 'lightning'], ['earth', 'earth'], ['wind', 'wind'], ['water', 'water'], ['acid', 'nature'], ['arcane', 'arcane'], ['light', 'light'], ['dark', 'dark'], ['poison', 'toxic']];
+  const found = { grit_edge: ['c', 2], tremor_brand: ['d', 1], bedrock: ['b', 3], crystal: ['c', 1], umbral_edge: ['c', 4], taint_brand: ['e', 2], nightsight: ['d', 1], elastic: ['c', 6], vigorous: ['b', 3], studious: ['d', 5] };
+  const cell = (id, extra = '') => {
+    if (!id) return `<td><div class="cell un" title="no mutagen">·</div></td>`;
+    const f = found[id], m = MUT[id];
+    if (!f) return `<td><div class="cell un" title="Not found. Drops from monsters tagged ${esc(m.from ?? '?')}.">?</div></td>`;
+    return `<td><div class="cell${extra}" title="${esc(m.name)} · best held ${GRADE_NAME[f[0]]} · ${f[1]} held · drops from ${esc(m.from)}">${plateFor(id, { size: 30, grade: f[0] })}<span class="n">${f[1]}</span></div></td>`;
+  };
+  let h = `<tr><th></th><th>Edge</th><th>Brand</th><th>Ward</th><th>Vuln.</th><th class="row" style="font-size:12px;color:var(--dim)">found</th></tr>`;
+  for (const [el, tag] of els) {
+    const ms = D.mutagens.filter((m) => m.from === tag && m.id !== 'crystal');
+    const by = (leg) => ms.find((m) => m.leg === leg)?.id;
+    const vuln = D.mutagens.find((m) => m.id === 'vuln_' + el)?.id;
+    const n = ['edge', 'brand', 'ward'].filter((l) => found[by(l)]).length;
+    h += `<tr><th class="row"><span style="display:inline-block;width:10px;height:10px;background:${hue(el)};margin-right:6px"></span>${el} <span class="tiny dim">tag: ${tag}</span></th>${cell(by('edge'))}${cell(by('brand'))}${cell(by('ward'))}${vuln ? `<td><div class="cell un" title="Fused at the bench from any ${el} mutagen; never drops">✕</div></td>` : '<td></td>'}<td class="tiny dim" style="padding-left:6px">${n}/3</td></tr>`;
+  }
+  const others = ['resonance', 'catalyst', 'elastic', 'bouncing', 'vigorous', 'studious', 'fleet', 'crystal'];
+  h += `<tr><th class="row">other</th>${others.slice(0, 4).map((id) => cell(id)).join('')}<td></td></tr><tr><th class="row"></th>${others.slice(4).map((id) => cell(id)).join('')}<td></td></tr>`;
+  $('matrix').innerHTML = h;
+  const nM = Object.keys(found).length;
+  $('disc').innerHTML = `<b>Mutagens ${nM}/41</b> · the next new one pays ${Math.round(45 * Math.pow(1.08, nM))} Geneshaping XP × skill-XP multiplier · <b>Genes 1/29</b> · the next pays ${Math.round(45 * Math.pow(1.15, 1))} · the payout grows with each find (§9 asks for it to be visible; nothing shows it today)`;
+  $('tray').innerHTML = [
+    ['umbral_edge', 'Umbral Edge · Fair ×1', '<span class="new">NEW</span>'],
+    ['bedrock', 'Bedrock · Fine ×1', ''],
+    ['elastic', 'Elastic · Fair ×2 → Fine ready', '<span class="tiny">52 biomatter (hold 61)</span>'],
+  ].map(([id, t, x]) => `<div>${plateFor(id, { size: 20 })}<span>${t}</span>${x}</div>`).join('') + `<div><span></span><span>Biomatter +14 · Slime Gel ×3</span><span class="tiny dim">while away 8 h</span></div><div class="tiny dim" style="display:block;background:none;border:0;padding:0">Today an 8 h absence that drops a gene reports nothing: the offline summary counts the inventory only.</div>`;
+  const refine = { f: '—', e: 8, d: 14, c: 27, b: 52, a: 99, s: 188 };
+  const capc = { f: 0.8, e: 0.88, d: 0.94, c: 1, b: 1.07, a: 1.15, s: 1.25 };
+  $('gladder').innerHTML = `<div class="ladder">${GRADES.map((q) => `<div class="${q === 'c' ? 'at' : q === 'b' ? 'to' : ''}"><b style="color:${gradeColor(q)}">${GRADE_NAME[q]}</b><span>${Math.round(D.approach[q] * 100)}%</span><span class="dim">cap ×${capc[q]}</span><span class="dim">${refine[q]}${refine[q] === '—' ? '' : ' bm'}</span></div>`).join('')}</div>
+    <div class="small" style="margin-top:6px">2 × Elastic Fair → 1 × Fine · 52 biomatter · effect 75% → 83% of listed (+11%) · capacity per placement 2.00 → 2.14</div>`;
+  // range chart
+  const genus = (id, title, w) => {
+    const G = D.genera[id];
+    const sp = G.tiers.map((t) => GENE[t]);
+    const maxY = 6, H = 190, colW = 54, padL = 34, padB = 46;
+    const Wd = padL + sp.length * colW + 10;
+    const y = (v) => 10 + (1 - v / maxY) * (H - 10 - padB + 10);
+    let s = `<svg width="${Wd}" height="${H}" viewBox="0 0 ${Wd} ${H}" role="img" aria-label="${title} coefficient ranges">`;
+    for (let v = 0; v <= maxY; v++) s += `<line x1="${padL}" x2="${Wd - 6}" y1="${y(v)}" y2="${y(v)}" stroke="${css('--frame')}"/><text x="${padL - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="${css('--dim')}">×${v}</text>`;
+    sp.forEach((g, i) => {
+      const x = padL + i * colW + colW / 2;
+      const over = g.costC > 66.5;
+      s += `<rect x="${x - 7}" y="${y(g.coefS)}" width="14" height="${y(g.coefF) - y(g.coefS)}" fill="${over ? 'url(#hatchr)' : hue(id === 'slimoid' ? (g.id.includes('fire') || g.id.includes('flame') || g.id.includes('blaze') ? 'heat' : 'acid') : 'earth')}" stroke="${css('--border')}"/>`;
+      s += `<text x="${x}" y="${H - padB + 14}" text-anchor="middle" font-size="11" fill="${css('--text')}">${esc(g.name.replace(' Giant', '').replace('Slime ', ''))}</text>`;
+      s += `<text x="${x}" y="${H - padB + 27}" text-anchor="middle" font-size="10.5" fill="${over ? css('--danger') : css('--dim')}">${g.costC}</text>`;
+    });
+    s += `<text x="${padL}" y="${H - 4}" font-size="10.5" fill="${css('--dim')}">bar = F → S coefficient · number = capacity at Fair · hatched = more than 66.5 (the cap after a full catalogue)</text>`;
+    s += `<defs><pattern id="hatchr" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.4" height="4" fill="${css('--danger')}"/></pattern></defs></svg>`;
+    return `<div style="display:inline-block;vertical-align:top;margin-right:18px"><h3 class="small" style="margin:4px 0">${title} <span class="tiny dim">${G.gradesPerStep} grades per tier step</span></h3>${s}</div>`;
+  };
+  $('ranges').innerHTML = genus('slimoid', 'Slimoid') + genus('gigantoid', 'Gigantoid');
+})();
+
+// ---------- D. body layer ----------
+const ATTRS = [['str', 'Strength'], ['dex', 'Dexterity'], ['con', 'Constitution'], ['int', 'Intelligence'], ['wis', 'Wisdom'], ['cha', 'Charisma']];
+const ATTR_ARM = { str: 'attacks', dex: 'attacks', con: 'defenses', int: 'active', wis: 'active', cha: 'special' };
+const LEAN = { slimoid: { str: 0.15, dex: 0.15, con: 0.4, int: 0.1, wis: 0.1, cha: 0.1 }, bare: { str: 1 / 6, dex: 1 / 6, con: 1 / 6, int: 1 / 6, wis: 1 / 6, cha: 1 / 6 } };
+const BASES = { john: { str: 17.2, dex: 14, con: 15.2, int: 5, wis: 5, cha: 27.5 }, fresh: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 } };
+const BODIES = {
+  bare0: { name: 'Bare Sequence, Genesis rank 0', G: 0, lean: 'bare', full: true, note: 'G = 0. Bare stays the free floor; nothing changes until prestige.' },
+  bare1: { name: 'Bare Sequence, Genesis rank 1', G: 6, lean: 'bare', full: true, note: 'G = 6 × Genesis rank. Bare points are prestige, always fully expressed.' },
+  slimeC: { name: 'Slime Gene, Fair, no mutagens', G: 9, lean: 'slimoid', st: null, note: 'G = 8 × 1.125. Basic use: slot the gene, place nothing; every arm at 50%.' },
+  body: { name: 'Fire Slime Gene, Fine, the test graph', G: 10, lean: 'slimoid', st: 'body', note: 'G = 8 × 1.25. Ring arms fed past one cap; cluster arms partly fed.' },
+  cut: { name: 'Fire Slime Gene, Fine, cut d–◉', G: 10, lean: 'slimoid', st: 'cut', note: 'The cut empties Special (Cha back to 50%) and feeds Active (Int, Wis up).' },
+};
+let bodyKey = 'body', baseKey = 'john';
+function expression(st) {
+  const out = {};
+  for (const arm of ARMS) {
+    let voice = 0;
+    if (st) for (const r of st.arms[arm].routes) if (r.delivered.length) voice += r.weight * D.approach[st.placed[r.from][1]];
+    out[arm] = { voice, cap: st ? st.ceiling : 1, e: 0.5 + 0.5 * Math.min(1, voice / (st ? st.ceiling : 1)) };
+  }
+  return out;
+}
+function renderBody() {
+  const b = BODIES[bodyKey], base = BASES[baseKey];
+  const st = b.st ? D.states[b.st] : null;
+  const ex = expression(st);
+  const pts = {};
+  for (const [a] of ATTRS) pts[a] = b.G * LEAN[b.lean][a] * (b.full ? 1 : ex[ATTR_ARM[a]].e);
+  const max = Math.max(...ATTRS.map(([a]) => base[a] + pts[a])) * 1.08;
+  $('attrs').innerHTML = `<div class="small"><b style="font-family:var(--title);font-weight:500">${b.name}</b></div>`
+    + ATTRS.map(([a, n]) => `<div class="arow"><span style="display:flex;gap:6px;align-items:center">${armMark(ATTR_ARM[a], 11, css('--dim'))}${n}</span>
+      <div class="abar"><i style="width:${(base[a] / max) * 100}%;background:var(--btn)"></i><i style="width:${(pts[a] / max) * 100}%;background:var(--accent)"></i></div>
+      <span>${(base[a] + pts[a]).toFixed(1)} <span class="tiny" style="color:var(--accent)">${pts[a] > 0.004 ? '+' + pts[a].toFixed(2) : ''}</span></span></div>`).join('')
+    + `<div class="legend"><span><i style="background:var(--btn)"></i>trained + level + gear</span><span><i style="background:var(--accent)"></i>body</span></div>`
+    + `<div class="tiny dim">At these points: Max HP +${(pts.con * 10).toFixed(0)} (10 per Con, before multipliers) · Spell Power +${(pts.int * 1.5).toFixed(1)} · Skill XP +${pts.int.toFixed(1)}% · Training XP +${(pts.wis * 1.2).toFixed(1)}% · Gold +${(pts.cha * 1.2).toFixed(1)}%</div>`;
+  let h = `<div class="small dim">${b.note}</div>`;
+  if (!b.full) {
+    for (const arm of ARMS) {
+      const x = ex[arm];
+      h += `<div class="mini">${armMark(arm, 12)}<span>${ARM_NAME[arm]}</span><div class="gauge"><i style="width:${Math.min(1, x.voice / x.cap) * 100}%;background:var(--accent)"></i></div><span class="wt">${Math.round(x.e * 100)}%</span></div>`;
+    }
+    h += `<div class="tiny dim">Bar = graded weight of the routes that carry a stat, against one per-route cap${st ? ` (×${st.ceiling.toFixed(2)})` : ''}. Silent routes (a conduit, a brand) do not count. Weight is the engine's <code>contributionWeight</code> × the mutagen's grade approach.</div>`;
+  }
+  h += `<div class="note">${ATTRS.map(([a, n]) => `${n.slice(0, 3)} ${b.G.toFixed(1)} × ${LEAN[b.lean][a].toFixed(2)} × ${b.full ? '1' : ex[ATTR_ARM[a]].e.toFixed(2)} = <b>${pts[a].toFixed(2)}</b>`).join('<br>')}</div>`;
+  $('expr').innerHTML = h;
+}
+document.querySelectorAll('[data-body]').forEach((x) => x.addEventListener('click', () => { bodyKey = x.dataset.body; document.querySelectorAll('[data-body]').forEach((y) => y.classList.toggle('on', y === x)); renderBody(); }));
+document.querySelectorAll('[data-base]').forEach((x) => x.addEventListener('click', () => { baseKey = x.dataset.base; document.querySelectorAll('[data-base]').forEach((y) => y.classList.toggle('on', y === x)); renderBody(); }));
+
+// ---------- E. figures ----------
+const FIGS = [
+  ['door', 'Door', 'some route crosses exactly 1 edge', 'placement picks the arm', (st) => allRoutes(st).find((r) => r.hops === 1)],
+  ['long_haul', 'Long Haul', 'a 1-hop route travels ≥ 9 μm', 'distance buys magnitude', (st) => allRoutes(st).find((r) => r.hops === 1 && r.distance >= 9)],
+  ['fork', 'Fork', 'a route divides at a tie', 'ties split evenly', (st) => allRoutes(st).find((r) => r.share < 1)],
+  ['four_doors', 'Four Doors', 'all four arms receive a route', 'every domain is a door', (st) => ARMS.every((a) => st.arms[a].routes.length) && { label: 'all four doors fed' }],
+  ['cascade', 'Cascade', 'a route\'s gain is ≥ ×1.15', 'conduits multiply what passes', (st) => allRoutes(st).find((r) => r.gain >= 1.15)],
+  ['ceiling', 'Ceiling Touch', 'a route of 2+ hops is clamped by the cap', 'long routes meet the ceiling', (st) => allRoutes(st).find((r) => r.clamped && r.hops >= 2)],
+  ['brand_rides', 'Brand Rides', 'a condition arrives where it is read', 'brands ride into Active', (st) => st.arms.active.grants.some((g) => g.live) && st.arms.active.routes.find((r) => r.grants.length)],
+  ['deep', 'Deep', 'a route crosses 3+ edges', 'hops buy character', (st) => allRoutes(st).find((r) => r.hops >= 3)],
+  ['reroute', 'Reroute', 'a cut changes some origin\'s path', 'a cut steers', (st) => st.cut.length && allRoutes(st).find((r) => { const o = allRoutes(D.states.body).find((x) => x.from === r.from); return o && routePath(o).join() !== routePath(r).join(); })],
+  ['relay', 'Relay', 'an Edge re-types another route en route, into an arm that reads type', 'what passes is rewritten', () => null],
+  ['catalyst', 'Catalyst Feed', 'a catalyst raises the socket it feeds', 'amplify points outward', () => null],
+  ['rewritten', 'Rewritten Body', 'a fused mutagen rekeys a weak point', 'a nuclease changes what, not how much', () => null],
+];
+let figState = 'body';
+const stamped = new Map();
+function renderFigs() {
+  const st = D.states[figState];
+  for (const [id, , , , test] of FIGS) { const r = test(st); if (r && !stamped.has(id)) stamped.set(id, r.label ?? `${routePath(r).join(' → ').replace('@', '◉')}`); }
+  const n = stamped.size, stab = Math.min(18, n * 1.5);
+  $('stab').innerHTML = `<span></span><span>Capacity</span><div class="capbar"><i style="width:${(80 / 98) * 100}%;background:var(--accent)"></i><i style="width:${(stab / 98) * 100}%;background:var(--good)"></i></div><span class="wt">80 + <b>${stab.toFixed(1)}</b> Stability · ${n}/12 stamped</span>`;
+  $('figs').innerHTML = FIGS.map(([id, name, test, lesson]) => {
+    const got = stamped.get(id);
+    return `<div class="fig ${got ? 'got' : 'un'}"><b>${name}</b><span>${test}</span><span class="tiny ${got ? '' : 'dim'}">${got ? `stamped · ${esc(got)}` : 'not yet'}</span><span class="tiny dim">${lesson}</span></div>`;
+  }).join('');
+}
+document.querySelectorAll('[data-fig]').forEach((x) => x.addEventListener('click', () => {
+  if (x.dataset.fig === 'reset') { stamped.clear(); figState = 'empty'; } else figState = x.dataset.fig;
+  document.querySelectorAll('[data-fig]').forEach((y) => y.classList.toggle('on', y.dataset.fig === figState));
+  renderFigs();
+}));
+
+renderChromo();
+renderPicker();
+renderBody();
+renderFigs();
+})();
+</script>
