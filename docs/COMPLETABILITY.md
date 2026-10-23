@@ -45,7 +45,8 @@ to do with skill. They are split below.
 - **Invariant C** — arithmetic and structure hold. Finite, terminating,
   round-tripping.
 - **The tuning target** — where the critical path's difficulty is allowed to
-  sit, and the one place a comprehension floor is permitted.
+  sit, and where a comprehension floor is permitted: optional content only
+  (revised 2026-10-22, §6).
 
 Three invariants and a target. That is the form the tests take.
 
@@ -120,7 +121,7 @@ They remain entirely legal — and encouraged — off it. See §5.
 **The distinction that matters when authoring:** *consuming a system's output*
 and *engaging its generative grammar* are miles apart, and "requires subsystem
 usage" is ambiguous between them. The critical path may ask for the first. The
-second belongs to optional content and to the final band only.
+second belongs to optional content only (§6, revised 2026-10-22).
 
 | System | The grammar that stays optional | What the road may ask for instead |
 | --- | --- | --- |
@@ -304,6 +305,18 @@ Late and local. The floor exists and means something, and nobody sinks eighty
 hours before discovering it — which is the failure mode that makes players
 quit, more reliably than difficulty does.
 
+> **Revised 2026-10-22.** The tower is open-ended, in theory and as a goal,
+> so there is no final band: every band has content above it, and a grammar
+> gate on any band would stop John below the next one for good. The user's
+> ruling: *"A mediocre player can 'win' if they spend enough time grinding,
+> mastery of systems is required for optional content clearing."*
+>
+> **No floor on the ladder may require a generative grammar. Every
+> critical-path fight is winnable by grinding.** The comprehension floor
+> lives in optional content only (§5): off-ladder floors, side stacks, chase
+> items, hidden rooms. The final-band rule above is kept as the record of
+> what this replaced.
+
 ⚠️ **Quest-count gates are the one gate kind that strains archetype 1.** Gold,
 skill-total, kill-count and discovery-count all accrue from acting at all.
 Quests require intention, and the goldfish measures the gap: most seeds finish
@@ -315,7 +328,7 @@ floor beside it.
 ### Progress must accrue from acting at all, not from acting correctly
 
 This survives the revision unchanged, and matters *more* now rather than less —
-it is what carries a non-reader as far as the final band. It is already the
+it is what carries a non-reader up the whole ladder. It is already the
 house style and the single biggest reason archetype 1 works today: skills
 *manifest* from doing rather than being chosen, resistance skills come from
 exposure, and the novelty ledger pays discovery XP for new combinations without
@@ -430,6 +443,9 @@ And the comprehension floor is then a parameter rather than a mood:
 
 > **John asserts through band N−1 and stops.** Moving the floor means moving
 > that number, not re-litigating the philosophy.
+
+*Revised 2026-10-22 (§6):* with no final band, John asserts through every
+band on the ladder. A band John cannot clear by grinding is a bug.
 
 **Built 2026-10-10 for band 1** (`tests/john.ts`). John is Skip tutorial —
 rusty sword, Neutral, no spell — walking the floors in order, hunting and

@@ -1020,7 +1020,8 @@ so nothing is ever fully immune to *being* afflicted, only to the consequences.
   transferable, never derivable-only** (this replaced the old
   "zero-authorship on-ramp"); and arithmetic and structure hold. The critical
   path is still tuned to the floor build, and a comprehension floor is
-  permitted in the **final band only**. All four seeds above are places this
+  permitted in **optional content only** (revised 2026-10-22: the tower is
+  open-ended, so there is no final band). All four seeds above are places this
   gets violated by default — see **[COMPLETABILITY.md](COMPLETABILITY.md)**,
   which is the law they answer to.
 - **Writes are AST-surgical.** Never reprint a file or an untouched entry —

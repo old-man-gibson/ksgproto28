@@ -104,7 +104,7 @@ John's critical-path number is set at build time and checked with
 
 | Constraint | Source |
 |---|---|
-| A band's critical path may ask for subsystem *usage*, not *invention*. COMPLETABILITY allows a generative grammar (arcane sentences, mutagen topology, alchemy sequence, the martial graph) only in the final band; an open-ended tower has none. Until §5.2 Q6 is ruled, no band's critical path requires a grammar | COMPLETABILITY §3, §6 |
+| A band's critical path may ask for subsystem *usage*, never *invention*. A mediocre player wins by grinding; mastery of a generative grammar (arcane sentences, mutagen topology, alchemy sequence, the martial graph) gates optional content only | COMPLETABILITY §3, §6 (revised 2026-10-22) |
 | Gates on accumulation; a power check sits at John's floor | COMPLETABILITY §6 |
 | Shut in alpha: runecarving, music, genes, psionics, wuxin; martial except the floor 2 tutor. An idea that needs one names how it opens (a Doors boon, a teacher on the floor) | plans/alpha-scope-locks.md, SLICE_REVIEW.md §6 step 2 |
 | Shelved, not re-pitched: the countryside, tile autotile / generator / fake doors, arcane compound words | LONGTERM.md |
@@ -180,8 +180,9 @@ does not touch is left out of its entry.
 - **L2 No exhaustion on the path.** No `once` or `fightLimit` source under a
   gate or clear that needs more than it holds.
 - **L3 Failure is recoverable.** A loss costs time, never a path.
-- **L4 Usage, not invention** on the critical path (§5.2 Q6).
-- **L5 No power gates.**
+- **L4 Usage, not invention** on the critical path. Mastery gates optional
+  content only (§5.1 Q6).
+- **L5 No power gates.** Every critical-path fight is winnable by grinding.
 - **L6 Shelf and shutters** (§1.4).
 
 ### 3.4 Verdicts
@@ -250,21 +251,13 @@ Band: · Floors: · Verdict:
 3. **One place per band.** Usually; always linked by a theme at the least.
 4. **Tower length.** Open-ended, in theory and as a goal.
 5. **Team per post.** Yes.
+6. **Grammar on the ladder.** *"A mediocre player can 'win' if they spend
+   enough time grinding, mastery of systems is required for optional content
+   clearing."* No floor on the ladder requires a generative grammar; every
+   critical-path fight is winnable by grinding. Mastery gates optional
+   content: off-ladder floors, side stacks, chase items, hidden rooms.
+   COMPLETABILITY.md §6 revised to match.
 
 ### 5.2 Open
 
-Each has a default, used if skipped.
-
-6. **Where may a band demand a grammar, now that no band is final?**
-   COMPLETABILITY §6 allows a generative grammar on the critical path only in
-   the final band, because nothing lies past it. In an open-ended tower every
-   band has content above it, so a grammar gate on band N stops John below
-   band N+1 for good.
-   - (a) Never on the ladder. Grammar demands live on optional floors (off
-     the ladder, no `bandId`) or a side stack off the hub; the main climb asks
-     only for usage.
-   - (b) Revise the law: a band may demand a grammar if the same band teaches
-     it (a teacher on the floor and a re-openable reference). This is a change
-     to COMPLETABILITY.md, not a reading of it.
-
-   Default: (a). COMPLETABILITY.md is unchanged either way until you rule.
+None.
