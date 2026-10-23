@@ -29,11 +29,12 @@ new pillar widens the game; none of them may narrow the road through it.
 > **learnable in-game and re-openable**. See §4 and §6.
 
 > **Revised 2026-10-23: the climb requires the core systems.** Grinding with
-> no subsystem no longer clears the climb. The player uses roughly half the
-> core systems at a basic level and picks which; mastery stays optional and
-> optimal play only accelerates. Archetype 2 changes with it: John now uses
-> about half the core systems at their simplest. §6a is the rule and wins
-> where §3, §6 and §8 disagree.
+> no subsystem no longer clears the climb. The player uses roughly half of
+> the eight core systems at a basic level and picks which, and any such half
+> covers every hurdle; mastery stays optional and optimal play only
+> accelerates. Archetype 2 changes with it: John now uses about half the core
+> systems at their simplest. §6a is the rule and wins where §3, §6 and §8
+> disagree.
 
 ---
 
@@ -296,7 +297,9 @@ Two properties of that design carry this section:
   the OR lives in the topology: several floors per band, each with a flat AND
   gate. A floor may name a specific discipline *if its band offers another
   floor that does not*, which turns a named gate into a shortcut for the
-  specialist rather than a wall for John.
+  specialist rather than a wall for John. **Superseded** by the sequential
+  ascent (2026-09-06): every rung is mandatory, so siblings are not
+  alternatives and a named gate is a wall. See §6a.
 - **Accumulation gates are a floor denominated in persistence.** Gold, quest
   counts, discovery counts. That is a real floor, and it is the genre's normal
   bargain — idle games ask whether you keep showing up, not whether you can
@@ -358,15 +361,17 @@ use them to some degree, optimal play will simply accelerate the player and
 their experience. Not every system will be required, but the player will have
 to touch and involve themselves with roughly half of the core systems (magic,
 martial, psionics, cooking, smithing, mutagens, possibly one or two others),
-but it'll be up to them which ones they pick and focus on."* And: *"divine
-magic is also a core system."*
+but it'll be up to them which ones they pick and focus on."* Then: divine
+magic and alchemy are core too, and *"the idea is that using about half those
+systems should cover enough of the game's hurdles to progress."*
 
 > **The climb requires basic use of roughly half the core systems. The player
-> picks which. Mastery stays optional; optimal play only accelerates.**
+> picks which. Any such half covers every hurdle on the ladder. Mastery stays
+> optional; optimal play only accelerates.**
 
-**The core systems:** arcane magic, divine magic, martial, psionics, cooking,
-smithing, mutagens. One or two more may join; candidates are alchemy, music,
-runecarving and wuxia (§6a Q3).
+**The core systems (eight):** arcane magic, divine magic, martial, psionics,
+cooking, smithing, mutagens, alchemy. One more may join; candidates are music,
+runecarving and wuxia (Q3).
 
 **What this replaces.** Where §3, §6 and §8 say otherwise, this section wins.
 
@@ -375,8 +380,12 @@ runecarving and wuxia (§6a Q3).
   the spells he is handed, prays to the gods he knows and fires the
   techniques he is taught. He never composes.
 - **The tuning target (§6).** The critical path is tuned to that build, basic
-  use of any qualifying set of systems, not to a build that touches nothing.
-  Every other build is width that makes the same road faster, as before.
+  use of any qualifying half, not to a build that touches nothing. Every other
+  build is width that makes the same road faster, as before.
+- **§6's "the band is the disjunction".** Superseded by the sequential ascent
+  (2026-09-06): every rung must be cleared, `clearsToAdvance` is unread, so a
+  band's floors are never alternatives. Alternatives live inside a floor, as
+  answers to its hurdles, never in the topology.
 - **The 2026-10-22 ruling** reads: a mediocre player wins by grinding inside
   the systems they picked.
 
@@ -387,59 +396,137 @@ generative grammar is never required on the ladder, only in optional content.
 The required level is the right column of §3's table (usage); the middle
 column (the grammar) stays optional.
 
+### Hurdles are written in roles
+
+A **hurdle** is anything on the critical path the climb asks the player to get
+past: a boss, a fight stretch, a condition the floor inflicts, a shut way. A
+hurdle names **roles**, never systems. A **role table** records which roles
+each core system fills at its basic level.
+
+Roles (proposal, Q5):
+
+| Role | A hurdle that asks for it |
+|---|---|
+| Damage | an enemy that must die inside the time its own damage allows |
+| Sustain | damage taken over a fight or a stretch that must be survived |
+| Condition defence | a named condition (poison, burning, …) that must be resisted or cleared |
+| Access | a way that must be opened: a door, a flooded room, a lock |
+
+Finding things (search, explore, reading) is every player's verb and is not a
+role: the critical path never hides a way behind a system.
+
+**The cover rule.** For any half to clear every hurdle, each role a hurdle
+names must be filled by at least
+
+> **n − k + 1 systems**
+
+where *n* is the number of core systems open to a fresh save and taught on
+rungs below the hurdle, and *k* is the number of systems the climb expects the
+player to have picked by then. With fewer, some set of *k* misses the role.
+
+| Picked by then (*k*) | Open (*n*) | Each role needs |
+|---|---|---|
+| 2 | 5 (today, from floor 2) | 4 systems |
+| 4 | 8 | 5 systems |
+| 3 | 8 | 6 systems |
+
+The consequence is a shape for the climb: early hurdles are broad (few picked,
+so nearly every open system needs an answer), later hurdles can be narrow.
+
 ### The five rules that keep the choice the player's
 
-1. **Count, never name.** A requirement counts core systems ("basic
-   competence in 3 core systems"), or offers one route per core system. It
-   never names one system without alternatives: that makes the system
-   mandatory, which "up to them which ones they pick" forbids. The shipped
-   lint *no rung is gated or cleared on a named discipline*
-   (`tests/content.test.ts`, `forge/lib/validate.ts`) is the first half of
-   this rule and stays. A count needs a new condition kind:
-   [`conditionsMet`](../src/core/systems/conditions.ts) is a pure AND and has
-   none today.
-2. **The choice is real.** A gate that counts *k* systems has more than *k*
-   open and taught before it. Shut systems do not count toward the choice. In
-   the alpha today four of the seven are open (arcane, divine, cooking,
-   smithing), martial only through the floor 2 tutor, and psionics and
-   mutagens are shut (`systems/unlocks.ts`).
+1. **Never name a system.** No `gate`, `clear` or hurdle names a system. The
+   shipped lint *no rung is gated or cleared on a named discipline*
+   (`tests/content.test.ts`, `forge/lib/validate.ts`) is this rule's first
+   half and stays. Hurdles name roles; the role table supplies the systems.
+2. **The cover holds.** Every role on every hurdle meets n − k + 1, counted
+   over systems open to a **fresh save**. Today a fresh save has arcane,
+   divine, cooking and smithing; martial from floor 2's tutor; alchemy cannot
+   manifest in run 1 (it needs herbalism 3, trained only at the hold,
+   SLICE_REVIEW.md §9); psionics and mutagens are shut and no content lifts
+   them (`flag:unlock_*` is written only by migrations and the DebugPanel).
+   So *n* is 5 from floor 2 until those change.
 3. **Taught before needed.** Each core system has a teacher or guide the
-   player reaches without passing the gate that counts it, and a re-openable
-   reference (Invariant B, and the circular-lock trap in §8).
-4. **No lock-in.** A pick is never permanent. Any system can be started later
-   and counted, because skills manifest from doing. A player who picked badly
-   loses time, never the road (Invariant A).
-5. **Competence is measured, not judged.** "Basic competence" is a number the
-   game already keeps, such as the system's skill level, and it accrues from
-   doing at all (§6, "acting at all, not acting correctly").
+   player reaches without passing the hurdle that relies on it, and a
+   re-openable reference (Invariant B, and the circular-lock trap in §8).
+4. **No lock-in.** A pick is never permanent. Any open system can be started
+   later, because skills manifest from doing. A player who picked badly loses
+   time, never the road (Invariant A). Shutters are run counters and reset at
+   prestige, so the systems a fresh save opens are the only ones a run can
+   rely on.
+5. **Competence is measured, not judged.** "Basic use" is a number the game
+   already keeps and that moves from doing at all. Per system (defaults, Q6):
+
+   | System | Measure | Note |
+   |---|---|---|
+   | Arcane | `arcana` level | manifests at INT 10; XP before that is discarded (about 61 attack casts of INT training) |
+   | Divine | `devotion` level | manifests at WIS 10 (about 18 s of vigil at the Nine Chapels) |
+   | Martial | executions of a taught technique | not `fighting` or a weapon skill: every climber swings a weapon, so it would count for free |
+   | Psionics | `psionics` level | manifests at INT 12 and WIS 12 |
+   | Cooking | `cooking` level | |
+   | Smithing | `smithing` level | |
+   | Mutagens | `geneshaping` level | |
+   | Alchemy | `alchemy` level | needs herbalism 3 |
 
 ### John, revised
 
-The quantifier trap in §8 comes back in a new form: "every choice of half the
-systems clears the climb" is a claim over subsets, 35 of them for four of
-seven. Rule 1 keeps the test linear. While gates only count, walk **one John
-per core system**: each uses that one system at its basic level and nothing
-else, and asserts that it reaches the competence mark in bounded time. Any
-set of *k* then clears by construction. Seven walks, not thirty-five.
+The quantifier trap in §8 comes back in a new form: "every half clears the
+climb" is a claim over subsets, 70 of them for four of eight. The cover rule
+keeps the test linear:
 
-Band 1 asks for no system today, so the shipped John (`tests/john.ts`) stays
-valid for it. The per-system Johns arrive with the first gate that counts.
+- **The cover lint** (static): every role on every hurdle meets n − k + 1 in
+  the role table.
+- **Cell tests**: for each role-table cell a hurdle relies on, the base
+  climber (the shipped John: rusty sword, no counted system) plus that one
+  system at its basic level gets past the hurdle, as a duel or scenario test
+  like `john.test.ts`'s duels. A cell that fails its test is removed from the
+  table, and the cover lint then reports the role.
+- **Named builds**: a full climb for each build the user names, for example
+  cooking, divine and smithing.
+
+"Any set of *k* clears by construction" rests on one assumption, stated
+here so it can be checked: no system's basic use forecloses or depends on
+another's.
+
+Band 1 has no hurdle that names a role yet, so the shipped John stays valid
+for it.
 
 ### Open (user)
 
 Each has a default, used until answered.
 
 1. **"To some degree."** Default: the system's own verbs at their simplest,
-   following a recipe, a teacher or a known prayer, measured by the system's
-   skill level. Buying or looting a system's output does not count: a
-   dropped sword is not smithing.
-2. **"Roughly half", by when.** Default: the count ramps with the climb. Band 1
+   following a recipe, a teacher or a known prayer. Buying or looting a
+   system's output does not count: a dropped sword is not smithing.
+2. **"Roughly half", by when.** Default: *k* ramps with the climb. Band 1
    asks for none (as built); later bands raise it, reaching about half of the
    open core systems.
-3. **The other core systems.** Default: the seven named. Alchemy, music,
-   runecarving and wuxia stay outside the count until you name them.
-4. **Across prestige.** Skills and stats reset with the run, so the count is
-   earned again each run. Default: earned again; a boon may carry it later.
+3. **A ninth core system.** Default: the eight named. Music, runecarving and
+   wuxia stay outside the count until named.
+4. **Across prestige.** Skills, stats and shutters reset with the run, so the
+   picks are earned again each run, from the systems a fresh save opens.
+   Default: earned again; a boon may carry it later.
+5. **The roles.** Default: damage, sustain, condition defence, access.
+6. **The measures.** Default: the table under rule 5.
+
+### The attack (2026-10-23)
+
+`antagonist-design` read the first draft of this section. Verdict: fix first;
+no reachable terminal state, because no counting gate exists yet.
+
+| # | Objection | Ruling |
+|---|---|---|
+| 1 | "One route per core system" means sibling floors, which the sequential ascent makes all mandatory: a wall per system | Accepted. Alternatives live inside a floor as hurdle answers; §6's disjunction paragraph marked superseded |
+| 2 | No enforcement row catches a requirement nobody can pass; the teacher row covers naming gates only; a fresh save opens 4 of the 7 | Accepted. Cover lint row; teacher row widened; *n* counted over a fresh save (rule 2) |
+| 3 | Martial has no skill to measure; `fighting` would give every climber martial for free | Accepted. Martial is measured by executions of a taught technique (rule 5) |
+| 4 | A John who only cooks never fights, so never reaches the hurdle he tests | Accepted. Cell tests use base John plus one system; independence stated |
+| 5 | Arcana and devotion manifest at INT/WIS 10 and XP before that is discarded, so "moves from doing at all" was false | Accepted. The attribute step is written into the measure table |
+| 6 | Shutters reset at prestige, so a legacy save's open set shrinks after run 1 | Accepted. Rule 4 and Q4 say so |
+
+The draft's count gate ("competence in 3 systems") was replaced by the cover
+rule the same day, on the user's "about half those systems should cover
+enough of the game's hurdles": a count shows a system was touched, not that
+it gets the player past anything.
 
 ---
 
@@ -480,9 +567,11 @@ The invariants are lint rules, not just prose here. Content rules live in
 | **Degeneracy stays finite** — absurd builds produce finite stats, a save that round-trips, and a fight that resolves | `tests/completability.test.ts` | C | **shipped** |
 | **The goldfish** — a random player drives the real game and never runs out of legal actions | `tests/goldfish.ts` + `.test.ts` | A, empirically | **shipped** |
 | **Non-finite values never serialize** — `serialize` clamps on the way out; player-controlled exponents are bounded at the `Math.pow` sites | `save.ts` + `completability.test.ts` | C | **unbuilt** (§4b) |
-| **Every subsystem-naming critical gate has a teacher** — an NPC or guide that hands over the combination, **reachable without passing the gate it teaches** | `content.test.ts` + forge mirror | B | **unbuilt** (§3) |
+| **Every system a critical hurdle relies on has a teacher** — an NPC or guide that hands over the combination, **reachable without passing the hurdle it teaches** (widened 2026-10-23 from "subsystem-naming gate": under §6a nothing names a system) | `content.test.ts` + forge mirror | B | **unbuilt** (§3) |
+| **The cover lint** — every role on every critical hurdle is filled by at least n − k + 1 systems open to a fresh save and taught below it (§6a) | `content.test.ts` + forge mirror | A, B | **unbuilt**; needs the role table and a hurdle declaration |
+| **Cell tests** — base John plus one system passes each hurdle the role table credits to that system (§6a) | `tests/` | tuning target | **unbuilt** |
 | **Optional is computed, not declared** — derived from the critical-path closure; an author-set flag is cross-checked against it, never trusted | `content.test.ts` | B, §5 | **unbuilt** |
-| **John** — a directed floor-build driver clears every band; from the first counting gate, one John per core system (§6a) | `tests/john.ts` + `.test.ts`, `npm run pacing` | tuning target | **shipped** for band 1 (2026-10-10); per-system Johns not built |
+| **John** — a directed floor-build driver clears every band; from the first role hurdle, base John is the climber the cell tests extend (§6a) | `tests/john.ts` + `.test.ts`, `npm run pacing` | tuning target | **shipped** for band 1 (2026-10-10) |
 
 ### The goldfish is not a completion oracle
 
@@ -549,8 +638,9 @@ And the comprehension floor is then a parameter rather than a mood:
 
 *Revised 2026-10-22 (§6):* with no final band, John asserts through every
 band on the ladder. A band John cannot clear by grinding is a bug.
-*Revised 2026-10-23 (§6a):* John uses about half the core systems at their
-basic level, and is walked once per system.
+*Revised 2026-10-23 (§6a):* the climb is tuned to about half the core systems
+at their basic level. Base John stays the climber; the cover lint and the cell
+tests (base John plus one system per hurdle) prove any half clears.
 
 **Built 2026-10-10 for band 1** (`tests/john.ts`). John is Skip tutorial —
 rusty sword, Neutral, no spell — walking the floors in order, hunting and

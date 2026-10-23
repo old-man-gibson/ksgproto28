@@ -1019,8 +1019,9 @@ so nothing is ever fully immune to *being* afflicted, only to the consequences.
   not two: no reachable state is terminal; **critical-path knowledge is
   transferable, never derivable-only** (this replaced the old
   "zero-authorship on-ramp"); and arithmetic and structure hold. The critical
-  path is tuned to basic use of roughly half the core systems, the player's
-  pick (revised 2026-10-23, COMPLETABILITY §6a), and a comprehension floor is
+  path is tuned to basic use of roughly half the eight core systems, the
+  player's pick, any half covering every hurdle (revised 2026-10-23,
+  COMPLETABILITY §6a), and a comprehension floor is
   permitted in **optional content only** (revised 2026-10-22: the tower is
   open-ended, so there is no final band). All four seeds above are places this
   gets violated by default — see **[COMPLETABILITY.md](COMPLETABILITY.md)**,
