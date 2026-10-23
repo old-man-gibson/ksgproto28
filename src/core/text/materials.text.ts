@@ -105,11 +105,11 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'healing_salve.desc': 'Apply: restores 25 HP plus 10% of max HP at once. Counts as treatment, so it closes wounds only treatment closes. Has a cooldown.',
 
-  'spring_water.desc': 'Alembic menstruum. Raises a water brew: Elixir when calm, Draught when roused. Capacity 8.',
+  'spring_water.desc': 'Alembic base: water. Elixir when calm, Draught when roused. Holds up to 8 potency.',
 
-  'pressed_oil.desc': 'Alembic menstruum. Raises an oil brew: Salve when calm, weapon Oil when roused. Capacity 6.',
+  'pressed_oil.desc': 'Alembic base: oil. Salve when calm, weapon Oil when roused. Holds up to 6 potency.',
 
-  'grain_spirit.desc': 'Alembic menstruum. Raises a spirit brew: Fume when calm, Flask when roused. Capacity 5, and adds 0.5 volatility on its own. Alchemy 4.',
+  'grain_spirit.desc': 'Alembic base: spirit. Fume when calm, Flask when roused. Holds up to 5 potency and adds 0.5 volatility. Alchemy 4.',
 
   'emberbloom.desc': 'Alembic essence: Ember (heat). Inflicts On Fire in a Flask or Oil. No effect in drinkable forms.',
 
@@ -123,17 +123,17 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'bloodwort.desc': 'Alembic essence: Vigor. Restores stamina in a Draught or Salve; grants Blood Communion in an Elixir. Alchemy 5.',
 
-  'thunderbloom.desc': 'Alembic essence: Storm (lightning). Inflicts Jolted in a Flask, Fume or Oil; restores mana in a Draught; grants Clear-Headed in an Elixir. Alchemy 9.',
+  'thunderbloom.desc': 'Alembic essence: Storm (lightning). Inflicts Jolted in a Flask, Fume or Oil; restores mana in a Draught or Salve; grants Clear-Headed in an Elixir. Alchemy 9.',
 
-  'quicksilver.desc': 'Alembic operator: +1.3 volatility to the brew as it stands. The calm/roused line is 1.0. Alchemy 2.',
+  'quicksilver.desc': 'Alembic operator: volatility +1.3. Roused is 1.0 or more. Alchemy 2.',
 
-  'fixing_salt.desc': 'Alembic operator: quenches volatility to calm and banks the amount quenched as duration. Base 45 seconds, cap 150.',
+  'fixing_salt.desc': 'Alembic operator: sets volatility to 0.15; each point removed adds 50% duration (45 seconds base, cap 150). No effect on a calm brew.',
 
-  'brimstone.desc': 'Alembic operator: ignites if volatility is at least 1.2, multiplying potency by 1.55. Below that it fouls the brew instead. Alchemy 7.',
+  'brimstone.desc': 'Alembic operator: if volatility is at least 1.2, potency ×1.55. If not, final potency ×0.82. Alchemy 7.',
 
-  'bone_ash.desc': 'Alembic operator: removes the weakest essence already in the brew and multiplies the rest by 1.5. Alchemy 4.',
+  'bone_ash.desc': 'Alembic operator: removes the weakest essence added before it; the other essences\' effects ×1.5 and potency ×1.25. Alchemy 4.',
 
-  'green_vitriol.desc': 'Alembic operator: +22% penetration and ×1.25 potency, at ×0.88 purity. Alchemy 11.',
+  'green_vitriol.desc': 'Alembic operator: armour pierce +22%, potency ×1.25, final potency ×0.88. Alchemy 11.',
 
   'iron_pot.desc': 'Cookware for the Cooking Stove tool slot. Not consumed. Sits outside the stove timeline.',
 

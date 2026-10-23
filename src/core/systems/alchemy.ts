@@ -97,6 +97,14 @@ export const DILUTE = { potency: 0.7, volatility: 0.55 };
 export const FIX_QUENCH = 0.15;
 /** Duration (in base-durations) banked per point of volatility quenched. */
 export const FIX_BANK = 0.5;
+/** What an ignite that catches adds to volatility. */
+export const IGNITE_KICK = 0.8;
+/** What an ignite that fails leaves of the final potency. */
+export const IGNITE_FOUL = 0.82;
+/** Potency gained when a clarify removes an essence. */
+export const CLARIFY_BOOST = 0.25;
+/** Final potency gained when a clarify finds only one essence. */
+export const CLARIFY_POLISH = 0.2;
 /** A thrown flask's potency, as damage. */
 export const BOMB_POWER = 2.4;
 /**
@@ -156,13 +164,25 @@ function scaleApps(
   });
 }
 
+/** A number for the reading: at most two decimals, no trailing zeros. */
+const num = (x: number): string => String(Math.round(x * 100) / 100);
+/** A multiplier or share as a whole percent. */
+const pctOf = (x: number): number => Math.round(x * 100);
+
 /**
  * Read a sequence into a brew. Pure: reagents in, brew out, no state and no
- * roll. Unknown reagents are skipped rather than refused — legality is
- * `previewBrew`'s job, so the bench can read out a sequence you cannot yet make.
+ * roll. Unknown reagents are read as "ignored" rather than refused — legality
+ * is `previewBrew`'s job, so the bench can read out a sequence you cannot yet
+ * make.
+ *
+ * The reading is for a player tinkering mid-session: `notes` has exactly one
+ * line per step, in order, each naming the rule that applied and the running
+ * number it changed; `summary` says what the whole adds up to. The words live
+ * in log.text.ts under `alchemy.step.*` and `alchemy.sum.*`.
  */
 export function composeBrew(steps: GradedStack[]): BrewSpec {
   const notes: string[] = [];
+  const summary: string[] = [];
   let medium: BrewMedium = 'none';
   let capacity = 0;
   let potency = 0;
@@ -176,11 +196,15 @@ export function composeBrew(steps: GradedStack[]): BrewSpec {
   const n = steps.length;
   steps.forEach((step, i) => {
     const def = REAGENTS[step.id];
-    if (!def) return;
+    if (!def) {
+      notes.push(`${step.id}: ${text('alchemy.step.unknown')}`);
+      return;
+    }
     const q = qualityMult(step.quality);
     /** Operators cannot run backwards on a poor grade; they merely do less. */
     const qq = Math.max(0, q);
-    const label = `${def.icon} ${def.name}`;
+    /** What this step did, clause by clause; a reagent can be two kinds at once. */
+    const parts: string[] = [];
 
     // A solvent first, because a reagent that is both raises the brew it then
     // acts on — spirit rouses what it is holding, not what it is about to.
@@ -189,12 +213,20 @@ export function composeBrew(steps: GradedStack[]): BrewSpec {
       if (medium === 'none') {
         medium = def.menstruum.medium;
         capacity += body;
-        notes.push(`${label} raises the brew — it will be ${MEDIUM_NAME[medium]}.`);
+        parts.push(text('alchemy.step.base', { base: medium, forms: MEDIUM_FORMS[medium], capacity: num(capacity) }));
       } else {
         potency *= DILUTE.potency;
         volatility *= DILUTE.volatility;
         capacity += body;
-        notes.push(`${label} thins what is there — weaker and calmer, with room for more.`);
+        parts.push(
+          text('alchemy.step.dilute', {
+            pmult: DILUTE.potency,
+            potency: num(potency),
+            vmult: DILUTE.volatility,
+            volatility: num(volatility),
+            capacity: num(capacity),
+          }),
+        );
       }
     }
 
@@ -207,48 +239,69 @@ export function composeBrew(steps: GradedStack[]): BrewSpec {
       // Everything that went in is still in the bottle, so all of it counts
       // toward how much there is. What steeping buys is the EXTRACT_YIELD on
       // the dissolved share; what it costs is that share's identity.
-      potency += power * dissolved * EXTRACT_YIELD + kept;
+      const gain = power * dissolved * EXTRACT_YIELD + kept;
+      potency += gain;
       if (kept !== 0) {
         const held = essences.get(def.essence.id);
         if (held) held.weight += kept;
         else essences.set(def.essence.id, { spec: def.essence, weight: kept });
       }
-      notes.push(
+      parts.push(
         after === 0
-          ? `${label} goes in last — none of it dissolves, all of it reads.`
-          : `${label} steeps under ${after} more — ${Math.round(dissolved * 100)}% of it becomes strength.`,
+          ? text('alchemy.step.last', { gain: num(gain), potency: num(potency) })
+          : text('alchemy.step.dissolve', {
+              after: `${after} step${after === 1 ? '' : 's'}`,
+              dissolved: pctOf(dissolved),
+              gain: num(gain),
+              potency: num(potency),
+              kept: 100 - pctOf(dissolved),
+            }),
       );
     }
 
     // Law 2: an operator reads the brew as it stands right now.
     const act = def.act;
-    if (!act) return;
-    switch (act.kind) {
+    switch (act?.kind) {
       case 'agitate': {
         const added = act.amount * qq;
         volatility += added;
-        if (added > 0) notes.push(`${label} sets it running (+${added.toFixed(2)} volatility).`);
+        if (added > 0) parts.push(text('alchemy.step.agitate', { amount: num(added), volatility: num(volatility) }));
         break;
       }
       case 'fix': {
         const quenched = Math.max(0, volatility - FIX_QUENCH);
         if (quenched <= 0) {
-          notes.push(`${label} has nothing to settle — the brew was already still.`);
+          parts.push(text('alchemy.step.fix_idle', { volatility: num(volatility), floor: FIX_QUENCH }));
           break;
         }
-        banked += quenched * Math.max(0.2, q);
+        const bank = quenched * Math.max(0.2, q);
+        banked += bank;
+        const before = volatility;
         volatility = FIX_QUENCH;
-        notes.push(`${label} settles it, and banks the ${quenched.toFixed(2)} it took out as duration.`);
+        parts.push(
+          text('alchemy.step.fix', { before: num(before), volatility: num(volatility), bonus: pctOf(bank * FIX_BANK) }),
+        );
         break;
       }
       case 'ignite': {
+        const before = volatility;
         if (volatility >= act.needs) {
-          potency *= 1 + (act.mult - 1) * Math.max(0.2, q);
-          volatility += 0.8;
-          notes.push(`${label} CATCHES — the whole brew takes hold.`);
+          const mult = 1 + (act.mult - 1) * Math.max(0.2, q);
+          potency *= mult;
+          volatility += IGNITE_KICK;
+          parts.push(
+            text('alchemy.step.ignite', {
+              before: num(before),
+              needs: act.needs,
+              mult: num(mult),
+              potency: num(potency),
+              kick: IGNITE_KICK,
+              volatility: num(volatility),
+            }),
+          );
         } else {
-          purity *= 0.82;
-          notes.push(`${label} does not catch (needs ${act.needs} volatility) and only fouls it.`);
+          purity *= IGNITE_FOUL;
+          parts.push(text('alchemy.step.ignite_fail', { before: num(before), needs: act.needs, foul: IGNITE_FOUL }));
         }
         break;
       }
@@ -268,33 +321,41 @@ export function composeBrew(steps: GradedStack[]): BrewSpec {
           for (const e of essences.values()) e.weight *= m;
           // Taking the impurity out concentrates what is left, in magnitude as
           // well as in how loudly it reads.
-          potency *= 1 + 0.25 * qq;
-          notes.push(`${label} takes the ${dropped} out — what remains reads ×${m.toFixed(2)}.`);
+          const boost = 1 + CLARIFY_BOOST * qq;
+          potency *= boost;
+          parts.push(text('alchemy.step.clarify', { dropped, mult: num(m), boost: num(boost), potency: num(potency) }));
         } else if (essences.size === 1) {
-          purity *= 1 + 0.2 * qq;
-          notes.push(`${label} finds one substance and can only polish it.`);
+          const polish = 1 + CLARIFY_POLISH * qq;
+          purity *= polish;
+          parts.push(text('alchemy.step.clarify_one', { polish: num(polish) }));
         } else {
-          notes.push(`${label} finds nothing to purify.`);
+          parts.push(text('alchemy.step.clarify_none'));
         }
         break;
       }
       case 'corrode': {
-        penetration += act.penetration * qq;
-        potency *= 1 + (act.mult - 1) * qq;
+        const pierce = act.penetration * qq;
+        const mult = 1 + (act.mult - 1) * qq;
+        penetration += pierce;
+        potency *= mult;
         purity *= act.purity;
-        notes.push(`${label} bites into it — sharper, and dirtier for it.`);
+        parts.push(
+          text('alchemy.step.corrode', { pierce: pctOf(pierce), mult: num(mult), potency: num(potency), purity: act.purity }),
+        );
         break;
       }
     }
+    notes.push(`${def.icon} ${def.name}: ${parts.join(' ')}`);
   });
 
   // What the solvent will actually hold. Past its capacity a brew does not
   // simply cap — it spills, and most of the excess is lost with the froth.
+  const raw = potency;
   if (capacity > 0 && potency > capacity) {
     const over = potency - capacity;
     potency = capacity + over * SPILL;
-    notes.push(`It runs over the top — the solvent will not hold that much.`);
   }
+  const held = potency;
   potency = Math.max(0, potency * purity);
 
   const ranked = [...essences.values()].filter((e) => e.weight > 0).sort((a, b) => b.weight - a.weight);
@@ -374,6 +435,75 @@ export function composeBrew(steps: GradedStack[]): BrewSpec {
     }
   }
 
+  const blows =
+    form === 'oil'
+      ? Math.min(OIL_BLOWS.cap, Math.max(1, Math.round(OIL_BLOWS.base + potency * OIL_BLOWS.perPotency)))
+      : undefined;
+
+  // ---- The summary: what the steps add up to, and why it is this form. ----
+
+  summary.push(
+    medium === 'none'
+      ? text('alchemy.sum.form_none')
+      : text('alchemy.sum.form', {
+          base: medium,
+          volatility: num(volatility),
+          state: text(volatility >= VOLATILE_AT ? 'alchemy.sum.roused' : 'alchemy.sum.calm'),
+          form: kind.name,
+        }),
+  );
+  if (raw > held) {
+    summary.push(
+      text('alchemy.sum.spill', { raw: num(raw), capacity: num(capacity), kept: pctOf(SPILL), potency: num(held) }),
+    );
+  }
+  if (purity !== 1) summary.push(text('alchemy.sum.purity', { purity: num(purity), potency: num(potency) }));
+  if (kind.sustained) {
+    summary.push(
+      banked > 0
+        ? text('alchemy.sum.duration_banked', {
+            seconds: Math.round(duration / 10),
+            base: BREW_BASE_DURATION / 10,
+            bonus: pctOf(banked * FIX_BANK),
+            cap: BREW_MAX_DURATION / 10,
+          })
+        : text('alchemy.sum.duration', { seconds: Math.round(duration / 10) }),
+    );
+  }
+  if (blows !== undefined) {
+    summary.push(
+      text('alchemy.sum.blows', { blows, base: OIL_BLOWS.base, per: OIL_BLOWS.perPotency, cap: OIL_BLOWS.cap }),
+    );
+  }
+  // An essence only speaks in the registers its form reads. Name what this
+  // form leaves unused, so an Ember Elixir with no effects is explained rather
+  // than silent (ALCHEMY.md §7: a discarded payload is never silent).
+  if (form !== 'residue') {
+    const reads = FORM_READS[form];
+    const unused: string[] = [];
+    for (const e of list) {
+      const lost: string[] = [];
+      if (e.spec.type && !reads.includes('type')) lost.push(text('alchemy.register.damage', { type: e.spec.type }));
+      if (e.spec.inflicts?.length && !reads.includes('inflicts')) lost.push(text('alchemy.register.afflictions'));
+      if (e.spec.grants?.length && !reads.includes('grants')) lost.push(text('alchemy.register.buffs'));
+      if (!reads.includes('restore')) {
+        for (const r of e.spec.restore ?? []) {
+          lost.push(text('alchemy.register.restore', { resource: RESOURCES[r.resource]?.name ?? r.resource }));
+        }
+      }
+      if (e.spec.cures?.length && !reads.includes('cures')) lost.push(text('alchemy.register.cures'));
+      if (lost.length) unused.push(`${e.spec.name} (${lost.join(', ')})`);
+    }
+    if (unused.length) {
+      summary.push(
+        text('alchemy.sum.unused', {
+          form: `${/^[AEIOU]/.test(kind.name) ? 'an' : 'a'} ${kind.name}`,
+          list: unused.join('; '),
+        }),
+      );
+    }
+  }
+
   const formula = formulaFor(steps.map((s) => s.id));
   const spec: BrewSpec = {
     name: formula?.name ?? brewName(form, list),
@@ -381,6 +511,7 @@ export function composeBrew(steps: GradedStack[]): BrewSpec {
     form,
     medium,
     potency,
+    capacity,
     volatility,
     duration,
     essences: list,
@@ -391,22 +522,30 @@ export function composeBrew(steps: GradedStack[]): BrewSpec {
     cures: [...new Set(cures)],
     value: Math.round(4 * potency + 3 * total + 5),
     notes,
+    summary,
   };
   if (penetration > 0) spec.penetration = Math.min(0.95, penetration);
-  if (form === 'oil') {
-    spec.blows = Math.min(
-      OIL_BLOWS.cap,
-      Math.max(1, Math.round(OIL_BLOWS.base + potency * OIL_BLOWS.perPotency)),
-    );
-  }
+  if (blows !== undefined) spec.blows = blows;
   return spec;
 }
 
-const MEDIUM_NAME: Record<BrewMedium, string> = {
-  none: 'nothing',
-  water: 'something to drink',
-  oil: 'something to wear',
-  spirit: 'something to throw',
+/** Which forms each base can come out as, for the first step's line. */
+const MEDIUM_FORMS: Record<BrewMedium, string> = {
+  none: 'Residue',
+  water: 'Elixir or Draught',
+  oil: 'Salve or Oil',
+  spirit: 'Fume or Flask',
+};
+
+/** The essence registers each form reads; everything else in it goes unused. */
+const FORM_READS: Record<BrewForm, ('type' | 'inflicts' | 'grants' | 'restore' | 'cures')[]> = {
+  bomb: ['type', 'inflicts'],
+  fume: ['inflicts'],
+  oil: ['type', 'inflicts'],
+  elixir: ['grants'],
+  draught: ['restore'],
+  salve: ['restore', 'cures'],
+  residue: [],
 };
 
 /**
@@ -695,7 +834,7 @@ function swallow(state: GameState, bus: EventBus, spec: BrewSpec): void {
 function hurl(state: GameState, bus: EventBus, spec: BrewSpec): void {
   const c = state.combat;
   if (!c) return;
-  feed(state, `${spec.icon} You hurl ${spec.name}.`);
+  feed(state, `${spec.icon} You throw ${spec.name}.`);
 
   for (let i = 0; i < c.enemies.length; i++) {
     const target = c.enemies[i];
@@ -720,9 +859,9 @@ function hurl(state: GameState, bus: EventBus, spec: BrewSpec): void {
       const dealt = Math.max(1, Math.round(total * statusIncomingDamageMult(target)));
       target.hp -= dealt;
       fireStatusEvent(state, target, 'damageTaken');
-      feed(state, `${spec.icon} ${spec.name} catches the ${target.name} for ${dealt}.`);
+      feed(state, `${spec.icon} ${spec.name} hits the ${target.name} for ${dealt}.`);
     } else if (spec.inflicts.length) {
-      feed(state, `${spec.icon} ${spec.name} settles over the ${target.name}.`);
+      feed(state, `${spec.icon} ${spec.name} lands on the ${target.name}.`);
     }
   }
 

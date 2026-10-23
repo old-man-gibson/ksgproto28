@@ -36,7 +36,7 @@ export const DISCIPLINES_TEXT: ProseTable = {
   'assembling.outcomes.salad.desc': 'Two vegetables.',
   'assembling.outcomes.ration.desc': 'Any two ingredients that match nothing else.',
 
-  'alchemy.desc': 'Alembic. Takes two to six reagents in order (steps three to six unlock at Alchemy 5, 12, 22 and 35). A reagent with n reagents after it dissolves by n/(n+1): the dissolved share becomes potency at x1.35, the rest keeps its element and effects. The first solvent sets the delivery form; volatility at or above 1.0 makes it a burst form. Brew time is fixed regardless of skill.',
+  'alchemy.desc': 'Alembic. Takes two to six reagents in order (steps three to six unlock at Alchemy 5, 12, 22 and 35). Start with a base (water, oil or spirit): it sets the form. The list under the strip says what each step did. Brew time is fixed regardless of skill.',
   'alchemy.outcomes.brew.desc': 'The brew the reagent sequence resolves to.',
 
   'preparing.desc': 'Cutting Board. Takes one whole ingredient and one cutting technique, and returns the ingredient in that cut. The output grade is the cut\'s uniformity: a higher grade narrows the range the ingredient\'s contribution rolls in at the next bench.',
