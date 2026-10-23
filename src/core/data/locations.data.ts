@@ -529,6 +529,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'train_int_chalk', kind: 'train', attr: 'int', name: 'Copy Out a Proof', icon: '✏️',
         drops: [{ material: 'word_slip_stone', chance: 0.0008 }] },
     ],
+    // PLACEHOLDER find (floor standard: every explore pays something).
+    finds: [{ id: 'chalk_old_working', at: 0.6, skillXp: { tags: ['arcane'], xp: 30 } }],
     connections: [],
   },
 
@@ -889,6 +891,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'explore_undercrofts', kind: 'explore', name: 'Go Through the Back Stores', icon: '🔍' },
       { id: 'train_con_undercrofts', kind: 'train', attr: 'con', name: 'Shift Barrels All Day', icon: '🛢️' },
     ],
+    // PLACEHOLDER find (floor standard: every explore pays something). Rough
+    // Flour is on the Granary Kitchens' shelf (head_chef).
+    finds: [{ id: 'undercroft_flour_sack', at: 0.5, material: { id: 'rough_flour', qty: 3 } }],
     connections: [],
   },
 

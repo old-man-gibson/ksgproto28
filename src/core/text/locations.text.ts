@@ -78,6 +78,8 @@ export const SPOTS_TEXT: ProseTable = {
   'the_reading_hall.desc': 'Indoor. Holds a Spell Table for inscribing spells. Read Until It Sticks trains Intelligence. Sit With a Hard Passage trains Wisdom and pays magic skill XP. Docent Marell stands here.',
 
   'chalk_yard.desc': 'Read the Old Working explores the yard (42 s). Copy Out a Proof trains Intelligence.',
+  // Placeholder text for the find: replace with your own.
+  'chalk_yard.finds.chalk_old_working.desc': '🔠 A chalk working on the flagstones: 30 Arcana XP.',
 
   'temple_rise_gate.desc': 'Gate of Temple Rise. Walk the Stair trains Constitution. Connects to the Foot, the Nine Chapels, Censer Walk, the Lectory Steps and the Muster Gate.',
 
@@ -125,6 +127,8 @@ export const SPOTS_TEXT: ProseTable = {
   'the_weighbridge.desc': 'Haul and Stack is a job: 11 gold per 18 s. Shift the Heavy Lots trains Strength.',
 
   'the_undercrofts.desc': 'Indoor. Go Through the Back Stores explores the cellars (52 s). Shift Barrels All Day trains Constitution.',
+  // Placeholder text for the find: replace with your own.
+  'the_undercrofts.finds.undercroft_flour_sack.desc': '🌾 A split sack in the back stores: 3 Rough Flour.',
 
   'f0_cell.desc': 'Floor 0, where a new life starts. Sleep on the Straw is a rest activity, so the cell is a haven. The rack here is the tutorial’s weapon choice. The cell door leads to the Cellblock (2 s).',
 
