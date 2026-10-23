@@ -106,6 +106,7 @@ Launch catalogue (user ruling 1 applied):
 | long | Long blade | edge | 2×6 | sword |
 | great | Great blade | edge | 2×10 | greatsword |
 | curved | Curved blade | edge | 2×6 | curved; katana |
+| curved_l | Long curved blade | edge | 2×10 | curved; odachi (added at build so every class is reachable) |
 | spearhead | Spearhead | point | 1×3 | |
 | axehead | Axe head | edge | 4×3 | cross; axe / halberd |
 | maulhead | Maul head | mass | 3×3 | cross |
@@ -202,7 +203,7 @@ headless run over 4,968 placements resolved with 0 failures):
 | bladed_spear | weapon / 2h | edge, haft l ≥ 5 |
 | rapier | weapon / 1h | edge w 1, l ≥ 5, guard, haft |
 | estoc | weapon / 1h | edge w 1, l ≥ 5, haft |
-| odachi | weapon / 2h | curved, l ≥ 9, haft (unreachable until a long curved part exists — the reachability lint must report it) |
+| odachi | weapon / 2h | curved, l ≥ 9, haft |
 | katana | weapon / 1h | curved, l ≥ 5, haft |
 | greatsword | weapon / 2h | edge, l ≥ 9 or area ≥ 18, haft |
 | sword | weapon / 1h | edge, l ≥ 6, haft |
