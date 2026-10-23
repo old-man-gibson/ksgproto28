@@ -53,18 +53,22 @@ export function stockMaterial(tag: string): MaterialDef | undefined {
  * The materials to offer for a part kind: those in the pack, plus whatever is
  * already in the slot. A player who holds only iron and hardwood is not shown
  * a metal they have never seen. When nothing accepted is held, one stand-in
- * per accepted tag (iron for 'metal') so the picker is never empty.
+ * per accepted tag (iron for 'metal') is offered as well, even if the slot's
+ * own material is present, so a player is never left on one material they do
+ * not have.
  */
 export function offeredMaterials(kind: PartKindDef, held: Record<string, number>, current?: string): MaterialDef[] {
   const all = materialsFor(kind);
-  const shown = all.filter((m) => (held[m.id] ?? 0) > 0 || m.id === current);
-  if (shown.length > 0) return shown;
-  const fallback: MaterialDef[] = [];
-  for (const tag of kind.accepts) {
-    const m = stockMaterial(tag);
-    if (m && all.includes(m) && !fallback.includes(m)) fallback.push(m);
+  const holds = (m: MaterialDef) => (held[m.id] ?? 0) > 0;
+  const shown = new Set(all.filter((m) => holds(m) || m.id === current));
+  if (!all.some(holds)) {
+    for (const tag of kind.accepts) {
+      const m = stockMaterial(tag);
+      if (m && all.includes(m)) shown.add(m);
+    }
   }
-  return fallback;
+  // Canonical order, whatever order they were added in.
+  return all.filter((m) => shown.has(m));
 }
 
 /**
@@ -84,7 +88,8 @@ export function pickMaterial(kind: PartKindDef, prefer: (string | undefined)[]):
 /**
  * The colour token a material is drawn in. Read off its tags, not its id, so
  * a steel ingot added later colours itself; an unknown metal gets the plain
- * metal token. The tokens are in app.css and overridden per theme.
+ * metal token. The tokens are in app.css; no theme overrides them (a material
+ * is the same colour wherever it is drawn).
  */
 export function materialColor(matId: string): string {
   const tags = MATERIALS[matId]?.craftTags ?? [];
@@ -234,6 +239,41 @@ export function silhouetteOf(placement: Placement): Silhouette {
   const cls = classifyPlacement(placement);
   const weaponLike = cls.slot === 'weapon' || cls.slot === 'offhand';
 
+  /** Stack one head part (every copy of it) down the axis from row `y`; returns the next free row. */
+  const stackHead = (h: Piece, from: number): number => {
+    let y = from;
+    for (let copy = 0; copy < h.qty; copy++) {
+      if (h.kind.shape === 'ring') {
+        shapes.push({ t: 'ring', cx: 0.5, cy: y + 0.5, r: 0.38, stroke: h.color });
+        y += 1;
+        continue;
+      }
+      // A head mounted across the haft (an axe) hangs to one side of it.
+      const x0 = h.kind.cross && h.kind.shape === 'edge' ? 1 - h.kind.w : -Math.floor((h.kind.w - 1) / 2);
+      for (let r = 0; r < h.kind.l; r++) {
+        const shear = h.kind.curved
+          ? Math.round(Math.pow((h.kind.l - 1 - r) / Math.max(1, h.kind.l - 1), 2) * 2)
+          : 0;
+        const x = x0 + shear;
+        if (h.kind.shape === 'point' && r === 0) {
+          shapes.push({ t: 'poly', points: [[x, y + 1], [x + 0.5, y - 0.6], [x + 1, y + 1]], fill: h.color });
+          continue;
+        }
+        // The tip of a plain blade is a cell narrower than the body.
+        const width = h.kind.shape === 'edge' && !h.kind.cross && r === 0 && h.kind.w > 1 ? h.kind.w - 1 : h.kind.w;
+        for (let c = 0; c < width; c++) cell(x + c, y + r, h.color);
+      }
+      y += h.kind.l;
+    }
+    return y;
+  };
+  /** Stack a guard or a haft below row `y`, centred on the axis; returns the next free row. */
+  const stackBar = (part: Piece, y: number): number => {
+    const x0 = -Math.floor((part.kind.w - 1) / 2);
+    for (let r = 0; r < part.kind.l; r++) for (let c = 0; c < part.kind.w; c++) cell(x0 + c, y + r, part.color);
+    return y + part.kind.l;
+  };
+
   if (cls.id === 'bow' && heads[0]) {
     const h = heads[0];
     const offsets = [2, 1, 0, 0, 0, 1, 2];
@@ -242,49 +282,32 @@ export function silhouetteOf(placement: Placement): Silhouette {
       cell(offsets[Math.round((r / (length - 1)) * (offsets.length - 1))], r, h.color);
     }
     if (bind) shapes.push({ t: 'line', x1: 2.5, y1: 0, x2: 2.5, y2: length, stroke: bind.color });
+    // The bow rule reads the first head only: whatever else is billed hangs below the bow.
+    let y = length;
+    for (const extra of heads.slice(1)) y = stackHead(extra, y);
+    if (guard) stackBar(guard, y);
   } else if (weaponLike || heads.length === 0) {
     let y = 0;
-    for (const h of heads) {
-      for (let copy = 0; copy < h.qty; copy++) {
-        if (h.kind.shape === 'ring') {
-          shapes.push({ t: 'ring', cx: 0.5, cy: y + 0.5, r: 0.38, stroke: h.color });
-          y += 1;
-          continue;
-        }
-        // A head mounted across the haft (an axe) hangs to one side of it.
-        const x0 = h.kind.cross && h.kind.shape === 'edge' ? 1 - h.kind.w : -Math.floor((h.kind.w - 1) / 2);
-        for (let r = 0; r < h.kind.l; r++) {
-          const shear = h.kind.curved
-            ? Math.round(Math.pow((h.kind.l - 1 - r) / Math.max(1, h.kind.l - 1), 2) * 2)
-            : 0;
-          const x = x0 + shear;
-          if (h.kind.shape === 'point' && r === 0) {
-            shapes.push({ t: 'poly', points: [[x, y + 1], [x + 0.5, y - 0.6], [x + 1, y + 1]], fill: h.color });
-            continue;
-          }
-          // The tip of a plain blade is a cell narrower than the body.
-          const width = h.kind.shape === 'edge' && !h.kind.cross && r === 0 && h.kind.w > 1 ? h.kind.w - 1 : h.kind.w;
-          for (let c = 0; c < width; c++) cell(x + c, y + r, h.color);
-        }
-        y += h.kind.l;
-      }
-    }
-    for (const part of [guard, haft]) {
-      if (!part) continue;
-      const x0 = -Math.floor((part.kind.w - 1) / 2);
-      for (let r = 0; r < part.kind.l; r++) for (let c = 0; c < part.kind.w; c++) cell(x0 + c, y + r, part.color);
-      y += part.kind.l;
-    }
+    for (const h of heads) y = stackHead(h, y);
+    for (const part of [guard, haft]) if (part) y = stackBar(part, y);
     // A binding wraps the grip: drawn as a strip beside the piece.
     if (bind) for (let r = 0; r < bind.kind.l; r++) cell(3, r, bind.color);
   } else {
     let x = 0;
-    // Rings from both head slots share one run of four to a row.
+    // Rings from both head slots share one run of four to a row, starting where the first ring would sit.
     let rings = 0;
+    let ringX = 0;
     for (const h of heads) {
       for (let copy = 0; copy < h.qty; copy++) {
         if (h.kind.shape === 'ring') {
-          shapes.push({ t: 'ring', cx: (rings % 4) * 1.1 + 0.5, cy: Math.floor(rings / 4) * 1.1 + 0.5, r: 0.4, stroke: h.color });
+          if (rings === 0) ringX = x;
+          shapes.push({
+            t: 'ring',
+            cx: ringX + (rings % 4) * 1.1 + 0.5,
+            cy: Math.floor(rings / 4) * 1.1 + 0.5,
+            r: 0.4,
+            stroke: h.color,
+          });
           rings++;
           continue;
         }
@@ -297,14 +320,19 @@ export function silhouetteOf(placement: Placement): Silhouette {
         }
         x += h.kind.w + 1;
       }
-      if (h.kind.shape === 'ring') x = 5;
+      if (h.kind.shape === 'ring') x = ringX + 5;
+    }
+    // A guard stands beside the piece, in the first free column.
+    if (guard) {
+      for (let r = 0; r < guard.kind.l; r++) for (let c = 0; c < guard.kind.w; c++) cell(x + c, r, guard.color);
     }
     if (bind) {
       if (heads[0]?.kind.shape === 'ring') {
         // A cord hung from above, the rings on it: a curve centred on the first row of rings.
-        const lastX = (Math.min(rings, 4) - 1) * 1.1 + 0.5;
-        const mid = (0.5 + lastX) / 2;
-        const half = Math.max(1.8, (lastX - 0.5) / 2 + 1.3);
+        const first = ringX + 0.5;
+        const last = ringX + (Math.min(rings, 4) - 1) * 1.1 + 0.5;
+        const mid = (first + last) / 2;
+        const half = Math.max(1.8, (last - first) / 2 + 1.3);
         shapes.push({ t: 'arc', x1: mid - half, y1: -2.6, cx: mid, cy: 2.8, x2: mid + half, y2: -2.6, stroke: bind.color });
       } else {
         const across = Math.max(bind.kind.l, x - 1);

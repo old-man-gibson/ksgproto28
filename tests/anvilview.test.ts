@@ -1,13 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { ITEM_CLASSES, MATERIALS, PART_KINDS } from '../src/core/registry';
+import { createInitialState } from '../src/core/state';
+import { Game } from '../src/core/game';
+import { deserialize, serialize } from '../src/core/save/save';
+import { getDerivedStats } from '../src/core/systems/derived';
 import {
   classifyPlacement,
   enumeratePlacements,
   forgeStats,
+  forgeTicks,
   neighbours,
   placementKey,
 } from '../src/core/systems/assembly';
-import type { Placement } from '../src/core/types';
+import { benchJobTicks, benchPace } from '../src/core/systems/benchwork';
+import { FORGING, previewForge } from '../src/core/systems/forging';
+import { FORGE_SLOTS } from '../src/core/data/parts.data';
+import type { GameState, Placement } from '../src/core/types';
+import { anvil, loadOnAnvil, resetAnvil, runKey, syncAnvil } from '../src/ui/lib/anvil.svelte';
+import { clearFloors } from './fixtures/floors';
 import {
   adaptMaterials,
   cellsOfMaterial,
@@ -61,6 +71,15 @@ describe('anvil view: materials', () => {
   it('never leaves a picker empty: with nothing held, one stand-in per accepted tag', () => {
     expect(offeredMaterials(PART_KINDS.h3, {}).map((m) => m.id)).toEqual([WOOD, IRON]);
     expect(offeredMaterials(PART_KINDS.long, {}).map((m) => m.id)).toEqual([IRON]);
+  });
+
+  it('adds the stand-in even when the slot holds a material the pack has none of', () => {
+    // A bronze head with no bronze (and no iron) in the pack: iron is offered beside it, in canonical order.
+    expect(offeredMaterials(PART_KINDS.long, {}, BRONZE).map((m) => m.id)).toEqual([IRON, BRONZE]);
+    // A hardwood haft with nothing held: wood stays, iron is the metal stand-in.
+    expect(offeredMaterials(PART_KINDS.h3, {}, WOOD).map((m) => m.id)).toEqual([WOOD, IRON]);
+    // Once anything accepted is held the stand-in is not added: bronze held, no iron shown.
+    expect(offeredMaterials(PART_KINDS.long, { [BRONZE]: 3 }, BRONZE).map((m) => m.id)).toEqual([BRONZE]);
   });
 
   it('gives a new part the first material it lists, or one it was asked to keep', () => {
@@ -314,5 +333,179 @@ describe('anvil view: form chart', () => {
     const firstNonWeapon = list.findIndex((c) => c.slot !== 'weapon');
     expect(list.slice(0, firstNonWeapon).every((c) => c.slot === 'weapon')).toBe(true);
     expect(list.slice(firstNonWeapon).some((c) => c.slot === 'weapon')).toBe(false);
+  });
+});
+
+describe('anvil view: the silhouette draws every part that is billed', () => {
+  const sig = (p: Placement) => JSON.stringify(silhouetteOf(p).shapes);
+
+  /** Every slot of a placement, removed one at a time; the drawing must change each time. */
+  function removalsThatChangeNothing(p: Placement): string[] {
+    const filled = FORGE_SLOTS.filter((s) => p[s]);
+    if (filled.length < 2) return [];
+    const base = sig(p);
+    const same: string[] = [];
+    for (const slot of filled) {
+      const rest: Placement = { ...p };
+      delete rest[slot];
+      if (sig(rest) === base) same.push(`${placementKey(p)} without ${slot} (${classifyPlacement(p).id})`);
+    }
+    return same;
+  }
+
+  it('draws a guard on armour and jewellery', () => {
+    const plain: Placement = { head: part('plate_w', IRON), bind: part('strap', LEATHER) };
+    const bossed: Placement = { ...plain, guard: part('boss', IRON) };
+    expect(classifyPlacement(bossed).id).toBe('breastplate');
+    expect(sig(bossed)).not.toBe(sig(plain));
+    // The guard is beside the plate, not on it: it widens the drawing.
+    expect(silhouetteOf(bossed).maxX).toBeGreaterThan(silhouetteOf(plain).maxX);
+  });
+
+  it('draws a second head and a guard on a bow, below it', () => {
+    const bow: Placement = { head: part('bent_l', WOOD), bind: part('cord', LEATHER) };
+    const armed: Placement = { ...bow, head2: part('long', IRON) };
+    expect(classifyPlacement(bow).id).toBe('bow');
+    expect(classifyPlacement(armed).id).toBe('bow');
+    expect(sig(armed)).not.toBe(sig(bow));
+    expect(silhouetteOf(armed).maxY).toBeGreaterThan(silhouetteOf(bow).maxY);
+    const guarded: Placement = { ...bow, guard: part('cross', IRON) };
+    expect(classifyPlacement(guarded).id).toBe('bow');
+    expect(sig(guarded)).not.toBe(sig(bow));
+  });
+
+  it('places rings after a bent piece beside it instead of on top of it', () => {
+    const p: Placement = { head: part('bent_s', IRON), head2: part('ring', IRON, 2) };
+    const sil = silhouetteOf(p);
+    const bentX = sil.shapes.flatMap((s) => (s.t === 'rect' ? [s.x] : []));
+    const ringX = sil.shapes.flatMap((s) => (s.t === 'ring' ? [s.cx] : []));
+    expect(ringX).toHaveLength(2);
+    expect(Math.min(...ringX)).toBeGreaterThan(Math.max(...bentX) + 1);
+  });
+
+  it('changes when any part of a multi-part exemplar is removed', () => {
+    for (const cls of Object.values(ITEM_CLASSES)) {
+      expect(removalsThatChangeNothing(cls.exemplar), cls.id).toEqual([]);
+    }
+  });
+
+  it('changes when any part of a sample of the whole catalogue is removed, degenerate classes included', () => {
+    // Every 13th placement (the sweep is 157,000 and each drawing classifies it). The full sweep
+    // was run once by hand when this was written: no removal in any class left the drawing alone,
+    // so no class is exempt.
+    let n = 0;
+    const same: string[] = [];
+    for (const p of enumeratePlacements({ materials: 'tags' })) {
+      if (n++ % 13 === 0) same.push(...removalsThatChangeNothing(p));
+    }
+    expect(same.slice(0, 5)).toEqual([]);
+  });
+});
+
+describe('anvil view: the layout belongs to one run', () => {
+  const swordKey = placementKey(sword);
+  const bronzeDagger: Placement = { head: part('short', BRONZE), haft: part('h3', WOOD) };
+
+  /** Dirty every field the store holds, the way a player would after a session at the anvil. */
+  function dirty(state: GameState) {
+    syncAnvil(state);
+    anvil.placement = { ...bronzeDagger };
+    anvil.view = 'chart';
+    anvil.chart.guard = 'cross';
+    anvil.chart.bind = 'strap';
+    anvil.chart.count = 8;
+  }
+
+  /** The default layout, whole, and nothing in it or on the new save's anvil that names bronze. */
+  function expectDefault(state: GameState) {
+    expect(placementKey(anvil.placement)).toBe(swordKey);
+    expect(anvil.view).toBe('anvil');
+    expect({ ...anvil.chart }).toEqual({ guard: null, bind: null, count: 1 });
+    expect(placementText(anvil.placement)).not.toMatch(/Bronze/);
+    const preview = previewForge(state, anvil.placement);
+    expect(preview.cost.map((c) => c.id)).not.toContain(BRONZE);
+    expect(preview.reason ?? '').not.toMatch(/Bronze/);
+    const head = anvil.placement.head!;
+    const offered = offeredMaterials(PART_KINDS[head.kind], state.materials, head.mat).map((m) => m.id);
+    expect(offered).not.toContain(BRONZE);
+  }
+
+  it('a hard reset, which assigns a new game into the same state object, clears it', () => {
+    const state = createInitialState(1_000);
+    dirty(state);
+    // hardReset in ui/state.svelte.ts: Object.assign(gs, createInitialState(Date.now())).
+    Object.assign(state, createInitialState(2_000));
+    syncAnvil(state);
+    expectDefault(state);
+  });
+
+  it('an import, which assigns the loaded save in, clears it', () => {
+    const state = createInitialState(3_000);
+    dirty(state);
+    // importSave: Object.assign(gs, deserialize(text)).
+    Object.assign(state, deserialize(serialize(createInitialState(4_000))));
+    syncAnvil(state);
+    expectDefault(state);
+  });
+
+  it('a prestige, which keeps createdAt, clears it', () => {
+    const state = createInitialState(5_000);
+    clearFloors(state.stats);
+    const game = new Game(state);
+    dirty(state);
+    const before = runKey(state);
+    expect(game.prestige(6_000)).toBe(true);
+    expect(state.createdAt).toBe(5_000);
+    expect(runKey(state)).not.toBe(before);
+    syncAnvil(state);
+    expectDefault(state);
+  });
+
+  it('keeps the layout while the run is the same, including across an in-place copy of itself', () => {
+    const state = createInitialState(7_000);
+    dirty(state);
+    syncAnvil(state);
+    expect(placementKey(anvil.placement)).toBe(placementKey(bronzeDagger));
+    // The offline catch-up assigns a copy of the same save back into the state.
+    Object.assign(state, deserialize(serialize(state)));
+    syncAnvil(state);
+    expect(placementKey(anvil.placement)).toBe(placementKey(bronzeDagger));
+    expect(anvil.view).toBe('chart');
+    expect(anvil.chart.count).toBe(8);
+  });
+
+  it('loading a placement claims the store for the new run first', () => {
+    const old = createInitialState(8_000);
+    dirty(old);
+    const next = createInitialState(9_000);
+    loadOnAnvil(next, { head: part('spearhead', IRON), haft: part('h6', WOOD) });
+    expect(placementKey(anvil.placement)).toBe(placementKey({ head: part('spearhead', IRON), haft: part('h6', WOOD) }));
+    expect(anvil.view).toBe('anvil');
+    // The old run's chart selectors did not come along.
+    expect({ ...anvil.chart }).toEqual({ guard: null, bind: null, count: 1 });
+  });
+
+  it('resets on request, with fresh objects each time', () => {
+    const state = createInitialState(10_000);
+    dirty(state);
+    resetAnvil();
+    expectDefault(state);
+    const first = anvil.placement;
+    resetAnvil();
+    expect(anvil.placement).not.toBe(first);
+  });
+});
+
+describe('anvil view: the job time', () => {
+  it('is the clock benchJobTicks gives an assembling bench, read from the shared craft speed', () => {
+    for (const level of [0, 20, 60]) {
+      const state = createInitialState(11_000);
+      state.skills.smithing = { level, xp: 0 };
+      for (const p of [sword, { head: part('ring', IRON, 8) }, { head: part('great', IRON), haft: part('h4', WOOD) }]) {
+        expect(benchPace(getDerivedStats(state).craftSpeed, forgeTicks(p)), `${level} ${placementKey(p)}`).toEqual(
+          benchJobTicks(state, FORGING, {}, undefined, p),
+        );
+      }
+    }
   });
 });

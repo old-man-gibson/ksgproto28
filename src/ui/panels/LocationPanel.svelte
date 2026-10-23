@@ -93,7 +93,7 @@
   /** "Open on anvil": load a recipe line's parts and open the bench. */
   function openOnAnvil(forge: ForgePlacement) {
     if (!anvilId) return;
-    loadOnAnvil(forge);
+    loadOnAnvil(gs, forge);
     openBench = anvilId;
   }
 

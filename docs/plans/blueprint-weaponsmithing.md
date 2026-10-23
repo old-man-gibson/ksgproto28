@@ -313,11 +313,16 @@ Calibration (measured headless on the mockup's kernel):
 `LocationPanel` opens `AnvilPanel.svelte` for any bench whose discipline has
 `assembles: true`; every other bench still opens `BenchPanel`. Two views in one
 window, kept by `ui/lib/anvil.svelte.ts` (UI-only: the layout survives closing
-the window, not a reload, and nothing touches the save).
+the window, not a reload, and nothing touches the save). The layout belongs to
+one run: the store is keyed on `createdAt` plus the prestige count and resets
+itself when either changes (`syncAnvil`, called on mount and by `loadOnAnvil`),
+which covers a hard reset, an import and a prestige without hooking any of them.
 
 - **Anvil view.** Silhouette (`lib/ForgeSilhouette.svelte`, geometry in
   `lib/anvilView.ts`: weapons stack head, guard, haft; armour lays pieces side
-  by side; a bow is an arc), the resolved name with slot, hands, family and
+  by side with a guard in the next column; a bow is an arc with any second head
+  or guard hung below it; every billed part is drawn, which a test sweeps), the
+  resolved name with slot, hands, family and
   degenerate chips (a family no combat skill claims is flagged), the kernel's
   stat lines at Fair quality, the bill (units, cells, held) and the job time,
   "one change away" (`neighbours`, one button per distinct product, "?" until
@@ -326,8 +331,9 @@ the window, not a reload, and nothing touches the save).
   out of stock" call `Game.forge`.
 - **Material choices.** Each part lists the forgeable materials it accepts that
   the pack holds, plus the one already in the slot. When nothing accepted is
-  held, one stand-in per accepted tag (iron for metal) so a picker is never
-  empty. A new part takes the first material it lists (a haft is hardwood), not
+  held, one stand-in per accepted tag (iron for metal) is offered as well, even
+  beside the slot's own material, so a picker is never stuck on one material the
+  pack lacks. A new part takes the first material it lists (a haft is hardwood), not
   whatever is held.
 - **Form chart** (`panels/FormChart.svelte`). Head kind by haft kind; guard,
   binding and head count (1, 2, 4, 8) are selectors. A cell shows the form its

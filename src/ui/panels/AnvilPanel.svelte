@@ -1,16 +1,16 @@
 <script lang="ts">
-  import { gs, game } from '../state.svelte';
+  import { gs, game, view } from '../state.svelte';
   import { MATERIALS, PART_KINDS, RECIPES, ITEM_CLASSES } from '../../core/registry';
   import { SLOT_NAMES } from '../../core/types';
   import type { ForgeSlot, PartKindDef, PartRole } from '../../core/types';
-  import { clonePlacement, neighbours, placementKey } from '../../core/systems/assembly';
+  import { clonePlacement, forgeTicks, neighbours, placementKey } from '../../core/systems/assembly';
   import { FORGING, formKnown, previewForge } from '../../core/systems/forging';
-  import { benchJobTicks } from '../../core/systems/benchwork';
+  import { benchPace } from '../../core/systems/benchwork';
   import { recipeHidden, recipeResultName } from '../../core/systems/crafting';
   import { WIELD_NAMES, familySkillFor } from '../../core/systems/wield';
   import { conditionsMet } from '../../core/systems/conditions';
   import { ticksToTime } from '../lib/format';
-  import { anvil } from '../lib/anvil.svelte';
+  import { anvil, syncAnvil } from '../lib/anvil.svelte';
   import {
     cellsOfMaterial,
     distinctNeighbours,
@@ -30,6 +30,10 @@
    * and edits the layout, which lives in `anvil` so closing the window keeps it.
    */
 
+  // The layout is this run's: a hard reset, an import or a prestige since it was last used clears it.
+  syncAnvil(gs);
+  $effect.pre(() => syncAnvil(gs));
+
   const placement = $derived(anvil.placement);
   const preview = $derived(previewForge(gs, placement));
   const cls = $derived(preview.class);
@@ -41,7 +45,9 @@
 
   /** The bench run underway at the anvil, if any. */
   const job = $derived(gs.benchWork?.disciplineId === FORGING.id ? gs.benchWork : null);
-  const pace = $derived(benchJobTicks(gs, FORGING, {}, undefined, placement));
+  // The clock `benchJobTicks` gives an assembling bench, read from the shared derived stats
+  // (PITFALLS §4) instead of calling getDerivedStats here; tests/anvilview.test.ts pins the two equal.
+  const pace = $derived(benchPace(view.stats.craftSpeed, forgeTicks(placement)));
   /** How many pieces the pack could pay for. */
   const affordableCopies = $derived(
     preview.cost.length ? Math.min(...preview.cost.map((c) => Math.floor(c.held / c.qty))) : 0,

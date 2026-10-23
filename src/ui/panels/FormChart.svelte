@@ -40,7 +40,7 @@
   const knownClasses = $derived(classes.filter((c) => formKnown(gs, c.id)));
 
   function load(entry: ChartEntry) {
-    loadOnAnvil(adaptMaterials(entry.placement, anvil.placement));
+    loadOnAnvil(gs, adaptMaterials(entry.placement, anvil.placement));
   }
 </script>
 
@@ -131,7 +131,7 @@
     </div>
     <div class="form-list">
       {#each knownClasses as c (c.id)}
-        <button class="small" title={placementText(c.exemplar)} onclick={() => loadOnAnvil(adaptMaterials(c.exemplar, anvil.placement))}>
+        <button class="small" title={placementText(c.exemplar)} onclick={() => loadOnAnvil(gs, adaptMaterials(c.exemplar, anvil.placement))}>
           {c.icon} {c.name}
         </button>
       {:else}
