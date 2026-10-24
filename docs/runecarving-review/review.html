@@ -198,10 +198,10 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
 <section class="panel verdict" id="verdict">
   <header><h2>Verdict</h2><span class="tag">team: 3 brainstormers, 1 design antagonist</span></header>
   <div class="line"><b>Today</b><span>Four stat-bundle patterns, ten adornments, four exact-recipe named runes. Combinations are many but the outcomes are few: every carving is a scaled sum of about fourteen stat lines. Runes are behind the alpha shutter and their stones have no source. Carved runes cannot touch techniques. Six bugs, four of them breaking "same inputs, same rune".</span></div>
-  <div class="line"><b>Proposed</b><span>The <em>Ledger</em>. A rune is a multiset of glyphs from the codex. Each glyph is a small vector over thirteen aspects. The rune's ledger is the sum. Each aspect has one linear reading per slot, so one rune reads eight ways. One aspect reaching 4 lights a rung; one aspect reaching a higher bar lights a named work. The bench draws no dice.</span></div>
-  <div class="line"><b>Identity</b><span>"The sum of its elements", as you put it. Nothing reads order (alchemy), adjacency or pairs (mutagens), proportion or tallies of verbs (smithing), time (cooking) or a classifier (music). Every term reads one aspect. Today's named runes are the one exception, and question 1 asks you whether to keep it.</span></div>
-  <div class="line"><b>Equipment</b><span>Sockets become deterministic by size (1 / 2 / 3). Rune value reads its inputs. The slot is the reading: three Fair ward runes in a vest take the floor-3 boss duel from 0/20 to 14–18/20 at John's band-one end state (two probes, two kits); the same runes on the club give 0/20.</span></div>
-  <div class="line"><b>Martial</b><span>Runes select technique cards by printed properties (event, kind, entry, exit), never by id. Rungs tune cooldown and penetration and add an element's status to hits. Lending glyphs add a fork archetype to a card's Honed offering. Named works rewrite one named card. No edge lists; the planner draws what changed.</span></div>
+  <div class="line"><b>Proposed</b><span>A rune is a set of glyphs from the codex, in any order. Each glyph adds points to a few of thirteen aspects (Power, Guard, Health, Speed, Crit, Magic, Luck, and the six elements). The rune's totals are the sum. Each slot turns the totals into different stats, so the same rune does different things in a weapon, a helmet or a ring. 4 glyph points in one aspect turn on a bonus; a higher total in one aspect turns on a named rune. The bench rolls no dice.</span></div>
+  <div class="line"><b>Identity</b><span>"The sum of its elements", as you put it. Nothing reads order (alchemy), adjacency or pairs (mutagens), proportion or tallies of verbs (smithing), time (cooking) or a classifier (music). Every bonus reads one aspect. Today's named runes are the one exception; question 1 asks whether to keep it.</span></div>
+  <div class="line"><b>Equipment</b><span>Sockets become deterministic by size (1 / 2 / 3). Rune value reads its inputs. The slot decides the stats: three Fair Algiz runes in a vest take the floor-3 boss duel from 0/20 to 14–18/20 at John's band-one end state (two probes, two kits); the same runes on the club give 0/20.</span></div>
+  <div class="line"><b>Martial</b><span>Runes select technique cards by printed properties (event, kind, entry, exit), never by id. Threshold bonuses cut cooldowns, add penetration, and make hits inflict an element's status. Some glyphs add a fork option to a technique's Honed choice. Named runes rewrite one specific technique. No rune chains techniques together; the planner shows what changed.</span></div>
   <div class="line"><b>Core system</b><span>Yes for sustain in band one, once the unlock sits on floor 2 (measured twice). Damage supporting. Condition defence through element resistances. Access unmeasured.</span></div>
   <div class="line"><b>Antagonist</b><span>Fix first: 13 objections. 12 accepted and folded in below, 1 sent to you. No terminal state, no gold loop, no edge list found.</span></div>
   <div class="line"><b>Size</b><span>Six slices. Slice 1 is bug fixes with no design question. Slices 2–6 need the alpha freeze lifted for runecarving (question 2).</span></div>
@@ -233,22 +233,22 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
   <div class="flow" style="margin-bottom:16px">
     <div class="step"><b>Glyphs</b><span class="small">Codex runes, each a small vector over 13 aspects and a stroke count.</span></div><span class="arrow" aria-hidden="true">→</span>
     <div class="step"><b>Slab</b><span class="small">A multiset of glyphs on a graded stone, plus adornments. No order, no dice.</span></div><span class="arrow" aria-hidden="true">→</span>
-    <div class="step"><b>Ledger</b><span class="small">Sum of vectors × stone grade + adornment assays. Rungs at 4; works when the need is covered.</span></div><span class="arrow" aria-hidden="true">→</span>
-    <div class="step"><b>Socket</b><span class="small">The slot reads the ledger: weapon, each armor slot, accessory. Span = sockets used.</span></div><span class="arrow" aria-hidden="true">→</span>
-    <div class="step"><b>Cards</b><span class="small">Rungs, lends and brands rewrite matching technique cards, one node at a time.</span></div>
+    <div class="step"><b>Totals</b><span class="small">Glyph points × stone grade, plus adornments. A bonus at 4 points in one aspect; a named rune at a higher total.</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Socket</b><span class="small">Each slot turns the totals into its own stats: weapon, each armor slot, accessory. Larger runes take more sockets.</span></div><span class="arrow" aria-hidden="true">→</span>
+    <div class="step"><b>Techniques</b><span class="small">Bonuses, added fork options and named runes change matching techniques, one technique at a time.</span></div>
   </div>
   <div class="two">
     <div style="display:grid; gap:10px; min-width:0">
       <h3>The carving</h3>
       <dl class="facts small">
-        <dt>Aspects</dt><dd>Might, Ward, Vital, Swift, Keen, Lore, Fortune, and six elements: Ember, Frost, Storm, Venom, Lumen, Gloam.</dd>
+        <dt>Aspects</dt><dd>Power, Guard, Health, Speed, Crit, Magic, Luck, and six elements: Heat, Cold, Lightning, Poison, Light, Dark.</dd>
         <dt>Glyphs</dt><dd>38 authored rows: the 24 Elder Futhark and 14 Anglo-Saxon additions (these supply the elements the Futhark is thin on: Ior storm, Þorn venom, Éar gloam). Each is 3 points (primary 2, secondary 1) chosen from its meaning, plus strokes from the drawn art. Variants (short-twig, long-branch) carry the parent's vector at half the strokes. Letter runes carry 1 point of the parent's primary at 1 stroke. Calendar marks stay unused (time is cooking's).</dd>
-        <dt>Ledger</dt><dd>Σ glyph vectors × stone grade + Σ adornment assays × each one's own grade. Adornments are one aspect each: gels are elements, gold leaf Fortune, bone dust Vital, ochre Might, verdigris Venom, garnet Keen, sapphire Lore.</dd>
-        <dt>Readings</dt><dd>One linear line per aspect per context (weapon, armor, accessory). Armor reads through a slot lens: chest ×1; head ×0.5 but Lore and Keen ×1.5; hands ×0.35 but Might and Swift ×1; feet ×0.35 but Swift ×1.5; legs ×0.7; offhand reads Ward as parry.</dd>
-        <dt>Rungs</dt><dd>One aspect's raw glyph points reaching 4 in one rune lights its rung: Swift (reflex cooldown ×0.85 / dodge +3pp), Ward (crit damage taken −10%), Keen (strike penetration +0.1). Each element's rung makes weapon hits inflict its status (Frost chilled, Ember on fire, Storm jolted, Venom poison, Lumen dazzled, Gloam blinded; 20%). A rung reads one aspect only.</dd>
-        <dt>Works</dt><dd>Recommended: a work is a named rung on one aspect at a higher bar (ledger 6–8 after grade, some with a minimum slab grade). Adding a glyph never unlights a work; all lit works apply. Unknown works show "?" on the chart until first lit or taught. Multi-aspect works (today's named runes) read two aspects together and break the guard: your ruling (question 1).</dd>
+        <dt>Totals</dt><dd>Σ glyph points × stone grade + Σ adornment assays × each one's own grade. Adornments are one aspect each: gels are elements, gold leaf Luck, bone dust Health, ochre Power, verdigris Poison, garnet Crit, sapphire Magic.</dd>
+        <dt>Readings</dt><dd>One linear line per aspect per context (weapon, armor, accessory). Armor reads through a slot lens: chest ×1; head ×0.5 but Magic and Crit ×1.5; hands ×0.35 but Power and Speed ×1; feet ×0.35 but Speed ×1.5; legs ×0.7; offhand reads Guard as parry.</dd>
+        <dt>Bonuses</dt><dd>4 glyph points in one aspect, in one rune, turn on that aspect's bonus: Speed (reflex cooldown ×0.85 / dodge +3pp), Guard (crit damage taken −10%), Crit (strike penetration +0.1). Each element's bonus makes weapon hits inflict its status (Cold chilled, Heat on fire, Lightning jolted, Poison poison, Light dazzled, Dark blinded; 20%). Each bonus reads one aspect only.</dd>
+        <dt>Named runes</dt><dd>Recommended: a named rune is a bonus with a name, on one aspect, at a higher total (6–8 after grade; some need a minimum slab grade). Adding a glyph never turns one off; all active named runes apply. Unknown ones show "?" on the chart until made once or taught. Named runes that need several aspects (today's shape) read two aspects together and break the guard: your ruling (question 1).</dd>
         <dt>Bench</dt><dd>No split chance, no upgrade chance. F slabs and F adornments refused. Cut slots open at Runecarving 0 / 5 / 10 / 18 / 25 / 35.</dd>
-        <dt>Span</dt><dd>Sockets a rune takes = ceil(strokes ÷ hold). Hold by stone grade (E 4, D 6, C 8, B 11, A 15, S 20) + tool + level ÷ 10. Span over 3 (the largest item) is refused at the bench. Tools and skill buy density, not odds. A burin is needed for variants and letters.</dd>
+        <dt>Sockets used</dt><dd>Strokes ÷ strokes per socket, rounded up. Strokes per socket: stone grade (E 4, D 6, C 8, B 11, A 15, S 20) + tool + Runecarving level ÷ 10. A rune that needs more than 3 sockets (the largest item) is refused at the bench. Better tools and skill fit more glyphs into one socket; they change no odds. A burin is needed for variants and letters.</dd>
         <dt>Value</dt><dd>Half the sale value of the inputs at their grades. Glyphs add nothing.</dd>
       </dl>
     </div>
@@ -256,19 +256,19 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
       <h3>Equipment</h3>
       <dl class="facts small">
         <dt>Sockets</dt><dd>Small 1, medium 2, large 3. Legacy items keep their rolls. Item value reads the class constant, never the runes in it.</dd>
-        <dt>Swap</dt><dd>Unsocketing is free and returns the whole rune. Swapping is the versatility.</dd>
+        <dt>Swap</dt><dd>Unsocketing is free and returns the whole rune, so one rune can move between slots as needed.</dd>
         <dt>Supply</dt><dd>Data only: blank runestone (Fair, pinned) 24 gold at a shop counter and 10% from the floor-2 automatons; ochre, verdigris and a bronze chisel as shop lines; a steel burin line after floor 2; bone dust from the living doll; garnet from a floor-3 find; sapphire on the floor-3 boss's first clear. The unlock find sits on floor 2 (the break room), below the boss it helps with.</dd>
         <dt>Knowledge</dt><dd>Four starter glyphs: Algiz, Uruz, Isaz, Fehu. A monster that bears a rune teaches its glyphs after five kills (a bestiary fact). Codex pages from finds teach the rest.</dd>
-        <dt>Presets</dt><dd>The eleven catalogue runes become fixed carvings that loot mints. Gale, Earthbind and Umbral become works that carry their surgery. Save v58 rewrites catalogue ids already socketed in items to their preset carvings, so nothing goes inert.</dd>
-        <dt>Monsters</dt><dd><code>MonsterDef.runes</code> per slot, through the same pure readers, all 13 aspects (Swift attack speed, Keen crit, Lore spell power included). The bestiary prints the exact carving.</dd>
+        <dt>Presets</dt><dd>The eleven catalogue runes become fixed carvings that loot mints. Gale, Earthbind and Umbral become named runes that keep their technique changes. Save v58 rewrites catalogue ids already socketed in items to their preset carvings, so nothing goes inert.</dd>
+        <dt>Monsters</dt><dd><code>MonsterDef.runes</code> per slot, through the same pure readers, all 13 aspects (Speed attack speed, Crit crit, Magic spell power included). The bestiary prints the exact carving.</dd>
       </dl>
       <h3 style="margin-top:6px">Martial</h3>
       <dl class="facts small">
         <dt>Selector</dt><dd>Printed-card properties: event, kind (strike, buff, counter), entry, exit, family. Never a technique id. Read on the printed card, so one pass and no order.</dd>
         <dt>Reach</dt><dd>Weapon runes reach strikes. Armor, offhand and accessory runes reach buffs, counters and the onHit / onParry / onDodge answers. A buckler card belongs to the offhand, not the weapon.</dd>
-        <dt>Tunes</dt><dd>Rungs add to cooldown and penetration of matching cards; element rungs add their status to every weapon hit, technique strikes included. Summed, then clamped (cooldown −40%, penetration +0.3).</dd>
-        <dt>Lends</dt><dd>Some glyphs lend an existing fork archetype (weight 0.7 × grade). A total of 1.0 adds that archetype to the matching card's Honed offering while socketed, at tier III, before a path is taken. Taking it is permanent, like every Honed choice. Void if its exit is the card's own entry.</dd>
-        <dt>Works</dt><dd>A work may rewrite one named card while socketed in the weapon (Gale: Sidestep; Earthbind: Thrust's exit; Umbral: Riposte). Precedence for a card's exit and name: work, then the chosen fork, then the printed card; between works, registry order. One rewrite per card.</dd>
+        <dt>Tunes</dt><dd>Bonuses cut cooldown and add penetration on matching techniques; element bonuses add their status to every weapon hit, technique strikes included. Summed, then clamped (cooldown −40%, penetration +0.3).</dd>
+        <dt>Fork options</dt><dd>Some glyphs add an existing fork option (weight 0.7 × grade per copy). A total of 1.0 adds that option to the matching card's Honed offering while socketed, at tier III, before a path is taken. Taking it is permanent, like every Honed choice. Void if its exit is the card's own entry.</dd>
+        <dt>Named runes</dt><dd>A named rune in the weapon may rewrite one specific technique (Gale: Sidestep; Earthbind: Thrust's exit; Umbral: Riposte). Which change wins for a technique's exit and name: named rune, then the chosen fork, then the printed card; between named runes, registry order. One rewrite per technique.</dd>
         <dt>Planner</dt><dd>A badge on every rune-rewritten edge, naming the runes; a ghost line to the printed exit. Socketing refreshes learning at once.</dd>
       </dl>
     </div>
@@ -283,38 +283,38 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
 
 <section class="panel" id="roles">
   <header><h2>Runecarving as a core system</h2><span class="tag">COMPLETABILITY §6a</span></header>
-  <p class="small dim" style="margin-bottom:10px">Two probes against the floor-3 boss (<code>puppet_bureaucrat</code>), 20 seeded duels each, John's pacing end state (level 5, oak club, three strings cut). A Fair Rune of Warding in armor reads +4 armor today, the same as a Fair Algiz under the Ledger. Scratch tests, deleted after the run.</p>
+  <p class="small dim" style="margin-bottom:10px">Two probes against the floor-3 boss (<code>puppet_bureaucrat</code>), 20 seeded duels each, John's pacing end state (level 5, oak club, three strings cut). A Fair Rune of Warding in armor reads +4 armor today, the same as a Fair Algiz in the new design. Scratch tests, deleted after the run.</p>
   <div class="scroll"><table>
     <thead><tr><th>Role</th><th>Basic runecarving fills it?</th><th>Evidence</th></tr></thead>
     <tbody>
       <tr><td>Sustain</td><td>Yes, at Fair stones, unlocked on floor 2</td><td>Brainstormer (vest, cap, boots; base armor 8.5): 8.5 → 0/20; 18.5 → 11–12/20; 20.5 → 18/20; 24.5 → 19/20. Antagonist (vest only; base 6.8): 6.8 → 0/20; three Fair ward runes, 18.8 → 14/20; three Common ward runes, 14.0 → 1/20; the same with no strings cut, 0/20; with the rusty sword, 4/20. The swift rune adds nothing, so the claim rests on Algiz, a starter glyph. The runestone shop line pins Fair; a Common line would void the cell.</td></tr>
       <tr><td>Damage</td><td>Supporting</td><td>Damage runes alone never flip the duel. Three armor runes 11/20, plus +16 damage 19/20.</td></tr>
       <tr><td>Condition defence</td><td>Elements only</td><td>Each element aspect reads as its resistance in armor. No band-one attacker needs one.</td></tr>
-      <tr><td>Access</td><td>Unmeasured</td><td>A Might cell reading strength would let worn runes open a STR-gated item. Not designed further.</td></tr>
+      <tr><td>Access</td><td>Unmeasured</td><td>A Power cell reading strength would let worn runes open a STR-gated item. Not designed further.</td></tr>
     </tbody>
   </table></div>
 </section>
 
 <section class="panel" id="objections">
   <header><h2>Objections and rulings</h2><span class="tag">antagonist verdict: fix first</span></header>
-  <p class="small dim" style="margin-bottom:10px">No terminal state, no gold loop, no edge list, no non-finite value found. The ledger is a pure sum and the caps in <code>derived.ts</code> bound every reading. Thirteen objections: twelve accepted and already in the design above, one sent to you. One more ruling came from the mockups.</p>
+  <p class="small dim" style="margin-bottom:10px">No terminal state, no gold loop, no edge list, no non-finite value found. The totals are a pure sum and the caps in <code>derived.ts</code> bound every reading. Thirteen objections: twelve accepted and already in the design above, one sent to you. One more ruling came from the mockups.</p>
   <div class="scroll"><table>
     <thead><tr><th style="width:4.6em">Severity</th><th>Objection</th><th>Ruling</th></tr></thead>
     <tbody>
       <tr><td><span class="sev hi">high</span></td><td><b>Shut below the hurdle it claims.</b> The plan put every find on floor 3, the boss's own floor. A fresh save would see no socket or rune until then, so runecarving could not count for that hurdle under §6a.</td><td class="ruling">Accepted. The unlock find goes in the floor-2 break room, beside the automatons that drop runestones.</td></tr>
-      <tr><td><span class="sev hi">high</span></td><td><b>Multi-aspect works are pair synergies.</b> A work needing {ward 4, frost 4} pays what two Algiz and two Isaz separately do not. The identity table in ALCHEMY.md and MUTAGENS.md says runecarving is "strictly additive, no pair synergies". Today's named runes already have this shape.</td><td class="ruling ask">Sent to you (question 1). Recommended: works read one aspect at a higher bar. The Works toggle in mockup 2 switches every mockup between the two.</td></tr>
-      <tr><td><span class="sev mid">medium</span></td><td><b>Precedence gaps.</b> Two works lit at once, a work and a fork both rewriting one exit, brand against rungs against riders: no rule said which wins, the same class of bug as F1 and F7.</td><td class="ruling">Accepted. All lit works apply; at most one card rewrite per card, by work, then the chosen fork, then the printed card; between works, registry order.</td></tr>
-      <tr><td><span class="sev mid">medium</span></td><td><b>Lends broke the permanent Honed choice, ten times early.</b> A tier-II lend replaced a chosen path while socketed; unsocketing was free, so a fork became a wardrobe toggle at a tenth of the practice.</td><td class="ruling">Accepted. A lend only adds to the Honed offering at tier III, before a path is taken. Taking it is permanent. This also answers F8: a rune-granted path outlives the rune by design.</td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>Named runes that need several aspects are pair synergies.</b> A named rune needing {Guard 4, Cold 4} pays what two Algiz and two Isaz separately do not. The identity table in ALCHEMY.md and MUTAGENS.md says runecarving is "strictly additive, no pair synergies". Today's named runes already have this shape.</td><td class="ruling ask">Sent to you (question 1). Recommended: named runes read one aspect at a higher total. The toggle in mockup 2 switches every mockup between the two.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Precedence gaps.</b> Two named runes active at once, a named rune and a fork both rewriting one exit, brand against bonuses against riders: no rule said which wins, the same class of bug as F1 and F7.</td><td class="ruling">Accepted. All active named runes apply; at most one rewrite per technique: named rune, then the chosen fork, then the printed card; between named runes, registry order.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Glyph fork options broke the permanent Honed choice, ten times early.</b> At tier II, a glyph's fork option replaced a chosen path while socketed; unsocketing was free, so a fork became a wardrobe toggle at a tenth of the practice.</td><td class="ruling">Accepted. A glyph only adds an option to the Honed choice at tier III, before a path is taken. Taking it is permanent. This also answers F8: a rune-granted path outlives the rune by design.</td></tr>
       <tr><td><span class="sev mid">medium</span></td><td><b>Tumble fails the fork EV test.</b> <code>tests/martial.test.ts</code> needs every archetype's crude EV ≥ 1; tumble at ×0.95 scores 0.95.</td><td class="ruling">Accepted. Tumble is ×1.0; its cost is the dead-end exit, as Overwhelming's is.</td></tr>
-      <tr><td><span class="sev mid">medium</span></td><td><b>Monster parity gaps.</b> Lends needed mastery monsters lack; the beast lens read Swift, Keen, Lore and Fortune as nothing; the monster path ignores a forced crit.</td><td class="ruling">Accepted. The beast lens reads all 13 aspects; a monster move names its fork archetype in data; the monster path honours <code>move.crit</code>.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Monster parity gaps.</b> Glyph fork options needed mastery, which monsters lack; the beast lens read Speed, Crit, Magic and Luck as nothing; the monster path ignores a forced crit.</td><td class="ruling">Accepted. The beast lens reads all 13 aspects; a monster move names its fork archetype in data; the monster path honours <code>move.crit</code>.</td></tr>
       <tr><td><span class="sev mid">medium</span></td><td><b>Smithing disagrees on forged sockets, and the freeze is not lifted.</b> The smithing card gives forged items 0 slots; this plan gives them class sockets. Both rewrite <code>itemValue</code> and <code>stackKey</code>.</td><td class="ruling ask">Accepted, with two calls for you: amend the smithing card to class sockets from cells (question 4); lift the freeze for runecarving or not (question 2).</td></tr>
       <tr><td><span class="sev lo">low–med</span></td><td><b>Socketed catalogue runes would go inert at v58.</b> The migration merged the pool but not string ids already inside items; Umbral in a weapon would become "Worn Rune".</td><td class="ruling">Accepted. v58 rewrites socketed strings to their preset carvings.</td></tr>
       <tr><td><span class="sev lo">low</span></td><td><b>The sustain cell depends on the grade.</b> Probe: three Fair ward runes 18.8 armor, 14/20; three Common, 1/20. The swift rune added nothing.</td><td class="ruling">Accepted. The runestone line pins Fair; a cell test pins the row; the claim drops the swift rune and uses the probe's 14/20 beside the brainstormer's 18/20.</td></tr>
       <tr><td><span class="sev lo">low</span></td><td><b>F adornments still subtract.</b></td><td class="ruling">Accepted. Refused like F slabs.</td></tr>
-      <tr><td><span class="sev lo">low</span></td><td><b>Span over 3 has no home.</b> No new item has 4 sockets.</td><td class="ruling">Accepted. The bench refuses span over 3 and says why.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>A rune needing 4 sockets fits nothing.</b> No new item has 4 sockets.</td><td class="ruling">Accepted. The bench refuses runes that need more than 3 sockets and says why.</td></tr>
       <tr><td><span class="sev lo">low</span></td><td><b>The slot lens is a hidden table.</b></td><td class="ruling">Accepted. The socket picker prints the rune's reading in every slot before you commit (mockup 3).</td></tr>
       <tr><td><span class="sev lo">low</span></td><td><b>The burin has no source</b>, so variants and letters would be unreachable.</td><td class="ruling">Accepted. A steel burin shop line after floor 2.</td></tr>
-      <tr><td><span class="sev mid">manager</span></td><td><b>Brand was degenerate.</b> Found in mockup 4: three plain Algiz in the chest summed Lumen 3 across armor runes and branded Riposte and Flowing Shield with light at 60% dazzle. The "dominant element" pick also compared aspects against each other.</td><td class="ruling">Brand removed. Each element has its own rung (4 raw points in one weapon rune): weapon hits, technique strikes included, inflict its status at 20%. Re-typing is dropped; the element readings already add typed damage.</td></tr>
+      <tr><td><span class="sev mid">manager</span></td><td><b>Brand was degenerate.</b> Found in mockup 4: three plain Algiz in the chest summed Light 3 across armor runes and branded Riposte and Flowing Shield with light at 60% dazzle. The "dominant element" pick also compared aspects against each other.</td><td class="ruling">Brand removed. Each element has its own bonus (4 glyph points in one weapon rune): weapon hits, technique strikes included, inflict its status at 20%. Re-typing is dropped; the element readings already add typed damage.</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -325,11 +325,11 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
     <thead><tr><th>#</th><th>Slice</th><th>Ships</th><th>Save change</th></tr></thead>
     <tbody>
       <tr><td>1</td><td>Fix first</td><td>Order-free shares (groups by copies, then id), adornment riders as a list, <code>stackKey</code> through <code>carvedKey</code>, deterministic exit and name resolution, F slab refused. A permutation test over every carving input.</td><td>No</td></tr>
-      <tr><td>2</td><td>The Ledger</td><td>Glyph registry, readings, rungs, works, span (refused over 3), the dice-free bench (F slabs and F adornments refused), the codex chart. Legacy patterns read as glyph aliases (Might = might 2, and so on), so old carvings keep their single-cut numbers.</td><td>No</td></tr>
+      <tr><td>2</td><td>Glyph sums</td><td>Glyph registry, slot readings, bonuses, named runes, sockets used (refused over 3), the dice-free bench (F slabs and F adornments refused), the codex chart. Legacy patterns read as glyph aliases (Power = might 2, and so on), so old carvings keep their single-cut numbers.</td><td>No</td></tr>
       <tr><td>3</td><td>Equipment</td><td>Deterministic sockets, slot lens with the per-slot preview, supply lines (runestone pinned at Fair, burin after floor 2), the unlock find on floor 2, starter glyphs, catalogue runes as preset carvings including those already socketed, the sustain cell test.</td><td>v58</td></tr>
       <tr><td>4</td><td>Monsters</td><td><code>MonsterDef.runes</code> through a beast lens over all 13 aspects, the bestiary "carries" fact that teaches glyphs.</td><td>No</td></tr>
-      <tr><td>5</td><td>Martial I</td><td>Selectors, reach, rung tunes, element rungs on strikes, works' named rewrites with the precedence rule, planner badges, the learning refresh on socket. The monster technique path goes through the same function.</td><td>No</td></tr>
-      <tr><td>6</td><td>Martial II</td><td>Lends into the Honed offering, the <code>tumble</code> archetype (×1.0) and its dead-end seat, <code>move.crit</code> on the monster path, archetypes named on monster moves.</td><td>No</td></tr>
+      <tr><td>5</td><td>Martial I</td><td>Selectors, reach, bonus tunes, element bonuses on strikes, named runes' technique rewrites with the precedence rule, planner badges, the learning refresh on socket. The monster technique path goes through the same function.</td><td>No</td></tr>
+      <tr><td>6</td><td>Martial II</td><td>Glyph fork options in the Honed choice, the <code>tumble</code> archetype (×1.0) and its dead-end seat, <code>move.crit</code> on the monster path, archetypes named on monster moves.</td><td>No</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -337,11 +337,11 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
 <section class="panel" id="questions">
   <header><h2>Questions for you</h2><span class="tag">answer in fragments</span></header>
   <ol class="list small" style="gap:10px">
-    <li><b>Works and the guard.</b> Works read one aspect at a higher bar (recommended; the guard holds), or keep multi-aspect needs and amend the "no pair synergies" line in ALCHEMY.md and MUTAGENS.md to admit works as the one exception?</li>
+    <li><b>Named runes and the guard.</b> Named runes read one aspect at a higher total (recommended; the guard holds), or keep multi-aspect needs and amend the "no pair synergies" line in ALCHEMY.md and MUTAGENS.md to allow named runes as the one exception?</li>
     <li><b>The freeze.</b> Slice 1 is bug fixes and needs nothing from you. Slices 2–6 add band-one shop, drop and find lines and a save bump. Lift the alpha freeze for runecarving, or bank the design and build slice 1 only?</li>
-    <li><b>The glyph table.</b> The 24 Elder vectors are first guesses from the meanings (Naudiz = Gloam and Ward, Raido = Swift and Fortune, Gebo = Keen and Fortune, and so on; full table in mockup 2). Change any?</li>
+    <li><b>The glyph table.</b> The 24 Elder vectors are first guesses from the meanings (Naudiz = Dark and Guard, Raido = Speed and Luck, Gebo = Crit and Luck, and so on; full table in mockup 2). Change any?</li>
     <li><b>Forged items.</b> Amend the smithing card so forged items get class sockets from their cells (1 / 2 / 3) and no socket finish exists?</li>
-    <li><b>Lends are permanent once taken.</b> A rune adds an archetype to the Honed offering; taking it is permanent and outlives the rune. Keep that, or let a rune-granted path lapse when the rune leaves?</li>
+    <li><b>Fork options from runes are permanent once taken.</b> A rune adds an option to the Honed choice; taking it is permanent and outlives the rune. Keep that, or let a rune-granted path lapse when the rune leaves?</li>
     <li><b>MUSIC.md.</b> Its identity table says cooking = sum and runecarving = breadth. Correct it to match PITFALLS.md (runecarving = sum, cooking = when)?</li>
   </ol>
 </section>
@@ -350,7 +350,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
 
 <section class="panel" id="bench">
   <header><h2>1 · The Rune Table</h2><span class="tag s1">slice 2 · the carving</span></header>
-  <p class="small dim" style="margin-bottom:12px">Pick glyphs into the cut slots, set the stone, adornments and tool. The ledger, the readings, the span and any lit works update as you go. Nothing on this bench rolls a die: what the preview shows is what you get.</p>
+  <p class="small dim" style="margin-bottom:12px">Pick glyphs into the cut slots, set the stone, adornments and tool. The totals, the slot readings, the sockets used and any active named runes update as you go. Nothing on this bench rolls a die: what the preview shows is what you get.</p>
   <div class="bench">
     <div class="slabwrap">
       <div class="slab" id="slab"></div>
@@ -360,7 +360,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
         <span class="dim">Runecarving</span><span style="display:flex; gap:8px; align-items:center"><input type="range" id="sel-level" min="0" max="50" value="12" style="flex:1"><b id="lvl-out">12</b></span>
       </div>
       <div class="box">
-        <div class="small dim">Span: sockets this rune takes</div>
+        <div class="small dim">Sockets used</div>
         <div class="spanbar" id="spanbar"></div>
         <div class="tiny dim" id="span-text"></div>
       </div>
@@ -384,12 +384,12 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
       <div class="stations" id="stations"></div>
       <div class="two" style="gap:14px">
         <div style="display:grid; gap:6px; min-width:0">
-          <h3>Ledger</h3>
-          <div class="tiny dim">Bar = ledger after grade. White tick = raw glyph points. Dashed line = rung at 4 raw points.</div>
+          <h3>Totals</h3>
+          <div class="tiny dim">Bar = total after stone grade. White tick = points from glyphs alone. Dashed line = 4 glyph points, where the bonus starts.</div>
           <div class="ledger" id="ledger"></div>
         </div>
         <div style="display:grid; gap:8px; align-content:start; min-width:0">
-          <h3>Reads as</h3>
+          <h3>In this slot</h3>
           <div class="ctxtabs" id="ctx-tabs"></div>
           <div class="reads" id="reads"></div>
           <div id="lit"></div>
@@ -402,11 +402,11 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
 
 <section class="panel" id="codex">
   <header><h2>2 · The codex</h2><span class="tag s1">slice 2 · discovery and reference</span></header>
-  <p class="small dim" style="margin-bottom:10px">Every glyph you can cut, with its vector, strokes and how it was learned. Unknown glyphs show their silhouette and where they are taught. Below, the works chart: a work's need shows once it has been lit on this save or taught; the rest are "?" with the aspects they touch.</p>
+  <p class="small dim" style="margin-bottom:10px">Every glyph you can cut, with its vector, strokes and how it was learned. Unknown glyphs show their silhouette and where they are taught. Below, the named-rune chart: a named rune's requirement shows once you have made it on this save or been taught it; the rest show "?" and the aspect they read.</p>
   <div class="chips small" id="codex-filter" style="margin-bottom:10px"></div>
   <div class="codex" id="codex-grid"></div>
   <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:baseline; margin:18px 0 8px">
-    <h3>Works</h3>
+    <h3>Named runes</h3>
     <span class="chips small" id="works-mode"><button class="chip on" data-wmode="one" style="cursor:pointer">one aspect (recommended)</button><button class="chip" data-wmode="multi" style="cursor:pointer">several aspects (question 1)</button></span>
   </div>
   <p class="tiny dim" id="works-note" style="margin-bottom:8px"></p>
@@ -442,7 +442,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
 
 <section class="panel" id="martial">
   <header><h2>4 · Runes on techniques</h2><span class="tag later">slices 5–6 · martial</span></header>
-  <p class="small dim" style="margin-bottom:12px">Reads the kit from mockup 3. Weapon runes reach strikes; armor and accessory runes reach buffs and the onHit / onParry / onDodge answers. Each card shows its printed values struck through where a rune changed them, the archetypes runes add to its Honed offering, and which runes did it. Only a work rewrites an exit; the graph draws it in gold with a ghost line to the printed one. Try the Earthbind rune (Uruz·Tiwaz, Fine, ochre) in the weapon with the sword selected.</p>
+  <p class="small dim" style="margin-bottom:12px">Reads the kit from mockup 3. Weapon runes reach strikes; armor and accessory runes reach buffs and the onHit / onParry / onDodge answers. Each card shows its printed values struck through where a rune changed them, the fork options runes add to its Honed choice, and which runes did it. Only a named rune rewrites an exit; the graph draws it in gold with a ghost line to the printed one. Try the Earthbind rune (Uruz·Tiwaz, Fine, ochre) in the weapon with the sword selected.</p>
   <div class="controls" style="margin-bottom:12px; max-width:560px">
     <span class="dim">Weapon family</span><select id="sel-family"><option value="blunt">oak club (blunt)</option><option value="sword">iron sword (sword)</option><option value="katana">katana</option></select>
     <span class="dim">Mastery</span><label><input type="checkbox" id="chk-tier" checked> every technique Honed (tier III), no path taken yet</label>
@@ -452,7 +452,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
     <div class="tcards" id="tcards"></div>
   </div>
   <div class="box" style="margin-top:12px">
-    <h3>Lending glyphs</h3>
+    <h3>Glyphs that add fork options</h3>
     <div class="small" id="lend-table"></div>
   </div>
 </section>
@@ -518,10 +518,11 @@ function glyphEl(g, size, color, style) {
 
 // ---------------------------------------------------------------- the model
 const ASPECTS = [
-  ['might', 'Might', '#c0704a'], ['ward', 'Ward', '#b8a582'], ['vital', 'Vital', '#7f9a4c'],
-  ['swift', 'Swift', '#d6b85a'], ['keen', 'Keen', '#d9d4c8'], ['lore', 'Lore', '#9c84c0'],
-  ['fortune', 'Fortune', '#e8b84b'], ['ember', 'Ember', '#d9643a'], ['frost', 'Frost', '#9cc0cc'],
-  ['storm', 'Storm', '#b9a6e6'], ['venom', 'Venom', '#97b23e'], ['lumen', 'Lumen', '#f2e6a6'], ['gloam', 'Gloam', '#8a70a2'],
+  // Player-facing names reuse the game's own words (stats, damage types).
+  ['might', 'Power', '#c0704a'], ['ward', 'Guard', '#b8a582'], ['vital', 'Health', '#7f9a4c'],
+  ['swift', 'Speed', '#d6b85a'], ['keen', 'Crit', '#d9d4c8'], ['lore', 'Magic', '#9c84c0'],
+  ['fortune', 'Luck', '#e8b84b'], ['ember', 'Heat', '#d9643a'], ['frost', 'Cold', '#9cc0cc'],
+  ['storm', 'Lightning', '#b9a6e6'], ['venom', 'Poison', '#97b23e'], ['lumen', 'Light', '#f2e6a6'], ['gloam', 'Dark', '#8a70a2'],
 ];
 const AID = ASPECTS.map((a) => a[0]);
 const ACOL = Object.fromEntries(ASPECTS.map((a) => [a[0], a[2]]));
@@ -628,7 +629,7 @@ const CTX_TABS = [['weapon', 'Weapon'], ['chest', 'Chest'], ['head', 'Head'], ['
 const RUNG_AT = 4;
 const ELEMENT_RUNG = (e) => ({ W: `hits inflict ${ELEMENT_STATUS[e]} (20%)` });
 const RUNGS = {
-  swift: { W: 'reflex techniques: cooldown ×0.85', A: 'dodge +3pp' },
+  swift: { W: 'triggered techniques: cooldown ×0.85', A: 'dodge +3pp' },
   ward:  { A: 'crit damage taken −10%' },
   keen:  { W: 'strikes: penetration +0.1' },
   ...Object.fromEntries(ELEMENTS.map((e) => [e, ELEMENT_RUNG(e)])),
@@ -718,7 +719,7 @@ const show = (l) => {
 };
 const rungText = (c, slot) => {
   const col = SLOTS[slot].col;
-  return c.rungs.map((a) => RUNGS[a][col] ? `${ANAME[a]} rung: ${RUNGS[a][col]}${c.mult < 1 ? ` (×${c.mult})` : ''}` : null).filter(Boolean);
+  return c.rungs.map((a) => RUNGS[a][col] ? `${ANAME[a]} bonus: ${RUNGS[a][col]}${c.mult < 1 ? ` (×${c.mult})` : ''}` : null).filter(Boolean);
 };
 const workText = (c, slot) => {
   const col = SLOTS[slot].col;
@@ -782,7 +783,7 @@ function renderBench() {
     const why = !isKnown ? `unknown: ${g.how}` : needBurin ? 'variants need a steel burin' : full ? 'no open cut' : `${g.name} (${g.gloss}): ${Object.entries(g.v).map(([a, p]) => ANAME[a] + ' ' + p).join(', ')}, ${g.s} strokes`;
     return `<button data-glyph="${g.id}" ${dis ? 'disabled' : ''} class="${!isKnown || needBurin ? 'locked' : ''}" title="${why}">
       ${isKnown ? glyphEl(g, 2) : glyphEl(g, 2, '#4a3c2c')}
-      <span><span class="nm">${g.name}${g.starter ? ' <span class="tiny dim">·start</span>' : ''}</span><br><span class="sub">${Object.entries(g.v).map(([a, p]) => ANAME[a].slice(0, 4) + ' ' + p).join(' ')} · ${g.s}✎</span></span></button>`;
+      <span><span class="nm">${g.name}${g.starter ? ' <span class="tiny dim">·start</span>' : ''}</span><br><span class="sub">${Object.entries(g.v).map(([a, p]) => ANAME[a] + ' ' + p).join(' ')} · ${g.s}✎</span></span></button>`;
   }).join('');
   document.getElementById('palette').innerHTML = pal;
   // stations
@@ -810,7 +811,7 @@ function renderBench() {
   for (let i = 0; i < Math.max(c.span, sockets); i++) sb += `<i class="${i < c.span ? (c.refused ? 'over' : 'f') : ''}"></i>`;
   document.getElementById('spanbar').innerHTML = `<b>${c.span}</b>${sb}`;
   document.getElementById('span-text').textContent = c.glyphs.length
-    ? `${c.strokes} strokes ÷ hold ${c.hold} (stone ${GRADES[bench.grade][2]}, tool ${toolBonus(bench.tool, bench.toolq)}, level ${Math.floor(bench.level / 10)}) → ${c.span} socket${c.span === 1 ? '' : 's'}.${c.refused ? ` Refused: no item has more than ${MAX_SPAN} sockets. A better stone, tool or level raises the hold.` : ' A vest has 3.'}`
+    ? `${c.strokes} strokes; ${c.hold} fit in one socket (stone ${GRADES[bench.grade][2]}, tool ${toolBonus(bench.tool, bench.toolq)}, level ${Math.floor(bench.level / 10)}) → ${c.span} socket${c.span === 1 ? '' : 's'}.${c.refused ? ` Refused: no item has more than ${MAX_SPAN} sockets. A better stone, tool or Runecarving level fits more strokes per socket.` : ' A vest has 3.'}`
     : 'No cuts yet.';
   const pb = document.getElementById('btn-pouch');
   pb.disabled = !c.glyphs.length || c.refused;
@@ -890,21 +891,21 @@ function renderCodex() {
     return `<div class="cg ${k ? '' : 'unknown'}" title="${g.gloss}">
       ${k ? glyphEl(g, 2, '#e8c25a') : glyphEl(g, 2, '#3a3026')}
       <span><span class="nm">${g.name}</span> <span class="tiny dim">${g.gloss}</span><br>${vecChips(g.v)} <span class="tiny dim">${g.s}✎</span></span>
-      <span class="how">${g.starter ? 'starter' : k ? 'learned · ' + g.how : 'taught by ' + g.how}${g.lend ? ` · lends ${g.lend[0]}` : ''}</span></div>`;
+      <span class="how">${g.starter ? 'starter' : k ? 'learned · ' + g.how : 'taught by ' + g.how}${g.lend ? ` · adds ${ARCH[g.lend[0]].name} to fork choices` : ''}</span></div>`;
   }).join('');
   document.getElementById('works').innerHTML = WORKS.map((w) => {
     const seen = w.known || litWorks.has(w.id);
     const now = compose(bench).works.some((x) => x.id === w.id);
     return `<div class="work ${now ? 'lit' : ''} ${seen ? '' : 'unknown'}">
-      <div style="display:flex; justify-content:space-between; gap:6px"><b>${seen ? w.name : '?'}</b>${now ? '<span class="chip lit">lit on the bench</span>' : ''}</div>
+      <div style="display:flex; justify-content:space-between; gap:6px"><b>${seen ? w.name : '?'}</b>${now ? '<span class="chip lit">made on the bench</span>' : ''}</div>
       <div>${seen ? vecChips(w.need) : Object.keys(w.need).map((a) => aspChip(a)).join(' ') + ' <span class="tiny dim">amounts unknown</span>'}${w.min ? ` <span class="tiny dim">· ${GRADES[w.min][0]} slab or better</span>` : ''}</div>
-      <div class="small ${seen ? '' : 'dim'}">${seen ? Object.entries(w.bonus).map(([k, v]) => `${{ W: 'Weapon', A: 'Armor', X: 'Accessory' }[k]}: ${v}`).join('<br>') : 'Light it once, or learn it, to read it.'}</div></div>`;
+      <div class="small ${seen ? '' : 'dim'}">${seen ? Object.entries(w.bonus).map(([k, v]) => `${{ W: 'Weapon', A: 'Armor', X: 'Accessory' }[k]}: ${v}`).join('<br>') : 'Make it once, or be taught it, to see what it needs.'}</div></div>`;
   }).join('');
 }
 document.getElementById('codex-filter').addEventListener('click', (e) => { const b = e.target.closest('[data-tier]'); if (b) { codexTier = b.dataset.tier; renderCodex(); } });
 const WORKS_NOTE = {
-  one: 'Each work reads one aspect of the ledger after grade. It is a rung with a name and a higher bar, so the guard "no term reads two elements" holds. Every mockup on this page follows this setting.',
-  multi: "Today's shape: a work needs several aspects at once, so its bonus depends on two aspects together. That is a pair synergy, which the identity table in ALCHEMY.md and MUTAGENS.md forbids. Every mockup on this page follows this setting.",
+  one: 'Each named rune reads one aspect, after stone grade. It is a bonus with a name and a higher threshold, so the rule "nothing reads two aspects at once" holds. Every mockup on this page follows this setting.',
+  multi: "Today's shape: a named rune needs several aspects at once, so its bonus depends on two aspects together. That is a pair synergy, which the identity table in ALCHEMY.md and MUTAGENS.md forbids. Every mockup on this page follows this setting.",
 };
 function setWorksMode(mode) {
   WORKS = mode === 'multi' ? WORKS_MULTI : WORKS_ONE;
@@ -961,7 +962,7 @@ function renderKit() {
     const c = compose(r), at = placedIn(i);
     return `<button data-pouch="${i}" class="${selectedRune === i ? 'on' : ''}" title="${c.key}">
       <span class="gl">${c.glyphs.map((id) => glyphEl(GLYPHS[id], 1, '#e8c25a')).join('')}</span>
-      <span class="small">${c.name} <span class="tiny dim">· span ${c.span}${at ? ' · in ' + SLOTS[at].name.toLowerCase() : ''}</span></span></button>`;
+      <span class="small">${c.name} <span class="tiny dim">· ${c.span} socket${c.span === 1 ? '' : 's'}${at ? ' · in ' + SLOTS[at].name.toLowerCase() : ''}</span></span></button>`;
   }).join('');
   document.getElementById('pouch-hint').textContent = selectedRune == null ? 'pick a rune' : 'now pick a socket';
   document.getElementById('eslots').innerHTML = KIT.map(([slot, item, size, n]) => {
@@ -1038,6 +1039,18 @@ const TECH = [
   { id: 'flowing_shield', name: 'Flowing Shield', kind: 'strike', family: 'buckler', event: 'onParry', from: ['guarded'], to: 'coiled', dmg: 1, cd: 70 },
 ];
 const ANSWERS = ['onHit', 'onParry', 'onDodge'];
+const KIND_WORD = { strike: 'attacks', buff: 'defensive techniques', counter: 'counters' };
+const KIND_LABEL = { strike: 'attack', buff: 'defensive', counter: 'counter' };
+const EVENT_LABEL = { onHit: 'when hit', onDodge: 'after a dodge', onParry: 'after a parry', onCrit: 'after a crit', onEncounterStart: 'at the start of a fight' };
+const EVENT_WORD = { onCrit: 'a crit', onDodge: 'a dodge', onParry: 'a parry', onHit: 'being hit' };
+/** A selector in words, for players: which techniques a glyph reaches. */
+function describeSel(sel) {
+  const parts = [sel.kind ? sel.kind.map((k) => KIND_WORD[k]).join(' or ') : 'techniques'];
+  if (sel.event) parts.push('triggered by ' + sel.event.map((e) => EVENT_WORD[e] || e).join(' or '));
+  if (sel.enters) parts.push(sel.enters.includes('any') ? 'usable from any position' : 'starting ' + sel.enters.map((p) => POS_NAME[p]).join(' or '));
+  if (sel.exits) parts.push('ending ' + sel.exits.map((p) => POS_NAME[p]).join(' or '));
+  return parts.join(' ');
+}
 const matches = (sel, t) =>
   (!sel.kind || sel.kind.includes(t.kind)) &&
   (!sel.event || sel.event.includes(t.event)) &&
@@ -1079,8 +1092,8 @@ function surgery(t, tierOK) {
     .sort((x, y) => ARCH_ORDER.indexOf(x[0]) - ARCH_ORDER.indexOf(y[0]));
   const pending = Object.entries(w).filter(([, v]) => v.total < 1 - 1e-9).map(([a, v]) => `${ARCH[a].name} ${fmtNum(v.total)} of 1`);
   for (const [a, v] of offers) { res.offers.push({ a, total: v.total, from: v.from }); v.from.forEach((f) => res.by.add(f)); }
-  if (offers.length && !tierOK) res.notes.push('offering opens at tier III');
-  if (pending.length) res.notes.push('short: ' + pending.join(', '));
+  if (offers.length && !tierOK) res.notes.push('the fork option appears at tier III');
+  if (pending.length) res.notes.push('not enough yet: ' + pending.join(', '));
   // Works: a hand-authored rewrite of one named card, from the weapon. One
   // rewrite per card; between works, registry order.
   const fromWeapon = sockets.weapon.map((i) => compose(pouch[i]));
@@ -1092,7 +1105,7 @@ function surgery(t, tierOK) {
     if (T.dmg) res.card.dmg = +(t.dmg * T.dmg).toFixed(3);
     if (T.exit) res.card.to = T.exit;
     if (T.offer) res.offers.push({ a: T.offer, total: null, from: [ws[0].name] });
-    res.by.add(`${ws[0].name} (work)`);
+    res.by.add(`${ws[0].name} (named rune)`);
     if (ws.length > 1) res.notes.push(`${ws.slice(1).map((x) => x.name).join(', ')} lose to ${ws[0].name} (registry order)`);
   }
   // Tunes from rungs, summed then clamped.
@@ -1100,9 +1113,9 @@ function surgery(t, tierOK) {
   const inflicts = [];
   for (const { slot, c } of reach) {
     if (slot !== 'weapon') continue;
-    if (c.rungs.includes('swift') && t.event) { cdm += 0.15 * Math.min(1, c.mult); res.by.add(`${c.name} (Swift rung)`); }
-    if (c.rungs.includes('keen') && t.kind === 'strike') { pen += 0.1 * Math.min(1, c.mult); res.by.add(`${c.name} (Keen rung)`); }
-    for (const e of ELEMENTS) if (c.rungs.includes(e) && t.kind === 'strike') { inflicts.push(`${ELEMENT_STATUS[e]} 20%`); res.by.add(`${c.name} (${ANAME[e]} rung)`); }
+    if (c.rungs.includes('swift') && t.event) { cdm += 0.15 * Math.min(1, c.mult); res.by.add(`${c.name} (Speed bonus)`); }
+    if (c.rungs.includes('keen') && t.kind === 'strike') { pen += 0.1 * Math.min(1, c.mult); res.by.add(`${c.name} (Crit bonus)`); }
+    for (const e of ELEMENTS) if (c.rungs.includes(e) && t.kind === 'strike') { inflicts.push(`${ELEMENT_STATUS[e]} 20%`); res.by.add(`${c.name} (${ANAME[e]} bonus)`); }
   }
   if (cdm) { res.card.cd = Math.round(res.card.cd * (1 - Math.min(CLAMP.cd, cdm))); res.notes.push(`cooldown −${Math.round(Math.min(CLAMP.cd, cdm) * 100)}%`); }
   if (pen) res.card.pen = +((t.pen || 0) + Math.min(0.3, pen)).toFixed(2);
@@ -1148,25 +1161,27 @@ function renderMartial() {
     const c = s.card;
     const d = [];
     const cmp = (label, a, b, f = (x) => x) => { if (a === undefined && b === undefined) return; d.push(a !== b ? `${label} <s>${a === undefined ? '—' : f(a)}</s> ${f(b)}` : `${label} ${f(a)}`); };
-    if (t.kind === 'strike') cmp('×', t.dmg, c.dmg, (x) => fmtNum(x));
-    cmp('cd', t.cd, c.cd, (x) => x + 't');
-    if (t.dur || c.dur) cmp('buff', t.dur, c.dur, (x) => x + 't');
-    if (t.splash || c.splash) cmp('splash', t.splash, c.splash, (x) => fmtNum(x));
-    if (t.pen || c.pen) cmp('pen', t.pen, c.pen, (x) => fmtNum(x));
-    cmp('exit', t.to, c.to, (x) => POS_NAME[x] || x);
+    // Ticks shown as seconds (10 ticks = 1 s), ratios as percentages.
+    const secs = (x) => fmtNum(x / 10) + 's';
+    if (t.kind === 'strike') cmp('damage ×', t.dmg, c.dmg, (x) => fmtNum(x));
+    cmp('cooldown', t.cd, c.cd, secs);
+    if (t.dur || c.dur) cmp('lasts', t.dur, c.dur, secs);
+    if (t.splash || c.splash) cmp('splash', t.splash, c.splash, (x) => Math.round(x * 100) + '%');
+    if (t.pen || c.pen) cmp('penetration', t.pen, c.pen, (x) => Math.round(x * 100) + '%');
+    cmp('ends', t.to, c.to, (x) => POS_NAME[x] || x);
     if (c.inflict) d.push(`hits inflict <b>${c.inflict}</b>`);
     const offer = s.offers.length
-      ? `<div class="small">Honed offering ${tierOK ? '+' : '(tier III) +'} ${s.offers.map((o) => `<b>${ARCH[o.a].name}</b>${ARCH[o.a].isNew ? ' (new)' : ''} <span class="tiny dim">${o.total != null ? fmtNum(o.total) + ' from ' : 'from '}${o.from.join(', ')}</span>`).join('; ')}</div>` : '';
+      ? `<div class="small">Honed choice ${tierOK ? 'adds' : 'adds at tier III:'} ${s.offers.map((o) => `<b>${ARCH[o.a].name}</b>${ARCH[o.a].isNew ? ' (new)' : ''} <span class="tiny dim">${o.total != null ? fmtNum(o.total) + ' from ' : 'from '}${o.from.join(', ')}</span>`).join('; ')}</div>` : '';
     const changed = s.by.size > 0;
     return `<div class="tcard ${changed ? 'changed' : ''} ${usable ? '' : 'off'}">
-      <div class="hd"><b>${c.name}${changed ? ' ⚒' : ''}</b><span class="tiny dim">${t.kind}${t.event ? ' · ' + t.event : ''} · ${t.from === 'any' ? 'any' : t.from.join('/')} → ${POS_NAME[t.to]}${t.family ? ' · ' + t.family : ''}${usable ? '' : ' · not held'}</span></div>
+      <div class="hd"><b>${c.name}${changed ? ' ⚒' : ''}</b><span class="tiny dim">${KIND_LABEL[t.kind]}${t.event ? ' · ' + (EVENT_LABEL[t.event] || t.event) : ''} · ${t.from === 'any' ? 'any position' : t.from.map((p) => POS_NAME[p]).join(' or ')} → ${POS_NAME[t.to]}${t.family ? ' · ' + t.family : ''}${usable ? '' : ' · weapon not held'}</span></div>
       <div class="delta">${d.join(' · ')}</div>${offer}
       ${s.notes.length ? `<div class="by">${s.notes.join('; ')}</div>` : ''}
       ${changed ? `<div class="by">by ${[...s.by].join(', ')}</div>` : ''}</div>`;
   }).join('');
   document.getElementById('lend-table').innerHTML = Object.values(GLYPHS).filter((g) => g.lend && !g.parent).map((g) =>
-    `<div style="display:flex; gap:8px; align-items:center; padding:2px 0">${glyphEl(g, 1, '#e8c25a')} <b>${g.name}</b> lends <b>${ARCH[g.lend[0]].name}</b>${ARCH[g.lend[0]].isNew ? ' (new)' : ''} to <span class="mono">${JSON.stringify(g.lend[1]).replace(/"/g, '')}</span> <span class="dim">· 0.7 × grade per copy</span></div>`).join('') +
-    '<div class="tiny dim" style="margin-top:6px">A total of 1.0 adds the archetype to the card\'s Honed offering while socketed. Taking it is permanent, like every Honed choice. Tumbling is a new archetype (damage ×1.0, so it passes the fork EV test) and a new dead-end seat: nothing enters from it; the next strike from it is ×0.7 and a forced crit that does not count as a crit for triggers or learning. Monsters have no ledger, so a monster move names its archetype in data.</div>';
+    `<div style="display:flex; gap:8px; align-items:center; padding:2px 0">${glyphEl(g, 1, '#e8c25a')} <b>${g.name}</b> adds <b>${ARCH[g.lend[0]].name}</b>${ARCH[g.lend[0]].isNew ? ' (new)' : ''} to the Honed choice of ${describeSel(g.lend[1])} <span class="dim">· 0.7 × grade per copy, 1.0 needed</span></div>`).join('') +
+    '<div class="tiny dim" style="margin-top:6px">A total of 1.0 adds the option to the technique\'s Honed choice while the rune is socketed. Taking it is permanent, like every Honed choice. Tumbling is a new fork option (damage ×1.0, so it passes the fork EV test) and a new dead-end seat: nothing enters from it; the next strike from it is ×0.7 and a forced crit that does not count as a crit for triggers or learning. Monsters have no glyph totals, so a monster move names its fork option in data.</div>';
 }
 document.getElementById('sel-family').addEventListener('change', renderKit);
 document.getElementById('chk-tier').addEventListener('change', renderMartial);
@@ -1180,11 +1195,11 @@ function renderCard(c) {
     <div class="mono">${c.key}</div>
     <div class="prov">
       <div><span class="src">Made of</span><div class="small">${c.glyphs.length ? [...new Set(c.glyphs)].map((id) => { const g = GLYPHS[id], n = c.glyphs.filter((x) => x === id).length; return `${g.name}${n > 1 ? ' ×' + n : ''} (${Object.entries(g.v).map(([a, p]) => ANAME[a] + ' ' + p * n).join(', ')})`; }).join(' + ') : '—'} on a ${GRADES[c.r.grade][0]} slab (×${c.mult})${adorn.length ? ' + ' + adorn.map((a) => `${ADORN[a.id].name} ${a.q.toUpperCase()} (${ANAME[ADORN[a.id].a]} ${fmtNum(gm(a.q))})`).join(' + ') : ''}</div></div>
-      <div><span class="src">Ledger</span><div>${AID.filter((a) => c.L[a]).map((a) => aspChip(a, c.L[a])).join(' ') || '—'}</div></div>
+      <div><span class="src">Totals</span><div>${AID.filter((a) => c.L[a]).map((a) => aspChip(a, c.L[a])).join(' ') || '—'}</div></div>
       <div><span class="src">Weapon</span><div class="small">${per('weapon').join(' · ') || '—'}</div></div>
       <div><span class="src">Chest</span><div class="small">${per('chest').join(' · ') || '—'}</div></div>
       <div><span class="src">Accessory</span><div class="small">${per('accessory').join(' · ') || '—'}</div></div>
-      <div><span class="src">Footprint</span><div class="small">${c.strokes} strokes, span ${c.span} at hold ${c.hold}</div></div>
+      <div><span class="src">Sockets used</span><div class="small">${c.span} (${c.strokes} strokes; ${c.hold} fit in one socket)</div></div>
       <div><span class="src">Worth</span><div class="small">${c.value} gold: half of the stone and adornments at their grades. The cuts add nothing.</div></div>
     </div></div>`;
 }
@@ -1206,13 +1221,13 @@ function renderBeasts() {
     if (c.L.lore) beastLens.push(`spell power +${fmtNum(c.L.lore * 3)}`);
     if (c.L.fortune) beastLens.push(`drops +${fmtNum(c.L.fortune)}%`);
     for (const e of ELEMENTS) if (c.L[e]) beastLens.push(`${ELEMENT_TYPE[e]} resist +${fmtNum(c.L[e] * 5)}pp`);
-    for (const a of c.rungs) if (RUNGS[a]) beastLens.push(ELEMENTS.includes(a) ? `blows inflict ${ELEMENT_STATUS[a]} (20%)` : `${ANAME[a]} rung`);
+    for (const a of c.rungs) if (RUNGS[a]) beastLens.push(ELEMENTS.includes(a) ? `blows inflict ${ELEMENT_STATUS[a]} (20%)` : `${ANAME[a]} bonus`);
     return `<div class="box">
       <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline"><h3>${b.name} · Carries</h3><span class="tiny dim">${b.facts}</span></div>
       <div style="display:flex; gap:6px; align-items:center">${c.glyphs.map((id) => glyphEl(GLYPHS[id], 2, '#e8c25a')).join('')}</div>
       <div class="small">${kills >= 5 ? `${c.name} in its ${SLOTS[b.slot].name.toLowerCase()}` : '? (fact at 5 kills)'}</div>
       <div class="mono">${kills >= 5 ? c.key : '…'}</div>
-      <div class="small">Reads on it: ${kills >= 5 ? beastLens.join(', ') : '?'}</div>
+      <div class="small">On it: ${kills >= 5 ? beastLens.join(', ') : '?'}</div>
       <div class="small">Teaches: ${b.teaches.map((id) => `${GLYPHS[id].name} ${kills >= 5 ? '✓' : `(${kills}/5)`}`).join(', ')}</div>
       <div class="small dim">${b.drop ? `Drops this rune at ${b.drop}% per kill.` : 'Does not drop it; carve it yourself.'}</div>
       <div><button data-beast="${bi}" ${kills >= 5 ? '' : 'disabled'}>Open on the Rune Table</button></div></div>`;
@@ -1222,22 +1237,22 @@ document.getElementById('beasts').addEventListener('click', (e) => { const b = e
 
 // ---------------------------------------------------------------- examples table
 const EXAMPLES = [
-  ['Starter ward', { glyphs: ['algiz'], grade: 'c', adorn: [] }],
-  ['Frost pair, chilled inlay', { glyphs: ['isaz', 'laguz'], grade: 'b', adorn: [{ id: 'chilled_slime_gel', q: 'c' }] }],
-  ['Horse and journey', { glyphs: ['ehwaz', 'raido'], grade: 'c', adorn: [] }],
-  ['Stormbrand, two hails and a god', { glyphs: ['hagalaz', 'hagalaz', 'ansuz'], grade: 'b', adorn: [] }],
-  ['Earthbind, ochre colour', { glyphs: ['uruz', 'tiwaz'], grade: 'b', adorn: [null, { id: 'ochre_pigment', q: 'b' }] }],
-  ['Aegis on a Superb slab', { glyphs: ['algiz', 'algiz', 'eihwaz', 'othala'], grade: 'a', adorn: [] }],
+  ['Algiz alone (starter glyph)', { glyphs: ['algiz'], grade: 'c', adorn: [] }],
+  ['Isaz + Laguz, chilled gel', { glyphs: ['isaz', 'laguz'], grade: 'b', adorn: [{ id: 'chilled_slime_gel', q: 'c' }] }],
+  ['Ehwaz + Raido', { glyphs: ['ehwaz', 'raido'], grade: 'c', adorn: [] }],
+  ['Stormbrand: Hagalaz ×2 + Ansuz', { glyphs: ['hagalaz', 'hagalaz', 'ansuz'], grade: 'b', adorn: [] }],
+  ['Earthbind: Uruz + Tiwaz, ochre', { glyphs: ['uruz', 'tiwaz'], grade: 'b', adorn: [null, { id: 'ochre_pigment', q: 'b' }] }],
+  ['Aegis: four Guard glyphs, Superb slab', { glyphs: ['algiz', 'algiz', 'eihwaz', 'othala'], grade: 'a', adorn: [] }],
 ];
 function renderExamples() {
-  document.getElementById('ex-table').innerHTML = '<thead><tr><th>Carving</th><th>Ledger</th><th>Weapon</th><th>Chest</th><th>Accessory</th><th>Span · worth</th></tr></thead><tbody>' +
+  document.getElementById('ex-table').innerHTML = '<thead><tr><th>Carving</th><th>Totals</th><th>Weapon</th><th>Chest</th><th>Accessory</th><th>Sockets · worth</th></tr></thead><tbody>' +
     EXAMPLES.map(([label, r], i) => {
       const c = compose({ ...r, tool: 'chisel', toolq: 'c', level: 12 });
       const cell = (slot) => readIn(c, slot).map(show).concat(rungText(c, slot).map((t) => '◆ ' + t), workText(c, slot).map((t) => '✦ ' + t)).join('<br>');
       return `<tr style="cursor:pointer" data-ex="${i}"><td><b>${label}</b><br><span class="small">${c.glyphs.map((id) => GLYPHS[id].name).join(' + ')} · ${GRADES[r.grade][0]}${(r.adorn || []).filter(Boolean).map((a) => ' + ' + ADORN[a.id].name).join('')}</span></td>
         <td class="small">${AID.filter((a) => c.L[a]).map((a) => `${ANAME[a]} ${fmtNum(c.L[a])}`).join('<br>')}</td>
         <td class="small">${cell('weapon')}</td><td class="small">${cell('chest')}</td><td class="small">${cell('accessory')}</td>
-        <td class="small">${c.strokes} strokes → span ${c.span}<br>${c.value} gold</td></tr>`;
+        <td class="small">${c.strokes} strokes → ${c.span} socket${c.span === 1 ? '' : 's'}<br>${c.value} gold</td></tr>`;
     }).join('') + '</tbody>';
 }
 document.getElementById('ex-table').addEventListener('click', (e) => { const tr = e.target.closest('[data-ex]'); if (tr) loadOnBench(EXAMPLES[+tr.dataset.ex][1]); });
