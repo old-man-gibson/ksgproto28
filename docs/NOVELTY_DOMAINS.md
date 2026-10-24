@@ -61,11 +61,33 @@ questions. Dialogue lines today are ambient text rotating on a timer
 
 ### `cookery` — Cooking
 
-`{ k: 8, c: 2, discovery: 20 }` — opens at 4x, half-life 2 cooks. Cooking has
-about twenty dishes and a bench run repeats one for hours, so the opening is
-the smallest of the built domains and the repeats wear off at hunting's rate.
-Like every domain the yield only adds to the ordinary payout (it settles to 1x,
-never below).
+`{ k: 5, c: 4, discovery: 2 }` — the first cook of a dish pays 1.25x (k / c), the
+excess over 1x shrinking as (k − c) / (c + n): 1.2x on the second, 1.1x by the
+fifth, under 1.02x after fifty. Cooking has about twenty dishes and a bench run
+repeats one for hours, so this is the gentlest of the built domains: a garnish,
+not a payout. Like every domain the yield only adds to the ordinary payout (it
+settles to 1x, never below).
+
+**Tuning, measured at Cooking 1** (a fresh save; Fair ingredients; the ten dishes
+that need no recipe card and no level, one of each in bench order, a level counted
+with the share of the next one earned). The ordinary cook is already worth about a
+level at Cooking 1 (a Fair stew costs the 20 XP the first level asks), so ten
+cooks with no novelty at all land at Cooking 7. The target (user, via the
+manager, 2026-10-23: slow compounding growth) is novelty worth about a third of a
+level on the first cook and about one level over all ten dishes.
+
+| `cookery` setting | first stew | one of each of ten | 40 more cooks |
+| --- | --- | --- | --- |
+| none (the floor) | 1.0 → 2.0 | 7.1 | 15.2 |
+| `k 8, c 2, discovery 20` (first build) | 1.0 → 5.1 | 16.0 | 21.9 |
+| `k 5, c 4, discovery 2` (now) | 1.0 → 2.3 | 8.4 | 16.4 |
+
+The levels in the first build came mostly from the flat 20: a level costs 20 XP at
+Cooking 1, so a flat discovery of that size is a whole level per new dish, and a 4x
+opening on top of it is three more. The flat part stops mattering by Cooking 10
+(a level costs about 70 XP there); the multiplier is the part that carries on, which is
+why `c` is the larger of the two numbers. `tests/cookbook.test.ts` pins the first-stew
+and ten-dish ranges.
 
 | input | key | treatment |
 | --- | --- | --- |

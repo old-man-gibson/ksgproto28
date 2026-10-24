@@ -107,6 +107,10 @@ export const LOG_TEXT = {
   'cooking.reason.no_such_technique': 'No such technique',
   'cooking.reason.technique_level': 'Technique needs Cooking {level}',
   'cooking.reason.not_preppable': 'Not a preppable ingredient',
+  // The Cook's Book crossing a threshold while cooking (systems/cooking.ts). Each
+  // is a tally entry on the "Cooked:" line of the cook that crossed it.
+  'cooking.book.time': "Cook's Book: {name} cook time noted ({cooks} cooks).",
+  'cooking.book.signature': '{name} is now a Signature dish: eating it also gives {status} ({cooks} cooks).',
 
   // ---------- disciplines ----------
   'disciplines.reason.slot_empty': '{slot} is empty',

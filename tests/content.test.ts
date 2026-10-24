@@ -1430,10 +1430,10 @@ describe('crafting disciplines', () => {
     // Mirrored in forge/lib/validate.ts, which runs the same function against the
     // staged copy. A flask marked food would be scaled by the cook's skill; a dish
     // left unmarked would not be; a signature that repeats the dish's own grant
-    // (or names no condition) does nothing.
-    const problems = foodProblems(DISCIPLINE_LIST, MATERIALS, new Set(Object.keys(STATUSES))).map(
-      (p) => p.message,
-    );
+    // (or names no condition) does nothing; food that grants a permanent or a
+    // harmful condition (the failure dish aside) would last forever or hurt, and
+    // the cook's skill would amplify it.
+    const problems = foodProblems(DISCIPLINE_LIST, MATERIALS, STATUSES).map((p) => p.message);
     expect(problems).toEqual([]);
   });
 

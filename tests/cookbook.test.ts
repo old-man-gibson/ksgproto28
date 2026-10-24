@@ -21,11 +21,13 @@ import {
 } from '../src/core/systems/cookbook';
 import { computeDerivedStats, getDerivedStats, statBreakdown, FOOD_MULT_CAP } from '../src/core/systems/derived';
 import { applyStatus, findStatus, hasStatus } from '../src/core/systems/statuses';
-import { noveltyRemaining } from '../src/core/systems/skills';
+import { noveltyRemaining, skillProgression } from '../src/core/systems/skills';
+import { bandedXpNeeded } from '../src/core/systems/progression';
 import { migrate } from '../src/core/save/migrations';
 import { deserialize, loadFromStorage, serialize, SAVE_KEY } from '../src/core/save/save';
 import { foodProblems } from '../src/core/systems/disciplines';
-import type { CraftDisciplineDef, GameEvent, GameState, MaterialDef, QualityTier } from '../src/core/types';
+import { harmOf, isHarmful } from '../src/core/systems/conditionHarm';
+import type { CraftDisciplineDef, GameEvent, GameState, MaterialDef, QualityTier, StatusDef } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
 const STOVE = DISCIPLINES.cooking;
@@ -193,15 +195,81 @@ describe('food scales with Cooking, and the read is capped', () => {
   });
 });
 
+describe('what counts as a harmful condition', () => {
+  const status = (patch: Partial<StatusDef>): StatusDef => ({
+    id: 'test_status',
+    name: 'Test Status',
+    icon: '🧪',
+    desc: 'A stand-in.',
+    stacking: { mode: 'highest' },
+    duration: 600,
+    ...patch,
+  });
+
+  it('is read from the condition, field by field', () => {
+    expect(harmOf(status({ dot: { type: 'poison', flat: 0.1 } }))).toBe('dot');
+    expect(harmOf(status({ drains: { resource: 'mana', ofMax: 0.01 } }))).toBe('drains');
+    expect(harmOf(status({ detonate: { type: 'arcane', ofDebt: 1 } }))).toBe('detonate');
+    expect(harmOf(status({ expireDamage: { type: 'piercing', flat: 1 } }))).toBe('expireDamage');
+    expect(harmOf(status({ fatalOnEmpty: { resource: 'hp', retains: 1 } }))).toBe('fatalOnEmpty');
+    expect(harmOf(status({ blocks: ['spell'] }))).toBe('blocks');
+    expect(harmOf(status({ blocksRegen: ['hp'] }))).toBe('blocksRegen');
+    expect(harmOf(status({ ceilings: [{ resource: 'hp', per: 0.1 }] }))).toBe('ceilings');
+    expect(harmOf(status({ missChance: 0.1 }))).toBe('missChance');
+    expect(harmOf(status({ healCap: 0 }))).toBe('healCap');
+    expect(harmOf(status({ disadvantage: true }))).toBe('disadvantage');
+    expect(harmOf(status({ element: 'heat' }))).toBe('element');
+    expect(harmOf(status({ escalatesTo: 'blazing' }))).toBe('escalatesTo');
+    expect(harmOf(status({ expiresTo: 'rot_recovery' }))).toBe('expiresTo');
+  });
+
+  it('reads a modifier that makes the bearer worse, either way round', () => {
+    expect(harmOf(status({ mods: [{ stat: 'maxHp', op: 'add', value: -8 }] }))).toContain('maxHp');
+    expect(harmOf(status({ mods: [{ stat: 'craftSpeed:smithing', op: 'mult', value: -0.1 }] }))).toContain('craftSpeed');
+    // Lower is better for damage taken: a negative value there helps.
+    expect(harmOf(status({ mods: [{ stat: 'damageTaken', op: 'mult', value: -0.1 }] }))).toBeNull();
+    expect(harmOf(status({ mods: [{ stat: 'damageTaken', op: 'mult', value: 0.1 }] }))).toContain('damageTaken');
+    expect(harmOf(status({ mods: [{ stat: 'maxHp', op: 'add', value: 8 }] }))).toBeNull();
+  });
+
+  it('does not mark what helps or only changes other conditions', () => {
+    expect(harmOf(status({ restores: [{ resource: 'hp', ofMax: 0.001 }] }))).toBeNull();
+    expect(harmOf(status({ immune: { ids: ['poison'] } }))).toBeNull();
+    expect(harmOf(status({ amplifies: [{ id: 'poison', mult: 2 }] }))).toBeNull();
+    expect(harmOf(status({}))).toBeNull();
+  });
+
+  it('on the live conditions: the five food conditions are harmless, spoilage and the afflictions are not', () => {
+    for (const id of ['well_fed', 'steady_hand', 'clear_headed', 'stoked', 'steeped']) {
+      expect(harmOf(STATUSES[id]), id).toBeNull();
+    }
+    for (const id of ['queasy', 'poison', 'bleeding', 'on_fire', 'manaburn', 'blinded', 'fasting']) {
+      expect(isHarmful(STATUSES[id]), id).toBe(true);
+    }
+  });
+});
+
 describe('the food flag lint', () => {
   const discs = Object.values(DISCIPLINES);
-  const statusIds = new Set(Object.keys(STATUSES));
-  const lint = (materials: Record<string, MaterialDef>, disciplines: CraftDisciplineDef[] = discs) =>
-    foodProblems(disciplines, materials, statusIds).map((p) => p.message);
+  const lint = (
+    materials: Record<string, MaterialDef>,
+    disciplines: CraftDisciplineDef[] = discs,
+    statuses: Record<string, StatusDef> = STATUSES,
+  ) => foodProblems(disciplines, materials, statuses).map((p) => p.message);
   const mark = (id: string, patch: Partial<NonNullable<MaterialDef['consumable']>>): Record<string, MaterialDef> => ({
     ...MATERIALS,
     [id]: { ...MATERIALS[id], consumable: { ...MATERIALS[id].consumable, ...patch } },
   });
+  /** Several dishes patched at once. */
+  const markAll = (
+    patches: Record<string, Partial<NonNullable<MaterialDef['consumable']>>>,
+  ): Record<string, MaterialDef> => {
+    let out: Record<string, MaterialDef> = { ...MATERIALS };
+    for (const [id, patch] of Object.entries(patches)) {
+      out = { ...out, [id]: { ...MATERIALS[id], consumable: { ...MATERIALS[id].consumable, ...patch } } };
+    }
+    return out;
+  };
 
   it('passes on the live content', () => {
     expect(lint(MATERIALS)).toEqual([]);
@@ -247,6 +315,99 @@ describe('the food flag lint', () => {
     ]);
     expect(lint(mark('healing_salve', { signature: [{ id: 'stoked', intensity: 0.5 }] }))).toEqual([
       "'healing_salve' has a signature but is not food",
+    ]);
+  });
+
+  it('catches a signature that lists a condition twice', () => {
+    expect(
+      lint(mark('hearty_stew', { signature: [{ id: 'stoked', intensity: 0.5 }, { id: 'stoked', intensity: 0.25 }] })),
+    ).toEqual(["'hearty_stew' signature lists 'stoked' twice"]);
+  });
+
+  it('catches a signature that is the spoilage condition, derived from what the failure dish grants', () => {
+    // Harmless-looking spoilage: the mess grants a benign condition, so the harm
+    // rule is silent and only the spoilage rule can catch a signature on it.
+    const benignMess = markAll({
+      scorched_mess: { grants: [{ id: 'psionic_haste', intensity: 1 }] },
+      berry_pie: { signature: [{ id: 'psionic_haste', intensity: 0.5 }] },
+    });
+    expect(lint(benignMess)).toEqual(["'berry_pie' signature is the spoilage condition 'psionic_haste'"]);
+    // And on the live content, where spoilage is queasy, both rules fire.
+    const problems = lint(mark('berry_pie', { signature: [{ id: 'queasy', intensity: 0.5 }] }));
+    expect(problems).toContain("'berry_pie' signature is the spoilage condition 'queasy'");
+    expect(problems.some((p) => p.includes('harmful condition (dot)'))).toBe(true);
+  });
+
+  it("catches food that never ends: 'permanent', or a duration of zero or less", () => {
+    expect(lint(mark('hearty_stew', { grants: [{ id: 'well_fed', intensity: 1, duration: 'permanent' }] }))).toEqual([
+      "'hearty_stew' grants 'well_fed' with duration 'permanent': a dish's effect must run out",
+    ]);
+    expect(lint(mark('hearty_stew', { signature: [{ id: 'stoked', intensity: 0.5, duration: 'permanent' }] }))).toEqual([
+      "'hearty_stew' signature 'stoked' with duration 'permanent': a dish's effect must run out",
+    ]);
+    expect(lint(mark('hearty_stew', { grants: [{ id: 'well_fed', intensity: 1, duration: 0 }] }))).toEqual([
+      "'hearty_stew' grants 'well_fed' with duration 0: it would end at once",
+    ]);
+    expect(lint(mark('hearty_stew', { signature: [{ id: 'stoked', intensity: 0.5, duration: -5 }] }))).toEqual([
+      "'hearty_stew' signature 'stoked' with duration -5: it would end at once",
+    ]);
+    // The failure dish is not exempt from this one.
+    expect(lint(mark('scorched_mess', { grants: [{ id: 'queasy', intensity: 1, duration: 'permanent' }] }))).toEqual([
+      "'scorched_mess' grants 'queasy' with duration 'permanent': a dish's effect must run out",
+    ]);
+  });
+
+  it('catches food that does nothing: intensity or chance of zero or less; a missing one is the default', () => {
+    expect(lint(mark('hearty_stew', { grants: [{ id: 'well_fed', intensity: 0 }] }))).toEqual([
+      "'hearty_stew' grants 'well_fed' with intensity 0: it would do nothing",
+    ]);
+    expect(lint(mark('hearty_stew', { signature: [{ id: 'stoked', intensity: -0.5 }] }))).toEqual([
+      "'hearty_stew' signature 'stoked' with intensity -0.5: it would do nothing",
+    ]);
+    expect(lint(mark('hearty_stew', { grants: [{ id: 'well_fed', intensity: 1, chance: 0 }] }))).toEqual([
+      "'hearty_stew' grants 'well_fed' with chance 0: it would never land",
+    ]);
+    // No intensity is intensity 1 (consumables.ts reads `app.intensity ?? 1`), no chance is certain.
+    expect(lint(mark('hearty_stew', { grants: [{ id: 'well_fed' }] }))).toEqual([]);
+    expect(lint(mark('hearty_stew', { signature: [{ id: 'stoked' }] }))).toEqual([]);
+  });
+
+  it('catches a harmful condition on food, whichever field makes it harmful', () => {
+    expect(lint(mark('hearty_stew', { grants: [{ id: 'poison', intensity: 1 }] }))).toEqual([
+      "'hearty_stew' grants 'poison' is a harmful condition (dot); food only nourishes",
+    ]);
+    expect(lint(mark('hearty_stew', { signature: [{ id: 'bleeding', intensity: 0.5 }] }))).toEqual([
+      "'hearty_stew' signature 'bleeding' is a harmful condition (dot); food only nourishes",
+    ]);
+    // The rule reads the condition, not its id: patch the registry with new conditions.
+    const harm = (patch: Partial<StatusDef>): Record<string, StatusDef> => ({
+      ...STATUSES,
+      test_harm: { id: 'test_harm', name: 'Test Harm', icon: '🧪', desc: 'x', stacking: { mode: 'highest' }, duration: 600, ...patch },
+    });
+    const eats = { grants: [{ id: 'test_harm', intensity: 1 }] };
+    for (const [field, patch] of [
+      ['drains', { drains: { resource: 'mana' as const, ofMax: 0.01 } }],
+      ['detonate', { detonate: { type: 'arcane' as const, ofDebt: 1 } }],
+      ['expireDamage', { expireDamage: { type: 'piercing' as const, flat: 1 } }],
+    ] as const) {
+      expect(lint(mark('hearty_stew', eats), discs, harm(patch)), field).toEqual([
+        `'hearty_stew' grants 'test_harm' is a harmful condition (${field}); food only nourishes`,
+      ]);
+    }
+    expect(lint(mark('hearty_stew', eats), discs, harm({ mods: [{ stat: 'maxHp', op: 'add', value: -8 }] }))).toEqual([
+      "'hearty_stew' grants 'test_harm' is a harmful condition (mods (maxHp -8)); food only nourishes",
+    ]);
+    // A benign condition with the same shape passes.
+    expect(lint(mark('hearty_stew', eats), discs, harm({ mods: [{ stat: 'maxHp', op: 'add', value: 8 }] }))).toEqual([]);
+  });
+
+  it("the failure dish's own harmful grants are the one exception", () => {
+    // The live Scorched Mess grants queasy (a dot): the live-content test above already passes.
+    expect(MATERIALS.scorched_mess.consumable!.grants!.map((g) => g.id)).toEqual(['queasy']);
+    expect(isHarmful(STATUSES.queasy)).toBe(true);
+    // Anywhere else queasy is refused as a grant.
+    expect(lint(mark('hearty_stew', { grants: [{ id: 'queasy', intensity: 1 }] }))).toEqual([
+      "'hearty_stew' grants 'queasy' is a harmful condition (dot); food only nourishes",
     ]);
   });
 
@@ -516,8 +677,16 @@ describe("the Cook's Book", () => {
 });
 
 describe('the cookery novelty domain', () => {
+  const spec = SKILLS.cooking.novelty!;
+  /** What the nth repeat of a dish is worth as a multiple of the ordinary payout. */
+  const yieldAt = (n: number) => (spec.k + n) / (spec.c + n);
+
+  it('is declared on the cooking skill, keyed by dish', () => {
+    expect(spec.domain).toBe('cookery');
+    expect(spec.k).toBeGreaterThanOrEqual(spec.c); // opens at k / c >= 1 and never pays below the ordinary rate
+  });
+
   it('pays a dish new to the Book once, then settles to the ordinary rate', () => {
-    expect(SKILLS.cooking.novelty).toEqual({ domain: 'cookery', k: 8, c: 2, discovery: 20 });
     // A high level, so no cook crosses a level mid-measure and hides its XP.
     const g = kitchen(40);
     const xpOf = () => g.state.skills.cooking.xp;
@@ -531,12 +700,13 @@ describe('the cookery novelty domain', () => {
     const second = gain();
     const third = gain();
     // Same cook, same grade: the base is constant, so the novelty multiple is
-    // visible directly — (8+0)/(2+0)=4, (8+1)/(2+1)=3, (8+2)/(2+2)=2.5 …
-    const base = second / 3;
-    expect(third / base).toBeCloseTo(2.5, 5);
+    // visible directly as the ratio of one cook to the next.
+    const base = second / yieldAt(1);
+    expect(third / base).toBeCloseTo(yieldAt(2), 5);
+    expect(second / base).toBeGreaterThan(third / base);
     // … and the first also carries the one-time discovery payout.
-    expect(first - base * 4).toBeCloseTo(SKILLS.cooking.novelty!.discovery * skillXp, 5);
-    expect(noveltyRemaining(g.state, 'cooking', 'hearty_stew')).toBeCloseTo((8 + 3) / (2 + 3));
+    expect(first - base * yieldAt(0)).toBeCloseTo(spec.discovery * skillXp, 5);
+    expect(noveltyRemaining(g.state, 'cooking', 'hearty_stew')).toBeCloseTo(yieldAt(3));
     // A second dish is new again.
     const broth = (): Placement => ({ main: at('cave_mushroom'), second: at('common_herb') });
     const before = xpOf();
@@ -548,10 +718,75 @@ describe('the cookery novelty domain', () => {
     const g = kitchen();
     clearFloors(g.state.stats);
     cookStew(g, 1);
-    expect(noveltyRemaining(g.state, 'cooking', 'hearty_stew')).toBeCloseTo(3);
+    expect(noveltyRemaining(g.state, 'cooking', 'hearty_stew')).toBeCloseTo(yieldAt(1));
     expect(g.prestige(5)).toBe(true);
     expect(g.state.novelty.cooking).toBeUndefined();
-    expect(noveltyRemaining(g.state, 'cooking', 'hearty_stew')).toBeCloseTo(4);
+    expect(noveltyRemaining(g.state, 'cooking', 'hearty_stew')).toBeCloseTo(yieldAt(0));
+  });
+
+  describe('is a garnish on the ordinary rate (tuning, measured at Cooking 1)', () => {
+    // The ten dishes a fresh save can cook with no recipe card and no level gate.
+    const TEN: { bench: string; place: Placement; duration?: number }[] = [
+      { bench: 'cooking', place: { main: at('raw_meat'), second: at('wild_onion') }, duration: 12 }, // stew
+      { bench: 'cooking', place: { main: at('cave_mushroom'), second: at('common_herb') }, duration: 12 }, // broth
+      { bench: 'cooking', place: { main: at('rough_flour'), second: at('rock_salt') }, duration: 12 }, // ration
+      { bench: 'grilling', place: { main: at('river_fish') } }, // skewered fish
+      { bench: 'grilling', place: { main: at('raw_meat') } }, // seared steak
+      { bench: 'grilling', place: { main: at('wild_onion'), second: at('cave_mushroom') } }, // charred roots
+      { bench: 'baking', place: { main: at('rough_flour'), second: at('rough_flour') } }, // loaf
+      { bench: 'baking', place: { main: at('rough_flour'), second: at('forest_berries') } }, // pie
+      { bench: 'assembling', place: { main: at('rustic_loaf'), second: at('seared_steak') } }, // sandwich
+      { bench: 'assembling', place: { main: at('wild_onion'), second: at('cave_mushroom') } }, // salad
+    ];
+    const fresh = (): Game => {
+      const g = new Game(createInitialState(1));
+      g.state.skills.cooking = { level: 1, xp: 0 };
+      for (const id of [
+        'raw_meat', 'wild_onion', 'cave_mushroom', 'common_herb', 'river_fish', 'rock_salt',
+        'rough_flour', 'forest_berries', 'rustic_loaf', 'seared_steak',
+      ]) {
+        grantGraded(g.state, id, 'c', 50);
+      }
+      return g;
+    };
+    /** Level plus the share of the next level already earned. */
+    const progress = (g: Game): number => {
+      const s = g.state.skills.cooking;
+      return s.level + s.xp / bandedXpNeeded(skillProgression('cooking'), s.level);
+    };
+    const runTen = (g: Game): number[] => {
+      const after: number[] = [];
+      for (const d of TEN) {
+        expect(cook(g.state, g.bus, d.place, DISCIPLINES[d.bench], d.duration)).not.toBeNull();
+        after.push(progress(g));
+      }
+      return after;
+    };
+
+    it('the first cook of a new dish is about one level and a third; one of each of ten is Cooking 8', () => {
+      const withNovelty = runTen(fresh());
+      // The first stew gains 1.0 to 1.6 levels, the ordinary cook's whole level included.
+      expect(withNovelty[0] - 1).toBeGreaterThanOrEqual(1.0);
+      expect(withNovelty[0] - 1).toBeLessThan(1.6);
+      // Ten dishes land in 6 to 9 (a level shows as its integer part: 6, 7 or 8).
+      expect(withNovelty[9]).toBeGreaterThanOrEqual(6);
+      expect(withNovelty[9]).toBeLessThan(9);
+    });
+
+    it('adds at most two levels over the same ten cooks with no novelty at all', () => {
+      const saved = SKILLS.cooking.novelty;
+      let floor: number;
+      try {
+        SKILLS.cooking.novelty = undefined;
+        floor = runTen(fresh())[9];
+      } finally {
+        SKILLS.cooking.novelty = saved;
+      }
+      const withNovelty = runTen(fresh())[9];
+      expect(floor).toBeGreaterThan(6.5); // ten ordinary cooks are already Cooking 7
+      expect(withNovelty).toBeGreaterThan(floor);
+      expect(withNovelty - floor).toBeLessThan(2);
+    });
   });
 });
 
@@ -723,5 +958,190 @@ describe('save v58', () => {
     g.state.stats[cookedKey('hearty_stew')] = COOK_TIME_COOKS;
     expect(g.prestige(9)).toBe(true);
     expect(g.state.prestige.cookbook).toEqual({ timed: ['hearty_stew'], signed: [] });
+  });
+});
+
+describe('the cook never amplifies a harmful condition a dish carries', () => {
+  /** A dish no lint would pass: nourishment, a harmful grant and a harmful Signature. */
+  const withCurry = (run: () => void) => {
+    MATERIALS.test_curry = {
+      id: 'test_curry',
+      name: 'Test Curry',
+      icon: '🍛',
+      value: 1,
+      graded: true,
+      consumable: {
+        food: true,
+        grants: [{ id: 'well_fed', intensity: 1 }, { id: 'poison', intensity: 0.5 }],
+        signature: [{ id: 'on_fire', intensity: 0.5 }],
+      },
+    };
+    try {
+      run();
+    } finally {
+      delete MATERIALS.test_curry;
+    }
+  };
+  const eat = (level: number): Game => {
+    const g = kitchen(level);
+    g.state.stats[cookedKey('test_curry')] = SIGNATURE_COOKS;
+    grantGraded(g.state, 'test_curry', 'c', 1);
+    expect(useConsumable(g.state, g.bus, 'test_curry', 'c')!.signature).toEqual(['on_fire']);
+    return g;
+  };
+
+  it('scales the nourishment and leaves the harm at its own terms, grants and Signature alike', () => {
+    withCurry(() => {
+      const novice = eat(1);
+      const master = eat(200);
+      // The harmless grant follows the cook...
+      expect(findStatus(novice.state, 'well_fed')!.intensity).toBe(1);
+      expect(findStatus(master.state, 'well_fed')!.intensity).toBeCloseTo(1.5);
+      expect(findStatus(master.state, 'well_fed')!.ticksLeft).toBe(Math.round(STATUSES.well_fed.duration! * 1.5));
+      // ...the harmful ones do not: same intensity, same default lifetime.
+      for (const id of ['poison', 'on_fire']) {
+        const a = findStatus(novice.state, id)!;
+        const b = findStatus(master.state, id)!;
+        expect(b.intensity, id).toBeCloseTo(a.intensity);
+        expect(a.intensity, id).toBeCloseTo(0.5);
+        expect(b.ticksLeft, id).toBe(STATUSES[id].duration);
+        expect(a.ticksLeft, id).toBe(STATUSES[id].duration);
+      }
+    });
+  });
+
+  it('is read from the condition, so a patched harmful condition is not scaled and a benign one is', () => {
+    withCurry(() => {
+      const original = STATUSES.steeped;
+      MATERIALS.test_curry.consumable!.grants = [{ id: 'steeped', intensity: 1 }];
+      MATERIALS.test_curry.consumable!.signature = [{ id: 'stoked', intensity: 0.5 }];
+      const eatAt200 = (): Game => {
+        const g = kitchen(200);
+        g.state.stats[cookedKey('test_curry')] = SIGNATURE_COOKS;
+        grantGraded(g.state, 'test_curry', 'c', 1);
+        useConsumable(g.state, g.bus, 'test_curry', 'c');
+        return g;
+      };
+      try {
+        // Make Steeped harmful by data alone: no id list is involved.
+        STATUSES.steeped = { ...original, dot: { type: 'poison', flat: 0.01 } };
+        const harmful = eatAt200();
+        expect(findStatus(harmful.state, 'steeped')!.intensity).toBeCloseTo(1);
+        expect(findStatus(harmful.state, 'steeped')!.ticksLeft).toBe(original.duration);
+      } finally {
+        STATUSES.steeped = original;
+      }
+      const benign = eatAt200();
+      expect(findStatus(benign.state, 'steeped')!.intensity).toBeCloseTo(1.5);
+      expect(findStatus(benign.state, 'steeped')!.ticksLeft).toBe(Math.round(original.duration! * 1.5));
+    });
+  });
+});
+
+describe('the Book says so when a cook crosses a threshold', () => {
+  const TIME_NOTE = "Cook's Book: Seared Stew cook time noted (25 cooks).";
+  const SIGNATURE_NOTE = 'Seared Stew is now a Signature dish: eating it also gives Well Fed (100 cooks).';
+  /** A kitchen that has read the Seared Stew card. */
+  function searedKitchen(): Game {
+    const g = kitchen(1);
+    g.state.stats['recipe:seared_stew'] = 1;
+    return g;
+  }
+  /** Meat midway on a Quick simmer: 5.4 units on the heat, under 6. */
+  const seared = (g: Game, n: number) => {
+    for (let i = 0; i < n; i++) {
+      const done = cook(g.state, g.bus, { main: at('wild_onion'), second: at('raw_meat') }, STOVE, 8);
+      expect(done?.dish).toBe('seared_stew');
+    }
+  };
+  /** Every Cook's Book note in the running log, in order: what the player reads. */
+  const notes = (g: Game) =>
+    g.state.log
+      .flatMap((l) => (l.tally ?? []).map((tl) => tl.label))
+      .filter((label) => /cook time noted|Signature dish/.test(label));
+
+  it('notes the cook time at the 25th cook of a dish that has one, once', () => {
+    const g = searedKitchen();
+    seared(g, 30);
+    expect(notes(g)).toEqual([TIME_NOTE]);
+    // It rides the "Cooked:" tally of the cook that crossed it: the same group, the same folding path.
+    const crossing = g.state.log.find((l) => l.tally?.some((tl) => tl.label === TIME_NOTE))!;
+    expect(crossing.group).toBe('bench:cooking');
+    expect(crossing.prefix).toBe('🍛 Cooked:');
+    expect(crossing.msg).toMatch(/^🍛 Cooked: .*Seared Stew ×\d+, /);
+    expect(crossing.msg).toContain(TIME_NOTE);
+    // The Book on the bench agrees: this is the cook that made it known.
+    expect(g.state.stats[cookedKey('seared_stew')]).toBe(30);
+    expect(row(g, 'cooking', 'seared_stew').cookTimeKnown).toBe(true);
+    // Thirty cooks leave the note once in the running log, not thirty times, and never on a line of its own.
+    const logged = g.state.log.filter((l) => l.msg.includes('cook time noted'));
+    expect(logged).toHaveLength(1);
+    expect(logged[0].msg).toContain('Cooked:');
+  });
+
+  it('names the Signature at the 100th cook of a dish that has one, once', () => {
+    const g = kitchen(1);
+    g.state.stats[cookedKey('hearty_stew')] = 97;
+    cookStew(g, 5);
+    expect(notes(g)).toEqual(['Hearty Stew is now a Signature dish: eating it also gives Stoked (100 cooks).']);
+  });
+
+  it('says nothing at 25 for a dish with no window of its own, and nothing for the failure dish', () => {
+    const g = kitchen(1);
+    g.state.stats[cookedKey('hearty_stew')] = 22;
+    cookStew(g, 5); // crosses 25: Hearty Stew has no cook-time window
+    expect(notes(g)).toEqual([]);
+    expect(row(g, 'cooking', 'stew').cookTimeKnown).toBe(true); // the Book still counts it
+
+    grantGraded(g.state, 'wild_onion', 'f', 400);
+    g.state.stats[cookedKey('scorched_mess')] = 98;
+    for (let i = 0; i < 5; i++) {
+      cook(g.state, g.bus, { main: at('wild_onion', 'f'), second: at('wild_onion', 'f') }, STOVE, 12);
+    }
+    expect(g.state.stats[cookedKey('scorched_mess')]).toBe(103); // past 25 and 100: no window, no Signature
+    expect(notes(g)).toEqual([]);
+  });
+
+  it('names a Signature on a dish that also has a cook time', () => {
+    const g = searedKitchen();
+    g.state.stats[cookedKey('seared_stew')] = 99;
+    seared(g, 2);
+    expect(notes(g)).toEqual([SIGNATURE_NOTE]);
+  });
+
+  it("stays quiet for what Cook's Notes already carried, and speaks when the boon is not held", () => {
+    /** Cross 25 and then 100 with the legacy lists naming the dish, at the given boon rank. */
+    const crossBoth = (rank: number): string[] => {
+      const g = searedKitchen();
+      g.state.prestige.cookbook = { timed: ['seared_stew'], signed: ['seared_stew'] };
+      if (rank > 0) g.state.prestige.purchases.cooks_notes = rank;
+      g.state.stats[cookedKey('seared_stew')] = 24;
+      seared(g, 1);
+      g.state.stats[cookedKey('seared_stew')] = 99;
+      seared(g, 1);
+      return notes(g);
+    };
+    expect(crossBoth(2)).toEqual([]); // both were carried over: no news
+    expect(crossBoth(1)).toEqual([SIGNATURE_NOTE]); // the cook time was carried, the Signature was not
+    expect(crossBoth(0)).toEqual([TIME_NOTE, SIGNATURE_NOTE]); // the lists are ignored without the boon
+  });
+
+  it('a counted bench run crossing a threshold leaves one note, folded into the run, not a line of its own', () => {
+    const g = searedKitchen();
+    // Cooking 40: no level-up lines between the cooks to split the run on their own.
+    g.state.skills.cooking = { level: 40, xp: 0 };
+    g.state.spot = 'my_home';
+    g.state.stats[cookedKey('seared_stew')] = 22;
+    expect(
+      startBenchWork(g.state, g.bus, 'cooking', { main: at('wild_onion'), second: at('raw_meat') }, { count: 6, duration: 8 }),
+    ).toBe(true);
+    for (let i = 0; i < 700 && g.state.benchWork; i++) g.tick();
+    expect(g.state.stats[cookedKey('seared_stew')]).toBe(28);
+    const logged = g.state.log.filter((l) => l.msg.includes('cook time noted'));
+    expect(logged).toHaveLength(1);
+    expect(logged[0].group).toBe('bench:cooking');
+    expect(logged[0].msg).toMatch(/Cooked: .*Seared Stew.*Cook's Book: Seared Stew cook time noted \(25 cooks\)\./);
+    // Nothing logged a line that is only the note.
+    expect(g.state.log.some((l) => l.msg.startsWith("Cook's Book:"))).toBe(false);
   });
 });

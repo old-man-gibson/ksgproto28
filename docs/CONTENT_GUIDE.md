@@ -1257,6 +1257,12 @@ is one count shared by its rows. Two thresholds, both in cooks of the dish:
 Signature. The counters reset with the run; the Cook's Notes prestige boon
 (docs/PRESTIGE.md) carries which dishes reached each threshold. The skill's
 novelty domain `cookery` is keyed by the same dish id (docs/NOVELTY_DOMAINS.md).
+The cook that crosses a threshold says so, as extra tally entries on its own
+"Cooked:" log line (so a bench run still folds into one line): at 25, for a dish
+with a heat window, "Cook's Book: <Dish> cook time noted (25 cooks)."; at 100,
+for a dish with a Signature, "<Dish> is now a Signature dish: eating it also
+gives <condition> (100 cooks)." A threshold the Cook's Notes boon already carried
+over is not announced again.
 
 **Bench runs** (`systems/benchwork.ts`) repeat one layout on the clock —
 `craftSpeed` compresses the interval to a floor, and speed past the floor
@@ -1316,13 +1322,27 @@ skill scales it as it is eaten. Cooking's milestones add to two player stats,
 bounds them). Eating food multiplies each granted condition's duration by
 `foodDuration` and its intensity by `foodPotency`, and each `restore` amount by
 `foodPotency` (`foodScale`, `consumables.ts`). A grant's own `duration` is
-scaled too; a permanent or never-ending condition keeps its terms. Only the
-benefit side scales: a refuse-grade dish, the spoilage condition (`queasy`) and
-anything that is not food are untouched. The flag is linted in both validation
-layers (`foodProblems`, `systems/disciplines.ts`; `tests/content.test.ts` and
-`forge/lib/validate.ts`): every material a bench with `skill: 'cooking'` makes
-is food and nothing else is, so an alchemy flask or a salve marked food fails.
-Monsters do not eat, so neither stat is on `MonsterStats`.
+scaled too; a never-ending condition (null duration) keeps its terms. Only the
+benefit side scales: a refuse-grade dish, any harmful condition a dish carries
+(the spoilage condition `queasy`, or anything else) and anything that is not food
+are untouched. "Harmful" is read from the condition's data, not an id list
+(`harmOf`, `systems/conditionHarm.ts`): a `dot`, `drains`, `detonate`,
+`expireDamage` or `fatalOnEmpty`; a `bar` jolt, `surplus`, `magnetism`,
+`incomingBite`, `tends`, `grafts` or `displaces`; a sealed pool (`ceilings`,
+`ceilingFromSpend`, `ceilingPerTick`, `blocksRegen`) or a `missChance`,
+`disadvantage`, `costMult`, `healCap`, `damp`, `resFloor`, `blocks` or
+`forceStyle`; an `element` (the established affliction flag), `escalatesTo` or
+`expiresTo`; or any modifier that makes the bearer worse (a negative value, or a
+positive one on a lower-is-better stat such as `damageTaken`). `restores`,
+`immune`, `retaliate` and the like help the bearer and do not count. The flag and
+what food grants are linted in both validation layers (`foodProblems`,
+`systems/disciplines.ts`; `tests/content.test.ts` and `forge/lib/validate.ts`):
+every material a bench with `skill: 'cooking'` makes is food and nothing else is,
+so an alchemy flask or a salve marked food fails; food grants and signatures
+carry no `duration: 'permanent'`, no duration, intensity or chance of zero or
+less, and no harmful condition (the failure dish's own grants aside). A missing
+intensity is 1 and a missing chance is certain. Monsters do not eat, so neither
+stat is on `MonsterStats`.
 
 **Signature** (`consumable.signature`, a `StatusApplication[]`): once the player
 has cooked a dish 100 times, eating it also grants these conditions, graded and
@@ -1331,7 +1351,8 @@ intensity 0.5 that differs from the dish's own grants. The lint requires it on
 every dish a cooking bench makes except the failure dish (the material only
 `maxQuality` outcomes make, the Scorched Mess), requires real condition ids, and
 refuses a signature that repeats one of the dish's own grants (a second dose of
-a `highest` condition adds nothing).
+a `highest` condition adds nothing), lists a condition twice, or is the spoilage
+condition (whatever the failure dish grants).
 
 ### Status condition (`statuses.data.ts`)
 
