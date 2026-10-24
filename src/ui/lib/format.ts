@@ -494,7 +494,7 @@ export function grantLine(app: StatusApplication): string {
   const bits = conditionEffects(app.id, strength, true);
   // The application may set its own lifetime (psionic coherence buys duration).
   const held = app.duration ?? def.duration;
-  const time = typeof held === 'number' && held ? ` ⌛ ${Math.round(held / TPS)}s` : '';
+  const time = typeof held === 'number' && held ? ` ⌛ ${ticksToTime(held)}` : '';
   return `${def.icon} ${def.name}${time}${bits.length ? ` — ${bits.join(', ')}` : ''}`;
 }
 

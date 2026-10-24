@@ -226,6 +226,14 @@ describe('what a dish does when eaten', () => {
     expect(fine[0]).not.toBe(fair[0]);
   });
 
+  it('gives a duration in minutes and seconds, as the rest of the game does', () => {
+    // Well Fed lasts 600 s; Seared Stew's Stoked 300 s; Braised Meat's Well Fed is stretched to 900 s.
+    expect(foodLines('hearty_stew', 'c')[0]).toContain('⌛ 10m 0s');
+    expect(foodLines('seared_stew', 'c')[0]).toContain('⌛ 5m 0s');
+    expect(foodLines('braised_meat', 'c')[0]).toContain('⌛ 15m 0s');
+    expect(foodLines('braised_meat', 'c')[0]).not.toMatch(/\d{3}s/);
+  });
+
   it('a Refuse dish makes you ill instead of doing what it says', () => {
     const lines = foodLines('hearty_stew', 'f');
     expect(lines).toHaveLength(1);

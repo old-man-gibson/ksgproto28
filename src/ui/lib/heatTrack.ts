@@ -1,5 +1,5 @@
 import type { CraftDisciplineDef, CraftOutcomeDef, CraftSlotDef, GameState, GradedStack } from '../../core/types';
-import { MATERIALS } from '../../core/registry';
+import { MATERIALS, SKILLS } from '../../core/registry';
 import { exposureInfo, type CookCheck, type ExposureInfo } from '../../core/systems/cooking';
 import {
   describeHeatWindow,
@@ -204,13 +204,23 @@ const oneDecimal = (n: number) => n.toFixed(1);
 /** 5.4 -> "5.4", 8 -> "8": trailing zeros dropped, for entry units and ranges. */
 const plain = (n: number) => String(Math.round(n * 10) / 10);
 
+/** Whether a part would be cooked right in a slot at a cook length. The core answers, not this file. */
+function cooksRight(disc: CraftDisciplineDef, slot: CraftSlotDef, materialId: string, units: number): boolean {
+  return exposureInfo(disc, slot, materialId, units)?.verdict === 'in its element';
+}
+
 /**
  * The single line under the track. The first ingredient (in time order) that
- * is outside its cooked-right range gets its range and the slot, or the cook
- * length, that would fix it. With every ingredient cooked right it says which
+ * is outside its cooked-right range gets its range and what would fix it: an
+ * open slot where it cooks right at this cook length (empty, or one whose
+ * ingredient would also cook right in this one's place), and a cook length at
+ * which it cooks right in the slot it is in. Each is asked of `exposureInfo`,
+ * so a suggestion is never a guess about which way is better. When nothing
+ * fixes it the line says so. With every ingredient cooked right it says which
  * dish the cook time makes and what the other readable cook times make.
  */
 export function heatHint(
+  state: GameState,
   disc: CraftDisciplineDef,
   placement: Placement,
   duration: number,
@@ -220,32 +230,36 @@ export function heatHint(
 ): Hint {
   const bad = rows.find((r) => r.info && r.info.verdict !== 'in its element');
   if (bad?.part && bad.info) {
-    const { info } = bad;
-    const name = MATERIALS[bad.part.id]?.name ?? bad.part.id;
+    const { info, part } = bad;
+    const nameOf = (id: string) => MATERIALS[id]?.name ?? id;
     const [lo, hi] = info.band;
-    const head = `${name} cooks ${oneDecimal(info.exposure)} units; cooked right is ${plain(lo)} to ${plain(hi)}.`;
-    const open = rows.filter((r) => !r.locked && r !== bad);
-    // Empty slots first, then the one nearest to where the part sits now.
-    const nearest = (slots: TrackRow[]) =>
-      [...slots].sort(
-        (a, b) => Number(!!a.part) - Number(!!b.part) || Math.abs(a.entry - bad.entry) - Math.abs(b.entry - bad.entry),
-      )[0];
-    const options = disc.timeline?.options ?? [];
+    const head = `${nameOf(part.id)} cooks ${oneDecimal(info.exposure)} units; cooked right is ${plain(lo)} to ${plain(hi)}.`;
 
-    if (info.verdict === 'undercooked') {
-      // Cooked right needs an entry no later than duration - lo.
-      const slot = duration >= lo ? nearest(open.filter((r) => r.entry < bad.entry && r.entry <= info.window[1] + 1e-9)) : undefined;
-      if (slot) return { kind: 'fix', text: `${head} Move it to ${slot.slot.name} (unit ${plain(slot.entry)}) or earlier.` };
-      const longer = options.find((o) => o.units - bad.entry >= lo);
-      if (longer) return { kind: 'fix', text: `${head} Cook for ${longer.name} (${longer.units}) or longer.` };
-      return { kind: 'fix', text: head };
+    // Empty slots first, then the one nearest to where the part sits now.
+    const slot = rows
+      .filter(
+        (r) =>
+          !r.locked &&
+          r !== bad &&
+          cooksRight(disc, r.slot, part.id, duration) &&
+          (!r.part || cooksRight(disc, bad.slot, r.part.id, duration)),
+      )
+      .sort((x, y) => Number(!!x.part) - Number(!!y.part) || Math.abs(x.entry - bad.entry) - Math.abs(y.entry - bad.entry))[0];
+    const length = (disc.timeline?.options ?? [])
+      .filter((o) => o.units !== duration && cooksRight(disc, bad.slot, part.id, o.units))
+      .sort((x, y) => Math.abs(x.units - duration) - Math.abs(y.units - duration))[0];
+
+    const fixes: string[] = [];
+    if (slot) {
+      const where = `${slot.slot.name} (unit ${plain(slot.entry)})`;
+      fixes.push(slot.part ? `swap it with ${nameOf(slot.part.id)} in ${where}` : `move it to ${where}`);
     }
-    // Overcooked: an entry no earlier than duration - hi.
-    const slot = nearest(open.filter((r) => r.entry > bad.entry && r.entry >= info.window[0] - 1e-9));
-    if (slot) return { kind: 'fix', text: `${head} Move it to ${slot.slot.name} (unit ${plain(slot.entry)}) or later.` };
-    const shorter = [...options].reverse().find((o) => o.units - bad.entry <= hi);
-    if (shorter) return { kind: 'fix', text: `${head} Cook for ${shorter.name} (${shorter.units}) or shorter.` };
-    return { kind: 'fix', text: head };
+    if (length) fixes.push(`cook for ${length.name} (${length.units})`);
+    const skill = SKILLS[disc.skill]?.name ?? disc.skill;
+    const text = fixes.length
+      ? `${head} ${cap(fixes.join(', or '))}.`
+      : `${head} No slot or cook time fixes this at ${skill} ${skillLevel(state, disc)}.`;
+    return { kind: 'fix', text };
   }
 
   if (!rows.some((r) => r.part)) {
