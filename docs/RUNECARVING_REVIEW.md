@@ -216,6 +216,10 @@ scan that `runecarving.ts` imports no RNG.
   never the runes in it, so no bench prints gold. Forged items take their
   class from cells (question 4).
 - **Swap.** Unsocketing is free and returns the whole rune.
+- **Sale prices.** Gold gain from the worn title and worn gear does not raise
+  sale prices; it still applies to loot and jobs. With fixed sockets, resale
+  is exact, and a switchable gold gain would otherwise mint gold at any
+  counter (§6b).
 - **Supply (data only).** Blank runestone at a shop counter, 24 gold, quality
   pinned at Fair, and 10% from the floor-2 filing and sorting automatons;
   ochre 16, verdigris 36 and a bronze chisel 80 as shop lines; a steel burin
@@ -292,6 +296,54 @@ scan that `runecarving.ts` imports no RNG.
   edge list. The bench gets no technique or position slot. Tumbling is a
   dead end under §9a rule 1.
 
+### 4.5 Points below a bonus (proposal, user 2026-10-23)
+
+The user's idea: points that do not reach a threshold should reroute into
+other effects, or each rune should have a general persistent effect. The
+manager's form combines both:
+
+- Each glyph has one persistent effect, the same in every slot.
+- A glyph point whose aspect reaches 4 in the rune goes to that aspect's
+  bonus. A point whose aspect does not reach 4 powers its own glyph's
+  persistent effect instead. Every point still gives its slot stat.
+- The choice it makes: concentrate glyphs on one aspect for its bonus, or
+  spread them and get each glyph's own effect.
+- Scaled by stone grade up to Fair only (× min(1, grade)), like bonuses.
+  Capped per stat across the whole kit. Adornment points have no glyph and
+  power nothing here.
+- Stats: only ones monsters also have (`MonsterStats`), so a monster wearing
+  a rune gets the same effects; none of smithing's lens stats.
+
+First-guess table (per leftover point, at Fair):
+
+| Glyph | Effect | Glyph | Effect |
+|---|---|---|---|
+| Fehu | Crit Damage +2% | Isaz | Armor +1 |
+| Uruz | Damage Taken −0.5% | Jera | Max HP +2 |
+| Thurisaz | Graze Damage on a Miss +1% | Eihwaz | Damage Taken −0.5% |
+| Ansuz | Spell Power +1 | Pertho | Cooldown Back on a Miss +1% |
+| Raido | Speed +1% | Algiz | Crit Damage Taken −1% |
+| Kaunan | Crit Damage +2% | Sowilo | Crit Chance +0.5pp |
+| Gebo | Cooldown Back on a Miss +1% | Tiwaz | Damage vs Larger +1% |
+| Wunjo | HP Regen +0.05/s | Berkanan | HP Regen +0.05/s |
+| Hagalaz | Resistance Ceiling +0.5pp | Ehwaz | Extra Swings +0.5% |
+| Naudiz | Crit Damage Taken −1% | Mannaz | Ward +0.5 |
+| Laguz | Dodge +0.5pp | Ingwaz | Damage vs Smaller +1% |
+| Dagaz | Extra Swings +0.5% | Othala | Ward +0.5 |
+
+Kit-wide caps (first guesses): Crit Damage 20%, Damage Taken −10%, Graze
+15%, Spell Power 10, Speed 8%, Cooldown Back on a Miss 10%, HP Regen 1/s,
+Resistance Ceiling 5pp, Crit Damage Taken −15%, Armor 10, Max HP 40,
+Damage vs Larger / Smaller 15%, Crit Chance 5pp, Extra Swings 5%, Ward 5,
+Dodge 5pp.
+
+Examples: Raido + Ehwaz on Fair: Speed reaches 4 and turns its bonus on;
+Raido's Luck point and Ehwaz's Health point are left over: Speed +1%,
+Extra Swings +0.5%. Algiz + Isaz + Raido on Fair: nothing reaches 4; all 9
+points: Crit Damage Taken −3%, Armor +3, Speed +3%.
+
+Second antagonist pass on this proposal (fix first) and rulings: §6b.
+
 ## 5. UI
 
 **Player text (user, 2026-10-23: legibility before literary flourish).**
@@ -342,6 +394,21 @@ Art: 16×16 glyphs drawn at 32 and 48 px only (whole multiples), tinted on a
 canvas. Idylwild glyphs stay in groups of their own, per the pixel-icons
 plan's two-grid rule.
 
+**How a rune looks (user, 2026-10-23: "inlays are completely overshadowed by
+color").** Each adornment kind has its own place on the drawing, so none
+hides another:
+
+- The inlay fills the cut strokes, one colour per material: gold leaf gold,
+  bone dust bone white, warm gel ember orange, chilled gel ice blue, charged
+  gel violet, luminous gel pale yellow. No inlay: dark bare cuts on the
+  stone, light ones on the UI.
+- The pigment paints a 1-pixel edge around the strokes (ochre, verdigris).
+- Gems sit in the stone, at its lower corners.
+- A legend under the slab names each one ("Inlay: Chilled gel (fills the
+  cuts)"), and the station headings say the same.
+- The same drawing is used everywhere a rune appears: the slab, the pouch,
+  the sockets, the rune card and the bestiary.
+
 ## 6. Antagonist objections and rulings
 
 Verdict: fix first. No terminal state, no gold loop, no edge list, no
@@ -374,6 +441,20 @@ economy (a rune never outsells its own materials; class-constant item value
 lowers every resale ceiling), MARTIAL §9 and §10, identity against smithing
 and music, the derived-stats cache (`modFingerprint` already stringifies
 carved runes per slot), and float order in fork-option totals.
+
+### 6b. Second pass: points below a bonus (§4.5)
+
+Verdict: fix first. No terminal state, no non-finite value.
+
+| Severity | Objection | Ruling |
+|---|---|---|
+| high | **Gold mint at the counter.** The buy floor is resale at the gold gain you have when buying; resale uses the gold gain you have when selling. With fixed sockets (§4.2) resale is exact, so anything switchable that raises gold gain mints gold: buy without it, sell with it. Reproduced with real `buyPrice`/`sellPrice`: iron sword bought 89, sold 167 at +90% gold gain. The Friend of the Court title (+8% while worn) is enough alone for any item worth more than about 13 gold | Accepted as a fix to §4.2, in slice 3: gold gain from the worn title and worn gear no longer raises sale prices; it still applies to loot and jobs. Gold Gain left the persistent table. Not live today: random socket rolls make it lose on average |
+| high | **Monster parity.** 15 of the first 24 persistent stats (travel speed, XP, craft speed, stamina, focus, spirit, gold gain) do not exist on monsters | Accepted. Table rebuilt from monster stats only. Utility effects: question 6 |
+| medium | **Adding a glyph can shrink another's effect** (Algiz alone −3% crit damage taken; add Eihwaz, Guard reaches 4, Algiz's Guard points move to the bonus) | Rejected as an identity break: the split reads one aspect's total, the same reading the bonus uses, and moving points into the bonus is the requested rerouting. Alternative (split by copies) is question 7 |
+| medium | **No clamps.** The chosen stats are ones `derived.ts` never caps; 16 sockets of Eihwaz at S grade near total damage immunity | Accepted. Kit-wide cap per persistent stat |
+| medium | **High grades flip the choice.** Persistent scaled fully with grade, bonuses to min(1, grade) | Accepted. Persistent scales to min(1, grade) |
+| low | **Two signs backwards** (stamina and mana efficiency are costs) | Accepted; both left the table. A cost stat shows as "cost −1%" |
+| low | **Overlap with smithing finishing stats** | Noted. Rune and finish are different objects; the tooltip names the source |
 
 ## 7. Roles under §6a
 
@@ -408,7 +489,15 @@ socketed changes what it does, and this duel measures that.
 5. **Permanence.** A rune adds a fork option to the Honed choice; taking it
    is permanent and outlives the rune. Keep, or let a rune-granted path lapse
    when the rune leaves?
-6. **MUSIC.md.** Correct its identity table (cooking = sum, runecarving =
+6. **Persistent effects: combat or utility.** Monster stats only
+   (recommended; monsters wearing runes get the same effects), or utility
+   effects such as travel speed, XP and craft speed as a deliberate parity
+   break, like unique abilities?
+7. **How points are split.** By aspect total, as in §4.5 (a point short of
+   its bonus powers its glyph), or by copies (a glyph cut once gives its own
+   effect; cut two or more times it gives none and concentrates on its
+   aspect)?
+8. **MUSIC.md.** Correct its identity table (cooking = sum, runecarving =
    breadth) to match PITFALLS.md?
 
 Not a question, a pacing item: grade multiplies every total, so a

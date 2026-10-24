@@ -192,7 +192,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
   <span class="tag" style="justify-self:start">Design review · 2026-10-23 · nothing built</span>
   <h1>Runecarving</h1>
   <p class="dim">Runes made of glyphs. A rune is the sum of its parts, read differently by the slot it sits in, and able to rewrite one technique card without writing a chain. Findings in today's code, the team's merged design, the objections raised against it, and six working mockups. Glyph art: Idylwild's Runic Codex (CC0).</p>
-  <nav class="chips small" aria-label="Sections"><a class="chip" href="#verdict">Verdict</a><a class="chip" href="#found">Found</a><a class="chip" href="#design">Design</a><a class="chip" href="#examples">Examples</a><a class="chip" href="#roles">Roles</a><a class="chip" href="#objections">Objections</a><a class="chip" href="#questions">Questions</a><a class="chip" href="#bench">Mockups</a></nav>
+  <nav class="chips small" aria-label="Sections"><a class="chip" href="#verdict">Verdict</a><a class="chip" href="#found">Found</a><a class="chip" href="#design">Design</a><a class="chip" href="#leftover">Below a bonus</a><a class="chip" href="#examples">Examples</a><a class="chip" href="#roles">Roles</a><a class="chip" href="#objections">Objections</a><a class="chip" href="#questions">Questions</a><a class="chip" href="#bench">Mockups</a></nav>
 </header>
 
 <section class="panel verdict" id="verdict">
@@ -275,6 +275,40 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
   </div>
 </section>
 
+<section class="panel" id="leftover">
+  <header><h2>Points below a bonus (proposal)</h2><span class="tag">your idea · antagonist pass 2: fix first, folded in</span></header>
+  <div class="two">
+    <div style="display:grid; gap:10px; min-width:0">
+      <h3>The rule</h3>
+      <dl class="facts small">
+        <dt>Today</dt><dd>Every glyph point gives its slot stat. A bonus needs 4 glyph points in one aspect. Points short of 4 give only their slot stat.</dd>
+        <dt>Proposed</dt><dd>Each glyph has one persistent effect, the same in every slot. A point whose aspect reaches 4 goes to that aspect's bonus. A point whose aspect does not reach 4 powers its own glyph's persistent effect instead. Every point still gives its slot stat.</dd>
+        <dt>Choice it makes</dt><dd>Concentrate glyphs on one aspect for its bonus, or spread them and get each glyph's own effect.</dd>
+        <dt>Example</dt><dd>Raido + Ehwaz, Fair: Speed reaches 4 and turns its bonus on. Raido's Luck point and Ehwaz's Health point are left over: Raido gives Speed +1%, Ehwaz gives Extra Swings +0.5%.</dd>
+        <dt>Example</dt><dd>Algiz + Isaz + Raido, Fair: nothing reaches 4. All 9 points go to persistent effects: Crit Damage Taken −3%, Armor +3, Speed +3%.</dd>
+        <dt>Limits</dt><dd>Scaled by stone grade up to Fair only (× min(1, grade)), like bonuses. Capped per stat across the whole kit. Adornment points have no glyph, so they power nothing here.</dd>
+        <dt>Stats</dt><dd>Only stats monsters also have, so a monster wearing a rune gets the same effects. None of smithing's reserved stats (penetration, elemental resistance, resistance vs smaller).</dd>
+      </dl>
+      <p class="small dim">Try it in mockup 1 with the toggle above the bench; the rune card, the kit totals and the examples follow the same toggle.</p>
+    </div>
+    <div style="display:grid; gap:10px; min-width:0">
+      <h3>Antagonist pass 2</h3>
+      <div class="scroll"><table>
+        <thead><tr><th style="width:4.6em">Severity</th><th>Objection</th><th>Ruling</th></tr></thead>
+        <tbody>
+          <tr><td><span class="sev hi">high</span></td><td><b>Gold mint at the counter.</b> A shop's buy price is floored at resale using gold gain at the moment you buy; resale uses gold gain when you sell. With fixed sockets an item's resale is exact, so anything switchable that raises gold gain mints gold: buy without it, sell with it. Reproduced with real prices: iron sword bought at 89, sold at 167 with +90% gold gain. The Friend of the Court title (+8% while worn) is enough on its own for items worth more than about 13 gold.</td><td class="ruling">Accepted, as a fix to the review's equipment change (slice 3): gold gain from the worn title and worn gear no longer raises sale prices; it still applies to loot and jobs. Gold Gain removed from the persistent table. Not live today: random socket rolls make it lose on average.</td></tr>
+          <tr><td><span class="sev hi">high</span></td><td><b>Monster parity.</b> 15 of the first 24 stats (travel speed, XP, craft speed, stamina, focus, spirit, gold gain) do not exist on monsters.</td><td class="ruling">Accepted. Rebuilt from monster stats only. Utility effects are question 6.</td></tr>
+          <tr><td><span class="sev mid">medium</span></td><td><b>Adding a glyph can shrink another's effect.</b> Algiz alone: Crit Damage Taken −3%. Add Eihwaz: Guard reaches 4, Algiz's Guard points move to the bonus.</td><td class="ruling no">Rejected as an identity break: the split reads one aspect's total, the same reading the bonus already uses, and moving points into the bonus is the rerouting you asked for. The alternative goes to you (question 7).</td></tr>
+          <tr><td><span class="sev mid">medium</span></td><td><b>No clamps.</b> The chosen stats are ones derived.ts never caps; 16 sockets of Eihwaz at S grade reach near-total damage immunity.</td><td class="ruling">Accepted. A kit-wide cap per persistent stat (first guesses in the mockup).</td></tr>
+          <tr><td><span class="sev mid">medium</span></td><td><b>High grades flip the choice.</b> Bonuses scale to min(1, grade), persistent effects scaled fully, so from Superb a spread rune beat a concentrated one.</td><td class="ruling">Accepted. Persistent effects scale to min(1, grade) too.</td></tr>
+          <tr><td><span class="sev lo">low</span></td><td><b>Two signs were backwards.</b> Stamina and mana efficiency are costs: lower is better.</td><td class="ruling">Accepted; both left the table in the rebuild. Any cost stat that returns shows as "cost −1%".</td></tr>
+          <tr><td><span class="sev lo">low</span></td><td><b>Overlap with smithing finishing.</b> Graze, cooldown back on a miss, damage vs larger and others are also finishing readings.</td><td class="ruling no">Noted. A rune is an object and a finish is part of the item; the tooltip names the source.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
 <section class="panel" id="examples">
   <header><h2>Worked examples</h2><span class="tag">computed by the model below</span></header>
   <p class="small dim" style="margin-bottom:10px">Each row is a real carving, read in a weapon, a chest piece and an accessory. Click one to load it on the Rune Table (mockup 1).</p>
@@ -326,7 +360,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
     <tbody>
       <tr><td>1</td><td>Fix first</td><td>Order-free shares (groups by copies, then id), adornment riders as a list, <code>stackKey</code> through <code>carvedKey</code>, deterministic exit and name resolution, F slab refused. A permutation test over every carving input.</td><td>No</td></tr>
       <tr><td>2</td><td>Glyph sums</td><td>Glyph registry, slot readings, bonuses, named runes, sockets used (refused over 3), the dice-free bench (F slabs and F adornments refused), the codex chart. Legacy patterns read as glyph aliases (Power = might 2, and so on), so old carvings keep their single-cut numbers.</td><td>No</td></tr>
-      <tr><td>3</td><td>Equipment</td><td>Deterministic sockets, slot lens with the per-slot preview, supply lines (runestone pinned at Fair, burin after floor 2), the unlock find on floor 2, starter glyphs, catalogue runes as preset carvings including those already socketed, the sustain cell test.</td><td>v58</td></tr>
+      <tr><td>3</td><td>Equipment</td><td>Deterministic sockets, slot lens with the per-slot preview, supply lines (runestone pinned at Fair, burin after floor 2), the unlock find on floor 2, starter glyphs, catalogue runes as preset carvings including those already socketed, the sustain cell test, and sale prices that ignore gold gain from the worn title and worn gear (no-arbitrage).</td><td>v58</td></tr>
       <tr><td>4</td><td>Monsters</td><td><code>MonsterDef.runes</code> through a beast lens over all 13 aspects, the bestiary "carries" fact that teaches glyphs.</td><td>No</td></tr>
       <tr><td>5</td><td>Martial I</td><td>Selectors, reach, bonus tunes, element bonuses on strikes, named runes' technique rewrites with the precedence rule, planner badges, the learning refresh on socket. The monster technique path goes through the same function.</td><td>No</td></tr>
       <tr><td>6</td><td>Martial II</td><td>Glyph fork options in the Honed choice, the <code>tumble</code> archetype (×1.0) and its dead-end seat, <code>move.crit</code> on the monster path, archetypes named on monster moves.</td><td>No</td></tr>
@@ -342,6 +376,8 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
     <li><b>The glyph table.</b> The 24 Elder vectors are first guesses from the meanings (Naudiz = Dark and Guard, Raido = Speed and Luck, Gebo = Crit and Luck, and so on; full table in mockup 2). Change any?</li>
     <li><b>Forged items.</b> Amend the smithing card so forged items get class sockets from their cells (1 / 2 / 3) and no socket finish exists?</li>
     <li><b>Fork options from runes are permanent once taken.</b> A rune adds an option to the Honed choice; taking it is permanent and outlives the rune. Keep that, or let a rune-granted path lapse when the rune leaves?</li>
+    <li><b>Persistent effects: combat or utility.</b> Monster stats only (recommended; monsters wearing runes get the same effects), or utility effects such as travel speed, XP and craft speed as a deliberate parity break, like unique abilities?</li>
+    <li><b>How points are split.</b> By aspect total, as above (a point short of its bonus powers its glyph), or by copies (a glyph cut once gives its own effect; cut two or more times, it gives none and concentrates on its aspect)?</li>
     <li><b>MUSIC.md.</b> Its identity table says cooking = sum and runecarving = breadth. Correct it to match PITFALLS.md (runecarving = sum, cooking = when)?</li>
   </ol>
 </section>
@@ -350,10 +386,12 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
 
 <section class="panel" id="bench">
   <header><h2>1 · The Rune Table</h2><span class="tag s1">slice 2 · the carving</span></header>
-  <p class="small dim" style="margin-bottom:12px">Pick glyphs into the cut slots, set the stone, adornments and tool. The totals, the slot readings, the sockets used and any active named runes update as you go. Nothing on this bench rolls a die: what the preview shows is what you get.</p>
+  <p class="small dim" style="margin-bottom:12px">Pick glyphs into the cut slots, set the stone, adornments and tool. The inlay fills the cuts, the color paints their edges, and gems sit in the stone, so each one shows at a glance; the same drawing is used in the pouch, the sockets and the rune card. The totals, the slot readings, the sockets used and any active named runes update as you go. Nothing on this bench rolls a die: what the preview shows is what you get.</p>
+  <label class="small" style="display:block; margin:-4px 0 12px"><input type="checkbox" id="chk-persist" checked> Proposal: a glyph point whose aspect does not reach its bonus powers that glyph's own effect, in any slot. Untick to compare with the design without it.</label>
   <div class="bench">
     <div class="slabwrap">
       <div class="slab" id="slab"></div>
+      <div class="chips small" id="slab-legend"></div>
       <div class="controls">
         <span class="dim">Stone</span><select id="sel-grade"></select>
         <span class="dim">Tool</span><span style="display:flex; gap:4px; flex-wrap:wrap"><select id="sel-tool"><option value="none">bare hands</option><option value="chisel">bronze chisel</option><option value="burin">steel burin</option></select><select id="sel-toolq"></select></span>
@@ -393,6 +431,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
           <div class="ctxtabs" id="ctx-tabs"></div>
           <div class="reads" id="reads"></div>
           <div id="lit"></div>
+          <div id="persist"></div>
           <div style="display:flex; gap:6px; flex-wrap:wrap"><button id="btn-pouch">Carve into the pouch (mockup 3)</button><button id="btn-clear">Clear cuts</button></div>
         </div>
       </div>
@@ -484,10 +523,15 @@ const glyphSrc = (n) => (window.GLYPH_DATA && window.GLYPH_DATA['w' + n])
   ? 'data:image/png;base64,' + window.GLYPH_DATA['w' + n]
   : PACK + 'rune_white' + n + '.png';
 const IMG = {};          // art index -> HTMLImageElement (loaded) or null
-const TINT = new Map();  // `${n}|${color}|${style}` -> data URL
+const TINT = new Map();  // `${n}|${fill}|${edge}|${style}` -> data URL
 
-function tinted(n, color, style) {
-  const key = n + '|' + color + '|' + (style || '');
+/**
+ * One glyph on an 18×18 canvas. `color` fills the strokes (an inlay, or the
+ * bare carved groove); `edge` paints a 1-px border around them (a pigment).
+ * Both stay visible together, so the inlay and the colour read separately.
+ */
+function tinted(n, color, style, edge) {
+  const key = [n, color, edge || '', style || ''].join('|');
   if (TINT.has(key)) return TINT.get(key);
   const img = IMG[n];
   if (!img) return null;
@@ -502,15 +546,16 @@ function tinted(n, color, style) {
     tx.fillStyle = col; tx.fillRect(0, 0, 16, 16);
     x.drawImage(t, dx, dy);
   };
-  if (style === 'carved') { paint('#9d978c', 2, 2); paint(color, 1, 1); }
-  else paint(color, 1, 1);
+  if (edge) for (const [dx, dy] of [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]]) paint(edge, 1 + dx, 1 + dy);
+  else if (style === 'carved') paint('#9d978c', 2, 2);
+  paint(color, 1, 1);
   const url = c.toDataURL();
   TINT.set(key, url);
   return url;
 }
-function glyphEl(g, size, color, style) {
+function glyphEl(g, size, color, style, edge) {
   const n = g.art;
-  const url = tinted(n, color || '#ddd1b6', style);
+  const url = tinted(n, color || '#ddd1b6', style, edge);
   const px = size * 18;
   if (url) return `<img class="g" src="${url}" width="${px}" height="${px}" style="width:${px}px;height:${px}px" alt="${g.name}">`;
   return `<span class="uni" style="width:${px}px;height:${px}px;font-size:${size * 14}px;color:${color || 'var(--text)'}">${g.u}</span>`;
@@ -593,7 +638,7 @@ const ADORN = {
   cut_garnet:         { name: 'Cut garnet',   station: 'gem',   a: 'keen',    value: 45, tint: '#b8324a' },
   raw_sapphire:       { name: 'Raw sapphire', station: 'gem',   a: 'lore',    value: 60, tint: '#3d6fc4' },
 };
-const STATIONS = [['inlay', 'Inlay'], ['color', 'Color'], ['gem1', 'Gem'], ['gem2', 'Second gem']];
+const STATIONS = [['inlay', 'Inlay · fills the cuts'], ['color', 'Color · paints the edges'], ['gem1', 'Gem · set in the stone'], ['gem2', 'Second gem']];
 const STONE_VALUE = 12;
 
 // one linear line per aspect per context, per ledger point (Fair = 1)
@@ -661,6 +706,39 @@ let WORKS = WORKS_ONE;
 const litWorks = new Set(['aegis', 'hearthward', 'gale', 'stormbrand']);
 const MAX_SPAN = 3;
 
+// Proposal (user, 2026-10-23): a glyph point whose aspect does not reach its
+// bonus in the rune powers the glyph's own persistent effect instead, the same
+// in every slot. Second pass (antagonist, same day): only stats a monster also
+// has (MonsterStats), none of smithing's lens stats, scaled by min(1, grade),
+// and capped per stat across the whole kit.
+// [stat name as the game shows it, per point at Fair, unit]
+const PERSIST = {
+  fehu: ['Crit Damage', 2, '%'], uruz: ['Damage Taken', -0.5, '%'], thurisaz: ['Graze Damage on a Miss', 1, '%'],
+  ansuz: ['Spell Power', 1, '+'], raido: ['Speed', 1, '%'], kaunan: ['Crit Damage', 2, '%'],
+  gebo: ['Cooldown Back on a Miss', 1, '%'], wunjo: ['HP Regen', 0.05, '/s'], hagalaz: ['Resistance Ceiling', 0.5, 'pp'],
+  naudiz: ['Crit Damage Taken', -1, '%'], isaz: ['Armor', 1, '+'], jera: ['Max HP', 2, '+'],
+  eihwaz: ['Damage Taken', -0.5, '%'], pertho: ['Cooldown Back on a Miss', 1, '%'], algiz: ['Crit Damage Taken', -1, '%'],
+  sowilo: ['Crit Chance', 0.5, 'pp'], tiwaz: ['Damage vs Larger', 1, '%'], berkanan: ['HP Regen', 0.05, '/s'],
+  ehwaz: ['Extra Swings', 0.5, '%'], mannaz: ['Ward', 0.5, '+'], laguz: ['Dodge', 0.5, 'pp'],
+  ingwaz: ['Damage vs Smaller', 1, '%'], dagaz: ['Extra Swings', 0.5, '%'], othala: ['Ward', 0.5, '+'],
+};
+// Kit-wide ceiling per persistent stat (first guesses), so stacking stays steerable.
+const PERSIST_CAP = {
+  'Crit Damage': 20, 'Damage Taken': -10, 'Graze Damage on a Miss': 15, 'Spell Power': 10, Speed: 8,
+  'Cooldown Back on a Miss': 10, 'HP Regen': 1, 'Resistance Ceiling': 5, 'Crit Damage Taken': -15,
+  Armor: 10, 'Max HP': 40, 'Damage vs Larger': 15, 'Damage vs Smaller': 15, 'Crit Chance': 5,
+  'Extra Swings': 5, Ward: 5, Dodge: 5,
+};
+const capPersist = (stat, v) => { const c = PERSIST_CAP[stat]; return c == null ? v : c < 0 ? Math.max(c, v) : Math.min(c, v); };
+let persistOn = true;
+const fmtPersist = (stat, v, unit) => `${stat} ${v < 0 ? '−' : '+'}${fmtNum(Math.abs(v))}${unit === '+' ? '' : unit}`;
+/** One glyph's persistent effect, with where its other points went. */
+function persistLine(p) {
+  const spent = p.of - p.points;
+  const to = [...p.spentTo].map((a) => ANAME[a]).join(' and ');
+  return `${GLYPHS[p.pid].name}: ${fmtPersist(p.stat, p.value, p.unit)} <span class="src">· ${p.points} of ${p.of} points${spent ? `; ${spent} went to the ${to} bonus` : ''}</span>`;
+}
+
 const TOOLS = { none: [0, 'bare hands'], chisel: [1, 'bronze chisel'], burin: [2, 'steel burin'] };
 const toolBonus = (tool, tq) => (tool === 'none' ? 0 : TOOLS[tool][0] + Math.max(0, GRADE_ORDER.indexOf(tq) - 2));
 const cutSlotsAt = (lvl) => [0, 5, 10, 18, 25, 35].filter((l) => lvl >= l).length;
@@ -681,13 +759,29 @@ function compose(r) {
   const hold = GRADES[r.grade][2] + toolBonus(r.tool || 'none', r.toolq || 'c') + Math.floor((r.level ?? 12) / 10);
   const span = glyphs.length ? Math.ceil(strokes / hold) : 0;
   const rungs = AID.filter((a) => (raw[a] || 0) >= RUNG_AT && RUNGS[a]);
+  // Each glyph point either goes to its aspect's bonus (the aspect reached 4)
+  // or to the glyph's own persistent effect. Reads one aspect at a time.
+  const pmap = {};
+  for (const id of glyphs) {
+    const g = GLYPHS[id], pid = g.parent || id;
+    const p = (pmap[pid] ??= { pid, points: 0, of: 0, spentTo: new Set() });
+    for (const [a, pts] of Object.entries(g.v)) {
+      p.of += pts;
+      if (rungs.includes(a)) p.spentTo.add(a);
+      else p.points += pts;
+    }
+  }
+  const persist = Object.values(pmap).map((p) => {
+    const [stat, per, unit] = PERSIST[p.pid];
+    return { ...p, stat, unit, value: per * p.points * Math.min(1, Math.max(0, mult)) };
+  }).filter((p) => p.points > 0);
   const works = WORKS.filter((w) => (!w.min || GRADE_ORDER.indexOf(r.grade) >= GRADE_ORDER.indexOf(w.min))
     && Object.entries(w.need).every(([a, n]) => (L[a] || 0) >= n - 1e-9));
   const value = Math.floor(0.5 * (STONE_VALUE * Math.max(0.1, mult) + adorn.reduce((s, ad) => s + ADORN[ad.id].value * Math.max(0.1, gm(ad.q)), 0)));
   const key = `${glyphs.join('+') || '∅'}@runestone_blank.${r.grade}${adorn.length ? '/' + adorn.map((a) => a.id + '.' + a.q).join('+') : ''}`;
   const named = works.length ? works.map((w) => w.name).join(' · ') : null;
   const plain = `${GRADES[r.grade][0]} ${glyphs.length ? [...new Set(glyphs)].map((id) => GLYPHS[id].name + (glyphs.filter((x) => x === id).length > 1 ? '×' + glyphs.filter((x) => x === id).length : '')).join('·') : 'blank'}`;
-  return { r, glyphs, mult, raw, L, strokes, hold, span, refused: span > MAX_SPAN, rungs, works, value, key, name: named || plain, plain };
+  return { r, glyphs, mult, raw, L, strokes, hold, span, refused: span > MAX_SPAN, rungs, persist, works, value, key, name: named || plain, plain };
 }
 
 const fmtNum = (x) => (Math.abs(x - Math.round(x)) < 1e-9 ? String(Math.round(x)) : (Math.abs(x) < 1 ? x.toFixed(2) : x.toFixed(1))).replace(/\.0+$/, '').replace(/(\.\d*[1-9])0+$/, '$1');
@@ -744,25 +838,48 @@ function stoneSVG(grade, adorn) {
     <rect x="4" y="4" width="10" height="10" fill="${q}" opacity="0.9"/>
   </svg>`;
 }
-function glyphColor(r) {
-  const inlay = r.adorn[0], color = r.adorn[1];
-  if (inlay && inlay.id === 'gold_leaf') return '#e8c25a';
-  if (color) return ADORN[color.id].tint;
-  if (inlay) return ACOL[ADORN[inlay.id].a];
-  return '#24211e';
+// How a rune looks: the inlay fills the cuts, the pigment paints their edges,
+// gems sit in the stone. Each has its own place, so none hides another.
+const INLAY_FILL = {
+  gold_leaf: '#e8c25a', bone_dust: '#ece4d0', warm_slime_gel: '#e8743a',
+  chilled_slime_gel: '#9fd6ea', charged_slime_gel: '#c7b3ff', luminous_slime_gel: '#fff2a0',
+};
+const GROOVE = '#24211e';     // a bare cut on the stone
+const BARE_ICON = '#cfc6b4';  // a bare cut drawn on the dark UI
+function runeLook(r) {
+  const ad = (r.adorn || []).filter(Boolean);
+  const inlay = ad.find((a) => ADORN[a.id].station === 'inlay');
+  const color = ad.find((a) => ADORN[a.id].station === 'color');
+  return { inlay, color, gems: ad.filter((a) => ADORN[a.id].station === 'gem'),
+    fill: inlay ? INLAY_FILL[inlay.id] : null, edge: color ? ADORN[color.id].tint : null };
+}
+/** A rune's glyphs as it looks: inlay fill, pigment edge. `onStone` draws bare cuts dark. */
+function runeGlyphs(r, size, onStone = false) {
+  const look = runeLook(r);
+  const fill = look.fill || (onStone ? GROOVE : BARE_ICON);
+  return [...r.glyphs].map((id) => glyphEl(GLYPHS[id], size, fill, onStone ? 'carved' : '', look.edge)).join('');
+}
+function lookLegend(r) {
+  const look = runeLook(r);
+  const sw = (c, edge) => `<i style="display:inline-block;width:10px;height:10px;${edge ? `border:2px solid ${c}` : `background:${c}`};vertical-align:-1px;margin-right:4px"></i>`;
+  const parts = [];
+  parts.push(look.inlay ? `${sw(INLAY_FILL[look.inlay.id])}Inlay: ${ADORN[look.inlay.id].name} (fills the cuts)` : `${sw(GROOVE)}No inlay (bare cuts)`);
+  if (look.color) parts.push(`${sw(ADORN[look.color.id].tint, true)}Color: ${ADORN[look.color.id].name} (edges)`);
+  if (look.gems.length) parts.push(`Gems: ${look.gems.map((g) => ADORN[g.id].name).join(', ')}`);
+  return parts.map((p) => `<span class="chip">${p}</span>`).join('');
 }
 function renderBench() {
   const c = compose(bench);
   const slots = cutSlotsAt(bench.level);
   if (bench.glyphs.length > slots) bench.glyphs.length = slots;
-  const col = glyphColor(bench);
   // slab
   const n = bench.glyphs.length;
   const size = n <= 2 ? 3 : 2;
-  const gems = bench.adorn.slice(2).filter(Boolean);
+  const gems = runeLook(bench).gems;
   document.getElementById('slab').innerHTML = stoneSVG(bench.grade) +
-    `<div class="cuts">${bench.glyphs.map((id) => glyphEl(GLYPHS[id], size, col, 'carved')).join('')}</div>` +
+    `<div class="cuts">${runeGlyphs(bench, size, true)}</div>` +
     gems.map((gem, i) => `<span class="gem" style="background:${ADORN[gem.id].tint}; ${i ? 'right:16%; bottom:14%' : 'left:16%; bottom:14%'}"></span>`).join('');
+  document.getElementById('slab-legend').innerHTML = lookLegend(bench);
   document.getElementById('lvl-out').textContent = bench.level;
   // cuts
   document.getElementById('cut-count').textContent = `${bench.glyphs.length} of ${slots} open (6 at Runecarving 35)`;
@@ -828,6 +945,9 @@ function renderBench() {
     (rt.length ? `<div class="chips" style="margin-bottom:4px">${rt.map((t) => `<span class="chip lit">◆ ${t}</span>`).join('')}</div>` : '') +
     (c.works.length ? `<div class="chips">${c.works.map((w) => `<span class="chip lit" title="${Object.entries(w.bonus).map(([k, v]) => k + ': ' + v).join('; ')}">✦ ${w.name}${w.bonus[SLOTS[bench.ctx].col] ? '' : ' (nothing in this slot)'}</span>`).join('')}</div>` : '') +
     (wt.length ? `<div class="small" style="margin-top:4px">${wt.join('<br>')}</div>` : '');
+  document.getElementById('persist').innerHTML = persistOn
+    ? `<div class="box" style="margin-top:4px"><span class="small dim">Persistent effects, any slot (proposal)</span>${c.persist.length ? c.persist.map((p) => `<div class="small">${persistLine(p)}</div>`).join('') : '<div class="small dim">None: every glyph point went to a bonus.</div>'}</div>`
+    : '';
   c.works.forEach((w) => litWorks.add(w.id));
   renderCard(c);
   renderCodex();
@@ -849,6 +969,7 @@ function bindBench() {
   tq.addEventListener('change', (e) => { bench.toolq = e.target.value; renderBench(); });
   document.getElementById('sel-level').addEventListener('input', (e) => { bench.level = +e.target.value; renderBench(); });
   document.getElementById('chk-all').addEventListener('change', () => { renderBench(); });
+  document.getElementById('chk-persist').addEventListener('change', (e) => { persistOn = e.target.checked; renderBench(); renderExamples(); renderKit(); });
   document.getElementById('bench').addEventListener('click', (e) => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.glyph) { bench.glyphs.push(b.dataset.glyph); renderBench(); }
@@ -961,7 +1082,7 @@ function renderKit() {
   document.getElementById('pouch').innerHTML = pouch.map((r, i) => {
     const c = compose(r), at = placedIn(i);
     return `<button data-pouch="${i}" class="${selectedRune === i ? 'on' : ''}" title="${c.key}">
-      <span class="gl">${c.glyphs.map((id) => glyphEl(GLYPHS[id], 1, '#e8c25a')).join('')}</span>
+      <span class="gl">${runeGlyphs(c.r, 1)}</span>
       <span class="small">${c.name} <span class="tiny dim">· ${c.span} socket${c.span === 1 ? '' : 's'}${at ? ' · in ' + SLOTS[at].name.toLowerCase() : ''}</span></span></button>`;
   }).join('');
   document.getElementById('pouch-hint').textContent = selectedRune == null ? 'pick a rune' : 'now pick a socket';
@@ -970,7 +1091,7 @@ function renderKit() {
     let socks = '';
     for (const i of sockets[slot]) {
       const c = compose(pouch[i]);
-      socks += `<button class="socket filled ${c.span > 1 ? 'wide' : ''}" data-unsock="${slot}:${i}" style="${c.span > 1 ? `width:${c.span * 40 + (c.span - 1) * 4}px` : ''}" title="${c.name}: click to unsocket">${c.glyphs.slice(0, 3).map((id) => glyphEl(GLYPHS[id], 1, '#e8c25a')).join('')}</button>`;
+      socks += `<button class="socket filled ${c.span > 1 ? 'wide' : ''}" data-unsock="${slot}:${i}" style="${c.span > 1 ? `width:${c.span * 40 + (c.span - 1) * 4}px` : ''}" title="${c.name}: click to unsocket">${runeGlyphs({ ...c.r, glyphs: c.glyphs.slice(0, 3) }, 1)}</button>`;
     }
     for (let k = used; k < n; k++) socks += `<button class="socket" data-sock="${slot}" title="empty socket" ${selectedRune == null ? '' : ''}></button>`;
     const reads = sockets[slot].flatMap((i) => readIn(compose(pouch[i]), slot));
@@ -989,12 +1110,26 @@ function renderKit() {
       ${rl.length ? `<div class="tiny" style="color:var(--accent)">${rl.join('<br>')}</div>` : ''}${would}</div>`;
   }).join('');
   const tot = kitReads();
-  document.getElementById('kit-total').innerHTML = tot.length ? tot.map((l) => `<div>${show(l)} <span class="src">· ${[...new Set(l.from)].join(', ')}</span></div>`).join('') : '<div class="dim">No runes socketed.</div>';
+  document.getElementById('kit-total').innerHTML = (tot.length ? tot.map((l) => `<div>${show(l)} <span class="src">· ${[...new Set(l.from)].join(', ')}</span></div>`).join('') : '<div class="dim">No runes socketed.</div>') + kitPersist();
   const armor = BASE_ARMOR + tot.filter((l) => l.label === 'armor').reduce((s, l) => s + l.value, 0);
   const w = duelWins(armor);
   document.getElementById('duel-text').innerHTML = `Total armor <b>${fmtNum(armor)}</b> (kit ${BASE_ARMOR} + runes ${fmtNum(armor - BASE_ARMOR)}) → about <b>${Math.round(w)}/20</b> wins`;
   document.getElementById('duel-bar').style.width = (w / 20) * 100 + '%';
   renderMartial();
+}
+/** Persistent effects summed over every socketed rune, by stat (proposal). */
+function kitPersist() {
+  if (!persistOn) return '';
+  const by = {};
+  for (const [slot] of KIT) for (const i of sockets[slot]) for (const p of compose(pouch[i]).persist) {
+    const k = p.stat;
+    by[k] ??= { stat: p.stat, unit: p.unit, value: 0, from: [] };
+    by[k].value += p.value; by[k].from.push(GLYPHS[p.pid].name);
+  }
+  const rows = Object.values(by);
+  return rows.length
+    ? `<div class="small dim" style="margin-top:6px">Persistent effects, any slot (proposal)</div>` + rows.map((r) => { const v = capPersist(r.stat, r.value); return `<div>${fmtPersist(r.stat, v, r.unit)}${v !== r.value ? ` <span class="src">(capped; ${fmtPersist('', r.value, r.unit).trim()} before the cap)</span>` : ''} <span class="src">· ${[...new Set(r.from)].join(', ')}</span></div>`; }).join('')
+    : '';
 }
 function mergeLines(lines) {
   const m = {};
@@ -1191,7 +1326,8 @@ function renderCard(c) {
   const adorn = (c.r.adorn || []).filter(Boolean);
   const per = (slot) => readIn(c, slot).map(show).concat(rungText(c, slot), workText(c, slot));
   document.getElementById('itemcard').innerHTML = `<div class="itemcard">
-    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">${c.glyphs.map((id) => glyphEl(GLYPHS[id], 2, '#e8c25a')).join('')}<span class="nm">${c.name}</span></div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap">${runeGlyphs(c.r, 2)}<span class="nm">${c.name}</span></div>
+    <div class="chips small">${lookLegend(c.r)}</div>
     <div class="mono">${c.key}</div>
     <div class="prov">
       <div><span class="src">Made of</span><div class="small">${c.glyphs.length ? [...new Set(c.glyphs)].map((id) => { const g = GLYPHS[id], n = c.glyphs.filter((x) => x === id).length; return `${g.name}${n > 1 ? ' ×' + n : ''} (${Object.entries(g.v).map(([a, p]) => ANAME[a] + ' ' + p * n).join(', ')})`; }).join(' + ') : '—'} on a ${GRADES[c.r.grade][0]} slab (×${c.mult})${adorn.length ? ' + ' + adorn.map((a) => `${ADORN[a.id].name} ${a.q.toUpperCase()} (${ANAME[ADORN[a.id].a]} ${fmtNum(gm(a.q))})`).join(' + ') : ''}</div></div>
@@ -1199,6 +1335,7 @@ function renderCard(c) {
       <div><span class="src">Weapon</span><div class="small">${per('weapon').join(' · ') || '—'}</div></div>
       <div><span class="src">Chest</span><div class="small">${per('chest').join(' · ') || '—'}</div></div>
       <div><span class="src">Accessory</span><div class="small">${per('accessory').join(' · ') || '—'}</div></div>
+      ${persistOn ? `<div><span class="src">Any slot (proposal)</span><div class="small">${c.persist.length ? c.persist.map(persistLine).join('<br>') : 'nothing: every glyph point went to a bonus'}</div></div>` : ''}
       <div><span class="src">Sockets used</span><div class="small">${c.span} (${c.strokes} strokes; ${c.hold} fit in one socket)</div></div>
       <div><span class="src">Worth</span><div class="small">${c.value} gold: half of the stone and adornments at their grades. The cuts add nothing.</div></div>
     </div></div>`;
@@ -1224,7 +1361,7 @@ function renderBeasts() {
     for (const a of c.rungs) if (RUNGS[a]) beastLens.push(ELEMENTS.includes(a) ? `blows inflict ${ELEMENT_STATUS[a]} (20%)` : `${ANAME[a]} bonus`);
     return `<div class="box">
       <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline"><h3>${b.name} · Carries</h3><span class="tiny dim">${b.facts}</span></div>
-      <div style="display:flex; gap:6px; align-items:center">${c.glyphs.map((id) => glyphEl(GLYPHS[id], 2, '#e8c25a')).join('')}</div>
+      <div style="display:flex; gap:6px; align-items:center">${runeGlyphs(b.rune, 2)}</div>
       <div class="small">${kills >= 5 ? `${c.name} in its ${SLOTS[b.slot].name.toLowerCase()}` : '? (fact at 5 kills)'}</div>
       <div class="mono">${kills >= 5 ? c.key : '…'}</div>
       <div class="small">On it: ${kills >= 5 ? beastLens.join(', ') : '?'}</div>
@@ -1245,13 +1382,14 @@ const EXAMPLES = [
   ['Aegis: four Guard glyphs, Superb slab', { glyphs: ['algiz', 'algiz', 'eihwaz', 'othala'], grade: 'a', adorn: [] }],
 ];
 function renderExamples() {
-  document.getElementById('ex-table').innerHTML = '<thead><tr><th>Carving</th><th>Totals</th><th>Weapon</th><th>Chest</th><th>Accessory</th><th>Sockets · worth</th></tr></thead><tbody>' +
+  document.getElementById('ex-table').innerHTML = '<thead><tr><th>Carving</th><th>Totals</th><th>Weapon</th><th>Chest</th><th>Accessory</th>' + (persistOn ? '<th>Any slot (proposal)</th>' : '') + '<th>Sockets · worth</th></tr></thead><tbody>' +
     EXAMPLES.map(([label, r], i) => {
       const c = compose({ ...r, tool: 'chisel', toolq: 'c', level: 12 });
       const cell = (slot) => readIn(c, slot).map(show).concat(rungText(c, slot).map((t) => '◆ ' + t), workText(c, slot).map((t) => '✦ ' + t)).join('<br>');
       return `<tr style="cursor:pointer" data-ex="${i}"><td><b>${label}</b><br><span class="small">${c.glyphs.map((id) => GLYPHS[id].name).join(' + ')} · ${GRADES[r.grade][0]}${(r.adorn || []).filter(Boolean).map((a) => ' + ' + ADORN[a.id].name).join('')}</span></td>
         <td class="small">${AID.filter((a) => c.L[a]).map((a) => `${ANAME[a]} ${fmtNum(c.L[a])}`).join('<br>')}</td>
         <td class="small">${cell('weapon')}</td><td class="small">${cell('chest')}</td><td class="small">${cell('accessory')}</td>
+        ${persistOn ? `<td class="small">${c.persist.map((p) => `${GLYPHS[p.pid].name}: ${fmtPersist(p.stat, p.value, p.unit)}`).join('<br>') || '—'}</td>` : ''}
         <td class="small">${c.strokes} strokes → ${c.span} socket${c.span === 1 ? '' : 's'}<br>${c.value} gold</td></tr>`;
     }).join('') + '</tbody>';
 }
