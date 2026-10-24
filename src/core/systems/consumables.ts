@@ -17,6 +17,7 @@ import { gradesHeld, knowsRecipe, recipeKey, recipeName, stockOf } from './disci
 import { bumpStat } from './achievements';
 import { STATUSES, TECHNIQUES } from '../registry';
 import { signatureEarned } from './cookbook';
+import { isHarmful } from './conditionHarm';
 import { learnTechnique, techniqueReachable } from './martial';
 import { wordUnlocked, wordUnlockKey } from './unlocks';
 import { checkTitleUnlocks } from './titles';
@@ -222,10 +223,13 @@ export function foodScale(stats: DerivedStats): FoodScale {
  * One granted condition as eaten: intensity × grade × potency, and a lifetime
  * scaled by duration — the application's own, else the condition's. A condition
  * that never ends on its own (`'permanent'`, or a null duration) keeps its
- * terms. The spoilage condition is harm, not nourishment, so it is never scaled.
+ * terms. A harmful condition (`isHarmful`, conditionHarm.ts: read from the
+ * condition's data, so it covers the spoilage condition and anything a dish is
+ * ever authored to carry) is harm, not nourishment, and is never scaled.
  */
 function eatenApplication(app: StatusApplication, scale: number, food: FoodScale): StatusApplication {
-  const f = app.id === SPOILED ? NO_FOOD_SCALE : food;
+  const def = STATUSES[app.id];
+  const f = def && isHarmful(def) ? NO_FOOD_SCALE : food;
   const out: StatusApplication = { ...app, intensity: (app.intensity ?? 1) * scale * f.potency };
   if (f.duration !== 1 && app.duration !== 'permanent') {
     const base = app.duration ?? STATUSES[app.id]?.duration;

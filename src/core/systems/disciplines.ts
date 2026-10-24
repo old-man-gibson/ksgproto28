@@ -6,7 +6,10 @@ import type {
   GradedStack,
   MaterialDef,
   QualityTier,
+  StatusApplication,
+  StatusDef,
 } from '../types';
+import { harmOf } from './conditionHarm';
 import { MATERIALS } from '../data/materials.data';
 import { DISCIPLINES } from '../data/disciplines.data';
 import { QUALITY_ORDER, qualityAtLeast, qualityMult, qualityRank } from '../data/quality.data';
@@ -427,26 +430,34 @@ export function heatWindowProblems(
 }
 
 /**
- * Problems with the `food` flag and Signatures, as plain sentences keyed by
- * material id. Shared by `tests/content.test.ts` and `forge/lib/validate.ts`
- * like `heatWindowProblems`. `statusIds` is the condition registry being checked
- * (optional: without it only the id-free rules run).
+ * Problems with the `food` flag, what food grants, and Signatures, as plain
+ * sentences keyed by material id. Shared by `tests/content.test.ts` and
+ * `forge/lib/validate.ts` like `heatWindowProblems`. `statuses` is the
+ * condition registry being checked (optional: without it only the rules that
+ * need no condition run).
  *
  *  - Food is exactly what a cooking-skill bench makes: every material a bench
  *    with `skill: 'cooking'` produces is marked `consumable.food`, and nothing
  *    else is. An alchemy flask or a salve marked food would be scaled by the
  *    cook's skill; a dish left unmarked would not be.
- *  - A Signature belongs to food only, names real conditions, and repeats none
- *    of the dish's own grants (a second dose of a `highest` condition adds
- *    nothing).
+ *  - A Signature belongs to food only, names real conditions, repeats none of the
+ *    dish's own grants (a second dose of a `highest` condition adds nothing) and
+ *    none of its own entries, and is never the spoilage condition.
  *  - Every dish carries one, except the bench's failure dish (a material only
  *    ever made by outcomes with `maxQuality`, like the Scorched Mess), which
- *    carries none.
+ *    carries none. The spoilage condition is whatever the failure dishes grant.
+ *  - What food grants must run out and must land: no `duration: 'permanent'`
+ *    (nor a duration of zero or less), no intensity or chance of zero or less.
+ *    A missing intensity is the default 1 and a missing chance is certain, so
+ *    neither needs checking.
+ *  - Nothing harmful is food, except what the failure dish grants. Harm is read
+ *    from the condition's own data (`harmOf`, conditionHarm.ts), so a dish
+ *    cannot be authored to hurt the eater and be amplified by the cook.
  */
 export function foodProblems(
   disciplines: CraftDisciplineDef[],
   materials: Record<string, MaterialDef>,
-  statusIds?: ReadonlySet<string>,
+  statuses?: Record<string, StatusDef>,
 ): { material: string; message: string }[] {
   const problems: { material: string; message: string }[] = [];
   const say = (material: string, message: string) => problems.push({ material, message });
@@ -463,6 +474,13 @@ export function foodProblems(
     }
   }
 
+  // The spoilage condition: what the failure dishes grant.
+  const failureDishes = new Set([...made].filter(([, e]) => e.failureOnly).map(([id]) => id));
+  const spoilage = new Set<string>();
+  for (const id of failureDishes) {
+    for (const g of materials[id]?.consumable?.grants ?? []) spoilage.add(g.id);
+  }
+
   for (const [id, entry] of made) {
     const mat = materials[id];
     if (!mat) continue; // an unresolved result is another lint's problem
@@ -476,6 +494,34 @@ export function foodProblems(
     }
   }
 
+  /** One list of applications (grants or signature) on one food. */
+  const checkApplications = (
+    id: string,
+    label: 'grants' | 'signature',
+    apps: StatusApplication[],
+    harmAllowed: boolean,
+  ) => {
+    for (const app of apps) {
+      const what = `'${id}' ${label} '${app.id}'`;
+      if (app.duration === 'permanent') {
+        say(id, `${what} with duration 'permanent': a dish's effect must run out`);
+      } else if (app.duration !== undefined && !(app.duration > 0)) {
+        say(id, `${what} with duration ${app.duration}: it would end at once`);
+      }
+      if (app.intensity !== undefined && !(app.intensity > 0)) {
+        say(id, `${what} with intensity ${app.intensity}: it would do nothing`);
+      }
+      if (app.chance !== undefined && !(app.chance > 0)) {
+        say(id, `${what} with chance ${app.chance}: it would never land`);
+      }
+      const def = statuses?.[app.id];
+      const harm = def ? harmOf(def) : null;
+      if (harm && !harmAllowed) {
+        say(id, `${what} is a harmful condition (${harm}); food only nourishes`);
+      }
+    }
+  };
+
   for (const mat of Object.values(materials)) {
     const spec = mat.consumable;
     if (!spec) continue;
@@ -485,10 +531,19 @@ export function foodProblems(
     if (spec.signature?.length && !spec.food) {
       say(mat.id, `'${mat.id}' has a signature but is not food`);
     }
+    if (spec.food) {
+      const failure = failureDishes.has(mat.id);
+      checkApplications(mat.id, 'grants', spec.grants ?? [], failure);
+      checkApplications(mat.id, 'signature', spec.signature ?? [], false);
+    }
     const own = new Set((spec.grants ?? []).map((g) => g.id));
+    const seen = new Set<string>();
     for (const sig of spec.signature ?? []) {
-      if (statusIds && !statusIds.has(sig.id)) say(mat.id, `'${mat.id}' signature names unknown condition '${sig.id}'`);
+      if (statuses && !statuses[sig.id]) say(mat.id, `'${mat.id}' signature names unknown condition '${sig.id}'`);
       if (own.has(sig.id)) say(mat.id, `'${mat.id}' signature repeats its own grant '${sig.id}'`);
+      if (seen.has(sig.id)) say(mat.id, `'${mat.id}' signature lists '${sig.id}' twice`);
+      seen.add(sig.id);
+      if (spoilage.has(sig.id)) say(mat.id, `'${mat.id}' signature is the spoilage condition '${sig.id}'`);
     }
   }
   return problems;

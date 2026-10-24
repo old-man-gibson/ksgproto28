@@ -9,13 +9,23 @@ import type {
 import type { EventBus } from '../engine/events';
 import { DISCIPLINES } from '../data/disciplines.data';
 import { MATERIALS } from '../data/materials.data';
+import { STATUSES } from '../registry';
 import { PREPS, UNIFORMITY, preppedIdOf } from '../data/preps.data';
 import { QUALITY_ORDER, QUALITY_TIERS, qualityMult, qualityRank } from '../data/quality.data';
 import { rand } from '../engine/rng';
 import { logRepeat } from './log';
 import { checkDiscovery, grantDiscoveryXp, grantSkillXp } from './skills';
 import { bumpStat } from './achievements';
-import { cookedCount, cookedGradeKey, cookedKey } from './cookbook';
+import {
+  COOK_TIME_COOKS,
+  SIGNATURE_COOKS,
+  cookTimeKnown,
+  cookedCount,
+  cookedGradeKey,
+  cookedKey,
+  dishHasCookTime,
+  signatureEarned,
+} from './cookbook';
 import {
   checkCraft,
   consumePlacement,
@@ -570,9 +580,15 @@ export function cook(
   // more under the grade it came out at (systems/cookbook.ts). A dish new to this
   // run's Book pays the skill's discovery bonus (domain 'cookery').
   const firstOfDish = cookedCount(state, result.id) === 0;
+  const hadCookTime = cookTimeKnown(state, result.id);
+  const hadSignature = signatureEarned(state, result.id);
   bumpStat(state, bus, cookedKey(result.id));
   bumpStat(state, bus, cookedGradeKey(result.id, quality));
   if (firstOfDish) grantDiscoveryXp(state, bus, 'cookery');
+  // A threshold crossed by THIS cook is news; one the Cook's Notes boon already
+  // carried over is not. Hearty Stew has no window of its own to note.
+  const noteCookTime = !hadCookTime && cookTimeKnown(state, result.id) && dishHasCookTime(result.id);
+  const noteSignature = !hadSignature && signatureEarned(state, result.id);
 
   // Novelty is keyed by the dish, not the basket: the same dish from another
   // layout is not news, and a different dish from the same ingredients is.
@@ -596,10 +612,22 @@ export function cook(
     high: check.qualityHigh ?? check.quality,
     qty,
   });
+  // Groupable: a batch run folds into one tallied line instead of a page. A
+  // threshold this cook crossed rides in the same tally (once per dish per run), so
+  // the note neither starts a line of its own nor breaks the run in two.
+  const name = dish?.name ?? result.id;
+  const tally = [{ label: `${QUALITY_TIERS[quality].name} ${name}`, qty }];
+  if (noteCookTime) {
+    tally.push({ label: text('cooking.book.time', { name, cooks: COOK_TIME_COOKS }), qty: 1 });
+  }
+  if (noteSignature) {
+    const status = (dish?.consumable?.signature ?? []).map((sig) => STATUSES[sig.id]?.name ?? sig.id).join(' and ');
+    tally.push({ label: text('cooking.book.signature', { name, status, cooks: SIGNATURE_COOKS }), qty: 1 });
+  }
   logRepeat(bus, {
     group: `bench:${disc.id}`,
     prefix: `${dish?.icon ?? '🍽️'} Cooked:`,
-    tally: [{ label: `${QUALITY_TIERS[quality].name} ${dish?.name ?? result.id}`, qty }],
+    tally,
     kind: 'item',
   });
   return { dish: result.id, quality, qty };

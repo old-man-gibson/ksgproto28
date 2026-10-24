@@ -1101,12 +1101,13 @@ export function validate(store: S): Issue[] {
   // Food and Signatures (ConsumableSpec.food, .signature). Mirrors 'food and
   // signatures' in tests/content.test.ts, and is the same function: exactly the
   // materials a cooking bench makes are food, a dish carries a signature that
-  // names a real condition and repeats none of its own, and the bench's failure
-  // dish carries none.
+  // names a real condition and repeats none of its own, the bench's failure dish
+  // carries none, food grants nothing permanent, null or harmful (the failure
+  // dish's own grants aside).
   for (const p of foodProblems(
     Object.values(store.all<CraftDisciplineDef>('discipline')),
     store.all<MaterialDef>('material'),
-    new Set(Object.keys(statuses)),
+    statuses,
   )) {
     err('material', p.material, p.message, ['consumable']);
   }

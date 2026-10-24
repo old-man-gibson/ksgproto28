@@ -114,6 +114,19 @@ export function cookbook(state: GameState): CookbookEntry[] {
   return rows;
 }
 
+/**
+ * Whether any outcome that makes this dish carries heat windows — i.e. whether
+ * the Book has a cook time to show for it. A dish with no window of its own (the
+ * Hearty Stew, the fallback) is "known" at 25 cooks but has nothing to note.
+ */
+export function dishHasCookTime(dishId: string): boolean {
+  return Object.values(DISCIPLINES).some(
+    (disc) =>
+      disc.skill === 'cooking' &&
+      disc.outcomes.some((o) => o.result.kind === 'material' && o.result.id === dishId && !!o.heat?.length),
+  );
+}
+
 /** Every material id a cooking bench makes, once each, in bench order. */
 export function cookingDishIds(): string[] {
   const ids = new Set<string>();

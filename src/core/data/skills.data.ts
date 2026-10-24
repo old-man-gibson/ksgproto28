@@ -856,11 +856,13 @@ const HAND_WRITTEN = prose<SkillDef>('HAND_WRITTEN', HAND_WRITTEN_TEXT, {
     progression: PROGRESSIONS.specialist,
     tags: ['cooking'],
     unlock: [],
-    // Keyed by dish id. Dishes are few and a bench run repeats one for hours, so
-    // the first cook of a dish opens at 4x (k / c) and the excess halves every 2
-    // cooks; a dish new to the Book also pays `discovery` once. The yield only
-    // ever adds to the ordinary payout (docs/NOVELTY_DOMAINS.md).
-    novelty: { domain: 'cookery', k: 8, c: 2, discovery: 20 },
+    // Keyed by dish id. A cook already pays about a level at Cooking 1 and ten
+    // ordinary cooks reach Cooking 7, so this is a garnish on that: the first cook
+    // of a dish pays 1.25x (k / c), settling toward 1x over a few dozen cooks, and
+    // a dish new to the Book also pays `discovery` once. Measured at Cooking 1
+    // (docs/NOVELTY_DOMAINS.md): first stew 1 -> 2.3, one of each of ten dishes
+    // -> 8.4 (7.1 with no novelty at all).
+    novelty: { domain: 'cookery', k: 5, c: 4, discovery: 2 },
     effects: [{ stat: 'craftSpeed', op: 'mult', value: 0, perLevel: 0.008 }],
     milestones: cookingMilestones(),
     tierNames: [
