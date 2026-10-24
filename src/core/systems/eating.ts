@@ -6,7 +6,7 @@ import { STATUSES } from '../registry';
 import { canUse, canUseOutOfFight, consumableSpec, useConsumable } from './consumables';
 import { signatureEarned } from './cookbook';
 import { isHarmful } from './conditionHarm';
-import { mealToReplace, pruneMeals, type ActiveMeal } from './meals';
+import { mealToReplace, pruneMeals, sweepMeals, type ActiveMeal } from './meals';
 import { text } from '../text/log';
 
 /**
@@ -124,6 +124,7 @@ export function cancelQueuedMeal(state: GameState, bus: EventBus): boolean {
  */
 export function tickMeals(state: GameState, bus: EventBus): void {
   pruneMeals(state);
+  sweepMeals(state);
   const queued = state.queuedMeal;
   if (!queued || state.combat || state.recovering) return;
   // Cleared first: eating logs and may raise events, and none of it may fire

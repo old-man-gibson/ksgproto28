@@ -6,6 +6,7 @@
   import type { StackRef } from '../../core/systems/equipment';
   import { RESOURCES } from '../../core/data/resources.data';
   import { consumableSpec, cooldownLeft, heldConsumables } from '../../core/systems/consumables';
+  import { eatButton } from '../lib/meals';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
   import {
     activeCoating,
@@ -172,6 +173,7 @@
       }
     }
     if (grade.mult < 0) lines.push('· Spoiled — this will do you harm');
+    if (spec?.food) lines.push('· Eaten between fights. Pressed during a fight, it waits and is eaten when the fight ends.');
     const left = cooldownLeft(gs, id);
     if (left > 0) lines.push(`· Not ready for another ${(left / 10).toFixed(1)}s`);
     return lines;
@@ -968,7 +970,7 @@
   warnRank={QUALITY_WARN}
   entryTip={provisionEntryTip}
   onOpen={(key) => (selected = provisionSel(key))}
-  onPrimary={(key) => { const p = provRef(key); game.useConsumable(p.id, p.quality); }}
+  onPrimary={(key) => { const p = provRef(key); game.eat(p.id, p.quality); }}
   onSell={(keys) => game.sellStackablesBatch(keys.map(provRef), 'provision')}
   onDump={(keys) => game.discardStackablesBatch(keys.map(provRef), 'provision')}
 >
@@ -1135,7 +1137,7 @@
   {@const id = selected.id}
   {@const quality = selected.quality}
   {@const def = MATERIALS[id]}
-  {@const ready = cooldownLeft(gs, id) === 0}
+  {@const eating = eatButton(gs, id, quality)}
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}
       <div class="win-title" style="color: {QUALITY_TIERS[quality].color}">
@@ -1149,9 +1151,26 @@
       {/each}
     </div>
     <div class="win-buttons">
-      <button disabled={!ready} onclick={() => game.useConsumable(id, quality)}>
-        {ready ? (consumableSpec(id)?.useVerb ?? 'Use') : `Cooling ${(cooldownLeft(gs, id) / 10).toFixed(1)}s`}
-      </button>
+      <!-- A dish pressed in a fight waits for its end. The tooltip says what the
+           press will do, and which dish a fourth one replaces. -->
+      {#snippet eatPress()}
+        <button
+          disabled={eating.disabled}
+          onclick={() => (eating.cancels ? game.cancelQueuedMeal() : game.eat(id, quality))}
+        >
+          {eating.label}
+        </button>
+      {/snippet}
+      {#if eating.tip.length > 0}
+        <Tip block>
+          {@render eatPress()}
+          {#snippet tip()}
+            {#each eating.tip as line}<div class="tip-line">{line}</div>{/each}
+          {/snippet}
+        </Tip>
+      {:else}
+        {@render eatPress()}
+      {/if}
       <button onclick={() => game.sellStackable(id, quality, 1)}>
         Sell ({fmt(gradedUnitPrice(gs, id, quality, goldGain))} 🪙)
       </button>
@@ -1169,6 +1188,9 @@
         Discard
       </button>
     </div>
+    {#if eating.replaces}
+      <div class="small dim">{eating.replaces}.</div>
+    {/if}
   </Modal>
 {:else if selected?.kind === 'ingredients'}
   <Modal wide onclose={() => (selected = null)}>

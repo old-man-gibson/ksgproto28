@@ -34,6 +34,7 @@
   import { RECOVERY_MULT, RESOURCES } from '../../core/data/resources.data';
   import { fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
   import Tip from '../lib/Tip.svelte';
+  import DishSlots from '../lib/DishSlots.svelte';
   import Icon from '../lib/icons/Icon.svelte';
 
   /** Pool icons sit outside their bars (user, 2026-10-22); 16 and 32 are the art's clean sizes. */
@@ -404,6 +405,9 @@
         {/each}
       </div>
     {/if}
+
+    <!-- The dishes holding a slot, and the one waiting for the fight to end. -->
+    <DishSlots />
   </div>
 
   <Tip block>

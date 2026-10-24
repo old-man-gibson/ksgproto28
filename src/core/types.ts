@@ -2469,19 +2469,18 @@ export interface ConsumableSpec {
 }
 
 /**
- * One condition a dish put on the eater, and what the dish left on it
- * (systems/meals.ts). Eviction ends a condition only when the dish provably
- * owns it: it was not already held when the dish landed (`shared`), and it
- * still reads as the dish left it (`intensity`, `stacks`).
+ * One condition a dish put on the eater (systems/meals.ts). Eviction ends it
+ * only when no other slot lists it and no source that is not a dish has a claim
+ * on it (`shared`).
  */
 export interface MealStatus {
   /** The condition's id. Its clock and strength live on the held condition. */
   id: string;
-  /** Already held when the dish landed on it: another source gave it first. */
+  /** A source that is not a dish also gives it: a flask, a blessing, an older save. */
   shared: boolean;
-  /** The held condition's intensity right after the dish landed. */
+  /** The held condition's intensity as the dishes left it; `sweepMeals` flags any other change. */
   intensity: number;
-  /** The held condition's stacks right after the dish landed. */
+  /** The held condition's stacks as the dishes left it. */
   stacks: number;
 }
 

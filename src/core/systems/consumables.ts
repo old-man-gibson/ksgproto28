@@ -18,7 +18,7 @@ import { gradesHeld, knowsRecipe, recipeKey, recipeName, stockOf } from './disci
 import { bumpStat } from './achievements';
 import { STATUSES, TECHNIQUES } from '../registry';
 import { signatureEarned } from './cookbook';
-import { recordMeal, type MealLanding } from './meals';
+import { recordMeal, sweepMeals, type MealLanding } from './meals';
 import { isHarmful } from './conditionHarm';
 import { learnTechnique, techniqueReachable } from './martial';
 import { wordUnlocked, wordUnlockKey } from './unlocks';
@@ -326,6 +326,8 @@ export function useConsumable(
   // twice (a grant and its Signature) does not read as sharing it with itself.
   const heldBefore = new Set(statusesOf(state).map((s) => s.id));
   const landings: MealLanding[] = [];
+  // Read what other sources did to the held dishes before this one blurs it.
+  if (spec.food) sweepMeals(state);
   const land = (dose: StatusApplication): StatusInstance | null => {
     const inst = applyStatus(state, state, dose, def.name);
     if (inst && spec.food) landings.push({ inst, had: heldBefore.has(inst.id), ticks: doseTicks(dose) });

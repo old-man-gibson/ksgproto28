@@ -43,6 +43,7 @@ import { tickExposure } from './systems/exposure';
 import { DISCIPLINES } from './data/disciplines.data';
 import { useConsumable } from './systems/consumables';
 import { cancelQueuedMeal, eat, tickMeals } from './systems/eating';
+import { markShared } from './systems/meals';
 import {
   findSpell,
   forgetSpell,
@@ -458,7 +459,11 @@ export class Game {
 
   /** Drink, apply or throw a flask — its sequence already decided which. */
   useFlask(index: number) {
-    return useFlask(this.state, this.bus, index);
+    const used = useFlask(this.state, this.bus, index);
+    // A flask's dose may have been ignored by a stronger dish's condition; the
+    // dish slots still have to know a flask gave it too (systems/meals.ts).
+    if (used) markShared(this.state, used.grants.map((g) => g.id));
+    return used;
   }
 
   /** Start a repeating run at a bench (batch prepping). */

@@ -1427,6 +1427,58 @@ refuses a signature that repeats one of the dish's own grants (a second dose of
 a `highest` condition adds nothing), lists a condition twice, or is the spoilage
 condition (whatever the failure dish grants).
 
+**Eating rules** (user, 2026-10-24: cooking makes long-term dishes eaten only out
+of combat; alchemy makes short consumables usable any time. Save v59.)
+
+- *Out of combat only.* `canUse` refuses a food (`consumable.food`) while
+  `state.combat` is set: "Not during a fight." The respawn gap between chained hunt
+  fights and a hunt's rest before the next fight (`huntrest.ts`) have no
+  `state.combat`, so they allow it. Flasks, salves and cards are not food and are
+  unaffected. `canUseOutOfFight` is the same check without the fight rule.
+- *Eat after this fight* (`systems/eating.ts`). The Provisions window's Eat button
+  calls `Game.eat`, which eats a dish at once, or during a fight queues it in
+  `state.queuedMeal` (one dish; another replaces it; `Game.cancelQueuedMeal`
+  clears it). `tickMeals` runs at the start of every tick and eats it on the first
+  tick with no fight and no knockout recovery (`state.recovering`: recovery runs
+  conditions several times faster, so a dish eaten there would burn down). It
+  re-runs `canUse` first; if stock or cooldown fail, the queue is dropped and the
+  log says why. The queue is run state, so offline catch-up fires it too. The eat
+  line then ends "(queued during the fight)". Pressing Eat while knocked out but
+  not fighting eats at once (open question: it burns at the recovery clock).
+- *At most 3 dishes active* (`systems/meals.ts`; `MAX_ACTIVE_DISHES` behind
+  `dishLimit(state)`, the one place a skill or mutagen would raise it). A dish is
+  one slot holding everything it gave, Signature included. `state.meals` lists, per
+  dish, the conditions it put on you (`MealSlot`); a slot has no clock of its own,
+  its time left is the longest clock among the conditions it still lists, so the
+  knockout clock and travel pauses apply as they do to any condition. A slot frees
+  when none of its conditions are held, however they went. Eating a dish already in
+  a slot renews it and raises each of its clocks to the new dose's full length (a
+  weaker or equal dose of a `highest` condition is otherwise ignored, which would
+  make a second helping a wasted dish). Eating a different dish with every slot
+  full drops the one with the least time left (oldest on a tie), logs it, and ends
+  its conditions, except those something else still has a claim on. A condition
+  has one instance, so two dishes that give Well Fed share it; it ends when the last
+  dish listing it goes. A claim from a source that is not a dish is
+  `MealStatus.shared`: set when the dish landed on a condition already held that no
+  dish accounts for (a flask or an old save), when `Game.useFlask` calls `markShared`
+  (a weaker flask dose on a stronger dish's `highest` condition is ignored and
+  leaves nothing on the instance to notice), and when `sweepMeals` (every tick, and
+  before a dish is eaten) finds an instance no longer as its dishes left it (a
+  stronger dose from any other source). A dish landing on a condition another dish
+  holds is itself why it changed, so the other slots' records are re-based on it. A
+  kept condition is not weakened.
+  A dish that gave nothing nourishing (spoiled grades, the Scorched Mess, or every
+  dose resisted) holds no slot and drops nobody: the Queasy immunity title asks for
+  bad food to be eaten on purpose.
+- *Old saves.* Migration 58 adds `meals: []` and `queuedMeal: null`. A food
+  condition already running belongs to no slot (nothing recorded which dish gave
+  it): it counts toward no limit and runs out on its own.
+- *Screen.* The sidebar lists "Dishes 2/3" under the condition pills, one row per
+  dish with its time left (`ui/lib/DishSlots.svelte`, words in `ui/lib/meals.ts`)
+  and, while a dish waits, "After this fight:" with a Cancel button. In a fight the
+  Eat button reads "Eat after this fight"; its tooltip says what the press does and,
+  with every slot full, which dish a new one replaces and how long it has left.
+
 ### Status condition (`statuses.data.ts`)
 
 A condition is one entry with an **intensity**; everything it does scales off

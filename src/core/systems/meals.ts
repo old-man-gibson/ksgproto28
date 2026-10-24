@@ -25,17 +25,25 @@ import { text } from '../text/log';
  *
  * **A condition has one instance.** Two dishes that both give Well Fed share
  * the instance, and so do a dish and an alchemy flask. Eviction therefore ends
- * a condition only when the evicted dish provably owns it, which takes all of:
+ * a condition only when nothing else has a claim on it:
  *
- *  - no other slot lists it;
- *  - it was not already held when the dish landed (`MealStatus.shared`: a
- *    flask, a blessing or an older dish gave it first);
- *  - it still reads as the dish left it (`intensity`, `stacks`), so a stronger
- *    dose from a source that landed afterwards keeps it.
+ *  - no other slot lists it (another dish gives it too);
+ *  - `MealStatus.shared` is false: no source that is not a dish has a claim.
+ *    The flag is set when the dish lands on a condition that was already held
+ *    and no dish accounts for (a flask, a blessing, an older save), when
+ *    `markShared` is told a flask gave it (a flask's weaker dose is ignored by a
+ *    `highest` condition and changes nothing on the instance), and when
+ *    `sweepMeals` finds the instance no longer as the dishes left it (a stronger
+ *    dose from another source). It is inherited by a dish that lands on a
+ *    condition another dish already holds with the flag set.
  *
- * A condition kept this way is not weakened either: it runs on with whatever
- * strength and clock it has. A dose the stacking rule discarded left nothing of
- * its own on the instance, so there is nothing for eviction to keep.
+ * A dish landing on a condition another dish holds is itself the reason the
+ * instance changed, so the other slots' records are re-based on it
+ * (`recordMeal`); that is what lets the last of two dishes of different grades
+ * end the condition instead of leaving it behind.
+ *
+ * A condition kept this way is not weakened: it runs on with whatever strength
+ * and clock it has.
  *
  * A dish that gave nothing nourishing (every condition it gave is harmful, as
  * with spoiled food, or none landed) holds no slot and evicts nobody: eating a
@@ -118,6 +126,40 @@ export function pruneMeals(state: GameState): void {
   if (changed) state.meals = kept;
 }
 
+/**
+ * Tell the slots that something other than a dish has just given these
+ * conditions. Eviction then leaves them running. Needed for a dose the status
+ * rule discarded (a weaker flask on a stronger dish's `highest` condition),
+ * which leaves nothing on the instance for `sweepMeals` to notice. The command
+ * layer calls it for a flask (`Game.useFlask`); a source it is not called for is
+ * noticed only if its dose changed the condition.
+ */
+export function markShared(state: GameState, ids: string[]): void {
+  if (ids.length === 0) return;
+  for (const slot of state.meals ?? []) {
+    for (const entry of slot.statuses) {
+      if (!entry.shared && ids.includes(entry.id)) entry.shared = true;
+    }
+  }
+}
+
+/**
+ * Flag every listed condition whose instance no longer reads as its dish left
+ * it: only a source that is not a dish changes one between dishes landing (a
+ * dish landing re-bases the records, see `recordMeal`). Run at the top of every
+ * tick and before a dish is eaten, so the evidence is read before a dish's own
+ * dose can blur it.
+ */
+export function sweepMeals(state: GameState): void {
+  for (const slot of state.meals ?? []) {
+    for (const entry of slot.statuses) {
+      if (entry.shared) continue;
+      const held = findStatus(state, entry.id);
+      if (held && (held.intensity !== entry.intensity || held.stacks !== entry.stacks)) entry.shared = true;
+    }
+  }
+}
+
 /** One dose of a dish that landed, as `useConsumable` saw it. */
 export interface MealLanding {
   /** The held condition the dose landed on (a new one, or the one it joined). */
@@ -157,21 +199,37 @@ export function recordMeal(
   pruneMeals(state);
 
   const prior = state.meals.find((s) => s.dish === dish);
+  const others = state.meals.filter((s) => s.dish !== dish);
   const entries: MealStatus[] = [];
   for (const l of nourishing) {
-    if (entries.some((e) => e.id === l.inst.id)) continue;
-    // A condition this slot already listed keeps its flag: the instance exists
-    // because the dish put it there, not because someone else did.
-    const before = prior?.statuses.find((e) => e.id === l.inst.id);
-    if (prior && l.ticks !== null && l.inst.ticksLeft !== null) {
-      l.inst.ticksLeft = Math.max(l.inst.ticksLeft, l.ticks);
+    const id = l.inst.id;
+    if (entries.some((e) => e.id === id)) continue;
+    // Read back through the state, never the instance `applyStatus` returned:
+    // for a condition that was new it is the raw object, not the UI proxy's.
+    const cur = findStatus(state, id) ?? l.inst;
+    const before = prior?.statuses.find((e) => e.id === id);
+    const listed = others.flatMap((o) => o.statuses.filter((e) => e.id === id));
+    if (prior && l.ticks !== null && cur.ticksLeft !== null) {
+      cur.ticksLeft = Math.max(cur.ticksLeft, l.ticks);
     }
     entries.push({
-      id: l.inst.id,
-      shared: before ? before.shared : l.had,
-      intensity: l.inst.intensity,
-      stacks: l.inst.stacks,
+      id,
+      // A condition this slot already listed keeps its flag: the instance exists
+      // because the dish put it there. Otherwise it is shared with a non-dish
+      // source when it was held and no dish accounts for it, or when a dish that
+      // holds it is itself shared.
+      shared: before ? before.shared : l.had && (listed.length === 0 || listed.some((e) => e.shared)),
+      intensity: cur.intensity,
+      stacks: cur.stacks,
     });
+    // This dose is why the instance reads as it does now: the dishes already
+    // holding it are re-based on it (a foreign change was flagged before the
+    // dose by `sweepMeals`).
+    for (const e of listed) {
+      if (e.shared) continue;
+      e.intensity = cur.intensity;
+      e.stacks = cur.stacks;
+    }
   }
   // A condition the earlier helping listed that this one did not land (a dose
   // can be resisted) stays listed while it is still held.
@@ -189,7 +247,7 @@ export function recordMeal(
     if (live.length <= dishLimit(state)) break;
     const victim = leastTimeLeft(live.filter((m) => m.slot.dish !== dish));
     if (!victim) break;
-    release(state, bus, victim.slot);
+    release(state, bus, victim.slot, `${QUALITY_TIERS[best].name} ${MATERIALS[dish]?.name ?? dish}`);
   }
 }
 
@@ -197,7 +255,7 @@ export function recordMeal(
  * Take a dish out of its slot and end what it owns. See the header for what
  * "owns" means; a condition it does not own is left exactly as it is.
  */
-function release(state: GameState, bus: EventBus, slot: MealSlot): void {
+function release(state: GameState, bus: EventBus, slot: MealSlot, by: string): void {
   const others = state.meals.filter((s) => s.dish !== slot.dish);
   const ended: string[] = [];
   const kept: string[] = [];
@@ -205,11 +263,7 @@ function release(state: GameState, bus: EventBus, slot: MealSlot): void {
     const held = findStatus(state, entry.id);
     if (!held) continue;
     const name = STATUSES[entry.id]?.name ?? entry.id;
-    const claimed =
-      entry.shared ||
-      others.some((o) => o.statuses.some((e) => e.id === entry.id)) ||
-      held.intensity !== entry.intensity ||
-      held.stacks !== entry.stacks;
+    const claimed = entry.shared || others.some((o) => o.statuses.some((e) => e.id === entry.id));
     if (claimed) {
       kept.push(name);
     } else {
@@ -229,6 +283,7 @@ function release(state: GameState, bus: EventBus, slot: MealSlot): void {
     msg: text('meals.replaced', {
       grade: QUALITY_TIERS[slot.quality].name,
       name: MATERIALS[slot.dish]?.name ?? slot.dish,
+      by,
       limit: dishLimit(state),
       detail,
     }),

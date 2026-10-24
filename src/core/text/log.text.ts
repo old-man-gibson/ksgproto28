@@ -113,7 +113,7 @@ export const LOG_TEXT = {
   'meals.queue_replaced': '🍽️ {grade} {name} queued in place of {old}: it is eaten when the fight ends.',
   'meals.queue_cancelled': '🍽️ Queued {grade} {name} cancelled.',
   'meals.queue_dropped': '🍽️ Queued {grade} {name} not eaten: {reason}',
-  'meals.replaced': '🍽️ {grade} {name} replaced: at most {limit} dishes can be active. {detail}',
+  'meals.replaced': '🍽️ {grade} {name} dropped for {by}: at most {limit} dishes can be active. {detail}',
   'meals.ended': 'Ended: {list}.',
   'meals.kept': 'Kept, another source gives it too: {list}.',
 
