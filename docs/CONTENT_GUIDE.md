@@ -1285,6 +1285,44 @@ for a dish with a Signature, "<Dish> is now a Signature dish: eating it also
 gives <condition> (100 cooks)." A threshold the Cook's Notes boon already carried
 over is not announced again.
 
+**The Cook's Book on screen** (`ui/lib/CookBook.svelte`; rows and words in
+`ui/lib/cookBook.ts`). A "Cook's Book" button in the window header of every
+cooking-skill bench (`LocationPanel.svelte`) opens it: one section per bench that
+makes dishes, labelled with the bench's name whether or not the player has reached
+it, rows in `cookbook()` order. A row is the dish's icon and name, seven grade
+squares F to S (filled: made at that grade; dashed: the grade above the best;
+empty otherwise), the count, the cook time and the Signature. The cook time is
+the window in words (`meat under 6 units`, from `describeHeatWindow`) once
+`cookTimeKnown`, "shown after 25 cooks" for a dish with a window not yet known, and
+"—" for a dish with no window. The Signature column is the condition names once
+earned, "after 100 cooks" before, "—" for the failure dish. **A dish never made whose
+recipe card is unread is a blank row** (a hatched bar, no name, icon or window):
+the Book prints no gate, so the card keeps teaching its own recipe. A dish never
+made that needs no card shows its name with zero counts. The header line counts
+dishes, not rows ("6 of 19 dishes made"; the Traveler's Ration is one).
+
+**The plate card** (`ui/lib/PlateCard.svelte`, built by `plateFor` in
+`ui/lib/cookBook.ts`). `BenchPanel` listens for `cooked` events from its own bench
+and shows the latest dish under the preview: the grade stamp in the tier colour,
+dish name, "made N · best <grade>" from the Book, and notes: "new best" (the best
+grade rose with this cook; not said for a dish's first cook), "cook time shown in
+the Cook's Book" (this cook made it known, for a dish that has one), "Signature
+dish" (earned), "could have been Fine to Superb" (only when the preview promised a
+spread) and "N cooked with this layout". What a cook changed is found by comparing
+the dish's Book row (`dishMarks`) before and after the event, so a threshold the
+Cook's Notes boon already carried does not read as news. The card clears when the
+layout or the cook length changes and is gone when the bench closes; once a bench
+has cooked a dish its space stays reserved, so the Cook button does not move.
+Stove runs from the bench window are single cooks (`startBenchWork` with
+`count: 1`); the run buttons exist only on benches whose outcomes are cuts or
+brews.
+
+**Eating a Signature dish** logs `consumables.used_signature`: "Ate Fine Hearty
+Stew. Signature: also Stoked ×0.84." The dose is the Signature's own intensity
+times the grade and the cook's `foodPotency`. `foodDuration` and `foodPotency`
+read as percents everywhere (`PERCENT_STATS` in `ui/lib/format.ts`: "+6% Food
+Duration"; the Fortune & pace group of the sidebar lists them once they leave 100%).
+
 **Bench runs** (`systems/benchwork.ts`) repeat one layout on the clock —
 `craftSpeed` compresses the interval to a floor, and speed past the floor
 resolves several crafts per completion. Exclusive with activities, bound to

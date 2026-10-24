@@ -48,6 +48,7 @@
   import SpellcraftPanel from './SpellcraftPanel.svelte';
   import AscentPanel from './AscentPanel.svelte';
   import Modal from '../lib/Modal.svelte';
+  import CookBook from '../lib/CookBook.svelte';
   import { DISCIPLINES } from '../../core/data/disciplines.data';
   import { conditionsMet } from '../../core/systems/conditions';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
@@ -63,6 +64,8 @@
 
   /** Which workbench is open, if any. */
   let openBench = $state<string | null>(null);
+  /** The Cook's Book, opened from the header of a cooking bench. */
+  let bookOpen = $state(false);
   /** The ware whose card was clicked — the detail window reads the live shelf by index. */
   let openWare = $state<{ npc: NpcDef; index: number } | null>(null);
   const wareLine = $derived(openWare ? visibleLines(gs, openWare.npc)[openWare.index] : undefined);
@@ -591,9 +594,20 @@
     </Modal>
   {:else if openBench}
     {@const bench = DISCIPLINES[openBench]}
-    <Modal wide onclose={() => (openBench = null)}>
+    <Modal
+      wide
+      onclose={() => {
+        openBench = null;
+        bookOpen = false;
+      }}
+    >
       {#snippet title()}
-        <div class="win-title">{bench.icon} {bench.benchName ?? bench.name}</div>
+        <div class="win-head">
+          <div class="win-title">{bench.icon} {bench.benchName ?? bench.name}</div>
+          {#if bench.skill === 'cooking'}
+            <button class="small" onclick={() => (bookOpen = true)}>📒 Cook's Book</button>
+          {/if}
+        </div>
         <div class="small dim">{bench.desc}</div>
       {/snippet}
       <!-- Keyed: the bench remembers its last layout per discipline, so a panel
@@ -602,6 +616,7 @@
         <BenchPanel disciplineId={openBench} large />
       {/key}
     </Modal>
+    {#if bookOpen}<CookBook onclose={() => (bookOpen = false)} />{/if}
   {/if}
 
   {#if recipes.length > 0}
@@ -639,6 +654,13 @@
 {/if}
 
 <style>
+  /* A workbench's window header: its name, and the Cook's Book button on a kitchen bench. */
+  .win-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
   .place {
     padding-top: 0;
     overflow: hidden;

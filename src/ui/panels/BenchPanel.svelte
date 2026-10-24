@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { gs, game } from '../state.svelte';
   import { MATERIALS, QUALITY_TIERS, SKILLS, STATUSES } from '../../core/registry';
   import { RUNE_PATTERNS } from '../../core/data/runes.data';
@@ -24,11 +25,13 @@
   import { adornmentEffectAt, namedRuneFor, patternEffectAt, resolveRune } from '../../core/systems/runes';
   import { describeRuneEffect, fmt, pct } from '../lib/format';
   import { recallLayout, rememberLayout } from '../lib/benchLayouts';
+  import { dishMarks, plateFor, type DishMark, type Plate } from '../lib/cookBook';
   import type { CraftSlotDef, GradedStack, QualityTier, RuneContext } from '../../core/types';
   import Tip from '../lib/Tip.svelte';
   import GradeBadge from '../lib/GradeBadge.svelte';
   import GradeLedger from '../lib/GradeLedger.svelte';
   import HeatTrack from '../lib/HeatTrack.svelte';
+  import PlateCard from '../lib/PlateCard.svelte';
 
   /**
    * The carving bench: a slab in the middle with its cuts around it, and four
@@ -119,6 +122,43 @@
   $effect(() => rememberLayout(disciplineId, bench, chosenUnits));
 
   const duration = $derived(disc.timeline ? (chosenUnits ?? disc.timeline.default) : undefined);
+
+  /** A bench that makes dishes shows a plate card; the cutting board's cuts are not dishes. */
+  const dishBench = $derived(disc.skill === 'cooking' && disc.outcomes.some((o) => o.result.kind === 'material'));
+  /** The latest dish cooked here. Cleared when the layout changes; gone when the bench closes. */
+  let plate = $state<Plate | null>(null);
+  /** A dish has been cooked here since the bench opened: the card's space stays reserved from then on. */
+  let plated = $state(false);
+  /** Where each dish stood in the Cook's Book before its latest cook here: the card says what the cook changed. */
+  let marks = new Map<string, DishMark>();
+
+  onMount(() => {
+    if (!dishBench) return;
+    marks = dishMarks(gs);
+    return game.bus.on('cooked', (ev) => {
+      if (ev.discipline !== disc.id) return;
+      const after = dishMarks(gs).get(ev.dish);
+      if (!after) return;
+      plate = plateFor(ev, marks.get(ev.dish), after, (plate?.cooks ?? 0) + 1);
+      plated = true;
+      marks.set(ev.dish, after);
+    });
+  });
+
+  /** What is laid out, as one string: the card describes a cook of THIS layout, so a change to it clears the card. */
+  const layoutKey = $derived(
+    JSON.stringify([
+      Object.entries(bench)
+        .filter(([, stack]) => stack)
+        .map(([slot, stack]) => [slot, stack!.id, stack!.quality])
+        .sort(),
+      duration ?? null,
+    ]),
+  );
+  $effect(() => {
+    void layoutKey;
+    plate = null;
+  });
   const carve = $derived(carving ? previewCarve(gs, bench) : null);
   const dish = $derived(carving || ordered || refining ? null : previewCook(gs, bench, disc, duration));
   const potion = $derived(ordered ? previewBrew(gs, bench, disc) : null);
@@ -766,6 +806,15 @@
     {/if}
   </div>
 
+  {#if plated}
+    <!-- Kept after the first cook, card or not, like the picker well: a card that
+         came and went would move the Cook button, and the centred window would
+         walk away from the cursor. -->
+    <div class="plate-slot">
+      {#if plate}<PlateCard {plate} />{/if}
+    </div>
+  {/if}
+
   <div class="bench-actions">
     {#if job}
       <!-- Work underway: the bar is the craft in progress, the caption the run. -->
@@ -1262,6 +1311,12 @@
 
   .odds .risky { color: var(--danger); }
   .odds .good { color: var(--xp); }
+
+  /* As tall as a card with one line of notes, so the Cook button stays put. */
+  .plate-slot {
+    min-height: 54px;
+    margin-bottom: 6px;
+  }
 
   .bench-actions {
     display: flex;

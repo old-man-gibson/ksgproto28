@@ -590,13 +590,20 @@
       {@render statRow('Attribute XP', 'trainXp', `×${stats.trainXp.toFixed(2)}`)}
       {/if}
 
-      {@render groupHead('fortune', '💰 Fortune & pace', `loot ×${stats.loot.toFixed(2)} · gold ×${stats.goldGain.toFixed(2)}`, 'What drops and pays, and how fast you travel and craft.')}
+      {@render groupHead('fortune', '💰 Fortune & pace', `loot ×${stats.loot.toFixed(2)} · gold ×${stats.goldGain.toFixed(2)}`, 'What drops and pays, how fast you travel and craft, and how long and how hard eaten food works.')}
       {#if openGroups.fortune}
       {@render statRow('Loot Luck', 'loot', `×${stats.loot.toFixed(2)}`)}
       {@render statRow('Gold Gain', 'goldGain', `×${stats.goldGain.toFixed(2)}`)}
       {@render statRow('Travel Speed', 'travelSpeed', `×${stats.travelSpeed.toFixed(2)}`)}
       {#if stats.craftSpeed !== 1}
         {@render statRow('Craft Speed', 'craftSpeed', `×${stats.craftSpeed.toFixed(2)}`)}
+      {/if}
+      <!-- Cooking's milestones (docs/CONTENT_GUIDE.md, food): how long and how hard eaten food works. -->
+      {#if stats.foodDuration !== 1}
+        {@render statRow('Food Duration', 'foodDuration', pct(stats.foodDuration))}
+      {/if}
+      {#if stats.foodPotency !== 1}
+        {@render statRow('Food Potency', 'foodPotency', pct(stats.foodPotency))}
       {/if}
       {/if}
     </tbody>

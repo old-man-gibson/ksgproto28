@@ -283,6 +283,8 @@ export function useConsumable(
   const stats = getDerivedStats(state);
   const scale = qualityMult(quality);
   const result: UseResult = { restored: [], granted: [], signature: [], cured: [] };
+  /** Each Signature condition granted, with its dose, for the log line. */
+  const signatureText: string[] = [];
   // The cook's skill improves food. It reaches the benefit side only: a spoiled
   // grade (scale < 0) is not helped by a better cook, and non-food is untouched.
   const food = spec.food && scale > 0 ? foodScale(stats) : NO_FOOD_SCALE;
@@ -323,10 +325,13 @@ export function useConsumable(
     // (systems/cookbook.ts), graded and scaled like the dish's own grants.
     if (signatureEarned(state, id)) {
       for (const app of spec.signature ?? []) {
-        const inst = applyStatus(state, state, eatenApplication(app, scale, food), def.name);
+        const dose = eatenApplication(app, scale, food);
+        const inst = applyStatus(state, state, dose, def.name);
         if (inst) {
           result.granted.push(inst.id);
           result.signature.push(inst.id);
+          // The log line names it with the dose it landed at, e.g. "Stoked ×0.8".
+          signatureText.push(`${STATUSES[inst.id]?.name ?? inst.id} ×${+(dose.intensity ?? 1).toFixed(2)}`);
         }
       }
     }
@@ -348,10 +353,15 @@ export function useConsumable(
 
   const grade = QUALITY_TIERS[quality];
   const verb = spec.useVerb ?? 'Used';
-  bus.emit({
-    type: 'log',
-    msg: text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name }),
-    kind: scale < 0 ? 'danger' : 'action',
-  });
+  const msg = signatureText.length
+    ? text('consumables.used_signature', {
+        icon: def.icon,
+        verb,
+        grade: grade.name,
+        name: def.name,
+        status: signatureText.join(' and '),
+      })
+    : text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name });
+  bus.emit({ type: 'log', msg, kind: scale < 0 ? 'danger' : 'action' });
   return result;
 }

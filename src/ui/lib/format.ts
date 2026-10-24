@@ -238,6 +238,10 @@ const PERCENT_STATS = new Set<string>([
   'splash',
   'parry',
   'riposte',
+  // Cooking's two food multipliers: base 1, so 1.06 reads "106%" and a milestone
+  // adds "+6%" (derived.ts holds both at FOOD_MULT_CAP).
+  'foodDuration',
+  'foodPotency',
   // Every resistance is a share of a blow, not a count of anything — derived
   // from the damage-type table so a new element can never fall out of this
   // list again (resWater/Wind/Earth/Light/Dark once did, and read "+0.05").

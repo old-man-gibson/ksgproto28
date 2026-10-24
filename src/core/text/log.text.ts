@@ -100,6 +100,8 @@ export const LOG_TEXT = {
   'divine.favor_assigned': '🕊️ 1 unassigned favor placed with {deity}.',
   'consumables.recipe_learned': '📜 Recipe learned: {name}. It is listed on the bench that cooks it.',
   'consumables.used': '{icon} {verb} {grade} {name}.',
+  // A dish cooked SIGNATURE_COOKS times also grants its Signature (systems/cookbook.ts).
+  'consumables.used_signature': '{icon} {verb} {grade} {name}. Signature: also {status}.',
 
   // ---------- cooking ----------
   'cooking.reason.no_outcome': 'No recipe matches',
