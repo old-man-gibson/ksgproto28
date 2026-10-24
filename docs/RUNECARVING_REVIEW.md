@@ -183,11 +183,14 @@ scan that `runecarving.ts` imports no RNG.
   offhand reads Guard as parry (a weapon line) and the rest ×0.7. The socket
   picker prints a rune's reading in every slot before you commit.
 - **Bonuses.** 4 glyph points in one aspect, in one rune, turn on that
-  aspect's bonus (effect × min(1, grade)): Speed (weapon: reflex techniques' cooldown
-  ×0.85; armor: dodge +3pp), Guard (armor: crit damage taken −10%), Crit
-  (weapon: strike penetration +0.1), and each element (weapon hits inflict
-  its status at 20%: chilled, on fire, jolted, poison, dazzled, blinded). Each
-  bonus reads one aspect only.
+  aspect's bonus: Speed (weapon: triggered techniques' cooldown −15%; armor:
+  dodge +3pp), Guard (armor: crit damage taken −10%), Crit (weapon: strike
+  penetration +10%), and each element (weapon hits inflict its status, 20%
+  chance: chilled, on fire, jolted, poison, dazzled, blinded). Each point past
+  4 adds a quarter of the base (8 points = 2×; user, 2026-10-23). Everything
+  × min(1, max(0, grade)). Caps are kit-wide sums: cooldown −40%, dodge +9pp,
+  crit damage taken −30%, penetration +30%, status chance 60%. Each bonus
+  reads one aspect only.
 - **Named runes (recommended form).** A bonus with a name, on one aspect,
   at a higher total, read after stone grade: Aegis Guard 8, Hearthward Heat 6, Gale
   Speed 8, Earthbind Power 8, Umbral Dark 8, Stormbrand Lightning 8 (Fine slab or
@@ -203,8 +206,15 @@ scan that `runecarving.ts` imports no RNG.
   is refused at the bench, and the preview says why. Better tools and skill
   fit more glyphs into one socket; they change no odds. A
   burin is needed for variants and letters.
-- **Value.** Half the sale value of the inputs at their grades. Glyphs add
-  nothing.
+- **Value (user, 2026-10-23: "players are allowed to make money selling
+  runes, as it is not a free money glitch and still takes resources").**
+  Worth = the materials' base value at their grades (gold gain 1) × (1 + 0.1
+  per glyph + 0.2 per bonus on + 0.4 per named rune), at most ×2. A rune
+  sells for worth × gold gain, like other goods, but never above just under
+  what its materials cost at a shop with the price seal (materials × 2 × 0.9
+  − 1). So a rune made from gathered or dropped materials sells for up to
+  nearly twice their raw sale value, and a rune made from bought materials
+  never turns gold into more gold (§6c).
 - **Count.** A brainstormer enumerated 73,253 distinct ledgers from 38
   glyphs at four cuts or fewer, 2.92 million at six; different totals
   always give different stats. Times six grades and the adornment sets.
@@ -296,40 +306,43 @@ scan that `runecarving.ts` imports no RNG.
   edge list. The bench gets no technique or position slot. Tumbling is a
   dead end under §9a rule 1.
 
-### 4.5 Points below a bonus (proposal, user 2026-10-23)
+### 4.5 Each glyph's own effect (user rulings 2026-10-23)
 
-The user's idea: points that do not reach a threshold should reroute into
-other effects, or each rune should have a general persistent effect. The
-manager's form combines both:
+The user's idea: points that do not reach a threshold should still do
+something, or each rune should have a general persistent effect. Settled by
+the user the same day (questions 6 and 7): monster stats only; "cutting a
+glyph once imparts the effects and additional cuts increase the effect,
+potentially putting it either above the threshold or further increasing the
+power of an effect."
 
-- Each glyph has one persistent effect, the same in every slot.
-- A glyph point whose aspect reaches 4 in the rune goes to that aspect's
-  bonus. A point whose aspect does not reach 4 powers its own glyph's
-  persistent effect instead. Every point still gives its slot stat.
-- The choice it makes: concentrate glyphs on one aspect for its bonus, or
-  spread them and get each glyph's own effect.
-- Scaled by stone grade up to Fair only (× min(1, grade)), like bonuses.
-  Capped per stat across the whole kit. Adornment points have no glyph and
-  power nothing here.
-- Stats: only ones monsters also have (`MonsterStats`), so a monster wearing
-  a rune gets the same effects; none of smithing's lens stats.
+- Each glyph has one effect of its own, the same in every slot. Cutting it
+  once gives the effect; each extra copy adds the same amount again
+  (strength = copies; a short-twig variant counts as its parent).
+- Every glyph point also counts toward its aspect total, as before: extra
+  copies can push an aspect to 4 (its bonus turns on) and past it (the bonus
+  grows a quarter per point, §4.1).
+- × min(1, max(0, grade)), like bonuses. Capped per stat across the whole
+  kit. Adornments have no glyph, so they add no effect of this kind.
+- Only stats monsters also have (`MonsterStats`), so a monster wearing a
+  rune gets the same effects; none of smithing's lens stats.
+- Reads one glyph's copies only: no term reads two glyphs or two aspects.
 
-First-guess table (per leftover point, at Fair):
+First-guess table (per copy, at Fair):
 
 | Glyph | Effect | Glyph | Effect |
 |---|---|---|---|
-| Fehu | Crit Damage +2% | Isaz | Armor +1 |
-| Uruz | Damage Taken −0.5% | Jera | Max HP +2 |
-| Thurisaz | Graze Damage on a Miss +1% | Eihwaz | Damage Taken −0.5% |
-| Ansuz | Spell Power +1 | Pertho | Cooldown Back on a Miss +1% |
-| Raido | Speed +1% | Algiz | Crit Damage Taken −1% |
-| Kaunan | Crit Damage +2% | Sowilo | Crit Chance +0.5pp |
-| Gebo | Cooldown Back on a Miss +1% | Tiwaz | Damage vs Larger +1% |
-| Wunjo | HP Regen +0.05/s | Berkanan | HP Regen +0.05/s |
-| Hagalaz | Resistance Ceiling +0.5pp | Ehwaz | Extra Swings +0.5% |
-| Naudiz | Crit Damage Taken −1% | Mannaz | Ward +0.5 |
-| Laguz | Dodge +0.5pp | Ingwaz | Damage vs Smaller +1% |
-| Dagaz | Extra Swings +0.5% | Othala | Ward +0.5 |
+| Fehu | Crit Damage +4% | Isaz | Armor +2 |
+| Uruz | Damage Taken −1% | Jera | Max HP +4 |
+| Thurisaz | Graze Damage on a Miss +2% | Eihwaz | Damage Taken −1% |
+| Ansuz | Spell Power +2 | Pertho | Cooldown Back on a Miss +2% |
+| Raido | Speed +2% | Algiz | Crit Damage Taken −2% |
+| Kaunan | Crit Damage +4% | Sowilo | Crit Chance +1pp |
+| Gebo | Cooldown Back on a Miss +2% | Tiwaz | Damage vs Larger +2% |
+| Wunjo | HP Regen +0.1/s | Berkanan | HP Regen +0.1/s |
+| Hagalaz | Resistance Ceiling +1pp | Ehwaz | Extra Swings +1% |
+| Naudiz | Crit Damage Taken −2% | Mannaz | Ward +1 |
+| Laguz | Dodge +1pp | Ingwaz | Damage vs Smaller +2% |
+| Dagaz | Extra Swings +1% | Othala | Ward +1 |
 
 Kit-wide caps (first guesses): Crit Damage 20%, Damage Taken −10%, Graze
 15%, Spell Power 10, Speed 8%, Cooldown Back on a Miss 10%, HP Regen 1/s,
@@ -337,12 +350,14 @@ Resistance Ceiling 5pp, Crit Damage Taken −15%, Armor 10, Max HP 40,
 Damage vs Larger / Smaller 15%, Crit Chance 5pp, Extra Swings 5%, Ward 5,
 Dodge 5pp.
 
-Examples: Raido + Ehwaz on Fair: Speed reaches 4 and turns its bonus on;
-Raido's Luck point and Ehwaz's Health point are left over: Speed +1%,
-Extra Swings +0.5%. Algiz + Isaz + Raido on Fair: nothing reaches 4; all 9
-points: Crit Damage Taken −3%, Armor +3, Speed +3%.
+Examples, Fair: Algiz + Isaz: Crit Damage Taken −2%, Armor +2. Algiz + Isaz
+×2: Cold reaches 4 and its bonus turns on (hits inflict chilled, 20%), and
+Isaz's own effect doubles: Armor +4. Four Algiz: Guard 8, so the Guard bonus
+is doubled (crit damage taken −20%), Aegis is made, and Algiz's own effect
+is −8% crit damage taken.
 
-Second antagonist pass on this proposal (fix first) and rulings: §6b.
+Antagonist passes on this section: §6b (the first form, points split by
+aspect total) and §6c (this form).
 
 ## 5. UI
 
@@ -400,14 +415,16 @@ hides another:
 
 - The inlay fills the cut strokes, one colour per material: gold leaf gold,
   bone dust bone white, warm gel ember orange, chilled gel ice blue, charged
-  gel violet, luminous gel pale yellow. No inlay: dark bare cuts on the
-  stone, light ones on the UI.
-- The pigment paints a 1-pixel edge around the strokes (ochre, verdigris).
+  gel violet, luminous gel pale yellow. No inlay: dark bare cuts.
+- The pigment stains the stone itself (user, 2026-10-23): ochre turns it
+  brown-orange, verdigris green.
 - Gems sit in the stone, at its lower corners.
 - A legend under the slab names each one ("Inlay: Chilled gel (fills the
-  cuts)"), and the station headings say the same.
-- The same drawing is used everywhere a rune appears: the slab, the pouch,
-  the sockets, the rune card and the bestiary.
+  cuts)", "Color: Verdigris (stains the stone)"), and the station headings
+  say the same.
+- Every rune is drawn on its stone wherever it appears: a small stained
+  stone in the pouch and on the rune card, the socket itself in the stone's
+  colour, the full slab on the bench.
 
 ## 6. Antagonist objections and rulings
 
@@ -437,8 +454,9 @@ Checked clean by the antagonist: completability invariant A (unsocketing is
 free; a plain swing from tumbling resets to neutral; prestige resets glyph
 knowledge and finds together), invariant C (every reading linear and
 capped; speed compounds uncapped, which trivialises but stays finite), the
-economy (a rune never outsells its own materials; class-constant item value
-lowers every resale ceiling), MARTIAL §9 and §10, identity against smithing
+economy (at the time a rune never outsold its own materials, since changed
+by the user's ruling and re-checked in §6c; class-constant item value lowers
+every resale ceiling), MARTIAL §9 and §10, identity against smithing
 and music, the derived-stats cache (`modFingerprint` already stringifies
 carved runes per slot), and float order in fork-option totals.
 
@@ -455,6 +473,26 @@ Verdict: fix first. No terminal state, no non-finite value.
 | medium | **High grades flip the choice.** Persistent scaled fully with grade, bonuses to min(1, grade) | Accepted. Persistent scales to min(1, grade) |
 | low | **Two signs backwards** (stamina and mana efficiency are costs) | Accepted; both left the table. A cost stat shows as "cost −1%" |
 | low | **Overlap with smithing finishing stats** | Noted. Rune and finish are different objects; the tooltip names the source |
+
+The split by aspect total was later replaced by the user's ruling (§4.5:
+every glyph gives its effect, extra copies strengthen it), which also
+removes objection 3's case.
+
+### 6c. Third pass: effects by copies, bonuses past 4, rune value
+
+Verdict: fix first. No terminal state, no non-finite value.
+
+| Severity | Objection | Ruling |
+|---|---|---|
+| high | **Bought inputs still profit.** Sale = worth × gold gain, and charisma raises gold gain; a carve is one click with no bench time. Four Algiz on a Fair stone with verdigris (worth ×2, cap): +1 gold per carve at charisma 1, +5 at charisma 6, +48 at charisma 41; the price seal adds +2 even on a bare stone. Reproduced with real `buyPrice` and `getDerivedStats` | Accepted. A rune never sells above just under what its materials cost at a shop with the seal (materials × 2 × 0.9 − 1). Gathered materials still profit; bought ones always lose at least 1 |
+| medium | **Gold gain counted twice** if worth is priced through `gradedUnitPrice` (which already multiplies by gold gain) | Accepted. Worth uses base values at gold gain 1; gold gain applies once, at sale |
+| medium | **Bonus caps had no scope**; per rune, 17 armour sockets of six-Raido runes reach the 75% dodge cap from bonuses alone | Accepted. Bonus caps are kit-wide sums |
+| medium–low | **The −40% cooldown clamp does not exist yet**, and a named rune (Gale ×0.55) stacks past it | Accepted. The clamp is slice-5 work; one ceiling covers everything runes do to a technique's cooldown, named runes included: −60% in total |
+| low | **Concentration dominates**: resonance (+0.25 per extra copy) plus the doubled bonus made one glyph six times the best carving almost everywhere | Accepted in part: resonance dropped from glyphs' own effects (strength = copies, as the user worded it). Stacking still pays through the bonus, by the user's ruling |
+| low | **Legacy F carvings flip sign** under min(1, grade) | Accepted. min(1, max(0, grade)) everywhere |
+
+Pre-existing, noted only: the Crit bonus (penetration) and the weapon Speed
+bonus (technique cooldown) have no monster-side stat.
 
 ## 7. Roles under §6a
 
@@ -489,14 +527,11 @@ socketed changes what it does, and this duel measures that.
 5. **Permanence.** A rune adds a fork option to the Honed choice; taking it
    is permanent and outlives the rune. Keep, or let a rune-granted path lapse
    when the rune leaves?
-6. **Persistent effects: combat or utility.** Monster stats only
-   (recommended; monsters wearing runes get the same effects), or utility
-   effects such as travel speed, XP and craft speed as a deliberate parity
-   break, like unique abilities?
-7. **How points are split.** By aspect total, as in §4.5 (a point short of
-   its bonus powers its glyph), or by copies (a glyph cut once gives its own
-   effect; cut two or more times it gives none and concentrates on its
-   aspect)?
+6. ~~Persistent effects: combat or utility.~~ **Answered 2026-10-23:**
+   monster stats only.
+7. ~~How points are split.~~ **Answered 2026-10-23:** cutting a glyph once
+   imparts its effect; additional cuts increase it and can push its aspect
+   past the threshold or make a bonus stronger (§4.5).
 8. **MUSIC.md.** Correct its identity table (cooking = sum, runecarving =
    breadth) to match PITFALLS.md?
 
