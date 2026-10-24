@@ -125,6 +125,21 @@ describe('heat windows: the clock picks the dish', () => {
     expect(STOVE.timeline!.default).toBe(12);
   });
 
+  it('a stated mean stands in for the measured one, for read-only what-ifs', () => {
+    const g = kitchen(1, CARDS);
+    const pot: Placement = { main: at('raw_meat'), second: at('wild_onion') };
+    // Measured, the meat sees 12 units: a Hearty Stew. Stated, it sees what we say.
+    const asked = (mean: number) => matchOutcome(g.state, STOVE, pot, 12, { tag: 'meat', mean })?.id;
+    expect(matchOutcome(g.state, STOVE, pot, 12)?.id).toBe('stew');
+    expect(asked(5)).toBe('seared_stew');
+    expect(asked(6)).toBe('stew'); // the edge of a half-open window is outside it
+    expect(asked(14)).toBe('braised_meat');
+    // Only the named tag is overridden, and nothing on the bench moves.
+    expect(matchOutcome(g.state, STOVE, pot, 12, { tag: 'herb', mean: 5 })?.id).toBe('stew');
+    expect(pot).toEqual({ main: at('raw_meat'), second: at('wild_onion') });
+    expect(stockOf(g.state, 'raw_meat', 'c')).toBe(10);
+  });
+
   it('the mean over every part with the tag decides, not the best of them', () => {
     const g = kitchen(8, CARDS); // third slot (0.66) opens
     // Meat first (16 units) and a fish midway (10.72) both carry `meat`:

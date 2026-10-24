@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { damageTipLines, describeMod, fmt, statusTipLines } from '../src/ui/lib/format';
+import { conditionEffects, damageTipLines, describeMod, fmt, foodLines, immuneText, statusTipLines } from '../src/ui/lib/format';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { applyStatus, findStatus } from '../src/core/systems/statuses';
-import { RES_STAT_BY_TYPE, type DamageReport, type DamageSlice } from '../src/core/types';
+import { STATUSES } from '../src/core/registry';
+import { RES_STAT_BY_TYPE, type DamageReport, type DamageSlice, type StatusDef } from '../src/core/types';
 
 function slice(over: Partial<DamageSlice> = {}): DamageSlice {
   return {
@@ -161,5 +162,79 @@ describe('affliction tooltips', () => {
     applyStatus(game.state, game.state, { id: 'blazing', intensity: 1 });
     const burn = statusTipLines(game.state, findStatus(game.state, 'blazing')!);
     expect(burn.some((l) => l.includes('Healing may undo only 50%'))).toBe(true);
+  });
+});
+
+describe('immunity in the tooltips', () => {
+  const ward: StatusDef = {
+    id: 'test_ward',
+    name: 'Warded',
+    icon: '🛡️',
+    desc: 'Test-only.',
+    stacking: { mode: 'highest' },
+    duration: null,
+    removal: [{ on: 'combatEnd', effect: 'remove' }],
+    immune: { elements: ['poison'] },
+  };
+
+  function withStatus(def: StatusDef, body: () => void) {
+    STATUSES[def.id] = def;
+    try {
+      body();
+    } finally {
+      delete STATUSES[def.id];
+    }
+  }
+
+  it('says which conditions are refused', () => {
+    expect(immuneText({ elements: ['poison'] })).toBe('Immune to poison conditions');
+    expect(immuneText({ ids: ['bleeding'] })).toBe('Immune to Bleeding');
+    expect(immuneText({ elements: ['poison', 'acid'], ids: ['bleeding'] })).toBe(
+      'Immune to poison conditions, acid conditions and Bleeding',
+    );
+  });
+
+  it('a held status tooltip states it', () => {
+    withStatus(ward, () => {
+      const game = new Game(createInitialState(1));
+      applyStatus(game.state, game.state, { id: 'test_ward', intensity: 1 });
+      const lines = statusTipLines(game.state, findStatus(game.state, 'test_ward')!);
+      expect(lines).toContain('— Immune to poison conditions');
+    });
+  });
+
+  it('a granted status states it where a dish or spell previews what it grants', () => {
+    withStatus({ ...ward, immune: { ids: ['bleeding', 'poison'] } }, () => {
+      expect(conditionEffects('test_ward')).toContain('Immune to Bleeding and Poisoned');
+    });
+  });
+
+  it('a status with no immunity says nothing about it', () => {
+    const game = new Game(createInitialState(1));
+    applyStatus(game.state, game.state, { id: 'poison', intensity: 1 });
+    expect(statusTipLines(game.state, findStatus(game.state, 'poison')!).some((l) => /Immune/.test(l))).toBe(false);
+  });
+});
+
+describe('what a dish does when eaten', () => {
+  it('scales the granted status by the grade, as eating does', () => {
+    const fair = foodLines('hearty_stew', 'c');
+    const fine = foodLines('hearty_stew', 'b');
+    expect(fair).toHaveLength(1);
+    expect(fair[0]).toContain('Well Fed');
+    expect(fine[0]).toContain('Well Fed');
+    expect(fine[0]).not.toBe(fair[0]);
+  });
+
+  it('a Refuse dish makes you ill instead of doing what it says', () => {
+    const lines = foodLines('hearty_stew', 'f');
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain('Queasy');
+    expect(lines[0]).not.toContain('Well Fed');
+  });
+
+  it('is empty for a material that cannot be eaten', () => {
+    expect(foodLines('raw_meat', 'c')).toEqual([]);
+    expect(foodLines('no_such_thing', 'c')).toEqual([]);
   });
 });

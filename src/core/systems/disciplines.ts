@@ -290,15 +290,26 @@ export function inHeatWindow(mean: number, window: { from?: number; to?: number 
   return (window.from === undefined || mean >= window.from) && (window.to === undefined || mean < window.to);
 }
 
+/**
+ * A hypothetical mean exposure for one tag, in timeline units. The UI's
+ * cook-time row asks "what would this basket make if its meat averaged 9
+ * units?" without moving any ingredient (`matchOutcome`'s last argument).
+ */
+export interface HeatOverride {
+  tag: string;
+  mean: number;
+}
+
 /** Whether a layout satisfies every heat window an outcome declares. */
 function heatMatches(
   o: CraftOutcomeDef,
   disc: CraftDisciplineDef,
   placement: Placement,
   duration?: number,
+  override?: HeatOverride,
 ): boolean {
   return (o.heat ?? []).every((w) => {
-    const mean = meanExposure(disc, placement, w.tag, duration);
+    const mean = override?.tag === w.tag ? override.mean : meanExposure(disc, placement, w.tag, duration);
     return mean !== null && inHeatWindow(mean, w);
   });
 }
@@ -430,13 +441,16 @@ export function consumedParts(disc: CraftDisciplineDef, placement: Placement): G
  *
  * `duration` is a timed bench's chosen length (its default when absent); only
  * outcomes with `heat` windows read it. A bench without a timeline never
- * matches a windowed outcome.
+ * matches a windowed outcome. `override` replaces the measured mean exposure of
+ * one tag with a stated one, for read-only what-ifs; the match is otherwise the
+ * same, and nothing is changed.
  */
 export function matchOutcome(
   state: GameState,
   disc: CraftDisciplineDef,
   placement: Placement,
   duration?: number,
+  override?: HeatOverride,
 ): CraftOutcomeDef | undefined {
   const counts = tagCounts(placement);
   const level = skillLevel(state, disc);
@@ -448,7 +462,7 @@ export function matchOutcome(
     if (o.minQuality && (!best || !qualityAtLeast(best, o.minQuality))) return false;
     if (o.maxQuality && best && qualityRank(best) > qualityRank(o.maxQuality)) return false;
     if (!o.requires.every((r) => (counts.get(r.tag) ?? 0) >= (r.count ?? 1))) return false;
-    return heatMatches(o, disc, placement, duration);
+    return heatMatches(o, disc, placement, duration, override);
   });
 
   return matches.sort(
