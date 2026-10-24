@@ -37,7 +37,7 @@
     {/if}
     {#if queued}
       <div class="queued">
-        <span>After this fight:</span>
+        <span>{queued.label}</span>
         <div class="queued-row">
           <span class="queued-name">{queued.icon} {queued.name}</span>
           <button class="small" onclick={() => game.cancelQueuedMeal()}>Cancel</button>

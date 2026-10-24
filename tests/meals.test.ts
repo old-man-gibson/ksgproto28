@@ -6,7 +6,13 @@ import { QUALITY_TIERS } from '../src/core/data/quality.data';
 import { grantGraded } from '../src/core/systems/disciplines';
 import { canUse, canUseOutOfFight, useConsumable } from '../src/core/systems/consumables';
 import { eatPlan } from '../src/core/systems/eating';
-import { MAX_ACTIVE_DISHES, activeMeals, dishLimit, mealToReplace } from '../src/core/systems/meals';
+import {
+  MAX_ACTIVE_DISHES,
+  activeMeals,
+  dishLimit,
+  mealToReplace,
+  tickMealClaims,
+} from '../src/core/systems/meals';
 import { abandonCombat } from '../src/core/systems/combat';
 import { brew, useFlask } from '../src/core/systems/alchemy';
 import { getDerivedStats } from '../src/core/systems/derived';
@@ -15,6 +21,7 @@ import { cookedKey } from '../src/core/systems/cookbook';
 import { migrate } from '../src/core/save/migrations';
 import { deserialize, loadFromStorage, serialize, SAVE_KEY } from '../src/core/save/save';
 import { text } from '../src/core/text/log';
+import type { QualityTier } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
 /** A hunt in the Cages, between fights, with a stocked table. */
@@ -65,9 +72,7 @@ describe('dishes are eaten out of combat', () => {
 
   it('a flask stays drinkable in a fight', () => {
     const g = fighting();
-    flaskKit(g);
-    brew(g.state, g.bus, { step1: { id: 'spring_water', quality: 'c' }, step2: { id: 'mendroot', quality: 'c' } });
-    expect(useFlask(g.state, g.bus, 0)).not.toBeNull();
+    expect(drink(g)).not.toBeNull();
     expect(hasStatus(g.state, 'well_fed')).toBe(true);
   });
 
@@ -115,7 +120,7 @@ describe('eat after this fight', () => {
     const g = fighting();
     stock(g, 'hearty_stew');
     expect(g.eat('hearty_stew', 'c')).toBe('queued');
-    expect(g.state.queuedMeal).toEqual({ dish: 'hearty_stew', quality: 'c' });
+    expect(g.state.queuedMeal).toEqual({ dish: 'hearty_stew', quality: 'c', why: 'fight' });
     expect(g.state.stock.hearty_stew!.c).toBe(5);
     expect(hasStatus(g.state, 'well_fed')).toBe(false);
     expect(logLines(g).some((l) => l.includes('queued') && l.includes('Hearty Stew'))).toBe(true);
@@ -151,12 +156,12 @@ describe('eat after this fight', () => {
     g.eat('hearty_stew', 'c');
     expect(logLines(g)).toHaveLength(lines);
     g.eat('mushroom_broth', 'c');
-    expect(g.state.queuedMeal).toEqual({ dish: 'mushroom_broth', quality: 'c' });
+    expect(g.state.queuedMeal).toEqual({ dish: 'mushroom_broth', quality: 'c', why: 'fight' });
     expect(logLines(g).at(-1)).toContain('in place of Fair Hearty Stew');
     // A different grade of the same dish is a different pending dish too.
     grantGraded(g.state, 'mushroom_broth', 'b', 1);
     g.eat('mushroom_broth', 'b');
-    expect(g.state.queuedMeal).toEqual({ dish: 'mushroom_broth', quality: 'b' });
+    expect(g.state.queuedMeal).toEqual({ dish: 'mushroom_broth', quality: 'b', why: 'fight' });
   });
 
   it('can be cancelled', () => {
@@ -276,7 +281,7 @@ describe('eat after this fight', () => {
     g.eat('hearty_stew', 'c');
     const loaded = deserialize(serialize(g.state));
     expect(loaded.combat).toBeNull();
-    expect(loaded.queuedMeal).toEqual({ dish: 'hearty_stew', quality: 'c' });
+    expect(loaded.queuedMeal).toEqual({ dish: 'hearty_stew', quality: 'c', why: 'fight' });
     const g2 = new Game(loaded);
     g2.tick();
     expect(g2.state.queuedMeal).toBeNull();
@@ -295,6 +300,97 @@ describe('eat after this fight', () => {
   });
 });
 
+/** A Cages hunt with the fight over and nothing left to start one: time moves only when a test steps it. */
+function idle(seed = 3) {
+  const g = hunting(seed);
+  abandonCombat(g.state);
+  g.state.activity = null;
+  return g;
+}
+
+/** The time a dish in a slot has left, on its own clocks. */
+const own = (g: Game, dish: string): number | null | undefined =>
+  activeMeals(g.state).find((m) => m.slot.dish === dish)?.ticksLeft;
+
+/** A dish's own claim on a condition. */
+const claim = (g: Game, dish: string, id: string) =>
+  g.state.meals.find((m) => m.dish === dish)?.claims.find((c) => c.id === id);
+
+/**
+ * Cut a dish's own clock on a condition to `ticks`, and the condition's with it
+ * (it is that dish's claim that leads), so a test need not wait out minutes to make
+ * one dish the shortest. Only for a dish that leads its condition.
+ */
+function shorten(g: Game, dish: string, id: string, ticks: number) {
+  claim(g, dish, id)!.left = ticks;
+  held(g, id)!.ticksLeft = ticks;
+}
+
+/** Drink a Mendroot elixir through the game (Fair: Well Fed x0.65 for 450; Divine: x2.6 for 450). */
+function drink(g: Game, quality: QualityTier = 'c') {
+  grantGraded(g.state, 'spring_water', quality, 1);
+  grantGraded(g.state, 'mendroot', quality, 1);
+  g.state.skills.alchemy = { level: 40, xp: 0 };
+  brew(g.state, g.bus, { step1: { id: 'spring_water', quality }, step2: { id: 'mendroot', quality } });
+  return g.useFlask(0)!;
+}
+
+describe('eat after recovering', () => {
+  /** Knocked out, no fight on, a stew in the pack. */
+  function floored() {
+    const g = idle();
+    stock(g, 'hearty_stew', 'healing_salve');
+    g.state.recovering = true;
+    g.state.resources.hp = 1;
+    return g;
+  }
+
+  it('a dish pressed while knocked out waits, and spends nothing', () => {
+    const g = floored();
+    expect(eatPlan(g.state, 'hearty_stew', 'c')).toMatchObject({ mode: 'queue', wait: 'recovery' });
+    expect(g.eat('hearty_stew', 'c')).toBe('queued');
+    expect(g.state.queuedMeal).toEqual({ dish: 'hearty_stew', quality: 'c', why: 'recovery' });
+    expect(g.state.stock.hearty_stew!.c).toBe(5);
+    expect(hasStatus(g.state, 'well_fed')).toBe(false);
+    expect(logLines(g).at(-1)).toContain('it is eaten when you are back on your feet');
+  });
+
+  it('is eaten the tick after the recovery ends, at full length, and says so', () => {
+    const g = floored();
+    g.eat('hearty_stew', 'c');
+    g.step(30);
+    expect(g.state.recovering).toBe(true);
+    expect(g.state.queuedMeal).not.toBeNull();
+    expect(slots(g)).toEqual([]);
+    g.state.resources.hp = getDerivedStats(g.state).maxHp;
+    g.tick();
+    expect(g.state.recovering).toBe(false);
+    g.tick();
+    expect(g.state.queuedMeal).toBeNull();
+    expect(logLines(g)).toContain(`🍲 Ate ${QUALITY_TIERS.c.name} Hearty Stew (queued while knocked out).`);
+    expect(own(g, 'hearty_stew')!).toBeGreaterThanOrEqual(STATUSES.well_fed.duration! - 1);
+  });
+
+  it('a salve is still used at once while knocked out', () => {
+    const g = floored();
+    expect(g.eat('healing_salve', 'c')).toBe('ate');
+    expect(g.state.queuedMeal).toBeNull();
+  });
+
+  it('a dish queued in the fight keeps the fight wording when a knockout comes first', () => {
+    const g = fighting();
+    stock(g, 'hearty_stew');
+    g.eat('hearty_stew', 'c');
+    abandonCombat(g.state);
+    g.state.recovering = true;
+    g.state.resources.hp = 1;
+    g.step(5);
+    g.state.resources.hp = getDerivedStats(g.state).maxHp;
+    g.step(3);
+    expect(logLines(g)).toContain(`🍲 Ate ${QUALITY_TIERS.c.name} Hearty Stew (queued during the fight).`);
+  });
+});
+
 describe('at most three dishes active', () => {
   it('the limit is one constant behind one function', () => {
     expect(MAX_ACTIVE_DISHES).toBe(3);
@@ -302,38 +398,33 @@ describe('at most three dishes active', () => {
   });
 
   it('a dish holds one slot with everything it gave, Signature included', () => {
-    const g = hunting();
-    abandonCombat(g.state);
+    const g = idle();
     g.state.stats[cookedKey('hearty_stew')] = 100;
     stock(g, 'hearty_stew');
     useConsumable(g.state, g.bus, 'hearty_stew', 'c');
     const meals = activeMeals(g.state);
     expect(meals).toHaveLength(1);
-    expect(meals[0].slot.statuses.map((s) => s.id).sort()).toEqual(['stoked', 'well_fed']);
+    expect(meals[0].slot.claims.map((c) => c.id).sort()).toEqual(['stoked', 'well_fed']);
     expect(meals[0].ticksLeft).toBe(STATUSES.well_fed.duration);
+    expect(claim(g, 'hearty_stew', 'stoked')!.left).toBe(STATUSES.stoked.duration);
   });
 
-  it('eating a dish that is already active refreshes its slot instead of taking another', () => {
-    const g = hunting();
-    abandonCombat(g.state);
+  it('eating a dish that is already active renews its slot instead of taking another', () => {
+    const g = idle();
     stock(g, 'hearty_stew', 'mushroom_broth');
     useConsumable(g.state, g.bus, 'hearty_stew', 'c');
     useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
-    g.state.activity = null;
     g.step(2000);
-    const before = activeMeals(g.state).find((m) => m.slot.dish === 'hearty_stew')!.ticksLeft!;
-    expect(before).toBeLessThan(STATUSES.well_fed.duration! - 1500);
+    expect(own(g, 'hearty_stew')!).toBeLessThan(STATUSES.well_fed.duration! - 1500);
     useConsumable(g.state, g.bus, 'hearty_stew', 'c');
     expect(slots(g)).toEqual(['mushroom_broth', 'hearty_stew']);
-    expect(activeMeals(g.state).find((m) => m.slot.dish === 'hearty_stew')!.ticksLeft).toBe(
-      STATUSES.well_fed.duration,
-    );
+    expect(own(g, 'hearty_stew')).toBe(STATUSES.well_fed.duration);
+    expect(held(g, 'well_fed')!.ticksLeft).toBe(STATUSES.well_fed.duration);
     expect(g.state.stock.hearty_stew!.c).toBe(3);
   });
 
-  it('a second helping at a better grade keeps the better grade on the slot', () => {
-    const g = hunting();
-    abandonCombat(g.state);
+  it('a second helping at a worse grade keeps the better grade on the slot', () => {
+    const g = idle();
     grantGraded(g.state, 'hearty_stew', 'b', 1);
     grantGraded(g.state, 'hearty_stew', 'd', 1);
     useConsumable(g.state, g.bus, 'hearty_stew', 'b');
@@ -343,9 +434,7 @@ describe('at most three dishes active', () => {
   });
 
   it('the fourth different dish replaces the one with the least time left, and its conditions end', () => {
-    const g = hunting();
-    abandonCombat(g.state);
-    g.state.activity = null;
+    const g = idle();
     stock(g, ...FOUR);
     const [a, b, c, d] = FOUR;
     useConsumable(g.state, g.bus, a, 'c'); // clear_headed, 4800
@@ -354,10 +443,9 @@ describe('at most three dishes active', () => {
     g.step(300);
     useConsumable(g.state, g.bus, c, 'c'); // steady_hand, 4800
     expect(slots(g)).toEqual([a, b, c]);
-    const left = (dish: string) => activeMeals(g.state).find((m) => m.slot.dish === dish)!.ticksLeft!;
     // a has run 600 ticks, c none: a has the least left.
-    expect(left(a)).toBeLessThan(left(c));
-    expect(left(a)).toBeLessThan(left(b));
+    expect(own(g, a)!).toBeLessThan(own(g, c)!);
+    expect(own(g, a)!).toBeLessThan(own(g, b)!);
     expect(mealToReplace(g.state, d)!.slot.dish).toBe(a);
     useConsumable(g.state, g.bus, d, 'c');
     expect(slots(g)).toEqual([b, c, d]);
@@ -373,58 +461,46 @@ describe('at most three dishes active', () => {
   });
 
   it('a replaced dish stops giving its stats at once (the derived cache sees it)', () => {
-    const g = hunting();
-    abandonCombat(g.state);
-    g.state.activity = null;
+    const g = idle();
     stock(g, 'hearty_stew', 'mushroom_broth', 'steeped_broth', 'skewered_fish');
     useConsumable(g.state, g.bus, 'hearty_stew', 'c');
     const fed = getDerivedStats(g.state).maxHp;
-    g.step(100);
+    g.step(5950); // the stew has 50 ticks left
     useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
     useConsumable(g.state, g.bus, 'steeped_broth', 'c');
-    // Hearty Stew (well_fed, 6000) outlasts the 4800 broth; make it the least.
-    held(g, 'well_fed')!.ticksLeft = 50;
     useConsumable(g.state, g.bus, 'skewered_fish', 'c');
-    expect(slots(g)).not.toContain('hearty_stew');
+    expect(slots(g)).toEqual(['mushroom_broth', 'steeped_broth', 'skewered_fish']);
     expect(hasStatus(g.state, 'well_fed')).toBe(false);
     expect(getDerivedStats(g.state).maxHp).toBe(fed - 8);
   });
 
-  it('a replaced dish frees its tie-break: equal time goes to the one eaten first', () => {
-    const g = hunting();
-    abandonCombat(g.state);
-    g.state.activity = null;
+  it('equal time goes to the dish eaten first', () => {
+    const g = idle();
     stock(g, ...FOUR);
-    for (const id of FOUR.slice(0, 3)) {
-      useConsumable(g.state, g.bus, id, 'c');
-      for (const m of activeMeals(g.state)) for (const e of m.slot.statuses) held(g, e.id)!.ticksLeft = 1000;
-    }
+    // Broth and fish both run 4800 and were eaten on the same tick; the broth was first.
+    for (const id of FOUR.slice(0, 3)) useConsumable(g.state, g.bus, id, 'c');
+    expect(own(g, FOUR[0])).toBe(own(g, FOUR[2]));
     useConsumable(g.state, g.bus, FOUR[3], 'c');
     expect(slots(g)).toEqual([FOUR[1], FOUR[2], FOUR[3]]);
   });
 
   it('a slot frees when its dish runs out, so the next dish replaces nobody', () => {
-    const g = hunting();
-    abandonCombat(g.state);
-    g.state.activity = null;
-    stock(g, ...FOUR);
-    for (const id of FOUR.slice(0, 3)) useConsumable(g.state, g.bus, id, 'c');
-    // Run the clock out on the first dish only.
-    held(g, 'clear_headed')!.ticksLeft = 2;
-    g.step(3);
-    expect(hasStatus(g.state, 'clear_headed')).toBe(false);
-    expect(slots(g)).toEqual([FOUR[1], FOUR[2]]);
-    expect(g.state.meals.map((s) => s.dish)).toEqual([FOUR[1], FOUR[2]]);
-    useConsumable(g.state, g.bus, FOUR[3], 'c');
-    expect(slots(g)).toEqual([FOUR[1], FOUR[2], FOUR[3]]);
+    const g = idle();
+    stock(g, 'seared_stew', 'steeped_broth', 'skewered_fish', 'mushroom_broth');
+    for (const id of ['seared_stew', 'steeped_broth', 'skewered_fish']) useConsumable(g.state, g.bus, id, 'c');
+    g.step(STATUSES.stoked.duration! + 1); // the stew's Stoked, 3000, runs out first
+    expect(hasStatus(g.state, 'stoked')).toBe(false);
+    expect(slots(g)).toEqual(['steeped_broth', 'skewered_fish']);
+    expect(g.state.meals.map((s) => s.dish)).toEqual(['steeped_broth', 'skewered_fish']);
+    useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
+    expect(slots(g)).toEqual(['steeped_broth', 'skewered_fish', 'mushroom_broth']);
     expect(hasStatus(g.state, 'steeped')).toBe(true);
     expect(hasStatus(g.state, 'steady_hand')).toBe(true);
     expect(logLines(g).filter((l) => l.includes('dropped for'))).toHaveLength(0);
   });
 
   it('a dish whose conditions are cleared another way frees its slot too', () => {
-    const g = hunting();
-    abandonCombat(g.state);
+    const g = idle();
     stock(g, 'hearty_stew');
     useConsumable(g.state, g.bus, 'hearty_stew', 'c');
     g.state.statuses.length = 0;
@@ -433,176 +509,8 @@ describe('at most three dishes active', () => {
     expect(g.state.meals).toHaveLength(0);
   });
 
-  describe('a condition two sources both give', () => {
-    /** Three dishes in the slots, the first two both giving Well Fed. */
-    function shared() {
-      const g = hunting();
-      abandonCombat(g.state);
-      g.state.activity = null;
-      stock(g, 'hearty_stew', 'berry_pie', 'mushroom_broth', 'steeped_broth');
-      useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-      useConsumable(g.state, g.bus, 'berry_pie', 'c');
-      useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
-      return g;
-    }
-
-    it('two dishes share one Well Fed; evicting one leaves it running with the same clock', () => {
-      const g = shared();
-      expect(slots(g)).toEqual(['hearty_stew', 'berry_pie', 'mushroom_broth']);
-      // Make the shared Well Fed the least time left: hearty_stew (eaten first) goes.
-      held(g, 'well_fed')!.ticksLeft = 50;
-      const intensity = held(g, 'well_fed')!.intensity;
-      useConsumable(g.state, g.bus, 'steeped_broth', 'c');
-      expect(slots(g)).toEqual(['berry_pie', 'mushroom_broth', 'steeped_broth']);
-      const wf = held(g, 'well_fed')!;
-      expect(wf).toBeDefined();
-      // The other dish's time: untouched by the eviction.
-      expect(wf.ticksLeft).toBe(50);
-      expect(wf.intensity).toBe(intensity);
-      expect(logLines(g).at(-1)).toMatch(/Hearty Stew dropped for Fair Steeped Broth.*Kept, another source gives it too: Well Fed\./);
-      // And it is still berry_pie's: it goes when berry_pie's time does.
-      const pie = activeMeals(g.state).find((m) => m.slot.dish === 'berry_pie')!;
-      expect(pie.ticksLeft).toBe(50);
-      g.step(60);
-      expect(hasStatus(g.state, 'well_fed')).toBe(false);
-      expect(slots(g)).not.toContain('berry_pie');
-    });
-
-    it('evicting the other of the two keeps it too', () => {
-      const g = shared();
-      // Refreshing the stew moves it to the back, so on a tie the pie is older.
-      useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-      held(g, 'well_fed')!.ticksLeft = 50;
-      useConsumable(g.state, g.bus, 'steeped_broth', 'c');
-      expect(slots(g)).toEqual(['mushroom_broth', 'hearty_stew', 'steeped_broth']);
-      expect(held(g, 'well_fed')!.ticksLeft).toBe(50);
-    });
-
-    it('a flask drunk before the dish: the dish is evicted, the flask keeps its Well Fed', () => {
-      const g = hunting();
-      abandonCombat(g.state);
-      g.state.activity = null;
-      flaskKit(g);
-      brew(g.state, g.bus, { step1: { id: 'spring_water', quality: 'c' }, step2: { id: 'mendroot', quality: 'c' } });
-      useFlask(g.state, g.bus, 0);
-      expect(hasStatus(g.state, 'well_fed')).toBe(true);
-      stock(g, 'hearty_stew', ...FOUR.slice(0, 3));
-      useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-      const stew = g.state.meals.find((s) => s.dish === 'hearty_stew')!;
-      expect(stew.statuses.find((e) => e.id === 'well_fed')!.shared).toBe(true);
-      for (const id of FOUR.slice(0, 2)) useConsumable(g.state, g.bus, id, 'c');
-      // Three slots now: stew + two. Make the stew the least time left.
-      for (const id of ['clear_headed', 'steeped']) held(g, id)!.ticksLeft = 5000;
-      held(g, 'well_fed')!.ticksLeft = 120;
-      useConsumable(g.state, g.bus, FOUR[2], 'c');
-      expect(slots(g)).not.toContain('hearty_stew');
-      expect(hasStatus(g.state, 'well_fed')).toBe(true);
-      expect(held(g, 'well_fed')!.ticksLeft).toBe(120);
-    });
-
-    it('two dishes of different grades: the first to go keeps it, the last to go ends it', () => {
-      const g = hunting();
-      abandonCombat(g.state);
-      g.state.activity = null;
-      stock(g, 'hearty_stew', 'mushroom_broth', 'steeped_broth', 'skewered_fish');
-      grantGraded(g.state, 'berry_pie', 'b', 2);
-      useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-      useConsumable(g.state, g.bus, 'berry_pie', 'b');
-      // The Fine pie raised the one Well Fed instance past the Fair stew's dose.
-      expect(held(g, 'well_fed')!.intensity).toBeGreaterThan(1);
-      useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
-      held(g, 'well_fed')!.ticksLeft = 50;
-      // The stew goes first: the pie still gives Well Fed.
-      useConsumable(g.state, g.bus, 'steeped_broth', 'c');
-      expect(slots(g)).toEqual(['berry_pie', 'mushroom_broth', 'steeped_broth']);
-      expect(hasStatus(g.state, 'well_fed')).toBe(true);
-      // Then the pie goes, and nothing is left giving it.
-      useConsumable(g.state, g.bus, 'skewered_fish', 'c');
-      expect(slots(g)).toEqual(['mushroom_broth', 'steeped_broth', 'skewered_fish']);
-      expect(hasStatus(g.state, 'well_fed')).toBe(false);
-      expect(logLines(g).at(-1)).toContain('Ended: Well Fed.');
-    });
-
-    it('a foreign dose in between: the dishes that landed on it all leave it running', () => {
-      const g = hunting();
-      abandonCombat(g.state);
-      g.state.activity = null;
-      stock(g, 'hearty_stew', 'mushroom_broth', 'steeped_broth', 'skewered_fish', 'seared_stew');
-      grantGraded(g.state, 'berry_pie', 'b', 1);
-      useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-      applyStatus(g.state, g.state, { id: 'well_fed', intensity: 3, duration: 900 }, 'Strong Brew');
-      useConsumable(g.state, g.bus, 'berry_pie', 'b'); // lands on the foreign instance, ignored as weaker
-      const shares = (dish: string) => g.state.meals.find((m) => m.dish === dish)!.statuses[0].shared;
-      expect(shares('hearty_stew')).toBe(true);
-      expect(shares('berry_pie')).toBe(true);
-      held(g, 'well_fed')!.ticksLeft = 50;
-      useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
-      useConsumable(g.state, g.bus, 'steeped_broth', 'c'); // the stew goes
-      useConsumable(g.state, g.bus, 'skewered_fish', 'c'); // the pie goes
-      expect(slots(g)).toEqual(['mushroom_broth', 'steeped_broth', 'skewered_fish']);
-      expect(hasStatus(g.state, 'well_fed')).toBe(true);
-      expect(held(g, 'well_fed')!.intensity).toBe(3);
-    });
-
-    it('the tick notices a foreign change to a held dish without being told', () => {
-      const g = hunting();
-      abandonCombat(g.state);
-      g.state.activity = null;
-      stock(g, 'hearty_stew');
-      useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-      const entry = () => g.state.meals[0].statuses[0];
-      expect(entry().shared).toBe(false);
-      g.step(5);
-      expect(entry().shared).toBe(false);
-      applyStatus(g.state, g.state, { id: 'well_fed', intensity: 4, duration: 900 }, 'Strong Brew');
-      g.step(1);
-      expect(entry().shared).toBe(true);
-    });
-
-    it('a flask drunk after the dish, its weaker dose ignored, still keeps its Well Fed when the dish goes', () => {
-      const g = hunting();
-      abandonCombat(g.state);
-      g.state.activity = null;
-      stock(g, 'hearty_stew', ...FOUR.slice(0, 3));
-      useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-      const dishDose = held(g, 'well_fed')!.intensity;
-      flaskKit(g);
-      brew(g.state, g.bus, { step1: { id: 'spring_water', quality: 'c' }, step2: { id: 'mendroot', quality: 'c' } });
-      expect(g.useFlask(0)).not.toBeNull();
-      // The stew's stronger Well Fed absorbed the flask's: nothing on the instance shows it.
-      expect(held(g, 'well_fed')!.intensity).toBe(dishDose);
-      for (const id of FOUR.slice(0, 2)) useConsumable(g.state, g.bus, id, 'c');
-      for (const id of ['clear_headed', 'steeped']) held(g, id)!.ticksLeft = 5000;
-      held(g, 'well_fed')!.ticksLeft = 120;
-      useConsumable(g.state, g.bus, FOUR[2], 'c');
-      expect(slots(g)).not.toContain('hearty_stew');
-      expect(hasStatus(g.state, 'well_fed')).toBe(true);
-      expect(logLines(g).at(-1)).toContain('Kept, another source gives it too: Well Fed.');
-    });
-
-    it('a flask drunk after the dish, with the stronger dose, keeps its Well Fed when the dish goes', () => {
-      const g = hunting();
-      abandonCombat(g.state);
-      g.state.activity = null;
-      stock(g, 'hearty_stew', ...FOUR.slice(0, 3));
-      useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-      // A flask's dose lands on the stew's instance and is stronger than it.
-      applyStatus(g.state, g.state, { id: 'well_fed', intensity: 3, duration: 900 }, 'Strong Brew');
-      expect(held(g, 'well_fed')!.intensity).toBe(3);
-      for (const id of FOUR.slice(0, 2)) useConsumable(g.state, g.bus, id, 'c');
-      for (const id of ['clear_headed', 'steeped']) held(g, id)!.ticksLeft = 5000;
-      held(g, 'well_fed')!.ticksLeft = 120;
-      useConsumable(g.state, g.bus, FOUR[2], 'c');
-      expect(slots(g)).not.toContain('hearty_stew');
-      expect(hasStatus(g.state, 'well_fed')).toBe(true);
-      expect(held(g, 'well_fed')!.intensity).toBe(3);
-    });
-  });
-
   it('a dish that gave nothing nourishing holds no slot and evicts nobody', () => {
-    const g = hunting();
-    abandonCombat(g.state);
-    g.state.activity = null;
+    const g = idle();
     stock(g, ...FOUR.slice(0, 3), 'scorched_mess');
     for (const id of FOUR.slice(0, 3)) useConsumable(g.state, g.bus, id, 'c');
     expect(eatPlan(g.state, 'scorched_mess', 'c').replaces).toBeUndefined();
@@ -612,9 +520,7 @@ describe('at most three dishes active', () => {
   });
 
   it('a spoiled helping of a real dish holds no slot either', () => {
-    const g = hunting();
-    abandonCombat(g.state);
-    g.state.activity = null;
+    const g = idle();
     stock(g, ...FOUR.slice(0, 3));
     grantGraded(g.state, 'hearty_stew', 'f', 1);
     for (const id of FOUR.slice(0, 3)) useConsumable(g.state, g.bus, id, 'c');
@@ -624,9 +530,7 @@ describe('at most three dishes active', () => {
   });
 
   it('a food condition already running (an old save) holds no slot and counts toward nothing', () => {
-    const g = hunting();
-    abandonCombat(g.state);
-    g.state.activity = null;
+    const g = idle();
     applyStatus(g.state, g.state, { id: 'well_fed', intensity: 1 }, 'Old Stew');
     stock(g, ...FOUR.slice(0, 3));
     for (const id of FOUR.slice(0, 3)) useConsumable(g.state, g.bus, id, 'c');
@@ -634,10 +538,8 @@ describe('at most three dishes active', () => {
     expect(hasStatus(g.state, 'well_fed')).toBe(true);
   });
 
-  it('the plan tells the fourth dish which one it replaces, and an active dish that it refreshes', () => {
-    const g = hunting();
-    abandonCombat(g.state);
-    g.state.activity = null;
+  it('the plan tells the fourth dish which one it replaces, and an active dish that it renews', () => {
+    const g = idle();
     stock(g, ...FOUR);
     for (const id of FOUR.slice(0, 3)) {
       useConsumable(g.state, g.bus, id, 'c');
@@ -645,23 +547,254 @@ describe('at most three dishes active', () => {
     }
     expect(eatPlan(g.state, FOUR[3], 'c').replaces!.slot.dish).toBe(FOUR[0]);
     expect(eatPlan(g.state, FOUR[1], 'c').replaces).toBeUndefined();
-    // A free slot replaces nobody.
-    held(g, 'clear_headed')!.ticksLeft = 1;
-    g.step(2);
+    // The first dish runs out (4800, eaten 300 ticks ago): a free slot replaces nobody.
+    g.step(4500);
+    expect(slots(g)).not.toContain(FOUR[0]);
     expect(eatPlan(g.state, FOUR[3], 'c').replaces).toBeUndefined();
   });
 
   it('a queued fourth dish replaces by the time left when it is eaten, not when it was queued', () => {
-    const g = fighting();
+    const g = idle();
     stock(g, ...FOUR);
-    abandonCombat(g.state);
-    g.state.activity = null;
-    for (const id of FOUR.slice(0, 3)) useConsumable(g.state, g.bus, id, 'c');
-    g.state.combat = null;
-    g.state.queuedMeal = { dish: FOUR[3], quality: 'c' };
-    held(g, 'steeped')!.ticksLeft = 10; // the second dish is now the shortest
+    useConsumable(g.state, g.bus, 'steeped_broth', 'c'); // 6000
+    g.step(5000); // 1000 left: the shortest once the others are eaten
+    useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
+    useConsumable(g.state, g.bus, 'skewered_fish', 'c');
+    g.state.queuedMeal = { dish: 'seared_stew', quality: 'c', why: 'fight' };
     g.tick();
-    expect(slots(g)).toEqual([FOUR[0], FOUR[2], FOUR[3]]);
+    expect(slots(g)).toEqual(['mushroom_broth', 'skewered_fish', 'seared_stew']);
+  });
+});
+
+describe('claims: every dose has a clock of its own', () => {
+  it('the dish the screen named is the dish that goes, even when the new dose raises its condition', () => {
+    const g = idle();
+    stock(g, 'hearty_stew', 'mushroom_broth', 'steeped_broth');
+    grantGraded(g.state, 'berry_pie', 'b', 1);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    g.step(5950); // the stew has 5 seconds left
+    useConsumable(g.state, g.bus, 'mushroom_broth', 'c'); // 4800
+    useConsumable(g.state, g.bus, 'steeped_broth', 'c');
+    const plan = eatPlan(g.state, 'berry_pie', 'b');
+    expect(plan.replaces!.slot.dish).toBe('hearty_stew');
+    expect(plan.replaces!.ticksLeft!).toBeLessThanOrEqual(50);
+    useConsumable(g.state, g.bus, 'berry_pie', 'b'); // a Fine pie: Well Fed x1.6
+    expect(slots(g)).toEqual(['mushroom_broth', 'steeped_broth', 'berry_pie']);
+    expect(logLines(g).filter((l) => l.includes('dropped for')).at(-1)).toContain(
+      'Fair Hearty Stew dropped for Fine Berry Pie',
+    );
+    // The broth is untouched, and Well Fed is the pie's, at the pie's own time.
+    expect(own(g, 'mushroom_broth')!).toBeGreaterThan(4700);
+    expect(hasStatus(g.state, 'clear_headed')).toBe(true);
+    const pie = claim(g, 'berry_pie', 'well_fed')!;
+    expect(pie.dose).toBeGreaterThan(1);
+    expect(held(g, 'well_fed')!.intensity).toBe(pie.dose);
+    expect(held(g, 'well_fed')!.ticksLeft).toBe(pie.left);
+    expect(own(g, 'berry_pie')).toBe(pie.left);
+  });
+
+  it('re-eating a dish never extends a stronger dose another source made', () => {
+    const g = idle();
+    stock(g, 'hearty_stew');
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    const spec = drink(g, 's'); // Divine: Well Fed x2.6 for 450
+    const dose = spec.grants[0].intensity!;
+    const span = spec.grants[0].duration as number;
+    expect(held(g, 'well_fed')!.intensity).toBe(dose);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    // The flask is still the strength, and still only for its own 450 ticks.
+    expect(held(g, 'well_fed')!.intensity).toBe(dose);
+    expect(held(g, 'well_fed')!.ticksLeft!).toBeLessThanOrEqual(span);
+    // The stew's own clock is renewed in full, though.
+    expect(own(g, 'hearty_stew')).toBe(STATUSES.well_fed.duration);
+    // Tick by tick: the flask's strength never outlasts the flask.
+    let flaskTicks = 0;
+    for (let i = 0; i < span + 20; i++) {
+      g.tick();
+      if (held(g, 'well_fed')!.intensity === dose) flaskTicks += 1;
+    }
+    expect(flaskTicks).toBeLessThanOrEqual(span);
+    expect(held(g, 'well_fed')!.intensity).toBe(1);
+    expect(held(g, 'well_fed')!.ticksLeft!).toBeGreaterThan(STATUSES.well_fed.duration! - span - 40);
+    // Handed over before it could expire: no "has passed" in between.
+    expect(logLines(g).some((l) => l.includes('Well Fed has passed'))).toBe(false);
+  });
+
+  it('a flask claim lapses: the dish evicted after it does takes the condition with it', () => {
+    const g = idle();
+    stock(g, 'hearty_stew', ...FOUR.slice(0, 3));
+    const spec = drink(g, 'c'); // Fair: Well Fed x0.65 for 450
+    const span = spec.grants[0].duration as number;
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    expect(g.state.foreignClaims.map((c) => c.id)).toEqual(['well_fed']);
+    g.step(5700); // the flask ran out long ago; the stew has 300 left
+    expect(span).toBeLessThan(5700);
+    expect(g.state.foreignClaims).toEqual([]);
+    for (const id of FOUR.slice(0, 3)) useConsumable(g.state, g.bus, id, 'c');
+    // The stew had the least time left and went; nothing else gives Well Fed.
+    expect(slots(g)).toEqual(FOUR.slice(0, 3));
+    expect(hasStatus(g.state, 'well_fed')).toBe(false);
+    expect(logLines(g).at(-1)).toContain('Ended: Well Fed.');
+  });
+
+  it("an old save's running condition lapses the same way", () => {
+    const g = idle();
+    stock(g, 'hearty_stew', ...FOUR.slice(0, 3));
+    applyStatus(g.state, g.state, { id: 'well_fed', intensity: 0.65, duration: 450 }, 'Old Stew');
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    expect(g.state.foreignClaims).toEqual([{ id: 'well_fed', dose: 0.65, left: 450 }]);
+    g.step(5700);
+    expect(g.state.foreignClaims).toEqual([]);
+    for (const id of FOUR.slice(0, 3)) useConsumable(g.state, g.bus, id, 'c');
+    expect(slots(g)).toEqual(FOUR.slice(0, 3));
+    expect(hasStatus(g.state, 'well_fed')).toBe(false);
+  });
+
+  it("while the flask is live, the evicted dish leaves the flask's dose and its remaining time", () => {
+    const g = idle();
+    stock(g, 'hearty_stew', ...FOUR.slice(0, 3));
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    g.step(5400); // the stew has 600 left
+    const spec = drink(g, 'c'); // Well Fed x0.65 for 450: weaker than the stew, so the condition ignores it
+    const dose = spec.grants[0].intensity!;
+    expect(held(g, 'well_fed')!.intensity).toBe(1);
+    useConsumable(g.state, g.bus, FOUR[0], 'c');
+    useConsumable(g.state, g.bus, FOUR[1], 'c');
+    expect(mealToReplace(g.state, FOUR[2])!.slot.dish).toBe('hearty_stew');
+    useConsumable(g.state, g.bus, FOUR[2], 'c');
+    expect(slots(g)).toEqual(FOUR.slice(0, 3));
+    // The condition is now the flask's: its dose, its remaining time.
+    expect(held(g, 'well_fed')!.intensity).toBe(dose);
+    expect(held(g, 'well_fed')!.ticksLeft).toBe(g.state.foreignClaims[0].left);
+    expect(held(g, 'well_fed')!.ticksLeft!).toBeLessThanOrEqual(450);
+    expect(logLines(g).at(-1)).toContain('Still given by another dish or source: Well Fed.');
+    g.step(460);
+    expect(hasStatus(g.state, 'well_fed')).toBe(false);
+  });
+
+  it('evicting the stronger of two dishes drops the condition to the other dish, at its dose and time', () => {
+    const g = idle();
+    stock(g, 'hearty_stew', 'steeped_broth', 'mushroom_broth');
+    grantGraded(g.state, 'berry_pie', 'b', 1);
+    useConsumable(g.state, g.bus, 'berry_pie', 'b'); // Well Fed x1.6, eaten first
+    g.step(100);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c'); // Well Fed x1: the pie still leads
+    expect(held(g, 'well_fed')!.intensity).toBe(claim(g, 'berry_pie', 'well_fed')!.dose);
+    g.step(100);
+    useConsumable(g.state, g.bus, 'steeped_broth', 'c');
+    // The pie has run 200 ticks, the stew 100, the steeped broth none: the pie has the least left.
+    expect(mealToReplace(g.state, 'mushroom_broth')!.slot.dish).toBe('berry_pie');
+    useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
+    expect(slots(g)).toEqual(['hearty_stew', 'steeped_broth', 'mushroom_broth']);
+    const stew = claim(g, 'hearty_stew', 'well_fed')!;
+    expect(stew.dose).toBe(1);
+    expect(held(g, 'well_fed')!.intensity).toBe(1);
+    expect(held(g, 'well_fed')!.ticksLeft).toBe(stew.left);
+    expect(own(g, 'hearty_stew')).toBe(stew.left);
+    expect(logLines(g).at(-1)).toContain('Still given by another dish or source: Well Fed.');
+  });
+
+  it('evicting the weaker of two dishes leaves the stronger one as it was', () => {
+    const g = idle();
+    stock(g, 'hearty_stew', 'steeped_broth', 'mushroom_broth');
+    grantGraded(g.state, 'berry_pie', 'b', 1);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c'); // eaten first: the least time left
+    g.step(100);
+    useConsumable(g.state, g.bus, 'berry_pie', 'b');
+    const lead = { ...claim(g, 'berry_pie', 'well_fed')! };
+    useConsumable(g.state, g.bus, 'steeped_broth', 'c');
+    useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
+    expect(slots(g)).toEqual(['berry_pie', 'steeped_broth', 'mushroom_broth']);
+    expect(held(g, 'well_fed')!.intensity).toBe(lead.dose);
+    expect(held(g, 'well_fed')!.ticksLeft).toBe(own(g, 'berry_pie'));
+  });
+
+  it('two dishes of different grades: the first to go keeps it, the last to go ends it', () => {
+    const g = idle();
+    stock(g, 'hearty_stew', 'steeped_broth', 'mushroom_broth', 'skewered_fish');
+    grantGraded(g.state, 'berry_pie', 'b', 2);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    g.step(50);
+    useConsumable(g.state, g.bus, 'berry_pie', 'b');
+    useConsumable(g.state, g.bus, 'steeped_broth', 'c');
+    expect(held(g, 'well_fed')!.intensity).toBeGreaterThan(1);
+    useConsumable(g.state, g.bus, 'mushroom_broth', 'c'); // the stew goes first: the pie still gives it
+    expect(slots(g)).toEqual(['berry_pie', 'steeped_broth', 'mushroom_broth']);
+    expect(hasStatus(g.state, 'well_fed')).toBe(true);
+    // Then the pie, with the least time left, goes: nothing is left giving it.
+    shorten(g, 'berry_pie', 'well_fed', 10);
+    useConsumable(g.state, g.bus, 'skewered_fish', 'c');
+    expect(slots(g)).toEqual(['steeped_broth', 'mushroom_broth', 'skewered_fish']);
+    expect(hasStatus(g.state, 'well_fed')).toBe(false);
+    expect(logLines(g).at(-1)).toContain('Ended: Well Fed.');
+  });
+
+  it('a flask used through alchemy directly is noticed by the tick and recorded as a claim', () => {
+    const g = idle();
+    stock(g, 'hearty_stew');
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    grantGraded(g.state, 'spring_water', 's', 1);
+    grantGraded(g.state, 'mendroot', 's', 1);
+    g.state.skills.alchemy = { level: 40, xp: 0 };
+    brew(g.state, g.bus, { step1: { id: 'spring_water', quality: 's' }, step2: { id: 'mendroot', quality: 's' } });
+    useFlask(g.state, g.bus, 0); // not through Game: nothing told the slots
+    expect(held(g, 'well_fed')!.intensity).toBeGreaterThan(1);
+    expect(g.state.foreignClaims).toEqual([]);
+    g.step(1);
+    expect(g.state.foreignClaims).toHaveLength(1);
+    expect(g.state.foreignClaims[0].dose).toBeGreaterThan(1);
+    expect(g.state.foreignClaims[0].left!).toBeLessThanOrEqual(450);
+    expect(held(g, 'well_fed')!.intensity).toBe(g.state.foreignClaims[0].dose);
+  });
+
+  it('the slots keep time with the conditions, in a knockout and out of one, and invent no claims', () => {
+    const g = idle();
+    stock(g, 'hearty_stew', 'mushroom_broth', 'skewered_fish');
+    for (const id of ['hearty_stew', 'mushroom_broth', 'skewered_fish']) useConsumable(g.state, g.bus, id, 'c');
+    const agree = () => {
+      for (const m of activeMeals(g.state)) {
+        for (const c of m.slot.claims) expect(held(g, c.id)!.ticksLeft).toBe(Math.max(...allClaimLefts(g, c.id)));
+      }
+    };
+    g.step(200);
+    agree();
+    // Knocked out, with the conditions running five times faster.
+    const before = own(g, 'hearty_stew')!;
+    for (let i = 0; i < 20; i++) {
+      g.state.recovering = true;
+      g.state.resources.hp = 1;
+      g.tick();
+    }
+    expect(before - own(g, 'hearty_stew')!).toBe(100);
+    agree();
+    g.state.resources.hp = getDerivedStats(g.state).maxHp;
+    g.step(50);
+    expect(g.state.recovering).toBe(false);
+    agree();
+    expect(g.state.foreignClaims).toEqual([]);
+    expect(activeMeals(g.state)).toHaveLength(3);
+  });
+
+  it('claims do not run while travelling', () => {
+    const g = idle();
+    stock(g, 'hearty_stew');
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    const before = own(g, 'hearty_stew')!;
+    tickMealClaims(g.state, 0);
+    expect(own(g, 'hearty_stew')).toBe(before);
+    tickMealClaims(g.state, 5);
+    expect(own(g, 'hearty_stew')).toBe(before - 5);
+  });
+
+  it('claims are part of the save', () => {
+    const g = idle();
+    stock(g, 'hearty_stew');
+    drink(g, 'c');
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    const loaded = deserialize(serialize(g.state));
+    expect(loaded.foreignClaims).toEqual(g.state.foreignClaims);
+    expect(loaded.meals).toEqual(g.state.meals);
+    expect(loaded.foreignClaims).toHaveLength(1);
   });
 });
 
@@ -670,6 +803,7 @@ describe('save v59', () => {
     const s = createInitialState(3);
     const raw: Record<string, unknown> = { ...s, version: 58 };
     delete raw.meals;
+    delete raw.foreignClaims;
     delete raw.queuedMeal;
     return raw;
   }
@@ -682,6 +816,7 @@ describe('save v59', () => {
     const migrated = migrate(v58(), SAVE_VERSION);
     expect(migrated.version).toBe(SAVE_VERSION);
     expect(migrated.meals).toEqual([]);
+    expect(migrated.foreignClaims).toEqual([]);
     expect(migrated.queuedMeal).toBeNull();
   });
 
@@ -700,17 +835,17 @@ describe('save v59', () => {
     expect(activeMeals(g.state)).toEqual([]);
   });
 
-  it('round-trips slots and the queue through serialize and deserialize', () => {
+  it('round-trips slots, claims and the queue through serialize and deserialize', () => {
     const g = fighting();
     g.state.activity = null;
     abandonCombat(g.state);
     stock(g, 'hearty_stew', 'mushroom_broth');
     useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-    g.state.queuedMeal = { dish: 'mushroom_broth', quality: 'c' };
+    g.state.queuedMeal = { dish: 'mushroom_broth', quality: 'c', why: 'fight' };
     const loaded = deserialize(serialize(g.state));
     expect(loaded.version).toBe(SAVE_VERSION);
     expect(loaded.meals).toEqual(g.state.meals);
-    expect(loaded.queuedMeal).toEqual({ dish: 'mushroom_broth', quality: 'c' });
+    expect(loaded.queuedMeal).toEqual({ dish: 'mushroom_broth', quality: 'c', why: 'fight' });
     expect(activeMeals(loaded).map((m) => m.slot.dish)).toEqual(['hearty_stew']);
   });
 
@@ -734,28 +869,32 @@ describe('save v59', () => {
     expect(result.state?.version).toBe(SAVE_VERSION);
     expect(result.state?.gold).toBe(4321);
     expect(result.state?.meals).toEqual([]);
+    expect(result.state?.foreignClaims).toEqual([]);
     expect(result.state?.queuedMeal).toBeNull();
     expect(storage.getItem(`${SAVE_KEY}:backup-v58`)).toContain('"version":58');
   });
 
-  it('a prestige starts the next run with no slots and no queue', () => {
+  it('a prestige starts the next run with no slots, no claims and no queue', () => {
     const g = new Game(createInitialState(5));
     g.state.activity = null;
     stock(g, 'hearty_stew', 'mushroom_broth');
+    drink(g, 'c');
     useConsumable(g.state, g.bus, 'hearty_stew', 'c');
-    g.state.queuedMeal = { dish: 'mushroom_broth', quality: 'c' };
+    g.state.queuedMeal = { dish: 'mushroom_broth', quality: 'c', why: 'fight' };
     expect(g.state.meals).toHaveLength(1);
     clearFloors(g.state.stats);
     expect(g.prestige(6)).toBe(true);
     expect(g.state.meals).toEqual([]);
+    expect(g.state.foreignClaims).toEqual([]);
     expect(g.state.queuedMeal).toBeNull();
     expect(g.state.statuses).toEqual([]);
   });
 });
 
-/** Reagents for a drinkable Mendroot flask, at a level that can brew it. */
-function flaskKit(g: Game) {
-  grantGraded(g.state, 'spring_water', 'c', 5);
-  grantGraded(g.state, 'mendroot', 'c', 5);
-  g.state.skills.alchemy = { level: 40, xp: 0 };
+/** Every live claim's time left on a condition, the dishes' and the other sources'. */
+function allClaimLefts(g: Game, id: string): number[] {
+  return [
+    ...g.state.meals.flatMap((m) => m.claims.filter((c) => c.id === id)),
+    ...g.state.foreignClaims.filter((c) => c.id === id),
+  ].map((c) => c.left as number);
 }

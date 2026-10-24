@@ -13,12 +13,12 @@ import { QUALITY_TIERS, qualityMult } from '../data/quality.data';
 import { getDerivedStats } from './derived';
 import { availableMax, resourceValue, restoreResource } from './resources';
 import { heal } from './health';
-import { applyStatus, fireStatusEvent, statusesOf } from './statuses';
+import { applyStatus, findStatus, fireStatusEvent, statusesOf } from './statuses';
 import { gradesHeld, knowsRecipe, recipeKey, recipeName, stockOf } from './disciplines';
 import { bumpStat } from './achievements';
 import { STATUSES, TECHNIQUES } from '../registry';
 import { signatureEarned } from './cookbook';
-import { recordMeal, sweepMeals, type MealLanding } from './meals';
+import { dishHoldsSlot, mealToReplace, recordMeal, type MealLanding } from './meals';
 import { isHarmful } from './conditionHarm';
 import { learnTechnique, techniqueReachable } from './martial';
 import { wordUnlocked, wordUnlockKey } from './unlocks';
@@ -294,8 +294,8 @@ export function useConsumable(
   bus: EventBus,
   id: string,
   quality: QualityTier = 'c',
-  /** `queued`: eaten from the queue (systems/eating.ts), and the log line says so. */
-  opts: { queued?: boolean } = {},
+  /** `queued`: eaten from the queue (systems/eating.ts), and the log line says what it waited for. */
+  opts: { queued?: 'fight' | 'recovery' } = {},
 ): UseResult | null {
   const check = canUse(state, id, quality);
   if (!check.ok) {
@@ -321,16 +321,30 @@ export function useConsumable(
   // The cook's skill improves food. It reaches the benefit side only: a spoiled
   // grade (scale < 0) is not helped by a better cook, and non-food is untouched.
   const food = spec.food && scale > 0 ? foodScale(stats) : NO_FOOD_SCALE;
-  // What this dish puts on you, for its dish slot (systems/meals.ts). "Already
-  // held" is judged before the first dose, so a dish that gives one condition
-  // twice (a grant and its Signature) does not read as sharing it with itself.
-  const heldBefore = new Set(statusesOf(state).map((s) => s.id));
+  // What this dish puts on you, for its dish slot (systems/meals.ts). Which dish
+  // a full set of slots would drop is chosen NOW, before any dose lands, because
+  // that is the dish the screen named; and the conditions held before the first
+  // dose are remembered, so one no dish accounts for is recorded as it stood.
+  const victim =
+    spec.food && dishHoldsSlot(state, id, quality) ? mealToReplace(state, id)?.slot.dish : undefined;
+  const before = new Map(
+    statusesOf(state).map((s) => [s.id, { intensity: s.intensity, ticksLeft: s.ticksLeft }] as const),
+  );
   const landings: MealLanding[] = [];
-  // Read what other sources did to the held dishes before this one blurs it.
-  if (spec.food) sweepMeals(state);
   const land = (dose: StatusApplication): StatusInstance | null => {
+    const held = findStatus(state, dose.id)?.intensity;
     const inst = applyStatus(state, state, dose, def.name);
-    if (inst && spec.food) landings.push({ inst, had: heldBefore.has(inst.id), ticks: doseTicks(dose) });
+    if (inst && spec.food) {
+      // The dose's own strength: what it raised the condition to, else what it
+      // offered (a weaker dose that the stacking rule ignored is still a dose).
+      const raised = held === undefined || inst.intensity > held;
+      landings.push({
+        id: inst.id,
+        dose: raised ? inst.intensity : (dose.intensity ?? 1),
+        ticks: doseTicks(dose),
+        before: before.get(inst.id) ?? null,
+      });
+    }
     return inst;
   };
 
@@ -398,22 +412,29 @@ export function useConsumable(
 
   const grade = QUALITY_TIERS[quality];
   const verb = spec.useVerb ?? 'Used';
+  const note = text(opts.queued === 'recovery' ? 'meals.note_recovery' : 'meals.note_fight');
   const msg = signatureText.length
-    ? text(opts.queued ? 'consumables.used_signature_queued' : 'consumables.used_signature', {
-        icon: def.icon,
-        verb,
-        grade: grade.name,
-        name: def.name,
-        status: signatureText.join(' and '),
-      })
-    : text(opts.queued ? 'consumables.used_queued' : 'consumables.used', {
-        icon: def.icon,
-        verb,
-        grade: grade.name,
-        name: def.name,
-      });
+    ? opts.queued
+      ? text('consumables.used_signature_queued', {
+          icon: def.icon,
+          verb,
+          grade: grade.name,
+          name: def.name,
+          note,
+          status: signatureText.join(' and '),
+        })
+      : text('consumables.used_signature', {
+          icon: def.icon,
+          verb,
+          grade: grade.name,
+          name: def.name,
+          status: signatureText.join(' and '),
+        })
+    : opts.queued
+      ? text('consumables.used_queued', { icon: def.icon, verb, grade: grade.name, name: def.name, note })
+      : text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name });
   bus.emit({ type: 'log', msg, kind: scale < 0 ? 'danger' : 'action' });
   // After the eating line, so a dish pushed out reads as what eating caused.
-  if (landings.length > 0) recordMeal(state, bus, id, quality, landings);
+  if (landings.length > 0) recordMeal(state, bus, id, quality, landings, victim);
   return result;
 }

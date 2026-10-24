@@ -4,7 +4,6 @@ import { QUALITY_TIERS } from '../../core/data/quality.data';
 import { activeMeals, dishLimit, type ActiveMeal } from '../../core/systems/meals';
 import { eatPlan } from '../../core/systems/eating';
 import { cooldownLeft, consumableSpec } from '../../core/systems/consumables';
-import { findStatus } from '../../core/systems/statuses';
 import { ticksToTime } from './format';
 
 /**
@@ -54,21 +53,31 @@ export function dishRows(state: GameState): DishRow[] {
     icon: MATERIALS[m.slot.dish]?.icon ?? '🍽️',
     name: dishLabel(m.slot.dish, m.slot.quality),
     time: timeLeftText(m.ticksLeft),
-    conditions: m.slot.statuses.flatMap((e) => {
-      const held = findStatus(state, e.id);
-      if (!held) return [];
-      const def = STATUSES[e.id];
-      return [`${def?.icon ?? ''} ${def?.name ?? e.id}: ${timeLeftText(held.ticksLeft)}`.trim()];
-    }),
+    conditions: m.slot.claims
+      .filter((c) => c.left === null || c.left > 0)
+      .map((c) => {
+        const def = STATUSES[c.id];
+        return `${def?.icon ?? ''} ${def?.name ?? c.id}: ${timeLeftText(c.left)}`.trim();
+      }),
     replacedFirst: full && m === least,
   }));
 }
 
-/** The queued dish, for the "after this fight" line; null when none waits. */
-export function queuedRow(state: GameState): { icon: string; name: string } | null {
+/**
+ * The queued dish for the sidebar line, and what it is waiting for right now: the
+ * knockout to pass when you are down with no fight on, else the fight. Null when
+ * none waits.
+ */
+export function queuedRow(
+  state: GameState,
+): { icon: string; name: string; label: string } | null {
   const q = state.queuedMeal;
   if (!q) return null;
-  return { icon: MATERIALS[q.dish]?.icon ?? '🍽️', name: dishLabel(q.dish, q.quality) };
+  return {
+    icon: MATERIALS[q.dish]?.icon ?? '🍽️',
+    name: dishLabel(q.dish, q.quality),
+    label: state.recovering && !state.combat ? 'After recovering:' : 'After this fight:',
+  };
 }
 
 /** What the Eat button on a dish says and does, and what its tooltip adds. */
@@ -116,19 +125,32 @@ export function eatButton(state: GameState, id: string, quality: QualityTier): E
   if (replaces) tip.push(`${replaces}. At most ${dishLimit(state)} dishes can be active at once.`);
 
   if (plan.mode === 'queue') {
+    const knockedOut = plan.wait === 'recovery';
     if (plan.queued) {
       return {
         label: 'Queued: cancel',
         disabled: false,
         cancels: true,
-        tip: ['It is eaten the moment the fight ends. Pressing this takes it off the queue.'],
+        tip: [
+          knockedOut
+            ? 'It is eaten the moment you are back on your feet. Pressing this takes it off the queue.'
+            : 'It is eaten the moment the fight ends. Pressing this takes it off the queue.',
+        ],
         replaces: null,
       };
     }
     tip.unshift(
-      'Dishes are eaten between fights. This one waits and is eaten the moment the fight ends. One dish waits at a time: choosing another replaces it.',
+      knockedOut
+        ? 'You are knocked out, and conditions run several times faster until you wake. This dish waits and is eaten the moment you are back on your feet. One dish waits at a time: choosing another replaces it.'
+        : 'Dishes are eaten between fights. This one waits and is eaten the moment the fight ends. One dish waits at a time: choosing another replaces it.',
     );
-    return { label: `${base} after this fight`, disabled: false, cancels: false, tip, replaces };
+    return {
+      label: `${base} ${knockedOut ? 'after recovering' : 'after this fight'}`,
+      disabled: false,
+      cancels: false,
+      tip,
+      replaces,
+    };
   }
 
   return { label: base, disabled: false, cancels: false, tip, replaces };

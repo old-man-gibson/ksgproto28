@@ -155,6 +155,15 @@ const RECOVER_THRESHOLD = 0.6;
 const UNCONSCIOUS_CLOCK_RATE = 5;
 
 /**
+ * Ticks every player condition's clock advances per tick: 5 while knocked out,
+ * otherwise 1. Read by `tickPlayerStatuses` and, through `Game.advance`, by the
+ * dish slots, whose own clocks must run at the conditions' pace (systems/meals.ts).
+ */
+export function conditionClockRate(state: GameState): number {
+  return state.recovering ? UNCONSCIOUS_CLOCK_RATE : 1;
+}
+
+/**
  * The tags an activity's cycle grants skill XP under — how an activity reaches
  * a skill (skillTrainedBy). The tick branches read it, and so does
  * `trainingSpots`, so "where does this train" cannot drift from what training
@@ -579,7 +588,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
     inCombat: state.combat !== null,
     resists: resistBlock(stats),
     pools: poolSnapshots(state, stats),
-    clockRate: state.recovering ? UNCONSCIOUS_CLOCK_RATE : 1,
+    clockRate: conditionClockRate(state),
     ward,
   });
 

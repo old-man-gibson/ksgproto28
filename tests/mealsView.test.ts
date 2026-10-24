@@ -3,7 +3,6 @@ import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { grantGraded } from '../src/core/systems/disciplines';
 import { abandonCombat } from '../src/core/systems/combat';
-import { findStatus } from '../src/core/systems/statuses';
 import { dishHeading, dishRows, eatButton, queuedRow, timeLeftText } from '../src/ui/lib/meals';
 
 /** In the Cages with the fight on, every dish stocked. */
@@ -81,6 +80,28 @@ describe('the Eat button words', () => {
   });
 });
 
+describe('the Eat button while knocked out', () => {
+  it('reads "Eat after recovering", says why in its tooltip, and cancels once queued', () => {
+    const g = fighting();
+    idle(g);
+    g.state.recovering = true;
+    const b = eatButton(g.state, 'hearty_stew', 'c');
+    expect(b.label).toBe('Eat after recovering');
+    expect(b.disabled).toBe(false);
+    expect(b.tip.join(' ')).toContain('knocked out');
+    expect(eatButton(g.state, 'mushroom_broth', 'c').label).toBe('Drink after recovering');
+    g.eat('hearty_stew', 'c');
+    expect(eatButton(g.state, 'hearty_stew', 'c')).toMatchObject({ label: 'Queued: cancel', cancels: true });
+    expect(queuedRow(g.state)).toMatchObject({ label: 'After recovering:', name: 'Fair Hearty Stew' });
+  });
+
+  it('the queued line says fight while a fight is on', () => {
+    const g = fighting();
+    g.eat('hearty_stew', 'c');
+    expect(queuedRow(g.state)!.label).toBe('After this fight:');
+  });
+});
+
 describe('the dish list', () => {
   it('counts the slots and lists each dish with its time left, oldest first', () => {
     const g = fighting();
@@ -108,8 +129,9 @@ describe('the dish list', () => {
     expect(dishHeading(g.state)).toBe('Dishes 3/3');
     expect(rows.filter((r) => r.replacedFirst).map((r) => r.dish)).toEqual(['mushroom_broth']);
     // The least time left, not the first eaten, is what is marked.
-    findStatus(g.state, 'steeped')!.ticksLeft = 5;
+    g.state.meals.find((m) => m.dish === 'steeped_broth')!.claims[0].left = 5;
     expect(dishRows(g.state).find((r) => r.replacedFirst)!.dish).toBe('steeped_broth');
+    expect(dishRows(g.state).find((r) => r.dish === 'steeped_broth')!.conditions).toEqual(['🫖 Steeped: 1s']);
   });
 
   it('shows the queued dish, and nothing when none waits', () => {

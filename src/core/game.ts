@@ -43,7 +43,7 @@ import { tickExposure } from './systems/exposure';
 import { DISCIPLINES } from './data/disciplines.data';
 import { useConsumable } from './systems/consumables';
 import { cancelQueuedMeal, eat, tickMeals } from './systems/eating';
-import { markShared } from './systems/meals';
+import { handOffMeals, noteForeignDoses, tickMealClaims } from './systems/meals';
 import {
   findSpell,
   forgetSpell,
@@ -59,7 +59,7 @@ import { assignFloatingFavor, learnMiracle } from './systems/divine';
 import { chooseFork, teachTechnique, toggleDrill, toggleSheathe } from './systems/martial';
 import { TECHNIQUES } from './data/martial.data';
 import type { Placement } from './systems/disciplines';
-import { tickAction, selectActivity } from './systems/actions';
+import { tickAction, selectActivity, conditionClockRate } from './systems/actions';
 import {
   tickTravel,
   startTravel,
@@ -200,6 +200,9 @@ export class Game {
   private advance(): void {
     if (dareHolds(this.state)) return;
     this.state.totalTicks += 1;
+    // How far the conditions' clocks will advance this tick (none while
+    // travelling, faster while knocked out): the dish slots keep time with them.
+    const clock = this.state.travel ? 0 : conditionClockRate(this.state);
     // Idleness is judged before anything moves, so the tick that starts or
     // ends work is not banked as time spent doing nothing.
     accrueBonusTime(this.state);
@@ -210,8 +213,8 @@ export class Game {
     syncGeneStatuses(this.state);
     // Before the world moves, so a queued dish is eaten on the first tick that
     // opens with no fight and no recovery, ahead of the hunt's next encounter
-    // (a reloaded save has no fight and may start one on its first tick), and a
-    // dish that ran out last tick frees its slot.
+    // (a reloaded save has no fight and may start one on its first tick).
+    handOffMeals(this.state, clock);
     tickMeals(this.state, this.bus);
     if (this.state.travel) {
       tickTravel(this.state, this.bus);
@@ -224,6 +227,9 @@ export class Game {
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);
     tickExposure(this.state, this.bus);
+    // After the conditions have ticked: the dish slots' own clocks run down by
+    // the same amount, and a claim that ran out stops counting.
+    tickMealClaims(this.state, clock);
     this.checkStyleSwap();
     this.checkResourceLocks();
   }
@@ -460,9 +466,9 @@ export class Game {
   /** Drink, apply or throw a flask — its sequence already decided which. */
   useFlask(index: number) {
     const used = useFlask(this.state, this.bus, index);
-    // A flask's dose may have been ignored by a stronger dish's condition; the
-    // dish slots still have to know a flask gave it too (systems/meals.ts).
-    if (used) markShared(this.state, used.grants.map((g) => g.id));
+    // A flask's dose may be ignored by a stronger dish's condition; the dish
+    // slots still record it, with its own clock (systems/meals.ts).
+    if (used) noteForeignDoses(this.state, used.grants);
     return used;
   }
 

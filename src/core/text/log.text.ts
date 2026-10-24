@@ -105,17 +105,21 @@ export const LOG_TEXT = {
   // A dish cooked SIGNATURE_COOKS times also grants its Signature (systems/cookbook.ts).
   'consumables.used_signature': '{icon} {verb} {grade} {name}. Signature: also {status}.',
   // The same two lines for a dish that was queued during a fight (systems/eating.ts).
-  'consumables.used_queued': '{icon} {verb} {grade} {name} (queued during the fight).',
-  'consumables.used_signature_queued': '{icon} {verb} {grade} {name} (queued during the fight). Signature: also {status}.',
+  'consumables.used_queued': '{icon} {verb} {grade} {name} ({note}).',
+  'consumables.used_signature_queued': '{icon} {verb} {grade} {name} ({note}). Signature: also {status}.',
 
   // ---------- meals: dish slots and the queued dish ----------
-  'meals.queued': '🍽️ {grade} {name} queued: it is eaten when the fight ends.',
-  'meals.queue_replaced': '🍽️ {grade} {name} queued in place of {old}: it is eaten when the fight ends.',
+  'meals.note_fight': 'queued during the fight',
+  'meals.note_recovery': 'queued while knocked out',
+  'meals.when_fight': 'when the fight ends',
+  'meals.when_recovery': 'when you are back on your feet',
+  'meals.queued': '🍽️ {grade} {name} queued: it is eaten {when}.',
+  'meals.queue_replaced': '🍽️ {grade} {name} queued in place of {old}: it is eaten {when}.',
   'meals.queue_cancelled': '🍽️ Queued {grade} {name} cancelled.',
   'meals.queue_dropped': '🍽️ Queued {grade} {name} not eaten: {reason}',
   'meals.replaced': '🍽️ {grade} {name} dropped for {by}: at most {limit} dishes can be active. {detail}',
   'meals.ended': 'Ended: {list}.',
-  'meals.kept': 'Kept, another source gives it too: {list}.',
+  'meals.kept': 'Still given by another dish or source: {list}.',
 
   // ---------- cooking ----------
   'cooking.reason.no_outcome': 'No recipe matches',

@@ -46,6 +46,7 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     statuses: [],
     useCooldowns: {},
     meals: [],
+    foreignClaims: [],
     queuedMeal: null,
     exerting: false, // opt in to the style's stamina bargain when you want it
     skills: {},
