@@ -4,6 +4,7 @@
   import { canPrestige, forecast, harvest, unitText } from '../../core/systems/prestige';
   import { boughtBoons } from '../../core/systems/legacy';
   import { termsText } from '../lib/format';
+  import { forgetLayouts } from '../lib/benchLayouts';
   import PrestigeBoons from '../lib/PrestigeBoons.svelte';
 
   // The PRE-prestige view: what a prestige pays right now (the same function
@@ -22,7 +23,11 @@
       return;
     }
     arming = false;
-    if (game.prestige()) ui.tab = 'location';
+    if (game.prestige()) {
+      // The stock the benches' remembered layouts name went with the run.
+      forgetLayouts();
+      ui.tab = 'location';
+    }
   }
 </script>
 

@@ -1221,7 +1221,10 @@ units. It matches only when, for every entry, the MEAN exposure
 only timed slots count, and no tagged part means no match. A bench with no
 `timeline` never matches a windowed outcome. `matchOutcome`, `checkCraft` and
 `previewCook` take the duration; `meanExposure` and `describeHeatWindow`
-(`systems/disciplines.ts`) are the read functions.
+(`systems/disciplines.ts`) are the read functions. `matchOutcome`'s last
+argument, `{ tag, mean }`, replaces one tag's measured mean with a stated one:
+it answers "what would this basket make if its meat averaged 9 units?" without
+moving anything, and the stove screen's cook-time row is built on it.
 
 Every windowed outcome needs a **window-less fallback on the same bench**: lower
 priority, no `recipe`, `minLevel`, `minQuality` or `maxQuality`, and `requires`
@@ -1242,6 +1245,19 @@ Superb at the cap, and two whole Superb ingredients reach Divine from Cooking
 38. `cookLedger` returns every number behind a grade (rows, mean, judgement, bench
 fit, score, gap to the next tier), and `dishQualityRange` is `tierFor` over its
 score.
+
+**The stove screen** draws a timed bench as a heat track instead of stations
+around a slab (`ui/lib/HeatTrack.svelte`; the rows, bars, cook-time row and hint
+line are worked out in `ui/lib/heatTrack.ts`, from the read functions above and
+`exposureInfo`). One row per timed slot in the order it enters, each with its
+bar split into not cooked enough, cooked right and overcooked; seasoning and
+cookware sit in an outside-time row; while a run is going at the bench the
+playhead reads the job's own progress. The cook-time row lists only the windows of
+dishes the player can make (card read, or none needed), and the default dish for
+the rest of the axis. **A window whose card is unread is never drawn**, edges
+included: the card is what teaches its numbers. Every cooking bench's dish
+preview has a collapsible grade ledger (`ui/lib/GradeLedger.svelte`, words in
+`ui/lib/gradeLedger.ts`) built on `cookLedger`.
 
 **Bench runs** (`systems/benchwork.ts`) repeat one layout on the clock —
 `craftSpeed` compresses the interval to a floor, and speed past the floor
