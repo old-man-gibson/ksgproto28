@@ -394,6 +394,74 @@ export function heatWindowProblems(
   return problems;
 }
 
+/**
+ * Problems with the `food` flag and Signatures, as plain sentences keyed by
+ * material id. Shared by `tests/content.test.ts` and `forge/lib/validate.ts`
+ * like `heatWindowProblems`. `statusIds` is the condition registry being checked
+ * (optional: without it only the id-free rules run).
+ *
+ *  - Food is exactly what a cooking-skill bench makes: every material a bench
+ *    with `skill: 'cooking'` produces is marked `consumable.food`, and nothing
+ *    else is. An alchemy flask or a salve marked food would be scaled by the
+ *    cook's skill; a dish left unmarked would not be.
+ *  - A Signature belongs to food only, names real conditions, and repeats none
+ *    of the dish's own grants (a second dose of a `highest` condition adds
+ *    nothing).
+ *  - Every dish carries one, except the bench's failure dish (a material only
+ *    ever made by outcomes with `maxQuality`, like the Scorched Mess), which
+ *    carries none.
+ */
+export function foodProblems(
+  disciplines: CraftDisciplineDef[],
+  materials: Record<string, MaterialDef>,
+  statusIds?: ReadonlySet<string>,
+): { material: string; message: string }[] {
+  const problems: { material: string; message: string }[] = [];
+  const say = (material: string, message: string) => problems.push({ material, message });
+
+  const made = new Map<string, { from: string[]; failureOnly: boolean }>();
+  for (const disc of disciplines) {
+    if (disc.skill !== 'cooking') continue;
+    for (const o of disc.outcomes) {
+      if (o.result.kind !== 'material') continue;
+      const entry = made.get(o.result.id) ?? { from: [], failureOnly: true };
+      entry.from.push(`${disc.id}/${o.id}`);
+      if (!o.maxQuality) entry.failureOnly = false;
+      made.set(o.result.id, entry);
+    }
+  }
+
+  for (const [id, entry] of made) {
+    const mat = materials[id];
+    if (!mat) continue; // an unresolved result is another lint's problem
+    const spec = mat.consumable;
+    if (!spec?.food) {
+      say(id, `'${id}' is made by ${entry.from.join(', ')}, a cooking bench, but is not marked food`);
+    } else if (entry.failureOnly && spec.signature?.length) {
+      say(id, `'${id}' is a failure dish (only ${entry.from.join(', ')} make it) and carries a signature`);
+    } else if (!entry.failureOnly && !spec.signature?.length) {
+      say(id, `'${id}' is a dish and has no signature`);
+    }
+  }
+
+  for (const mat of Object.values(materials)) {
+    const spec = mat.consumable;
+    if (!spec) continue;
+    if (spec.food && !made.has(mat.id)) {
+      say(mat.id, `'${mat.id}' is marked food but no cooking bench makes it`);
+    }
+    if (spec.signature?.length && !spec.food) {
+      say(mat.id, `'${mat.id}' has a signature but is not food`);
+    }
+    const own = new Set((spec.grants ?? []).map((g) => g.id));
+    for (const sig of spec.signature ?? []) {
+      if (statusIds && !statusIds.has(sig.id)) say(mat.id, `'${mat.id}' signature names unknown condition '${sig.id}'`);
+      if (own.has(sig.id)) say(mat.id, `'${mat.id}' signature repeats its own grant '${sig.id}'`);
+    }
+  }
+  return problems;
+}
+
 /** Only what is spent INTO the result — a tool is not part of what you made. */
 export function consumedParts(disc: CraftDisciplineDef, placement: Placement): GradedStack[] {
   const spend = new Set(disc.slots.filter((s) => slotConsumes(s)).map((s) => s.id));

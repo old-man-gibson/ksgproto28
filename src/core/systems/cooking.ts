@@ -13,7 +13,9 @@ import { PREPS, UNIFORMITY, preppedIdOf } from '../data/preps.data';
 import { QUALITY_ORDER, QUALITY_TIERS, qualityMult, qualityRank } from '../data/quality.data';
 import { rand } from '../engine/rng';
 import { logRepeat } from './log';
-import { checkDiscovery, grantSkillXp } from './skills';
+import { checkDiscovery, grantDiscoveryXp, grantSkillXp } from './skills';
+import { bumpStat } from './achievements';
+import { cookedCount, cookedGradeKey, cookedKey } from './cookbook';
 import {
   checkCraft,
   consumePlacement,
@@ -21,7 +23,6 @@ import {
   grantGraded,
   matchOutcome,
   meanExposure,
-  noveltyKeys,
   placed,
   rollQuality,
   skillLevel,
@@ -63,6 +64,10 @@ import { text } from '../text/log';
  *    cooks what it always did.
  *  - The cook's judgement is capped (`cookJudgement`): Cooking 60 and beyond add
  *    two grades, no more.
+ *  - Every dish cooked counts toward the Cook's Book (`cooked:<dish>`, and per
+ *    grade; systems/cookbook.ts), emits `cooked` for the plate card, and feeds the
+ *    skill's novelty, which is keyed by the dish. The cutting board's cuts are not
+ *    dishes and count for none of it.
  */
 
 export const COOKING = DISCIPLINES.cooking;
@@ -530,13 +535,9 @@ export function cook(
     // the benches themselves manifested nothing. Now that each skill claims
     // only its own discipline, the bench has to say its own name.
     checkDiscovery(state, bus, [disc.tag]);
-    grantSkillXp(
-      state,
-      bus,
-      ['craft', disc.tag],
-      disc.xp * (1 + qualityRank(cut) * 0.15),
-      noveltyKeys(disc, placement),
-    );
+    // No source key: a cut is not a dish, so the skill's novelty (keyed by dish)
+    // has nothing to say about it and pays the ordinary rate.
+    grantSkillXp(state, bus, ['craft', disc.tag], disc.xp * (1 + qualityRank(cut) * 0.15));
     const made = MATERIALS[id];
     // Quest familiarization hears bench work the same way it hears recipes.
     bus.emit({ type: 'craft', discipline: disc.id });
@@ -564,16 +565,37 @@ export function cook(
   // the benches themselves manifested nothing. Now that each skill claims
   // only its own discipline, the bench has to say its own name.
   checkDiscovery(state, bus, [disc.tag]);
+
+  // The Cook's Book counts cooks, not dishes in the pot: once per cook, and once
+  // more under the grade it came out at (systems/cookbook.ts). A dish new to this
+  // run's Book pays the skill's discovery bonus (domain 'cookery').
+  const firstOfDish = cookedCount(state, result.id) === 0;
+  bumpStat(state, bus, cookedKey(result.id));
+  bumpStat(state, bus, cookedGradeKey(result.id, quality));
+  if (firstOfDish) grantDiscoveryXp(state, bus, 'cookery');
+
+  // Novelty is keyed by the dish, not the basket: the same dish from another
+  // layout is not news, and a different dish from the same ingredients is.
   grantSkillXp(
     state,
     bus,
     ['craft', disc.tag],
     disc.xp * (1 + placed(placement).length * 0.2) * (1 + qualityRank(quality) * 0.15),
-    noveltyKeys(disc, placement),
+    result.id,
   );
 
   const dish = MATERIALS[result.id];
   bus.emit({ type: 'craft', discipline: disc.id });
+  bus.emit({
+    type: 'cooked',
+    discipline: disc.id,
+    outcome: check.outcome.id,
+    dish: result.id,
+    quality,
+    low: check.quality,
+    high: check.qualityHigh ?? check.quality,
+    qty,
+  });
   logRepeat(bus, {
     group: `bench:${disc.id}`,
     prefix: `${dish?.icon ?? '🍽️'} Cooked:`,

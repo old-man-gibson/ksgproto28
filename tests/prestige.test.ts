@@ -370,6 +370,7 @@ describe('migration', () => {
       purchases: {},
       peakLevels: {},
       peakAttrs: {},
+      cookbook: { timed: [], signed: [] },
       lastHarvest: null,
       review: false,
       spentThisReview: 0,

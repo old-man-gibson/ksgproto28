@@ -1243,6 +1243,21 @@ Superb at the cap, and two whole Superb ingredients reach Divine from Cooking
 fit, score, gap to the next tier), and `dishQualityRange` is `tierFor` over its
 score.
 
+**Cook counts and the Cook's Book** (`systems/cookbook.ts`). Every dish cooked
+bumps `cooked:<dish material id>` and `cooked:<dish>:<tier>` in `state.stats`
+(once per cook, whatever the bench; the cutting board's cuts are not dishes), and
+`cook()` emits `cooked` (`discipline`, `outcome`, `dish`, `quality`, `low`, `high`,
+`qty`; the plate card's payload) beside `craft`. There is no Book in the save:
+`cookbook(state)` reads the counters into one row per cooking-bench outcome with
+a material result, in bench then outcome order, each with `made`, `byGrade`,
+`best`, `cookTimeKnown`, `signature` and (once the cook time is known) the
+outcome's `heat` windows. A dish made by several benches (the Traveler's Ration)
+is one count shared by its rows. Two thresholds, both in cooks of the dish:
+`COOK_TIME_COOKS` (25) shows the cook time, `SIGNATURE_COOKS` (100) earns the
+Signature. The counters reset with the run; the Cook's Notes prestige boon
+(docs/PRESTIGE.md) carries which dishes reached each threshold. The skill's
+novelty domain `cookery` is keyed by the same dish id (docs/NOVELTY_DOMAINS.md).
+
 **Bench runs** (`systems/benchwork.ts`) repeat one layout on the clock —
 `craftSpeed` compresses the interval to a floor, and speed past the floor
 resolves several crafts per completion. Exclusive with activities, bound to
@@ -1292,6 +1307,31 @@ lifetimes for free — a **set duration**, one that runs **until a trigger**
 > multiplier, and a Refuse-grade consumable has a NEGATIVE one — so eating
 > something spoiled grants `queasy` instead of whatever it meant to do, rather
 > than quietly doing nothing. That substitution lives in `consumables.ts`.
+
+**Food** (`consumable.food: true`) is what a cooking bench makes, and the cook's
+skill scales it as it is eaten. Cooking's milestones add to two player stats,
+`foodDuration` (+0.06 every 10 levels, through level 90) and `foodPotency`
+(+0.05 every 20, through level 200), base 1 and read at most ×1.5
+(`FOOD_MULT_CAP`, `derived.ts`; cooking has no level cap, so the clamp is what
+bounds them). Eating food multiplies each granted condition's duration by
+`foodDuration` and its intensity by `foodPotency`, and each `restore` amount by
+`foodPotency` (`foodScale`, `consumables.ts`). A grant's own `duration` is
+scaled too; a permanent or never-ending condition keeps its terms. Only the
+benefit side scales: a refuse-grade dish, the spoilage condition (`queasy`) and
+anything that is not food are untouched. The flag is linted in both validation
+layers (`foodProblems`, `systems/disciplines.ts`; `tests/content.test.ts` and
+`forge/lib/validate.ts`): every material a bench with `skill: 'cooking'` makes
+is food and nothing else is, so an alchemy flask or a salve marked food fails.
+Monsters do not eat, so neither stat is on `MonsterStats`.
+
+**Signature** (`consumable.signature`, a `StatusApplication[]`): once the player
+has cooked a dish 100 times, eating it also grants these conditions, graded and
+food-scaled like `grants`. Author one small signature per dish: a condition at
+intensity 0.5 that differs from the dish's own grants. The lint requires it on
+every dish a cooking bench makes except the failure dish (the material only
+`maxQuality` outcomes make, the Scorched Mess), requires real condition ids, and
+refuses a signature that repeats one of the dish's own grants (a second dose of
+a `highest` condition adds nothing).
 
 ### Status condition (`statuses.data.ts`)
 

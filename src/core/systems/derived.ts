@@ -213,6 +213,9 @@ function baseStats(attr: (id: AttributeId) => number): DerivedStats {
     goldGain: 1 + attr('cha') * 0.012,
     travelSpeed: 1,
     craftSpeed: 1,
+    // Cooking's milestones add to both (skills.data.ts); read at most FOOD_MULT_CAP.
+    foodDuration: 1,
+    foodPotency: 1,
     critDamage: 2,
     penetration: 0,
     // Share of a landed hit that spills onto a random secondary target.
@@ -313,6 +316,14 @@ export const RESIST_CAP = 0.75;
 
 /** No amount of gear turns every blow aside. */
 export const PARRY_CAP = 0.5;
+
+/**
+ * The most the cook's skill ever multiplies food by, duration and potency alike.
+ * Cooking has no level cap, so the stat is clamped where it is read: milestones,
+ * and anything else that adds to it, stop paying here.
+ */
+export const FOOD_MULT_CAP = 1.5;
+
 /**
  * A parry answers with this share of your damage, for free. It is the BASE of
  * the `riposte` stat, not a constant: frequency is capped at PARRY_CAP, so the
@@ -495,6 +506,8 @@ export function computeDerivedStats(
   stats.actionBar = Math.max(MIN_ACTION_BAR, stats.actionBar);
   stats.attackSpeed = Math.max(0.1, stats.attackSpeed);
   stats.craftSpeed = Math.max(0.1, stats.craftSpeed);
+  stats.foodDuration = Math.min(FOOD_MULT_CAP, Math.max(0, stats.foodDuration));
+  stats.foodPotency = Math.min(FOOD_MULT_CAP, Math.max(0, stats.foodPotency));
   stats.extraSwings = Math.max(0, stats.extraSwings);
   // The attack-time floor: speed past it converts to extra hits per swing
   // rather than vanishing — superhuman pace reads as flurries, not blur.
@@ -729,6 +742,8 @@ export const BASE_FORMULA_TEXT: Record<StatKey, string> = {
   goldGain: '1 + 1.2% × CHA',
   travelSpeed: '×1',
   craftSpeed: '×1',
+  foodDuration: '×1 — Cooking milestones add; read at most ×1.5',
+  foodPotency: '×1 — Cooking milestones add; read at most ×1.5',
   critDamage: '×2',
   penetration: '0',
   splash: '0',
@@ -768,6 +783,8 @@ export const BASE_FORMULA_TEXT: Record<StatKey, string> = {
 
 /** Caps applied in getDerivedStats, surfaced in tooltips when they bite. */
 const STAT_CAPS: Partial<Record<StatKey, number>> = {
+  foodDuration: FOOD_MULT_CAP,
+  foodPotency: FOOD_MULT_CAP,
   dodge: 0.75,
   crit: 0.9,
   penetration: 0.6,

@@ -1,9 +1,29 @@
-import type { SkillDef } from '../types';
+import type { Milestone, SkillDef } from '../types';
 import { PROGRESSIONS } from './progression.data';
 import { MUSIC_UNLOCKS } from './music.data';
 import { WORD_SKILLS } from './wordskills.data';
 import { prose } from '../text/prose';
 import { HAND_WRITTEN_TEXT } from '../text/skills.text';
+
+/**
+ * Cooking's milestones: food scales with the cook (systems/consumables.ts
+ * `foodScale`). +0.06 Food Duration every 10 levels and +0.05 Food Potency every
+ * 20, each list ending at the level where its stat reaches the ×1.5 read cap
+ * (derived.ts `FOOD_MULT_CAP`) so no listed milestone pays nothing: Duration at
+ * level 90 (nine steps, 1.54 raw; the last is trimmed to 0.50), Potency at 200
+ * (ten steps, 1.50). Cooking has no level cap; the clamp where the stat is read
+ * is what holds the line past these levels, and for anything else that adds to it.
+ */
+function cookingMilestones(): Milestone[] {
+  const out: Milestone[] = [];
+  for (let level = 10; level <= 200; level += 10) {
+    const bonus: Milestone['bonus'] = [];
+    if (level <= 90) bonus.push({ stat: 'foodDuration', op: 'add', value: 0.06 });
+    if (level % 20 === 0) bonus.push({ stat: 'foodPotency', op: 'add', value: 0.05 });
+    if (bonus.length) out.push({ level, bonus });
+  }
+  return out;
+}
 
 /**
  * Skill content. Skills "manifest" (are discovered) when the player performs an
@@ -836,7 +856,13 @@ const HAND_WRITTEN = prose<SkillDef>('HAND_WRITTEN', HAND_WRITTEN_TEXT, {
     progression: PROGRESSIONS.specialist,
     tags: ['cooking'],
     unlock: [],
+    // Keyed by dish id. Dishes are few and a bench run repeats one for hours, so
+    // the first cook of a dish opens at 4x (k / c) and the excess halves every 2
+    // cooks; a dish new to the Book also pays `discovery` once. The yield only
+    // ever adds to the ordinary payout (docs/NOVELTY_DOMAINS.md).
+    novelty: { domain: 'cookery', k: 8, c: 2, discovery: 20 },
     effects: [{ stat: 'craftSpeed', op: 'mult', value: 0, perLevel: 0.008 }],
+    milestones: cookingMilestones(),
     tierNames: [
       { level: 1, name: 'Camp Cook' },
       { level: 8, name: 'Hearth Cook' },
