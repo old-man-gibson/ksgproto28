@@ -39,6 +39,19 @@ export function hasWayfinding(state: GameState): boolean {
   return boughtBoons(state).some(({ def }) => def.effect.kind === 'wayfinding');
 }
 
+/**
+ * Rank of the Cook's Notes boon (0 = not bought): 1 lets the Cook's Book keep
+ * which dishes had their cook time shown, 2 also keeps Signatures. Read by
+ * `cookTimeKnown` and `signatureEarned` (cookbook.ts).
+ */
+export function cookbookRank(state: GameState): number {
+  let rank = 0;
+  for (const { def, rank: bought } of boughtBoons(state)) {
+    if (def.effect.kind === 'cookbook') rank = Math.max(rank, bought);
+  }
+  return rank;
+}
+
 /** Cap levels a skill's ceiling gains from prestige. Manifested or not. */
 export function legacyCapRaise(state: GameState, skillId: string): number {
   let by = 0;

@@ -56,7 +56,7 @@ import { TAG_RESISTANCES } from '../src/core/systems/monsterStats';
 import { monsterTags } from '../src/core/systems/bestiary';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
 import { isCard } from '../src/core/systems/consumables';
-import { heatWindowProblems } from '../src/core/systems/disciplines';
+import { foodProblems, heatWindowProblems } from '../src/core/systems/disciplines';
 import { askingPrice, lineValue } from '../src/core/systems/shops';
 import { wordTag } from '../src/core/data/wordskills.data';
 import { attrXpWeights } from '../src/core/systems/actions';
@@ -1422,6 +1422,17 @@ describe('crafting disciplines', () => {
     // no timeline option can land in is a dish nobody can make.
     const problems = DISCIPLINE_LIST.flatMap((disc) =>
       heatWindowProblems(disc, MATERIALS).map((p) => p.message),
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it('food and signatures: exactly what a cooking bench makes is food, and each dish has a signature', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against the
+    // staged copy. A flask marked food would be scaled by the cook's skill; a dish
+    // left unmarked would not be; a signature that repeats the dish's own grant
+    // (or names no condition) does nothing.
+    const problems = foodProblems(DISCIPLINE_LIST, MATERIALS, new Set(Object.keys(STATUSES))).map(
+      (p) => p.message,
     );
     expect(problems).toEqual([]);
   });

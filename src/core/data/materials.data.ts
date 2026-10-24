@@ -266,6 +266,12 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
   // Dishes are graded materials with a `consumable` spec, so they stack, sell
   // and sit in stock like anything else — and a dish cooked from better
   // ingredients is simply a better grade of the same dish.
+  //
+  // `food: true` marks exactly what a cooking bench makes: the cook's skill
+  // scales it as eaten (consumables.ts foodScale), and foodProblems lints the
+  // flag in both validation layers. `signature` is a second, smaller grant that
+  // arrives once the dish has been cooked 100 times (systems/cookbook.ts); each
+  // is a different condition at x0.5 from the dish's own. The mess has none.
   hearty_stew: {
     id: 'hearty_stew',
     name: 'Hearty Stew',
@@ -273,9 +279,11 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 14,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       // Sustained: it feeds you across its whole duration rather than at once.
       grants: [{ id: 'well_fed', intensity: 1 }],
+      signature: [{ id: 'stoked', intensity: 0.5 }],
     },
   },
   skewered_fish: {
@@ -288,8 +296,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     craftTags: ['filling', 'ingredient', 'cooked'],
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'steady_hand', intensity: 1 }],
+      signature: [{ id: 'well_fed', intensity: 0.5 }],
     },
   },
   seared_steak: {
@@ -300,8 +310,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     craftTags: ['filling', 'ingredient', 'cooked'],
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'well_fed', intensity: 1 }, { id: 'steady_hand', intensity: 0.5 }],
+      signature: [{ id: 'stoked', intensity: 0.5 }],
     },
   },
   charred_roots: {
@@ -312,8 +324,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     craftTags: ['ingredient', 'cooked'],
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'well_fed', intensity: 0.75 }],
+      signature: [{ id: 'steady_hand', intensity: 0.5 }],
     },
   },
   rustic_loaf: {
@@ -326,8 +340,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     craftTags: ['bread', 'ingredient', 'cooked'],
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'well_fed', intensity: 0.6 }],
+      signature: [{ id: 'clear_headed', intensity: 0.5 }],
     },
   },
   berry_pie: {
@@ -337,8 +353,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 18,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'well_fed', intensity: 1 }],
+      signature: [{ id: 'clear_headed', intensity: 0.5 }],
     },
   },
   honey_cake: {
@@ -348,8 +366,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 28,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'clear_headed', intensity: 1 }, { id: 'well_fed', intensity: 0.5 }],
+      signature: [{ id: 'steady_hand', intensity: 0.5 }],
     },
   },
   hearty_sandwich: {
@@ -359,8 +379,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 24,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'well_fed', intensity: 1 }, { id: 'steady_hand', intensity: 0.75 }],
+      signature: [{ id: 'stoked', intensity: 0.5 }],
     },
   },
   forest_salad: {
@@ -370,8 +392,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 12,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'clear_headed', intensity: 0.5 }, { id: 'well_fed', intensity: 0.5 }],
+      signature: [{ id: 'steeped', intensity: 0.5 }],
     },
   },
   mushroom_broth: {
@@ -381,8 +405,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 16,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Drank',
       grants: [{ id: 'clear_headed', intensity: 1 }],
+      signature: [{ id: 'steeped', intensity: 0.5 }],
     },
   },
   // Learned dishes (the stove's recipe outcomes) and the cards that teach
@@ -394,9 +420,11 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 16,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       restore: [{ resource: 'hp', ofMax: 0.15 }],
       grants: [{ id: 'well_fed', intensity: 1 }],
+      signature: [{ id: 'clear_headed', intensity: 0.5 }],
     },
   },
   fish_onion_pot: {
@@ -406,8 +434,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 22,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'well_fed', intensity: 1 }, { id: 'steady_hand', intensity: 0.75 }],
+      signature: [{ id: 'clear_headed', intensity: 0.5 }],
     },
   },
   lectory_porridge: {
@@ -417,8 +447,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 30,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'clear_headed', intensity: 1.5 }, { id: 'well_fed', intensity: 0.5 }],
+      signature: [{ id: 'steady_hand', intensity: 0.5 }],
     },
   },
   // Windowed dishes (CraftOutcomeDef.heat): which one the stove makes depends on
@@ -431,8 +463,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 18,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'stoked', intensity: 1 }],
+      signature: [{ id: 'well_fed', intensity: 0.5 }],
     },
   },
   braised_meat: {
@@ -442,9 +476,11 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 20,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       // Ticks: 15 minutes at 10 ticks a second. Well Fed's own length is 10.
       grants: [{ id: 'well_fed', intensity: 1.5, duration: 9000 }],
+      signature: [{ id: 'steady_hand', intensity: 0.5 }],
     },
   },
   steeped_broth: {
@@ -454,8 +490,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 20,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Drank',
       grants: [{ id: 'steeped', intensity: 1 }],
+      signature: [{ id: 'clear_headed', intensity: 0.5 }],
     },
   },
   recipe_herb_rubbed_meat: {
@@ -551,8 +589,10 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 8,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Ate',
       grants: [{ id: 'well_fed', intensity: 0.5 }],
+      signature: [{ id: 'steady_hand', intensity: 0.5 }],
     },
   },
   feast_platter: {
@@ -562,10 +602,12 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 60,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Feasted on',
       // The S-tier dish does both: a slug of health now AND the long buff.
       restore: [{ resource: 'hp', ofMax: 0.25 }],
       grants: [{ id: 'well_fed', intensity: 2 }, { id: 'steady_hand', intensity: 1.5 }],
+      signature: [{ id: 'stoked', intensity: 0.5 }],
     },
   },
   scorched_mess: {
@@ -575,6 +617,7 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     value: 1,
     graded: true,
     consumable: {
+      food: true,
       useVerb: 'Choked down',
       grants: [{ id: 'queasy', intensity: 1 }],
     },

@@ -59,6 +59,33 @@ Still missing from this domain: talking to NPCs outside of quests, and asking
 questions. Dialogue lines today are ambient text rotating on a timer
 (`LocationPanel.svelte`), not an interaction.
 
+### `cookery` — Cooking
+
+`{ k: 8, c: 2, discovery: 20 }` — opens at 4x, half-life 2 cooks. Cooking has
+about twenty dishes and a bench run repeats one for hours, so the opening is
+the smallest of the built domains and the repeats wear off at hunting's rate.
+Like every domain the yield only adds to the ordinary payout (it settles to 1x,
+never below).
+
+| input | key | treatment |
+| --- | --- | --- |
+| a dish cooked on any cooking bench | **dish material id** (`hearty_stew`) | novelty-scaled (`cooking.ts` `cook`) |
+| a dish new to this run's Cook's Book (`cooked:<dish>` still 0) | — | discovery x1 |
+| a cutting-board cut | none | ordinary rate: a cut is not a dish |
+
+> **Why the dish is the key, not the basket.** The recurring thing is the dish.
+> Keyed to the ingredient combination (what the craft framework's `noveltyKeys`
+> returns), nearly every basket of different grades is "new" and the bonus never
+> wears off. Keyed by dish, the Traveler's Ration cooked at the stove and at the
+> grill is one input, and the Scorched Mess is an input like any other.
+
+**Seeding: none.** The per-dish counters (`cooked:<dish>`, the Cook's Book in
+`systems/cookbook.ts`) and `state.novelty.cooking` are new with save v58. Older
+saves recorded no dish, so there is nothing honest to seed them from, and the
+migration (v57 → v58) does not touch them. An existing save is paid one
+first-time bonus per dish, then settles. The domain resets with the run, like
+the Book: a prestige pays the dishes' first cooks again.
+
 ---
 
 ## Designed, not built

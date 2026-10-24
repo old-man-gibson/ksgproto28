@@ -97,6 +97,38 @@ describe('derived-stats cache', () => {
     expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang', divine)).toBeNull();
   });
 
+  it('invalidates when Cooking crosses a food milestone, and holds at the ×1.5 cap', () => {
+    // The food stats come from Cooking's milestones (skills.data.ts), so the
+    // skill level in modFingerprint is their whole invalidation input.
+    const g = huntingGame();
+    g.state.skills.cooking = { level: 9, xp: 0 };
+    const before = getDerivedStats(g.state);
+    expect(before.foodDuration).toBe(1);
+    expect(before.foodPotency).toBe(1);
+
+    g.state.skills.cooking = { level: 10, xp: 0 };
+    const tenth = getDerivedStats(g.state);
+    expect(tenth).not.toBe(before);
+    expect(tenth.foodDuration).toBeCloseTo(1.06);
+    expect(tenth).toEqual(computeDerivedStats(g.state));
+
+    g.state.skills.cooking = { level: 20, xp: 0 };
+    const twentieth = getDerivedStats(g.state);
+    expect(twentieth).not.toBe(tenth);
+    expect(twentieth.foodDuration).toBeCloseTo(1.12);
+    expect(twentieth.foodPotency).toBeCloseTo(1.05);
+    expect(twentieth).toEqual(computeDerivedStats(g.state));
+
+    // Far past the last milestone the read is held at the cap, cached or not.
+    g.state.skills.cooking = { level: 1000, xp: 0 };
+    const deep = getDerivedStats(g.state);
+    expect(deep).not.toBe(twentieth);
+    expect(deep.foodDuration).toBe(1.5);
+    expect(deep.foodPotency).toBe(1.5);
+    expect(deep).toEqual(computeDerivedStats(g.state));
+    expect(getDerivedStats(g.state)).toBe(deep);
+  });
+
   it('serves target-gated variants from the same entry, consistently', () => {
     const g = huntingGame();
     g.equip(1);
