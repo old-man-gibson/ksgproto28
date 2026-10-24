@@ -183,12 +183,12 @@ scan that `runecarving.ts` imports no RNG.
   offhand reads Guard as parry (a weapon line) and the rest ×0.7. The socket
   picker prints a rune's reading in every slot before you commit.
 - **Bonuses.** 4 glyph points in one aspect, in one rune, turn on that
-  aspect's bonus: Speed (weapon: triggered techniques' cooldown −15%; armor:
-  dodge +3pp), Guard (armor: crit damage taken −10%), Crit (weapon: strike
-  penetration +10%), and each element (weapon hits inflict its status, 20%
+  aspect's bonus: Speed (weapon: attack speed +6%; armor: dodge +3pp), Guard
+  (armor: crit damage taken −10%), Crit (weapon: penetration +10% on every
+  hit), and each element (weapon hits inflict its status, 20%
   chance: chilled, on fire, jolted, poison, dazzled, blinded). Each point past
   4 adds a quarter of the base (8 points = 2×; user, 2026-10-23). Everything
-  × min(1, max(0, grade)). Caps are kit-wide sums: cooldown −40%, dodge +9pp,
+  × min(1, max(0, grade)). Caps are kit-wide sums: attack speed +18%, dodge +9pp,
   crit damage taken −30%, penetration +30%, status chance 60%. Each bonus
   reads one aspect only.
 - **Named runes (recommended form).** A bonus with a name, on one aspect,
@@ -256,11 +256,26 @@ scan that `runecarving.ts` imports no RNG.
   monster are a named carve-out until the monster blow takes a rider.
 - The bestiary "carries" fact prints the exact carving and teaches its
   glyphs. A lint holds a monster's carvings to its own sockets.
-- A monster move names its fork archetype in data (monsters have no glyph
-  totals to get one from). The monster technique path honours `move.crit`
-  (needed for the tumbling seat).
+- On hold with §4.4: a monster move naming its fork archetype in data, and
+  the monster technique path honouring `move.crit` (needed for the tumbling
+  seat).
 
-### 4.4 Martial
+### 4.4 Martial (ON HOLD, user 2026-10-23)
+
+Runes that modify martial techniques are on hold: "a complex thing that
+requires a lot of thought". The design below stays as the record of what was
+proposed and attacked; it is not on the build plan. While it is on hold:
+
+- No rune changes a technique, except Gale, Earthbind and Umbral, which keep
+  the changes today's catalogue versions of them already make.
+- The Speed and Crit weapon bonuses read on every weapon hit (attack speed,
+  penetration) instead of on techniques (§4.1).
+- PR #14's fix to socket-order resolution of technique changes stays: it
+  fixes existing behaviour.
+- Question 5 waits with it.
+
+The design, as reviewed:
+
 
 - **Selector.** Printed-card properties: `{ event?, kind?, enters?, exits?,
   family? }`, any-of inside a field, AND across fields, read on the printed
@@ -394,7 +409,7 @@ glyph-sum model.
    rune, then a socket; every slot prints what the picked rune would read
    there; the kit total names each source slot; the floor-3 duel estimate
    from both probes' armor curve.
-4. **Runes on techniques.** Ten real cards; printed values struck through
+4. **Runes on techniques (on hold).** Ten real cards; printed values struck through
    where a rune changed them; fork options added by glyphs; the runes that
    did each change; the position graph with a named rune's rewritten exit in gold
    and a ghost line to the printed one.
@@ -487,7 +502,7 @@ Verdict: fix first. No terminal state, no non-finite value.
 | high | **Bought inputs still profit.** Sale = worth × gold gain, and charisma raises gold gain; a carve is one click with no bench time. Four Algiz on a Fair stone with verdigris (worth ×2, cap): +1 gold per carve at charisma 1, +5 at charisma 6, +48 at charisma 41; the price seal adds +2 even on a bare stone. Reproduced with real `buyPrice` and `getDerivedStats` | Accepted. A rune never sells above just under what its materials cost at a shop with the seal (materials × 2 × 0.9 − 1). Gathered materials still profit; bought ones always lose at least 1 |
 | medium | **Gold gain counted twice** if worth is priced through `gradedUnitPrice` (which already multiplies by gold gain) | Accepted. Worth uses base values at gold gain 1; gold gain applies once, at sale |
 | medium | **Bonus caps had no scope**; per rune, 17 armour sockets of six-Raido runes reach the 75% dodge cap from bonuses alone | Accepted. Bonus caps are kit-wide sums |
-| medium–low | **The −40% cooldown clamp does not exist yet**, and a named rune (Gale ×0.55) stacks past it | Accepted. The clamp is slice-5 work; one ceiling covers everything runes do to a technique's cooldown, named runes included: −60% in total |
+| medium–low | **The −40% cooldown clamp does not exist yet**, and a named rune (Gale ×0.55) stacks past it | Accepted, now on hold with §4.4. The clamp was slice-5 work; one ceiling covers everything runes do to a technique's cooldown, named runes included: −60% in total |
 | low | **Concentration dominates**: resonance (+0.25 per extra copy) plus the doubled bonus made one glyph six times the best carving almost everywhere | Accepted in part: resonance dropped from glyphs' own effects (strength = copies, as the user worded it). Stacking still pays through the bonus, by the user's ruling |
 | low | **Legacy F carvings flip sign** under min(1, grade) | Accepted. min(1, max(0, grade)) everywhere |
 
@@ -524,9 +539,9 @@ socketed changes what it does, and this duel measures that.
    the meanings. Change any?
 4. **Forged items.** Amend the smithing card so forged items get class
    sockets from their cells and no socket finish exists?
-5. **Permanence.** A rune adds a fork option to the Honed choice; taking it
-   is permanent and outlives the rune. Keep, or let a rune-granted path lapse
-   when the rune leaves?
+5. **Permanence (on hold with §4.4).** A rune adds a fork option to the
+   Honed choice; taking it is permanent and outlives the rune. Keep, or let a
+   rune-granted path lapse when the rune leaves?
 6. ~~Persistent effects: combat or utility.~~ **Answered 2026-10-23:**
    monster stats only.
 7. ~~How points are split.~~ **Answered 2026-10-23:** cutting a glyph once

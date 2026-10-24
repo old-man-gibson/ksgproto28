@@ -203,7 +203,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
   <div class="line"><b>Proposed</b><span>A rune is a set of glyphs from the codex, in any order. Each glyph adds points to a few of thirteen aspects (Power, Guard, Health, Speed, Crit, Magic, Luck, and the six elements). The rune's totals are the sum. Each slot turns the totals into different stats, so the same rune does different things in a weapon, a helmet or a ring. 4 glyph points in one aspect turn on a bonus; a higher total in one aspect turns on a named rune. The bench rolls no dice.</span></div>
   <div class="line"><b>Identity</b><span>"The sum of its elements", as you put it. Nothing reads order (alchemy), adjacency or pairs (mutagens), proportion or tallies of verbs (smithing), time (cooking) or a classifier (music). Every bonus reads one aspect. Today's named runes are the one exception; question 1 asks whether to keep it.</span></div>
   <div class="line"><b>Equipment</b><span>Sockets become deterministic by size (1 / 2 / 3). Rune value reads its inputs. The slot decides the stats: three Fair Algiz runes in a vest take the floor-3 boss duel from 0/20 to 14–18/20 at John's band-one end state (two probes, two kits); the same runes on the club give 0/20.</span></div>
-  <div class="line"><b>Martial</b><span>Runes select technique cards by printed properties (event, kind, entry, exit), never by id. Threshold bonuses cut cooldowns, add penetration, and make hits inflict an element's status. Some glyphs add a fork option to a technique's Honed choice. Named runes rewrite one specific technique. No rune chains techniques together; the planner shows what changed.</span></div>
+  <div class="line"><b>Martial</b><span><b>On hold</b> (your call, 2026-10-23: it needs its own thought). The design for runes changing techniques stays below as a record (mockup 4) but is off the build plan. Meanwhile no rune changes a technique except Gale, Earthbind and Umbral, which keep what today's versions do, and the Speed and Crit weapon bonuses apply to every weapon hit.</span></div>
   <div class="line"><b>Core system</b><span>Yes for sustain in band one, once the unlock sits on floor 2 (measured twice). Damage supporting. Condition defence through element resistances. Access unmeasured.</span></div>
   <div class="line"><b>Antagonist</b><span>Fix first: 13 objections. 12 accepted and folded in below, 1 sent to you. No terminal state, no gold loop, no edge list found.</span></div>
   <div class="line"><b>Size</b><span>Six slices. Slice 1 is bug fixes with no design question. Slices 2–6 need the alpha freeze lifted for runecarving (question 2).</span></div>
@@ -247,7 +247,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
         <dt>Glyphs</dt><dd>38 authored rows: the 24 Elder Futhark and 14 Anglo-Saxon additions (these supply the elements the Futhark is thin on: Ior storm, Þorn venom, Éar gloam). Each is 3 points (primary 2, secondary 1) chosen from its meaning, plus strokes from the drawn art. Variants (short-twig, long-branch) carry the parent's vector at half the strokes. Letter runes carry 1 point of the parent's primary at 1 stroke. Calendar marks stay unused (time is cooking's).</dd>
         <dt>Totals</dt><dd>Σ glyph points × stone grade + Σ adornment assays × each one's own grade. Adornments are one aspect each: gels are elements, gold leaf Luck, bone dust Health, ochre Power, verdigris Poison, garnet Crit, sapphire Magic.</dd>
         <dt>Readings</dt><dd>One linear line per aspect per context (weapon, armor, accessory). Armor reads through a slot lens: chest ×1; head ×0.5 but Magic and Crit ×1.5; hands ×0.35 but Power and Speed ×1; feet ×0.35 but Speed ×1.5; legs ×0.7; offhand reads Guard as parry.</dd>
-        <dt>Bonuses</dt><dd>4 glyph points in one aspect, in one rune, turn on that aspect's bonus: Speed (triggered techniques' cooldown −15% / dodge +3pp), Guard (crit damage taken −10%), Crit (strike penetration +10%). Each element's bonus makes weapon hits inflict its status (Cold chilled, Heat on fire, Lightning jolted, Poison poison, Light dazzled, Dark blinded; 20% chance). Each point past 4 adds a quarter (8 points = double). Capped across the whole kit. Each bonus reads one aspect only.</dd>
+        <dt>Bonuses</dt><dd>4 glyph points in one aspect, in one rune, turn on that aspect's bonus: Speed (attack speed +6% / dodge +3pp), Guard (crit damage taken −10%), Crit (penetration +10% on every hit). Each element's bonus makes weapon hits inflict its status (Cold chilled, Heat on fire, Lightning jolted, Poison poison, Light dazzled, Dark blinded; 20% chance). Each point past 4 adds a quarter (8 points = double). Capped across the whole kit. Each bonus reads one aspect only.</dd>
         <dt>Named runes</dt><dd>Recommended: a named rune is a bonus with a name, on one aspect, at a higher total (6–8 after grade; some need a minimum slab grade). Adding a glyph never turns one off; all active named runes apply. Unknown ones show "?" on the chart until made once or taught. Named runes that need several aspects (today's shape) read two aspects together and break the guard: your ruling (question 1).</dd>
         <dt>Bench</dt><dd>No split chance, no upgrade chance. F slabs and F adornments refused. Cut slots open at Runecarving 0 / 5 / 10 / 18 / 25 / 35.</dd>
         <dt>Sockets used</dt><dd>Strokes ÷ strokes per socket, rounded up. Strokes per socket: stone grade (E 4, D 6, C 8, B 11, A 15, S 20) + tool + Runecarving level ÷ 10. A rune that needs more than 3 sockets (the largest item) is refused at the bench. Better tools and skill fit more glyphs into one socket; they change no odds. A burin is needed for variants and letters.</dd>
@@ -264,7 +264,8 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
         <dt>Presets</dt><dd>The eleven catalogue runes become fixed carvings that loot mints. Gale, Earthbind and Umbral become named runes that keep their technique changes. Save v58 rewrites catalogue ids already socketed in items to their preset carvings, so nothing goes inert.</dd>
         <dt>Monsters</dt><dd><code>MonsterDef.runes</code> per slot, through the same pure readers, all 13 aspects (Speed attack speed, Crit crit, Magic spell power included). The bestiary prints the exact carving.</dd>
       </dl>
-      <h3 style="margin-top:6px">Martial</h3>
+      <h3 style="margin-top:6px">Martial (on hold)</h3>
+      <p class="small dim">Kept as the record of the reviewed design; not on the build plan.</p>
       <dl class="facts small">
         <dt>Selector</dt><dd>Printed-card properties: event, kind (strike, buff, counter), entry, exit, family. Never a technique id. Read on the printed card, so one pass and no order.</dd>
         <dt>Reach</dt><dd>Weapon runes reach strikes. Armor, offhand and accessory runes reach buffs, counters and the onHit / onParry / onDodge answers. A buckler card belongs to the offhand, not the weapon.</dd>
@@ -302,7 +303,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
           <tr><td><span class="sev hi">high</span></td><td><b>Bought inputs still profited.</b> Sale is worth × gold gain, charisma raises gold gain, and a carve is one click. Four Algiz on a Fair stone with verdigris: +5 gold per carve at charisma 6, +48 at charisma 41. Reproduced with real prices.</td><td class="ruling">Accepted. A rune never sells above just under what its materials cost at a shop (materials × 2 × 0.9 − 1). Gathered materials still profit.</td></tr>
           <tr><td><span class="sev mid">medium</span></td><td><b>Gold gain counted twice</b> if worth were priced with the gold-gain sale price of its inputs.</td><td class="ruling">Accepted. Worth uses base values; gold gain applies once, at sale.</td></tr>
           <tr><td><span class="sev mid">medium</span></td><td><b>Bonus caps had no scope</b>: per rune, 17 armour sockets of six-Raido runes hit the 75% dodge cap.</td><td class="ruling">Accepted. Bonus caps are kit-wide sums.</td></tr>
-          <tr><td><span class="sev mid">medium</span></td><td><b>The −40% cooldown clamp does not exist yet</b>, and Gale (×0.55) stacks past it.</td><td class="ruling">Accepted. Slice-5 work: one ceiling of −60% on everything runes do to a technique's cooldown, named runes included.</td></tr>
+          <tr><td><span class="sev mid">medium</span></td><td><b>The −40% cooldown clamp does not exist yet</b>, and Gale (×0.55) stacks past it.</td><td class="ruling">Accepted, now on hold with the martial part. Was slice-5 work: one ceiling of −60% on everything runes do to a technique's cooldown, named runes included.</td></tr>
           <tr><td><span class="sev lo">low</span></td><td><b>Concentration dominated</b>: my resonance bonus on extra copies plus the doubled bonus made six of one glyph the best carving almost everywhere.</td><td class="ruling">Accepted in part: resonance dropped from own effects, so strength = copies, as you worded it. Stacking still pays through the bonus.</td></tr>
           <tr><td><span class="sev lo">low</span></td><td><b>Old F-grade carvings could flip sign.</b></td><td class="ruling">Accepted. Grade floored at 0 everywhere.</td></tr>
         </tbody>
@@ -371,8 +372,8 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
       <tr><td>2</td><td>Glyph sums</td><td>Glyph registry, slot readings, bonuses, named runes, sockets used (refused over 3), the dice-free bench (F slabs and F adornments refused), the codex chart. Legacy patterns read as glyph aliases (Power = might 2, and so on), so old carvings keep their single-cut numbers.</td><td>No</td></tr>
       <tr><td>3</td><td>Equipment</td><td>Deterministic sockets, slot lens with the per-slot preview, supply lines (runestone pinned at Fair, burin after floor 2), the unlock find on floor 2, starter glyphs, catalogue runes as preset carvings including those already socketed, the sustain cell test, and sale prices that ignore gold gain from the worn title and worn gear (no-arbitrage).</td><td>v58</td></tr>
       <tr><td>4</td><td>Monsters</td><td><code>MonsterDef.runes</code> through a beast lens over all 13 aspects, the bestiary "carries" fact that teaches glyphs.</td><td>No</td></tr>
-      <tr><td>5</td><td>Martial I</td><td>Selectors, reach, bonus tunes, element bonuses on strikes, named runes' technique rewrites with the precedence rule, planner badges, the learning refresh on socket. The monster technique path goes through the same function.</td><td>No</td></tr>
-      <tr><td>6</td><td>Martial II</td><td>Glyph fork options in the Honed choice, the <code>tumble</code> archetype (×1.0) and its dead-end seat, <code>move.crit</code> on the monster path, archetypes named on monster moves.</td><td>No</td></tr>
+      <tr class="dim"><td>5</td><td>Martial I (on hold)</td><td>Selectors, reach, bonus tunes, element bonuses on strikes, named runes' technique rewrites with the precedence rule, planner badges, the learning refresh on socket. The monster technique path goes through the same function.</td><td>No</td></tr>
+      <tr class="dim"><td>6</td><td>Martial II (on hold)</td><td>Glyph fork options in the Honed choice, the <code>tumble</code> archetype (×1.0) and its dead-end seat, <code>move.crit</code> on the monster path, archetypes named on monster moves.</td><td>No</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -384,7 +385,7 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
     <li><b>The freeze.</b> Slice 1 is bug fixes and needs nothing from you. Slices 2–6 add band-one shop, drop and find lines and a save bump. Lift the alpha freeze for runecarving, or bank the design and build slice 1 only?</li>
     <li><b>The glyph table.</b> The 24 Elder vectors are first guesses from the meanings (Naudiz = Dark and Guard, Raido = Speed and Luck, Gebo = Crit and Luck, and so on; full table in mockup 2). Change any?</li>
     <li><b>Forged items.</b> Amend the smithing card so forged items get class sockets from their cells (1 / 2 / 3) and no socket finish exists?</li>
-    <li><b>Fork options from runes are permanent once taken.</b> A rune adds an option to the Honed choice; taking it is permanent and outlives the rune. Keep that, or let a rune-granted path lapse when the rune leaves?</li>
+    <li><b>Fork options from runes are permanent once taken (on hold with the martial part).</b> A rune adds an option to the Honed choice; taking it is permanent and outlives the rune. Keep that, or let a rune-granted path lapse when the rune leaves?</li>
     <li><s>Persistent effects: combat or utility.</s> <b>Answered:</b> monster stats only.</li>
     <li><s>How points are split.</s> <b>Answered:</b> one cut gives the glyph's own effect; extra cuts increase it and can push its aspect past 4 or make a bonus stronger.</li>
     <li><b>MUSIC.md.</b> Its identity table says cooking = sum and runecarving = breadth. Correct it to match PITFALLS.md (runecarving = sum, cooking = when)?</li>
@@ -489,7 +490,8 @@ img.g { image-rendering: pixelated; display: inline-block; vertical-align: middl
 </section>
 
 <section class="panel" id="martial">
-  <header><h2>4 · Runes on techniques</h2><span class="tag later">slices 5–6 · martial</span></header>
+  <header><h2>4 · Runes on techniques</h2><span class="tag">on hold · kept as a record</span></header>
+  <p class="note" style="margin-bottom:10px">On hold (your call, 2026-10-23). This mockup shows the reviewed design for runes changing techniques; none of it is on the build plan.</p>
   <p class="small dim" style="margin-bottom:12px">Reads the kit from mockup 3. Weapon runes reach strikes; armor and accessory runes reach buffs and the onHit / onParry / onDodge answers. Each card shows its printed values struck through where a rune changed them, the fork options runes add to its Honed choice, and which runes did it. Only a named rune rewrites an exit; the graph draws it in gold with a ghost line to the printed one. Try the Earthbind rune (Uruz·Tiwaz, Fine, ochre) in the weapon with the sword selected.</p>
   <div class="controls" style="margin-bottom:12px; max-width:560px">
     <span class="dim">Weapon family</span><select id="sel-family"><option value="blunt">oak club (blunt)</option><option value="sword">iron sword (sword)</option><option value="katana">katana</option></select>
@@ -681,9 +683,10 @@ const RUNG_AT = 4;
 const RUNG_STEP = 0.25;
 const ELEMENT_RUNG = (e) => ({ W: [`hits inflict ${ELEMENT_STATUS[e]}`, 20, 'chance', 60] });
 const RUNGS = {
-  swift: { W: ['triggered techniques: cooldown', -15, '%', -40], A: ['dodge', 3, 'pp', 9] },
+  // Weapon Speed and Crit bonuses read on every hit while the martial part is on hold.
+  swift: { W: ['attack speed', 6, '%', 18], A: ['dodge', 3, 'pp', 9] },
   ward:  { A: ['crit damage taken', -10, '%', -30] },
-  keen:  { W: ['strikes: penetration', 10, '%', 30] },
+  keen:  { W: ['penetration on every hit', 10, '%', 30] },
   ...Object.fromEntries(ELEMENTS.map((e) => [e, ELEMENT_RUNG(e)])),
 };
 const bonusScale = (c, a) => Math.min(1, Math.max(0, c.mult)) * (1 + RUNG_STEP * ((c.raw[a] || 0) - RUNG_AT));
@@ -1042,7 +1045,7 @@ function renderCodex() {
     return `<div class="cg ${k ? '' : 'unknown'}" title="${g.gloss}">
       ${k ? glyphEl(g, 2, '#e8c25a') : glyphEl(g, 2, '#3a3026')}
       <span><span class="nm">${g.name}</span> <span class="tiny dim">${g.gloss}</span><br>${vecChips(g.v)} <span class="tiny dim">${g.s}✎</span></span>
-      <span class="how">${g.starter ? 'starter' : k ? 'learned · ' + g.how : 'taught by ' + g.how}${g.lend ? ` · adds ${ARCH[g.lend[0]].name} to fork choices` : ''}</span></div>`;
+      <span class="how">${g.starter ? 'starter' : k ? 'learned · ' + g.how : 'taught by ' + g.how}</span></div>`;
   }).join('');
   document.getElementById('works').innerHTML = WORKS.map((w) => {
     const seen = w.known || litWorks.has(w.id);
@@ -1303,8 +1306,6 @@ function surgery(t, tierOK) {
   const inflicts = [];
   for (const { slot, c } of reach) {
     if (slot !== 'weapon') continue;
-    if (c.rungs.includes('swift') && t.event) { cdm += -bonusValue(c, 'swift', 'W') / 100; res.by.add(`${c.name} (Speed bonus)`); }
-    if (c.rungs.includes('keen') && t.kind === 'strike') { pen += bonusValue(c, 'keen', 'W') / 100; res.by.add(`${c.name} (Crit bonus)`); }
     for (const e of ELEMENTS) if (c.rungs.includes(e) && t.kind === 'strike') { inflicts.push(`${ELEMENT_STATUS[e]} ${fmtNum(bonusValue(c, e, 'W'))}%`); res.by.add(`${c.name} (${ANAME[e]} bonus)`); }
   }
   if (cdm) { res.card.cd = Math.round(res.card.cd * (1 - Math.min(CLAMP.cd, cdm))); res.notes.push(`cooldown −${Math.round(Math.min(CLAMP.cd, cdm) * 100)}%`); }
