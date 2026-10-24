@@ -38,6 +38,17 @@ export const TITLES = prose<TitleDef>('TITLES', TITLES_TEXT, {
     id: 'procedural_objection', name: 'Procedural Objection', icon: '✊', secret: true,
     unlock: [{ type: 'stat', key: 'flag:toll_brute_force', value: 1 }],
   },
+  // Spoiled dishes eaten (`food:spoiled`: every refuse-grade dish and every
+  // Scorched Mess, systems/consumables.ts). 25 is a first guess. The one title
+  // that confers a permanent immunity (`TitleDef.immune`) rather than a stat.
+  iron_stomach: {
+    id: 'iron_stomach',
+    name: 'Iron Stomach',
+    icon: '🥣',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'food:spoiled', value: 25 }],
+    immune: { ids: ['queasy'] },
+  },
   iconoclast: {
     id: 'iconoclast',
     name: 'Iconoclast',

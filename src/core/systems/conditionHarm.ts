@@ -1,4 +1,4 @@
-import type { StatusDef } from '../types';
+import type { StatusDef, TitleDef } from '../types';
 
 /**
  * Whether a condition HURTS its bearer, read from the condition's own data.
@@ -12,6 +12,9 @@ import type { StatusDef } from '../types';
  *    `foodDuration` amplify a harmful condition a dish carries.
  *  - `foodProblems` (disciplines.ts, linted in both validation layers) refuses
  *    a harmful condition on any dish except the bench's failure dish.
+ *  - `resistanceProblems` (below, linted in both validation layers) demands that
+ *    every harmful condition says what resists it: an `element`, or
+ *    `unresistable`.
  *
  * What counts, and why these fields:
  *
@@ -92,4 +95,76 @@ export function harmOf(def: StatusDef): string | null {
 
 export function isHarmful(def: StatusDef): boolean {
   return harmOf(def) !== null;
+}
+
+/** One problem `resistanceProblems` found, for the test and for the forge's issue list. */
+export interface ResistanceProblem {
+  kind: 'status' | 'title';
+  id: string;
+  message: string;
+  /** Where in the entry, for the forge's deep link. */
+  path?: string[];
+}
+
+/**
+ * Problems with who can resist what, as plain sentences. Shared by
+ * `tests/content.test.ts` and `forge/lib/validate.ts` like `foodProblems`, so
+ * it takes the registries it checks. It lives beside `harmOf` because it reads
+ * harm from it.
+ *
+ *  - Totality: every harmful condition has an `element` (resistance in that
+ *    element answers it) or `unresistable` (nothing does, and why), never
+ *    both. "Can this be resisted?" always has an answer.
+ *  - `unresistable` is a reason in words, and means nothing on a condition that
+ *    harms no one.
+ *  - Nothing can switch an unresistable condition off: no `immune.ids`, on a
+ *    condition or on a title, may name one (a boss phase stays a boss phase).
+ *    An `immune.elements` entry cannot reach it, since it has no element.
+ */
+export function resistanceProblems(
+  statuses: Record<string, StatusDef>,
+  titles: Record<string, Pick<TitleDef, 'id' | 'immune'>> = {},
+): ResistanceProblem[] {
+  const problems: ResistanceProblem[] = [];
+  const say = (kind: ResistanceProblem['kind'], id: string, message: string, path?: string[]) =>
+    problems.push({ kind, id, message, ...(path ? { path } : {}) });
+
+  for (const def of Object.values(statuses)) {
+    const harm = harmOf(def);
+    if (def.unresistable !== undefined && def.unresistable.trim() === '') {
+      say('status', def.id, `'${def.id}' has an empty unresistable: give the reason in a few words`, ['unresistable']);
+    } else if (def.element && def.unresistable) {
+      say(
+        'status',
+        def.id,
+        `'${def.id}' has both an element (${def.element}) and unresistable ('${def.unresistable}'): it is resisted or it is not`,
+        ['unresistable'],
+      );
+    } else if (harm && !def.element && !def.unresistable) {
+      say(
+        'status',
+        def.id,
+        `'${def.id}' harms its bearer (${harm}) but has neither an element to be resisted by nor unresistable: say which`,
+      );
+    } else if (!harm && def.unresistable) {
+      say('status', def.id, `'${def.id}' is marked unresistable but harms no one: remove the mark`, ['unresistable']);
+    }
+  }
+
+  const unresistable = (id: string) => !!statuses[id]?.unresistable;
+  for (const def of Object.values(statuses)) {
+    for (const id of def.immune?.ids ?? []) {
+      if (unresistable(id)) {
+        say('status', def.id, `immune names '${id}', which is unresistable: nothing may switch it off`, ['immune', 'ids']);
+      }
+    }
+  }
+  for (const title of Object.values(titles)) {
+    for (const id of title.immune?.ids ?? []) {
+      if (unresistable(id)) {
+        say('title', title.id, `immune names '${id}', which is unresistable: nothing may switch it off`, ['immune', 'ids']);
+      }
+    }
+  }
+  return problems;
 }

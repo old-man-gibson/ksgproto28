@@ -658,7 +658,9 @@ function swallow(state: GameState, bus: EventBus, spec: BrewSpec): void {
   for (const r of spec.restore) {
     if (r.amount <= 0) continue;
     const before = state.resources[r.resource];
-    if (r.resource === 'hp') heal(state, stats, r.amount, 'salve');
+    // Only the Salve is applied to a wound. A Draught heals as much but closes
+    // nothing: wound removal rules listen for 'salve' and no other brew kind.
+    if (r.resource === 'hp') heal(state, stats, r.amount, spec.form === 'salve' ? 'salve' : 'draught');
     else restoreResource(state, stats, r.resource, r.amount);
     const got = Math.round(state.resources[r.resource] - before);
     if (got > 0) gained.push(`+${got} ${RESOURCES[r.resource].name}`);

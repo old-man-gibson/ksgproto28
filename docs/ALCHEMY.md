@@ -67,6 +67,11 @@ That is the whole table.
 
 Essences decide what it is *of*; potency decides how much of it there is.
 
+**Only the Salve treats a wound.** A Salve and a Draught restore health alike,
+but a Salve heals as kind `salve` (what bleeding, laceration and the other
+wounds that need treatment listen for) and a Draught as kind `draught`, which no
+rule names. The Salve is also the only form whose essences cure.
+
 **Every solvent reads volatility.** That was not true in the first cut — oil
 ignored the dial and always made salves — and the asymmetry was the one thing
 wrong with the table. `tests/alchemy.test.ts` now asserts the invariant directly
@@ -92,7 +97,11 @@ spirit is a solvent that also agitates, which is why bombs start there.
   one **dilutes**: potency ×0.7, volatility ×0.55, and adds capacity. Potency
   past capacity **spills** — only 35% of the excess survives.
 - **Essences** — emberbloom, frostmoss, nightcap, gloomcap (the concealment
-  line: `veiled`), mendroot, bloodwort, thunderbloom.
+  line: `concealed`), mendroot, bloodwort, thunderbloom. What an Elixir of
+  them grants is alchemy's own: Frostmoss `frosted`, Gloomcap `concealed`,
+  Bloodwort `invigorated`. They once granted Xima's Rime, Veiled and Blood
+  Communion, which are divine signatures and stay divine. Mendroot's cure tags
+  (`poison`, `bleed`) are heard by poison, rotting, bleeding and lacerated.
 - **Operators** — quicksilver (`agitate`), fixing salt (`fix` — quenches, and
   banks what it quenched as duration), brimstone (`ignite` — needs volatility
   ≥ 1.2, else it only fouls), bone ash (`clarify` — drops the weakest essence

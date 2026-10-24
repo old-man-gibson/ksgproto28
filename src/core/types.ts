@@ -1297,6 +1297,18 @@ export interface StatusDef {
    * set you on fire, but heat usually does.
    */
   element?: DamageType;
+  /**
+   * Marks a harmful condition that no resistance answers, with the reason in a
+   * few words ("state: caught off guard", "the Toll Collector's phase"). The
+   * other half of a rule both validation layers enforce (`resistanceProblems`,
+   * conditionHarm.ts): a condition that hurts its bearer has an `element` or
+   * this, never both, so "can this be resisted?" always has an answer.
+   *
+   * `applyStatus` lands such a condition in full whatever the bearer's stats
+   * are, and `immune.ids` may not name one, so it cannot be switched off.
+   * Developer-facing; the tooltip only says "Cannot be resisted".
+   */
+  unresistable?: string;
   /** The worse condition this becomes when it is pushed far enough. */
   escalatesTo?: string;
   /** The milder condition a 'deescalate' removal drops this back to. */
@@ -2036,6 +2048,14 @@ export interface TierDef {
   /** Stat multiplier rolled uniformly within this range at spawn. */
   multiplierRange: [number, number];
   rewardMult: number;
+  /**
+   * The penetration a monster of this tier applies conditions with, unless its
+   * def sets its own (`MonsterDef.penetration`). It comes off the player's
+   * resistance in the immunity test only: a condition lands nothing at all once
+   * resistance minus penetration reaches 1, and the share that lands below
+   * that is untouched (`applyStatus`).
+   */
+  penetration: number;
 }
 
 export interface ModifierTierDef {
@@ -2125,6 +2145,12 @@ export interface MonsterDef {
   desc?: string;
   /** Intrinsic tier — part of the monster's identity, not rolled. */
   tier: TierId;
+  /**
+   * Overrides the tier's penetration (`TierDef.penetration`) for the conditions
+   * this species applies to the player. Omit for the tier's value; 0 is the
+   * explicit "none". Only the immunity line reads it, never the partial dose.
+   */
+  penetration?: number;
   /**
    * Every blow that LANDS deals exactly this much — no crit, no jitter, no
    * armour, no resistance, no counter reduction. Training equipment: the
@@ -4720,6 +4746,13 @@ export interface TitleDef {
   unlock: UnlockCondition[];
   passive?: Modifier[];
   equipped?: Modifier[];
+  /**
+   * Once earned, conditions of these elements and these ids do not land on the
+   * player: the same refusal as `StatusDef.immune`, with the title as the
+   * source instead of a held condition. Passive (always on, not only worn). It
+   * refuses applications only, and may not name an `unresistable` condition.
+   */
+  immune?: { elements?: DamageType[]; ids?: string[] };
   /** Hidden from the UI until earned. */
   secret?: boolean;
   /**

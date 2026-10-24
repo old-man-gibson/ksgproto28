@@ -1508,9 +1508,9 @@ describe('conditions are resisted on APPLICATION, not only on their damage', () 
   });
 
   it('a condition with no element is never resisted — that is every buff', () => {
-    // 37 of 67 conditions carry an `element` and all 37 are afflictions. The
-    // absence on the other 30 is the authoring, not an omission: you do not
-    // resist your own steadying hand.
+    // Every condition that carries an `element` is an affliction. The absence
+    // on the rest (buffs, and the ten marked `unresistable`) is the authoring,
+    // not an omission: you do not resist your own steadying hand.
     const g = fresh(34);
     expect(STATUSES.steady_hand?.element).toBeUndefined();
     applyStatus(g.state, g.state, { id: 'steady_hand', intensity: 1 }, 'test', {

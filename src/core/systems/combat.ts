@@ -584,7 +584,9 @@ import {
   type MonsterStats,
   innateArmor,
   mindInDebt,
+  monsterDamageResistance,
   monsterMind,
+  monsterPenetration,
   monsterStats,
   rollMonsterAttrs,
   scaledMonsterAttrs,
@@ -639,6 +641,7 @@ import {
   fireStatusEvent,
   graftHarvest,
   hasStatus,
+  reform,
   removeStatus,
   statusDisplacedExit,
   tendOnDamage,
@@ -2170,7 +2173,7 @@ function resolveMonsterWorking(
         : incomingSlice(stats, strike.type, spec.name, raw).dealt;
       damagePlayer(state, landed, strike.type);
       feed(state, `${spec.icon} ${spec.name} hits you for ${landed} ${strike.type}.`);
-      if (landed > 0) applyStatuses(state, state, strike.inflicts, spec.name, stats);
+      if (landed > 0) applyStatuses(state, state, strike.inflicts, spec.name, stats, monsterPenetration(e));
       if (!isAlive(state)) {
         onDefeat(state, bus);
         return true;
@@ -2178,7 +2181,7 @@ function resolveMonsterWorking(
     }
   }
   // The working itself arriving, blow or no blow (see SpellSpec.afflicts).
-  applyStatuses(state, state, spec.afflicts, spec.name, stats);
+  applyStatuses(state, state, spec.afflicts, spec.name, stats, monsterPenetration(e));
   return false;
 }
 
@@ -2257,6 +2260,8 @@ function layBurn(
   times: number,
   source: string,
   playerStats?: DerivedStats,
+  /** The applier's penetration, for the immunity line only. 0 for a player's own undoing. */
+  penetration = 0,
 ): void {
   if (intensity <= 0) return;
   for (const bearer of bearers) {
@@ -2269,6 +2274,7 @@ function layBurn(
         // The player's arcane resistance thins a burn on arrival; a monster's
         // is read off the monster by applyStatus itself.
         bearer === state ? playerStats : undefined,
+        penetration,
       );
     }
   }
@@ -2410,8 +2416,17 @@ function springEnemyCounter(
   const reading = counterEfficiency(counter, workingSignature(working));
   const burn = reading.efficiency * counter.burn * es.spellPower;
   // "Undo me" in a monster's mouth burns the monster. The grammar is the
-  // grammar, whoever speaks it.
-  layBurn(state, spec.target === 'self' ? [e] : [state], burn, counter.burns ?? 1, spec.name, stats);
+  // grammar, whoever speaks it. The burn is the monster's doing only when it
+  // lands on the player; its own penetration has nothing to say about itself.
+  layBurn(
+    state,
+    spec.target === 'self' ? [e] : [state],
+    burn,
+    counter.burns ?? 1,
+    spec.name,
+    stats,
+    spec.target === 'self' ? 0 : monsterPenetration(e),
+  );
   const undone = reading.efficiency >= 1 ? 'undone entirely' : `${pctOf(reading.efficiency)} of it undone`;
   feed(
     state,
@@ -2736,6 +2751,11 @@ export function healEnemy(
    * mechanic: forced life accrues, kindness settles.
    */
   hostile = true,
+  /**
+   * The caster's penetration, for the overgrowth the forced life opens: it is
+   * resisted through poison now, so it has an immunity line to get past.
+   */
+  penetration = 0,
 ): void {
   const c = state.combat;
   const target = c?.enemies[index];
@@ -2778,7 +2798,8 @@ export function healEnemy(
 
   // The ledger rides whichever rung of the ladder is already held.
   let held = swollen;
-  held ??= applyStatus(state, target, { id: 'overgrowth', intensity: 1 }, source) ?? undefined;
+  held ??=
+    applyStatus(state, target, { id: 'overgrowth', intensity: 1 }, source, undefined, penetration) ?? undefined;
   if (!held) return;
   held.data = held.data ?? {};
   held.data.surplus = (held.data.surplus ?? 0) + amount;
@@ -2790,8 +2811,14 @@ export function healEnemy(
   const cfg = def?.surplus;
   if (cfg?.escalateAt !== undefined && def?.escalatesTo && surplus >= maxHp * cfg.escalateAt) {
     removeStatus(target, held.id);
-    const next = applyStatus(state, target, { id: def.escalatesTo, intensity: held.intensity }, source);
-    if (next) (next.data ??= {}).surplus = surplus;
+    // A transformation, not a fresh dose: the forced life that fed the ledger
+    // was already answered when the overgrowth landed, so the next rung goes
+    // through `reform` and a poison-resistant body is not billed twice.
+    const next = reform(state, target, { id: def.escalatesTo, intensity: held.intensity }, source);
+    if (next) {
+      next.data ??= {};
+      next.data.surplus = surplus;
+    }
     feed(state, `🧬 The growth inside the ${target.name} takes on a will of its own!`);
     return;
   }
@@ -3094,7 +3121,7 @@ export function castCraftedAttack(
   // body already whole has nowhere to put it.
   if (spec.heal && spec.healsEnemy) {
     for (const idx of targets) {
-      healEnemy(state, idx, spec.heal * stats.spellPower * castMult * share, spec.name);
+      healEnemy(state, idx, spec.heal * stats.spellPower * castMult * share, spec.name, true, stats.penetration);
     }
   } else if (spec.heal) {
     const healed = heal(state, stats, spec.heal * stats.spellPower * castMult, 'spell');
@@ -3443,7 +3470,8 @@ function burnMind(
   }
   if (mana !== mind.current) e.mana = mana;
   for (const boom of result.detonations) {
-    const res = Math.max(-1, Math.min(0.9, monsterStats(e).resistances[boom.type] ?? 0)) * (1 - boom.bypassRes);
+    // The damage path's own figure for the type, as a condition's ticks read it.
+    const res = monsterDamageResistance(e, boom.type) * (1 - boom.bypassRes);
     const dealt = Math.max(1, Math.round(boom.amount * (1 - res)));
     e.hp -= dealt;
     noteOutgoing(state, dealt);
@@ -4577,6 +4605,9 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       // afterwards: a cold-armoured body registers a shallower chill and needs
       // more bites to freeze. See `applicationMult`.
       stats,
+      // The species' penetration, by tier unless it sets its own: it comes off
+      // that resistance in the immunity test only, never thinning the dose.
+      monsterPenetration(e),
     );
     for (const inst of inflicted) {
       const sdef = STATUSES[inst.id];

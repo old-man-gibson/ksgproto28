@@ -143,7 +143,11 @@ the fastest way to feel a sequence out; the preview updates as you go.
   reads. Emberbloom has an element and an affliction — perfect in a Flask,
   worthless in an Elixir, which reads `grants`. The preview will show an Ember
   Elixir with no effects listed at all. Believe it.
-- **Only Salves cure.** Mendroot's cure tags are ignored in every other form.
+- **Only Salves cure, and only Salves treat a wound.** Mendroot's cure tags are
+  ignored in every other form, and a Draught heals you without closing a
+  bleed.
+- **A cure answers a tag.** Mendroot cures `poison` and `bleed`: Poisoned goes,
+  Rotting eases to Poisoned, Bleeding goes, Lacerated eases to Bleeding.
 - **Elixirs don't restore, Draughts don't grant.** Calm water sustains, roused
   water bursts. Pick the one you wanted.
 - **An Oil reads the same registers a Flask does** — element and afflictions.
@@ -166,7 +170,7 @@ the fastest way to feel a sequence out; the preview updates as you go.
 | `Water → Quicksilver → Mendroot` | Mending Draught — 8 HP now |
 | `Oil → Mendroot → Mendroot → Fixing Salt` | **Field Salve** 📜 — 19 HP, clears poison and bleed |
 | `Oil → Quicksilver → Emberbloom` | Ember Oil — 6 blows of heat and burning |
-| `Water → Gloomcap → Fixing Salt` | **Thief's Measure** 📜 — Veiled ×0.65 |
+| `Water → Gloomcap → Fixing Salt` | **Thief's Measure** 📜 — Concealed ×0.65 |
 | `Spirit → Quicksilver → Emberbloom → Brimstone` | **Smoulderer's Flask** 📜 — 13 heat + burning |
 
 A 📜 marks a **known formula** — a sequence somebody already wrote down. The

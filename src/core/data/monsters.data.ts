@@ -5,15 +5,21 @@ import { MONSTERS_TEXT } from '../text/monsters.text';
 /**
  * Intrinsic monster tiers (proto26 model): part of a monster's identity,
  * with the stat multiplier ROLLED within the range at spawn for variance.
+ *
+ * `penetration` is what a monster of the tier applies conditions with (comes off
+ * the player's resistance in the immunity test only; `MonsterDef.penetration`
+ * overrides it per species). Floors 1 to 3 need 0, and their one elite (the
+ * Puppet Bureaucrat) is why elite is 0 here. Band 2 has no content yet, so its
+ * 0.15 is where ancient starts; the steps above it are placeholders.
  */
 export const TIERS: Record<string, TierDef> = {
-  basic: { id: 'basic', name: 'Basic', multiplierRange: [0.8, 1.1], rewardMult: 1 },
-  veteran: { id: 'veteran', name: 'Veteran', multiplierRange: [1.0, 1.25], rewardMult: 1.3 },
-  elite: { id: 'elite', name: 'Elite', multiplierRange: [1.25, 1.5], rewardMult: 1.8 },
-  ancient: { id: 'ancient', name: 'Ancient', multiplierRange: [1.45, 1.7], rewardMult: 3 },
-  legendary: { id: 'legendary', name: 'Legendary', multiplierRange: [1.75, 2.5], rewardMult: 4 },
-  mythic: { id: 'mythic', name: 'Mythic', multiplierRange: [2.0, 3.0], rewardMult: 5 },
-  divine: { id: 'divine', name: 'Divine', multiplierRange: [4.0, 5.0], rewardMult: 8 },
+  basic: { id: 'basic', name: 'Basic', multiplierRange: [0.8, 1.1], rewardMult: 1, penetration: 0 },
+  veteran: { id: 'veteran', name: 'Veteran', multiplierRange: [1.0, 1.25], rewardMult: 1.3, penetration: 0 },
+  elite: { id: 'elite', name: 'Elite', multiplierRange: [1.25, 1.5], rewardMult: 1.8, penetration: 0 },
+  ancient: { id: 'ancient', name: 'Ancient', multiplierRange: [1.45, 1.7], rewardMult: 3, penetration: 0.15 },
+  legendary: { id: 'legendary', name: 'Legendary', multiplierRange: [1.75, 2.5], rewardMult: 4, penetration: 0.25 },
+  mythic: { id: 'mythic', name: 'Mythic', multiplierRange: [2.0, 3.0], rewardMult: 5, penetration: 0.35 },
+  divine: { id: 'divine', name: 'Divine', multiplierRange: [4.0, 5.0], rewardMult: 8, penetration: 0.5 },
 };
 
 /** Rolled-at-spawn modifier classifications (second axis, like rarity). */
