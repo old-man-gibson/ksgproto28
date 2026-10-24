@@ -204,7 +204,7 @@ table.parts td { white-space: nowrap; }
 <div class="wrap">
 
 <header style="display:grid; gap:10px">
-  <span class="tag" style="justify-self:start">Design review · 2026-10-23 · rounds 1 and 2 in progress</span>
+  <span class="tag" style="justify-self:start">Design review · 2026-10-23 · rounds 1 and 2 built, not merged</span>
   <h1>Cooking and Hunting</h1>
   <p class="dim">What the cooking and hunting code does today, what to change, the objections raised and how they were ruled, your answers, and six working mockups of the new stove screens.</p>
   <nav class="chips small" aria-label="Sections"><a class="chip" href="#verdict">Summary</a><a class="chip" href="#answers">Your answers</a><a class="chip" href="#findings">Findings</a><a class="chip" href="#design">Plan</a><a class="chip" href="#roles">Roles</a><a class="chip" href="#objections">Objections</a><a class="chip" href="#slices">Rounds</a><a class="chip" href="#stove">Mockups</a></nav>
@@ -214,8 +214,8 @@ table.parts td { white-space: nowrap; }
   <header><h2>Summary</h2><span class="tag">team: 3 brainstormers, 1 design antagonist</span></header>
   <div class="line"><b>Identity</b><span>Cooking is about timing. Today cook time only changes a dish's grade. After round 1 it also decides which dish you get. In round 3 each animal part and each jelly has its own cook time. Cooking does not get pair bonuses (mutagens), order rules (alchemy) or added-up effects (runecarving).</span></div>
   <div class="line"><b>Gold</b><span>Cooking may earn gold (your answer 1). Today, at Cooking 45, 10 gold of Fair (C) ingredients make a Divine (S) stew that sells for 56. The round 1 skill cap lowers that to Superb (A, 35 gold), so better ingredients still matter at high levels.</span></div>
-  <div class="line"><b>Round 1</b><span>Building now. Skill bonus capped at +2.00. Heat windows: the same ingredients make Seared Stew, Hearty Stew or Braised Meat depending on cook time. Steeped Broth for poison resistance. A condition does not land at 100% resistance. Stove screen fixes, the heat track and the grade ledger.</span></div>
-  <div class="line"><b>Round 2</b><span>Next. Food lasts longer and works better as Cooking levels up. Cook counts per dish, Signature dishes at 100 cooks, the Cook's Book, the plate card, and a prestige boon that keeps part of the Book.</span></div>
+  <div class="line"><b>Round 1</b><span>Built on branch <code>cooking-rounds-1-2</code>. Skill bonus capped at +2.00. Heat windows: the same ingredients make Seared Stew, Hearty Stew or Braised Meat depending on cook time. Steeped Broth for poison resistance. A condition does not land at 100% resistance. Stove screen fixes, the heat track and the grade ledger.</span></div>
+  <div class="line"><b>Round 2</b><span>Built on the same branch (save version 58). Food lasts longer and works better as Cooking levels up. Cook counts per dish, Signature dishes at 100 cooks, the Cook's Book, the plate card, and a prestige boon that keeps part of the Book.</span></div>
   <div class="line"><b>Hunting</b><span>Round 3. Slimes drop jelly, one flavor per slime family. Animals drop parts. Humanoids are not food unless the player has an omnivore or cannibal flag.</span></div>
   <div class="line"><b>Source</b><span><code>docs/COOKING_REVIEW.md</code> and this page's source, on branch <code>docs/cooking-review</code>.</span></div>
 </section>
@@ -231,7 +231,7 @@ table.parts td { white-space: nowrap; }
       <tr><td>4</td><td>Are goblins food?</td><td>No, unless the player has an omnivore or cannibal flag from an ability, gene or mutagen.</td><td>Food rules check flags on the eater.</td></tr>
       <tr><td>5</td><td>Does the Cook's Book survive prestige?</td><td>It resets. Prestige boons can carry parts over.</td><td>Round 2 adds a boon. Default until you say otherwise: rank 1 keeps the cook times you learned, rank 2 keeps Signatures.</td></tr>
       <tr><td>6</td><td>100-cook Signature grind?</td><td>Yes.</td><td>Round 2.</td></tr>
-      <tr><td>7</td><td>Scope?</td><td>Rounds 1 and 2. Simpler language.</td><td>Building. This page rewritten.</td></tr>
+      <tr><td>7</td><td>Scope?</td><td>Rounds 1 and 2. Simpler language.</td><td>Built on branch <code>cooking-rounds-1-2</code>. This page rewritten.</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -350,8 +350,8 @@ table.parts td { white-space: nowrap; }
   <div class="scroll"><table>
     <thead><tr><th>Round</th><th>Ships</th><th>State</th><th>Save change</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td>Skill cap. Heat windows and three new dishes with recipe cards. Stoked and Steeped. The 100% immunity rule and the <code>immune</code> field. Stove fixes: preview color, pot restored mid-cook, grades in the picker. Heat track and grade ledger.</td><td>Building</td><td>No</td></tr>
-      <tr><td>2</td><td>Food duration and strength by level. Cook counts per dish, Signatures, the Cook's Book, the plate card. XP for new dishes. Prestige boon for the Book.</td><td>Next</td><td>Yes</td></tr>
+      <tr><td>1</td><td>Skill cap. Heat windows and three new dishes with recipe cards. Stoked and Steeped. The 100% immunity rule and the <code>immune</code> field. Stove fixes: preview color, pot restored mid-cook, grades in the picker. Heat track and grade ledger.</td><td>Built, not merged</td><td>No</td></tr>
+      <tr><td>2</td><td>Food duration and strength by level. Cook counts per dish, Signatures, the Cook's Book, the plate card. XP for new dishes. Prestige boon for the Book.</td><td>Built, not merged</td><td>Yes (v58)</td></tr>
       <tr><td>3</td><td>Slime jelly by family, animal parts, glands, omnivore and cannibal flags, the Palate entry and Load Pot.</td><td>Waits for your go-ahead</td><td>No</td></tr>
       <tr><td>4</td><td>Diets, bait, rare monsters that come to bait, feeding.</td><td>After round 3</td><td>No</td></tr>
       <tr><td>5</td><td>Crocks.</td><td>After base building</td><td>Yes</td></tr>
