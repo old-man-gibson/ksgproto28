@@ -896,13 +896,13 @@ describe('save v58', () => {
     return { ...s, version: 57, prestige };
   }
 
-  it('is the version this change took', () => {
-    expect(SAVE_VERSION).toBe(58);
+  it('is the version this change took, or a later one', () => {
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(58);
   });
 
   it('migrates a v57 legacy block by adding empty Cook\'s Book lists', () => {
     const migrated = migrate(v57(), SAVE_VERSION);
-    expect(migrated.version).toBe(58);
+    expect(migrated.version).toBe(SAVE_VERSION);
     expect(migrated.prestige.cookbook).toEqual({ timed: [], signed: [] });
     expect(migrated.prestige.count).toBe(1);
   });
@@ -940,7 +940,7 @@ describe('save v58', () => {
     storage.setItem(SAVE_KEY, JSON.stringify(raw));
     const result = loadFromStorage(storage);
     expect(result.corrupted).toBe(false);
-    expect(result.state?.version).toBe(58);
+    expect(result.state?.version).toBe(SAVE_VERSION);
     expect(result.state?.gold).toBe(4321);
     expect(result.state?.prestige.cookbook).toEqual({ timed: [], signed: [] });
     expect(storage.getItem(`${SAVE_KEY}:backup-v57`)).toContain('"version":57');

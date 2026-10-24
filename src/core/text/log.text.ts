@@ -92,6 +92,8 @@ export const LOG_TEXT = {
   'consumables.reason.recipe_known': 'Recipe already known',
   'consumables.reason.card_spent': 'Already done',
   'consumables.reason.technique_unreachable': 'No technique you know leads into {name}’s position yet',
+  // Dishes are for between fights (systems/consumables.ts canUse); a flask is not.
+  'consumables.reason.in_combat': 'Not during a fight.',
   'consumables.word_learned': '📝 Word learned: {word}. It is on the Spellcrafting Table (castable once Arcana reaches its level).',
   'consumables.technique_learned': '📘 Technique learned: {name} (canonical form).',
   'consumables.card_used': '{icon} {verb}: {name}.',
@@ -102,6 +104,18 @@ export const LOG_TEXT = {
   'consumables.used': '{icon} {verb} {grade} {name}.',
   // A dish cooked SIGNATURE_COOKS times also grants its Signature (systems/cookbook.ts).
   'consumables.used_signature': '{icon} {verb} {grade} {name}. Signature: also {status}.',
+  // The same two lines for a dish that was queued during a fight (systems/eating.ts).
+  'consumables.used_queued': '{icon} {verb} {grade} {name} (queued during the fight).',
+  'consumables.used_signature_queued': '{icon} {verb} {grade} {name} (queued during the fight). Signature: also {status}.',
+
+  // ---------- meals: dish slots and the queued dish ----------
+  'meals.queued': '🍽️ {grade} {name} queued: it is eaten when the fight ends.',
+  'meals.queue_replaced': '🍽️ {grade} {name} queued in place of {old}: it is eaten when the fight ends.',
+  'meals.queue_cancelled': '🍽️ Queued {grade} {name} cancelled.',
+  'meals.queue_dropped': '🍽️ Queued {grade} {name} not eaten: {reason}',
+  'meals.replaced': '🍽️ {grade} {name} replaced: at most {limit} dishes can be active. {detail}',
+  'meals.ended': 'Ended: {list}.',
+  'meals.kept': 'Kept, another source gives it too: {list}.',
 
   // ---------- cooking ----------
   'cooking.reason.no_outcome': 'No recipe matches',

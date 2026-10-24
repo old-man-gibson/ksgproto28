@@ -663,6 +663,16 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     raw.prestige = prestige;
     raw.version = 58;
   },
+  // v58 → v59: dish slots and the queued dish (systems/meals.ts, eating.ts).
+  // Both start empty. A food condition already running is left running and
+  // belongs to no slot: no earlier save recorded which dish gave it, so there
+  // is nothing honest to attach it to. It counts toward no limit, and a dish
+  // eaten now holds a slot of its own beside it.
+  58: (raw) => {
+    if (!Array.isArray(raw.meals)) raw.meals = [];
+    if (raw.queuedMeal === undefined) raw.queuedMeal = null;
+    raw.version = 59;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {

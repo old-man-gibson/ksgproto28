@@ -2468,6 +2468,39 @@ export interface ConsumableSpec {
   votive?: boolean;
 }
 
+/**
+ * One condition a dish put on the eater, and what the dish left on it
+ * (systems/meals.ts). Eviction ends a condition only when the dish provably
+ * owns it: it was not already held when the dish landed (`shared`), and it
+ * still reads as the dish left it (`intensity`, `stacks`).
+ */
+export interface MealStatus {
+  /** The condition's id. Its clock and strength live on the held condition. */
+  id: string;
+  /** Already held when the dish landed on it: another source gave it first. */
+  shared: boolean;
+  /** The held condition's intensity right after the dish landed. */
+  intensity: number;
+  /** The held condition's stacks right after the dish landed. */
+  stacks: number;
+}
+
+/**
+ * A dish holding one of the player's dish slots (`dishLimit`, systems/meals.ts).
+ * One slot per dish, holding everything the dish gave (its grants and its
+ * Signature). It has no clock of its own: the time left is read off the
+ * conditions it lists, so a knockout's faster clock and a travel pause apply to
+ * a dish exactly as they do to any condition.
+ */
+export interface MealSlot {
+  /** The dish's material id. */
+  dish: string;
+  /** The best grade eaten into this slot. */
+  quality: QualityTier;
+  /** The nourishing conditions the dish gave. A dish with none holds no slot. */
+  statuses: MealStatus[];
+}
+
 // ---------- Quality ----------
 
 /**
@@ -5119,6 +5152,17 @@ export interface GameState {
   statuses: StatusInstance[];
   /** totalTicks at which each consumable may next be used. */
   useCooldowns: Record<string, number>;
+  /**
+   * Dishes holding a dish slot, oldest first (systems/meals.ts). Run state: it
+   * resets with the run like the conditions it points at. A condition already
+   * held when the field was added (save v59) belongs to no slot.
+   */
+  meals: MealSlot[];
+  /**
+   * The dish to eat once the fight is over (systems/eating.ts), at most one.
+   * Fired by the first tick with no fight and no knockout recovery.
+   */
+  queuedMeal: { dish: string; quality: QualityTier } | null;
   /** Opted in to paying your style's exertion cost for its bonuses. */
   exerting: boolean;
   skills: Record<string, SkillState>;

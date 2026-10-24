@@ -42,6 +42,7 @@ import { tickChronosense } from './systems/chronosense';
 import { tickExposure } from './systems/exposure';
 import { DISCIPLINES } from './data/disciplines.data';
 import { useConsumable } from './systems/consumables';
+import { cancelQueuedMeal, eat, tickMeals } from './systems/eating';
 import {
   findSpell,
   forgetSpell,
@@ -206,6 +207,11 @@ export class Game {
     // Outside the travel branch's else, because a poison does not care whether
     // you are walking and neither does the thing that stops you closing.
     syncGeneStatuses(this.state);
+    // Before the world moves, so a queued dish is eaten on the first tick that
+    // opens with no fight and no recovery, ahead of the hunt's next encounter
+    // (a reloaded save has no fight and may start one on its first tick), and a
+    // dish that ran out last tick frees its slot.
+    tickMeals(this.state, this.bus);
     if (this.state.travel) {
       tickTravel(this.state, this.bus);
     } else {
@@ -467,6 +473,19 @@ export class Game {
   /** Eat, drink or apply something from stock. */
   useConsumable(id: string, quality: QualityTier = 'c') {
     return useConsumable(this.state, this.bus, id, quality);
+  }
+
+  /**
+   * What the Eat button calls: use it now, or, for a dish during a fight, queue
+   * it for the end of the fight (systems/eating.ts).
+   */
+  eat(id: string, quality: QualityTier = 'c') {
+    return eat(this.state, this.bus, id, quality);
+  }
+
+  /** Take the queued dish off the queue. */
+  cancelQueuedMeal() {
+    return cancelQueuedMeal(this.state, this.bus);
   }
 
   // ---------- Music ----------
