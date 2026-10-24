@@ -38,9 +38,16 @@ another's reading.
 
 ## 3. Condition resistance (user, 2026-10-23 and 2026-10-24)
 
-- **Every condition can be resisted.** Today a condition is resisted through
-  its element's resistance; the 13 harmful conditions with no element cannot be
-  resisted at all yet (list in docs/COOKING_REVIEW.md, follow-up).
+- **Every ordinary condition can be resisted.** Today a condition is resisted
+  through its element's resistance (37 harmful conditions carry one).
+- **Some conditions are exempt by design** (user, 2026-10-24): special unique
+  conditions (`fasting`), state-based conditions (`flat_footed`, `surprised`)
+  and environmental conditions (`toll_steam`; `toll_ice` and `toll_overdrive`
+  are the same boss fight's phases and are treated the same until the user
+  says otherwise). These have no resistance.
+- **Seven are undecided; the user will review them:** `doused`,
+  `psionic_compression`, `overgrowth`, `proliferating`, `unfolded`, `queasy`,
+  `psionic_read`.
 - **Immunity at 100%.** A condition does not land when the target's resistance
   to it, minus the applier's penetration, is 100% or more. Same rule for
   players and monsters. A status can also grant immunity outright
