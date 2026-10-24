@@ -50,11 +50,17 @@
   const rows = $derived(trackRows(gs, disc, bench, duration));
   const outside = $derived(outsideSlots(disc));
   const cook = $derived(cookTimeRows(gs, disc, bench, duration));
-  const hint = $derived(heatHint(disc, bench, duration, rows, cook, check));
+  const hint = $derived(heatHint(gs, disc, bench, duration, rows, cook, check));
   const skillName = $derived(SKILLS[disc.skill]?.name ?? disc.skill);
 
   /** Tick marks along the axis, every other unit. */
   const ticks = $derived(Array.from({ length: Math.floor(max / 2) + 1 }, (_, i) => i * 2));
+
+  /** The lane's width in pixels, to tell which cook-time windows have room for their name. */
+  let areaWidth = $state(320);
+  const labelOf = (w: CookWindow) => w.outcome?.name ?? 'no dish';
+  /** About 6.4 px a character at the window label's size, plus its padding. */
+  const roomy = (w: CookWindow) => ((w.to - w.from) / max) * areaWidth >= labelOf(w).length * 6.4 + 12;
 
   const pct = (units: number) => `${((units / max) * 100).toFixed(2)}%`;
   const units1 = (n: number) => n.toFixed(1);
@@ -81,7 +87,7 @@
 <div class="heat-track" style="--ht-steps: {max / 2}">
   <div class="ht-row ht-axis">
     <span class="ht-name ht-dim">Cook time, in units</span>
-    <div class="ht-area">
+    <div class="ht-area" bind:clientWidth={areaWidth}>
       <i class="ht-after" style="left: {pct(duration)}"></i>
       {#each ticks as t (t)}
         <b class="ht-tick" style="left: {pct(t)}">{t}</b>
@@ -142,7 +148,7 @@
         <span>{c.tag.charAt(0).toUpperCase() + c.tag.slice(1)} cook time</span>
         <small class="ht-dim">decides the dish</small>
       </div>
-      <div class="ht-area ht-windows">
+      <div class="ht-area ht-windows" class:ht-capped={c.windows.some((w) => !roomy(w))}>
         <i class="ht-after" style="left: {pct(duration)}"></i>
         {#if c.mean === null}
           <span class="ht-dim ht-hold">Put {c.tag} in a row to see its cook time.</span>
@@ -153,7 +159,13 @@
               class:ht-on={w === c.here}
               style="--c: {windowColour[w.side]}; left: {pct(w.from)}; width: calc({pct(w.to - w.from)} - 2px)"
               title="{w.outcome?.name ?? 'No dish'}: {c.tag} {windowWords(w, max)}"
-            >{w.outcome?.name ?? 'no dish'}</span>
+            >{#if roomy(w)}{labelOf(w)}{/if}</span>
+          {/each}
+          <!-- A window too narrow for its name is named under the strip instead of cut off. -->
+          {#each c.windows.filter((w) => !roomy(w)) as w (w.from)}
+            <span class="ht-cap" style="--c: {windowColour[w.side]}; right: calc(100% - {pct(w.to)})">
+              {labelOf(w)}: {c.tag} {windowWords(w, max)}
+            </span>
           {/each}
           <i class="ht-mark" style="left: {pct(c.mean)}"></i>
         {/if}
@@ -377,6 +389,18 @@
   /* The cook-time row: which dish each stretch of the axis makes. */
   .ht-windows {
     min-height: 40px;
+  }
+
+  .ht-windows.ht-capped {
+    min-height: 56px;
+  }
+
+  .ht-cap {
+    position: absolute;
+    top: 34px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    color: var(--c);
   }
 
   .ht-hold {

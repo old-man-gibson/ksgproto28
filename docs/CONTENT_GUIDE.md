@@ -1256,7 +1256,11 @@ cookware sit in an outside-time row; while a run is going at the bench the
 playhead reads the job's own progress. The cook-time row lists only the windows of
 dishes the player can make (card read, or none needed), and the default dish for
 the rest of the axis. **A window whose card is unread is never drawn**, edges
-included: the card is what teaches its numbers. Every cooking bench's dish
+included: the card is what teaches its numbers. The hint line's fixes (a slot, a
+swap, a cook length) are each asked of `exposureInfo` for the part in that place,
+never guessed from which side of its range it is on, because a slot's exposure is
+`duration × (1 − at)` and a different cook length moves every slot by a different
+amount; when nothing fixes it the line says so. Every cooking bench's dish
 preview has a collapsible grade ledger (`ui/lib/GradeLedger.svelte`, words in
 `ui/lib/gradeLedger.ts`) built on `cookLedger`.
 
