@@ -3035,14 +3035,30 @@ export interface RuneTechniqueMod {
   grantsFork?: string;
 }
 
+/** One typed on-hit rider of a rune: a damage type and how much of it. */
+export interface RuneRider {
+  type: DamageType;
+  value: number;
+}
+
+/**
+ * The riders of a rune effect as a list. Authored data writes one rider as a
+ * bare object; a carved rune holds one rider per damage type, as a list.
+ * Every reader goes through this so both shapes mean the same thing.
+ */
+export function runeRiders(riders: RuneRider | RuneRider[] | undefined): RuneRider[] {
+  if (!riders) return [];
+  return Array.isArray(riders) ? riders : [riders];
+}
+
 /** What a rune grants in ONE context (a rune defines up to three of these). */
 export interface RuneEffect {
   /** Stat modifiers while the host item is equipped. */
   mods?: Modifier[];
-  /** Weapon context only: flat typed damage added to every weapon hit. */
-  bonusDamage?: { type: DamageType; value: number };
-  /** Weapon context only: fraction of each hit dealt again as this type (0.12 = 12%). */
-  bonusDamagePct?: { type: DamageType; value: number };
+  /** Weapon context only: flat typed damage added to every weapon hit. One rider, or a list. Read with runeRiders. */
+  bonusDamage?: RuneRider | RuneRider[];
+  /** Weapon context only: fraction of each hit dealt again as this type (0.12 = 12%). One rider, or a list. Read with runeRiders. */
+  bonusDamagePct?: RuneRider | RuneRider[];
   /** Weapon context only: graph surgery on specific techniques. */
   techniqueMods?: RuneTechniqueMod[];
 }
@@ -3070,12 +3086,12 @@ export interface CarvedRune {
   /**
    * The patterns cut into the slab — what the rune fundamentally does. A slab
    * takes one to begin with and up to three as the carver's hands steady.
+   * A multiset: cut order does not change the rune (see carvedKey).
    */
   patterns: string[];
   /**
-   * The slab it was cut into, and how good it was. A fine tool can bring this
-   * out a grade better than the stone started, which is the only mark the tool
-   * leaves — the rune stays purely a record of what it is made of.
+   * The slab it was cut into, and its grade. The grade is the slab's own: the
+   * carving tool never changes it, so the rune stays a record of what went in.
    */
   stone: GradedStack;
   /**
