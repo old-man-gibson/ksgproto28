@@ -251,14 +251,15 @@ export const LOG_TEXT = {
 
   // ---------- runecarving ----------
   'runecarving.carved_named': '{icon} Carved {name} (named rune).',
-  'runecarving.carved': '{icon} Carved: {name}{clean}',
-  'runecarving.clean_cut': ' (grade up)',
+  'runecarving.carved': '{icon} Carved: {name}',
   'runecarving.reason.no_such_pattern': 'No such pattern',
   'runecarving.reason.pattern_level': '{name} needs Runecarving {level}',
   'runecarving.reason.nothing_chosen': 'No rune chosen to carve',
   'runecarving.reason.too_many_copies': 'No slab can hold {copies} of one rune',
   'runecarving.reason.slab_grade': '{copies}× {name} needs a {grade} slab or better',
   'runecarving.reason.no_slab': 'No slab on the bench',
+  'runecarving.reason.slab_refuse': 'A {grade} slab cannot be cut: it would subtract from the rune',
+  'runecarving.reason.adornment_refuse': '{name} at {grade} cannot be worked in: it would subtract from the rune',
   'runecarving.slab_split': '💥 Slab split. Work lost.',
 
   // ---------- runes ----------
