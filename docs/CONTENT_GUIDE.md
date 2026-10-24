@@ -1280,9 +1280,10 @@ Signature. The counters reset with the run; the Cook's Notes prestige boon
 novelty domain `cookery` is keyed by the same dish id (docs/NOVELTY_DOMAINS.md).
 The cook that crosses a threshold says so, as extra tally entries on its own
 "Cooked:" log line (so a bench run still folds into one line): at 25, for a dish
-with a heat window, "Cook's Book: <Dish> cook time noted (25 cooks)."; at 100,
+with a heat window, "Cook's Book: <Dish> cook time noted (25 cooks)"; at 100,
 for a dish with a Signature, "<Dish> is now a Signature dish: eating it also
-gives <condition> (100 cooks)." A threshold the Cook's Notes boon already carried
+gives <condition> (100 cooks)". The entries carry no final period because the
+tally joins them with ", ". A threshold the Cook's Notes boon already carried
 over is not announced again.
 
 **The Cook's Book on screen** (`ui/lib/CookBook.svelte`; rows and words in
@@ -1302,20 +1303,33 @@ made that needs no card shows its name with zero counts. The header line counts
 dishes, not rows ("6 of 19 dishes made"; the Traveler's Ration is one).
 
 **The plate card** (`ui/lib/PlateCard.svelte`, built by `plateFor` in
-`ui/lib/cookBook.ts`). `BenchPanel` listens for `cooked` events from its own bench
-and shows the latest dish under the preview: the grade stamp in the tier colour,
-dish name, "made N · best <grade>" from the Book, and notes: "new best" (the best
-grade rose with this cook; not said for a dish's first cook), "cook time shown in
-the Cook's Book" (this cook made it known, for a dish that has one), "Signature
-dish" (earned), "could have been Fine to Superb" (only when the preview promised a
-spread) and "N cooked with this layout". What a cook changed is found by comparing
-the dish's Book row (`dishMarks`) before and after the event, so a threshold the
-Cook's Notes boon already carried does not read as news. The card clears when the
-layout or the cook length changes and is gone when the bench closes; once a bench
-has cooked a dish its space stays reserved, so the Cook button does not move.
-Stove runs from the bench window are single cooks (`startBenchWork` with
-`count: 1`); the run buttons exist only on benches whose outcomes are cuts or
-brews.
+`ui/lib/cookBook.ts`). `BenchPanel` shows the latest dish cooked at its bench: the
+grade stamp in the tier colour, dish name, "made N · best <grade>" from the Book,
+and notes: "new best" (the best grade rose with this cook; not said for a dish's
+first cook), "cook time shown in the Cook's Book" (this cook made it known, for a
+dish that has one), "Signature dish" (earned), "could have been Fine to Superb"
+(only when the preview promised a spread) and "N cooked with this layout". What a
+cook changed is found by comparing the dish's Book row (`dishMarks`) before and
+after the event, so a threshold the Cook's Notes boon already carried does not read
+as news. `plateTracker` hears the `cooked` events of EVERY bench and refreshes the
+dish's row on each: a dish two benches make (the Traveler's Ration, the Scorched
+Mess) cooked at the grill while the stove window is open must not make the next
+stove cook compare itself with a row from before the grill's. Only a cook at the
+window's own bench makes a card. The card clears when the layout or the cook length
+changes and is gone when the bench closes.
+
+**Bench window height** (a dish bench's window is tight: heat track, dish, ledger,
+Cook, card). The card sits under the Cook row, not above it, because its height
+depends on what it has to say and nothing above Cook may move when it appears,
+changes or clears; its usual height (`.plate-fill` in `BenchPanel.svelte`) is
+reserved from the moment the bench opens. On a dish bench the picker well is shut
+to nothing (timed bench) or one line (the others) until a slot's picker opens, and
+the picker then takes its full height. Checked at 1280×768 and 1280×900 in both
+themes on the Granary Kitchens stove with two slots filled: no scrollbar, Cook and
+the card both in view, Cook's position the same before the first cook, with the
+card showing and with the card cleared. Stove runs from the bench window are single
+cooks (`startBenchWork` with `count: 1`); the run buttons exist only on benches
+whose outcomes are cuts or brews.
 
 **Eating a Signature dish** logs `consumables.used_signature`: "Ate Fine Hearty
 Stew. Signature: also Stoked ×0.84." The dose is the Signature's own intensity

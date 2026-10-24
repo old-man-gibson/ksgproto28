@@ -1039,8 +1039,9 @@ describe('the cook never amplifies a harmful condition a dish carries', () => {
 });
 
 describe('the Book says so when a cook crosses a threshold', () => {
-  const TIME_NOTE = "Cook's Book: Seared Stew cook time noted (25 cooks).";
-  const SIGNATURE_NOTE = 'Seared Stew is now a Signature dish: eating it also gives Well Fed (100 cooks).';
+  // No trailing period: the tally joins its entries with ", ".
+  const TIME_NOTE = "Cook's Book: Seared Stew cook time noted (25 cooks)";
+  const SIGNATURE_NOTE = 'Seared Stew is now a Signature dish: eating it also gives Well Fed (100 cooks)';
   /** A kitchen that has read the Seared Stew card. */
   function searedKitchen(): Game {
     const g = kitchen(1);
@@ -1083,7 +1084,7 @@ describe('the Book says so when a cook crosses a threshold', () => {
     const g = kitchen(1);
     g.state.stats[cookedKey('hearty_stew')] = 97;
     cookStew(g, 5);
-    expect(notes(g)).toEqual(['Hearty Stew is now a Signature dish: eating it also gives Stoked (100 cooks).']);
+    expect(notes(g)).toEqual(['Hearty Stew is now a Signature dish: eating it also gives Stoked (100 cooks)']);
   });
 
   it('says nothing at 25 for a dish with no window of its own, and nothing for the failure dish', () => {
@@ -1140,7 +1141,9 @@ describe('the Book says so when a cook crosses a threshold', () => {
     const logged = g.state.log.filter((l) => l.msg.includes('cook time noted'));
     expect(logged).toHaveLength(1);
     expect(logged[0].group).toBe('bench:cooking');
-    expect(logged[0].msg).toMatch(/Cooked: .*Seared Stew.*Cook's Book: Seared Stew cook time noted \(25 cooks\)\./);
+    expect(logged[0].msg).toMatch(/Cooked: .*Seared Stew.*Cook's Book: Seared Stew cook time noted \(25 cooks\)/);
+    // The tally's ", " is the only punctuation between entries: no "., " run.
+    expect(logged[0].msg).not.toMatch(/\.,/);
     // Nothing logged a line that is only the note.
     expect(g.state.log.some((l) => l.msg.startsWith("Cook's Book:"))).toBe(false);
   });

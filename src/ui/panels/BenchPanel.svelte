@@ -25,7 +25,7 @@
   import { adornmentEffectAt, namedRuneFor, patternEffectAt, resolveRune } from '../../core/systems/runes';
   import { describeRuneEffect, fmt, pct } from '../lib/format';
   import { recallLayout, rememberLayout } from '../lib/benchLayouts';
-  import { dishMarks, plateFor, type DishMark, type Plate } from '../lib/cookBook';
+  import { plateTracker, type Plate } from '../lib/cookBook';
   import type { CraftSlotDef, GradedStack, QualityTier, RuneContext } from '../../core/types';
   import Tip from '../lib/Tip.svelte';
   import GradeBadge from '../lib/GradeBadge.svelte';
@@ -125,23 +125,22 @@
 
   /** A bench that makes dishes shows a plate card; the cutting board's cuts are not dishes. */
   const dishBench = $derived(disc.skill === 'cooking' && disc.outcomes.some((o) => o.result.kind === 'material'));
+  /**
+   * A timed dish bench with no picker open has nothing in the picker well at all:
+   * its heat track's hint line already says "Click a row's square to put an
+   * ingredient in it", and the window has no height to spare for the same words twice.
+   */
+  const bare = $derived(dishBench && !!disc.timeline && !picking);
   /** The latest dish cooked here. Cleared when the layout changes; gone when the bench closes. */
   let plate = $state<Plate | null>(null);
-  /** A dish has been cooked here since the bench opened: the card's space stays reserved from then on. */
-  let plated = $state(false);
-  /** Where each dish stood in the Cook's Book before its latest cook here: the card says what the cook changed. */
-  let marks = new Map<string, DishMark>();
 
   onMount(() => {
     if (!dishBench) return;
-    marks = dishMarks(gs);
+    // Hears every bench's cooks, not only this one's (see plateTracker).
+    const tracker = plateTracker(gs, disc.id);
     return game.bus.on('cooked', (ev) => {
-      if (ev.discipline !== disc.id) return;
-      const after = dishMarks(gs).get(ev.dish);
-      if (!after) return;
-      plate = plateFor(ev, marks.get(ev.dish), after, (plate?.cooks ?? 0) + 1);
-      plated = true;
-      marks.set(ev.dish, after);
+      const made = tracker.cooked(ev, (plate?.cooks ?? 0) + 1);
+      if (made) plate = made;
     });
   });
 
@@ -617,8 +616,12 @@
     when you click a slot re-centres the window under the cursor, which makes
     laying out a sequence — where you click slot after slot — genuinely hard to
     aim at. Nothing here changes the bench's height; the options scroll inside.
+
+    The exception is a dish bench (`idle`, `bare`): its window is already full,
+    so with no picker open the well is a line or nothing, and a click on a slot
+    opens it. Slots are aimed at with the well shut, which is the same every time.
   -->
-  <div class="picker-well" class:timed={!!disc.timeline}>
+  <div class="picker-well" class:timed={!!disc.timeline} class:idle={dishBench && !picking} class:bare>
     {#if picking}
       {@const slot = open.find((s) => s.id === picking)!}
       {@const options = optionsFor(slot)}
@@ -668,7 +671,7 @@
           <div class="small dim">Nothing you own belongs here.</div>
         {/if}
       </div>
-    {:else}
+    {:else if !bare}
       <div class="picker-idle small dim">
         {ordered ? 'Click a step to fill it — order is the recipe.' : 'Click a slot to fill it.'}
       </div>
@@ -806,15 +809,6 @@
     {/if}
   </div>
 
-  {#if plated}
-    <!-- Kept after the first cook, card or not, like the picker well: a card that
-         came and went would move the Cook button, and the centred window would
-         walk away from the cursor. -->
-    <div class="plate-slot">
-      {#if plate}<PlateCard {plate} />{/if}
-    </div>
-  {/if}
-
   <div class="bench-actions">
     {#if job}
       <!-- Work underway: the bar is the craft in progress, the caption the run. -->
@@ -850,6 +844,16 @@
       <button class="small" onclick={clear}>Clear</button>
     {/if}
   </div>
+
+  {#if dishBench}
+    <!-- Under the Cook button, not above it: how tall the card is depends on what
+         it has to say, and nothing above Cook may move when a card appears,
+         changes or clears. Its usual height is reserved from the moment the bench
+         opens, so the window does not re-centre either. -->
+    <div class="plate-slot">
+      <div class="plate-fill">{#if plate}<PlateCard {plate} />{/if}</div>
+    </div>
+  {/if}
 
   {#if ordered && gs.flasks?.length}
     <div class="carved">
@@ -988,6 +992,24 @@
      gives some back. Still a fixed height, so clicking a row never moves the bench. */
   .large .picker-well.timed {
     height: 126px;
+  }
+
+  /* A dish bench with no picker open is one line: its window has to fit the heat
+     track, the dish, the plate card and the Cook button. Opening a picker gives
+     the well its full height (the options scroll inside) and closing it gives the
+     height back; aiming at a slot always happens with the well closed. */
+  .picker-well.idle,
+  .large .picker-well.idle,
+  .large .picker-well.timed.idle {
+    height: auto;
+  }
+
+  .picker-well.idle .picker-idle {
+    padding: 4px 8px;
+  }
+
+  .picker-well.bare {
+    margin-top: 0;
   }
 
   .large .picker {
@@ -1312,10 +1334,22 @@
   .odds .risky { color: var(--danger); }
   .odds .good { color: var(--xp); }
 
-  /* As tall as a card with one line of notes, so the Cook button stays put. */
+  /* The card's usual height: one row (icon, name, notes, count), and on a narrow
+     bench the count and the notes each drop to a line of their own. A taller card
+     (several notes) grows the window below the Cook button, never above it. */
   .plate-slot {
-    min-height: 54px;
-    margin-bottom: 6px;
+    container-type: inline-size;
+    margin-top: 4px;
+  }
+
+  .plate-fill {
+    min-height: 42px;
+  }
+
+  @container (max-width: 460px) {
+    .plate-fill {
+      min-height: 84px;
+    }
   }
 
   .bench-actions {

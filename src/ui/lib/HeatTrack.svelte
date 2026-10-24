@@ -520,6 +520,19 @@
       display: none;
     }
 
+    /* The names of windows too narrow for their own are right-aligned to each
+       window's end, and on a narrow strip two of them meet. Each takes a line of
+       its own under the strip instead; the strip keeps the top 40px. */
+    .ht-windows.ht-capped {
+      min-height: 0;
+      padding-top: 40px;
+    }
+
+    .ht-cap {
+      position: static;
+      display: block;
+    }
+
     .ht-outside {
       grid-template-columns: 7.6em minmax(0, 1fr);
     }

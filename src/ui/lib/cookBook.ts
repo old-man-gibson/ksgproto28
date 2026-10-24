@@ -234,3 +234,25 @@ export function plateFor(
     cooks,
   };
 }
+
+/**
+ * What a bench window keeps between the `cooked` events it hears: where each dish
+ * stood in the Book after the last cook of it ANYWHERE. A dish more than one bench
+ * makes (the Traveler's Ration, the Scorched Mess) can be cooked at another bench
+ * while this window is open, so every event refreshes that dish's mark, and only
+ * a cook at this bench makes a card. Otherwise the next cook here would compare
+ * itself with a mark that predates the other bench's cook and call it a new best.
+ */
+export function plateTracker(state: GameState, benchId: string) {
+  const marks = dishMarks(state);
+  return {
+    /** The card for a cook at this bench; null (after noting the cook) for a cook at another. */
+    cooked(ev: CookedEvent, cooks: number): Plate | null {
+      const after = dishMarks(state).get(ev.dish);
+      if (!after) return null;
+      const before = marks.get(ev.dish);
+      marks.set(ev.dish, after);
+      return ev.discipline === benchId ? plateFor(ev, before, after, cooks) : null;
+    },
+  };
+}

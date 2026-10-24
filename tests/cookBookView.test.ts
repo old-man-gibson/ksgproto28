@@ -12,10 +12,12 @@ import {
   bookSummary,
   dishMarks,
   plateFor,
+  plateTracker,
   squaresLabel,
   tierColour,
   type BookRow,
   type CookedEvent,
+  type Plate,
 } from '../src/ui/lib/cookBook';
 import { describeMod, statTipLines, sumMods } from '../src/ui/lib/format';
 import { getDerivedStats } from '../src/core/systems/derived';
@@ -279,6 +281,39 @@ describe('the plate card', () => {
     const g = newGame();
     const { ev, before, after } = cookOnce(g, stew('c'));
     expect(plateFor(ev, before, after, 4).cooks).toBe(4);
+  });
+});
+
+describe('a window that hears every bench’s cooks', () => {
+  /** A stove window open since before the grill cooked anything; the Ration is made at both. */
+  function windowOpenAtStove() {
+    const g = newGame();
+    for (const q of ['c', 'a'] as QualityTier[]) grantGraded(g.state, 'forest_berries', q, 20);
+    const stoveRation = (): Placement => ({ main: at('wild_onion', 'c'), second: at('forest_berries', 'c') });
+    // The best Ration made at the stove so far is Fair.
+    expect(cook(g.state, g.bus, stoveRation(), STOVE, 12)!.quality).toBe('c');
+    const tracker = plateTracker(g.state, 'cooking');
+    const heard: (Plate | null)[] = [];
+    g.bus.on('cooked', (ev) => heard.push(tracker.cooked(ev, 1)));
+    return { g, stoveRation, heard };
+  }
+
+  it('does not call a Fair stove Ration a new best after the grill made a Superb one', () => {
+    const { g, stoveRation, heard } = windowOpenAtStove();
+    // A Superb Ration lands at the grill while the stove window is open.
+    expect(cook(g.state, g.bus, { main: at('forest_berries', 'a') }, DISCIPLINES.grilling)!.quality).toBe('a');
+    expect(cook(g.state, g.bus, stoveRation(), STOVE, 12)!.quality).toBe('c');
+    expect(heard[0]).toBeNull(); // the grill's cook makes no card here
+    expect(heard[1]!.news.newBest).toBe(false);
+    expect(heard[1]!.best).toBe('a'); // the Book's best is still the grill's Superb
+    expect(heard[1]!.made).toBe(3);
+  });
+
+  it('still says new best when the stove itself raises it', () => {
+    const { g, heard } = windowOpenAtStove();
+    const better: Placement = { main: at('wild_onion', 'a'), second: at('forest_berries', 'a') };
+    expect(QUALITY_ORDER.indexOf(cook(g.state, g.bus, better, STOVE, 12)!.quality)).toBeGreaterThan(QUALITY_ORDER.indexOf('c'));
+    expect(heard[0]!.news.newBest).toBe(true);
   });
 });
 

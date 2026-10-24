@@ -9,6 +9,10 @@
    * grade made, and what this cook changed (a new best, the cook time shown, a
    * Signature dish) with the range it could have rolled. Everything arrives in
    * `plate` (lib/cookBook.ts `plateFor`); this only draws it.
+   *
+   * On a bench window wide enough it is one row: icon, grade and name, the notes,
+   * the count. Narrow (a phone), the count and the notes each take a line under
+   * the name. The height the bench reserves for it is BenchPanel's `.plate-fill`.
    */
   let { plate }: { plate: Plate } = $props();
 
@@ -32,19 +36,17 @@
 
 <div class="plate-card" style="--tint: {tierColour(plate.quality)}" role="status">
   <span class="pc-dish" aria-hidden="true">{plate.icon}</span>
-  <div class="pc-main">
-    <div class="pc-title">
-      <GradeBadge tier={plate.quality} />
-      <span class="pc-stamp">{QUALITY_TIERS[plate.quality].name}</span>
-      <span class="pc-name">{plate.name}</span>
-    </div>
-    {#if news.length || facts.length}
-      <div class="pc-notes">
-        {#each news as note (note)}<span class="pc-news">{note}</span>{/each}
-        {#each facts as note (note)}<span>{note}</span>{/each}
-      </div>
-    {/if}
+  <div class="pc-title">
+    <GradeBadge tier={plate.quality} />
+    <span class="pc-stamp">{QUALITY_TIERS[plate.quality].name}</span>
+    <span class="pc-name">{plate.name}</span>
   </div>
+  {#if news.length || facts.length}
+    <div class="pc-notes">
+      {#each news as note (note)}<span class="pc-news">{note}</span>{/each}
+      {#each facts as note (note)}<span>{note}</span>{/each}
+    </div>
+  {/if}
   <div class="pc-made">{made}</div>
 </div>
 
@@ -54,7 +56,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 4px 12px;
-    padding: 6px 10px;
+    padding: 4px 10px;
     border: 1px solid var(--tint);
     border-radius: 6px;
     background: color-mix(in srgb, var(--tint) 12%, var(--bg-raised));
@@ -62,20 +64,14 @@
 
   .pc-dish {
     flex: none;
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
     display: grid;
     place-items: center;
-    font-size: 20px;
+    font-size: 17px;
     line-height: 1;
     border: 1px solid var(--tint);
     background: var(--bg);
-  }
-
-  /* A phone-width bench has no room for this beside the count, which then drops to its own line. */
-  .pc-main {
-    flex: 1 1 200px;
-    min-width: 0;
   }
 
   .pc-title {
@@ -96,8 +92,10 @@
     font-weight: 600;
   }
 
-  /* Short notes, each its own run, so a narrow bench wraps between them. */
+  /* Short notes, each its own run, so a long set wraps between them. */
   .pc-notes {
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 0 14px;
@@ -113,6 +111,26 @@
     flex: none;
     margin-left: auto;
     text-align: right;
+    white-space: nowrap;
     font-size: 13px;
+  }
+
+  @container (max-width: 460px) {
+    .pc-title {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .pc-made {
+      order: 3;
+      flex-basis: 100%;
+      margin-left: 0;
+      text-align: left;
+    }
+
+    .pc-notes {
+      order: 4;
+      flex-basis: 100%;
+    }
   }
 </style>
