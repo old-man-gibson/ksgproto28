@@ -510,7 +510,8 @@ describe('cures that work', () => {
     expect(listens('poison', 'poison')).toBe(true);
     expect(listens('rotting', 'poison')).toBe(true);
     expect(listens('bleeding', 'bleed')).toBe(true);
-    expect(listens('lacerated', 'bleed')).toBe(true);
+    // A laceration answers treatment (the salve's heal), not the cure: one rung a flask.
+    expect(listens('lacerated', 'bleed')).toBe(false);
   });
 
   it('a brewed salve removes a held poison', () => {
@@ -523,27 +524,41 @@ describe('cures that work', () => {
     expect(hasStatus(g.state, 'bleeding')).toBe(false);
   });
 
-  it('a rot eases to poison, a laceration to a bleed: one rung per cure', () => {
+  it('a rot eases to poison: one rung a flask, and the next flask ends it', () => {
     const rot = applySalve([{ id: 'rotting', intensity: 1 }]);
     expect(hasStatus(rot.state, 'rotting')).toBe(false);
     expect(hasStatus(rot.state, 'poison')).toBe(true);
 
-    // The cure alone, as a consumable that only cures would fire it.
-    const cut = fresh();
-    applyStatus(cut.state, cut.state, { id: 'lacerated', intensity: 1 }, 'test');
-    fireStatusEvent(cut.state, cut.state, 'cure', { tag: 'bleed' });
+    // The cure alone fires one rung each time it is spoken.
+    const again = fresh();
+    applyStatus(again.state, again.state, { id: 'rotting', intensity: 1 }, 'test');
+    fireStatusEvent(again.state, again.state, 'cure', { tag: 'poison' });
+    expect(hasStatus(again.state, 'poison')).toBe(true);
+    fireStatusEvent(again.state, again.state, 'cure', { tag: 'poison' });
+    expect(hasStatus(again.state, 'poison')).toBe(false);
+  });
+
+  it('a laceration eases to a bleed in ONE flask, not two: the next flask closes it', () => {
+    // A Mendroot Salve is treatment (heal kind 'salve') and cure at once. The
+    // cure goes first and names no laceration; the heal then eases it one rung.
+    // Were the heal first, the bleed it leaves would meet the cure and close:
+    // two rungs, against what the tooltip and BREWING.md promise.
+    const cut = applySalve([{ id: 'lacerated', intensity: 1 }]);
     expect(hasStatus(cut.state, 'lacerated')).toBe(false);
     expect(hasStatus(cut.state, 'bleeding')).toBe(true);
-    fireStatusEvent(cut.state, cut.state, 'cure', { tag: 'bleed' });
+
+    // A second salve (flasks share one clock) closes what is left.
+    cut.state.totalTicks += 1000;
+    brew(cut.state, cut.bus, lay('pressed_oil', 'mendroot'));
+    expect(useFlask(cut.state, cut.bus, 0)).not.toBeNull();
     expect(hasStatus(cut.state, 'bleeding')).toBe(false);
   });
 
-  it('a Mendroot Salve is treatment AND cure, so it takes a laceration all the way', () => {
-    // The heal (kind 'salve') eases the laceration to a bleed, and the cure
-    // that follows closes that bleed. Two rungs from one flask.
-    const cut = applySalve([{ id: 'lacerated', intensity: 1 }]);
-    expect(hasStatus(cut.state, 'lacerated')).toBe(false);
-    expect(hasStatus(cut.state, 'bleeding')).toBe(false);
+  it('the cure alone does nothing to a laceration (it answers treatment)', () => {
+    const cut = fresh();
+    applyStatus(cut.state, cut.state, { id: 'lacerated', intensity: 1 }, 'test');
+    fireStatusEvent(cut.state, cut.state, 'cure', { tag: 'bleed' });
+    expect(hasStatus(cut.state, 'lacerated')).toBe(true);
   });
 
   it('leaves what it does not name alone', () => {

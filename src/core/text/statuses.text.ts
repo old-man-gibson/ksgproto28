@@ -38,7 +38,7 @@ export const STATUSES_TEXT: ProseTable = {
 
   'bleeding.desc': 'Deals 0.08 slashing damage per tick plus 0.15% of current health, at 30% rate out of combat. No timer. Each cut is its own stack; at 5 it escalates to Lacerated. Removed only by rest, a salve, a healing spell, or a bleed cure (a Mendroot Salve).',
 
-  'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and seals off 4% of maximum health per stack, up to 30%. No timer. Rest, a salve, a healing spell, or a bleed cure (a Mendroot Salve) reduces it to Bleeding; a second treatment closes that.',
+  'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and seals off 4% of maximum health per stack, up to 30%. No timer. Rest, a salve (a Mendroot Salve included), or a healing spell reduces it to Bleeding; a second treatment closes that.',
 
   'concussed.desc': 'Spells cannot be cast and attacks have a 12% miss chance per intensity, for 25 seconds. Rest, a salve, or a healing spell reduces intensity by 0.4. At intensity 3 it escalates to Dazed.',
 

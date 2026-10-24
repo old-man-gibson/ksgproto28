@@ -211,6 +211,27 @@ describe('resistanceProblems: who can resist what', () => {
     expect(lint({}, { test_title: { ...stomach, immune: { ids: ['queasy'], elements: ['poison'] } } })).toEqual([]);
   });
 
+  it('refuses a title whose immunity names a condition that does not exist, or names nothing', () => {
+    // A typo here would refuse nothing and say so nowhere.
+    const stomach: TitleDef = {
+      id: 'test_title', name: 'T', icon: 'T', desc: '', unlock: [], immune: { ids: ['queazy'] },
+    };
+    expect(lint({}, { test_title: stomach })).toEqual(["immune names unknown condition 'queazy'"]);
+    // One real id and one typo: only the typo is named.
+    expect(lint({}, { test_title: { ...stomach, immune: { ids: ['queasy', 'queazy'] } } })).toEqual([
+      "immune names unknown condition 'queazy'",
+    ]);
+    expect(lint({}, { test_title: { ...stomach, immune: {} } })).toEqual([
+      'immune names no condition and no element — it protects against nothing',
+    ]);
+    expect(lint({}, { test_title: { ...stomach, immune: { ids: [] } } })).toEqual([
+      'immune names no condition and no element — it protects against nothing',
+    ]);
+    // An element alone is a legal answer, and the real Iron Stomach is clean.
+    expect(lint({}, { test_title: { ...stomach, immune: { elements: ['poison'] } } })).toEqual([]);
+    expect(TITLES.iron_stomach.immune!.ids!.every((id) => !!STATUSES[id])).toBe(true);
+  });
+
   it('names the entry and where in it, for the forge', () => {
     const problems = resistanceProblems({ ...STATUSES, x: aStatus({ id: 'x', element: 'heat', unresistable: 'a test' }) });
     expect(problems).toEqual([

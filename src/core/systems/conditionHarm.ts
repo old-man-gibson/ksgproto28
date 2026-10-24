@@ -120,6 +120,9 @@ export interface ResistanceProblem {
  *  - Nothing can switch an unresistable condition off: no `immune.ids`, on a
  *    condition or on a title, may name one (a boss phase stays a boss phase).
  *    An `immune.elements` entry cannot reach it, since it has no element.
+ *  - A title's `immune` names something and every id in it is a real
+ *    condition (a typo would refuse nothing, silently). A condition's own
+ *    `immune` gets those two checks in the status lint of each layer.
  */
 export function resistanceProblems(
   statuses: Record<string, StatusDef>,
@@ -159,9 +162,19 @@ export function resistanceProblems(
       }
     }
   }
+  // A title's immunity is checked like a condition's own: it names something,
+  // every id is a real condition, and none is unresistable. (The status layers
+  // check a condition's `immune` for the first two themselves.)
   for (const title of Object.values(titles)) {
-    for (const id of title.immune?.ids ?? []) {
-      if (unresistable(id)) {
+    const immune = title.immune;
+    if (!immune) continue;
+    if (!immune.ids?.length && !immune.elements?.length) {
+      say('title', title.id, 'immune names no condition and no element — it protects against nothing', ['immune']);
+    }
+    for (const id of immune.ids ?? []) {
+      if (!statuses[id]) {
+        say('title', title.id, `immune names unknown condition '${id}'`, ['immune', 'ids']);
+      } else if (unresistable(id)) {
         say('title', title.id, `immune names '${id}', which is unresistable: nothing may switch it off`, ['immune', 'ids']);
       }
     }

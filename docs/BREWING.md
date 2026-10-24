@@ -146,8 +146,9 @@ the fastest way to feel a sequence out; the preview updates as you go.
 - **Only Salves cure, and only Salves treat a wound.** Mendroot's cure tags are
   ignored in every other form, and a Draught heals you without closing a
   bleed.
-- **A cure answers a tag.** Mendroot cures `poison` and `bleed`: Poisoned goes,
-  Rotting eases to Poisoned, Bleeding goes, Lacerated eases to Bleeding.
+- **A cure answers a tag, one rung a flask.** Mendroot cures `poison` and
+  `bleed`: Poisoned goes, Rotting eases to Poisoned, Bleeding goes. A Salve is
+  also treatment, so it eases Lacerated to Bleeding; a second Salve closes that.
 - **Elixirs don't restore, Draughts don't grant.** Calm water sustains, roused
   water bursts. Pick the one you wanted.
 - **An Oil reads the same registers a Flask does** — element and afflictions.

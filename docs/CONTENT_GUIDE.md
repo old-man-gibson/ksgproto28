@@ -1619,10 +1619,12 @@ remembered between fights).
 
 **Cure tags.** A `cure` event carries a tag, and a rule answers only its own:
 `poison` and `bleed` are what alchemy's Mendroot Salve emits, so `poison`
-(remove), `rotting` (back to poison), `bleeding` (remove) and `lacerated` (back
-to a bleed) each listen for theirs; `corrupted` waits on `cleansing`. A Mendroot
-Salve is also treatment (its heal is kind `salve`), so one salve eases a
-laceration to a bleed (the heal) and then closes that bleed (the cure).
+(remove), `rotting` (back to poison) and `bleeding` (remove) listen for theirs;
+`corrupted` waits on `cleansing`. `lacerated` listens for treatment only. A
+Mendroot Salve is both (its heal is kind `salve`), and the flask is one rung:
+`swallow` fires the cure BEFORE the heal, so the heal eases a laceration to a
+bleed and the cure never meets that bleed. Do not reorder them, and do not give
+`lacerated` a cure rule: either makes one flask close a laceration outright.
 
 **Other fields:** `ceilings` seal off part of a pool; `ceilingFromSpend` eats a
 share of what you spend from one; `ceilingPerTick` widens a wound for as long as

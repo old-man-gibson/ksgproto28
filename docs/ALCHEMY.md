@@ -101,7 +101,8 @@ spirit is a solvent that also agitates, which is why bombs start there.
   them grants is alchemy's own: Frostmoss `frosted`, Gloomcap `concealed`,
   Bloodwort `invigorated`. They once granted Xima's Rime, Veiled and Blood
   Communion, which are divine signatures and stay divine. Mendroot's cure tags
-  (`poison`, `bleed`) are heard by poison, rotting, bleeding and lacerated.
+  (`poison`, `bleed`) are heard by poison, rotting and bleeding; a Salve's
+  heal (treatment) is what eases a laceration, so a flask is one rung.
 - **Operators** — quicksilver (`agitate`), fixing salt (`fix` — quenches, and
   banks what it quenched as duration), brimstone (`ignite` — needs volatility
   ≥ 1.2, else it only fouls), bone ash (`clarify` — drops the weakest essence

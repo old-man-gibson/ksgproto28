@@ -350,10 +350,9 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     stacking: { mode: 'count', cap: 5 },
     duration: null,
     // One treatment brings it back to an ordinary bleed; the next one closes it.
-    removal: [
-      { on: 'heal', healKinds: ['rest', 'salve', 'spell'], effect: 'deescalate' },
-      { on: 'cure', tag: 'bleed', effect: 'deescalate' },
-    ],
+    // No `cure` rule on purpose: a Mendroot Salve is treatment AND a bleed cure,
+    // and a cure rule here would let one flask ease this and close the bleed.
+    removal: [{ on: 'heal', healKinds: ['rest', 'salve', 'spell'], effect: 'deescalate' }],
     dot: { type: 'slashing', maxHp: 0.002, outOfCombat: 0.3 },
     ceilings: [{ resource: 'hp', per: 0.04, max: 0.3 }],
   },
