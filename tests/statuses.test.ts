@@ -3,7 +3,7 @@ import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { ITEMS, MAIN_GENES, MONSTERS, SPOTS, STATUSES, TITLES } from '../src/core/registry';
 import { HUNGER_SLOW_CEILING } from '../src/core/data/statuses.data';
-import { RES_STAT_BY_TYPE, type StatusDef } from '../src/core/types';
+import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE, type MonsterDef, type StatusDef } from '../src/core/types';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { getDerivedStats } from '../src/core/systems/derived';
@@ -1726,6 +1726,126 @@ describe('immunity: resistance of 1, or a status that grants it', () => {
       }
     }
     expect(pairs).toContain('death_knight:poison');
+  });
+
+  /** Run `body` with an extra species registered, then remove it. */
+  function withSpecies(def: MonsterDef, body: () => void) {
+    MONSTERS[def.id] = def;
+    try {
+      body();
+    } finally {
+      delete MONSTERS[def.id];
+    }
+  }
+
+  it('a species whose TAGS give it resistance 1 is immune with nothing declared', () => {
+    // Lightning-tagged slimes resist lightning 0.7 at basic plus 0.1 per tier
+    // step (TAG_RESISTANCES), which is 1.0 at ancient. Damage already sees it;
+    // so must the condition.
+    const storm = (id: string, tier: MonsterDef['tier']): MonsterDef => ({
+      ...MONSTERS.slime_thunder_elite,
+      id,
+      tier,
+      resistances: undefined,
+    });
+    withSpecies(storm('test_storm_ancient', 'ancient'), () => {
+      withSpecies(storm('test_storm_elite', 'elite'), () => {
+        const g = fresh(52);
+        const ancient = monsterOf(g, 'test_storm_ancient');
+        expect(monsterStats(ancient).resistances.lightning).toBeCloseTo(0.9); // the damage clamp
+        expect(applyStatus(g.state, ancient, { id: 'jolted', intensity: 1 }, 'a spark')).toBeNull();
+        // One tier down it is 0.9: the floor, not a wall.
+        const elite = monsterOf(g, 'test_storm_elite');
+        expect(applyStatus(g.state, elite, { id: 'jolted', intensity: 1 }, 'a spark')!.intensity).toBeCloseTo(
+          APPLICATION_FLOOR,
+        );
+      });
+    });
+  });
+
+  it('a condition that dictates the resistance can take a declared 1 away', () => {
+    // `soaked` decides what poison resistance is (-0.5). It must lower the
+    // immunity too, or a drenched death knight would stay untouchable.
+    const g = fresh(53);
+    const knight = monsterOf(g, 'death_knight');
+    expect(applyStatus(g.state, knight, { id: 'poison', intensity: 1 }, 'a fang')).toBeNull();
+    applyStatus(g.state, knight, { id: 'soaked', intensity: 1 }, 'a bucket');
+    expect(hasStatus(knight, 'soaked')).toBe(true);
+    expect(monsterStats(knight).resistances.poison).toBeCloseTo(-0.5);
+    // And the dose lands deeper than a plain one: vulnerability, not just no wall.
+    expect(applyStatus(g.state, knight, { id: 'poison', intensity: 1 }, 'a fang')!.intensity).toBeGreaterThan(1);
+  });
+
+  it('elemental resistance counts toward the line for the elemental types only', () => {
+    // incomingSlice and monsterSlice both add resElemental to an elemental
+    // type's own resistance before the cap, so 0.95 + 0.05 is a full 1.
+    const g = fresh(54);
+    const poison = (stats: Record<string, number>) => {
+      const f = fresh(54);
+      return applyStatus(f.state, f.state, { id: 'poison', intensity: 1 }, 'a fang', stats);
+    };
+    expect(poison({ resPoison: 0.95, resElemental: 0.05 })).toBeNull();
+    expect(poison({ resPoison: 0.95, resElemental: 0.04 })).not.toBeNull();
+    // Slashing is not elemental: the bonus never reaches a bleed.
+    expect(ELEMENTAL_TYPES.has('slashing')).toBe(false);
+    const bleed = applyStatus(g.state, g.state, { id: 'bleeding', intensity: 1 }, 'a claw', {
+      resSlashing: 0.95,
+      resElemental: 0.05,
+    });
+    expect(bleed!.intensity).toBeCloseTo(APPLICATION_FLOOR);
+  });
+
+  it('the player’s elemental resistance is read through the real stat pipeline', () => {
+    const warding: StatusDef = {
+      id: 'test_warding',
+      name: 'Warding',
+      icon: '🛡️',
+      desc: 'Test-only: +90% poison resistance and +10% elemental resistance.',
+      stacking: { mode: 'highest' },
+      duration: null,
+      removal: [{ on: 'combatEnd', effect: 'remove' }],
+      mods: [
+        { stat: 'resPoison', op: 'add', value: 0.9 },
+        { stat: 'resElemental', op: 'add', value: 0.1 },
+      ],
+    };
+    withStatuses({ test_warding: warding }, () => {
+      const g = fresh(55);
+      applyStatus(g.state, g.state, { id: 'test_warding', intensity: 1 }, 'test');
+      const stats = getDerivedStats(g.state);
+      expect(stats.resPoison).toBeCloseTo(0.75); // capped; the 0.9 under it and the 0.1 beside it are not
+      expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang', stats)).toBeNull();
+      // Not a poison, not an element: still lands.
+      expect(applyStatus(g.state, g.state, { id: 'bleeding', intensity: 1 }, 'a claw', stats)).not.toBeNull();
+    });
+  });
+
+  it('a monster’s elemental resistance counts toward the line too', () => {
+    const bog: MonsterDef = { ...MONSTERS.death_knight, id: 'test_bog', resistances: { poison: 0.95, slashing: 0.95 } };
+    const plus5: StatusDef = {
+      id: 'test_hardened',
+      name: 'Hardened',
+      icon: '🛡️',
+      desc: 'Test-only: +5% elemental resistance.',
+      stacking: { mode: 'highest' },
+      duration: null,
+      removal: [{ on: 'combatEnd', effect: 'remove' }],
+      mods: [{ stat: 'resElemental', op: 'add', value: 0.05 }],
+    };
+    withSpecies(bog, () => {
+      withStatuses({ test_hardened: plus5 }, () => {
+        const g = fresh(56);
+        const m = monsterOf(g, 'test_bog');
+        expect(applyStatus(g.state, m, { id: 'poison', intensity: 1 }, 'a fang')!.intensity).toBeCloseTo(
+          APPLICATION_FLOOR,
+        );
+        removeStatus(m, 'poison');
+        applyStatus(g.state, m, { id: 'test_hardened', intensity: 1 }, 'test');
+        expect(applyStatus(g.state, m, { id: 'poison', intensity: 1 }, 'a fang')).toBeNull();
+        // The physical type has no elemental share.
+        expect(applyStatus(g.state, m, { id: 'bleeding', intensity: 1 }, 'a claw')).not.toBeNull();
+      });
+    });
   });
 
   it('a condition that grants resistance 1 makes its bearer immune, monster or player', () => {

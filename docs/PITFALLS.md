@@ -141,7 +141,9 @@ overload-recovery all ride them), so their sharp edges cut everywhere:
   side table (`noteUncappedResistance`), keyed by the block object: pass the
   block `getDerivedStats` returned. A copy (`{ ...stats }`) loses the record,
   and immunity then fails closed (the dose lands at the floor). Monsters read
-  their declared resistance plus condition mods, uncapped, in `statuses.ts`.
+  the damage pipeline's own pre-clamp figure (`monsterResistanceUnclamped`),
+  which `monsterStats.ts` hands to `statuses.ts` at load because the import
+  runs the other way. Both bearers add `resElemental` for the elemental types.
 - **Never let a school borrow another's signature condition** — author a
   native one (a test sweeps for this). Borrowed conditions also carry the
   wrong intensity scale (a unit-scale condition fed a quantity-scale

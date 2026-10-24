@@ -311,6 +311,14 @@ export function describeHeatWindow(window: { from?: number; to?: number }): stri
   return `${from ?? 0} or more`;
 }
 
+/** Every way to choose `size` of `items`, order ignored. */
+function subsetsOf<T>(items: T[], size: number): T[][] {
+  if (size <= 0) return [[]];
+  if (items.length < size) return [];
+  const [head, ...rest] = items;
+  return [...subsetsOf(rest, size - 1).map((tail) => [head, ...tail]), ...subsetsOf(rest, size)];
+}
+
 /**
  * Problems with the heat windows on one bench, as plain sentences keyed by
  * outcome id. Shared by `tests/content.test.ts` and `forge/lib/validate.ts`, so
@@ -324,10 +332,12 @@ export function describeHeatWindow(window: { from?: number; to?: number }): stri
  *    outcome's own requirements already cover. Without one, a player outside
  *    every window, or without the recipe card, would cook something other than
  *    what the same basket makes today.
- *  - Every window is reachable: some timeline option and some slot open at the
- *    outcome's level puts a part carrying the tag inside it. When an outcome
- *    declares several windows, one option must reach all of them (distinct slots
- *    are not checked).
+ *  - Every window is reachable: some timeline option and some choice of open
+ *    slots at the outcome's level put the tagged parts' MEAN exposure inside it.
+ *    A tag the outcome requires `count` times is tried over every `count` slots
+ *    that can hold it (a count above the number of slots is unreachable). When
+ *    an outcome declares several windows, one option must reach all of them
+ *    (distinct slots across windows are not checked).
  */
 export function heatWindowProblems(
   disc: CraftDisciplineDef,
@@ -380,11 +390,22 @@ export function heatWindowProblems(
           return tags.includes(tag) && s.accepts.some((a) => tags.includes(a));
         }),
       );
+    // Matching reads the MEAN over every tagged part, and the outcome needs at
+    // least `count` of them, so a window is reachable when some `count` slots
+    // average inside it: one slot landing there is not enough once two parts
+    // have to carry the tag.
+    const need = (tag: string) => Math.max(1, demand(tag));
     const reachable = disc.timeline.options.some((opt) =>
-      windows.every((w) => holders(w.tag).some((s) => inHeatWindow(opt.units * (1 - s.at!), w))),
+      windows.every((w) =>
+        subsetsOf(holders(w.tag), need(w.tag)).some((set) =>
+          inHeatWindow(set.reduce((sum, s) => sum + opt.units * (1 - s.at!), 0) / set.length, w),
+        ),
+      ),
     );
     if (!reachable) {
-      const named = windows.map((w) => `'${w.tag}' ${describeHeatWindow(w)}`).join(' and ');
+      const named = windows
+        .map((w) => `${need(w.tag) > 1 ? `${need(w.tag)} × ` : ''}'${w.tag}' ${describeHeatWindow(w)}`)
+        .join(' and ');
       say(
         `${disc.id}/${o.id}: no timeline option and entry slot open at level ${level} puts a part inside ` +
           `${named} — the dish could never be made`,

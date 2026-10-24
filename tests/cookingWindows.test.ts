@@ -642,6 +642,32 @@ describe('heat window lints (heatWindowProblems)', () => {
     expect(lint(withOutcomes([...STOVE.outcomes, under3(8)]))).toEqual([]);
   });
 
+  it('a tag required twice is reachable only if some two slots average inside the window', () => {
+    // Matching reads the mean over every meat part. With two required, the two
+    // slots open at level 0 (first and midway) average 6.7, 10.0 and 13.4 units
+    // at the three durations, so "under 6" is out of reach until the third slot
+    // opens at Cooking 8 (2.7 and 5.4 average 4.0 at the quick simmer).
+    const twoMeats = (minLevel: number, heat: CraftOutcomeDef['heat']): CraftOutcomeDef => ({
+      ...seared,
+      id: 'two_meats',
+      minLevel,
+      requires: [{ tag: 'meat', count: 2 }, { tag: 'vegetable' }],
+      heat,
+    });
+    const under6 = [{ tag: 'meat', to: 6 }];
+    expect(lint(withOutcomes([...STOVE.outcomes, twoMeats(0, under6)])).join('\n')).toMatch(/two_meats: .*2 × 'meat' under 6/);
+    expect(lint(withOutcomes([...STOVE.outcomes, twoMeats(8, under6)]))).toEqual([]);
+    // The same holds from above: the best pair at level 0 is 16 and 10.7, a
+    // mean of 13.4, short of 14.
+    const over14 = [{ tag: 'meat', from: 14 }];
+    expect(lint(withOutcomes([...STOVE.outcomes, twoMeats(0, over14)])).join('\n')).toMatch(/two_meats: .*could never be made/);
+    // A tag required once is unchanged: the single best slot decides.
+    expect(lint(withOutcomes([...STOVE.outcomes, { ...twoMeats(0, over14), requires: [{ tag: 'meat' }, { tag: 'vegetable' }] }]))).toEqual([]);
+    // And more parts than slots open is unreachable, whatever the window.
+    const threeMeats: CraftOutcomeDef = { ...twoMeats(0, [{ tag: 'meat', from: 0 }]), requires: [{ tag: 'meat', count: 3 }] };
+    expect(lint(withOutcomes([...STOVE.outcomes, threeMeats])).join('\n')).toMatch(/could never be made/);
+  });
+
   it('refuses an empty window', () => {
     const empty: CraftOutcomeDef = { ...seared, id: 'empty', heat: [{ tag: 'meat', from: 10, to: 5 }] };
     expect(lint(withOutcomes([...STOVE.outcomes, empty])).join('\n')).toMatch(/empty: .*is empty/);

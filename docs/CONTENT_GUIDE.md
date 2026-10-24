@@ -1230,8 +1230,9 @@ window, then makes what the same basket always made. Windowed dishes are
 gated by a recipe card whose name and description state the window in plain
 numbers. `heatWindowProblems` (`systems/disciplines.ts`) lints this in both
 layers (`tests/content.test.ts`, `forge/lib/validate.ts`): a timed bench, a
-fallback, a non-empty window, and a window some timeline option × open slot can
-reach at the outcome's level. The stove's first set: Seared Stew (meat under 6,
+fallback, a non-empty window, and a window some timeline option can reach at the
+outcome's level. Reachable means the MEAN over the tagged parts: a tag required
+`count` times is tried over every `count` open slots that can hold it. The stove's first set: Seared Stew (meat under 6,
 `stoked`), Hearty Stew (fallback), Braised Meat (meat 14 or more, `well_fed`
 ×1.5 for 15 minutes), Steeped Broth (herb 8 or more, `steeped`), Mushroom Broth
 (fallback).
@@ -1335,11 +1336,18 @@ deepens the dose.
 read before any cap, minus the applier's `penetration`, at or above
 `IMMUNITY_RESISTANCE` (1) and the condition does not land at all
 (`applyStatus` returns null). Penetration enters only that test; the share that
-lands below it is read from the bearer's own resistance, unchanged. Both bearers:
-a monster's resistance is its declared value plus its conditions' mods (the
-[-1, 0.9] clamp applies after the test), and the player's is read from the
+lands below it reads the same resistance, unchanged. It is the figure the
+damage pipeline stacks for that element, before the cap: the type's own
+resistance plus `resElemental` for the elemental types (`ELEMENTAL_TYPES`).
+For a monster that is `monsterResistanceUnclamped` (`monsterStats.ts`): innate
+value (declared, else from its tags), its conditions' mods, derived mods,
+overrides and floors, so a lightning-tagged ancient species resists `jolted`
+for the reason it resists a bolt, and a `soaked` death knight is no longer
+immune to poison. `statuses.ts` cannot import that module, so `monsterStats.ts`
+registers it at load (`setMonsterResistanceReader`). For the player it is the
 pre-cap record `computeDerivedStats` leaves on the stat block, because
-`resistCap` (0.75) holds the stat itself under 1. `applyStatus` takes the
+`resistCap` (0.75) holds the stat itself under 1. A condition's damage ticks
+on a monster still read the narrower declared-plus-mods value. `applyStatus` takes the
 applier's penetration as its last argument: the player's stat where the player
 inflicts, the flask's own where a flask does, 0 everywhere else. Monsters have no
 penetration stat.

@@ -11,7 +11,7 @@ import type {
   StatusInstance,
   StatusRemoval,
 } from '../types';
-import { RES_STAT_BY_TYPE } from '../types';
+import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE } from '../types';
 import { STATUSES } from '../data/statuses.data';
 import { MONSTERS } from '../data/monsters.data';
 import { chance } from '../engine/rng';
@@ -129,6 +129,25 @@ export function noteUncappedResistance(stats: object, over: Record<string, numbe
 }
 
 /**
+ * A live monster's resistance to a type, as its damage pipeline stacks it
+ * before the body's clamp: the species' innate value (declared, else from its
+ * tags), its conditions' mods, derived mods, overrides and floors, plus
+ * `resElemental` for the elemental types.
+ *
+ * Registered by `monsterStats.ts` when it loads. This module is a near-leaf and
+ * `monsterStats.ts` imports it, so it cannot import that pipeline back; the
+ * reader is handed over instead. Until it is registered the monster branch
+ * falls back to the narrower declared-plus-mods reading, so a test or tool that
+ * never loads `monsterStats.ts` still runs.
+ */
+type MonsterResistanceReader = (monster: MonsterInstance, type: DamageType) => number;
+let monsterResistanceReader: MonsterResistanceReader | undefined;
+
+export function setMonsterResistanceReader(reader: MonsterResistanceReader): void {
+  monsterResistanceReader = reader;
+}
+
+/**
  * How much of an incoming dose survives the bearer's resistance to it; 0 when
  * the bearer cannot be affected by it at all.
  *
@@ -139,10 +158,13 @@ export function noteUncappedResistance(stats: object, over: Record<string, numbe
  * application: that is every self-granted buff in the game, and the absence is
  * the authoring, not an omission.
  *
- * Immunity: the bearer's resistance to the element, read BEFORE any cap, minus
- * the applier's `penetration`, at or above `IMMUNITY_RESISTANCE` means nothing
- * lands. Penetration enters only this test; the share that lands below it is
- * still read from the bearer's own resistance, unchanged.
+ * ONE figure answers both questions, for both bearers: the resistance the
+ * damage pipeline stacks for that element BEFORE its cap (the type's own
+ * resistance, plus `resElemental` for the elemental types; for a monster also
+ * its tag-derived innate value, derived mods, overrides and floors). Minus the
+ * applier's `penetration`, at or above `IMMUNITY_RESISTANCE` means nothing
+ * lands. Penetration enters only that test; the share that lands below it reads
+ * the same figure, unchanged.
  *
  * The player's stat block is passed in, because this module cannot reach
  * derived.ts — the same contract `tickStatuses` already works under. Passing it
@@ -158,19 +180,20 @@ function applicationMult(
 ): number {
   if (!def.element) return 1;
   let res: number;
-  let uncapped: number;
   if (bearer === state) {
     // No block passed means the caller cannot see one, not that the player is
     // unarmoured — leave the dose alone rather than inventing a resistance.
     const key = RES_STAT_BY_TYPE[def.element];
     const own = stats?.[key];
     if (own === undefined) return 1;
-    res = own;
-    uncapped = UNCAPPED_RESISTANCE.get(stats!)?.[key] ?? own;
+    res =
+      (UNCAPPED_RESISTANCE.get(stats!)?.[key] ?? own) +
+      (ELEMENTAL_TYPES.has(def.element) ? (stats!.resElemental ?? 0) : 0);
   } else {
-    res = uncapped = monsterResistanceUncapped(bearer, def.element);
+    res = (monsterResistanceReader ?? monsterResistanceUncapped)(bearer as MonsterInstance, def.element);
   }
-  if (uncapped - penetration >= IMMUNITY_RESISTANCE) return 0;
+  // The epsilon is for sums that are 1 on paper: 0.7 + 3 × 0.1 is a hair under.
+  if (res - penetration >= IMMUNITY_RESISTANCE - 1e-9) return 0;
   // Vulnerability amplifies by the same arithmetic it resists by; the clamp is
   // the one `bearerResistance` applies to monsters, extended to the player so
   // equipment cannot stack its way past the floor.
@@ -1286,9 +1309,12 @@ function bearerResistance(
 }
 
 /**
- * A monster's resistance before the [-1, 0.9] clamp: the species' declared
- * value plus what its conditions add. The immunity test reads this, because the
- * clamp would hold a body that resists a condition completely to 0.9.
+ * A monster's resistance before the [-1, 0.9] clamp, in the narrow reading: the
+ * species' DECLARED value plus what its conditions add. It does not see tag-
+ * derived innate resistance, overrides, floors or `resElemental`, which is why
+ * application no longer uses it (see `setMonsterResistanceReader`). It remains
+ * what a condition's damage ticks read through `bearerResistance`, and the
+ * fallback while the full pipeline is not registered.
  */
 function monsterResistanceUncapped(bearer: GameState | MonsterInstance, type: DamageType): number {
   const inst = bearer as MonsterInstance;
