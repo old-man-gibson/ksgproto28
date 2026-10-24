@@ -38,8 +38,10 @@ another's reading.
 
 ## 3. Condition resistance (user, 2026-10-23 and 2026-10-24)
 
-- **Every ordinary condition can be resisted.** Today a condition is resisted
-  through its element's resistance (37 harmful conditions carry one).
+- **Every ordinary condition can be resisted.** A condition is resisted
+  through its element's resistance. After the 2026-10-24 rulings 40 harmful
+  conditions carry an element and 10 are marked `unresistable` (with a reason);
+  a lint in both validation layers keeps that total for new conditions.
 - **Some conditions are exempt by design** (user, 2026-10-24): special unique
   conditions (`fasting`), state-based conditions (`flat_footed`, `surprised`)
   and environmental conditions (`toll_steam`; `toll_ice` and `toll_overdrive`
