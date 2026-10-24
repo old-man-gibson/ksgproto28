@@ -69,11 +69,14 @@ Each one was checked against the code on 2026-10-23.
 - **F5. The stove mints gold.** Fair meat and onion cost about 10 gold at the
   Larder after the hello. A Hearty Stew sells for value 14 × grade multiplier
   (`gradedUnitPrice`, `systems/equipment.ts` 223): Fair 14, Fine 22, Superb 35,
-  Divine 56. A stew takes 12 s. Bench runs repeat a layout, and offline
-  catch-up runs ordinary ticks for up to 8 h (`save/offline.ts`), about 2400
-  stews a night: about +29k gold at Cooking 15, +110k at 45. The band-1
-  economy holds about 1k gold at the end of the band. The shop no-arbitrage law
-  does not cover this; it is crafting value-add.
+  Divine 56. A stew takes 12 s. Correction (2026-10-23, found while building
+  round 2): the stove has no repeat button. Only benches that make cuts or
+  brews offer bench runs (`BenchPanel.svelte`), so each stew is one click and
+  nothing cooks offline. The earlier "about 2400 stews a night" figure needs
+  a run started through code, which players cannot do. At Cooking 45 that is
+  +46 gold per click. The band-1 economy holds about 1k gold at the end of the
+  band. The shop no-arbitrage law does not cover this; it is crafting
+  value-add. Answer 1 allows it.
 - **F6. The stove hides its own rules.** Seen on the live stove (port 5599,
   gothic theme) during the review:
   - The exposure band appears only in the tooltip of a filled cell
