@@ -302,6 +302,14 @@ describe('the tool and the risk of splitting', () => {
     expect(armed).toBeLessThan(bare);
   });
 
+  it('an F-grade tool counts as no tool, never worse', () => {
+    const g = fresh();
+    const bare = failureChance(g.state, bench('c'));
+    expect(failureChance(g.state, bench('c', 'pattern_might', { tool: at('steel_burin', 'f') }))).toBe(bare);
+    // The next grade up is the first that helps.
+    expect(failureChance(g.state, bench('c', 'pattern_might', { tool: at('steel_burin', 'e') }))).toBeLessThan(bare);
+  });
+
   it('every extra cut is another thing that can go wrong', () => {
     const g = fresh();
     g.state.skills.runecarving = { level: 25, xp: 0 };

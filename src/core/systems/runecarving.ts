@@ -83,7 +83,8 @@ export const FAILURE_PER_LEVEL = 0.02;
 export function failureChance(state: GameState, placement: Placement): number {
   const patterns = patternSlots(state).filter((s) => placement[s.id]).length;
   const tool = placement.tool;
-  const toolGrade = tool ? qualityMult(tool.quality) : 0;
+  // An F tool counts as no tool; it must never make the split chance worse.
+  const toolGrade = tool ? Math.max(0, qualityMult(tool.quality)) : 0;
 
   let risk = BASE_FAILURE + Math.max(0, patterns - 1) * FAILURE_PER_EXTRA_PATTERN;
   risk -= skillLevel(state, RUNECARVING) * FAILURE_PER_LEVEL;
@@ -134,18 +135,12 @@ export function previewCarve(state: GameState, placement: Placement): CarveCheck
   // Refused here so no new carving is ever made from one.
   const slab = placement.slab;
   if (slab && qualityMult(slab.quality) < 0) {
-    return { ok: false, reason: text('runecarving.reason.slab_refuse', { grade: QUALITY_TIERS[slab.quality].name }) };
+    return { ok: false, reason: text('runecarving.reason.slab_refuse') };
   }
   const adornments = adornmentsOf(state, placement);
   for (const a of adornments) {
     if (qualityMult(a.quality) < 0) {
-      return {
-        ok: false,
-        reason: text('runecarving.reason.adornment_refuse', {
-          name: MATERIALS[a.id]?.name ?? a.id,
-          grade: QUALITY_TIERS[a.quality].name,
-        }),
-      };
+      return { ok: false, reason: text('runecarving.reason.adornment_refuse', { name: MATERIALS[a.id]?.name ?? a.id }) };
     }
   }
 
@@ -154,7 +149,9 @@ export function previewCarve(state: GameState, placement: Placement): CarveCheck
     if (copies < 2) continue;
     const needed = REPEAT_MIN_QUALITY[copies];
     if (!needed) {
-      return { ok: false, reason: text('runecarving.reason.too_many_copies', { copies }) };
+      // No entry in REPEAT_MIN_QUALITY: past the most copies any slab can hold.
+      const max = Math.max(...Object.keys(REPEAT_MIN_QUALITY).map(Number));
+      return { ok: false, reason: text('runecarving.reason.too_many_copies', { max }) };
     }
     if (!slab || !qualityAtLeast(slab.quality, needed)) {
       return {

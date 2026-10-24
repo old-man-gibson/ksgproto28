@@ -2,15 +2,17 @@
  * Runecarving is deterministic: the same inputs make the same rune, whatever
  * order they were laid down, cut or socketed in. These tests hold that line.
  *
- * Findings from docs/RUNECARVING_REVIEW.md §3 that they cover: F1 pattern
- * order, F2 adornment riders, F3 stack keys, F4 the random upgrade, F5 Refuse
- * grades, F6 technique surgery on carved runes, F7 socket order.
+ * The rule is the "A carving is a multiset" paragraph in docs/CONTENT_GUIDE.md.
+ * What they cover: pattern order, adornment riders, stack keys, the random
+ * grade-up (removed), F-grade slabs and adornments, technique surgery on carved
+ * runes, and socket order.
  */
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { RUNES } from '../src/core/registry';
 import { RUNE_PATTERNS } from '../src/core/data/runes.data';
+import { QUALITY_ORDER } from '../src/core/data/quality.data';
 import { TECHNIQUES } from '../src/core/data/martial.data';
 import {
   DAMAGE_TYPE_NAMES,
@@ -65,7 +67,7 @@ function swordWith(runes: RuneRef[], uid = 700): ItemInstance {
   return { uid, defId: 'iron_sword', slots: runes.length, runes };
 }
 
-// ---------- F1 + F2: one multiset, one rune ----------
+// ---------- One multiset, one rune ----------
 
 describe('a carving depends on what is in it, never on the order', () => {
   type Parts = Pick<CarvedRune, 'patterns' | 'adornments'>;
@@ -87,8 +89,21 @@ describe('a carving depends on what is in it, never on the order', () => {
     ],
     ['a named work (Stormbrand)', { patterns: ['pattern_edge'], adornments: [at('charged_slime_gel', 'b'), at('raw_sapphire', 'b')] }],
     ['a named work with two cuts (Twiceforged)', { patterns: ['pattern_warding', 'pattern_might'], adornments: [at('gold_leaf', 'c')] }],
+    // Hearthward has no minimum stone, so it is named at every grade.
+    ['a named work with no minimum grade (Hearthward)', { patterns: ['pattern_warding'], adornments: [at('warm_slime_gel', 'c')] }],
+    // The four adornments the tables above leave out, at four different grades.
+    [
+      'luminous gel, bone dust, ochre and verdigris on two cuts',
+      {
+        patterns: ['pattern_might', 'pattern_edge'],
+        adornments: [at('luminous_slime_gel', 'c'), at('bone_dust', 'd'), at('ochre_pigment', 'b'), at('verdigris_pigment', 'e')],
+      },
+    ],
+    // Legacy: an F adornment already in a save, among good ones.
+    ['an F-grade adornment among others', { patterns: ['pattern_might'], adornments: [at('warm_slime_gel', 'f'), at('chilled_slime_gel', 'c')] }],
   ];
-  const STONES: QualityTier[] = ['c', 'b', 'a'];
+  // Every grade, F included: an F stone is a legacy carving that must still compose the same.
+  const STONES: QualityTier[] = [...QUALITY_ORDER];
 
   beforeEach(() => clearCarvedCache());
   afterEach(() => clearCarvedCache());
@@ -137,7 +152,7 @@ describe('a carving depends on what is in it, never on the order', () => {
   });
 });
 
-describe('F2: adornment riders are all kept', () => {
+describe('adornment riders are all kept', () => {
   const stone = slab('c');
   const warmThenChilled: CarvedRune = {
     patterns: ['pattern_might'],
@@ -220,9 +235,9 @@ describe('F2: adornment riders are all kept', () => {
   });
 });
 
-// ---------- F3: stack keys ----------
+// ---------- Stack keys ----------
 
-describe('F3: items stack by what is carved on them', () => {
+describe('items stack by what is carved on them', () => {
   const might: CarvedRune = { patterns: ['pattern_might'], stone: slab('c'), adornments: [] };
   const warding: CarvedRune = { patterns: ['pattern_warding'], stone: slab('c'), adornments: [] };
 
@@ -256,9 +271,9 @@ describe('F3: items stack by what is carved on them', () => {
   });
 });
 
-// ---------- F4: the tool does not change the rune ----------
+// ---------- The tool does not change the rune ----------
 
-describe('F4: the tool only lowers the chance the slab splits', () => {
+describe('the tool only lowers the chance the slab splits', () => {
   it('a fine tool never lifts the slab a grade', () => {
     const g = carver(3);
     grantGraded(g.state, 'runestone_blank', 'c', 30);
@@ -291,15 +306,15 @@ describe('F4: the tool only lowers the chance the slab splits', () => {
   });
 });
 
-// ---------- F5: Refuse grades ----------
+// ---------- F-grade slabs and adornments ----------
 
-describe('F5: a Refuse (F) grade is refused, and reads as nothing in old saves', () => {
+describe('an F-grade slab or adornment is refused, and reads as nothing in old saves', () => {
   it('previewCarve refuses an F slab with a reason, and carving spends nothing', () => {
     const g = carver(6);
     grantGraded(g.state, 'runestone_blank', 'f', 2);
     const check = previewCarve(g.state, bench('f'));
     expect(check.ok).toBe(false);
-    expect(check.reason).toMatch(/Refuse slab cannot be cut/);
+    expect(check.reason).toBe("An F-grade slab can't be carved: it gives negative stats");
     expect(carveRune(g.state, g.bus, bench('f'))).toBeNull();
     expect(stockOf(g.state, 'runestone_blank', 'f')).toBe(2);
     expect(g.state.carved).toHaveLength(0);
@@ -312,10 +327,10 @@ describe('F5: a Refuse (F) grade is refused, and reads as nothing in old saves',
     grantGraded(g.state, 'raw_sapphire', 'f', 1);
     const inlay = previewCarve(g.state, bench('c', 'pattern_might', { inlay: at('warm_slime_gel', 'f') }));
     expect(inlay.ok).toBe(false);
-    expect(inlay.reason).toMatch(/Warm Slime Gel at Refuse cannot be worked in/);
+    expect(inlay.reason).toBe("Warm Slime Gel is F-grade and can't be used: it gives negative stats");
     const gem = previewCarve(g.state, bench('c', 'pattern_might', { gem1: at('raw_sapphire', 'f') }));
     expect(gem.ok).toBe(false);
-    expect(gem.reason).toMatch(/Raw Sapphire at Refuse cannot be worked in/);
+    expect(gem.reason).toBe("Raw Sapphire is F-grade and can't be used: it gives negative stats");
   });
 
   it('the grade just above Refuse is still allowed', () => {
@@ -365,9 +380,9 @@ describe('F5: a Refuse (F) grade is refused, and reads as nothing in old saves',
   });
 });
 
-// ---------- F6: technique surgery survives composition ----------
+// ---------- Technique surgery survives composition ----------
 
-describe('F6: a carved rune keeps its patterns\' technique surgery', () => {
+describe('a carved rune keeps its patterns\' technique surgery', () => {
   beforeEach(() => {
     RUNE_PATTERNS['test_surgery_a'] = {
       id: 'test_surgery_a',
@@ -427,9 +442,9 @@ describe('F6: a carved rune keeps its patterns\' technique surgery', () => {
   });
 });
 
-// ---------- F7: socket order ----------
+// ---------- Socket order ----------
 
-describe('F7: socket order does not decide a technique', () => {
+describe('socket order does not decide a technique', () => {
   // Catalogue runes target different techniques, so build the conflict: two
   // runes that both rewrite Thrust, with clashing names, exits, tempo and forks.
   beforeEach(() => {
