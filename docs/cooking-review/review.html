@@ -204,20 +204,36 @@ table.parts td { white-space: nowrap; }
 <div class="wrap">
 
 <header style="display:grid; gap:10px">
-  <span class="tag" style="justify-self:start">Design review · 2026-10-23 · nothing built</span>
+  <span class="tag" style="justify-self:start">Design review · 2026-10-23 · rounds 1 and 2 in progress</span>
   <h1>Cooking and Hunting</h1>
-  <p class="dim">How to make cooking distinct and worth mastering while it keeps its identity, how hunting can feed it, and what the stove should look like. Findings from the code, the team's plan in rounds, the objections raised against it, and six working mockups.</p>
-  <nav class="chips small" aria-label="Sections"><a class="chip" href="#verdict">Verdict</a><a class="chip" href="#findings">Findings</a><a class="chip" href="#design">Design</a><a class="chip" href="#roles">Roles</a><a class="chip" href="#objections">Objections</a><a class="chip" href="#questions">Questions</a><a class="chip" href="#stove">Mockups</a></nav>
+  <p class="dim">What the cooking and hunting code does today, what to change, the objections raised and how they were ruled, your answers, and six working mockups of the new stove screens.</p>
+  <nav class="chips small" aria-label="Sections"><a class="chip" href="#verdict">Summary</a><a class="chip" href="#answers">Your answers</a><a class="chip" href="#findings">Findings</a><a class="chip" href="#design">Plan</a><a class="chip" href="#roles">Roles</a><a class="chip" href="#objections">Objections</a><a class="chip" href="#slices">Rounds</a><a class="chip" href="#stove">Mockups</a></nav>
 </header>
 
 <section class="panel verdict" id="verdict">
-  <header><h2>Verdict</h2><span class="tag">team: 3 brainstormers, 1 design antagonist</span></header>
-  <div class="line"><b>Identity</b><span>Cooking stays <em>when</em>. Today timing decides how good a dish is. The plan makes timing also decide <em>which</em> dish it is. Later, each part of an animal arrives with its own cook time, so the quarry tells the cook when it goes in. No pair synergies (mutagens), no order rules (alchemy), no summed effects (runecarving).</span></div>
-  <div class="line"><b>Fix first</b><span>The stove mints gold. At Cooking 45, Fair Larder ingredients worth about 10 gold make a Divine stew that sells for 56, every 12 seconds, and bench runs keep going offline: about 110k gold a night against about 1k held at the end of band 1. A cap on the cook's skill bonus fixes the worst of it.</span></div>
-  <div class="line"><b>Round 1</b><span>Cap the skill bonus at +2.00; heat windows (same pot, different cook time, different dish); the stove UI fixes; a heat track and a grade ledger on the stove. No save version change.</span></div>
-  <div class="line"><b>Hunting</b><span>Designed, held back. The tower spawns slimes and constructs; the only animals that drop meat live on the shelved maps. Carcass parts and the Palate fact wait for living quarry on a live floor, or for your answer on whether slimes are food.</span></div>
-  <div class="line"><b>Roles</b><span>Basic cooking would fill sustain (stews), damage (Seared Stew), and maybe condition defence (Steeped Broth, unproven). Access only in optional content.</span></div>
-  <div class="line"><b>Where</b><span><code>docs/COOKING_REVIEW.md</code> and this page's source, on branch <code>docs/cooking-review</code>. Not merged.</span></div>
+  <header><h2>Summary</h2><span class="tag">team: 3 brainstormers, 1 design antagonist</span></header>
+  <div class="line"><b>Identity</b><span>Cooking is about timing. Today cook time only changes a dish's grade. After round 1 it also decides which dish you get. In round 3 each animal part and each jelly has its own cook time. Cooking does not get pair bonuses (mutagens), order rules (alchemy) or added-up effects (runecarving).</span></div>
+  <div class="line"><b>Gold</b><span>Cooking may earn gold (your answer 1). Today, at Cooking 45, 10 gold of Fair (C) ingredients make a Divine (S) stew that sells for 56. The round 1 skill cap lowers that to Superb (A, 35 gold), so better ingredients still matter at high levels.</span></div>
+  <div class="line"><b>Round 1</b><span>Building now. Skill bonus capped at +2.00. Heat windows: the same ingredients make Seared Stew, Hearty Stew or Braised Meat depending on cook time. Steeped Broth for poison resistance. A condition does not land at 100% resistance. Stove screen fixes, the heat track and the grade ledger.</span></div>
+  <div class="line"><b>Round 2</b><span>Next. Food lasts longer and works better as Cooking levels up. Cook counts per dish, Signature dishes at 100 cooks, the Cook's Book, the plate card, and a prestige boon that keeps part of the Book.</span></div>
+  <div class="line"><b>Hunting</b><span>Round 3. Slimes drop jelly, one flavor per slime family. Animals drop parts. Humanoids are not food unless the player has an omnivore or cannibal flag.</span></div>
+  <div class="line"><b>Source</b><span><code>docs/COOKING_REVIEW.md</code> and this page's source, on branch <code>docs/cooking-review</code>.</span></div>
+</section>
+
+<section class="panel" id="answers">
+  <header><h2>Your answers</h2><span class="tag">2026-10-23</span></header>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:2em">#</th><th>Question</th><th>Your answer</th><th>What changes</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Can cooking earn gold?</td><td>Yes. It takes an investment, so it is not an infinite gold glitch.</td><td>No price limit on dishes. The skill cap stays so ingredients matter at high levels.</td></tr>
+      <tr><td>2</td><td>How strong against poison?</td><td>Raises resistance. Immune when resistance reaches 100% after the enemy's penetration, or when a dish grants immunity outright.</td><td>Steeped Broth: +25% poison resistance × grade multiplier (Divine: +100%). New rule for every condition, players and monsters: resistance minus penetration of 100% or more means it does not land. New <code>immune</code> field on statuses.</td></tr>
+      <tr><td>3</td><td>Are slimes food?</td><td>Yes, the main jelly source. Each slime family has its own jelly (hot, cold, spicy, tingling, kingly, and so on). Higher level and tier slimes drop better grades.</td><td>Round 3 designs one jelly per slime family.</td></tr>
+      <tr><td>4</td><td>Are goblins food?</td><td>No, unless the player has an omnivore or cannibal flag from an ability, gene or mutagen.</td><td>Food rules check flags on the eater.</td></tr>
+      <tr><td>5</td><td>Does the Cook's Book survive prestige?</td><td>It resets. Prestige boons can carry parts over.</td><td>Round 2 adds a boon. Default until you say otherwise: rank 1 keeps the cook times you learned, rank 2 keeps Signatures.</td></tr>
+      <tr><td>6</td><td>100-cook Signature grind?</td><td>Yes.</td><td>Round 2.</td></tr>
+      <tr><td>7</td><td>Scope?</td><td>Rounds 1 and 2. Simpler language.</td><td>Building. This page rewritten.</td></tr>
+    </tbody>
+  </table></div>
 </section>
 
 <section class="panel" id="findings">
@@ -225,103 +241,106 @@ table.parts td { white-space: nowrap; }
   <div class="scroll"><table>
     <thead><tr><th style="width:5em">Weight</th><th>Finding</th><th>Where</th></tr></thead>
     <tbody>
-      <tr><td><span class="sev hi">high</span></td><td><b>The stove mints gold.</b> Judgement is level ÷ 15, uncapped. Fair inputs make Fine at 9, Superb at 23, Divine at 45. A stew sells for 14 × the grade multiplier: 14, 22, 35, 56. Bench runs repeat, and offline catch-up runs ordinary ticks for up to 8 hours: about 2400 stews, +29k gold at Cooking 15, +110k at 45.</td><td class="tiny"><code>cooking.ts</code> 199–203, <code>equipment.ts</code> 223, <code>save/offline.ts</code></td></tr>
-      <tr><td><span class="sev hi">high</span></td><td><b>Hunting feeds no pot in the alpha.</b> Raw meat drops from the young wolf, wolf, boar and cliff hawk, all four on shelved maps only. Live animals: forest rats and goblins in the Cages and one floor room. All food comes from the Larder Door.</td><td class="tiny"><code>monsters.data.ts</code>, <code>shelved/locations.shelved.ts</code></td></tr>
-      <tr><td><span class="sev hi">high</span></td><td><b>Fifteen dishes, three effects.</b> Every dish grants some mix of Well Fed, Steady Hand and Clear-Headed. Cooking is one of the eight core systems but fills one role, weakly.</td><td class="tiny"><code>materials.data.ts</code> 196–520</td></tr>
-      <tr><td><span class="sev mid">medium</span></td><td><b>Timing does nothing in the alpha.</b> Unprepped food fits a band of 3–16 units and the cutting board is shut, so below Cooking 8 every layout lands in band. From 8, the late slot at Quick simmer falls short; the fourth slot can only lower the grade.</td><td class="tiny"><code>cooking.ts</code> 78–83, <code>unlocks.ts</code></td></tr>
-      <tr><td><span class="sev mid">medium</span></td><td><b>Mastery stops at Cooking 45.</b> Past Divine, levels buy nothing. The skill's only other effect is craft speed, which the stove ignores. No milestones.</td><td class="tiny"><code>skills.data.ts</code> 830–846</td></tr>
-      <tr><td><span class="sev mid">medium</span></td><td><b>The stove hides its rules.</b> See mockup 1 for the list: the heat band is tooltip-only, slots sit out of time order, the preview's grade colour is never drawn, the picker shows no grades, cookware counts in the mean unsaid, and reopening mid-cook shows an empty pot.</td><td class="tiny"><code>BenchPanel.svelte</code> 80, 291–298, 643–647, ~1104</td></tr>
-      <tr><td><span class="sev lo">low</span></td><td><b>Hunting's knowledge has no use.</b> Bestiary facts are read, never acted on. Hunting levels buy small loot and gold multipliers.</td><td class="tiny"><code>skills.data.ts</code> ~84</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Cooking makes a lot of gold.</b> The skill bonus is level ÷ 15 with no cap. Fair ingredients make Fine at Cooking 9, Superb at 23, Divine at 45. A stew sells for 14 × the grade multiplier: 14, 22, 35, 56. Bench runs repeat, and the game runs up to 8 hours while you are away: about 2400 stews. Allowed (answer 1).</td><td class="tiny"><code>cooking.ts</code> 199–203, <code>equipment.ts</code> 223, <code>save/offline.ts</code></td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>In the alpha, hunting gives no food.</b> Raw meat drops from the young wolf, wolf, boar and cliff hawk. All four live only on shelved maps. The live animals are forest rats and goblins in the Cages and one floor room. All food comes from the Larder Door.</td><td class="tiny"><code>monsters.data.ts</code>, <code>shelved/locations.shelved.ts</code></td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>15 dishes share 3 effects.</b> Every dish gives some mix of Well Fed, Steady Hand and Clear-Headed. Cooking is one of the eight core systems but covers one role, weakly.</td><td class="tiny"><code>materials.data.ts</code> 196–520</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>In the alpha, cook time does nothing.</b> Whole ingredients cook right anywhere from 3 to 16 units, and the cutting board is locked. Below Cooking 8 every layout cooks right. From 8, the late slot on a Quick simmer is a little short; the fourth slot can only lower the grade.</td><td class="tiny"><code>cooking.ts</code> 78–83, <code>unlocks.ts</code></td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Cooking levels past 45 do nothing.</b> Divine is the top grade. The skill's only other effect is craft speed, which the stove ignores. No milestones.</td><td class="tiny"><code>skills.data.ts</code> 830–846</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>The stove screen does not show its rules.</b> The list is under mockup 1: right cook time only in a tooltip, slots out of order, no grade color on the preview, no grades in the picker, cookware counted without saying so, empty pot when reopened mid-cook.</td><td class="tiny"><code>BenchPanel.svelte</code> 80, 291–298, 643–647, ~1104</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>Bestiary facts are only for reading.</b> Nothing uses them. Hunting levels give small loot and gold bonuses.</td><td class="tiny"><code>skills.data.ts</code> ~84</td></tr>
     </tbody>
   </table></div>
 </section>
 
 <section class="panel" id="flow">
-  <header><h2>The loop, end to end</h2><span class="tag">overview</span></header>
+  <header><h2>How it fits together</h2><span class="tag">overview</span></header>
   <div class="flow">
-    <div class="step later"><b>Quarry</b><span class="small">A kill drops parts by its tags. The Palate fact says what each is for. Later.</span></div>
+    <div class="step later"><b>Kill</b><span class="small">Round 3. A slime drops jelly; an animal drops parts. The bestiary's Palate entry lists them.</span></div>
     <span class="arrow" aria-hidden="true">→</span>
-    <div class="step"><b>Pot</b><span class="small">Each slot enters the pot at a fixed point; the duration sets how long every part cooks.</span></div>
+    <div class="step"><b>Pot</b><span class="small">Each slot adds its ingredient at a fixed point. The cook time sets how long each one cooks.</span></div>
     <span class="arrow" aria-hidden="true">→</span>
-    <div class="step"><b>Dish</b><span class="small">The tagged parts' time on the heat picks the dish inside its window. Round 1.</span></div>
+    <div class="step"><b>Dish</b><span class="small">Round 1. How long the main ingredient cooks decides which dish you get.</span></div>
     <span class="arrow" aria-hidden="true">→</span>
-    <div class="step"><b>Grade</b><span class="small">Ingredient grade × fit, plus the cook's judgement, capped at +2.00. Round 1.</span></div>
+    <div class="step"><b>Grade</b><span class="small">Round 1. Ingredient grade × how well it cooked, plus the skill bonus (at most +2.00).</span></div>
     <span class="arrow" aria-hidden="true">→</span>
-    <div class="step"><b>Eaten</b><span class="small">A status: sustain, damage or resistance, scaled by grade.</span></div>
+    <div class="step"><b>Eat</b><span class="small">The dish gives a status: health, damage or resistance. Higher grade, stronger status.</span></div>
     <span class="arrow" aria-hidden="true">→</span>
-    <div class="step later"><b>Book</b><span class="small">Count and best grade per dish; windows pinned at 25 cooks, Signature at 100.</span></div>
+    <div class="step later"><b>Book</b><span class="small">Round 2. Counts each dish and its best grade. 25 cooks shows the cook time; 100 makes a Signature.</span></div>
   </div>
 </section>
 
 <section class="panel" id="design">
-  <header><h2>The plan</h2><span class="tag">first-guess numbers</span></header>
+  <header><h2>The plan</h2><span class="tag">numbers are first guesses</span></header>
   <div class="two">
     <div style="display:grid; gap:10px; min-width:0">
-      <h3>The kitchen</h3>
+      <h3>Kitchen</h3>
       <dl class="facts small">
-        <dt>Heat windows</dt><dd>A stove outcome may declare windows on a tag. It matches when the mean time on the heat of the parts carrying that tag falls inside. The window-less dish stays the fallback for its ingredients, so a player without the card, or outside every window, cooks exactly what they cook today.</dd>
-        <dt>First set</dt><dd>Meat + vegetable: <b>Seared Stew</b> when meat cooks under 6 units (grants Stoked: +5% damage and +5% crit damage per intensity, 5 min); <b>Hearty Stew</b> otherwise (Well Fed); <b>Braised Meat</b> at 14 or more (Well Fed ×1.5, 15 min). Mushroom + herb: <b>Steeped Broth</b> when the herb cooks 8 or more (poison and acid resistance); <b>Mushroom Broth</b> otherwise.</dd>
-        <dt>Reachable</dt><dd>At Cooking 1, two slots, unprepped food. Seared: meat midway at Quick simmer (5.4 units). Braised: meat first at Long braise (16). Steady stew with meat first stays Hearty (12).</dd>
-        <dt>Judgement cap</dt><dd>min(L, 15) ÷ 15, then + (L − 15) ÷ 45, capped at +2.00 (reached at 60). Fair inputs top out at Superb; Divine needs Superb ingredients. Levels 15–60 still pay, 0.022 each.</dd>
-        <dt>Milestones</dt><dd>Round 2. Every 10 levels food lasts 6% longer; every 20, 5% stronger. Both capped at ×1.5, because cooking has no level cap.</dd>
-        <dt>Signatures</dt><dd>Round 2. 25 cooks of a dish pins its window in the Cook's Book. 100 makes it a Signature: eating it also grants a second, smaller status.</dd>
-        <dt>Cook's Book</dt><dd>Round 2. One row per dish: grades made, count, best, window, Signature. Unmade dishes show as a blank row with no gate printed.</dd>
-        <dt>Crocks</dt><dd>After base building. A bench on the world clock: start a pickle, collect later; the grade reads time at rest with the stove's own fit curve. A save change.</dd>
+        <dt>Heat windows</dt><dd>A dish can require that an ingredient cooks for a set time. Without the recipe card, or outside that time, you get the same dish as today.</dd>
+        <dt>Round 1 dishes</dt><dd><b>Seared Stew</b>: meat and a vegetable, meat cooks under 6 units. Gives Stoked: +5% damage and +5% crit damage, 5 minutes. <b>Braised Meat</b>: meat cooks 14 units or more. Gives Well Fed ×1.5 for 15 minutes. <b>Steeped Broth</b>: mushroom and herb, herb cooks 8 units or more. Gives Steeped: +25% poison and +10% acid resistance, 10 minutes. <b>Hearty Stew</b> and <b>Mushroom Broth</b> stay as they are.</dd>
+        <dt>Grade</dt><dd>Every status number above is multiplied by the dish's grade: Fair (C) ×1, Fine (B) ×1.6, Superb (A) ×2.5, Divine (S) ×4.</dd>
+        <dt>How to make them</dt><dd>At Cooking 1 with two slots. Seared: meat in the midway slot on a Quick simmer (5.4 units). Braised: meat first on a Long braise (16 units). The recipe cards at the Larder Door say the same.</dd>
+        <dt>Skill bonus</dt><dd>Cooking level ÷ 15 up to level 15, then +1 per 45 levels, at most +2.00 (level 60). Fair (C) ingredients can reach Superb (A). Divine (S) needs Superb (A) ingredients.</dd>
+        <dt>Immunity</dt><dd>A condition does not land if the target's resistance to it, minus the attacker's penetration, is 100% or more. Below 100% nothing changes. A status can also grant immunity to an element or a condition. Monsters follow the same rule.</dd>
+        <dt>Levels</dt><dd>Round 2. Every 10 Cooking levels, food lasts 6% longer. Every 20, food is 5% stronger. Both stop at ×1.5.</dd>
+        <dt>Signatures</dt><dd>Round 2. After 25 cooks of a dish, the Cook's Book shows its cook time. After 100, it is a Signature and also gives a second, smaller status.</dd>
+        <dt>Cook's Book</dt><dd>Round 2. One row per dish: grades made, count, best grade, cook time, Signature. Dishes you have not made are blank rows. Resets on prestige; a boon keeps part of it.</dd>
+        <dt>Crocks</dt><dd>After base building. Jars that pickle while you do other things. Collecting early or late lowers the grade. Needs a save version change.</dd>
       </dl>
     </div>
     <div style="display:grid; gap:10px; min-width:0">
-      <h3>The hunt</h3>
+      <h3>Hunting</h3>
       <dl class="facts small">
-        <dt>Carcass parts</dt><dd>Held. A kill rolls parts from the monster's tags instead of a per-monster meat line: tender cut, sinew, offal for living beasts; marrow for large ones. Zero authoring per monster; a monster may override.</dd>
-        <dt>Parts' windows</dt><dd>Each part has its own cook band: tender cut 3–9, sinew 12–16, offal 2–5, marrow 10–16. The animal decides which slot each part belongs in.</dd>
-        <dt>Glands</dt><dd>A species with innate elemental resistance of 0.25 or more drops a gland; gland + herb makes a broth that resists that element.</dd>
-        <dt>Palate</dt><dd>A new bestiary fact (4 kills minimum): the species' parts, their windows, its glands, and a Load Pot button that fills the stove with a layout that lands every part in band.</dd>
-        <dt>Bait</dt><dd>Later. Each species has a diet from its tags. A bait dish multiplies the encounter weight of matching species, up to ×3, growing with Hunting. At Hunting 40, rare quarry answers only bait (optional content).</dd>
-        <dt>Offering</dt><dd>Later. Feeding the front enemy a dish it eats makes it Sated: it stops attacking until hit or until a timer runs out. Optional content only.</dd>
-        <dt>Dressing</dt><dd>Later, low priority. How it died shifts its parts' grade: bleeding +1, poisoned −2.</dd>
+        <dt>Slime jelly</dt><dd>Round 3. Each slime family drops its own jelly: hot, cold, spicy, tingling, kingly, and so on. Higher level and tier slimes drop better grades. Each jelly has its own cook time.</dd>
+        <dt>Animal parts</dt><dd>Round 3. Living beasts drop parts based on their tags: tender cut, sinew, offal; large ones also drop marrow. Cook times: tender cut 3–9 units, sinew 12–16, offal 2–5, marrow 10–16.</dd>
+        <dt>Glands</dt><dd>Round 3. A species with 25% or more resistance to an element drops a gland. Gland and herb make a broth that resists that element.</dd>
+        <dt>What is food</dt><dd>Humanoids, goblins included, are not food. An ability, gene or mutagen can give the player an omnivore or cannibal flag that changes this.</dd>
+        <dt>Palate</dt><dd>Round 3. A new bestiary entry, learned after at least 4 kills. Lists the species' parts, their cook times and glands. A Load Pot button fills the stove so every part cooks the right time.</dd>
+        <dt>Bait</dt><dd>Round 4. Each species eats certain foods, set by its tags. A bait dish makes those species show up more often, up to ×3, more with higher Hunting. At Hunting 40, some rare monsters only come to bait (optional content).</dd>
+        <dt>Feeding</dt><dd>Round 4. Give the front enemy a dish it eats and it stops attacking until it is hit or a timer runs out. Optional content only.</dd>
+        <dt>Dressing</dt><dd>Later. How the monster died changes its parts' grade: bleeding +1, poisoned −2.</dd>
       </dl>
     </div>
   </div>
   <div class="scroll" style="margin-top:16px"><table>
-    <thead><tr><th>Hunting level</th><th>Today</th><th>With the hunt half</th></tr></thead>
+    <thead><tr><th>Hunting level</th><th>Today</th><th>After rounds 3–4</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td>novelty XP, +0.4% loot</td><td>Palate in about 17 kills (the Cages: 4); parts by tag</td></tr>
-      <tr><td>25</td><td>+10% loot</td><td>Palate in about 9 kills; more parts from living quarry; stronger bait</td></tr>
-      <tr><td>40</td><td>+16% loot</td><td>rare quarry answers bait</td></tr>
-      <tr><td>60</td><td>+24% loot</td><td>bait at its ×3 cap; dressing costs 1 tick a part</td></tr>
+      <tr><td>1</td><td>bestiary XP, +0.4% loot</td><td>Palate after about 17 kills (4 at the Cages); parts and jelly drop by tag</td></tr>
+      <tr><td>25</td><td>+10% loot</td><td>Palate after about 9 kills; more parts per kill; stronger bait</td></tr>
+      <tr><td>40</td><td>+16% loot</td><td>some rare monsters come to bait</td></tr>
+      <tr><td>60</td><td>+24% loot</td><td>bait at its ×3 limit; dressing takes 1 tick per part</td></tr>
     </tbody>
   </table></div>
-  <p class="small dim" style="margin-top:10px">Hunting moves from a passive multiplier to knowledge (what a species is for), then selection (what comes to you), then yield (how well you take it).</p>
+  <p class="small dim" style="margin-top:10px">Today Hunting only raises loot and gold a little. After rounds 3–4 it also sets how fast you learn what a species drops, how well bait works, and which rare monsters you can draw out.</p>
 </section>
 
 <section class="panel" id="roles">
   <header><h2>Cooking as a core system</h2><span class="tag">COMPLETABILITY §6a</span></header>
-  <p class="small dim" style="margin-bottom:10px">The climb asks for basic use of about half the eight core systems; hurdles name roles. These are the roles basic cooking (following a recipe card) would fill on a fresh save.</p>
+  <p class="small dim" style="margin-bottom:10px">The climb asks for basic use of about half the eight core systems. Each hurdle needs a role. This is what basic cooking (making dishes from recipe cards) would cover on a fresh save.</p>
   <div class="scroll"><table>
-    <thead><tr><th>Role</th><th>Delivered by</th><th>Status</th></tr></thead>
+    <thead><tr><th>Role</th><th>Dish</th><th>Status</th></tr></thead>
     <tbody>
-      <tr><td>Sustain</td><td>Hearty Stew, Braised Meat (Well Fed)</td><td>Exists; Braised is stronger.</td></tr>
-      <tr><td>Damage</td><td>Seared Stew (Stoked)</td><td>New. Needs a cell test: the base climber plus a Fair Seared Stew against a hurdle he fails bare.</td></tr>
-      <tr><td>Condition defence</td><td>Steeped Broth (Steeped)</td><td><span class="sev hi">unproven</span> At Fair it trims poison by 8%; no test would credit that. Strength is question 2.</td></tr>
-      <tr><td>Access</td><td>none</td><td>Bait and Sated are optional content only.</td></tr>
+      <tr><td>Sustain</td><td>Hearty Stew, Braised Meat (Well Fed)</td><td>Exists. Braised is stronger.</td></tr>
+      <tr><td>Damage</td><td>Seared Stew (Stoked)</td><td>New in round 1. Needs a test: a basic build with a Fair Seared Stew beats a hurdle it loses without it.</td></tr>
+      <tr><td>Condition defence</td><td>Steeped Broth (Steeped)</td><td>New in round 1. Divine reaches 100% and blocks poison. Needs the same kind of test against a poison hurdle.</td></tr>
+      <tr><td>Access</td><td>none</td><td>Bait and feeding are optional content only.</td></tr>
     </tbody>
   </table></div>
 </section>
 
 <section class="panel" id="objections">
   <header><h2>Objections and rulings</h2><span class="tag">antagonist verdict: fix first</span></header>
-  <p class="small dim" style="margin-bottom:10px">No state the player cannot leave: no critical path touches parts or windows, every food source is endless, prestige re-earns per run, and the identity guards hold. Seven objections, all accepted. The plan above includes each ruling.</p>
+  <p class="small dim" style="margin-bottom:10px">No way to get stuck: no required path uses parts or heat windows, every food source refills, and prestige re-earns everything. Seven objections, all accepted. The plan above includes each ruling.</p>
   <div class="scroll"><table>
     <thead><tr><th style="width:4.6em">Severity</th><th>Objection</th><th>Ruling</th></tr></thead>
     <tbody>
-      <tr><td><span class="sev hi">high</span></td><td><b>The first rewrite of the skill bonus was still uncapped.</b> Fair reached Divine at Cooking 105 instead of 45, so the mint survived. Cooking has no level cap. Measured.</td><td class="ruling">Accepted. Capped at +2.00. Windowed dishes sell for no more than Hearty Stew.</td></tr>
-      <tr><td><span class="sev hi">high</span></td><td><b>Windows could make the default stew worse.</b> Recipe and level filters run before ingredient matching, so a long braise without the Braised card fell through to Traveler's Ration, where today it makes a Hearty Stew.</td><td class="ruling">Accepted. The window-less dish stays the fallback; a lint checks every layout matches something no worse than today.</td></tr>
-      <tr><td><span class="sev hi">high</span></td><td><b>Carcass parts claimed three roles; only one has a source.</b> No live animal is large (no marrow) and none has 0.25 resistance (no glands). Only the rat's tender cut exists, from the Cages.</td><td class="ruling">Accepted. The hunt half is held; no role claimed for it.</td></tr>
-      <tr><td><span class="sev mid">medium</span></td><td><b>Food potency was uncapped</b> while duration was capped, on a skill with no level cap.</td><td class="ruling">Accepted. Both capped at ×1.5.</td></tr>
-      <tr><td><span class="sev mid">medium</span></td><td><b>Steeped Broth is not condition defence.</b> −8% poison at Fair; a cell test would not credit it.</td><td class="ruling">Accepted. Role unclaimed until a test passes. Question 2.</td></tr>
-      <tr><td><span class="sev lo">low</span></td><td><b>The gland broth's status was named ward_*,</b> which is arcane magic's verb and an existing stat.</td><td class="ruling">Accepted. Renamed at build time.</td></tr>
-      <tr><td><span class="sev lo">low</span></td><td><b>A cooking novelty domain needs a seeding migration,</b> or existing saves get one windfall per dish.</td><td class="ruling">Accepted. The domain ships on its own with its migration.</td></tr>
-      <tr><td><span class="sev lo">low</span></td><td><b>Later: two Sated sides never end a fight.</b></td><td class="ruling">Accepted. Sated gets a timer.</td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>The first version of the skill cap was not a cap.</b> Fair ingredients still reached Divine, at Cooking 105 instead of 45. Cooking has no level limit.</td><td class="ruling">Accepted: capped at +2.00. Your answer 1 then allowed cooking to earn gold; the cap stays so ingredients matter.</td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>Heat windows could make the normal stew worse.</b> Recipe checks run before ingredient checks, so a long braise without the Braised card fell through to Traveler's Ration instead of Hearty Stew.</td><td class="ruling">Accepted. The dish without a cook-time rule stays the default. A check makes sure every layout still makes at least what it makes today.</td></tr>
+      <tr><td><span class="sev hi">high</span></td><td><b>Animal parts claimed three roles; only one had a source.</b> No live animal is large (no marrow) or 25% resistant (no glands).</td><td class="ruling">Accepted. Moved to round 3. Your answer 3 (slimes are food) gives it a source.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Food strength had no limit</b> while food duration did, on a skill with no level limit.</td><td class="ruling">Accepted. Both stop at ×1.5.</td></tr>
+      <tr><td><span class="sev mid">medium</span></td><td><b>Steeped Broth was too weak to count.</b> −8% poison at Fair.</td><td class="ruling">Accepted. Your answer 2 set it to +25% per grade multiplier, with immunity at 100%.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>The gland broth's status was called ward_*,</b> which is already an arcane magic word and a stat.</td><td class="ruling">Accepted. Renamed when built.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>A cooking XP-for-new-dishes system needs a save migration,</b> or old saves get a one-time XP bonus per dish.</td><td class="ruling">Accepted. It ships in round 2 with its migration.</td></tr>
+      <tr><td><span class="sev lo">low</span></td><td><b>Two fed enemies would never end a fight.</b></td><td class="ruling">Accepted. Feeding gets a timer.</td></tr>
     </tbody>
   </table></div>
 </section>
@@ -329,32 +348,19 @@ table.parts td { white-space: nowrap; }
 <section class="panel" id="slices">
   <header><h2>Rounds</h2><span class="tag">build order</span></header>
   <div class="scroll"><table>
-    <thead><tr><th>Round</th><th>Ships</th><th>Waits on</th><th>Save change</th></tr></thead>
+    <thead><tr><th>Round</th><th>Ships</th><th>State</th><th>Save change</th></tr></thead>
     <tbody>
-      <tr><td>1</td><td>Skill bonus capped at +2.00. Heat windows and the first five dishes, two new statuses. Stove fixes: preview colour, layout restored mid-cook, grades on picker cells. Heat track and grade ledger.</td><td>Your go-ahead</td><td>No</td></tr>
-      <tr><td>2</td><td>Milestones (duration, potency), per-dish counts, Signatures, Cook's Book, plate card. Cooking novelty domain.</td><td>Questions 5, 6</td><td>Only the novelty domain</td></tr>
-      <tr><td>3</td><td>Carcass parts, glands, the Palate fact and Load Pot.</td><td>Living quarry on a live floor, or question 3</td><td>No</td></tr>
-      <tr><td>4</td><td>Diets, bait, rare quarry that answers bait, offerings.</td><td>Round 3</td><td>No</td></tr>
-      <tr><td>5</td><td>Crocks.</td><td>Base building</td><td>Yes</td></tr>
+      <tr><td>1</td><td>Skill cap. Heat windows and three new dishes with recipe cards. Stoked and Steeped. The 100% immunity rule and the <code>immune</code> field. Stove fixes: preview color, pot restored mid-cook, grades in the picker. Heat track and grade ledger.</td><td>Building</td><td>No</td></tr>
+      <tr><td>2</td><td>Food duration and strength by level. Cook counts per dish, Signatures, the Cook's Book, the plate card. XP for new dishes. Prestige boon for the Book.</td><td>Next</td><td>Yes</td></tr>
+      <tr><td>3</td><td>Slime jelly by family, animal parts, glands, omnivore and cannibal flags, the Palate entry and Load Pot.</td><td>Waits for your go-ahead</td><td>No</td></tr>
+      <tr><td>4</td><td>Diets, bait, rare monsters that come to bait, feeding.</td><td>After round 3</td><td>No</td></tr>
+      <tr><td>5</td><td>Crocks.</td><td>After base building</td><td>Yes</td></tr>
     </tbody>
   </table></div>
 </section>
 
-<section class="panel" id="questions">
-  <header><h2>Questions for you</h2><span class="tag">answer in fragments</span></header>
-  <ol class="list small" style="gap:10px">
-    <li><b>Is cooking a gold source?</b> After the cap, Fair inputs still make Superb stews worth 3.5× their cost, and bench runs replay offline. Default: the cap alone. Alternative: dish resale stops scaling with grade past Fair, so a dish's worth is eating it.</li>
-    <li><b>How strong may a cooking status be against poison?</b> (a) A resistance a test passes, about +0.25 at Fair. (b) Poison cannot land at all while Steeped is held (monsters can wear it too). (c) Cooking does not claim condition defence. Default: (a), tested.</li>
-    <li><b>Are slimes food?</b> 37 of 64 species are slimes, and they are the tower's main quarry. Yes makes slime jelly the alpha's hunt-to-pot link. Default: no until you say; the hunt half waits for living quarry.</li>
-    <li><b>Are goblins food?</b> Default: no, humanoids are excluded.</li>
-    <li><b>Does the Cook's Book survive prestige?</b> Default: it resets per run like recipe cards; a prestige boon may carry it later.</li>
-    <li><b>Is a 100-cook Signature grind wanted?</b> Default: yes; the numbers are data.</li>
-    <li><b>Round 1 scope.</b> Default: as in the table above.</li>
-  </ol>
-</section>
-
 <section class="panel" id="stove">
-  <header><h2>1 · The stove: today and the heat track</h2><span class="tag r1">round 1 · heat windows + UI</span></header>
+  <header><h2>1 · The stove: today and the heat track</h2><span class="tag r1">round 1</span></header>
   <div class="two" style="margin-bottom:16px">
     <div style="display:grid; gap:8px; min-width:0">
       <h3>Today</h3>
@@ -368,19 +374,19 @@ table.parts td { white-space: nowrap; }
       <div class="small" style="border:1px solid var(--border); background:var(--raised); padding:3px 8px; max-width:460px">🍲 Fair Hearty Stew <span class="pin">3</span></div>
     </div>
     <div style="display:grid; gap:8px; min-width:0">
-      <h3>What it hides</h3>
+      <h3>Problems with today's screen</h3>
       <ol class="today-notes">
-        <li>Slots sit out of time order: the midway slot is above the first one, slots 3 and 4 are in the corners.</li>
-        <li>The heat band appears only in a filled cell's tooltip, so you cannot see where a part should go before placing it.</li>
-        <li>The dish preview is one line, with no reason and no grade colour (it sets one; the style never reads it).</li>
-        <li>Cookware's grade is averaged in like an ingredient, and nothing says so.</li>
-        <li>The picker shows every grade of an onion as the same icon. The review run put a Refuse onion in by accident.</li>
-        <li>Reopening the stove mid-cook shows an empty pot beside a running bar.</li>
+        <li>The slots are not in time order. The midway slot is above the first one; slots 3 and 4 are in the corners.</li>
+        <li>The right cook time for an ingredient only shows in its tooltip after you place it.</li>
+        <li>The dish preview is one line. It does not say why, and its grade color is never drawn.</li>
+        <li>Cookware's grade counts like an ingredient's, and the screen does not say so.</li>
+        <li>The picker shows every grade of an onion with the same icon. During the review an F-grade onion went in by accident.</li>
+        <li>Reopening the stove during a cook shows an empty pot next to the progress bar.</li>
       </ol>
     </div>
   </div>
   <h3 style="margin-bottom:8px">Proposed</h3>
-  <p class="small dim" style="margin-bottom:10px">Each slot is a lane on the time axis. The bar under a part runs from its entry to the end of the cook: hatched is raw, filled is inside its band, red hatch is burnt. The strip under the lanes shows the stew's dish windows and where the meat lands. Change the cook time or the meat's slot and watch the dish change.</p>
+  <p class="small dim" style="margin-bottom:10px">Each slot is a row on a time line. The bar under an ingredient starts when it goes in and ends when the cook ends. Striped: not cooked enough yet. Solid: cooked the right amount. Red stripes: overcooked. The bottom row shows which dish each meat cook time makes, and where the meat is now. Change the cook time or the meat's slot to see the dish change.</p>
   <div class="ctl"><span class="lab">Cook for</span><span id="c-dur"></span></div>
   <div class="ctl"><span class="lab">Meat goes in</span><span id="c-slot"></span></div>
   <div class="ctl"><span class="lab">Ingredients</span><span id="c-grade"></span></div>
@@ -390,26 +396,26 @@ table.parts td { white-space: nowrap; }
 </section>
 
 <section class="panel" id="ledger-panel">
-  <header><h2>2 · The grade ledger</h2><span class="tag r1">round 1 · preview</span></header>
-  <p class="small dim" style="margin-bottom:10px">The dish preview opens to show why the dish lands where it does. Live from mockup 1. Struck-through numbers are today's formula; the plan caps the cook's judgement at +2.00, so at high levels only better ingredients close the gap. In the game it is collapsed to one line until opened.</p>
+  <header><h2>2 · The grade ledger</h2><span class="tag r1">round 1</span></header>
+  <p class="small dim" style="margin-bottom:10px">The dish preview can open to show how the grade is worked out. It uses the settings from mockup 1. Crossed-out numbers are today's formula. In the game it shows one line until you open it.</p>
   <div id="ledger"></div>
 </section>
 
 <section class="panel" id="plate-panel">
-  <header><h2>3 · The plate card</h2><span class="tag later">round 2 · completion</span></header>
-  <p class="small dim" style="margin-bottom:10px">Shown at the bench when a cook finishes, instead of only a log line: grade stamp in the grade's colour, the score, and the dish's count and best grade from the Cook's Book. Live from mockup 1.</p>
+  <header><h2>3 · The plate card</h2><span class="tag later">round 2</span></header>
+  <p class="small dim" style="margin-bottom:10px">Shown on the stove when a cook finishes. Today only a log line appears. It uses the settings from mockup 1.</p>
   <div id="plate"></div>
 </section>
 
 <section class="panel" id="book-panel">
-  <header><h2>4 · The Cook's Book</h2><span class="tag later">round 2 · reference</span></header>
-  <p class="small dim" style="margin-bottom:10px">The re-openable reference the completability law asks for. A square per grade (filled: made at that grade; dashed: the next grade up from your best), count, the window once pinned, the Signature once earned. Dishes not yet made show as a blank row with no gate printed, so the stove keeps its discovery. Example save.</p>
+  <header><h2>4 · The Cook's Book</h2><span class="tag later">round 2</span></header>
+  <p class="small dim" style="margin-bottom:10px">Every dish in one list. Filled square: you made it at that grade. Dashed square: the next grade up from your best. Then how many you cooked, the cook time once you have made it 25 times, and the Signature at 100. Dishes you have not made are blank rows. Example save.</p>
   <div class="scroll"><table class="book" id="book"></table></div>
 </section>
 
 <section class="panel" id="palate-panel">
-  <header><h2>5 · Bestiary: the Palate fact</h2><span class="tag held">held · needs living quarry</span></header>
-  <p class="small dim" style="margin-bottom:10px">What a species yields for the pot and where each part fits on the stove. Load Pot fills the stove with a layout that lands every part in its band.</p>
+  <header><h2>5 · Bestiary: the Palate entry</h2><span class="tag later">round 3</span></header>
+  <p class="small dim" style="margin-bottom:10px">What a species drops for cooking and where each part goes in the pot. Load Pot fills the stove so every part cooks the right time. Slimes get the same entry for their jelly.</p>
   <div class="box">
     <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:baseline"><h3>Forest Rat</h3><span class="tiny dim">living · beast · tiny</span></div>
     <div class="fact"><b>Field Notes</b><span class="tiny dim">known</span></div>
@@ -425,8 +431,8 @@ table.parts td { white-space: nowrap; }
 </section>
 
 <section class="panel" id="bait-panel">
-  <header><h2>6 · Bait: the kitchen feeds the hunt</h2><span class="tag later">round 4 · encounter weights</span></header>
-  <p class="small dim" style="margin-bottom:10px">A bait dish raises the encounter weight of species whose diet matches, by 1 + 0.5 + Hunting ÷ 40, capped at ×3. Example: the floor-1 storerooms roll rats 75 and slimes 25. Slimes eat sweet things; rats do not.</p>
+  <header><h2>6 · Bait</h2><span class="tag later">round 4</span></header>
+  <p class="small dim" style="margin-bottom:10px">A bait dish makes species that eat it show up more often: × (1.5 + Hunting ÷ 40), at most ×3. Example: the floor 1 storerooms spawn rats 75% of the time and slimes 25%. Slimes eat sweet food; rats do not.</p>
   <div class="ctl"><span class="lab">Bait</span><span id="b-bait"></span></div>
   <div class="ctl"><span class="lab">Hunting</span><span id="b-hunt"></span></div>
   <div class="box" style="max-width:560px">
@@ -525,11 +531,11 @@ function renderTrack(C) {
       }
       area += `<i class="endcap" style="left:${D * UW - 1}px"></i>`;
       area += `<div class="cellb" style="left:${r.entry * UW}px;--tint:${Q[grade].c}">${r.icon}</div>`;
-      tail = `<span class="ok">×${r.f.toFixed(2)} in band</span> <span class="dim tiny">${r.exp.toFixed(1)} of 3–16</span>`;
+      tail = `<span class="ok">×${r.f.toFixed(2)} cooked right</span> <span class="dim tiny">${r.exp.toFixed(1)} units (right: 3–16)</span>`;
     }
     h += `<div class="lane">${nm}<div class="area">${area}</div><div class="tail">${tail}</div></div>`;
   }
-  h += `<div class="winrow"><div class="nm">Meat on the heat<small>picks the dish</small></div><div class="wins">`;
+  h += `<div class="winrow"><div class="nm">Meat cook time<small>decides the dish</small></div><div class="wins">`;
   for (const k of ['seared', 'hearty', 'braised']) {
     const d = DISH[k], to = Math.min(18, d.to);
     h += `<span class="win${C.dish === k ? ' on' : ''}" style="--c:${d.c};left:${d.from * UW}px;width:${(to - d.from) * UW - 2}px">${d.n}</span>`;
@@ -557,29 +563,29 @@ function renderLedger(C) {
   if (next) {
     const short = Q[next].m - C.now;
     const capped = judgeNew(level) >= 2;
-    r += `<p class="small" style="margin-bottom:6px">${Q[next].n} needs ${Q[next].m.toFixed(2)}: ${short.toFixed(2)} short. ${capped ? 'Judgement is at its cap; only better ingredients close the gap.' : `Each Cooking level adds ${level < 15 ? '0.07' : '0.02'}.`}</p>`;
+    r += `<p class="small" style="margin-bottom:6px">${Q[next].n} needs ${Q[next].m.toFixed(2)}: ${short.toFixed(2)} short. ${capped ? 'The skill bonus is at its cap. Only better ingredients raise the grade.' : `Each Cooking level adds ${level < 15 ? '0.07' : '0.02'}.`}</p>`;
   }
   r += `<div class="scroll"><table class="ledger"><thead><tr><th>part</th><th>grade</th><th style="text-align:right">fit</th><th style="text-align:right">adds</th></tr></thead><tbody>`;
   for (const p of C.parts) r += `<tr><td>${p.icon} ${p.name} <span class="dim tiny">${p.s.name.toLowerCase()}</span></td><td style="color:${Q[grade].c}">${Q[grade].n}</td><td class="n">×${p.f.toFixed(2)}</td><td class="n">${p.contrib.toFixed(2)}</td></tr>`;
   r += `<tr><td colspan="3" class="dim">mean of ${C.parts.length} parts</td><td class="n">${C.mean.toFixed(2)}</td></tr>`;
-  r += `<tr><td colspan="3">+ judgement <span class="dim tiny">Cooking ${level}: first 15 levels ÷ 15, then ÷ 45, cap 2.00</span></td><td class="n"><span class="was">+${judgeToday(level).toFixed(2)}</span>+${judgeNew(level).toFixed(2)}</td></tr>`;
-  r += `<tr><td colspan="3">+ bench fit <span class="dim tiny">the stove likes diced food; the cutting board is shut in the alpha</span></td><td class="n">+0.00</td></tr>`;
+  r += `<tr><td colspan="3">+ skill bonus <span class="dim tiny">Cooking ${level}: ÷ 15 up to 15, then ÷ 45, at most 2.00</span></td><td class="n"><span class="was">+${judgeToday(level).toFixed(2)}</span>+${judgeNew(level).toFixed(2)}</td></tr>`;
+  r += `<tr><td colspan="3">+ cut bonus <span class="dim tiny">the stove gives a bonus for diced food; the cutting board is locked in the alpha</span></td><td class="n">+0.00</td></tr>`;
   r += `<tr class="sum"><td colspan="3">score</td><td class="n"><span class="was">${C.today.toFixed(2)} ${Q[tToday].n}</span>${C.now.toFixed(2)} ${Q[t].n}</td></tr></tbody></table></div>`;
   r += `<p class="small" style="margin-top:8px">Eaten at ${Q[t].n}: ${d.eat(Q[t].m)}</p>`;
   r += `<p class="small dim">Sells for <span class="was">${sell(tToday)}</span>${sell(t)} gold. Inputs at the Larder Door: 10 gold after the hello.</p>`;
   $('#ledger').innerHTML = r;
-  $('#plate').innerHTML = `<div class="stamp" style="--tint:${Q[t].c}"><div class="plate">${d.i}</div><div><div class="grade">${Q[t].n}</div><div>${d.n}</div><div class="tiny dim">score ${C.now.toFixed(2)} · whole food, so no roll</div></div><div class="side"><div>made 26 · best ${Q[t].n}</div><div class="sig">window pinned in the Cook's Book</div><div style="margin-top:4px"><span class="pip on"></span><span class="pip on"></span><span class="pip on"></span><span class="pip"></span><span class="pip"></span></div></div></div>`;
+  $('#plate').innerHTML = `<div class="stamp" style="--tint:${Q[t].c}"><div class="plate">${d.i}</div><div><div class="grade">${Q[t].n}</div><div>${d.n}</div><div class="tiny dim">score ${C.now.toFixed(2)} · whole ingredients, so no random roll</div></div><div class="side"><div>made 26 · best ${Q[t].n}</div><div class="sig">cook time shown in the Cook's Book</div><div style="margin-top:4px"><span class="pip on"></span><span class="pip on"></span><span class="pip on"></span><span class="pip"></span><span class="pip"></span></div></div></div>`;
 }
 
 function renderBook() {
   const rows = [
     { bench: 'Stove' },
-    { i: '🍲', n: 'Hearty Stew', made: 'cdb', best: 'b', count: 141, win: 'meat 6–14 (fallback)', sig: 'Signature: + Stoked ×0.5' },
-    { i: '🥘', n: 'Seared Stew', made: 'dc', best: 'c', count: 26, win: 'meat under 6' },
+    { i: '🍲', n: 'Hearty Stew', made: 'cdb', best: 'b', count: 141, win: 'meat 6–14 units (default)', sig: 'Signature: also Stoked ×0.5' },
+    { i: '🥘', n: 'Seared Stew', made: 'dc', best: 'c', count: 26, win: 'meat under 6 units' },
     { i: '🍖', n: 'Braised Meat', made: 'c', best: 'c', count: 9, win: null },
-    { i: '🍵', n: 'Mushroom Broth', made: 'edc', best: 'c', count: 31, win: 'herb under 8 (fallback)' },
+    { i: '🍵', n: 'Mushroom Broth', made: 'edc', best: 'c', count: 31, win: 'herb under 8 units (default)' },
     { i: '🥖', n: "Traveler's Ration", made: 'fedc', best: 'c', count: 44, win: 'any' },
-    { i: '🥘', n: 'Scorched Mess', made: 'f', best: 'f', count: 3, win: 'any, all Refuse' },
+    { i: '🥘', n: 'Scorched Mess', made: 'f', best: 'f', count: 3, win: 'any, all F-grade' },
     { blank: true }, { blank: true },
     { bench: 'Oven · Grill · Counter (the hold, after the first prestige)' },
     { i: '🍢', n: 'Skewered Fish', made: 'c', best: 'c', count: 4, win: null },
@@ -607,8 +613,8 @@ function renderBait() {
   const sp = (slime / total) * 100;
   $('#b-share').innerHTML = `<div style="flex-basis:${100 - sp}%; background:var(--dim)">Rat ${(100 - sp).toFixed(0)}%</div><div style="flex-basis:${sp}%; background:var(--q-c)">Slime ${sp.toFixed(0)}%</div>`;
   $('#b-text').textContent = bait
-    ? `Sweet bait at Hunting ${HUNT[hunt]}: slime weight ×${mult.toFixed(2)}${mult >= 3 ? ' (cap)' : ''}. Rats are unaffected.`
-    : 'No bait: the table as authored.';
+    ? `Sweet bait at Hunting ${HUNT[hunt]}: slimes ×${mult.toFixed(2)}${mult >= 3 ? ' (cap)' : ''}. Rats are unaffected.`
+    : 'No bait: the normal spawn table.';
 }
 
 function render() { const C = compute(); renderTrack(C); renderLedger(C); }

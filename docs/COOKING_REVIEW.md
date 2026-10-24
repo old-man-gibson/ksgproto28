@@ -102,8 +102,8 @@ the questions in §8 or on content that does not exist yet.
 
 ### 4.0 Fix first (no design question)
 
-- Cap the judgement nudge (§4.2). This is the mint fix.
-- Windowed dishes keep `value` at or below Hearty Stew's.
+- Cap the judgement nudge (§4.2). Answer 1 allows cooking to earn gold; the
+  cap stays so better ingredients matter.
 - UI: `.preview` reads `--tint`; seed `bench` from `job.placement` and keep
   the last layout per bench in UI state; show the grade on picker cells and
   stock on placed cells.
@@ -325,28 +325,31 @@ What cooking would fill at basic use (follow a recipe card) on a fresh save:
 | Condition defence | Steeped Broth (`steeped`) | **unproven**; Q2 |
 | Access | none | bait and `sated` are optional content only |
 
-## 8. Open questions
+## 8. Answers (user, 2026-10-23)
 
-Each has a default, used until answered.
+These override the sections above where they differ.
 
-1. **Is cooking a gold source?** After the cap, Fair inputs still make Superb
-   stews worth 3.5× their cost, and bench runs replay offline. Default: cap
-   only (§4.2) and keep window dish values at Hearty's. Alternative: dish
-   resale stops scaling with grade past Fair; a dish's worth is eating it.
-2. **How strong may a cooking status be against poison?** (a) a resistance a
-   cell test passes, e.g. +0.25 at Fair; (b) `blockedBy`: poison cannot land
-   while `steeped` is held, for its duration (monsters can wear it too);
-   (c) cooking does not claim condition defence. Default: (a), tested.
-3. **Are slimes food?** 37 of 64 species are slimes and they are the tower's
-   main quarry. Yes would make slime jelly the alpha's hunt-to-pot link (its
-   band retuned to fit a two-slot stove). Default: no until you say; §4.5
-   waits for living quarry.
-4. **Are goblins (humanoids) food?** Default: no (`not: ['humanoid']`).
-5. **Does the Cook's Book survive prestige?** Default: resets per run like
-   recipe cards; a prestige boon may carry it later.
-6. **Is a 100-cook Signature grind wanted?** Default: yes; the numbers are
-   data.
-7. **Round 1 scope.** Default: §4.0, §4.1, §4.2, §5.1, §5.2.
+1. **Cooking may earn gold.** It takes an investment in ingredients, so it is
+   not an infinite gold glitch. Dish values have no limit. The skill cap
+   (§4.2) stays so better ingredients matter at high levels. §4.0's "windowed
+   dishes sell for no more than Hearty Stew" is dropped.
+2. **Poison: more resistance, and immunity at 100%.** A condition does not
+   land when the target's resistance to its element, minus the applier's
+   penetration, is 100% or more. Below 100% the old formula holds. A status
+   can also grant immunity outright (`StatusDef.immune`). Same rule for
+   players and monsters. Steeped gives +25% poison and +10% acid resistance ×
+   grade multiplier, so a Divine (S) Steeped Broth reaches 100%.
+3. **Slimes are food: the main jelly source.** Each slime family has its own
+   jelly (hot, cold, spicy, tingling, kingly, and so on). Higher level and
+   tier slimes drop better grades. Unblocks §4.5 as round 3.
+4. **Humanoids are not food,** unless the player has an omnivore or cannibal
+   flag from an ability, gene or mutagen. Food rules read flags on the eater.
+5. **The Cook's Book resets on prestige; boons can carry parts over.** Round 2
+   adds a boon. Default: rank 1 keeps learned cook times, rank 2 keeps
+   Signatures.
+6. **The 100-cook Signature grind is wanted.**
+7. **Scope: rounds 1 and 2.** Plain language in game text and in design pages:
+   say the rule, no slogans.
 
 ## 9. Weighed and dropped
 
