@@ -19,6 +19,13 @@ done:
 
 # Conditions should be resisted on application
 
+**Amended 2026-10-23 (cooking round 1): resistance of 1 or more, after the
+applier's penetration, is now immunity.** `applyStatus` returns null instead of
+landing at the floor, for players and monsters; below 1 everything here still
+holds. `StatusDef.immune` adds explicit immunity by element or id. See
+CONTENT_GUIDE §"Status condition". The "never gates landing" line in the front
+matter describes the 2026-08-14 build.
+
 **Built 2026-08-14. `npm run verify` green: 1607 tests, 0 type errors.** No save
 change — the whole thing is arithmetic at the point of application, so `save`
 stays empty.

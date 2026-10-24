@@ -421,6 +421,43 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
       grants: [{ id: 'clear_headed', intensity: 1.5 }, { id: 'well_fed', intensity: 0.5 }],
     },
   },
+  // Windowed dishes (CraftOutcomeDef.heat): which one the stove makes depends on
+  // how long the meat or herb sat on the heat. Each is a recipe card away from
+  // the window-less dish it replaces (Hearty Stew, Mushroom Broth).
+  seared_stew: {
+    id: 'seared_stew',
+    name: 'Seared Stew',
+    icon: '🍛',
+    value: 18,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      grants: [{ id: 'stoked', intensity: 1 }],
+    },
+  },
+  braised_meat: {
+    id: 'braised_meat',
+    name: 'Braised Meat',
+    icon: '🍗',
+    value: 20,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      // Ticks: 15 minutes at 10 ticks a second. Well Fed's own length is 10.
+      grants: [{ id: 'well_fed', intensity: 1.5, duration: 9000 }],
+    },
+  },
+  steeped_broth: {
+    id: 'steeped_broth',
+    name: 'Steeped Broth',
+    icon: '🫖',
+    value: 20,
+    graded: true,
+    consumable: {
+      useVerb: 'Drank',
+      grants: [{ id: 'steeped', intensity: 1 }],
+    },
+  },
   recipe_herb_rubbed_meat: {
     id: 'recipe_herb_rubbed_meat',
     name: 'Recipe: Herb-Rubbed Meat',
@@ -441,6 +478,27 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     icon: '📜',
     value: 60,
     consumable: { useVerb: 'Read', teaches: 'lectory_porridge' },
+  },
+  recipe_seared_stew: {
+    id: 'recipe_seared_stew',
+    name: 'Recipe: Seared Stew (meat under 6)',
+    icon: '📜',
+    value: 20,
+    consumable: { useVerb: 'Read', teaches: 'seared_stew' },
+  },
+  recipe_braised_meat: {
+    id: 'recipe_braised_meat',
+    name: 'Recipe: Braised Meat (meat 14 or more)',
+    icon: '📜',
+    value: 25,
+    consumable: { useVerb: 'Read', teaches: 'braised_meat' },
+  },
+  recipe_steeped_broth: {
+    id: 'recipe_steeped_broth',
+    name: 'Recipe: Steeped Broth (herb 8 or more)',
+    icon: '📜',
+    value: 25,
+    consumable: { useVerb: 'Read', teaches: 'steeped_broth' },
   },
   // District rare finds (ActivityDef.drops). Cards are read or offered for a
   // one-time effect (ConsumableSpec), ungraded, and unmarked in play.

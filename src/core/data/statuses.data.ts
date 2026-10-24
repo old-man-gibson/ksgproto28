@@ -967,6 +967,36 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     ],
   },
 
+  // The two below come from windowed stove dishes (CraftOutcomeDef.heat). Both
+  // are elementless like the rest of this block: you do not resist your own
+  // dinner. Per point of intensity; a dish's grade multiplies the intensity.
+
+  stoked: {
+    id: 'stoked',
+    name: 'Stoked',
+    icon: '🥩',
+    color: '#d9692c',
+    stacking: { mode: 'highest' },
+    duration: 300 * SECOND,
+    mods: [
+      { stat: 'damage', op: 'mult', value: 0.05 },
+      { stat: 'critDamage', op: 'add', value: 0.05 },
+    ],
+  },
+
+  steeped: {
+    id: 'steeped',
+    name: 'Steeped',
+    icon: '🫖',
+    color: '#6f9a58',
+    stacking: { mode: 'highest' },
+    duration: 600 * SECOND,
+    mods: [
+      { stat: 'resPoison', op: 'add', value: 0.25 },
+      { stat: 'resAcid', op: 'add', value: 0.1 },
+    ],
+  },
+
   queasy: {
     id: 'queasy',
     name: 'Queasy',

@@ -77,6 +77,26 @@ describe('derived-stats cache', () => {
     expect(afflicted).toEqual(computeDerivedStats(g.state));
   });
 
+  it('invalidates on a cooked status and its grade, resistance past the cap included', () => {
+    // Steeped Broth: resPoison +0.25 per intensity, and a Divine broth is 4 —
+    // 1.0 before the cap, which condition immunity reads (statuses.ts).
+    const g = huntingGame();
+    const before = getDerivedStats(g.state);
+    applyStatus(g.state, g.state, { id: 'steeped', intensity: 1 }, 'a broth');
+    const fair = getDerivedStats(g.state);
+    expect(fair).not.toBe(before);
+    expect(fair.resPoison).toBeCloseTo(before.resPoison + 0.25);
+    expect(fair).toEqual(computeDerivedStats(g.state));
+
+    applyStatus(g.state, g.state, { id: 'steeped', intensity: 4 }, 'a broth');
+    const divine = getDerivedStats(g.state);
+    expect(divine).not.toBe(fair);
+    expect(divine.resPoison).toBeCloseTo(0.75); // the damage cap
+    expect(divine).toEqual(computeDerivedStats(g.state));
+    // The immunity test sees the 1.0 under the cap on the cached block too.
+    expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang', divine)).toBeNull();
+  });
+
   it('serves target-gated variants from the same entry, consistently', () => {
     const g = huntingGame();
     g.equip(1);

@@ -708,11 +708,15 @@ function hurl(state: GameState, bus: EventBus, spec: BrewSpec): void {
       const slice = monsterSlice(target, strike.type, spec.name, raw, strike.penetration ?? 0);
       total += slice.dealt;
       if (slice.dealt > 0) {
-        for (const app of strike.inflicts ?? []) applyStatus(state, target, app, spec.name);
+        // The flask is its own applier: its penetration was set at the bench,
+        // and the thrower's stat has no say (see the note above).
+        for (const app of strike.inflicts ?? []) {
+          applyStatus(state, target, app, spec.name, undefined, strike.penetration ?? 0);
+        }
       }
     }
     // A fume has no blow to land behind — it settles on everyone regardless.
-    for (const app of spec.inflicts) applyStatus(state, target, app, spec.name);
+    for (const app of spec.inflicts) applyStatus(state, target, app, spec.name, undefined, spec.penetration ?? 0);
 
     if (total > 0) {
       // An ambushed target takes the burst harder (StatusDef.incomingBite);

@@ -20,10 +20,12 @@ import {
   craftTagsOf,
   grantGraded,
   matchOutcome,
+  meanExposure,
   noveltyKeys,
   placed,
   rollQuality,
   skillLevel,
+  slotPicks,
   type Placement,
 } from './disciplines';
 import { text } from '../text/log';
@@ -54,6 +56,13 @@ import { text } from '../text/log';
  *    Julienne goes in late or goes to waste; dice wants the whole simmer.
  *  - Each bench may favor one cut (`favoredPrep`), worth about a grade
  *    across a fully matched basket.
+ *  - The same clock also picks WHICH dish: an outcome may declare heat windows
+ *    (`CraftOutcomeDef.heat`) on a tag, and matches only when the mean exposure
+ *    of the placed parts carrying it falls inside. Windowed dishes sit above a
+ *    window-less fallback on the same tags, so a layout outside every window
+ *    cooks what it always did.
+ *  - The cook's judgement is capped (`cookJudgement`): Cooking 60 and beyond add
+ *    two grades, no more.
  */
 
 export const COOKING = DISCIPLINES.cooking;
@@ -123,13 +132,34 @@ function exposureFit(
   return fitOf(duration * (1 - slot.at), exposureProfile(materialId));
 }
 
+/** What `exposureInfo` says about one piece in one slot at one duration. */
+export interface ExposureInfo {
+  /** Units on the heat: duration × (1 − slot.at). */
+  exposure: number;
+  /** The contribution multiplier that exposure earns. */
+  fit: number;
+  verdict: 'in its element' | 'undercooked' | 'overcooked';
+  /** The exposure range this cut wants, in units. */
+  band: [number, number];
+  /** The multiplier at the best point of the band. */
+  peak: number;
+  /**
+   * The entry points, in units from the start of the cook, at which this piece
+   * would land in its band at this duration: [duration − hi, duration − lo],
+   * clamped to [0, duration]. When the whole cook is shorter than the band's
+   * lower end nothing reaches the band and this collapses to [0, 0]; compare
+   * `duration` with `band[0]` to tell that from a real point.
+   */
+  window: [number, number];
+}
+
 /** For the UI: how a piece would fare in a slot, at a duration. */
 export function exposureInfo(
   disc: CraftDisciplineDef,
   slot: CraftSlotDef,
   materialId: string,
   duration?: number,
-): { exposure: number; fit: number; verdict: 'in its element' | 'undercooked' | 'overcooked' } | null {
+): ExposureInfo | null {
   if (!disc.timeline || slot.at == null) return null;
   const units = durationOf(disc, duration);
   const exposure = units * (1 - slot.at);
@@ -137,7 +167,16 @@ export function exposureInfo(
   const fit = fitOf(exposure, profile);
   const verdict =
     exposure < profile.band[0] ? 'undercooked' : exposure > profile.band[1] ? 'overcooked' : 'in its element';
-  return { exposure, fit, verdict };
+  const [lo, hi] = profile.band;
+  const clamp = (x: number) => Math.max(0, Math.min(units, x));
+  return {
+    exposure,
+    fit,
+    verdict,
+    band: [lo, hi],
+    peak: profile.peak,
+    window: [clamp(units - hi), clamp(units - lo)],
+  };
 }
 
 // ---------- Contribution: what each part puts into the dish ----------
@@ -188,7 +227,7 @@ function prepFitBonus(disc: CraftDisciplineDef, parts: GradedStack[]): number {
 }
 
 /** The tier whose own multiplier a combined value has earned, from below. */
-function tierFor(value: number): QualityTier {
+export function tierFor(value: number): QualityTier {
   let best: QualityTier = 'f';
   for (const tier of QUALITY_ORDER) {
     if (QUALITY_TIERS[tier].mult <= value + 1e-9) best = tier;
@@ -196,10 +235,117 @@ function tierFor(value: number): QualityTier {
   return best;
 }
 
-/** avg contribution + the cook's judgement + the bench-fit bonus. */
+/** The most a cook's judgement is ever worth, in grades. */
+export const JUDGEMENT_CAP = 2;
+
+/**
+ * What the cook's own hand adds to a dish, in grades: +1.00 at Cooking 15,
+ * +2.00 at Cooking 60, flat after. The first fifteen levels pay a grade; the
+ * next forty-five pay a second, at a third of the rate.
+ *
+ * Capped on purpose. Uncapped, two Fair ingredients reached Divine at Cooking
+ * 45, and a stew's resale value rides its grade; at the cap, Fair inputs top
+ * out at Superb.
+ */
+export function cookJudgement(level: number): number {
+  const l = Math.max(0, level);
+  return Math.min(JUDGEMENT_CAP, Math.min(l, 15) / 15 + Math.max(0, l - 15) / 45);
+}
+
+/** The cook's judgement + the bench-fit bonus: everything added to the mean contribution. */
 function basketNudge(state: GameState, disc: CraftDisciplineDef, parts: GradedStack[]): number {
-  // Every fifteen levels is worth roughly a grade of judgement.
-  return skillLevel(state, disc) / 15 + prepFitBonus(disc, parts);
+  return cookJudgement(skillLevel(state, disc)) + prepFitBonus(disc, parts);
+}
+
+// ---------- The ledger: where a grade comes from ----------
+
+/** One placed part's line in the ledger. */
+export interface LedgerRow {
+  slotId: string;
+  /** The material placed. */
+  id: string;
+  quality: QualityTier;
+  /** The exposure multiplier its slot and the duration earn it; 1 outside time. */
+  fit: number;
+  /** What it adds to the mean: its grade scaled by `fit`, and by the cut's uniformity band if prepped. */
+  lo: number;
+  hi: number;
+  /** Cookware. It is averaged in like an ingredient, so it is listed like one. */
+  tool: boolean;
+}
+
+export interface CookLedger {
+  /** One row per placed part, in the bench's slot order. */
+  rows: LedgerRow[];
+  /** Mean of the rows' contributions: [floor, ceiling]. */
+  mean: [number, number];
+  /** What the cook adds (`cookJudgement`). */
+  judgement: number;
+  /** What the bench adds for cuts it favours. */
+  benchFit: number;
+  /** mean + judgement + benchFit. `tierFor` of each end is the dish's grade range. */
+  score: [number, number];
+  /**
+   * The tier above the one the floor of the range earned, with its threshold
+   * and how far each end of the score falls short of it. `shortBest` is 0 when
+   * the best roll reaches it. Absent for an empty pot and at Divine.
+   */
+  next?: { tier: QualityTier; at: number; shortBest: number; shortWorst: number };
+}
+
+/**
+ * Every number that makes up a dish's grade, laid out part by part. The grade
+ * range (`dishQualityRange`) is `tierFor` over `score`, so the two cannot
+ * disagree. An empty pot scores 0, which is grade F.
+ */
+export function cookLedger(
+  state: GameState,
+  placement: Placement,
+  disc: CraftDisciplineDef = COOKING,
+  duration?: number,
+): CookLedger {
+  const units = durationOf(disc, duration);
+  const order = (id: string) => {
+    const i = disc.slots.findIndex((s) => s.id === id);
+    return i < 0 ? disc.slots.length : i;
+  };
+  const rows: LedgerRow[] = Object.entries(placement)
+    .filter((e): e is [string, GradedStack] => !!e[1])
+    .sort((a, b) => order(a[0]) - order(b[0]))
+    .map(([slotId, part]) => {
+      const slot = disc.slots.find((s) => s.id === slotId);
+      const [lo, hi] = contributionBand(disc, slot, part, units);
+      return {
+        slotId,
+        id: part.id,
+        quality: part.quality,
+        fit: exposureFit(disc, slot, part.id, units),
+        lo,
+        hi,
+        tool: !!slot && slotPicks(slot) === 'tool',
+      };
+    });
+  const judgement = cookJudgement(skillLevel(state, disc));
+  if (!rows.length) return { rows, mean: [0, 0], judgement, benchFit: 0, score: [0, 0] };
+
+  const benchFit = prepFitBonus(disc, rows.map(({ id, quality }) => ({ id, quality })));
+  const mean: [number, number] = [
+    rows.reduce((sum, r) => sum + r.lo, 0) / rows.length,
+    rows.reduce((sum, r) => sum + r.hi, 0) / rows.length,
+  ];
+  const nudge = judgement + benchFit;
+  const score: [number, number] = [mean[0] + nudge, mean[1] + nudge];
+
+  const above = QUALITY_ORDER[QUALITY_ORDER.indexOf(tierFor(score[0])) + 1];
+  const next = above
+    ? {
+        tier: above,
+        at: QUALITY_TIERS[above].mult,
+        shortBest: Math.max(0, QUALITY_TIERS[above].mult - score[1]),
+        shortWorst: QUALITY_TIERS[above].mult - score[0],
+      }
+    : undefined;
+  return { rows, mean, judgement, benchFit, score, ...(next ? { next } : {}) };
 }
 
 /**
@@ -222,21 +368,9 @@ export function dishQualityRange(
   disc: CraftDisciplineDef = COOKING,
   duration?: number,
 ): { min: QualityTier; max: QualityTier } {
-  const out = laidOut(disc, placement);
-  if (!out.length) return { min: 'f', max: 'f' };
-  const units = durationOf(disc, duration);
-  let lo = 0;
-  let hi = 0;
-  for (const { slot, part } of out) {
-    const [a, b] = contributionBand(disc, slot, part, units);
-    lo += a;
-    hi += b;
-  }
-  const nudge = basketNudge(state, disc, out.map((o) => o.part));
-  return {
-    min: tierFor(lo / out.length + nudge),
-    max: tierFor(hi / out.length + nudge),
-  };
+  const ledger = cookLedger(state, placement, disc, duration);
+  if (!ledger.rows.length) return { min: 'f', max: 'f' };
+  return { min: tierFor(ledger.score[0]), max: tierFor(ledger.score[1]) };
 }
 
 /** Cook-time resolution: every prepped part rolls inside its own band. */
@@ -269,6 +403,13 @@ export interface CookCheck {
   qualityHigh?: QualityTier;
   /** What will come out, at the grade(s) it can come out at. */
   label?: string;
+  /**
+   * The heat windows of the outcome that matched, with the mean exposure the
+   * placed parts carrying each tag actually got. Absent when the outcome has no
+   * windows. A window an UNmatched dish declares is read with `meanExposure`
+   * and the bench's outcomes.
+   */
+  heatExposure?: { tag: string; mean: number; from?: number; to?: number }[];
 }
 
 /** The cutting board's placement, picked apart. Null when not that bench. */
@@ -288,10 +429,10 @@ export function previewCook(
   disc: CraftDisciplineDef = COOKING,
   duration?: number,
 ): CookCheck {
-  const check = checkCraft(state, disc, placement);
+  const check = checkCraft(state, disc, placement, duration);
   if (!check.ok) return { ok: false, reason: check.reason };
 
-  const outcome = matchOutcome(state, disc, placement);
+  const outcome = matchOutcome(state, disc, placement, duration);
   if (!outcome) return { ok: false, reason: text('cooking.reason.no_outcome') };
 
   // The cutting board: same machinery in, a transformed ingredient out. The
@@ -319,6 +460,13 @@ export function previewCook(
   const { min, max } = dishQualityRange(state, placement, disc, duration);
   const dish = outcome.result.kind === 'material' ? MATERIALS[outcome.result.id] : undefined;
   const name = dish?.name ?? outcome.name;
+  // Matching already proved every window has a mean, so the null is unreachable.
+  const heatExposure = outcome.heat?.map((w) => ({
+    tag: w.tag,
+    mean: meanExposure(disc, placement, w.tag, duration) ?? 0,
+    ...(w.from !== undefined ? { from: w.from } : {}),
+    ...(w.to !== undefined ? { to: w.to } : {}),
+  }));
   return {
     ok: true,
     outcome,
@@ -328,6 +476,7 @@ export function previewCook(
       min === max
         ? `${QUALITY_TIERS[min].name} ${name}`
         : `${QUALITY_TIERS[min].name}–${QUALITY_TIERS[max].name} ${name}`,
+    ...(heatExposure ? { heatExposure } : {}),
   };
 }
 

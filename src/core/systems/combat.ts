@@ -454,12 +454,12 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
   }
   bumpStat(state, bus, 'combat:attacks');
   if (crit) {
-    onCritLanded(state, monster, itemName(item));
+    onCritLanded(state, monster, itemName(item), penetration);
     markCombatEvent(state, 'onCrit');
     bumpStat(state, bus, 'combat:crits');
   }
   if (oil?.inflicts && monster.hp > 0) {
-    for (const app of oil.inflicts) applyStatus(state, monster, app, oil.name);
+    for (const app of oil.inflicts) applyStatus(state, monster, app, oil.name, undefined, penetration);
   }
   if (oil?.exhausted) feed(state, `🛢️ The last of the ${oil.name} wipes off your edge.`);
 
@@ -1029,7 +1029,9 @@ function startEncounter(
     state.pendingApproach = null;
     let told = false;
     for (const e of liveEnemies(state.combat)) {
-      for (const app of opening.enemies) told = !!applyStatus(state, e, app, 'your approach') || told;
+      for (const app of opening.enemies) {
+        told = !!applyStatus(state, e, app, 'your approach', undefined, getDerivedStats(state).penetration) || told;
+      }
     }
     if (told) feed(state, `🥷 Your approach catches them cold!`);
     // What the road did to YOU is still something done to you — wading in wet
@@ -2531,8 +2533,8 @@ function landIncantation(state: GameState, bus: EventBus): void {
     monster.hp -= burned;
     noteOutgoing(state, burned);
   }
-  applyStatuses(state, monster, geneInflicts(state, spec, monster), ability!.name);
-  onCritLanded(state, monster, ability!.name);
+  applyStatuses(state, monster, geneInflicts(state, spec, monster), ability!.name, undefined, vs.penetration);
+  onCritLanded(state, monster, ability!.name, vs.penetration);
   if (monster.hp <= 0) {
     const at = c.enemies.indexOf(monster);
     if (at >= 0) onKill(state, bus, at);
@@ -2624,9 +2626,9 @@ function geneInflicts(
  * Read off the gene rather than named in combat, so a second body wanting a
  * different on-crit rider needs nothing here.
  */
-function onCritLanded(state: GameState, target: MonsterInstance, source: string): void {
+function onCritLanded(state: GameState, target: MonsterInstance, source: string, penetration = 0): void {
   for (const app of expressedGene(state)?.onCrit ?? []) {
-    applyStatus(state, target, app, source);
+    applyStatus(state, target, app, source, undefined, penetration);
   }
 }
 
@@ -2902,6 +2904,8 @@ export function castCraftedAttack(
           c.enemies[aim]!,
           { id: t.id, intensity: t.intensity * spec.transfers.mult },
           spec.name,
+          undefined,
+          stats.penetration,
         );
       }
       feed(state, `${spec.icon} ${spec.name} strips your affliction and delivers it, sharpened.`);
@@ -3011,7 +3015,9 @@ export function castCraftedAttack(
             ? '♨️ Water bursts into steam. The collector stamps blindly through the cloud.'
             : type === 'cold' ? '🧊 Ice locks the collector in place and prises its armor apart.'
             : '⚡ The collector stamps faster. Each stroke tears through its own mechanism.');
-          for (const app of strike.inflicts ?? []) applyStatus(state, target, app, spec.name);
+          for (const app of strike.inflicts ?? []) {
+            applyStatus(state, target, app, spec.name, undefined, vs.penetration);
+          }
         }
       }
       prevLanded = landedAny;
@@ -3020,7 +3026,9 @@ export function castCraftedAttack(
     // whether or not anything was struck, which is the whole point of them
     // (see SpellSpec.afflicts). A shape that only exposes someone has no hit
     // to hang them on.
-    for (const app of spec.afflicts ?? []) applyStatus(state, target, app, spec.name);
+    for (const app of spec.afflicts ?? []) {
+      applyStatus(state, target, app, spec.name, undefined, vs.penetration);
+    }
     // A working with nothing to land — a mending poured into an enemy, or a
     // sentence whose every strike was conditioned out this cast — deals no
     // damage and says nothing. Its own machinery does the talking.
@@ -3040,7 +3048,7 @@ export function castCraftedAttack(
       }
       if (anyCrit) {
         markCombatEvent(state, 'onCrit');
-        onCritLanded(state, target, spec.name);
+        onCritLanded(state, target, spec.name, vs.penetration);
       }
       feed(
         state,
@@ -4053,7 +4061,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       // The fight's ledger: what your body has done, for reflexes to learn from.
       if (isWeaponHit) bumpStat(state, bus, 'combat:attacks');
       if (isCrit) {
-        onCritLanded(state, monster, hitLabel);
+        onCritLanded(state, monster, hitLabel, vs.penetration);
         markCombatEvent(state, 'onCrit');
         bumpStat(state, bus, 'combat:crits');
       }
@@ -4077,12 +4085,14 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       // inflicts its riders and exits into its position; a plain swing
       // recovers to neutral. Spells move the mind, not the feet.
       if (move?.inflicts && monster.hp > 0) {
-        for (const app of move.inflicts) applyStatus(state, monster, app, technique!.name);
+        for (const app of move.inflicts) {
+          applyStatus(state, monster, app, technique!.name, undefined, vs.penetration);
+        }
       }
       if (skillActive?.spec.type === 'gene' && monster.hp > 0) {
         const gspec = skillActive.spec;
         for (const app of geneInflicts(state, gspec, monster) ?? []) {
-          applyStatus(state, monster, app, hitLabel);
+          applyStatus(state, monster, app, hitLabel, undefined, vs.penetration);
         }
         // "Slays significantly weaker creatures outright" — measured against the
         // blow that just landed rather than against level, so an execute keeps
@@ -4094,7 +4104,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       }
       if (oilSpent) {
         if (oilRiders && monster.hp > 0) {
-          for (const app of oilRiders) applyStatus(state, monster, app, oilName);
+          for (const app of oilRiders) applyStatus(state, monster, app, oilName, undefined, vs.penetration);
         }
         if (oilExhausted) feed(state, `🛢️ The last of the ${oilName} wipes off your edge.`);
       }
@@ -4165,7 +4175,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
             // `other`, not `monster` — this is the splash, and the whole point
             // of asking per target is that each flank has its own count.
             for (const app of geneInflicts(state, geneSpec, other) ?? []) {
-              applyStatus(state, other, app, hitLabel);
+              applyStatus(state, other, app, hitLabel, undefined, vs.penetration);
             }
             if (geneSpec.execute && other.hp <= spill * geneSpec.execute) {
               feed(state, `☠️ ${hitLabel} finishes the ${other.name} outright.`);

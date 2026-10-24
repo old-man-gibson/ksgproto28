@@ -83,6 +83,10 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
         // Recipe cards (ConsumableSpec.teaches): the stove's learned dishes.
         { kind: 'material', id: 'recipe_herb_rubbed_meat' },
         { kind: 'material', id: 'recipe_fish_onion_pot' },
+        // The windowed dishes (CraftOutcomeDef.heat): each card names its window.
+        { kind: 'material', id: 'recipe_seared_stew' },
+        { kind: 'material', id: 'recipe_braised_meat' },
+        { kind: 'material', id: 'recipe_steeped_broth' },
       ],
     },
   },

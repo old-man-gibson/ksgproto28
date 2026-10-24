@@ -1306,6 +1306,14 @@ export interface StatusDef {
   };
   /** Conditions that prevent this one being applied at all while held. */
   blockedBy?: string[];
+  /**
+   * While the bearer holds this, applications that match do not land: any
+   * condition whose `element` is listed, and any condition named by id. The
+   * mirror of `blockedBy`, written on the protecting status instead of the
+   * blocked one. A monster can wear it (`MonsterDef.wears`) as readily as a dish
+   * can grant it. Only applications are refused; a condition already held stays.
+   */
+  immune?: { elements?: DamageType[]; ids?: string[] };
   stacking: StatusStacking;
   /** Default lifetime in ticks; null means only a removal rule can end it. */
   duration: number | null;
@@ -2152,7 +2160,9 @@ export interface MonsterDef {
   escorts?: string[];
   /**
    * Fractional damage reduction per incoming type: 0.5 = takes half damage,
-   * negative = vulnerable (−0.5 = takes 50% more). Missing = 0.
+   * negative = vulnerable (−0.5 = takes 50% more). Missing = 0. Damage is capped
+   * at 0.9 on read, but a value of 1 or more also makes the species immune to
+   * conditions of that element: they do not land (`applyStatus`).
    */
   resistances?: Partial<Record<DamageType, number>>;
   /**
@@ -2604,8 +2614,26 @@ export interface CraftOutcomeDef {
    * (`recipe:<id>`, taught by a recipe card — `ConsumableSpec.teaches`).
    */
   recipe?: string;
+  /**
+   * Heat windows, for outcomes on a bench with a `timeline`. Each entry names a
+   * craft tag and a half-open exposure range [from, to) in timeline units
+   * (`from` absent = 0, `to` absent = no upper end). The outcome matches only
+   * when, for every entry, the MEAN exposure of the placed parts carrying that
+   * tag (duration × (1 − slot.at), timed slots only) falls inside the range. If
+   * no placed part carries the tag, or the bench has no timeline, it does not
+   * match. Pair every windowed outcome with a window-less fallback on the same
+   * tags (linted in both layers).
+   */
+  heat?: HeatWindow[];
   /** What comes out. */
   result: CraftResult;
+}
+
+/** One heat window: parts tagged `tag` must average an exposure in [from, to). */
+export interface HeatWindow {
+  tag: string;
+  from?: number;
+  to?: number;
 }
 
 export type CraftResult =

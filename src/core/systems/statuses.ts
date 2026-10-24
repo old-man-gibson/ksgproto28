@@ -103,7 +103,34 @@ function durationOf(def: StatusDef, app: StatusApplication): number | null {
 export const APPLICATION_FLOOR = 0.25;
 
 /**
- * How much of an incoming dose survives the bearer's resistance to it.
+ * Resistance at or above this, after the applier's penetration, is IMMUNITY: the
+ * condition does not land at all. Below it the floor above still applies.
+ */
+export const IMMUNITY_RESISTANCE = 1;
+
+/**
+ * The player's resistances that sat ABOVE their cap before `computeDerivedStats`
+ * clamped them, keyed by stat key (`resPoison`), attached to the stat block that
+ * was returned. Only entries that exceeded the cap are stored.
+ *
+ * The immunity test needs the number before the cap: `resistCap` (0.75 by
+ * default) exists to limit damage reduction, and a cap under 1 would make the
+ * player unable to reach `IMMUNITY_RESISTANCE` however much they stacked. It is
+ * a side table rather than a stat because `DerivedStats` is `Record<StatKey,
+ * number>` and a new key would spread through every stat list, tooltip and
+ * test. A copy of the block (`{ ...stats }`) loses the entry, and the lookup
+ * then falls back to the capped value: immunity fails closed, never open.
+ */
+const UNCAPPED_RESISTANCE = new WeakMap<object, Record<string, number>>();
+
+/** Called by `computeDerivedStats` with the resistances it is about to clamp. */
+export function noteUncappedResistance(stats: object, over: Record<string, number>): void {
+  UNCAPPED_RESISTANCE.set(stats, over);
+}
+
+/**
+ * How much of an incoming dose survives the bearer's resistance to it; 0 when
+ * the bearer cannot be affected by it at all.
  *
  * Reads `StatusDef.element` — the damage type that most commonly inflicts this
  * condition — which is a DIFFERENT field from `StatusDot.type` (what its ticks
@@ -111,6 +138,11 @@ export const APPLICATION_FLOOR = 0.25;
  * `element` is not an elemental affliction and is never resisted on
  * application: that is every self-granted buff in the game, and the absence is
  * the authoring, not an omission.
+ *
+ * Immunity: the bearer's resistance to the element, read BEFORE any cap, minus
+ * the applier's `penetration`, at or above `IMMUNITY_RESISTANCE` means nothing
+ * lands. Penetration enters only this test; the share that lands below it is
+ * still read from the bearer's own resistance, unchanged.
  *
  * The player's stat block is passed in, because this module cannot reach
  * derived.ts — the same contract `tickStatuses` already works under. Passing it
@@ -122,22 +154,44 @@ function applicationMult(
   bearer: GameState | MonsterInstance,
   def: StatusDef,
   stats?: Record<string, number>,
+  penetration = 0,
 ): number {
   if (!def.element) return 1;
   let res: number;
+  let uncapped: number;
   if (bearer === state) {
     // No block passed means the caller cannot see one, not that the player is
     // unarmoured — leave the dose alone rather than inventing a resistance.
-    const own = stats?.[RES_STAT_BY_TYPE[def.element]];
+    const key = RES_STAT_BY_TYPE[def.element];
+    const own = stats?.[key];
     if (own === undefined) return 1;
     res = own;
+    uncapped = UNCAPPED_RESISTANCE.get(stats!)?.[key] ?? own;
   } else {
-    res = bearerResistance(bearer, def.element);
+    res = uncapped = monsterResistanceUncapped(bearer, def.element);
   }
+  if (uncapped - penetration >= IMMUNITY_RESISTANCE) return 0;
   // Vulnerability amplifies by the same arithmetic it resists by; the clamp is
-  // the one bearerResistance already applies to monsters, extended to the
-  // player so equipment cannot stack its way past the floor.
+  // the one `bearerResistance` applies to monsters, extended to the player so
+  // equipment cannot stack its way past the floor.
   return Math.max(APPLICATION_FLOOR, 1 - Math.max(-1, Math.min(0.9, res)));
+}
+
+/**
+ * Whether something the bearer holds makes it immune to this condition, by id
+ * or by element (`StatusDef.immune`). Checked beside `blockedBy`: the
+ * difference is the direction. `blockedBy` is written on the condition that
+ * would land, `immune` on the one that protects, so a status worn by a monster
+ * or granted by food can shield without the shielded conditions knowing.
+ */
+function wearsImmunityTo(bearer: GameState | MonsterInstance, def: StatusDef): boolean {
+  for (const held of statusesOf(bearer)) {
+    const immune = STATUSES[held.id]?.immune;
+    if (!immune) continue;
+    if (immune.ids?.includes(def.id)) return true;
+    if (def.element && immune.elements?.includes(def.element)) return true;
+  }
+  return false;
 }
 
 /**
@@ -159,6 +213,12 @@ function applicationMult(
  * grant is unresisted by its own data. ⚠️ **The day a beneficial condition wants
  * an `element` is the day that stops being true**, and the fix is to split the
  * grant sites out rather than to weaken this rule.
+ *
+ * `penetration` is the APPLIER's penetration stat, 0 when the applier is
+ * unknown or has none: the player's when the player inflicts on a monster. It
+ * erodes the bearer's resistance in the immunity test only — a condition lands
+ * nothing at all once resistance minus penetration reaches 1. Monsters have no
+ * penetration stat, so every monster-applied call passes nothing.
  */
 export function applyStatus(
   state: GameState,
@@ -166,10 +226,13 @@ export function applyStatus(
   app: StatusApplication,
   source?: string,
   stats?: Record<string, number>,
+  penetration = 0,
 ): StatusInstance | null {
   const def = STATUSES[app.id];
   if (!def) return null;
-  return inflict(state, bearer, app, source, applicationMult(state, bearer, def, stats));
+  const resisted = applicationMult(state, bearer, def, stats, penetration);
+  if (resisted <= 0) return null;
+  return inflict(state, bearer, app, source, resisted);
 }
 
 /**
@@ -204,6 +267,7 @@ function inflict(
   for (const blocker of def.blockedBy ?? []) {
     if (hasStatus(bearer, blocker)) return null;
   }
+  if (wearsImmunityTo(bearer, def)) return null;
 
   // Another condition may make this one land harder — a soaking carries a
   // chill far deeper than dry skin does — and the body's own armour against
@@ -310,10 +374,11 @@ export function applyStatuses(
   apps: StatusApplication[] | undefined,
   source?: string,
   stats?: Record<string, number>,
+  penetration = 0,
 ): StatusInstance[] {
   const landed: StatusInstance[] = [];
   for (const app of apps ?? []) {
-    const inst = applyStatus(state, bearer, app, source, stats);
+    const inst = applyStatus(state, bearer, app, source, stats, penetration);
     if (inst) landed.push(inst);
   }
   return landed;
@@ -1217,9 +1282,17 @@ function bearerResistance(
   playerRes?: number,
 ): number {
   if (playerRes !== undefined) return playerRes;
+  return Math.max(-1, Math.min(0.9, monsterResistanceUncapped(bearer, type)));
+}
+
+/**
+ * A monster's resistance before the [-1, 0.9] clamp: the species' declared
+ * value plus what its conditions add. The immunity test reads this, because the
+ * clamp would hold a body that resists a condition completely to 0.9.
+ */
+function monsterResistanceUncapped(bearer: GameState | MonsterInstance, type: DamageType): number {
   const inst = bearer as MonsterInstance;
-  const innate = MONSTERS[inst.defId]?.resistances?.[type] ?? 0;
-  let res = innate;
+  let res = MONSTERS[inst.defId]?.resistances?.[type] ?? 0;
   for (const held of statusesOf(bearer)) {
     for (const mod of STATUSES[held.id]?.mods ?? []) {
       if (mod.stat !== RES_STAT_BY_TYPE[type]) continue;
@@ -1227,7 +1300,7 @@ function bearerResistance(
       res = mod.op === 'add' ? res + value : res * (1 + value);
     }
   }
-  return Math.max(-1, Math.min(0.9, res));
+  return res;
 }
 
 /**

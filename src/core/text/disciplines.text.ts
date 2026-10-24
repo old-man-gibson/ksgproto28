@@ -10,10 +10,13 @@ export const DISCIPLINES_TEXT: ProseTable = {
   'runecarving.desc': 'Rune Table. Takes a rune slab, one to three carving patterns (second at Runecarving 10, third at 25), and optional inlay, pigment, up to two gems and a carving tool that is not consumed. Slab grade scales the pattern effects; each adornment adds its own.',
   'runecarving.outcomes.carve.desc': 'A slab cut to the chosen patterns.',
 
-  'cooking.desc': 'Cooking Stove. Simmers two to four raw ingredients for 8, 12 or 16 units; each slot enters the pot at a fixed point of the simmer. The outcome is matched on ingredient tags; the grade comes from ingredient grade and how well each ingredient suits its time in the pot.',
+  'cooking.desc': 'Cooking Stove. Simmers two to four raw ingredients for 8, 12 or 16 units; each slot enters the pot at a fixed point of the simmer. The outcome is matched on ingredient tags; the grade comes from ingredient grade and how well each ingredient suits its time in the pot. Some learned dishes also need the parts with one tag to average a set number of units on the heat; the recipe card states it.',
   'cooking.outcomes.feast.desc': 'Meat, a vegetable and a seasoning, all Superb grade or better. Cooking 20.',
-  'cooking.outcomes.stew.desc': 'Meat and a vegetable.',
-  'cooking.outcomes.broth.desc': 'A mushroom and an herb.',
+  'cooking.outcomes.stew.desc': 'Meat and a vegetable. What the same two make when the meat is outside the Seared Stew and Braised Meat windows, or their recipes are not known.',
+  'cooking.outcomes.broth.desc': 'A mushroom and an herb. What the same two make when the herb is outside the Steeped Broth window, or its recipe is not known.',
+  'cooking.outcomes.seared_stew.desc': 'Learned dish. Meat and a vegetable, with the meat on the heat for under 6 units on average (midway on a Quick simmer).',
+  'cooking.outcomes.braised_meat.desc': 'Learned dish. Meat and a vegetable, with the meat on the heat for 14 units or more on average (first in on a Long braise).',
+  'cooking.outcomes.steeped_broth.desc': 'Learned dish. A mushroom and an herb, with the herb on the heat for 8 units or more on average (first in, on any simmer).',
   'cooking.outcomes.ration.desc': 'Any two ingredients that match nothing else.',
   'cooking.outcomes.mess.desc': 'Any basket whose best ingredient is Refuse grade. Harmful to eat.',
 

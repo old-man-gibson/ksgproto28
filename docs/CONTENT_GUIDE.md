@@ -756,7 +756,8 @@ window lists known recipes with the tags each one takes. The lints require
 every learned dish to have a card, every card to teach a real dish, and every
 card to be sold at a counter or dropped by an activity. Learned dishes take a
 priority above the generic outcome their tags would otherwise hit (fish + onion
-is a stew without the card).
+is a stew without the card). A learned dish with `heat` windows is the same
+thing plus a timing requirement; the card says which.
 
 A `train` activity is `attr: 'str'` for the simple case, or `attrXp` alone when
 several attributes are the point — `attr` is optional, and the split then *is*
@@ -1213,6 +1214,35 @@ the full simmer, whole food is forgiving and never bonused. Slots without `at`
 (seasoning, cookware) stand outside time. The stove is the reference
 implementation.
 
+**Heat windows: the clock picks the dish.** A timed bench's outcome may carry
+`heat: [{ tag, from?, to? }]`, half-open exposure ranges [from, to) in timeline
+units. It matches only when, for every entry, the MEAN exposure
+(duration × (1 − `slot.at`)) of the placed parts carrying that tag lies inside;
+only timed slots count, and no tagged part means no match. A bench with no
+`timeline` never matches a windowed outcome. `matchOutcome`, `checkCraft` and
+`previewCook` take the duration; `meanExposure` and `describeHeatWindow`
+(`systems/disciplines.ts`) are the read functions.
+
+Every windowed outcome needs a **window-less fallback on the same bench**: lower
+priority, no `recipe`, `minLevel`, `minQuality` or `maxQuality`, and `requires`
+its own `requires` already cover. A cook without the card, or outside every
+window, then makes what the same basket always made. Windowed dishes are
+gated by a recipe card whose name and description state the window in plain
+numbers. `heatWindowProblems` (`systems/disciplines.ts`) lints this in both
+layers (`tests/content.test.ts`, `forge/lib/validate.ts`): a timed bench, a
+fallback, a non-empty window, and a window some timeline option × open slot can
+reach at the outcome's level. The stove's first set: Seared Stew (meat under 6,
+`stoked`), Hearty Stew (fallback), Braised Meat (meat 14 or more, `well_fed`
+×1.5 for 15 minutes), Steeped Broth (herb 8 or more, `steeped`), Mushroom Broth
+(fallback).
+
+**The cook's judgement is capped** (`cookJudgement`, `systems/cooking.ts`):
++1.00 grade at Cooking 15, +2.00 at 60, flat after. Fair ingredients top out at
+Superb at the cap, and two whole Superb ingredients reach Divine from Cooking
+38. `cookLedger` returns every number behind a grade (rows, mean, judgement, bench
+fit, score, gap to the next tier), and `dishQualityRange` is `tierFor` over its
+score.
+
 **Bench runs** (`systems/benchwork.ts`) repeat one layout on the clock —
 `craftSpeed` compresses the interval to a floor, and speed past the floor
 resolves several crafts per completion. Exclusive with activities, bound to
@@ -1297,9 +1327,30 @@ unresistable by construction.
 The landed share is `max(APPLICATION_FLOOR, 1 − resistance)`, and the floor
 (`systems/statuses.ts`) is load-bearing: without it a 0.9-resistant target needs
 fifty doses to escalate a bleed that costs five, which is immunity wearing a
-number. **Resistance buys the consequences, never the immunity.** Negative
-resistance runs the same arithmetic the other way, so a vulnerability deepens
-the dose.
+number. **Below 1, resistance buys the consequences, never the immunity.**
+Negative resistance runs the same arithmetic the other way, so a vulnerability
+deepens the dose.
+
+**At 1 it is immunity.** The bearer's resistance to the condition's element,
+read before any cap, minus the applier's `penetration`, at or above
+`IMMUNITY_RESISTANCE` (1) and the condition does not land at all
+(`applyStatus` returns null). Penetration enters only that test; the share that
+lands below it is read from the bearer's own resistance, unchanged. Both bearers:
+a monster's resistance is its declared value plus its conditions' mods (the
+[-1, 0.9] clamp applies after the test), and the player's is read from the
+pre-cap record `computeDerivedStats` leaves on the stat block, because
+`resistCap` (0.75) holds the stat itself under 1. `applyStatus` takes the
+applier's penetration as its last argument: the player's stat where the player
+inflicts, the flask's own where a flask does, 0 everywhere else. Monsters have no
+penetration stat.
+
+`immune: { elements?, ids? }` is the explicit form: while the bearer holds a
+status that has it, matching applications are refused (checked beside
+`blockedBy`, the other direction: `blockedBy` is written on the condition that
+would land, `immune` on the one that protects). Monsters can wear it
+(`MonsterDef.wears`). It refuses applications only; a condition already held
+stays, and an escalation into a refused condition drops the old one with
+nothing in its place.
 
 Where escalation is measured in **depth** (`sum`, `highest`, `absorb` — 14 of
 the 16 element-bearing conditions) resistance raises applications-to-escalation
@@ -1376,8 +1427,9 @@ share of what you spend from one; `ceilingPerTick` widens a wound for as long as
 it is held; `damp` dulls modifiers by where they came from (`{ slot: 'weapon' }`
 = your weapon's bonuses); `healCap` rations how much of the condition's own
 damage healing may undo; `expiresTo` is what it becomes when the timer runs out,
-inheriting its bookkeeping; `blockedBy` prevents it applying at all; `hidden`
-keeps it off the status bar.
+inheriting its bookkeeping; `blockedBy` prevents it applying at all; `immune`
+makes its bearer immune to the elements and ids it lists; `hidden` keeps it off
+the status bar.
 
 **Behavioural gates** — what a condition stops you *doing*, all declarative:
 

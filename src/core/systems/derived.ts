@@ -30,6 +30,7 @@ import {
   fieldHungerBucket,
   hasDamping,
   hasStatus,
+  noteUncappedResistance,
   statusDampingFor,
   statusResFloor,
   statusResOverrides,
@@ -529,10 +530,15 @@ export function computeDerivedStats(
   // giant that shrugs off flame is raising the LIMIT, not merely approaching it,
   // and clamping to a global would have quietly thrown that away.
   const cap = Math.max(0, stats.resistCap);
+  // What the cap is about to hide, for the one reader that needs it: condition
+  // immunity is resistance reaching 1, and the cap holds the stat under that.
+  const aboveCap: Record<string, number> = {};
   for (const key of RES_KEYS) {
+    if (stats[key] > cap) aboveCap[key] = stats[key];
     stats[key] = Math.min(cap, stats[key]);
     if (floor !== undefined) stats[key] = Math.max(floor, stats[key]);
   }
+  if (Object.keys(aboveCap).length > 0) noteUncappedResistance(stats, aboveCap);
 
   // Layer 3: modifiers whose value is DERIVED from another stat. Deliberately
   // last, so every source reads its final, clamped value — a fire slime paid

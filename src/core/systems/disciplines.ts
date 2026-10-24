@@ -252,6 +252,148 @@ function tagCounts(placement: Placement): Map<string, number> {
   return counts;
 }
 
+// ---------- Heat windows ----------
+
+/** The duration a timed bench cooks for: the chosen one, or its default. */
+export function timelineUnits(disc: CraftDisciplineDef, duration?: number): number | undefined {
+  return disc.timeline ? (duration ?? disc.timeline.default) : undefined;
+}
+
+/**
+ * The mean exposure, in timeline units, of the placed parts carrying `tag`:
+ * duration × (1 − slot.at) per part, over timed slots only. Null when the bench
+ * has no timeline or no timed part carries the tag. A part in a slot without
+ * `at` (seasoning, cookware) stands outside time and is not counted.
+ */
+export function meanExposure(
+  disc: CraftDisciplineDef,
+  placement: Placement,
+  tag: string,
+  duration?: number,
+): number | null {
+  const units = timelineUnits(disc, duration);
+  if (units === undefined) return null;
+  let sum = 0;
+  let n = 0;
+  for (const [slotId, part] of Object.entries(placement)) {
+    if (!part) continue;
+    const at = disc.slots.find((s) => s.id === slotId)?.at;
+    if (at == null || !craftTagsOf(part.id).includes(tag)) continue;
+    sum += units * (1 - at);
+    n++;
+  }
+  return n > 0 ? sum / n : null;
+}
+
+/** Whether a mean exposure lies in the half-open window [from, to). */
+export function inHeatWindow(mean: number, window: { from?: number; to?: number }): boolean {
+  return (window.from === undefined || mean >= window.from) && (window.to === undefined || mean < window.to);
+}
+
+/** Whether a layout satisfies every heat window an outcome declares. */
+function heatMatches(
+  o: CraftOutcomeDef,
+  disc: CraftDisciplineDef,
+  placement: Placement,
+  duration?: number,
+): boolean {
+  return (o.heat ?? []).every((w) => {
+    const mean = meanExposure(disc, placement, w.tag, duration);
+    return mean !== null && inHeatWindow(mean, w);
+  });
+}
+
+/** A window in the words the bench uses: "under 6", "14 or more", "8 to 14". */
+export function describeHeatWindow(window: { from?: number; to?: number }): string {
+  const { from, to } = window;
+  if (from !== undefined && to !== undefined) return `${from} to ${to}`;
+  if (to !== undefined) return `under ${to}`;
+  return `${from ?? 0} or more`;
+}
+
+/**
+ * Problems with the heat windows on one bench, as plain sentences keyed by
+ * outcome id. Shared by `tests/content.test.ts` and `forge/lib/validate.ts`, so
+ * the two layers cannot drift. `materials` is the material registry being
+ * checked (the live one, or the forge's staged copy).
+ *
+ *  - A windowed outcome needs a bench with a `timeline`.
+ *  - A window must not be empty (`from` at or above `to`).
+ *  - Each windowed outcome needs a window-less fallback on the same bench: lower
+ *    priority, no recipe, level, or grade gate, and requirements the windowed
+ *    outcome's own requirements already cover. Without one, a player outside
+ *    every window, or without the recipe card, would cook something other than
+ *    what the same basket makes today.
+ *  - Every window is reachable: some timeline option and some slot open at the
+ *    outcome's level puts a part carrying the tag inside it. When an outcome
+ *    declares several windows, one option must reach all of them (distinct slots
+ *    are not checked).
+ */
+export function heatWindowProblems(
+  disc: CraftDisciplineDef,
+  materials: Record<string, { craftTags?: string[] }>,
+): { outcome: string; message: string }[] {
+  const problems: { outcome: string; message: string }[] = [];
+  const stock = Object.values(materials);
+  for (const o of disc.outcomes) {
+    const windows = o.heat ?? [];
+    if (windows.length === 0) continue;
+    const say = (message: string) => problems.push({ outcome: o.id, message });
+    if (!disc.timeline) {
+      say(`${disc.id}/${o.id} has heat windows, but ${disc.id} has no timeline`);
+      continue;
+    }
+    for (const w of windows) {
+      if (w.from !== undefined && w.to !== undefined && w.from >= w.to) {
+        say(`${disc.id}/${o.id}: the window on '${w.tag}' is empty (from ${w.from} is not below to ${w.to})`);
+      }
+    }
+
+    const demand = (tag: string) =>
+      o.requires.filter((r) => r.tag === tag).reduce((sum, r) => sum + (r.count ?? 1), 0);
+    const fallback = disc.outcomes.find(
+      (f) =>
+        f !== o &&
+        !f.heat?.length &&
+        !f.recipe &&
+        !f.minLevel &&
+        !f.minQuality &&
+        !f.maxQuality &&
+        (f.priority ?? 0) < (o.priority ?? 0) &&
+        f.requires.every((r) => demand(r.tag) >= (r.count ?? 1)),
+    );
+    if (!fallback) {
+      say(
+        `${disc.id}/${o.id} has no window-less fallback: needs an outcome of lower priority on this bench, ` +
+          `with no recipe, minLevel, minQuality or maxQuality, whose requires its own requires cover`,
+      );
+    }
+
+    const level = o.minLevel ?? 0;
+    const entries = disc.slots.filter(
+      (s) => s.at != null && slotPicks(s) === 'material' && (s.unlockLevel ?? 0) <= level,
+    );
+    const holders = (tag: string) =>
+      entries.filter((s) =>
+        stock.some((m) => {
+          const tags = m.craftTags ?? [];
+          return tags.includes(tag) && s.accepts.some((a) => tags.includes(a));
+        }),
+      );
+    const reachable = disc.timeline.options.some((opt) =>
+      windows.every((w) => holders(w.tag).some((s) => inHeatWindow(opt.units * (1 - s.at!), w))),
+    );
+    if (!reachable) {
+      const named = windows.map((w) => `'${w.tag}' ${describeHeatWindow(w)}`).join(' and ');
+      say(
+        `${disc.id}/${o.id}: no timeline option and entry slot open at level ${level} puts a part inside ` +
+          `${named} — the dish could never be made`,
+      );
+    }
+  }
+  return problems;
+}
+
 /** Only what is spent INTO the result — a tool is not part of what you made. */
 export function consumedParts(disc: CraftDisciplineDef, placement: Placement): GradedStack[] {
   const spend = new Set(disc.slots.filter((s) => slotConsumes(s)).map((s) => s.id));
@@ -264,11 +406,16 @@ export function consumedParts(disc: CraftDisciplineDef, placement: Placement): G
  * What this combination makes. Outcomes state what they need as tags, so the
  * data describes recipes without enumerating them; the most specific match
  * wins, and ties break on how much the outcome demanded.
+ *
+ * `duration` is a timed bench's chosen length (its default when absent); only
+ * outcomes with `heat` windows read it. A bench without a timeline never
+ * matches a windowed outcome.
  */
 export function matchOutcome(
   state: GameState,
   disc: CraftDisciplineDef,
   placement: Placement,
+  duration?: number,
 ): CraftOutcomeDef | undefined {
   const counts = tagCounts(placement);
   const level = skillLevel(state, disc);
@@ -279,7 +426,8 @@ export function matchOutcome(
     if (o.recipe && !knowsRecipe(state, o.recipe)) return false;
     if (o.minQuality && (!best || !qualityAtLeast(best, o.minQuality))) return false;
     if (o.maxQuality && best && qualityRank(best) > qualityRank(o.maxQuality)) return false;
-    return o.requires.every((r) => (counts.get(r.tag) ?? 0) >= (r.count ?? 1));
+    if (!o.requires.every((r) => (counts.get(r.tag) ?? 0) >= (r.count ?? 1))) return false;
+    return heatMatches(o, disc, placement, duration);
   });
 
   return matches.sort(
@@ -298,11 +446,12 @@ export interface CraftCheck {
   outcome?: CraftOutcomeDef;
 }
 
-/** Whether the bench as laid out could actually be worked. */
+/** Whether the bench as laid out could actually be worked (`duration`: see matchOutcome). */
 export function checkCraft(
   state: GameState,
   disc: CraftDisciplineDef,
   placement: Placement,
+  duration?: number,
 ): CraftCheck {
   const open = openSlots(state, disc);
   // Slots that spend the same material at the same grade draw on one stack:
@@ -341,7 +490,7 @@ export function checkCraft(
     }
   }
 
-  const outcome = matchOutcome(state, disc, placement);
+  const outcome = matchOutcome(state, disc, placement, duration);
   if (!outcome) return { ok: false, reason: text('disciplines.reason.no_outcome') };
   return { ok: true, outcome };
 }
