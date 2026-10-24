@@ -107,9 +107,15 @@ Each checked against the code on 2026-10-23.
 F1–F7: groups ordered by (copies desc, id); adornment riders kept as a list;
 `stackKey` through `carvedKey`; exit and name resolution independent of
 socket order (the precedence rule in §4.4); F slabs and F adornments
-refused. One permutation test over every carving input (glyphs, adornments,
-socket order, cache cleared between runs) and a source scan that
-`runecarving.ts` imports no RNG.
+refused, and grade multipliers floored at 0 for carvings already in saves;
+the tool's upgrade chance removed (it made the product random). One
+permutation test over every carving input (patterns, adornments, socket
+order, cache cleared between runs).
+
+Ruling (2026-10-23, at build time): the split chance stays until slice 2.
+It makes an attempt fail, not the product differ, and it is the tool's only
+job until span gives tools a new one. Slice 2 deletes it and adds the source
+scan that `runecarving.ts` imports no RNG.
 
 ### 4.1 The Ledger (the carving)
 
