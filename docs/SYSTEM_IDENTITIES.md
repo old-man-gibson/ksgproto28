@@ -45,9 +45,19 @@ another's reading.
   and environmental conditions (`toll_steam`; `toll_ice` and `toll_overdrive`
   are the same boss fight's phases and are treated the same until the user
   says otherwise). These have no resistance.
-- **Seven are undecided; the user will review them:** `doused`,
-  `psionic_compression`, `overgrowth`, `proliferating`, `unfolded`, `queasy`,
-  `psionic_read`.
+- **The seven reviewed (user, 2026-10-24, decision page):** no resistance for
+  `doused`, `psionic_compression`, `psionic_read`, `unfolded`. Resistible:
+  `overgrowth`, `proliferating`, `queasy`, through poison (their own data
+  already uses poison; per-condition resistance is on hold). Eating enough bad
+  food unlocks permanent immunity to `queasy` (a hidden title), the one
+  permanent immunity outside mutagens.
+- **Decided the same day:** resistance does not slow conditions that build by
+  stacks (bleeding → lacerated stays 5 cuts); Anupama's two hunger conditions
+  keep their dark resistance; at most 3 dishes active at once; any status may
+  give temporary immunity while it lasts, permanent immunity comes from
+  mutagens; monsters get penetration by tier (0 on floors 1–3); a resistance
+  separate from the element (e.g. "Bleeding resistance") is on hold; dish heals
+  that stop clearing bleeding are on hold.
 - **Immunity at 100%.** A condition does not land when the target's resistance
   to it, minus the applier's penetration, is 100% or more. Same rule for
   players and monsters. A status can also grant immunity outright
