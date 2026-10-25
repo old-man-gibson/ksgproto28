@@ -1,5 +1,7 @@
 import type {
   CarvedRune,
+  DamageType,
+  GradedStack,
   QualityTier,
   RuneContext,
   GameState,
@@ -8,11 +10,12 @@ import type {
   RuneDef,
   RuneEffect,
   RuneRef,
+  RuneRider,
   RuneSizeClass,
   RuneTechniqueMod,
   SlotId,
 } from '../types';
-import { runeContextFor } from '../types';
+import { runeContextFor, runeRiders } from '../types';
 import type { EventBus } from '../engine/events';
 import { weightedPick } from '../engine/rng';
 import { ITEMS, RUNES } from '../registry';
@@ -97,54 +100,104 @@ export function createItem(state: GameState, defId: string): ItemInstance {
 
 // ---------- Resolving a rune ----------
 
+/** Code-unit string order: the same order `Array.prototype.sort()` gives, with no locale in it. */
+function byCode(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** One adornment as the string carvedKey spells it. */
+function adornmentKey(a: GradedStack): string {
+  return `${a.id}.${a.quality}`;
+}
+
+/** The adornments in their canonical order (by spelling), without touching the original. */
+function canonicalAdornments(adornments: GradedStack[]): GradedStack[] {
+  return [...adornments].sort((a, b) => byCode(adornmentKey(a), adornmentKey(b)));
+}
+
 /**
  * A carved rune's identity, and its shareable form.
  *
  * The key is the combination itself, which is exactly what makes a carving
  * reverse-engineerable: hand somebody this string and they can reconstruct the
  * rune with no registry of yours. It doubles as the memo key below.
+ *
+ * Patterns and adornments are multisets, so the key sorts both. composeCarved
+ * must therefore read both order-free, or two spellings of one key would
+ * resolve to whichever was composed first.
  */
 export function carvedKey(rune: CarvedRune): string {
   const cuts = [...rune.patterns].sort().join(',');
-  const adorn = rune.adornments
-    .map((a) => `${a.id}.${a.quality}`)
-    .sort()
-    .join('+');
+  const adorn = canonicalAdornments(rune.adornments).map(adornmentKey).join('+');
   return `${cuts}@${rune.stone.id}.${rune.stone.quality}${adorn ? `/${adorn}` : ''}`;
 }
 
-/** Scale everything an effect grants by one multiplier. */
+/**
+ * A rune reference as one canonical string: a catalogue id as written, a
+ * carving through carvedKey. Equal strings are the same rune, whatever order
+ * the carving was cut in. Used wherever refs are compared, grouped or ordered
+ * (stackKey, weaponTechniqueMods); a bare ref cannot do that, because a carving
+ * is an object.
+ */
+export function runeRefKey(ref: RuneRef): string {
+  return typeof ref === 'string' ? ref : carvedKey(ref);
+}
+
+/** A grade's multiplier, floored at 0: a Refuse stone reads as nothing, never as a penalty. */
+function gradeMult(quality: QualityTier): number {
+  return Math.max(0, qualityMult(quality));
+}
+
+/**
+ * Fold rider lists into one rider per damage type: same types sum, and the
+ * list is in damage-type order, so which contributor came first never shows.
+ * Undefined when nothing is left.
+ */
+function foldRiders(...lists: (RuneRider | RuneRider[] | undefined)[]): RuneRider[] | undefined {
+  const sums = new Map<DamageType, number>();
+  for (const list of lists) {
+    for (const r of runeRiders(list)) sums.set(r.type, (sums.get(r.type) ?? 0) + r.value);
+  }
+  const folded = [...sums]
+    .filter(([, value]) => value !== 0)
+    .sort(([a], [b]) => byCode(a, b))
+    .map(([type, value]) => ({ type, value }));
+  return folded.length ? folded : undefined;
+}
+
+/**
+ * Scale the magnitudes an effect grants by one multiplier. A multiplier of 0
+ * or less grants nothing at all (undefined). Technique surgery rewrites
+ * structure, not a quantity, so it passes through unscaled.
+ */
 function scaleEffect(effect: RuneEffect | undefined, mult: number): RuneEffect | undefined {
-  if (!effect) return undefined;
+  if (!effect || !(mult > 0)) return undefined;
   const out: RuneEffect = {};
   if (effect.mods) out.mods = effect.mods.map((m) => ({ ...m, value: m.value * mult }));
-  if (effect.bonusDamage) {
-    out.bonusDamage = { ...effect.bonusDamage, value: effect.bonusDamage.value * mult };
-  }
-  if (effect.bonusDamagePct) {
-    out.bonusDamagePct = { ...effect.bonusDamagePct, value: effect.bonusDamagePct.value * mult };
-  }
+  const flat = runeRiders(effect.bonusDamage).map((r) => ({ ...r, value: r.value * mult }));
+  if (flat.length) out.bonusDamage = flat;
+  const pct = runeRiders(effect.bonusDamagePct).map((r) => ({ ...r, value: r.value * mult }));
+  if (pct.length) out.bonusDamagePct = pct;
+  if (effect.techniqueMods) out.techniqueMods = effect.techniqueMods.map((m) => ({ ...m }));
   return out;
 }
 
-/** Fold `add` into `into`, summing anything they both grant. */
+/**
+ * Fold `add` into `into`: mods and technique surgery concatenate, riders sum
+ * per damage type (a composed rune keeps every type it was given). The result
+ * is always a fresh effect in the list shape, never the authored object.
+ */
 function mergeEffect(into: RuneEffect | undefined, add: RuneEffect | undefined): RuneEffect | undefined {
   if (!add) return into;
-  if (!into) return { ...add, mods: add.mods ? [...add.mods] : undefined };
-  const out: RuneEffect = { ...into };
-  if (add.mods) out.mods = [...(into.mods ?? []), ...add.mods];
-  if (add.bonusDamage) {
-    out.bonusDamage =
-      into.bonusDamage && into.bonusDamage.type === add.bonusDamage.type
-        ? { ...into.bonusDamage, value: into.bonusDamage.value + add.bonusDamage.value }
-        : (into.bonusDamage ?? add.bonusDamage);
-  }
-  if (add.bonusDamagePct) {
-    out.bonusDamagePct =
-      into.bonusDamagePct && into.bonusDamagePct.type === add.bonusDamagePct.type
-        ? { ...into.bonusDamagePct, value: into.bonusDamagePct.value + add.bonusDamagePct.value }
-        : (into.bonusDamagePct ?? add.bonusDamagePct);
-  }
+  const out: RuneEffect = {};
+  const mods = [...(into?.mods ?? []), ...(add.mods ?? [])];
+  if (mods.length) out.mods = mods;
+  const flat = foldRiders(into?.bonusDamage, add.bonusDamage);
+  if (flat) out.bonusDamage = flat;
+  const pct = foldRiders(into?.bonusDamagePct, add.bonusDamagePct);
+  if (pct) out.bonusDamagePct = pct;
+  const surgery = [...(into?.techniqueMods ?? []), ...(add.techniqueMods ?? [])];
+  if (surgery.length) out.techniqueMods = surgery;
   return out;
 }
 
@@ -177,7 +230,7 @@ export function adornmentEffectAt(
   quality: QualityTier,
   ctx: RuneContext,
 ): RuneEffect | undefined {
-  return scaleEffect(RUNE_ADORNMENTS[id]?.effects[ctx], qualityMult(quality));
+  return scaleEffect(RUNE_ADORNMENTS[id]?.effects[ctx], gradeMult(quality));
 }
 
 /**
@@ -192,11 +245,33 @@ export function patternEffectAt(
   copies = 1,
 ): RuneEffect | undefined {
   const stacked = copies + (copies - 1) * RESONANCE;
-  return scaleEffect(RUNE_PATTERNS[id]?.effects[ctx], qualityMult(quality) * stacked);
+  return scaleEffect(RUNE_PATTERNS[id]?.effects[ctx], gradeMult(quality) * stacked);
 }
 
 /** Composed carvings, keyed by combination. Carvings never change once made. */
 const CARVED_CACHE = new Map<string, RuneDef>();
+
+/**
+ * TEST HOOK. Empties the composition memo so a test can resolve a carving cold,
+ * in a chosen spelling, and prove the result does not depend on which spelling
+ * reached the cache first. Nothing in the game calls this.
+ */
+export function clearCarvedCache(): void {
+  CARVED_CACHE.clear();
+}
+
+/**
+ * A carving's distinct patterns in their canonical order: most copies first,
+ * then pattern id. The order decides each pattern's share and which one names
+ * the rune, so it must come from the multiset alone, never from cut order.
+ */
+function patternGroups(patterns: string[]): { id: string; copies: number }[] {
+  const counts = new Map<string, number>();
+  for (const id of patterns) counts.set(id, (counts.get(id) ?? 0) + 1);
+  return [...counts]
+    .map(([id, copies]) => ({ id, copies }))
+    .sort((a, b) => b.copies - a.copies || byCode(a.id, b.id));
+}
 
 /**
  * Compose a carving into an ordinary RuneDef: the pattern is what it does, the
@@ -209,8 +284,19 @@ function composeCarved(rune: CarvedRune): RuneDef {
   const cached = CARVED_CACHE.get(key);
   if (cached) return cached;
 
-  const patterns = rune.patterns.map((id) => RUNE_PATTERNS[id]).filter(Boolean);
-  const stone = qualityMult(rune.stone.quality);
+  /*
+   * The result depends on the multiset of patterns, the stone, and the multiset
+   * of adornments, never on the order they were laid down: the key sorts them,
+   * so the cache would otherwise hand the first spelling's numbers to the rest.
+   * Patterns are read in patternGroups order and adornments in
+   * canonicalAdornments order, which also fixes the order of the mods and the
+   * float additions below.
+   */
+  const groups = patternGroups(rune.patterns);
+  // Only patterns that still exist take a share; a deleted one is inert and skipped.
+  const cut = groups.filter((g) => RUNE_PATTERNS[g.id]);
+  const adornments = canonicalAdornments(rune.adornments);
+  const stone = gradeMult(rune.stone.quality);
   const effects: RuneDef['effects'] = {};
   const contexts = ['weapon', 'armor', 'accessory'] as const;
 
@@ -224,25 +310,20 @@ function composeCarved(rune: CarvedRune): RuneDef {
    * on top (RESONANCE). Two of a figure is worth more than two separate
    * figures — which is the whole reason to spend a fine slab on it, and why a
    * fine slab is required (see REPEAT_MIN_QUALITY).
+   *
+   * Shares go by canonical position: the most-repeated pattern first (it is
+   * the rune's main figure), ties by pattern id.
    */
   const share = (i: number) => 1 / (1 + i * 0.6);
 
-  // Distinct patterns in first-appearance order, with how many copies of each.
-  const groups: { pattern: (typeof patterns)[number]; copies: number }[] = [];
-  for (const p of patterns) {
-    const seen = groups.find((g) => g.pattern.id === p.id);
-    if (seen) seen.copies += 1;
-    else groups.push({ pattern: p, copies: 1 });
-  }
-
   for (const ctx of contexts) {
     let effect: RuneEffect | undefined;
-    groups.forEach((g, i) => {
+    for (const [i, g] of cut.entries()) {
       const stacked = g.copies + (g.copies - 1) * RESONANCE;
-      effect = mergeEffect(effect, scaleEffect(g.pattern.effects[ctx], stone * share(i) * stacked));
-    });
-    for (const a of rune.adornments) {
-      effect = mergeEffect(effect, scaleEffect(RUNE_ADORNMENTS[a.id]?.effects[ctx], qualityMult(a.quality)));
+      effect = mergeEffect(effect, scaleEffect(RUNE_PATTERNS[g.id].effects[ctx], stone * share(i) * stacked));
+    }
+    for (const a of adornments) {
+      effect = mergeEffect(effect, scaleEffect(RUNE_ADORNMENTS[a.id]?.effects[ctx], gradeMult(a.quality)));
     }
     if (effect) effects[ctx] = effect;
   }
@@ -252,11 +333,13 @@ function composeCarved(rune: CarvedRune): RuneDef {
     for (const ctx of contexts) effects[ctx] = mergeEffect(effects[ctx], named.bonus[ctx]);
   }
 
+  // The first canonical group names the rune and lends its icon and description.
   const grade = QUALITY_TIERS[rune.stone.quality];
-  const lead = patterns[0];
-  const leadName = lead?.name ?? rune.patterns[0];
-  const leadCopies = rune.patterns.filter((id) => id === rune.patterns[0]).length;
-  const distinct = new Set(rune.patterns).size;
+  const lead = cut[0] ?? groups[0];
+  const leadDef = lead ? RUNE_PATTERNS[lead.id] : undefined;
+  const leadName = leadDef?.name ?? lead?.id ?? 'Rune';
+  const leadCopies = lead?.copies ?? 0;
+  const distinct = groups.length;
   const plainName =
     leadCopies > 1 && distinct === 1
       ? // Nothing but the same cut, over and over: it is concentrated, not broad.
@@ -267,8 +350,8 @@ function composeCarved(rune: CarvedRune): RuneDef {
   const composed: RuneDef = {
     id: key,
     name: named?.name ?? plainName,
-    icon: named?.icon ?? lead?.icon ?? '🔷',
-    desc: named?.desc ?? lead?.desc,
+    icon: named?.icon ?? leadDef?.icon ?? '🔷',
+    desc: named?.desc ?? leadDef?.desc,
     value: Math.max(1, Math.round(10 * Math.max(0.1, stone) * (1 + rune.adornments.length))),
     effects,
   };
@@ -513,12 +596,15 @@ export function grantRune(state: GameState, bus: EventBus, runeId: string, qty =
 }
 
 /**
- * Typed on-hit damage granted by the equipped weapon's socketed runes. Each
- * bonus carries the rune it came from, so a damage tooltip can name it.
- */
-/**
  * Graph-surgery mods the socketed weapon's runes apply to ONE technique
  * (see docs/MARTIAL.md §9 — a rune may rewrite a node, never an edge list).
+ *
+ * Returned in a canonical order that does not depend on which socket holds
+ * which rune: by the source rune's canonical string (runeRefKey), and within
+ * one rune in the order it was written. Callers take the first mod that sets a
+ * field (`.find`) and apply the rest in sequence, so this order is what makes
+ * a technique's name, exit, Honed offering and tempo the same in every socket
+ * order.
  */
 export function weaponTechniqueMods(
   state: GameState,
@@ -526,19 +612,29 @@ export function weaponTechniqueMods(
 ): RuneTechniqueMod[] {
   const weapon = state.equipment.weapon;
   if (!weapon) return [];
-  const out: RuneTechniqueMod[] = [];
+  const found: { ref: RuneRef; mod: RuneTechniqueMod }[] = [];
   for (const ref of weapon.runes ?? []) {
     for (const m of resolveRune(ref).effects.weapon?.techniqueMods ?? []) {
-      if (m.technique === techniqueId) out.push(m);
+      if (m.technique === techniqueId) found.push({ ref, mod: m });
     }
   }
-  return out;
+  // One source (the usual case) has nothing to order against, so skip the keys.
+  if (found.length > 1) {
+    const keyed = found.map((f) => ({ ...f, key: runeRefKey(f.ref) }));
+    // Array.prototype.sort is stable: mods of one rune keep their written order.
+    keyed.sort((a, b) => byCode(a.key, b.key));
+    return keyed.map((f) => f.mod);
+  }
+  return found.map((f) => f.mod);
 }
 
 /**
- * On-hit rune riders from the weapon in `slot` — the main hand unless asked
- * otherwise, because a blade the mind is holding out at arm's length carries
- * its OWN runes, not the ones cut into whatever is in your fist.
+ * Typed on-hit damage granted by the weapon in `slot`'s socketed runes — the
+ * main hand unless asked otherwise, because a blade the mind is holding out at
+ * arm's length carries its OWN runes, not the ones cut into whatever is in your
+ * fist. Each bonus carries the rune it came from, so a damage tooltip can name
+ * it. A rune may carry several riders (one per damage type); every one is
+ * listed.
  */
 export function weaponRuneBonuses(
   state: GameState,
@@ -552,8 +648,8 @@ export function weaponRuneBonuses(
     const rune = resolveRune(ref);
     const effect = rune.effects.weapon;
     const source = rune.name;
-    if (effect?.bonusDamage) flat.push({ ...effect.bonusDamage, source });
-    if (effect?.bonusDamagePct) pct.push({ ...effect.bonusDamagePct, source });
+    for (const r of runeRiders(effect?.bonusDamage)) flat.push({ ...r, source });
+    for (const r of runeRiders(effect?.bonusDamagePct)) pct.push({ ...r, source });
   }
   return { flat, pct };
 }

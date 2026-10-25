@@ -813,7 +813,8 @@ unfinished objective with a place when that place is in town (or anywhere,
 with the Wayfinding boon).
 
 A ladder floor (`towers.data.ts`) pays `clearXp` level XP the first time
-its `clear` holds in a run. Band 1: 100 / 150 / 200.
+its `clear` holds in a run. Band 1: 100 / 150 / 200. A floor's rooms, gates
+and clear spot are linted against the floor standard (§8, FLOOR_STANDARD.md).
 
 ### Teacher (a `teaches` list on an `NpcDef`)
 
@@ -1104,7 +1105,9 @@ minor_rune_might: {
 Weapon-context effects can also carry typed on-hit damage:
 `bonusDamage: { type: 'lightning', value: 3 }` (flat per hit) or
 `bonusDamagePct: { type: 'lightning', value: 0.12 }` (12% of each hit dealt
-again as that type). A context without an entry is inert (socketable, does
+again as that type). Both also accept a list of such riders, which is how a
+carved rune holds one per damage type; code reads either shape through
+`runeRiders` (`types.ts`). A context without an entry is inert (socketable, does
 nothing). Runes drop via `{ kind: 'rune', id, weight }` drop-table entries and
 can be recipe results (`result: { kind: 'rune', ... }`). They stack in
 `state.runes` and socket via the Equipment tab.
@@ -1225,6 +1228,14 @@ and reinforce each other by `RESONANCE` (0.25) on top — so two of a figure bea
 two different figures, and beat a single cut by more than double. The cost is
 the slab: `REPEAT_MIN_QUALITY` in `runecarving.ts` demands Fine for a double and
 Superb for a triple. Both constants are the tuning dials.
+
+**A carving is a multiset.** The same patterns, stone and adornments make the
+same rune whatever order they were cut or laid in (`tests/runeorder.test.ts`
+holds the line). `composeCarved` takes distinct patterns in a canonical order,
+which fixes each one's share and which one names the rune: most copies first,
+then pattern id. A Refuse (F) slab or adornment is refused at the bench, and a
+legacy one composes to nothing. The tool lowers the chance the slab splits and
+changes nothing else.
 
 ### Consumable (a `MaterialDef` with a `consumable` spec)
 
@@ -1556,6 +1567,15 @@ COMPLETABILITY §8) plays band 1 by the obvious road with every rack weapon,
 and `npm run pacing` prints when each stretch ended, where the knockouts were
 and what the climb held at the top. Touching a band-1 floor, monster or gate?
 Run it before and after; `tests/john.test.ts` holds the curve's bounds.
+
+Floor structure has its own lints ([FLOOR_STANDARD.md](FLOOR_STANDARD.md)
+§2.2, `src/core/systems/floorRules.ts`), run by `npm run verify` and live in the
+forge. On a ladder floor: no gate can be walked around (a free road past a
+`fights:`, flag or key-item door), every room is within 3 hops of the road from
+the landing to the clear spot, a wing of 3 or more rooms loops back, and the
+clear spot's encounter table is never empty at any value of the counters its
+lines read. On any spot: an `explore` activity needs a find or a hidden road.
+A `search` with no reward left refuses to start (`searchSpent`).
 
 ## 9. Spellcraft content (words, miracles, psionic recognitions)
 

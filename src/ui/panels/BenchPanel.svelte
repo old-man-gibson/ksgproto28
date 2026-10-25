@@ -652,9 +652,6 @@
           {#if named}<span class="known">known work</span>{/if}
           <span class="odds small">
             <span class:risky={(carve?.failure ?? 0) > 0.35}>💥 {pct(carve?.failure ?? 0)}</span>
-            {#if (carve?.upgrade ?? 0) > 0}
-              <span class="good">✨ {pct(carve?.upgrade ?? 0)}</span>
-            {/if}
           </span>
         </div>
         {#snippet tip()}
@@ -669,9 +666,6 @@
             {/if}
           {/each}
           <div class="tip-line tip-sub">💥 {pct(carve?.failure ?? 0)} chance the slab splits</div>
-          {#if (carve?.upgrade ?? 0) > 0}
-            <div class="tip-line tip-sub">✨ {pct(carve?.upgrade ?? 0)} chance of a clean cut</div>
-          {/if}
           <div class="tip-line tip-total">Worth about {fmt(preview.value)} gold</div>
         {/snippet}
       </Tip>
@@ -1137,7 +1131,6 @@
   }
 
   .odds .risky { color: var(--danger); }
-  .odds .good { color: var(--xp); }
 
   .bench-actions {
     display: flex;

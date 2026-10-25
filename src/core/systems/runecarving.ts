@@ -3,7 +3,8 @@ import type { EventBus } from '../engine/events';
 import { chance } from '../engine/rng';
 import { DISCIPLINES } from '../data/disciplines.data';
 import { RUNE_PATTERNS } from '../data/runes.data';
-import { QUALITY_ORDER, QUALITY_TIERS, qualityAtLeast, qualityMult, qualityRank } from '../data/quality.data';
+import { MATERIALS } from '../data/materials.data';
+import { QUALITY_TIERS, qualityAtLeast, qualityMult } from '../data/quality.data';
 import { checkDiscovery, grantSkillXp } from './skills';
 import { namedRuneFor, resolveRune } from './runes';
 import {
@@ -26,11 +27,11 @@ import { text } from '../text/log';
  * the carver knows rather than things they own, and that the tool is worked
  * WITH rather than into the result.
  *
- * The tool leaves exactly one mark on the finished rune: a good one carves
- * cleanly enough that the slab comes out reading a grade better than it went
- * in. That is deliberate. A rune is a record of what it is made of, so a tool
- * that changed the result invisibly would break the promise that you can hand
- * somebody a rune and they can work out what it is.
+ * The tool lowers the chance the slab splits, and does nothing else. It leaves
+ * no mark on the finished rune. A rune is a record of what it is made of, so a
+ * tool that changed the result invisibly would break the promise that you can
+ * hand somebody a rune and they can work out what it is. The same inputs make
+ * the same rune; the only roll at the bench is whether the slab splits.
  */
 
 export const RUNECARVING = DISCIPLINES.runecarving;
@@ -82,7 +83,8 @@ export const FAILURE_PER_LEVEL = 0.02;
 export function failureChance(state: GameState, placement: Placement): number {
   const patterns = patternSlots(state).filter((s) => placement[s.id]).length;
   const tool = placement.tool;
-  const toolGrade = tool ? qualityMult(tool.quality) : 0;
+  // An F tool counts as no tool; it must never make the split chance worse.
+  const toolGrade = tool ? Math.max(0, qualityMult(tool.quality)) : 0;
 
   let risk = BASE_FAILURE + Math.max(0, patterns - 1) * FAILURE_PER_EXTRA_PATTERN;
   risk -= skillLevel(state, RUNECARVING) * FAILURE_PER_LEVEL;
@@ -94,17 +96,6 @@ export function failureChance(state: GameState, placement: Placement): number {
   return Math.max(0, Math.min(0.95, risk));
 }
 
-/** Chance a fine tool brings the slab out a grade better than it went in. */
-export function upgradeChance(placement: Placement): number {
-  const tool = placement.tool;
-  if (!tool) return 0;
-  return Math.min(0.5, Math.max(0, qualityMult(tool.quality)) * 0.12);
-}
-
-function betterGrade(q: QualityTier): QualityTier {
-  return QUALITY_ORDER[Math.min(QUALITY_ORDER.length - 1, qualityRank(q) + 1)];
-}
-
 // ---------- Previewing and carving ----------
 
 export interface CarveCheck {
@@ -113,7 +104,6 @@ export interface CarveCheck {
   /** What would come out, if the cut went well. */
   preview?: CarvedRune;
   failure?: number;
-  upgrade?: number;
 }
 
 /** Everything on the bench that is worked INTO the slab (not the slab, not the tool). */
@@ -141,13 +131,27 @@ export function previewCarve(state: GameState, placement: Placement): CarveCheck
   }
   if (patterns.length === 0) return { ok: false, reason: text('runecarving.reason.nothing_chosen') };
 
-  // Repeating a cut concentrates the rune, and needs a slab that can hold it.
+  // A Refuse (F) grade multiplies below zero: it would subtract from the rune.
+  // Refused here so no new carving is ever made from one.
   const slab = placement.slab;
+  if (slab && qualityMult(slab.quality) < 0) {
+    return { ok: false, reason: text('runecarving.reason.slab_refuse') };
+  }
+  const adornments = adornmentsOf(state, placement);
+  for (const a of adornments) {
+    if (qualityMult(a.quality) < 0) {
+      return { ok: false, reason: text('runecarving.reason.adornment_refuse', { name: MATERIALS[a.id]?.name ?? a.id }) };
+    }
+  }
+
+  // Repeating a cut concentrates the rune, and needs a slab that can hold it.
   for (const [id, copies] of countPatterns(patterns)) {
     if (copies < 2) continue;
     const needed = REPEAT_MIN_QUALITY[copies];
     if (!needed) {
-      return { ok: false, reason: text('runecarving.reason.too_many_copies', { copies }) };
+      // No entry in REPEAT_MIN_QUALITY: past the most copies any slab can hold.
+      const max = Math.max(...Object.keys(REPEAT_MIN_QUALITY).map(Number));
+      return { ok: false, reason: text('runecarving.reason.too_many_copies', { max }) };
     }
     if (!slab || !qualityAtLeast(slab.quality, needed)) {
       return {
@@ -165,16 +169,14 @@ export function previewCarve(state: GameState, placement: Placement): CarveCheck
 
   return {
     ok: true,
-    preview: { patterns, stone, adornments: adornmentsOf(state, placement) },
+    preview: { patterns, stone, adornments },
     failure: failureChance(state, placement),
-    upgrade: upgradeChance(placement),
   };
 }
 
 export interface CarveResult {
   carved?: CarvedRune;
   failed?: boolean;
-  upgraded?: boolean;
 }
 
 /**
@@ -210,13 +212,7 @@ export function carveRune(
     return { failed: true };
   }
 
-  let carving = check.preview;
-  let upgraded = false;
-  if (chance(state, check.upgrade ?? 0)) {
-    // A clean cut brings out more than the stone promised.
-    carving = { ...carving, stone: { ...carving.stone, quality: betterGrade(carving.stone.quality) } };
-    upgraded = true;
-  }
+  const carving = check.preview;
 
   state.carved ??= [];
   state.carved.push(carving);
@@ -228,8 +224,8 @@ export function carveRune(
     type: 'log',
     msg: named
       ? text('runecarving.carved_named', { icon: rune.icon, name: rune.name })
-      : text('runecarving.carved', { icon: rune.icon, name: rune.name, clean: upgraded ? text('runecarving.clean_cut') : '' }),
+      : text('runecarving.carved', { icon: rune.icon, name: rune.name }),
     kind: 'item',
   });
-  return { carved: carving, upgraded };
+  return { carved: carving };
 }

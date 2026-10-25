@@ -45,9 +45,9 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'raw_sapphire.desc': 'Rune gem. Weapon: +3 spell power. Armor: +4 max mana. Accessory: +0.05 mana regen. Up to two gems per rune.',
 
-  'bronze_chisel.desc': 'Carving tool. Not consumed. Lowers the chance the slab splits and adds a chance to finish a grade higher; both scale with the tool grade.',
+  'bronze_chisel.desc': 'Carving tool. Not consumed. Lowers the chance the slab splits; scales with the tool grade. Does not change the rune.',
 
-  'steel_burin.desc': 'Carving tool. Not consumed. Lowers the chance the slab splits and adds a chance to finish a grade higher; both scale with the tool grade.',
+  'steel_burin.desc': 'Carving tool. Not consumed. Lowers the chance the slab splits; scales with the tool grade. Does not change the rune.',
 
   'wild_onion.desc': 'Raw vegetable. Gathered. Whole, so it can be cut on the Cutting Board before cooking.',
 
