@@ -261,7 +261,9 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   // hall, so even John walks in; the lessons are free. Then four stretches. ----
   if (!climbTo('ascent_f2')) return finish();
   walk('f2_gym');
-  for (const lesson of NPCS.hall_tutor.teaches ?? []) g.learnFromTeacher('hall_tutor', lesson.technique);
+  for (const lesson of NPCS.hall_tutor.teaches ?? []) {
+    if ('technique' in lesson) g.learnFromTeacher('hall_tutor', lesson.technique);
+  }
   for (const stretch of HALL) {
     if (!persist(stretch, 'hunt', () => stat(`fights:${stretch}`) >= SPOTS[stretch].fightLimit!)) return finish();
   }

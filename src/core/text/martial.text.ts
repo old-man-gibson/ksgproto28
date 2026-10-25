@@ -41,7 +41,7 @@ export const FORK_ARCHETYPES_TEXT: ProseTable = {
 
 // ---------- TECHNIQUES ----------
 export const TECHNIQUES_TEXT: ProseTable = {
-  'gather.desc': 'Neutral → Coiled. 0.6× damage, +0.02 momentum, 3 s cooldown. Unlocks at Fighting 5; learned after 100 attacks, or after seeing it used on you 50 times.',
+  'gather.desc': 'Neutral → Coiled. 0.6× damage, +2% momentum (momentum is extra attack speed for the rest of the fight; only the Quick and Ittou-ryu stances build and use it), 3 s cooldown. Unlocks at Fighting 5; learned after 100 attacks, or after seeing it used on you 50 times.',
 
   'lunge.desc': 'Coiled → Extended. Any weapon. 1.3× damage, costs 3% stamina, 4 s cooldown. Unlocks at Fighting 8; learned after 400 attacks, or after seeing it used on you 50 times.',
 
@@ -73,7 +73,7 @@ export const TECHNIQUES_TEXT: ProseTable = {
 
   'clinch_knee.desc': 'Unarmed. Triggers on being hit, from any position → Guarded. 1.5× damage, 35% chance to inflict Dazed, costs 5% stamina, 9 s cooldown. Unlocks at Unarmed Combat 20; learned after 150 hits taken.',
 
-  'ginga.desc': 'Unarmed. Off Balance → Coiled. 0.8× damage, +0.03 momentum, 2 s cooldown. Unlocks at Unarmed Combat 12; learned after 120 hits taken.',
+  'ginga.desc': 'Unarmed. Off Balance → Coiled. 0.8× damage, +3% momentum (momentum is extra attack speed for the rest of the fight; only the Quick and Ittou-ryu stances build and use it), 2 s cooldown. Unlocks at Unarmed Combat 12; learned after 120 hits taken.',
 
   'meia_lua.desc': 'Unarmed. Off Balance → Neutral. 1.35× damage, 40% splash to adjacent enemies, costs 5% stamina, 5 s cooldown. Unlocks at Unarmed Combat 18; learned after 100 dodges.',
 
@@ -93,7 +93,7 @@ export const TECHNIQUES_TEXT: ProseTable = {
 
   'german_suplex.desc': 'Unarmed. Wide Open → Off Balance. 2.0× bludgeoning damage, 12 s cooldown. Unlocks at Strength 30 and Wrestling 25; learned after 150 hits taken.',
 
-  'taunt.desc': 'Any position → Wide Open. 0.25× damage, +0.5 momentum, 10 s cooldown. Unlocks at Speechcraft 15; learned after 200 dodges.',
+  'taunt.desc': 'Any position → Wide Open. 0.25× damage, +50% momentum (momentum is extra attack speed for the rest of the fight; only the Quick and Ittou-ryu stances build and use it), capped by the stance, 10 s cooldown. Unlocks at Speechcraft 15; learned after 200 dodges.',
 
   'impaling_swing.desc': 'Requires a wielded weapon. Coiled → Wide Open. 0.9× piercing damage, +20% penetration; leaves the weapon in the enemy and inflicts Skewered (−5% speed, −15% dodge for 10 s; 12 piercing damage if it expires). You are unarmed until Flesh Draw. 10 s cooldown. Unlocks at Fighting 15 and Unarmed Combat 10; learned after 600 attacks.',
 

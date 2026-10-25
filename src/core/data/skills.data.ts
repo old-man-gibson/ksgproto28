@@ -1303,10 +1303,15 @@ const HAND_WRITTEN = prose<SkillDef>('HAND_WRITTEN', HAND_WRITTEN_TEXT, {
     progression: PROGRESSIONS.esoteric,
     parent: 'fighting',
     tags: ['style:finesse', 'style:magic_combat', 'magic'],
+    // Taught, never found (user, 2026-10-25): the last condition is the stamp
+    // a teacher's school lesson writes (npcs.data.ts hall_tutor), so fighting
+    // in Finesse no longer manifests it. The rest stay so the skill tree can
+    // show the player getting close.
     unlock: [
       { type: 'skill', id: 'fighting', level: 10 },
       { type: 'skill', id: 'magic', level: 10 },
       { type: 'attr', attr: 'int', level: 20 },
+      { type: 'stat', key: 'taught:school_magic_combat', value: 1 },
     ],
     effects: [
       { stat: 'damage', op: 'mult', value: 0, perLevel: 0.008, requiresStyle: 'magic_combat' },

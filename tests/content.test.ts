@@ -6,6 +6,7 @@ import { searchContentIssues } from '../src/core/systems/searchValidation';
 import { smithingContentIssues } from '../src/core/systems/assemblyValidation';
 import { exploreIssues, floorStructureIssues, type FloorRule } from '../src/core/systems/floorRules';
 import { SHELVED_WORLD } from '../src/core/data/shelved';
+import { schoolTaughtKey } from '../src/core/systems/martial';
 import {
   ACHIEVEMENTS,
   ADJACENCY,
@@ -103,6 +104,12 @@ function statCounterValid(key: string): boolean {
   if (key.startsWith('used:')) return key.slice(5).length > 0;
   // Per-vendor tallies: shops.ts stamps shop:buys:<npcId> on every purchase.
   if (key.startsWith('shop:buys:')) return key.slice(10).length > 0;
+  // `taught:<skill>` is stamped by a teacher's school lesson (martial.ts
+  // teachSchool), so it is bumped only if some NPC gives that lesson.
+  if (key.startsWith('taught:')) {
+    const school = key.slice(7);
+    return Object.values(NPCS).some((n) => (n.teaches ?? []).some((l) => 'school' in l && l.school === school));
+  }
   // Tag tallies are bumped for every tag a killed monster carried, including
   // the derived ones (tier, swarm, non_elemental), so check against tags in use
   // rather than the hand-written registry alone.
@@ -1112,12 +1119,22 @@ describe('npcs & quests', () => {
       }
     }
     for (const npc of Object.values(NPCS)) {
-      // A teacher teaches techniques that exist, each once (systems/martial.ts).
-      const taught = (npc.teaches ?? []).map((l) => l.technique);
-      expect(new Set(taught).size, `${npc.id} teaches a technique twice`).toBe(taught.length);
+      // A teacher teaches techniques and schools that exist, each once
+      // (systems/martial.ts). A school's skill waits on the lesson's stamp.
+      const taught = (npc.teaches ?? []).map((l) => ('technique' in l ? l.technique : l.school));
+      expect(new Set(taught).size, `${npc.id} teaches something twice`).toBe(taught.length);
       for (const lesson of npc.teaches ?? []) {
-        expect(TECHNIQUES[lesson.technique], `${npc.id} teaches ${lesson.technique}`).toBeDefined();
-        checkConditions(`${npc.id} lesson ${lesson.technique}`, lesson.requires);
+        if ('technique' in lesson) {
+          expect(TECHNIQUES[lesson.technique], `${npc.id} teaches ${lesson.technique}`).toBeDefined();
+        } else {
+          const skill = SKILLS[lesson.school];
+          expect(skill, `${npc.id} teaches school ${lesson.school}`).toBeDefined();
+          expect(
+            skill.unlock?.some((c) => c.type === 'stat' && c.key === schoolTaughtKey(lesson.school)),
+            `${lesson.school} waits on ${schoolTaughtKey(lesson.school)}`,
+          ).toBe(true);
+        }
+        checkConditions(`${npc.id} lesson ${'technique' in lesson ? lesson.technique : lesson.school}`, lesson.requires);
       }
     }
     for (const q of Object.values(QUESTS)) {
@@ -1505,11 +1522,13 @@ describe('modular smithing content', () => {
       .filter((i) => i.rule === rule)
       .map((i) => `${i.kind} ${i.id}: ${i.message}`);
 
+  // The first test pays for `issuesOf()` (about 3 s alone, more on a busy
+  // machine), so it gets a longer limit than vitest's 5 s default.
   it('parts, smith profiles and class rules are well formed', () => {
     expect(report('parts')).toEqual([]);
     expect(report('materials')).toEqual([]);
     expect(report('classes')).toEqual([]);
-  });
+  }, 30_000);
 
   it('every class exemplar resolves to its own class', () => {
     expect(report('exemplars')).toEqual([]);

@@ -10,7 +10,7 @@ import type { store as Store } from './store.svelte';
 import { searchContentIssues } from '../../src/core/systems/searchValidation';
 import { smithingContentIssues } from '../../src/core/systems/assemblyValidation';
 import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
-import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
+import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SkillDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
 import { MUSIC_AXES } from '../../src/core/data/music.data';
@@ -551,14 +551,24 @@ export function validate(store: S): Issue[] {
         warn('npc', npc.id, `'${line.id}' is priced under its worth`, [...path, 'price']);
       }
     });
-    // Lessons: each names a real technique, once (mirrors tests/content.test.ts).
+    // Lessons: each names a real technique or school, once (mirrors
+    // tests/content.test.ts). A school lesson's skill must wait on the stamp
+    // the lesson writes, or the lesson teaches what fighting already gives.
     const taught = new Set<string>();
     (npc.teaches ?? []).forEach((lesson, i) => {
-      if (!store.all('technique')[lesson.technique]) {
+      const id = 'technique' in lesson ? lesson.technique : lesson.school;
+      if ('technique' in lesson && !store.all('technique')[lesson.technique]) {
         err('npc', npc.id, `teaches unknown technique '${lesson.technique}'`, ['teaches', i, 'technique']);
       }
-      if (taught.has(lesson.technique)) err('npc', npc.id, `teaches '${lesson.technique}' twice`, ['teaches', i]);
-      taught.add(lesson.technique);
+      if ('school' in lesson) {
+        const skill = store.all<SkillDef>('skill')[lesson.school];
+        if (!skill) err('npc', npc.id, `teaches unknown school '${lesson.school}'`, ['teaches', i, 'school']);
+        else if (!(skill.unlock ?? []).some((c) => c.type === 'stat' && c.key === `taught:${lesson.school}`)) {
+          err('npc', npc.id, `'${lesson.school}' does not wait on taught:${lesson.school} in its unlock`, ['teaches', i, 'school']);
+        }
+      }
+      if (taught.has(id)) err('npc', npc.id, `teaches '${id}' twice`, ['teaches', i]);
+      taught.add(id);
     });
   }
   for (const quest of Object.values(quests)) {

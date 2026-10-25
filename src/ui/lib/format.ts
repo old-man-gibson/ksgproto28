@@ -36,12 +36,12 @@ import {
   attrValue,
   type BreakdownLine,
 } from '../../core/systems/attributes';
-import { MONSTERS, MONSTER_TAGS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
+import { MONSTERS, MONSTER_TAGS, NPCS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
 import { itemDefOf } from '../../core/systems/assembly';
 import { resolveModValue } from '../../core/systems/derived';
 import { resolveRune } from '../../core/systems/runes';
 import { OTHERS_POWER, counterEfficiency, matchCeiling } from '../../core/systems/arcane';
-import { resolvedMove } from '../../core/systems/martial';
+import { resolvedMove, schoolTeacher } from '../../core/systems/martial';
 import type { GeneSpec } from '../../core/systems/mutagens';
 import {
   atGrade,
@@ -127,7 +127,12 @@ export function techniqueMoveText(state: GameState, def: TechniqueDef): string {
     );
   }
   if (move.staminaCost) parts.push(`${pct(move.staminaCost)} stamina`);
-  if (move.momentum) parts.push(`+${pct(move.momentum)} momentum`);
+  if (move.momentum) {
+    // Momentum only exists under a stance whose exertion ramps (styles.data.ts);
+    // say which, or the number reads as something every stance has.
+    const ramping = Object.values(STYLES).filter((st) => st.exertion?.ramp).map((st) => st.name);
+    parts.push(`+${pct(move.momentum)} momentum (attack speed this fight, in ${ramping.join(" or ")})`);
+  }
   parts.push(`⟳ ${ticksToTime(move.cooldown)}`);
   return parts.join(' · ');
 }
@@ -163,6 +168,11 @@ export function condText(cond: UnlockCondition): string {
       // the door still has to say what opens it rather than print a counter.
       if (cond.key === 'prestige:count') {
         return cond.value === 1 ? 'prestige once' : `prestige ${cond.value} times`;
+      }
+      // A school that is taught, not found (SchoolLesson): name the teacher.
+      if (cond.key.startsWith('taught:')) {
+        const teacher = schoolTeacher(cond.key.slice('taught:'.length));
+        return teacher ? `lessons from ${NPCS[teacher.npcId].name}` : 'a teacher';
       }
       return `${cond.key} ≥ ${cond.value}`;
     case 'statMax':

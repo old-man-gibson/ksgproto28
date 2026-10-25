@@ -200,13 +200,27 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   // fiction need not explain a gym in an office. Both lessons are free. Lunge
   // is held until something the player knows leads into Coiled — Gather,
   // here (martial.ts, Reach): no technique is taught that could never fire.
+  // Magic Combat is taught, not found (user, 2026-10-25): the school's skill
+  // waits on `taught:school_magic_combat`, and this lesson's requirements are
+  // the ones the skill used to manifest on by itself.
   hall_tutor: {
     id: 'hall_tutor',
     name: 'Old Brannoc',
     icon: '🥋',
     spotId: 'f2_gym',
     quests: [],
-    teaches: [{ technique: 'gather' }, { technique: 'lunge' }],
+    teaches: [
+      { technique: 'gather' },
+      { technique: 'lunge' },
+      {
+        school: 'school_magic_combat',
+        requires: [
+          { type: 'skill', id: 'fighting', level: 10 },
+          { type: 'skill', id: 'magic', level: 10 },
+          { type: 'attr', attr: 'int', level: 20 },
+        ],
+      },
+    ],
   },
   hall_quartermaster: {
     id: 'hall_quartermaster',
