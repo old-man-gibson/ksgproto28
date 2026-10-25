@@ -44,12 +44,21 @@ per level: `⬆️ Level N: +1 to every attribute.`
 
 | source | amount | where |
 |---|---|---|
-| kill | the spawned monster's `xp` × `KILL_LEVEL_XP_RATE` (1). That `xp` is already level- and tier-scaled (`def.xp × (1 + 0.35 × (level − 1)) × rewardMult`, combat.ts) | `'kill'` listener |
+| kill | the kill's earned XP (`killXp`, below) × `KILL_LEVEL_XP_RATE` (1). The monster's `xp` is already level- and tier-scaled (`def.xp × (1 + 0.35 × (level − 1)) × rewardMult`, combat.ts) | `'kill'` listener, `ev.xp` |
 | quest turn-in | `rewards.levelXp`, else `DEFAULT_QUEST_LEVEL_XP` (50). Listed in the turn-in log line | `turnInQuest` (quests.ts) |
 | floor first clear | `FloorDef.clearXp`, once per run, stamped `level:floor:<id>` | `checkFloorClears` |
 
 - Kill XP ignores `xpGain` and every other multiplier on purpose: the
   level is the one track whose pace is set only by these three numbers.
+- **Level gap (user, 2026-10-22).** A kill earns the monster's `xp` ×
+  `levelGapXpMult(player level, monster level)`: all of it when the monster
+  is at or above the player's level, `1 / gap` when the player is `gap`
+  levels above (one above is 1/1, two is half, three a third), and never
+  less than `MIN_KILL_XP` (1). `killXp` (levels.ts) computes it once per
+  kill in combat; the same number pays skill XP (`grantSkillXp`) and level
+  XP (carried on the `'kill'` event as `xp`). Measured the same day: band 1's
+  climb barely changes, because its fights are at or near the climber's
+  level; the cut bites on farming far below.
 - `checkFloorClears` runs after `'kill'`, `'fight:won'`, `'quest:complete'`
   and `'arrive'`: the events that move a clear counter today. A clear met
   any other way pays on the next of those.

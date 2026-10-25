@@ -6,7 +6,8 @@
   import { previewCarve, countPatterns } from '../../core/systems/runecarving';
   import { exposureInfo, previewCook } from '../../core/systems/cooking';
   import { REAGENTS, BREW_FORMS } from '../../core/data/alchemy.data';
-  import { brewGrade, previewBrew, resolveBrew, sequenceOf } from '../../core/systems/alchemy';
+  import { brewGrade, composeBrew, previewBrew, resolveBrew, sequenceOf } from '../../core/systems/alchemy';
+  import { RESOURCES } from '../../core/data/resources.data';
   import { REFINE_COPIES, nextGrade, previewRefine, refineCost } from '../../core/systems/mutagens';
   import { MAIN_GENES, MUTATIONS } from '../../core/data/mutagens.data';
   import { DISCIPLINES } from '../../core/data/disciplines.data';
@@ -97,6 +98,14 @@
   const heldCopies = $derived(subject ? stockOf(gs, subject.id, subject.quality) : 0);
   /** The sequence as it currently reads, gaps closed — what the strip narrates. */
   const sequence = $derived(ordered ? sequenceOf(disc, bench) : []);
+  /**
+   * The alembic's reading of the strip, step by step, whether or not the brew
+   * is legal yet — a one-step strip or a reagent above your level still reads,
+   * so tinkering never goes dark. Pure, so it costs nothing to recompute.
+   */
+  const reading = $derived(ordered && sequence.length ? composeBrew(sequence) : null);
+  /** Empty steps still get a row, so the reading keeps its height as you fill it. */
+  const emptySteps = $derived(ordered ? Math.max(0, open.length - sequence.length) : 0);
 
   /** The bench run underway at THIS bench, if any. */
   const job = $derived(gs.benchWork?.disciplineId === disc.id ? gs.benchWork : null);
@@ -199,13 +208,6 @@
     );
   }
 
-  /** What each solvent promises, said the way the bench says it. */
-  const RAISES: Record<string, string> = {
-    water: 'something to drink',
-    oil: 'something to wear',
-    spirit: 'something to throw',
-  };
-
   /** Which step of the sequence a slot is, 1-based, gaps closed. Ordered benches only. */
   function stepNumber(slotId: string): number {
     let n = 0;
@@ -230,36 +232,15 @@
   function describePiece(slot: CraftSlotDef, held: GradedStack): { head: string; lines: string[] } {
     if (ordered) {
       // A reagent's tooltip is about its POSITION, because position is the
-      // whole of what a reagent does here.
+      // whole of what a reagent does here: what it is, then what it did at
+      // this step — the same line the reading under the strip shows.
       const def = REAGENTS[held.id];
       const mat = MATERIALS[held.id];
       const grade = QUALITY_TIERS[held.quality];
       const lines: string[] = [`${grade.name} · ×${grade.mult} strength`];
       if (def?.desc) lines.push(def.desc);
-      const step = stepNumber(slot.id);
-      const after = sequence.length - step;
-      if (def?.menstruum) {
-        lines.push(
-          step === 1
-            ? `Raises the brew — ${RAISES[def.menstruum.medium]}`
-            : 'Raised already, so this only thins it: weaker, calmer, roomier',
-        );
-      }
-      if (def?.essence) {
-        const dissolved = after / (after + 1);
-        lines.push(
-          after === 0
-            ? 'Last in — none of it dissolves, all of its character reads'
-            : `${after} more after it — ${Math.round(dissolved * 100)}% dissolves into raw strength`,
-        );
-      }
-      if (def?.act) {
-        lines.push(
-          step === 1
-            ? 'Acts on the brew it finds — and it finds nothing here'
-            : `Acts on the ${step - 1} thing${step === 2 ? '' : 's'} added before it`,
-        );
-      }
+      const note = reading?.notes[stepNumber(slot.id) - 1];
+      if (note) lines.push(`Step ${stepNumber(slot.id)}: ${note.slice(note.indexOf(': ') + 2)}`);
       return { head: `${mat?.icon ?? '📦'} ${mat?.name ?? held.id}`, lines };
     }
     if (slotPicks(slot) === 'design') {
@@ -545,9 +526,17 @@
           <div class="small dim">Nothing you own belongs here.</div>
         {/if}
       </div>
+    {:else if reading}
+      <!-- The idle well holds the alembic's reading: one line per step, empty
+           steps as dashes. Opening a picker covers it for the moment it takes
+           to choose, and the well never changes height either way. -->
+      <ol class="brew-steps small">
+        {#each reading.notes as note, i (i)}<li>{note}</li>{/each}
+        {#each { length: emptySteps } as _, i (i)}<li class="ghost">—</li>{/each}
+      </ol>
     {:else}
       <div class="picker-idle small dim">
-        {ordered ? 'Click a step to fill it — order is the recipe.' : 'Click a slot to fill it.'}
+        {ordered ? 'Click a step to add a reagent. Steps are read left to right.' : 'Click a slot to fill it.'}
       </div>
     {/if}
   </div>
@@ -594,52 +583,56 @@
       {:else}
         <div class="dim small">Put a gene or a mutagen on the bench.</div>
       {/if}
-    {:else if ordered && potion?.ok && potion.spec}
+    {:else if ordered}
       <!--
-        Alchemy's preview is the READING: not just what comes out, but the
-        alembic's line-by-line account of how the sequence produced it. That is
-        the whole teaching surface — a player who reads it twice knows why
-        moving the salt one step later changed everything.
+        Alchemy's preview is the READING, drawn on the face rather than in a
+        tooltip so it works on touch and stays up while you tinker: what comes
+        out, what it does, then the summary (form and why, spill, duration,
+        what goes unused). The per-step lines live in the picker well above.
       -->
-      {@const spec = potion.spec}
-      {@const kind = BREW_FORMS[spec.form]}
-      <Tip block>
+      {#if potion?.ok && potion.spec}
+        {@const spec = potion.spec}
+        {@const kind = BREW_FORMS[spec.form]}
         <div class="preview" class:named={!!potion.formula} style="--tint: {QUALITY_TIERS[brewGrade(spec)].color}">
-          <span class="pv-name"><b>{spec.icon} {spec.name}</b></span>
+          <span class="pv-name"><b>{spec.icon} {spec.name}</b> <span class="dim small">{kind.name} · {kind.verb}</span></span>
           {#if potion.formula}<span class="known">known formula</span>{/if}
           <span class="odds small">
-            <span>⚡ {spec.volatility.toFixed(2)}</span>
-            <span>◆ {spec.potency.toFixed(1)}</span>
+            <span>Volatility {spec.volatility.toFixed(2)}</span>
+            <span>Potency {spec.potency.toFixed(2)}</span>
           </span>
         </div>
-        {#snippet tip()}
-          <div class="tip-line tip-base">{spec.icon} {spec.name}</div>
-          <div class="tip-line tip-sub">{kind.desc}</div>
-          {#each spec.notes as note}<div class="tip-line">{note}</div>{/each}
-          <div class="tip-line tip-sub">
-            {spec.form === 'oil' ? `What each blow carries — ${spec.blows} blows of it` : 'What it does'}
-          </div>
+        <ul class="brew-fx small">
           {#each spec.strikes as s}
             <!-- An oil's numbers are PER BLOW; a flask's are the whole burst.
                  Saying which is the difference between "that looks weak" and
                  "that is a coating". -->
-            <div class="tip-line">
-              💥 {s.power < 10 ? s.power.toFixed(1) : Math.round(s.power)} {s.type}{spec.form === 'oil' ? ' per blow' : ''}{s.penetration ? ` · ${pct(s.penetration)} through armor` : ''}
-            </div>
+            <li>
+              💥 {s.power < 10 ? s.power.toFixed(1) : Math.round(s.power)} {s.type} damage{spec.form === 'oil' ? ` per blow, ${spec.blows} blows` : kind.thrown ? ' to the front enemy, half to the rest' : ''}{s.penetration ? ` · ${pct(s.penetration)} armour pierce` : ''}{#each s.inflicts ?? [] as inf}, inflicts {STATUSES[inf.id]?.name ?? inf.id} ×{(inf.intensity ?? 1).toFixed(2)}{/each}
+            </li>
           {/each}
           {#each spec.restore as r}
-            <div class="tip-line">💚 restores {Math.round(r.amount)} {r.resource}</div>
+            <li>💚 +{Math.round(r.amount * 10) / 10} {RESOURCES[r.resource]?.name ?? r.resource}</li>
           {/each}
           {#each spec.grants as g}
-            <div class="tip-line">✨ {STATUSES[g.id]?.name ?? g.id} ×{(g.intensity ?? 1).toFixed(2)} for {((g.duration as number) / 10).toFixed(0)}s</div>
+            <li>✨ {STATUSES[g.id]?.name ?? g.id} ×{(g.intensity ?? 1).toFixed(2)} for {((g.duration as number) / 10).toFixed(0)}s</li>
           {/each}
           {#each spec.inflicts as inf}
-            <div class="tip-line">☠️ inflicts {STATUSES[inf.id]?.name ?? inf.id} ×{(inf.intensity ?? 1).toFixed(2)}</div>
+            <li>☠️ Inflicts {STATUSES[inf.id]?.name ?? inf.id} ×{(inf.intensity ?? 1).toFixed(2)}{inf.duration ? ` for ${((inf.duration as number) / 10).toFixed(0)}s` : ''}{spec.form === 'fume' ? ' on every enemy' : spec.form === 'oil' ? ' per blow' : ''}</li>
           {/each}
-          {#each spec.cures as c}<div class="tip-line">🩹 clears {c}</div>{/each}
-          <div class="tip-line tip-total">Worth about {fmt(spec.value)} gold</div>
-        {/snippet}
-      </Tip>
+          {#each spec.cures as c}<li>🩹 Clears {c}</li>{/each}
+          {#if !spec.strikes.length && !spec.restore.length && !spec.grants.length && !spec.inflicts.length && !spec.cures.length}
+            <li class="dim">No effect. See “Not used by” below.</li>
+          {/if}
+          <li class="dim">Worth about {fmt(spec.value)} gold</li>
+        </ul>
+      {:else}
+        <div class="small dim">{reason ?? 'Lay something out to begin.'}</div>
+      {/if}
+      {#if reading}
+        <div class="brew-sum small">
+          {#each reading.summary as line}<div>{line}</div>{/each}
+        </div>
+      {/if}
     {:else if !carving && !ordered && dish?.ok}
       <!-- Cooking: what comes out, and at what grade the basket earned. -->
       <div class="preview" style="--tint: {QUALITY_TIERS[dish.quality!].color}">
@@ -652,9 +645,6 @@
           {#if named}<span class="known">known work</span>{/if}
           <span class="odds small">
             <span class:risky={(carve?.failure ?? 0) > 0.35}>💥 {pct(carve?.failure ?? 0)}</span>
-            {#if (carve?.upgrade ?? 0) > 0}
-              <span class="good">✨ {pct(carve?.upgrade ?? 0)}</span>
-            {/if}
           </span>
         </div>
         {#snippet tip()}
@@ -669,9 +659,6 @@
             {/if}
           {/each}
           <div class="tip-line tip-sub">💥 {pct(carve?.failure ?? 0)} chance the slab splits</div>
-          {#if (carve?.upgrade ?? 0) > 0}
-            <div class="tip-line tip-sub">✨ {pct(carve?.upgrade ?? 0)} chance of a clean cut</div>
-          {/if}
           <div class="tip-line tip-total">Worth about {fmt(preview.value)} gold</div>
         {/snippet}
       </Tip>
@@ -719,7 +706,7 @@
   {#if ordered && gs.flasks?.length}
     <div class="carved">
       <div class="small dim">
-        On the shelf — a flask remembers its sequence, so it is always exactly what it says
+        Brewed flasks. Use them from the Satchel on the Equipment tab.
       </div>
       <div class="opts">
         {#each gs.flasks as flask, i (i)}
@@ -1121,6 +1108,41 @@
     white-space: nowrap;
   }
 
+  /* The alembic's reading: what it does, then one numbered line per step. */
+  .brew-fx {
+    margin: 5px 0 0;
+    padding-left: 4px;
+    list-style: none;
+    display: grid;
+    gap: 1px;
+  }
+
+  .brew-steps {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0;
+    padding: 6px 8px 6px 28px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-sunken, var(--bg));
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .brew-steps li.ghost {
+    color: var(--text-dim);
+  }
+
+  .brew-sum {
+    margin-top: 4px;
+    padding-left: 4px;
+    display: grid;
+    gap: 1px;
+    color: var(--text-dim);
+  }
+
   .known {
     font-size: 9px;
     color: var(--accent);
@@ -1137,7 +1159,6 @@
   }
 
   .odds .risky { color: var(--danger); }
-  .odds .good { color: var(--xp); }
 
   .bench-actions {
     display: flex;

@@ -2779,6 +2779,8 @@ export interface BrewSpec {
   medium: BrewMedium;
   /** Raw magnitude, after the solvent's capacity and every purity term. */
   potency: number;
+  /** How much potency the bases hold before the excess spills. */
+  capacity: number;
   /** How badly it wants to release. Past the threshold it is a burst. */
   volatility: number;
   /** Ticks a sustained brew runs for. */
@@ -2797,8 +2799,10 @@ export interface BrewSpec {
   cures: string[];
   /** Roughly what it is worth. */
   value: number;
-  /** The reading, line by line — how the alembic explains itself. */
+  /** The reading: exactly one line per step, in sequence order. */
   notes: string[];
+  /** What the steps add up to: the form and why, spill, duration or blows, unused effects. */
+  summary: string[];
 }
 
 /**
@@ -3035,14 +3039,30 @@ export interface RuneTechniqueMod {
   grantsFork?: string;
 }
 
+/** One typed on-hit rider of a rune: a damage type and how much of it. */
+export interface RuneRider {
+  type: DamageType;
+  value: number;
+}
+
+/**
+ * The riders of a rune effect as a list. Authored data writes one rider as a
+ * bare object; a carved rune holds one rider per damage type, as a list.
+ * Every reader goes through this so both shapes mean the same thing.
+ */
+export function runeRiders(riders: RuneRider | RuneRider[] | undefined): RuneRider[] {
+  if (!riders) return [];
+  return Array.isArray(riders) ? riders : [riders];
+}
+
 /** What a rune grants in ONE context (a rune defines up to three of these). */
 export interface RuneEffect {
   /** Stat modifiers while the host item is equipped. */
   mods?: Modifier[];
-  /** Weapon context only: flat typed damage added to every weapon hit. */
-  bonusDamage?: { type: DamageType; value: number };
-  /** Weapon context only: fraction of each hit dealt again as this type (0.12 = 12%). */
-  bonusDamagePct?: { type: DamageType; value: number };
+  /** Weapon context only: flat typed damage added to every weapon hit. One rider, or a list. Read with runeRiders. */
+  bonusDamage?: RuneRider | RuneRider[];
+  /** Weapon context only: fraction of each hit dealt again as this type (0.12 = 12%). One rider, or a list. Read with runeRiders. */
+  bonusDamagePct?: RuneRider | RuneRider[];
   /** Weapon context only: graph surgery on specific techniques. */
   techniqueMods?: RuneTechniqueMod[];
 }
@@ -3070,12 +3090,12 @@ export interface CarvedRune {
   /**
    * The patterns cut into the slab — what the rune fundamentally does. A slab
    * takes one to begin with and up to three as the carver's hands steady.
+   * A multiset: cut order does not change the rune (see carvedKey).
    */
   patterns: string[];
   /**
-   * The slab it was cut into, and how good it was. A fine tool can bring this
-   * out a grade better than the stone started, which is the only mark the tool
-   * leaves — the rune stays purely a record of what it is made of.
+   * The slab it was cut into, and its grade. The grade is the slab's own: the
+   * carving tool never changes it, so the rune stays a record of what went in.
    */
   stone: GradedStack;
   /**
@@ -5854,7 +5874,8 @@ export type GameEvent =
   | { type: 'attr:levelup'; attr: AttributeId; level: number }
   | { type: 'superattr:unlock'; id: SuperAttributeId }
   | { type: 'encounter'; spot: string; monsterIds: string[] }
-  | { type: 'kill'; monster: MonsterInstance }
+  /** `xp`: what the kill earned after the level-gap cut (killXp, levels.ts). */
+  | { type: 'kill'; monster: MonsterInstance; xp: number }
   /** The last enemy of a fight fell. `forced`: it was a fight that could not be fled. */
   | { type: 'fight:won'; spot: string; forced: boolean }
   | { type: 'defeat'; monster: MonsterInstance }
