@@ -23,7 +23,7 @@ import type {
   StatusInstance,
   StatusRemoval,
 } from '../../core/types';
-import { DAMAGE_TYPE_NAMES, RES_STAT_BY_TYPE, STAT_NAMES } from '../../core/types';
+import { DAMAGE_TYPE_NAMES, RES_STAT_BY_TYPE, STAT_NAMES, runeRiders } from '../../core/types';
 import { RESOURCES } from '../../core/data/resources.data';
 import { TPS } from '../../core/engine/loop';
 import { ATTRIBUTE_LIST } from '../../core/data/attributes.data';
@@ -912,15 +912,12 @@ export function statTipLines(state: GameState, key: StatKey): string[] {
     for (const ref of weapon?.runes ?? []) {
       const rune = resolveRune(ref);
       const eff = rune.effects.weapon;
-      if (eff?.bonusDamage) {
-        lines.push(
-          `on hit: +${fmt(eff.bonusDamage.value)} ${DAMAGE_TYPE_NAMES[eff.bonusDamage.type]} — ${rune.name}`,
-        );
+      // A carved rune can hold one rider per damage type; list every one.
+      for (const r of runeRiders(eff?.bonusDamage)) {
+        lines.push(`on hit: +${fmt(r.value)} ${DAMAGE_TYPE_NAMES[r.type]} — ${rune.name}`);
       }
-      if (eff?.bonusDamagePct) {
-        lines.push(
-          `on hit: +${pct(eff.bonusDamagePct.value)} as ${DAMAGE_TYPE_NAMES[eff.bonusDamagePct.type]} — ${rune.name}`,
-        );
+      for (const r of runeRiders(eff?.bonusDamagePct)) {
+        lines.push(`on hit: +${pct(r.value)} as ${DAMAGE_TYPE_NAMES[r.type]} — ${rune.name}`);
       }
     }
   }
@@ -1052,11 +1049,11 @@ export function factorLabel(f: ActivityFactor): string {
 export function describeRuneEffect(effect: RuneEffect | undefined): string {
   if (!effect) return 'inert';
   const parts = (effect.mods ?? []).map((m) => describeMod(m));
-  if (effect.bonusDamage) {
-    parts.push(`+${fmt(effect.bonusDamage.value)} ${DAMAGE_TYPE_NAMES[effect.bonusDamage.type]} damage`);
+  for (const r of runeRiders(effect.bonusDamage)) {
+    parts.push(`+${fmt(r.value)} ${DAMAGE_TYPE_NAMES[r.type]} damage`);
   }
-  if (effect.bonusDamagePct) {
-    parts.push(`+${pct(effect.bonusDamagePct.value)} damage as ${DAMAGE_TYPE_NAMES[effect.bonusDamagePct.type]}`);
+  for (const r of runeRiders(effect.bonusDamagePct)) {
+    parts.push(`+${pct(r.value)} damage as ${DAMAGE_TYPE_NAMES[r.type]}`);
   }
   return parts.length ? parts.join(', ') : 'inert';
 }

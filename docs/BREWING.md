@@ -4,7 +4,7 @@ How the Alembic thinks, how to read a brew, and how to write new ones.
 
 Part 1 is for playing. Part 2 is for adding content. Every number below is what
 the code actually produces at Fair (C) grade — you can reproduce any of it by
-laying the sequence out on the bench and reading the preview tooltip.
+laying the sequence out on the bench and reading the step list under the strip.
 
 > The internal spec (framework hooks, deferred work) lives in
 > [ALCHEMY.md](ALCHEMY.md). This document is the practical one.
@@ -26,7 +26,7 @@ every time. If two brews differ, the sequence differs.
 
 | Kind | What it does | Examples |
 |---|---|---|
-| **Menstruum** (solvent) | Raises the brew and decides how it is *delivered* | Spring Water, Pressed Oil, Grain Spirit |
+| **Base** (`menstruum` in code) | Decides how it is *delivered*: drink, apply, coat or throw | Spring Water, Pressed Oil, Grain Spirit |
 | **Essence** (substance) | What the brew is *of* | Emberbloom, Mendroot, Gloomcap, Nightcap… |
 | **Operator** | Acts on the brew it *finds* | Quicksilver, Fixing Salt, Brimstone, Bone Ash, Green Vitriol |
 
@@ -79,8 +79,8 @@ but where you drop it.
 
 | Sequence | Volatility when Brimstone lands | Result |
 |---|---|---|
-| `Spirit → Quicksilver → Emberbloom → Brimstone` | 1.80 ✔ ≥ 1.2 | **catches** — potency 5.29 |
-| `Spirit → Brimstone → Quicksilver → Emberbloom` | 0.50 ✘ | fouls it — potency 2.60 |
+| `Spirit → Quicksilver → Emberbloom → Brimstone` | 1.80 ✔ ≥ 1.2 | **ignites** — potency 5.29 |
+| `Spirit → Brimstone → Quicksilver → Emberbloom` | 0.50 ✘ | fails, final potency ×0.82 — potency 2.62 |
 
 ## What comes out
 
@@ -122,27 +122,43 @@ settled, and it has no banked duration to spend.
 Note the Quicksilver: pressed oil has nothing to rouse it on its own, so an
 untouched oil sequence always settles into a Salve.
 
-Watch the Satchel for `🛢️ On your edge: … — N blows left`, and the fight feed
+Watch the Satchel for `🛢️ Weapon oil: …, N blows left`, and the fight feed
 for the line where the last of it wipes off.
 
-## Reading the preview
+## Reading the bench
 
-Hovering the result line gives you the alembic's own account, one line per
-addition — what dissolved, what caught, what settled. If a brew is not doing
-what you expected, that list says why. The two numbers on the face of it are:
+Under the strip the bench shows three things, all on its face (no hovering):
 
-- **⚡ volatility** — which side of 1.0 you are on
-- **◆ potency** — raw magnitude
+1. **The result**: name, form, volatility and potency, then what it does —
+   damage, restores, buffs, afflictions, cures.
+2. **One line per step**, numbered like the strip. Each line names the rule that
+   applied and the number it changed, with the running total after the arrow:
+
+   ```
+   1. 🍶 Grain Spirit: Base is spirit (Fume or Flask). Holds up to 5 potency. Volatility +0.5 → 0.5.
+   2. 🪙 Quicksilver: Volatility +1.3 → 1.8.
+   3. 🌺 Emberbloom: 1 step after it, 50% dissolves. Potency +3.76 → 3.76. Keeps 50% of its effects.
+   4. 🟡 Brimstone: Volatility 1.8 is at least 1.2, so it ignites. Potency ×1.55 → 5.83. Volatility +0.8 → 2.6.
+   ```
+
+   Empty steps show as `—`. The list reads even when the brew cannot be made
+   yet (one step, or a reagent above your level).
+3. **The summary**: which form and why (`Form: spirit base, volatility 2.6 (1.0
+   or more) → Flask.`), any spill, the final potency multiplier, the duration or
+   the blows, and what the form leaves unused (`Not used by an Elixir: Ember
+   (heat damage, afflictions).`).
 
 Use the **◀ ▶** arrows under a filled step to swap it with its neighbour. That is
-the fastest way to feel a sequence out; the preview updates as you go.
+the fastest way to feel a sequence out; every line updates as you go. Hovering a
+placed reagent shows that reagent's description and its step line.
 
 ## Things that will bite you
 
 - **Drinking fire does nothing.** An essence only speaks in the register its form
   reads. Emberbloom has an element and an affliction — perfect in a Flask,
-  worthless in an Elixir, which reads `grants`. The preview will show an Ember
-  Elixir with no effects listed at all. Believe it.
+  worthless in an Elixir, which reads `grants`. The bench shows an Ember Elixir
+  with no effects, and the summary says `Not used by an Elixir: Ember (heat
+  damage, afflictions)`.
 - **Only Salves cure.** Mendroot's cure tags are ignored in every other form.
 - **Elixirs don't restore, Draughts don't grant.** Calm water sustains, roused
   water bursts. Pick the one you wanted.
@@ -151,8 +167,8 @@ the fastest way to feel a sequence out; the preview updates as you go.
   Rouse an oil only when you have something worth putting on an edge.
 - **Solvents have a capacity.** Water holds 8, Oil 6, Spirit 5 (×grade). Potency
   past that **spills**, and only 35% of the excess survives. Four heavy essences
-  in a small solvent throws most of them away — the preview says *"It runs over
-  the top."*
+  in a small solvent throws most of them away — the summary says *"Over the
+  limit: potency …, base holds …"*.
 - **Grades scale, they never decide.** A Superb reagent makes the same brew,
   bigger. Refuse (F) grade is genuinely negative and drags a brew down.
 - **A second solvent dilutes.** Potency ×0.7, volatility ×0.55, but it adds
@@ -278,8 +294,12 @@ act: { kind: 'corrode', penetration: 0.22, mult: 1.25, purity: 0.88 }
 
 Adding a *new* act shape means extending `ReagentAct` in `types.ts` and adding a
 case to the `switch` in `composeBrew`. Two rules if you do: it must read state
-that only earlier steps could have set, and it must `notes.push(...)` a line
-explaining itself — the preview's reading is the teaching surface.
+that only earlier steps could have set, and it must add a clause to its step's
+line: `parts.push(text('alchemy.step.<kind>', { … }))`, with the template in
+`src/core/text/log.text.ts`. The clause names the rule and the number it changed,
+with the running total after an arrow (`Potency ×1.55 → 5.83`). The step list on
+the bench is the teaching surface; a step with no line breaks the one-line-per-
+step rule that `tests/alchemy.test.ts` locks.
 
 ### …as a menstruum
 
@@ -358,4 +378,4 @@ outcome table, so if a change to `composeBrew` breaks the design rather than the
 code, that is where it shows up.
 
 The fastest way to see what a sequence does is still the bench: lay it out and
-read the preview tooltip. It is generated from the same fold the game runs.
+read the step list. It is generated from the same fold the game runs.

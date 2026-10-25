@@ -175,6 +175,7 @@ describe('fusion unlock trigger', () => {
         rarity: 'common', mutation: null, hp: 0, statuses: [], attrs: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
         xp: 1, gold: 0, range: 'melee', bar: 0, stunSpent: 0,
       },
+      xp: 1,
     });
     expect(g.state.stats['kills']).toBe(500);
     expect(isFused(g.state, 'dominion')).toBe(true);

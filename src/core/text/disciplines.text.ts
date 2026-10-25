@@ -36,7 +36,7 @@ export const DISCIPLINES_TEXT: ProseTable = {
   'assembling.outcomes.salad.desc': 'Two vegetables.',
   'assembling.outcomes.ration.desc': 'Any two ingredients that match nothing else.',
 
-  'alchemy.desc': 'Alembic. Takes two to six reagents in order (steps three to six unlock at Alchemy 5, 12, 22 and 35). A reagent with n reagents after it dissolves by n/(n+1): the dissolved share becomes potency at x1.35, the rest keeps its element and effects. The first solvent sets the delivery form; volatility at or above 1.0 makes it a burst form. Brew time is fixed regardless of skill.',
+  'alchemy.desc': 'Alembic. Takes two to six reagents in order (steps three to six unlock at Alchemy 5, 12, 22 and 35). Start with a base (water, oil or spirit): it sets the form. The list under the strip says what each step did. Brew time is fixed regardless of skill.',
   'alchemy.outcomes.brew.desc': 'The brew the reagent sequence resolves to.',
 
   'forging.desc': 'Anvil. Takes up to five parts, each a part kind in a material: a head, a guard (Smithing 5), a haft, a binding (Smithing 3) and a second head (Smithing 15). The proportions of the parts name the piece: a 2×3 blade on a handle is a dagger, a 2×6 blade a sword. The cost is the parts\' cells in each material, rounded up to whole units. Work time grows with the cells and shrinks with Smithing, and the grade is rolled from Smithing when the piece is finished.',

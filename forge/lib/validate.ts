@@ -9,6 +9,7 @@
 import type { store as Store } from './store.svelte';
 import { searchContentIssues } from '../../src/core/systems/searchValidation';
 import { smithingContentIssues } from '../../src/core/systems/assemblyValidation';
+import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
 import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
@@ -294,6 +295,23 @@ export function validate(store: S): Issue[] {
         err('spot', spot.id, `edge to '${c.to}' crosses a banded floor boundary — the ladder is the only door`, ['connections']);
       }
     }
+  }
+  // Floor structure (docs/FLOOR_STANDARD.md §2.2): spine, no skip, wing depth,
+  // wing loops, the clear spot's table, and explores that pay. Imported, not
+  // mirrored: these are the same pure functions tests/content.test.ts runs, so
+  // the two layers cannot drift. A floor whose clear names no spot has no spine
+  // to measure from, so its spine rules are skipped with a warning.
+  {
+    const adjacency = buildAdjacency(spots);
+    for (const floor of Object.values(floors)) {
+      if (floor.bandId === undefined) continue;
+      const report = floorStructureIssues(floor, spots, adjacency);
+      for (const issue of report.issues) err('floor', floor.id, `${issue.rule}: ${issue.message}`);
+      if (report.skipped === 'no-clear-spot') {
+        warn('floor', floor.id, 'the clear names no spot, so the spine rules (no skip, wing depth, wing loops, clear table) did not run', ['clear']);
+      }
+    }
+    for (const issue of exploreIssues(Object.values(spots))) err('spot', issue.spot, issue.message, ['activities']);
   }
 
   // ---------- Spots ----------

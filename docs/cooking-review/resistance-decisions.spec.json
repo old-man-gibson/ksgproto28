@@ -1,0 +1,162 @@
+{
+  "title": "Condition Resistance Decisions",
+  "lede": "Every ordinary condition should be resistible, each system should resist conditions its own way (your table, docs/SYSTEM_IDENTITIES.md), and dishes are eaten only out of combat. Mark each item. Nothing is built until you do. Notes go to whoever builds it.",
+  "meta": [
+    {"label": "Prepared by", "text": "Claude, with 2 brainstormers and 1 design antagonist"},
+    {"label": "Built on", "text": "branch cooking-rounds-1-2 (cooking rounds 1 and 2)"},
+    {"label": "Code changed", "text": "none"}
+  ],
+  "options": [
+    {"key": "approve", "label": "Yes", "tone": "ok"},
+    {"key": "hold", "label": "Later", "tone": "warn"},
+    {"key": "reject", "label": "No", "tone": "bad"}
+  ],
+  "recLabel": "I recommend",
+  "notePlaceholder": "Note (optional)",
+  "collection": "decisions",
+  "groups": [
+    {"key": "build", "title": "Build now", "note": "Matches rules you already stated. No save version change. Yes means it goes to a builder next."},
+    {"key": "calls", "title": "Your calls", "note": "Each item says what Yes and No mean."},
+    {"key": "seven", "title": "The seven you are reviewing", "note": "You said you would look at these again. Yes = make it resistible (say how in the note: through an element, or its own resistance). No = no resistance, like fasting. Later = still deciding."},
+    {"key": "found", "title": "Problems found elsewhere", "note": "Not cooking. Found while checking. Yes queues a fix."}
+  ],
+  "items": [
+    {
+      "id": "eat-out-of-combat", "group": "build", "title": "Dishes can only be eaten out of combat", "rec": "approve",
+      "tags": ["consumables.ts", "combat.ts"],
+      "summary": "Your table says cooking is eaten only out of combat. Today the game lets you eat during a fight.",
+      "note": {"label": "Plan", "text": "Eating a dish during a fight is refused (\"Not during a fight.\"). The 1.5 s gap between chained hunt fights and the rest break count as out of combat. Pressing Eat during a fight queues one dish: \"Eat after this fight\". It is eaten on the first out-of-combat moment, and waits out a knockout recovery. A dish already active when a fight starts keeps running. Flasks and the Healing Salve are unchanged."},
+      "details": {
+        "label": "Details and review",
+        "panels": [
+          {
+            "title": "What changes for the player", "subtitle": "eat-out-of-combat",
+            "fields": [
+              {"label": "Cost", "text": "No top-up during a boss fight. Plan the meal before the pull. One extra click if you queue."},
+              {"label": "Offline", "text": "Nothing is eaten while you are away until consumable automation exists (planned). A dish eaten before you leave keeps running."},
+              {"label": "Queue", "text": "UI state only, not saved. Checked again when it fires (stock, cooldown)."}
+            ],
+            "cards": [
+              {"title": "Design antagonist", "badge": "fixed", "tone": "ok", "lines": [{"label": "Found", "text": "A queued dish would have fired during knockout recovery, where statuses run 5x faster and burn the dish. Now it waits."}]}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "meal-heal", "group": "build", "title": "Dishes stop clearing bleeding", "rec": "approve",
+      "tags": ["consumables.ts"],
+      "summary": "A dish that restores health heals as a 'salve' today, and a salve heal removes bleeding, lacerated, concussed and blaze burn. That is alchemy's job (the Salve), not cooking's.",
+      "note": {"label": "Plan", "text": "Health restored by a dish uses a new heal type, 'meal', which clears nothing. Only dishes are affected: the bought Healing Salve keeps clearing wounds. The two dishes affected are Herb-Rubbed Meat and Feast Platter; neither promises wound closing in its text."}
+    },
+    {
+      "id": "unresistable-marker", "group": "build", "title": "Mark conditions that have no resistance, and check the rest", "rec": "approve",
+      "tags": ["statuses.data.ts", "content check, both layers"],
+      "summary": "fasting, flat_footed, surprised, toll_steam, toll_ice and toll_overdrive get an explicit \"no resistance\" mark with a reason. A content check then requires every harmful condition to either have an element (so it is resisted) or carry the mark.",
+      "note": {"label": "Plan", "text": "The seven you are reviewing sit on a waiting list the check accepts. The list can only shrink, so a new harmful condition cannot be added without choosing. Immunity cannot be granted to a condition marked as having no resistance (a boss phase cannot be switched off). The forge editor gets the field."}
+    },
+    {
+      "id": "tick-fix", "group": "build", "title": "Monster damage ticks use the same resistance as everything else", "rec": "approve",
+      "tags": ["statuses.ts", "monsterStats.ts"],
+      "summary": "A condition's damage ticks on a monster still read the monster's declared resistance only. Whether a condition lands already reads the full value (with tag-based resistance). On the player, ticks leave out the elemental resistance stat.",
+      "note": {"label": "Plan", "text": "Both read the full value. Checked: no monster that spawns anywhere today changes. Only two unplaced monsters would."}
+    },
+    {
+      "id": "resist-tooltip", "group": "build", "title": "Condition tooltips say what resists them", "rec": "approve",
+      "tags": ["format.ts"],
+      "summary": "A condition's tooltip gets one line: \"Resisted by: Slashing resistance 10%\". It shows your real total, or \"Immune\" when you are at 100% or more.",
+      "note": {"label": "Why the real total", "text": "Your damage resistance is capped at 75% in the stat panel, but immunity reads the full value. Showing 75% while a condition never lands would mislead."}
+    },
+    {
+      "id": "stack-ladders", "group": "calls", "title": "Should resistance slow down conditions that build by stacks?", "rec": "reject",
+      "tags": ["statuses.ts", "statuses.test.ts:1573"],
+      "summary": "Bleeding turns into Lacerated after 5 cuts, whatever the target's slashing resistance. Resistance makes each bleed weaker but never delays the laceration. A current test locks this in on purpose: \"the number of applications IS the mechanic\".",
+      "note": {"label": "Yes / No", "text": "Yes: the stack count needed grows with resistance (5 cuts become 10 on a 50% slashing slime, 6 to 7 on floor 2 to 3 automatons, 3 on a slashing-vulnerable target). No: keep today's rule. I recommend No unless you want that change."}
+    },
+    {
+      "id": "anupama-pair", "group": "calls", "title": "Anupama's two hunger conditions: keep dark resistance working on them?", "rec": "reject",
+      "tags": ["hunger_anupama", "weight_of_hunger"],
+      "summary": "Both belong to Anupama's unique set (like fasting) but carry the dark element, and their data says dark resistance blunting them is deliberate.",
+      "note": {"label": "Yes / No", "text": "Yes: mark them as having no resistance, like fasting (dark resistance stops working on them). No: leave them resistible by dark resistance, as now."}
+    },
+    {
+      "id": "per-condition-resist", "group": "calls", "title": "Resistance to one condition, separate from its element", "rec": "hold",
+      "tags": ["new stat family"],
+      "summary": "Today resisting bleeding means resisting all slashing damage. This adds a second kind: \"Bleeding resistance 20%\", which adds to Slashing resistance but only for that condition (34 condition families). A dish, flask or charm could then resist one condition without touching damage.",
+      "note": {"label": "Yes / No / Later", "text": "Needed if any of the seven becomes resistible without an element (the two psionic ones have no element to use). Yes: build it. Later: decide with the seven. No: element resistance stays the only kind."}
+    },
+    {
+      "id": "dish-limit", "group": "calls", "title": "Limit how many dishes are active at once", "rec": "approve",
+      "tags": ["3 dishes"],
+      "summary": "With no limit, several dishes plus a flask, a ward and gear can make you immune to 4 to 6 element families for over 10 minutes.",
+      "note": {"label": "Yes / No", "text": "Yes: at most 3 dishes active. Each dish is one slot with everything it gives, its Signature included. A 4th replaces the dish with the least time left. A skill or mutagen can raise the limit later. No: no limit."}
+    },
+    {
+      "id": "immunity-sources", "group": "calls", "title": "Which sources may make you immune", "rec": "approve",
+      "tags": ["statuses", "resistCap"],
+      "summary": "Any status can add resistance today, so a dish, a flask, a divine blessing or a music effect can push you to 100% while it lasts. Gear alone cannot go past the 75% cap; only mutagens raise the cap.",
+      "note": {"label": "Yes / No", "text": "Yes: temporary immunity can come from any status while it lasts; permanent immunity only from mutagens (raising the cap, or a gene that grants immunity). No: say in the note which sources should not."}
+    },
+    {
+      "id": "monster-penetration", "group": "calls", "title": "Monsters get penetration by tier", "rec": "approve",
+      "tags": ["monsters.data.ts"],
+      "summary": "Monsters have no penetration today, so a player at 100% resistance is immune to that monster's conditions forever. With penetration, immunity needs more than 100% as the climb goes on.",
+      "note": {"label": "Yes / No", "text": "Yes: 0 on floors 1 to 3, about 0.15 in band 2, set per monster tier. It only affects the 100% line, not how much a partial resistance blocks. No: monsters stay at 0."}
+    },
+    {
+      "id": "fill-gaps", "group": "calls", "title": "Give the 17 unanswered conditions an answer, per system", "rec": "approve",
+      "tags": ["content"],
+      "summary": "17 of the 37 element conditions have no answer in any system a fresh save can use: the whole piercing family, dazed, shard bleed, and the earth, wind, light, arcane and dark conditions.",
+      "note": {"label": "Plan", "text": "One answer per system row: slime jellies by element family (cooking round 3), a resistance on a Forges armour recipe (equipment), a divine miracle that turns burning into healing (Flame Vow), and alchemy's cure effects made to work. Yes approves the direction; each piece comes back to you before it is built."}
+    },
+    {"id": "c-doused", "group": "seven", "title": "doused", "summary": "Reached only by another condition turning into it, never applied directly, so a resistance would do nothing unless that changes."},
+    {"id": "c-psionic-compression", "group": "seven", "title": "psionic_compression", "summary": "No psionic element exists. Resistible only through its own resistance (the 'Resistance to one condition' item) or not at all."},
+    {"id": "c-psionic-read", "group": "seven", "title": "psionic_read", "summary": "Same as psionic_compression: no psionic element exists."},
+    {"id": "c-overgrowth", "group": "seven", "title": "overgrowth", "summary": "Part of the overgrowth ladder."},
+    {"id": "c-proliferating", "group": "seven", "title": "proliferating", "summary": "Reached when an enemy heal escalates. If it becomes resistible, that escalation must stop being charged twice."},
+    {"id": "c-unfolded", "group": "seven", "title": "unfolded", "summary": "A divine miracle's mark on enemies. Its effects already touch arcane resistance, so arcane is a possible element."},
+    {"id": "c-queasy", "group": "seven", "title": "queasy", "summary": "From spoiled food (Scorched Mess). If resistible, eating spoiled food must count as something done to you so resistance applies."},
+    {
+      "id": "alchemy-borrows-divine", "group": "found", "title": "Alchemy hands out divine statuses", "rec": "approve",
+      "tags": ["alchemy.data.ts:78, 107, 133"],
+      "summary": "Frostmoss grants Xima's Rime, Gloomcap grants Veiled and Bloodwort grants Blood Communion. Those are divine statuses. The law says no system uses another's signature conditions.",
+      "note": {"label": "Fix", "text": "Give alchemy its own statuses for those three reagents."}
+    },
+    {
+      "id": "alchemy-cures-inert", "group": "found", "title": "Alchemy's cures do nothing", "rec": "approve",
+      "tags": ["alchemy.data.ts:120"],
+      "summary": "Mendroot promises to cure poison and bleeding, but no condition listens for those cures. Only corrupted listens, for a cleansing that nothing produces.",
+      "note": {"label": "Fix", "text": "Make poison and bleeding respond to alchemy's cure tags."}
+    },
+    {
+      "id": "draughts-salve", "group": "found", "title": "Every healing flask clears bleeding like the Salve", "rec": "hold",
+      "tags": ["alchemy.ts:661", "ALCHEMY.md:64"],
+      "summary": "All health-restoring flask forms heal as a 'salve', so a Draught closes bleeding although the alchemy doc says only the Salve cures.",
+      "note": {"label": "Choice", "text": "Either the doc changes or the Draught stops clearing wounds. Later: decide with the alchemy item above."}
+    }
+  ],
+  "generalNote": {"label": "Anything else", "hint": "Priorities, or anything the items above miss."},
+  "appendix": [
+    {
+      "title": "Background",
+      "columns": true,
+      "blocks": [
+        {"kind": "list", "title": "Your rules this builds on", "items": [
+          "Alchemy: short consumables, usable any time, in combat.",
+          "Cooking: long dishes, eaten only out of combat.",
+          "Arcane: instant, modular, limited space.",
+          "Divine: changes the rules, exclusive, expensive.",
+          "Equipment: passive, static.",
+          "Mutagens: change base rules, can exceed limits.",
+          "Immune when resistance minus penetration is 100% or more."
+        ]},
+        {"kind": "list", "title": "No resistance, by your ruling", "items": [
+          "fasting (unique)",
+          "flat_footed, surprised (states)",
+          "toll_steam, toll_ice, toll_overdrive (the toll collector fight)"
+        ]}
+      ]
+    }
+  ],
+  "footer": "Choices save as you click. I read them back before any work starts."
+}

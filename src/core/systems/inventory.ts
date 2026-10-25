@@ -2,7 +2,7 @@ import type { ItemInstance, RarityId, SlotId } from '../types';
 import { SLOT_NAMES } from '../types';
 import { forgeKey, itemDefOf } from './assembly';
 import { itemName, itemValue } from './equipment';
-import { maxRuneSlots } from './runes';
+import { maxRuneSlots, runeRefKey } from './runes';
 
 // ---------- Categories (for group selection) ----------
 
@@ -109,12 +109,16 @@ export function isMaxRarity(item: ItemInstance): boolean {
  * socketed — so "Vest (2 slots)" is one stack and "Swift Dagger (1 rune)" and
  * "Swift Dagger (3 runes)" are two.
  *
+ * Each rune goes through runeRefKey first: a carving is an object, and joined
+ * raw every carving reads "[object Object]". Refs are sorted and joined with
+ * ';' because a carving's own key contains commas.
+ *
  * A forged item adds its `forgeKey` (its parts and its grade): two different
  * swords never stack, two identical ones do. Static items key as they always
  * did.
  */
 export function stackKey(item: ItemInstance): string {
-  const runes = [...(item.runes ?? [])].sort().join(',');
+  const runes = (item.runes ?? []).map(runeRefKey).sort().join(';');
   const forged = item.forged ? `|${forgeKey(item.forged)}` : '';
   return `${item.defId}|${item.affix?.name ?? ''}|${item.slots ?? 0}|${runes}${forged}`;
 }

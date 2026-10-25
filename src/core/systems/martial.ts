@@ -452,6 +452,9 @@ export function resolvedMove(state: GameState, def: TechniqueDef): TechniqueMove
     }
   }
   // Rune graph surgery — the equipment layer applies last, on top of practice.
+  // `runes` is in weaponTechniqueMods' canonical order: the cooldown step
+  // rounds and clamps at each rune, so the result depends on the sequence, and
+  // the sequence must not be the socket order.
   for (const m of runes) {
     if (m.damageMult && move.damageMult !== undefined) move.damageMult *= m.damageMult;
     if (m.damageMult && move.preventedMult !== undefined) move.preventedMult *= m.damageMult;
@@ -536,6 +539,8 @@ export function chooseFork(state: GameState, def: TechniqueDef, archetypeId: str
 /**
  * The name as path and equipment have shaped it: a socketed rune's rename
  * wins outright ("Flash Step"), else the fork prefixes ("Split Heavy Blow").
+ * When two socketed runes both rename it, weaponTechniqueMods' canonical order
+ * picks one, the same in every socket order.
  */
 export function techniqueDisplayName(state: GameState, def: TechniqueDef): string {
   const rename = weaponTechniqueMods(state, def.id).find((m) => m.rename)?.rename;
@@ -544,7 +549,12 @@ export function techniqueDisplayName(state: GameState, def: TechniqueDef): strin
   return fork ? `${fork.name} ${def.name}` : def.name;
 }
 
-/** Where executing it leaves you — fork may rewrite the exit; a rune wins last. */
+/**
+ * Where executing it leaves you — fork may rewrite the exit; a rune wins last.
+ * Precedence: rune, then the chosen fork, then the printed card. Between two
+ * runes that both set an exit, weaponTechniqueMods' canonical order picks one,
+ * the same in every socket order.
+ */
 export function techniqueExit(state: GameState, def: TechniqueDef): string {
   const rune = weaponTechniqueMods(state, def.id).find((m) => m.exitTo)?.exitTo;
   return rune ?? chosenFork(state, def)?.exitTo ?? def.to;

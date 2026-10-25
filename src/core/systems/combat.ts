@@ -669,6 +669,7 @@ import {
   noteOutgoing,
   noteParry,
 } from './ledger';
+import { killXp } from './levels';
 import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
@@ -1549,9 +1550,12 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   bumpStat(state, bus, 'gold:earned', gold);
   // The species is the input a hunter learns from — the hundredth wolf teaches
   // less than the first, while a new one is worth going out of your way for.
-  grantSkillXp(state, bus, tags, monster.xp, monster.defId);
+  // The XP itself is cut by how far the fighter has outgrown the monster
+  // (killXp, levels.ts); the same number pays level XP through the event.
+  const xp = killXp(state, monster);
+  grantSkillXp(state, bus, tags, xp, monster.defId);
   rollDropTable(state, bus, MONSTERS[monster.defId].loot, monster);
-  bus.emit({ type: 'kill', monster });
+  bus.emit({ type: 'kill', monster, xp });
   bus.emit({
     type: 'log',
     // Slimes and slime spiders carry no coin; "+0 gold" on most of the first

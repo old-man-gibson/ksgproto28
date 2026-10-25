@@ -18,7 +18,7 @@ import {
 } from '../src/core/systems/disciplines';
 import { carveRune, failureChance, previewCarve } from '../src/core/systems/runecarving';
 import { carvedKey, namedRuneFor, resolveRune } from '../src/core/systems/runes';
-import type { CarvedRune, QualityTier } from '../src/core/types';
+import { runeRiders, type CarvedRune, type QualityTier } from '../src/core/types';
 
 const RC = DISCIPLINES.runecarving;
 const fresh = (seed = 1) => new Game(createInitialState(seed));
@@ -223,9 +223,9 @@ describe('carving', () => {
     supply(g, 'c', [['warm_slime_gel', 'c']]);
     const plain = previewCarve(g.state, bench('c'));
     const inlaid = previewCarve(g.state, bench('c', 'pattern_might', { inlay: at('warm_slime_gel', 'c') }));
-    expect(resolveRune(plain.preview!).effects.weapon?.bonusDamage).toBeUndefined();
+    expect(runeRiders(resolveRune(plain.preview!).effects.weapon?.bonusDamage)).toEqual([]);
     // The gel is what puts fire on the blade; the pattern never did.
-    expect(resolveRune(inlaid.preview!).effects.weapon?.bonusDamage?.type).toBe('heat');
+    expect(runeRiders(resolveRune(inlaid.preview!).effects.weapon?.bonusDamage).map((r) => r.type)).toEqual(['heat']);
   });
 
   it('a second cut adds a new capability, but at a diminished share', () => {
@@ -300,6 +300,14 @@ describe('the tool and the risk of splitting', () => {
     const bare = failureChance(g.state, bench('c'));
     const armed = failureChance(g.state, bench('c', 'pattern_might', { tool: at('steel_burin', 'a') }));
     expect(armed).toBeLessThan(bare);
+  });
+
+  it('an F-grade tool counts as no tool, never worse', () => {
+    const g = fresh();
+    const bare = failureChance(g.state, bench('c'));
+    expect(failureChance(g.state, bench('c', 'pattern_might', { tool: at('steel_burin', 'f') }))).toBe(bare);
+    // The next grade up is the first that helps.
+    expect(failureChance(g.state, bench('c', 'pattern_might', { tool: at('steel_burin', 'e') }))).toBeLessThan(bare);
   });
 
   it('every extra cut is another thing that can go wrong', () => {

@@ -15,7 +15,7 @@ function killEvent(g: Game, defId: string): void {
     xp: 1, gold: 0, range: 'melee', bar: 0, stunSpent: 0,
   };
   g.state.combat = null;
-  g.bus.emit({ type: 'kill', monster });
+  g.bus.emit({ type: 'kill', monster, xp: monster.xp });
 }
 
 describe('title unlocks', () => {
