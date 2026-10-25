@@ -20,4 +20,10 @@ export const DEITIES_TEXT: ProseTable = {
   'tuigamala.desc': 'Aspects: humanoid, tribal, nature, honorable, unaligned, Foai pantheon. Miracles strengthen wooden weapons and grow plants. Shares a page with honorable, nature or Foai deities; refuses evil, poison and fire ones.',
 
   'yshicna.desc': 'Aspects: aberrant, atomic, arcane, curious, warping, outer. Miracles act on arcane words: one returns a word\'s Meaning to its basic state, another raises the Sound of a word the caster has uttered many times. No synergies or hostilities with any other deity.',
+
+  'goblin_fire.desc': 'Placeholder. Aspects: tribal, humanoid, fire, chaotic, Goblin pantheon. Miracles set enemies on fire. Shares a page with the Goblin pantheon; refuses water and cold deities outside it.',
+
+  'goblin_mud.desc': 'Placeholder. Aspects: tribal, humanoid, earth, water, Goblin pantheon. Miracles heal the caster\'s allies and bog enemies down. Shares a page with the Goblin pantheon and earth deities.',
+
+  'goblin_hunt.desc': 'Placeholder. Aspects: tribal, bestial, nature, Goblin pantheon. The hunt of rats, birds and worms: miracles send vermin at enemies and sharpen the caster\'s allies. Shares a page with the Goblin pantheon and bestial deities; refuses the honorable.',
 };

@@ -157,6 +157,14 @@ shutter open, needs the technique reachable (MARTIAL.md §6 "Reach"), counts
 from when it became reachable, and lands as a ROUGH form. The bestiary entry
 shows "seen N / 50" once martial is open.
 
+**Built 2026-10-25 (branch `band2-goblins`): M6 and M7**, with these
+differences from the text below: the firetongue speaks `quickly fire pierce`
+and `fire pierce`; the gods are three (fire, mud, hunt) with two miracles
+each — Cinder Curse, Kindling; Mud Poultice, Sucking Mire; Vermin Swarm,
+Pack Scent; a monster's `others` working (heal, grants) lands on its own side,
+and a working only for its side is skipped when nobody else stands. Nothing
+is placed on a floor yet; band 1 pacing is unchanged.
+
 **M7. Goblin casters and gods.**
 
 - Firetongue: a goblin with a rotation of one or two arcane fire sentences

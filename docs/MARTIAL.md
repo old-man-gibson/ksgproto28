@@ -245,6 +245,14 @@ brands its **form**:
   `combat:hitsTaken`. Rough mechanics are all arm, no hips: **+25% stamina
   cost** (`ROUGH_STAMINA_MULT`) — but your own tricks internalize fast:
   **reps count double** on the ladder (`ROUGH_REP_MULT`).
+  **Watching (user, 2026-10-24)** is the second autodidactic way: a technique
+  with `learn.watch` crystallizes rough once a monster has used it on you that
+  many times (`TECHNIQUE_WATCH_COUNT`, 50 for every technique). Each monster
+  technique that reaches you (not dodged) bumps `seen:technique:<id>`
+  (combat.ts). Same shutter, same eligibility, same Reach rule: sightings
+  before a way in exists count from zero (`learnFrom['watch:<id>']`). Gather,
+  Lunge and Heavy Blow can be watched; the goblin techniques can ONLY be
+  watched — no teacher holds them.
 - **canonical** — taught the clean form: a teacher (`NpcDef.teaches`, the
   floor-2 tutor is the first) or a drill manual (`ConsumableSpec.teachesTechnique`).
   No surcharge, full thresholds. Re-learning never downgrades: rough →
@@ -336,6 +344,13 @@ Positions: the universal five (§2). Techniques (`unlock` = eligibility;
 | `clinch_knee` | 🐘 unarmed | onHit (w20) | any → guarded | 1.5×, dazes 35%, 5% stamina, cd 90 | unarmed_combat 20 | 150 hits taken |
 | `flowing_shield` | 🛡️🌊 buckler | onParry (w20) | guarded → coiled | 1.0× **+ 120% of the force turned aside**, 4% stamina, cd 70 | shield_combat 10, deflection 5 + buckler | 40 parries |
 | `electric_cross` | ⚡🥊 unarmed | onHit — **counter** | guarded → extended | takes 40% off the blow, then 1.0× **+ 100% of what it blocked as lightning**, 6% mana, cd 80 | school_magic_combat 10, school_boxing 15 + unarmed | 200 hits taken |
+| `hamstring` | 🦵 goblin | — | coiled → extended | 0.9×, Unfooted 50%, cd 50 | fighting 5 | watched 50 times only |
+| `dirty_stab` | 🩸 goblin | — | extended → neutral | 1.1×, Bleeding 50%, cd 40 | fighting 5 | watched 50 times only |
+| `pocket_sand` | 🫳 goblin | — | any → neutral | 0.3×, Dazzled 60%, cd 120 | fighting 5 | watched 50 times only |
+
+Hobgoblins fight with gather, hamstring, lunge, dirty_stab and pocket_sand;
+the champion with heavy_blow, hamstring, dirty_stab and gather (monsters.data.ts).
+`gather`, `lunge` and `heavy_blow` can also be learned by watching them 50 times.
 
 Katana are also swords, so a katana hand holds thrust/crosscut too — the
 katana entries are what only the curved blade teaches, flavored after its four

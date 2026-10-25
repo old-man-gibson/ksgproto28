@@ -586,6 +586,67 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
       ],
     },
   },
+  // The goblin casters (docs/plans/bands-2-3.md M7). Not placed yet; band 2
+  // puts them on floors 5 and 6. Stats are first guesses beside the goblin's.
+  goblin_firetongue: {
+    id: 'goblin_firetongue',
+    name: 'Goblin Firetongue',
+    icon: '👺',
+    tags: ['living', 'goblin', 'humanoid', 'small'],
+    tier: 'basic',
+    damageType: 'piercing',
+    range: 'ranged',
+    resistances: { poison: 0.1, heat: 0.25 },
+    // Plain arcane from the starter lexicon: the same sentences a player
+    // starts with, so burning is the hurdle it brings, not a new grammar.
+    rotation: [
+      { cast: { school: 'arcane', words: ['quickly', 'fire', 'pierce'] } },
+      { cast: { school: 'arcane', words: ['fire', 'pierce'] } },
+    ],
+    attrs: { str: 4, dex: 7, con: 5, int: 9, wis: 4, cha: 3 },
+    growth: { str: 0.5, dex: 0.9, con: 0.7, int: 1.3, wis: 0.6, cha: 0.4 },
+    xp: 14,
+    gold: [3, 8],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'torn_fur', weight: 20 },
+        { kind: 'material', id: 'iron_scrap', weight: 10 },
+        { kind: 'rune', id: 'minor_rune_might', weight: 2 },
+        { kind: 'nothing', weight: 68 },
+      ],
+    },
+  },
+  goblin_witch_doctor: {
+    id: 'goblin_witch_doctor',
+    name: 'Goblin Witch Doctor',
+    icon: '👺',
+    tags: ['living', 'goblin', 'humanoid', 'small'],
+    tier: 'veteran',
+    damageType: 'bludgeoning',
+    range: 'ranged',
+    resistances: { poison: 0.2 },
+    // Mends the pack first (twice a fight), then curses. Alone, the poultice
+    // has no one to mend, so pickMonsterAction skips it for the curses.
+    rotation: [
+      { cast: { school: 'divine', litany: 'mud_poultice' }, uses: 2 },
+      { cast: { school: 'divine', litany: 'vermin_swarm' } },
+      { cast: { school: 'divine', litany: 'cinder_curse' } },
+    ],
+    attrs: { str: 5, dex: 6, con: 7, int: 5, wis: 10, cha: 6 },
+    growth: { str: 0.6, dex: 0.7, con: 0.9, int: 0.6, wis: 1.4, cha: 0.8 },
+    xp: 22,
+    gold: [5, 12],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'torn_fur', weight: 20 },
+        { kind: 'material', id: 'pristine_fur', weight: 6 },
+        { kind: 'rune', id: 'minor_rune_might', weight: 3 },
+        { kind: 'nothing', weight: 71 },
+      ],
+    },
+  },
   // The toll level's daylight keeper (quest 3). Names/levels are first
   // guesses for review, like everything else on band 1.
   hobgoblin: {
@@ -597,6 +658,17 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     damageType: 'slashing',
     inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.2 }],
     resistances: { poison: 0.15 },
+    // Basic martial technique (bands-2-3 M7): a player with martial open
+    // learns each of these after seeing it 50 times. Read top-down from where
+    // it stands: Gather winds up, Hamstring or Lunge spend the coil, Dirty Stab
+    // finishes from extended, Pocket Sand fills whatever gap the clocks leave.
+    rotation: [
+      { technique: 'hamstring' },
+      { technique: 'dirty_stab' },
+      { technique: 'lunge' },
+      { technique: 'gather' },
+      { technique: 'pocket_sand' },
+    ],
     attrs: { str: 10, dex: 8, con: 9, int: 4, wis: 4, cha: 4 },
     growth: { str: 1.1, dex: 1.0, con: 1.0, int: 0.5, wis: 0.5, cha: 0.5 },
     xp: 24,
@@ -629,6 +701,12 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     escorts: ['hobgoblin'],
     inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.25 }],
     resistances: { poison: 0.3, slashing: 0.2 },
+    rotation: [
+      { technique: 'heavy_blow' },
+      { technique: 'hamstring' },
+      { technique: 'dirty_stab' },
+      { technique: 'gather' },
+    ],
     attrs: { str: 16, dex: 11, con: 15, int: 6, wis: 6, cha: 7 },
     growth: { str: 1.5, dex: 1.1, con: 1.5, int: 0.6, wis: 1.6, cha: 1.6 },
     xp: 120,
