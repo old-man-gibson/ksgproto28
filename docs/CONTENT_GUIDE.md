@@ -1105,7 +1105,9 @@ minor_rune_might: {
 Weapon-context effects can also carry typed on-hit damage:
 `bonusDamage: { type: 'lightning', value: 3 }` (flat per hit) or
 `bonusDamagePct: { type: 'lightning', value: 0.12 }` (12% of each hit dealt
-again as that type). A context without an entry is inert (socketable, does
+again as that type). Both also accept a list of such riders, which is how a
+carved rune holds one per damage type; code reads either shape through
+`runeRiders` (`types.ts`). A context without an entry is inert (socketable, does
 nothing). Runes drop via `{ kind: 'rune', id, weight }` drop-table entries and
 can be recipe results (`result: { kind: 'rune', ... }`). They stack in
 `state.runes` and socket via the Equipment tab.
@@ -1226,6 +1228,14 @@ and reinforce each other by `RESONANCE` (0.25) on top — so two of a figure bea
 two different figures, and beat a single cut by more than double. The cost is
 the slab: `REPEAT_MIN_QUALITY` in `runecarving.ts` demands Fine for a double and
 Superb for a triple. Both constants are the tuning dials.
+
+**A carving is a multiset.** The same patterns, stone and adornments make the
+same rune whatever order they were cut or laid in (`tests/runeorder.test.ts`
+holds the line). `composeCarved` takes distinct patterns in a canonical order,
+which fixes each one's share and which one names the rune: most copies first,
+then pattern id. A Refuse (F) slab or adornment is refused at the bench, and a
+legacy one composes to nothing. The tool lowers the chance the slab splits and
+changes nothing else.
 
 ### Consumable (a `MaterialDef` with a `consumable` spec)
 

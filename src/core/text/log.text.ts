@@ -251,15 +251,16 @@ export const LOG_TEXT = {
 
   // ---------- runecarving ----------
   'runecarving.carved_named': '{icon} Carved {name} (named rune).',
-  'runecarving.carved': '{icon} Carved: {name}{clean}',
-  'runecarving.clean_cut': ' (grade up)',
+  'runecarving.carved': '{icon} Carved: {name}',
   'runecarving.reason.no_such_pattern': 'No such pattern',
   'runecarving.reason.pattern_level': '{name} needs Runecarving {level}',
   'runecarving.reason.nothing_chosen': 'No rune chosen to carve',
-  'runecarving.reason.too_many_copies': 'No slab can hold {copies} of one rune',
+  'runecarving.reason.too_many_copies': 'A slab holds at most {max} copies of one pattern',
   'runecarving.reason.slab_grade': '{copies}× {name} needs a {grade} slab or better',
   'runecarving.reason.no_slab': 'No slab on the bench',
-  'runecarving.slab_split': '💥 Slab split. Work lost.',
+  'runecarving.reason.slab_refuse': "An F-grade slab can't be carved: it gives negative stats",
+  'runecarving.reason.adornment_refuse': "{name} is F-grade and can't be used: it gives negative stats",
+  'runecarving.slab_split': '💥 Slab split. The slab and materials are used up.',
 
   // ---------- runes ----------
   'runes.sold_many': 'Sold {count} rune{plural} for {price} gold.',
