@@ -20,5 +20,12 @@ export const LEVEL_XP_EXP = 1.5;
 /** Kill XP = the spawned monster's XP (already level- and tier-scaled) × this. */
 export const KILL_LEVEL_XP_RATE = 1;
 
+/**
+ * A kill never earns less than this, however far the fighter has outgrown
+ * the monster (user, 2026-10-22). The level-gap share is `levelGapXpMult` in
+ * systems/levels.ts.
+ */
+export const MIN_KILL_XP = 1;
+
 /** A quest turn-in with no `rewards.levelXp` of its own pays this. */
 export const DEFAULT_QUEST_LEVEL_XP = 50;
