@@ -991,14 +991,14 @@
   <div class="panel satchel">
     <h3>⚗️ Satchel</h3>
     <div class="small dim">
-      Off the alembic. A thrown flask needs a fight; everything else works where you stand.
+      Flasks and Fumes are thrown and need a fight. Elixirs, Draughts, Salves and Oils work anywhere. One shared cooldown.
       {#if flaskCooling > 0}· ready in {(flaskCooling / 10).toFixed(1)}s{/if}
     </div>
     {#if coated}
       <!-- An oil is spent state, not stock: it lives on the blade and is
            measured in blows, so it gets its own line rather than a flask card. -->
       <div class="coated small">
-        🛢️ On your edge: <b>{coated.spec.name}</b> — {coated.coat.blowsLeft} blow{coated.coat.blowsLeft === 1 ? '' : 's'} left
+        🛢️ Weapon oil: <b>{coated.spec.name}</b>, {coated.coat.blowsLeft} blow{coated.coat.blowsLeft === 1 ? '' : 's'} left
       </div>
     {/if}
     <div class="flasks">
