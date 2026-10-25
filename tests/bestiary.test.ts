@@ -233,7 +233,7 @@ describe('wired into the game', () => {
   it('killing through the event bus records the kill', () => {
     const g = newGame();
     const monster = { defId: 'goblin' } as MonsterInstance;
-    g.bus.emit({ type: 'kill', monster });
+    g.bus.emit({ type: 'kill', monster, xp: monster.xp });
     expect(isDiscovered(g.state, 'goblin')).toBe(true);
   });
 

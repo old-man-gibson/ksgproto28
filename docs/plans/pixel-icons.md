@@ -2,11 +2,11 @@
 id: pixel-icons
 title: Pixel icons — replace the emoji, one registry at a time
 kind: epic
-status: planning
+status: execution
 system: ui
 parent: ''
 save: ''
-updated: 2026-10-20
+updated: 2026-10-22
 invariants:
   - core-browser-free
   - emoji-fallback
@@ -23,7 +23,7 @@ done:
 
 # Pixel icons
 
-Plan only. No code yet. Story 1 is ready to start (§6).
+Story 1 shipped 2026-10-22: the pipeline and the sidebar (§6). Story 2 is next.
 
 - **What:** 1,142 `icon:` fields in `src/core/data` and about 750 emoji hard-coded
   in `src/ui` and `src/core` → pixel sprites.
@@ -425,7 +425,8 @@ matching block (§3.2) but nobody has chosen icons from it.
 
 Each step is one story and one PR.
 
-1. **Packs folder, mechanism, sidebar.** Story 1 is the largest because it sets up
+1. **Packs folder, mechanism, sidebar. Done 2026-10-22** (branch
+   `pixel-icons-story-1`; how-to in docs/ENGINEERING.md §5). Story 1 is the largest because it sets up
    the folder layout and the pipeline every later story uses. In order:
    1. **Packs out of the way.** In the main checkout, move `64x64/`, the four
       `Raven Fantasy - …/` packs, `Epic Weapons 3/` and `Trees and Logs/` into
@@ -476,13 +477,19 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
    of the tree, but history keeps them. Before any public flip: `git filter-repo` on
    those paths, or a yes from each author. Outside this plan's code; not needed
    while the repo is private.
-2. **16px or 32px for inline rows** (sidebar, word pills, log)? Mockup §2 and §4;
-   decided on the real sidebar in story 1.
-3. **Buy or draw the 14 the sheet lacks** (§5.1)?
-4. **The picks themselves** ([picks.png](pixel-icons/picks.png)): swap any that read
+2. **Buy or draw the 14 the sheet lacks** (§5.1)?
+3. **The picks themselves** ([picks.png](pixel-icons/picks.png)): swap any that read
    wrong. Each has alternates listed.
 
 Answered:
+- 2026-10-22 (user, after story 1): drawn inside the bars, on the fill colour,
+  the resource icons were hard to read. **Each pool now has its own row: a 32px
+  icon left of a shorter bar**; the action bar is indented to line up. Two bars
+  per row was tried at both sizes: 32px wrapped the labels, 16px stayed small.
+- 2026-10-22 (story 1, on the real sidebar): **32px for attribute and
+  superattribute rows**, 16px in tooltip lines.
+  At 16px the attribute art was hard to read; 32px adds about 60px to the
+  attribute block. Word pills and the log still to decide in their stories.
 - 2026-10-20: the 32px set is Clockwork Raven, bought. So are the full sheet, the
   four Raven Fantasy skill packs, Epic Weapons 3 and Trees and Logs (2026-10-21).
 - 2026-10-20: the full sheet is on disk: `src/assets/64x64/` in the main checkout.

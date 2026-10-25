@@ -10,13 +10,15 @@ import {
   checkFloorClears,
   floorXpKey,
   grantLevelXp,
+  killXp,
   levelFromXp,
+  levelGapXpMult,
   questLevelXp,
   xpToNext,
   xpToReach,
 } from '../src/core/systems/levels';
 import { buyBoon, prestigeNow } from '../src/core/systems/prestige';
-import { DEFAULT_QUEST_LEVEL_XP, LEVEL_ATTR_BONUS, LEVEL_XP_BASE } from '../src/core/data/levels.data';
+import { DEFAULT_QUEST_LEVEL_XP, LEVEL_ATTR_BONUS, LEVEL_XP_BASE, MIN_KILL_XP } from '../src/core/data/levels.data';
 import type { SpotEncounter } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
@@ -33,6 +35,26 @@ describe('the level curve', () => {
       expect(levelFromXp(xpToReach(level))).toEqual({ level, xp: 0 });
       expect(levelFromXp(xpToReach(level) + 1)).toEqual({ level, xp: 1 });
     }
+  });
+});
+
+describe('kill XP by level gap (user, 2026-10-22)', () => {
+  it('full at or above the fighter, then 1/N when the fighter is N levels above', () => {
+    expect(levelGapXpMult(5, 9)).toBe(1); // the monster is higher: no bonus, no cut
+    expect(levelGapXpMult(5, 5)).toBe(1);
+    expect(levelGapXpMult(5, 4)).toBe(1); // one above: 1/1
+    expect(levelGapXpMult(5, 3)).toBe(1 / 2);
+    expect(levelGapXpMult(5, 2)).toBe(1 / 3);
+    expect(levelGapXpMult(20, 1)).toBe(1 / 19);
+  });
+
+  it('a kill earns at least MIN_KILL_XP however wide the gap', () => {
+    const s = createInitialState(1);
+    s.level = 40;
+    expect(MIN_KILL_XP).toBe(1);
+    expect(killXp(s, { xp: 8, level: 1 })).toBe(1); // 8 / 39 is under one
+    expect(killXp(s, { xp: 390, level: 1 })).toBeCloseTo(10, 6); // 390 / 39
+    expect(killXp(s, { xp: 8, level: 40 })).toBe(8);
   });
 });
 
@@ -94,6 +116,20 @@ describe('what pays level XP', () => {
     for (let i = 0; i < 3000 && !(g.state.stats['kills:goblin'] ?? 0); i++) g.tick();
     expect(g.state.stats['kills:goblin']).toBe(1);
     expect(xpToReach(g.state.level) + g.state.levelXp).toBeCloseTo(MONSTERS.goblin.xp, 6);
+  });
+
+  it('a kill by a fighter far above the monster pays 1/gap, never under one XP', () => {
+    SPOTS.the_cages.encounters = [{ monsterId: 'goblin', weight: 1, level: [1, 1] }] as SpotEncounter[];
+    const g = new Game(createInitialState(4));
+    g.state.level = 4; // three levels above a level-1 goblin: a third
+    g.state.attrs.str.level = 30;
+    g.state.attrs.con.level = 30;
+    g.state.spot = 'the_cages';
+    g.selectActivity('hunt');
+    for (let i = 0; i < 3000 && !(g.state.stats['kills:goblin'] ?? 0); i++) g.tick();
+    expect(g.state.stats['kills:goblin']).toBe(1);
+    const earned = Math.max(MIN_KILL_XP, MONSTERS.goblin.xp / 3);
+    expect(g.state.levelXp).toBeCloseTo(earned, 6);
   });
 
   it('a floor pays its clear XP once per run', () => {

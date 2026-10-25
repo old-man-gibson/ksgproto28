@@ -34,6 +34,10 @@
   import { RECOVERY_MULT, RESOURCES } from '../../core/data/resources.data';
   import { fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
   import Tip from '../lib/Tip.svelte';
+  import Icon from '../lib/icons/Icon.svelte';
+
+  /** Pool icons sit outside their bars (user, 2026-10-22); 16 and 32 are the art's clean sizes. */
+  const RES_ICON: 16 | 32 = 32;
   import { REFERENCE_BLOW, expectedHitTaken, roughDps } from '../lib/statSummary';
   import { levelAttrBonus, xpToNext } from '../../core/systems/levels';
   import { startingLevel } from '../../core/systems/legacy';
@@ -261,7 +265,7 @@
   <div class="tip-line tip-base">{sup.desc}</div>
   {#each sup.components as compId}
     {@const a = attrInfo(compId)}
-    <div class="tip-line">{a.icon} {a.name}: {fmt(eff[compId])}</div>
+    <div class="tip-line"><Icon of={a} /> {a.name}: {fmt(eff[compId])}</div>
   {/each}
   <div class="tip-line tip-total">{sup.name}: {fmt(attrValue(gs, sup.components[0]))}</div>
 {/snippet}
@@ -272,20 +276,24 @@
   {/if}
 
   <div class="resources">
-    <!-- Row 1: Health, full width -->
+    <!-- One pool per row, its icon left of the bar on the panel (user,
+         2026-10-22): drawn on the bar's fill colour it was hard to read. -->
     <Tip block>
-      <div class="bar res-bar">
-        <div class="fill" style="width: {hpPct}%; background: var(--hp)"></div>
-        <div class="label">HP {pool('hp')}</div>
+      <div class="res">
+        <Icon of={RESOURCES.hp} size={RES_ICON} />
+        <div class="bar res-bar">
+          <div class="fill" style="width: {hpPct}%; background: var(--hp)"></div>
+          <div class="label">HP {pool('hp')}</div>
+        </div>
       </div>
       {#snippet tip()}
         {@render resTip(`HP ${pool('hp')}`, 'maxHp', hpNotes, 'hpRegen')}
       {/snippet}
     </Tip>
 
-    <!-- Row 2: Stamina | Mana -->
-    <div class="res-row">
-      <Tip block>
+    <Tip block>
+      <div class="res">
+        <Icon of={RESOURCES.stamina} size={RES_ICON} />
         <div class="bar res-bar" class:exhausted={staminaLock === 'empty'}>
           <div class="fill" style="width: {staminaPct}%; background: {staminaColor}"></div>
           <div class="reserve" style="left: {STAMINA_RESERVE * 100}%"></div>
@@ -294,73 +302,83 @@
                resource that was only just added. -->
           <div class="label">{staminaMark}Stamina {pool('stamina')}</div>
         </div>
-        {#snippet tip()}
-          {@render poolTip(
-            `Stamina ${pool('stamina')}`,
-            'maxStamina',
-            'staminaRegen',
-            'staminaEff',
-            STAMINA_EFF_FACTORS,
-            staminaNotes,
-            STAMINA_EFF_FLOOR,
-          )}
-        {/snippet}
-      </Tip>
-      <Tip block>
+      </div>
+      {#snippet tip()}
+        {@render poolTip(
+          `Stamina ${pool('stamina')}`,
+          'maxStamina',
+          'staminaRegen',
+          'staminaEff',
+          STAMINA_EFF_FACTORS,
+          staminaNotes,
+          STAMINA_EFF_FLOOR,
+        )}
+      {/snippet}
+    </Tip>
+    <Tip block>
+      <div class="res">
+        <Icon of={RESOURCES.mana} size={RES_ICON} />
         <div class="bar res-bar" class:burning={manaDebt > 0}>
           <div class="fill" style="width: {manaPct}%; background: {manaColor}"></div>
           <div class="label">
             {manaDebt > 0 ? `−${fmt(manaDebt)} burned` : `Mana ${pool('mana')}`}
           </div>
         </div>
-        {#snippet tip()}
-          {@render poolTip(
-            `Mana ${pool('mana')}`,
-            'maxMana',
-            'manaRegen',
-            'manaEff',
-            MANA_EFF_FACTORS,
-            [`Resting recovers it ×${RESOURCES.mana.restRegenMult} as fast`],
-          )}
-        {/snippet}
-      </Tip>
-    </div>
+      </div>
+      {#snippet tip()}
+        {@render poolTip(
+          `Mana ${pool('mana')}`,
+          'maxMana',
+          'manaRegen',
+          'manaEff',
+          MANA_EFF_FACTORS,
+          [`Resting recovers it ×${RESOURCES.mana.restRegenMult} as fast`],
+        )}
+      {/snippet}
+    </Tip>
 
-    <!-- Row 3: Spirit | Focus — the two standing pools, one divine, one psionic -->
-    <div class="res-row">
-      <Tip block>
+    <!-- Spirit and Focus: the two standing pools, one divine, one psionic -->
+    <Tip block>
+      <div class="res">
+        <Icon of={RESOURCES.spirit} size={RES_ICON} />
         <div class="bar res-bar">
           <div class="fill" style="width: {spiritPct}%; background: var(--spirit)"></div>
           <div class="label">Spirit {pool('spirit')}</div>
         </div>
-        {#snippet tip()}
-          {@render resTip(`Spirit ${pool('spirit')}`, 'maxSpirit', [
-            'Reserved for continuous spells & rituals (coming soon)',
-          ])}
-        {/snippet}
-      </Tip>
-      <Tip block>
+      </div>
+      {#snippet tip()}
+        {@render resTip(`Spirit ${pool('spirit')}`, 'maxSpirit', [
+          'Reserved for continuous spells & rituals (coming soon)',
+        ])}
+      {/snippet}
+    </Tip>
+    <Tip block>
+      <div class="res">
+        <Icon of={RESOURCES.focus} size={RES_ICON} />
         <div class="bar res-bar">
           <div class="fill" style="width: {focusPct}%; background: var(--focus)"></div>
           <div class="label">Focus {pool('focus')}</div>
         </div>
-        {#snippet tip()}
-          {@render resTip(`Focus ${pool('focus')}`, 'maxFocus', [
-            'The psionic pool. Overload will eat its MAXIMUM while a working is held (coming soon)',
-          ])}
-        {/snippet}
-      </Tip>
-    </div>
+      </div>
+      {#snippet tip()}
+        {@render resTip(`Focus ${pool('focus')}`, 'maxFocus', [
+          'The psionic pool. Overload will eat its MAXIMUM while a working is held (coming soon)',
+        ])}
+      {/snippet}
+    </Tip>
 
-    <!-- Row 4: Action bar — time until your next attack -->
+    <!-- Action bar: time until your next attack. No icon; the spacer lines it up with the bars. -->
     <Tip block>
-      <div class="bar res-bar action-bar">
-        <div class="fill" style="width: {actionPct}%; background: var(--action)"></div>
+      <div class="res">
+        <span class="res-spacer" style="width: {RES_ICON}px"></span>
+        <div class="bar res-bar action-bar">
+          <div class="fill" style="width: {actionPct}%; background: var(--action)"></div>
+        </div>
       </div>
       {#snippet tip()}{@render actionBarTip()}{/snippet}
     </Tip>
 
-    <!-- Row 5: whatever is currently wrong with you. Absent when nothing is. -->
+    <!-- Whatever is currently wrong with you. Absent when nothing is. -->
     {#if afflictions.length}
       <div class="afflictions">
         {#each afflictions as held (held.id)}
@@ -412,7 +430,7 @@
       <div class="super-head">
         <span>
           <Tip>
-            {sup.icon} {sup.name}
+            <Icon of={sup} size={32} /> {sup.name}
             {#snippet tip()}{@render superTip(sup)}{/snippet}
           </Tip>
         </span>
@@ -425,7 +443,7 @@
           <div class="attr-head">
             <span>
               <Tip>
-                {attr.icon} {attr.name}
+                <Icon of={attr} size={32} /> {attr.name}
                 {#snippet tip()}
                   {#each attrTipLines(gs, compId) as line, i}
                     <div class="tip-line" class:tip-base={i === 0}>{line}</div>
@@ -452,7 +470,7 @@
       <div class="attr-head">
         <span>
           <Tip>
-            {attr.icon} {attr.name}
+            <Icon of={attr} size={32} /> {attr.name}
             {#snippet tip()}
               {#each attrTipLines(gs, attr.id) as line, i}
                 <div class="tip-line" class:tip-base={i === 0}>{line}</div>
@@ -701,19 +719,25 @@
     border-bottom: none;
   }
 
-  .res-row {
+  .res-bar {
+    height: 16px;
+  }
+
+  /* Each pool's icon sits left of its bar, on the panel, not on the fill
+     colour where it was hard to read; the bar takes the rest of the width. */
+  .res {
     display: flex;
+    align-items: center;
     gap: 4px;
   }
 
-  /* The flex children are now Tip wrappers (block targets), so size those. */
-  .res-row > :global(.tip-target) {
+  .res > .res-bar {
     flex: 1 1 0;
     min-width: 0;
   }
 
-  .res-bar {
-    height: 16px;
+  .res-spacer {
+    flex: none;
   }
 
   .res-bar.action-bar {

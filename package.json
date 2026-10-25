@@ -13,6 +13,7 @@
     "test": "vitest run",
     "verify": "svelte-check --tsconfig ./tsconfig.json && vitest run",
     "names": "node scripts/names.mjs",
+    "icons": "node scripts/icons.mjs",
     "pacing": "vite-node scripts/pacing.ts"
   },
   "devDependencies": {

@@ -68,6 +68,7 @@ export const REST_MANA_MULT = 3;
 export const RESOURCE_LIST: ResourceDef[] = [
   {
     id: 'hp',
+    art: 'hp',
     name: 'HP',
     icon: '❤️',
     cssVar: '--hp',
@@ -81,6 +82,7 @@ export const RESOURCE_LIST: ResourceDef[] = [
   },
   {
     id: 'stamina',
+    art: 'stamina',
     name: 'Stamina',
     icon: '💪',
     cssVar: '--stamina',
@@ -105,6 +107,7 @@ export const RESOURCE_LIST: ResourceDef[] = [
   },
   {
     id: 'mana',
+    art: 'mana',
     name: 'Mana',
     icon: '🔮',
     cssVar: '--mana',
@@ -119,6 +122,7 @@ export const RESOURCE_LIST: ResourceDef[] = [
   },
   {
     id: 'spirit',
+    art: 'spirit',
     name: 'Spirit',
     icon: '✨',
     cssVar: '--spirit',
@@ -129,6 +133,7 @@ export const RESOURCE_LIST: ResourceDef[] = [
   },
   {
     id: 'focus',
+    art: 'focus',
     name: 'Focus',
     icon: '🧠',
     cssVar: '--focus',

@@ -1,4 +1,4 @@
-import type { GameState, QuestDef } from '../types';
+import type { GameState, MonsterInstance, QuestDef } from '../types';
 import type { EventBus } from '../engine/events';
 import { FLOORS } from '../registry';
 import { setStat } from './achievements';
@@ -11,6 +11,7 @@ import {
   LEVEL_ATTR_BONUS,
   LEVEL_XP_BASE,
   LEVEL_XP_EXP,
+  MIN_KILL_XP,
 } from '../data/levels.data';
 
 /**
@@ -43,6 +44,26 @@ export function levelFromXp(xp: number, from = 1): { level: number; xp: number }
     level++;
   }
   return { level, xp: rest };
+}
+
+/**
+ * The share of a kill's XP a fighter earns by level gap (user, 2026-10-22):
+ * all of it against a monster at or above the fighter's level, and 1/N of
+ * it when the fighter is N levels above. One level above is 1/1, so the cut
+ * starts at two (half), then three (a third), and so on.
+ */
+export function levelGapXpMult(playerLevel: number, monsterLevel: number): number {
+  const gap = playerLevel - monsterLevel;
+  return gap <= 0 ? 1 : 1 / gap;
+}
+
+/**
+ * The XP a kill earns: the spawned monster's XP times the level-gap share,
+ * never under MIN_KILL_XP. Computed once in combat and handed to both skill
+ * XP and level XP (the `kill` event carries it), so the two never disagree.
+ */
+export function killXp(state: GameState, monster: Pick<MonsterInstance, 'xp' | 'level'>): number {
+  return Math.max(MIN_KILL_XP, monster.xp * levelGapXpMult(state.level ?? 1, monster.level));
 }
 
 /** The flat bonus every attribute gets from the current level. */
@@ -104,7 +125,7 @@ export function applyStartingLevel(state: GameState): void {
 
 export function registerLevelListeners(state: GameState, bus: EventBus): void {
   bus.on('kill', (ev) => {
-    grantLevelXp(state, bus, ev.monster.xp * KILL_LEVEL_XP_RATE);
+    grantLevelXp(state, bus, ev.xp * KILL_LEVEL_XP_RATE);
     checkFloorClears(state, bus);
   });
   bus.on('fight:won', () => checkFloorClears(state, bus));

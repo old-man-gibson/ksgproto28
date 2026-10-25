@@ -14,7 +14,7 @@ import { MONSTERS } from '../src/core/registry';
 /** Fire the kill event the combat loop emits, without staging a whole fight. */
 function killed(g: Game, defId: string, times = 1): void {
   const monster = { defId, name: MONSTERS[defId].name, level: 1 } as never;
-  for (let i = 0; i < times; i++) g.bus.emit({ type: 'kill', monster });
+  for (let i = 0; i < times; i++) g.bus.emit({ type: 'kill', monster, xp: 1 });
 }
 
 describe('tag kill counters', () => {

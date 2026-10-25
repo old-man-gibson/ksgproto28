@@ -10,7 +10,7 @@ import type {
   SpotFind,
 } from '../types';
 import type { EventBus } from '../engine/events';
-import { rollSearch } from './search';
+import { rollSearch, searchSpent } from './search';
 import { grantKeyItem } from './keyitems';
 import { TPS } from '../engine/loop';
 import { chance, randInt } from '../engine/rng';
@@ -109,8 +109,9 @@ export function selectActivity(state: GameState, bus: EventBus, activityId: stri
 
 /**
  * Whether an activity id can be started here and now: it exists at the spot,
- * and a craft is unlocked and affordable (a starved craft would only log its
- * own stop on the next tick).
+ * a craft is unlocked and affordable (a starved craft would only log its own
+ * stop on the next tick), and a search still has a reward to pay (a spent one
+ * would run a full cycle to find nothing).
  */
 export function canStartActivity(state: GameState, spotId: string, activityId: string): boolean {
   const act = spotActivities(getSpot(spotId)).find((a) => a.id === activityId);
@@ -119,6 +120,7 @@ export function canStartActivity(state: GameState, spotId: string, activityId: s
     const recipe = RECIPES[act.recipe];
     return !!recipe && recipeUnlocked(state, recipe) && canAfford(state, recipe);
   }
+  if (act.kind === 'search') return !searchSpent(state, spotId, act);
   return true;
 }
 
@@ -406,7 +408,14 @@ export function tickAction(state: GameState, bus: EventBus): void {
         state.activityProgress -= cost;
         const reward = rollSearch(state, bus, spot.id, act);
         if (reward) grantFind(state, bus, spot, { ...reward, at: 1 }, false);
-        else bus.emit({ type: 'log', kind: 'explore', msg: 'Nothing remains to be found in this search.' });
+        else {
+          bus.emit({ type: 'log', kind: 'explore', msg: 'Nothing remains to be found in this search.' });
+          // Spent: stop the way a starved craft does, instead of cycling on.
+          // The resume entry stays, and `canStartActivity` keeps refusing it
+          // until a reward becomes eligible again.
+          state.activity = null;
+          state.activityProgress = 0;
+        }
         checkDiscovery(state, bus, activityXpTags(act));
         grantSkillXp(state, bus, activityXpTags(act), 2);
       }

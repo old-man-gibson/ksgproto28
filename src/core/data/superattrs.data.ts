@@ -11,6 +11,7 @@ import { SUPERATTRS_TEXT } from '../text/superattrs.text';
 export const SUPERATTRS = prose<SuperAttributeDef>('SUPERATTRS', SUPERATTRS_TEXT, {
   dominion: {
     id: 'dominion',
+    art: 'dominion',
     name: 'Dominion',
     icon: '👑',
     components: ['str', 'cha'],
@@ -23,6 +24,7 @@ export const SUPERATTRS = prose<SuperAttributeDef>('SUPERATTRS', SUPERATTRS_TEXT
   },
   force: {
     id: 'force',
+    art: 'force',
     name: 'Force',
     icon: '🌀',
     components: ['int', 'con'],
@@ -34,6 +36,7 @@ export const SUPERATTRS = prose<SuperAttributeDef>('SUPERATTRS', SUPERATTRS_TEXT
   },
   martial_prowess: {
     id: 'martial_prowess',
+    art: 'martial_prowess',
     name: 'Martial Prowess',
     icon: '🥋',
     components: ['dex', 'wis'],
