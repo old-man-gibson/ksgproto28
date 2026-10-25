@@ -138,6 +138,19 @@ export const MIRACLES_TEXT: ProseTable = {
   'spear_and_fang.desc': '',
   'spear_and_fang.spec.desc': '',
 
+  'cinder_curse.desc': 'Goblin fire god. 4 favor, 4 mana, 12 second cooldown. One 1.2 heat strike; 60% chance to set the target On Fire.',
+  'cinder_curse.spec.desc': '1.2 heat strike; 60% chance of On Fire.',
+  'kindling.desc': 'Goblin fire god. 7 favor, 6 mana, 30 second cooldown. Sets the target Blazing.',
+  'kindling.spec.desc': 'Inflicts Blazing.',
+  'mud_poultice.desc': 'Goblin mud god. 4 favor, 4 mana, 15 second cooldown. Heals each of the caster\'s allies, not the caster, for 1.5 spell power.',
+  'mud_poultice.spec.desc': 'Heals the caster\'s allies for 1.5 spell power.',
+  'sucking_mire.desc': 'Goblin mud god. 4 favor, 4 mana, 16 second cooldown. Inflicts Unfooted and two stacks of Wet.',
+  'sucking_mire.spec.desc': 'Inflicts Unfooted and 2 Wet.',
+  'vermin_swarm.desc': 'Goblin hunting god. 5 favor, 5 mana, 13 second cooldown. Three 0.4 piercing strikes, each with a 25% chance to inflict Punctured.',
+  'vermin_swarm.spec.desc': 'Three 0.4 piercing strikes; 25% chance of Punctured each.',
+  'pack_scent.desc': 'Goblin hunting god. 4 favor, 4 mana, 40 second cooldown. Grants Steady Hand to each of the caster\'s allies.',
+  'pack_scent.spec.desc': 'Grants Steady Hand to the caster\'s allies.',
+
   'atomic_state.desc': '',
   'atomic_state.spec.desc': '',
 

@@ -1915,8 +1915,13 @@ export interface TechniqueDef {
    * is knowing it (see systems/martial.ts).
    */
   unlock?: UnlockCondition[];
-  /** How it can be acquired without a teacher. Absent = taught/granted only. */
-  learn?: { self?: TechniqueSelfLearn };
+  /**
+   * How it can be acquired without a teacher. Absent = taught/granted only.
+   * `watch` is the number of times the player must see a monster use it
+   * (`seen:technique:<id>`, bumped in combat); either way crystallizes the
+   * same rough form, under the same shutter and reach gates.
+   */
+  learn?: { self?: TechniqueSelfLearn; watch?: number };
   /** Annotations on the standard ladder, keyed by tier (1–4). */
   mastery?: Partial<Record<1 | 2 | 3 | 4, TechniqueMasteryNote>>;
   /**
@@ -5265,6 +5270,7 @@ export interface GameState {
    * (systems/martial.ts, Reach). Follows the counter while the technique is
    * unreachable; absent means reachable all along. Not a counter, so not in
    * `stats`: it moves on every swing and must not run achievement checks.
+   * The `learn.watch` sightings keep their own start under `watch:<id>`.
    */
   learnFrom: Record<string, number>;
   /**

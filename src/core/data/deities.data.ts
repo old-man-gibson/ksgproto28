@@ -102,6 +102,38 @@ export const DEITIES = prose<DeityDef>('DEITIES', DEITIES_TEXT, {
     // mortal-facing pantheons need. See docs/NEXT.md — when that changes it
     // will be authored on THEIR side; deityRelation reads both ways.
   },
+
+  // ----- The goblin gods (docs/plans/bands-2-3.md M7) -----
+  // Fire, mud and the hunt (rats, birds and worms), worshipped by band 2's
+  // witch doctors. Names, epithets and words are placeholders for the user.
+  // Thievery and witch magic are planned later. Not starter deities, so a
+  // player cannot pray to them until something meets them (unlocks.ts).
+  goblin_fire: {
+    id: 'goblin_fire',
+    name: 'Goblin Fire God',
+    epithet: 'placeholder',
+    icon: '🔥',
+    tags: ['tribal', 'humanoid', 'fire', 'chaotic', 'goblin pantheon'],
+    synergies: [{ anyOf: ['goblin pantheon'] }],
+    hostilities: [{ anyOf: ['water', 'cold'], unless: ['goblin pantheon'] }],
+  },
+  goblin_mud: {
+    id: 'goblin_mud',
+    name: 'Goblin Mud God',
+    epithet: 'placeholder',
+    icon: '🟤',
+    tags: ['tribal', 'humanoid', 'earth', 'water', 'goblin pantheon'],
+    synergies: [{ anyOf: ['goblin pantheon', 'earth'] }],
+  },
+  goblin_hunt: {
+    id: 'goblin_hunt',
+    name: 'Goblin Hunting God',
+    epithet: 'placeholder',
+    icon: '🐀',
+    tags: ['tribal', 'bestial', 'nature', 'goblin pantheon'],
+    synergies: [{ anyOf: ['goblin pantheon', 'bestial'] }],
+    hostilities: [{ anyOf: ['honorable'] }],
+  },
 });
 
 export const DEITY_LIST: DeityDef[] = Object.values(DEITIES);
@@ -129,6 +161,7 @@ export const DEITY_TAGS: Record<string, DeityTagDef> = Object.fromEntries([
   // What group the god belongs to, if any
   tag('yolixoch pantheon', 'Yolixoch Pantheon', '🌴💧','membership'),
   tag('foai pantheon', 'Foai Pantheon', '🏝️🌊', 'membership'),
+  tag('goblin pantheon', 'Goblin Pantheon', '👺', 'membership'),
 
   // What it IS, insofar as that means anything.
   tag('bestial', 'Bestial', '🐾', 'nature'),

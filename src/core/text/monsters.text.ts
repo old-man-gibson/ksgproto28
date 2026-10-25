@@ -47,9 +47,13 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'goblin_boss.desc': 'Legendary goblin. Slashing attacks. Always spawns in a group of five with Goblin escorts. Takes 25% less poison damage. Two loot rolls; drops include a Boss Token, Iron Gauntlets, the Moonlit Katana and greater runes.',
 
-  'hobgoblin.desc': 'Veteran goblin. Slashing attacks with a 20% chance to inflict Bleeding. Takes 15% less poison damage. Appears in The Undercrofts. Drops fur and iron scrap.',
+  'goblin_firetongue.desc': 'Small basic goblin. Fights from range with arcane fire: "quickly fire pierce" and "fire pierce", which can set you On Fire. Takes 25% less heat and 10% less poison damage. Drops fur and iron scrap.',
 
-  'hobgoblin_champion.desc': 'Large legendary goblin. Slashing attacks with a 25% chance to inflict heavy Bleeding. Spawns in a group of three with Hobgoblin escorts. Takes 30% less poison and 20% less slashing damage. Appears in The Undercrofts. Three loot rolls; drops include a Boss Token, gold, Iron Gauntlets and the Moonlit Katana.',
+  'goblin_witch_doctor.desc': 'Small veteran goblin. Fights from range with goblin miracles: heals its allies with Mud Poultice (twice a fight, only when it has allies), then casts Vermin Swarm and Cinder Curse. Takes 20% less poison damage. Drops fur.',
+
+  'hobgoblin.desc': 'Veteran goblin. Slashing attacks with a 20% chance to inflict Bleeding. Fights with Gather, Hamstring, Lunge, Dirty Stab and Pocket Sand; with martial open, seeing a technique used on you 50 times teaches it. Takes 15% less poison damage. Drops fur and iron scrap.',
+
+  'hobgoblin_champion.desc': 'Large legendary goblin. Slashing attacks with a 25% chance to inflict heavy Bleeding. Fights with Gather, Heavy Blow, Hamstring and Dirty Stab. Spawns in a group of three with Hobgoblin escorts. Takes 30% less poison and 20% less slashing damage. Three loot rolls; drops include a Boss Token, gold, Iron Gauntlets and the Moonlit Katana.',
 
   'slime_golem.desc': 'Gargantuan ancient slime construct, earth element. Bludgeoning attacks. Takes 75% less slashing and piercing damage, 70% less heat and cold, 75% more bludgeoning and double arcane damage. Three loot rolls; drops Warm Slime Gel, gold and a Boss Token.',
 

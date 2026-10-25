@@ -262,9 +262,9 @@ describe('technique content', () => {
 
   it('every technique is acquirable without a teacher (for now)', () => {
     // Until teacher content exists, a technique with no self-learn counter
-    // would be unreachable for new players.
+    // and nothing to watch would be unreachable for new players.
     for (const def of TECHNIQUE_LIST) {
-      expect(def.learn?.self, `${def.id} has no acquisition path`).toBeDefined();
+      expect(def.learn?.self ?? def.learn?.watch, `${def.id} has no acquisition path`).toBeDefined();
     }
   });
 });

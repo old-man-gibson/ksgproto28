@@ -124,6 +124,11 @@ export const MASTERY_COOLDOWN = [1, 0.92, 0.85, 0.75] as const;
 export const ROUGH_STAMINA_MULT = 1.25;
 /** Your own tricks internalize fast: rough reps count double on the ladder. */
 export const ROUGH_REP_MULT = 2;
+/**
+ * Sightings that teach a technique a monster uses on you (`learn.watch`).
+ * One number for every watchable technique (user, 2026-10-24).
+ */
+export const TECHNIQUE_WATCH_COUNT = 50;
 
 // ---------- Fork archetypes ----------
 /** The rung at which a forked technique offers its choice (Honed — 1,000 reps). */
@@ -223,7 +228,7 @@ export const TECHNIQUES = prose<TechniqueDef>('TECHNIQUES', TECHNIQUES_TEXT, {
     to: 'coiled',
     move: { damageMult: 0.6, momentum: 0.02, cooldown: 30 },
     unlock: [{ type: 'skill', id: 'fighting', level: 5 }],
-    learn: { self: { stat: 'combat:attacks', count: 100 } },
+    learn: { self: { stat: 'combat:attacks', count: 100 }, watch: TECHNIQUE_WATCH_COUNT },
     mastery: { 2: { name: 'Second Nature' } },
   },
   // The universal coiled → extended step: any weapon, no family. With Gather
@@ -238,7 +243,7 @@ export const TECHNIQUES = prose<TechniqueDef>('TECHNIQUES', TECHNIQUES_TEXT, {
     to: 'extended',
     move: { damageMult: 1.3, staminaCost: 0.03, cooldown: 40 },
     unlock: [{ type: 'skill', id: 'fighting', level: 8 }],
-    learn: { self: { stat: 'combat:attacks', count: 400 } },
+    learn: { self: { stat: 'combat:attacks', count: 400 }, watch: TECHNIQUE_WATCH_COUNT },
   },
   heavy_blow: {
     id: 'heavy_blow',
@@ -252,7 +257,7 @@ export const TECHNIQUES = prose<TechniqueDef>('TECHNIQUES', TECHNIQUES_TEXT, {
       { type: 'skill', id: 'fighting', level: 5 },
       { type: 'attr', attr: 'str', level: 8 },
     ],
-    learn: { self: { stat: 'combat:crits', count: 50 } },
+    learn: { self: { stat: 'combat:crits', count: 50 }, watch: TECHNIQUE_WATCH_COUNT },
     // Ten thousand cuts: perfected, it no longer needs the wind-up.
     mastery: { 4: { addFrom: ['neutral'] } },
     forks: ['split', 'overwhelm'],
@@ -732,6 +737,45 @@ export const TECHNIQUES = prose<TechniqueDef>('TECHNIQUES', TECHNIQUES_TEXT, {
       self: { stat: 'combat:attacks', count: 800 },
     },
     forks: ['overwhelm', 'split'],
+  },
+
+  // ----- Goblin fighting (docs/plans/bands-2-3.md M7) -----
+  // Hobgoblins fight with these. No teacher has them: a player with martial
+  // open learns them by being on the wrong end of them, TECHNIQUE_WATCH_COUNT
+  // times. Each chains off a position Gather or Lunge already reaches, so the
+  // reach rule never holds them back from a player taught on floor 2.
+  hamstring: {
+    id: 'hamstring',
+    name: 'Hamstring',
+    icon: '🦵',
+    skill: 'fighting',
+    from: ['coiled'],
+    to: 'extended',
+    move: { damageMult: 0.9, inflicts: [{ id: 'unfooted', intensity: 1, chance: 0.5 }], cooldown: 50 },
+    unlock: [{ type: 'skill', id: 'fighting', level: 5 }],
+    learn: { watch: TECHNIQUE_WATCH_COUNT },
+  },
+  dirty_stab: {
+    id: 'dirty_stab',
+    name: 'Dirty Stab',
+    icon: '🩸',
+    skill: 'fighting',
+    from: ['extended'],
+    to: 'neutral',
+    move: { damageMult: 1.1, inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.5 }], cooldown: 40 },
+    unlock: [{ type: 'skill', id: 'fighting', level: 5 }],
+    learn: { watch: TECHNIQUE_WATCH_COUNT },
+  },
+  pocket_sand: {
+    id: 'pocket_sand',
+    name: 'Pocket Sand',
+    icon: '🫳',
+    skill: 'fighting',
+    from: 'any',
+    to: 'neutral',
+    move: { damageMult: 0.3, inflicts: [{ id: 'dazzled', intensity: 1, chance: 0.6 }], cooldown: 120 },
+    unlock: [{ type: 'skill', id: 'fighting', level: 5 }],
+    learn: { watch: TECHNIQUE_WATCH_COUNT },
   },
 });
 

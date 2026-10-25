@@ -93,6 +93,34 @@ and ore from the hills and caves (smithing). Exact drops at build.
 | Scaling | Monster level on direction floors = rolled level + `DIRECTION_LEVEL_STEP[k]`, k = directions cleared. Default table `[0, 2, 5, 9]` (steps 2, 3, 4: slightly faster than linear). A data table, so it is one dial |
 | Castle safe | A counter or flag set when all four floors are cleared; it reads as the band's clear. Nothing else hangs on it yet (R8) |
 
+### The spine, floors 1-10 (user, 2026-10-25)
+
+Band 1 measured against "interesting": few rewards change how the next floor
+plays (Lunge, the oak club; the rest is gold and salves), few decisions (floor
+2 is a corridor of set fights, the gates are waited out), and every retry is
+the same climb. The rule for every new floor: **one new threat, one reward
+that changes the next floor, one decision.**
+
+| Floor | New threat | Reward that changes the next floor | Decision |
+|---|---|---|---|
+| 1-3 | as built | Lunge, the oak club | which strings to cut |
+| 4 | roaming goblin raid parties, rolled | herbs open alchemy, game meat feeds cooking | which den to hunt for which material |
+| 5 | firetongues (burning), hobgoblins (techniques), darkness | ore for the anvil; the first technique learned by watching | which system answers burning |
+| 6 | the witch doctor heals its allies | prestige | which sabotages: each weakens a different part of the warchief's fight |
+| 7-10 | each direction cleared levels up the rest | each direction's reward answers another direction's main threat | the order, which this makes a real choice |
+
+### Reruns (user, 2026-10-25)
+
+1. **Knowledge carries.** What the player learned about a floor's layout
+   survives prestige: floor 1's remembered route, floor 3's stair plans
+   (`flag:f3_stairs_*`). Re-climbing band 1 gets faster without being
+   skipped. Band passes (M3) remain the way to skip.
+2. **Variant bosses.** The bosses of floors 1, 3 and 6 roll one of two or
+   three variants per run. The `boss:<spot>` latch already counts any variant
+   as the kill.
+3. **Rolled events.** Raid parties on band 2 are rolled, so two runs through
+   floors 4-6 differ.
+
 ## 4. Machinery (each a separate build)
 
 **M1. Prestige moves to floor 6.** `PRESTIGE_UNLOCK` reads the warchief kill.
@@ -128,6 +156,14 @@ Rides `checkTechniqueLearning`: needs the martial
 shutter open, needs the technique reachable (MARTIAL.md §6 "Reach"), counts
 from when it became reachable, and lands as a ROUGH form. The bestiary entry
 shows "seen N / 50" once martial is open.
+
+**Built 2026-10-25 (branch `band2-goblins`): M6 and M7**, with these
+differences from the text below: the firetongue speaks `quickly fire pierce`
+and `fire pierce`; the gods are three (fire, mud, hunt) with two miracles
+each — Cinder Curse, Kindling; Mud Poultice, Sucking Mire; Vermin Swarm,
+Pack Scent; a monster's `others` working (heal, grants) lands on its own side,
+and a working only for its side is skipped when nobody else stands. Nothing
+is placed on a floor yet; band 1 pacing is unchanged.
 
 **M7. Goblin casters and gods.**
 

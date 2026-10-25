@@ -608,6 +608,7 @@ import {
 import {
   applyTechniqueEquipment,
   checkTechniqueLearning,
+  watchStatKey,
   knownTechniques,
   declaredPositions,
   openEntry,
@@ -2162,11 +2163,21 @@ function resolveMonsterWorking(
   spec: SpellSpec,
   stats: DerivedStats,
 ): boolean {
+  // Its own side. `others`, said by a monster, is everyone else on that side:
+  // a witch doctor mending the pack, not itself. Any other target keeps the
+  // kindness for the caster.
+  const enemies = state.combat!.enemies;
+  const kin =
+    spec.target === 'others'
+      ? enemies.filter((m): m is MonsterInstance => !!m && m !== e && m.hp > 0)
+      : [e];
   if (spec.heal && !spec.healsEnemy) {
-    const i = state.combat!.enemies.indexOf(e);
-    if (i >= 0) healEnemy(state, i, spec.heal * es.spellPower, spec.name, false);
+    for (const m of kin) {
+      const i = enemies.indexOf(m);
+      if (i >= 0) healEnemy(state, i, spec.heal * es.spellPower, spec.name, false);
+    }
   }
-  for (const app of spec.grants ?? []) applyStatus(state, e, app, spec.name);
+  for (const m of kin) for (const app of spec.grants ?? []) applyStatus(state, m, app, spec.name);
 
   // What it does to YOU. Strikes arrive as any incoming damage does, so armor,
   // resistances and bracing all still have their say.
@@ -2458,7 +2469,12 @@ function pickMonsterAction(
     if ('cast' in entry) {
       // An undoing is never its own turn's action: it waits in the rotation
       // for YOUR casting to spring it (answerPlayerWorking).
-      if (specForSource(entry.cast).counter) continue;
+      const spec = specForSource(entry.cast);
+      if (spec.counter) continue;
+      // A working only for its own side, with nobody else on that side
+      // standing, has nothing to do: fall through instead of wasting the turn.
+      const kinOnly = spec.target === 'others' && !spec.strikes.length && !spec.afflicts?.length;
+      if (kinOnly && !state.combat?.enemies.some((m) => !!m && m !== e && m.hp > 0)) continue;
       // A mind burned past empty cannot shape a working until it recovers —
       // it falls through to whatever else it can still do, or a plain swing.
       if (mindInDebt(e)) continue;
@@ -4418,6 +4434,9 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       spendMonsterAction(e, action!.index);
       e.position = statusDisplacedExit(state, e) ?? tech.to;
       feed(state, `${tech.icon} The ${e.name} moves into ${tech.name}.`);
+      // Seen up close: a move that came at you counts toward learning it by
+      // watching (TechniqueDef.learn.watch). A dodged one never got this far.
+      bumpStat(state, bus, watchStatKey(tech.id));
     } else {
       // As for the player: a plain swing always recovers, whatever is pushing.
       e.position = NEUTRAL_POSITION;

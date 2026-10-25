@@ -152,11 +152,39 @@ export function selfLearnProgress(state: GameState, def: TechniqueDef): number {
   return Math.max(0, (state.stats[self.stat] ?? 0) - (state.learnFrom?.[def.id] ?? 0));
 }
 
+/** The counter a monster's use of this technique bumps (combat.ts). */
+export function watchStatKey(techniqueId: string): string {
+  return `seen:technique:${techniqueId}`;
+}
+
+/** Where `learnFrom` keeps the watching count's start, beside the self one. */
+function watchFromKey(techniqueId: string): string {
+  return `watch:${techniqueId}`;
+}
+
+/**
+ * Sightings toward `learn.watch`, counted from when the technique became
+ * reachable — the same rule as `selfLearnProgress`: watching a move you have
+ * no way into teaches you nothing.
+ */
+export function watchLearnProgress(state: GameState, def: TechniqueDef): number {
+  if (!def.learn?.watch) return 0;
+  const seen = state.stats[watchStatKey(def.id)] ?? 0;
+  return Math.max(0, seen - (state.learnFrom?.[watchFromKey(def.id)] ?? 0));
+}
+
+/** Whether either autodidactic counter has crossed its line. */
+function autodidactReady(state: GameState, def: TechniqueDef): boolean {
+  const { self, watch } = def.learn ?? {};
+  if (self && selfLearnProgress(state, def) >= self.count) return true;
+  return !!watch && watchLearnProgress(state, def) >= watch;
+}
+
 /**
  * Autodidactic crystallization: an eligible, reachable, unknown technique
- * with a `learn.self` counter becomes known — ROUGH — once its progress
- * (counted from when it became reachable) crosses. Called from combat
- * wherever those counters are bumped.
+ * with a `learn.self` counter or a `learn.watch` count becomes known — ROUGH —
+ * once either progress (counted from when it became reachable) crosses.
+ * Called from combat wherever those counters are bumped.
  *
  * Off while the `martial` shutter is shut (systems/unlocks.ts, user
  * 2026-10-21): in the alpha the only way into the system is a teacher. The
@@ -167,16 +195,16 @@ export function checkTechniqueLearning(state: GameState, bus: EventBus): void {
   const reach = reachablePositions(state);
   state.learnFrom ??= {};
   for (const def of TECHNIQUE_LIST) {
-    const self = def.learn?.self;
-    if (!self || techniqueKnown(state, def) || techniqueReachable(state, def, reach)) continue;
-    state.learnFrom[def.id] = state.stats[self.stat] ?? 0;
+    const { self, watch } = def.learn ?? {};
+    if ((!self && !watch) || techniqueKnown(state, def) || techniqueReachable(state, def, reach)) continue;
+    if (self) state.learnFrom[def.id] = state.stats[self.stat] ?? 0;
+    if (watch) state.learnFrom[watchFromKey(def.id)] = state.stats[watchStatKey(def.id)] ?? 0;
   }
   if (!subsystemUnlocked(state, 'martial')) return;
   for (const def of TECHNIQUE_LIST) {
-    const self = def.learn?.self;
-    if (!self || techniqueKnown(state, def)) continue;
+    if (!def.learn || techniqueKnown(state, def)) continue;
     if (!techniqueReachable(state, def, reach)) continue;
-    if (selfLearnProgress(state, def) < self.count) continue;
+    if (!autodidactReady(state, def)) continue;
     if (!eligibleToLearn(state, def)) continue;
     learnTechnique(state, def, 'rough');
     bus.emit({

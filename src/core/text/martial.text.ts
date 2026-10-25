@@ -41,11 +41,17 @@ export const FORK_ARCHETYPES_TEXT: ProseTable = {
 
 // ---------- TECHNIQUES ----------
 export const TECHNIQUES_TEXT: ProseTable = {
-  'gather.desc': 'Neutral → Coiled. 0.6× damage, +0.02 momentum, 3 s cooldown. Unlocks at Fighting 5; learned after 100 attacks.',
+  'gather.desc': 'Neutral → Coiled. 0.6× damage, +0.02 momentum, 3 s cooldown. Unlocks at Fighting 5; learned after 100 attacks, or after seeing it used on you 50 times.',
 
-  'lunge.desc': 'Coiled → Extended. Any weapon. 1.3× damage, costs 3% stamina, 4 s cooldown. Unlocks at Fighting 8; learned after 400 attacks.',
+  'lunge.desc': 'Coiled → Extended. Any weapon. 1.3× damage, costs 3% stamina, 4 s cooldown. Unlocks at Fighting 8; learned after 400 attacks, or after seeing it used on you 50 times.',
 
-  'heavy_blow.desc': 'Coiled → Off Balance. 2.0× damage, costs 8% stamina, 6 s cooldown. Unlocks at Fighting 5 and Strength 8; learned after 50 crits. Perfected, it also starts from Neutral.',
+  'heavy_blow.desc': 'Coiled → Off Balance. 2.0× damage, costs 8% stamina, 6 s cooldown. Unlocks at Fighting 5 and Strength 8; learned after 50 crits, or after seeing it used on you 50 times. Perfected, it also starts from Neutral.',
+
+  'hamstring.desc': 'Goblin. Coiled → Extended. 0.9× damage, 50% chance to inflict Unfooted, 5 s cooldown. Unlocks at Fighting 5; learned after seeing it used on you 50 times.',
+
+  'dirty_stab.desc': 'Goblin. Extended → Neutral. 1.1× damage, 50% chance to inflict Bleeding, 4 s cooldown. Unlocks at Fighting 5; learned after seeing it used on you 50 times.',
+
+  'pocket_sand.desc': 'Goblin. From any position → Neutral. 0.3× damage, 60% chance to inflict Dazzled, 12 s cooldown. Unlocks at Fighting 5; learned after seeing it used on you 50 times.',
 
   'sidestep.desc': 'Triggers on being hit, from any position → Guarded. +40% dodge for 3 seconds, 12 s cooldown. Unlocks at Fighting 8 and Dexterity 10; learned after 100 hits taken.',
 

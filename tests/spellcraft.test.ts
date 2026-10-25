@@ -798,8 +798,9 @@ describe('browsing the powers', () => {
         .map((d) => d.id)
         .sort(),
     );
-    // Tribal AND fire is nobody — Xima's exception is his own fondness, not a tag.
-    expect(ids({ tags: ['tribal', 'fire'] })).toEqual([]);
+    // Tribal AND fire is the goblin fire god alone — D'Enjalle is fire but
+    // organized, and Xima's exception is his own fondness, not a tag.
+    expect(ids({ tags: ['tribal', 'fire'] })).toEqual(['goblin_fire']);
     // No filter is everybody.
     expect(queryDeities()).toHaveLength(DEITY_LIST.length);
   });

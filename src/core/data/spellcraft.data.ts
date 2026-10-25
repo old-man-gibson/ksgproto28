@@ -894,6 +894,111 @@ export const MIRACLES = prose<MiracleDef>('MIRACLES', MIRACLES_TEXT, {
     spec: { name: '', icon: '', target: 'self', strikes: [], manaCost: 0, cooldown: 0 },
   },
 
+  // ----- The goblin gods: fire, mud, the hunt (bands-2-3 M7) -----
+  // Written for the witch doctors first, so each god has one blow and one
+  // working for the pack. `others`, said by a monster, is its own side
+  // (combat.ts resolveMonsterWorking). Names and words are placeholders.
+  cinder_curse: {
+    id: 'cinder_curse',
+    deity: 'goblin_fire',
+    name: 'Cinder Curse',
+    icon: '🔥',
+    favorCost: 4,
+    spec: {
+      name: 'Cinder Curse',
+      icon: '🔥',
+      target: 'one',
+      strikes: [{ type: 'heat', power: 1.2, inflicts: [{ id: 'on_fire', intensity: 1, chance: 0.6 }] }],
+      manaCost: 4,
+      cooldown: 120,
+    },
+  },
+  kindling: {
+    id: 'kindling',
+    deity: 'goblin_fire',
+    name: 'Kindling',
+    icon: '🪵',
+    favorCost: 7,
+    minLevel: 5,
+    spec: {
+      name: 'Kindling',
+      icon: '🪵',
+      target: 'one',
+      strikes: [],
+      afflicts: [{ id: 'blazing', intensity: 1 }],
+      manaCost: 6,
+      cooldown: 300,
+    },
+  },
+  mud_poultice: {
+    id: 'mud_poultice',
+    deity: 'goblin_mud',
+    name: 'Mud Poultice',
+    icon: '🟤',
+    favorCost: 4,
+    spec: {
+      name: 'Mud Poultice',
+      icon: '🟤',
+      target: 'others',
+      strikes: [],
+      heal: 1.5,
+      manaCost: 4,
+      cooldown: 150,
+    },
+  },
+  sucking_mire: {
+    id: 'sucking_mire',
+    deity: 'goblin_mud',
+    name: 'Sucking Mire',
+    icon: '🫠',
+    favorCost: 4,
+    spec: {
+      name: 'Sucking Mire',
+      icon: '🫠',
+      target: 'one',
+      strikes: [],
+      afflicts: [
+        { id: 'unfooted', intensity: 1 },
+        { id: 'wet', intensity: 2 },
+      ],
+      manaCost: 4,
+      cooldown: 160,
+    },
+  },
+  vermin_swarm: {
+    id: 'vermin_swarm',
+    deity: 'goblin_hunt',
+    name: 'Vermin Swarm',
+    icon: '🐀',
+    favorCost: 5,
+    spec: {
+      name: 'Vermin Swarm',
+      icon: '🐀',
+      target: 'one',
+      strikes: [
+        { type: 'piercing', power: 0.4, hits: 3, inflicts: [{ id: 'punctured', intensity: 1, chance: 0.25 }] },
+      ],
+      manaCost: 5,
+      cooldown: 130,
+    },
+  },
+  pack_scent: {
+    id: 'pack_scent',
+    deity: 'goblin_hunt',
+    name: 'Pack Scent',
+    icon: '🐦',
+    favorCost: 4,
+    spec: {
+      name: 'Pack Scent',
+      icon: '🐦',
+      target: 'others',
+      strikes: [],
+      grants: [{ id: 'steady_hand', intensity: 1 }],
+      manaCost: 4,
+      cooldown: 400,
+    },
+  },
+
   // ----- yShicna', Logic Purified -----
   // The god grants no spells: both of its scriptures are PASSIVES that edit
   // the grammar itself, and they are mutually exclusive. Neither has a spec to
