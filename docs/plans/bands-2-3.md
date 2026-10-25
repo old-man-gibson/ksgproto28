@@ -89,7 +89,7 @@ and ore from the hills and caves (smithing). Exact drops at build.
 |---|---|
 | Entry | The band 3 gate is the key boon (R2) and band 2 cleared this run (Q4). The climb lands at the castle |
 | The castle | The band's hub: a set of spots off the ladder (no `bandId`), with four doors. Each door is a direction floor's landing edge. It holds residents and a haven |
-| Directions | South 7, West 8, North 9, East 10. All four open together once band 3 is open. Contents per direction: Q2 |
+| Directions | South 7, West 8, North 9, East 10. All four open together once band 3 is open. Each direction floor is a city district that leads out into a thematic map beyond the walls (user, Q2): district first, the outside map past it, the floor's clear at the far end. Themes per direction: open |
 | Scaling | Monster level on direction floors = rolled level + `DIRECTION_LEVEL_STEP[k]`, k = directions cleared. Default table `[0, 2, 5, 9]` (steps 2, 3, 4: slightly faster than linear). A data table, so it is one dial |
 | Castle safe | A counter or flag set when all four floors are cleared; it reads as the band's clear. Nothing else hangs on it yet (R8) |
 
@@ -123,11 +123,11 @@ level gap (kill-xp-level-gap), so the last direction pays better per kill.
 
 **M6. Learning by watching.** A counter `seen:technique:<id>` bumped when a
 monster executes a technique in a fight the player is in. Techniques that can
-be watched get `learn.watch = { count }` (25 for general techniques, 50 for
-goblin-specific ones: Q3). Rides `checkTechniqueLearning`: needs the martial
+be watched get `learn.watch = { count }`, 50 for every technique (user, Q3).
+Rides `checkTechniqueLearning`: needs the martial
 shutter open, needs the technique reachable (MARTIAL.md §6 "Reach"), counts
 from when it became reachable, and lands as a ROUGH form. The bestiary entry
-shows "seen N / 25" once martial is open.
+shows "seen N / 50" once martial is open.
 
 **M7. Goblin casters and gods.**
 
@@ -135,8 +135,11 @@ shows "seen N / 25" once martial is open.
   from the starter lexicon (burning is the condition it brings).
 - Witch doctor: a goblin with `{ cast: miracle }` from a goblin deity, `uses: 1`
   or `2` per fight (a heal on its allies, a curse on the player).
-- Two goblin deities in deities.data.ts, placeholder names and text, two
-  miracles each. Not meetable by the player in this card (Q6).
+- Goblin deities in deities.data.ts (user, Q6). First: a god of **fire**, a
+  god of **mud**, a god of **hunting** (rats, birds and worms). Later, lower
+  priority: **thievery** and **witch magic**. Placeholder names and text, two
+  miracles each. Witch doctors draw on them; the fire god also suits
+  firetongue shrines. Not meetable by the player in this card.
 - Hobgoblins: rotations of general techniques (the Lunge family) and two or
   three goblin-specific ones, authored in martial data as normal
   TechniqueDefs so M6 can teach them.
@@ -169,15 +172,24 @@ One builder at a time; each step merges before the next starts.
 6. Band 3: the castle and four direction floors, sketch fidelity.
 7. John through floor 10.
 
-## 7. Open questions (defaults hold until answered)
+## 7. Questions
+
+### Answered (user, 2026-10-24)
+
+| # | Question | Answer |
+|---|---|---|
+| Q1 | Biome split across floors 4-6 | As proposed: 4 = forest, hills, ravine; 5 = swamp, caves; 6 = the warren, two maps |
+| Q2 | What is in each direction of the city | Districts that lead into further thematic maps outside the city |
+| Q3 | Watch counts | 50 for every technique |
+| Q4 | Does band 3 need band 2 cleared in the same run | Yes, unless the band 2 pass is owned |
+| Q5 | Band pass prices | "Expensive enough." Set at build against the floor 6 harvest: the band 1 pass above every current boon, the band 2 pass well above that |
+| Q6 | Goblin deities | Fire, mud, hunting (rats, birds, worms) first; thievery and witch magic later |
+| Q7 | Bureaucrat killed, never prestiged: tab gone until floor 6 | Accepted |
+| Q8 | Direction level steps | `[0, 2, 5, 9]` |
+
+### Open
 
 | # | Question | Default |
 |---|---|---|
-| Q1 | Biome split across floors 4-6 | 4 = forest, hills, ravine; 5 = swamp, caves; 6 = the warren, two maps |
-| Q2 | What is in each direction of the city, and what threatens it once the goblins are gone | Placeholder districts (south harbour, west market, north cathedral, east walls), each with its own problem; the user names them |
-| Q3 | Watch counts | 25 for general techniques, 50 for goblin-specific ones |
-| Q4 | Does band 3 need band 2 cleared in the same run | Yes, unless the band 2 pass is owned |
-| Q5 | Band pass prices | Band 1 pass above every current boon; band 2 pass about twice that. Numbers set at build against the floor 6 harvest |
-| Q6 | Goblin deities | Two, placeholder, domains rot and the hunt; not meetable in this card |
-| Q7 | A save that killed the bureaucrat but never prestiged loses the prestige tab until floor 6 | Accepted (alpha) |
-| Q8 | Direction level steps | `[0, 2, 5, 9]` |
+| Q9 | Theme of each direction's district and the map beyond it | Placeholders at sketch fidelity; the user captions them |
+| Q10 | What threatens the city once the goblins are gone | Each district has its own problem; no band-wide villain |
