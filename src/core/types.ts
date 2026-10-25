@@ -2779,6 +2779,8 @@ export interface BrewSpec {
   medium: BrewMedium;
   /** Raw magnitude, after the solvent's capacity and every purity term. */
   potency: number;
+  /** How much potency the bases hold before the excess spills. */
+  capacity: number;
   /** How badly it wants to release. Past the threshold it is a burst. */
   volatility: number;
   /** Ticks a sustained brew runs for. */
@@ -2797,8 +2799,10 @@ export interface BrewSpec {
   cures: string[];
   /** Roughly what it is worth. */
   value: number;
-  /** The reading, line by line — how the alembic explains itself. */
+  /** The reading: exactly one line per step, in sequence order. */
   notes: string[];
+  /** What the steps add up to: the form and why, spill, duration or blows, unused effects. */
+  summary: string[];
 }
 
 /**
@@ -5870,7 +5874,8 @@ export type GameEvent =
   | { type: 'attr:levelup'; attr: AttributeId; level: number }
   | { type: 'superattr:unlock'; id: SuperAttributeId }
   | { type: 'encounter'; spot: string; monsterIds: string[] }
-  | { type: 'kill'; monster: MonsterInstance }
+  /** `xp`: what the kill earned after the level-gap cut (killXp, levels.ts). */
+  | { type: 'kill'; monster: MonsterInstance; xp: number }
   /** The last enemy of a fight fell. `forced`: it was a fight that could not be fled. */
   | { type: 'fight:won'; spot: string; forced: boolean }
   | { type: 'defeat'; monster: MonsterInstance }

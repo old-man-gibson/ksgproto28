@@ -82,8 +82,8 @@ describe('the sequence is the recipe', () => {
   it('law 2: brimstone catches only in a brew already running', () => {
     const roused = seq('grain_spirit', 'quicksilver', 'emberbloom', 'brimstone');
     const cold = seq('spring_water', 'emberbloom', 'brimstone');
-    expect(roused.notes.some((n) => n.includes('CATCHES'))).toBe(true);
-    expect(cold.notes.some((n) => n.includes('does not catch'))).toBe(true);
+    expect(roused.notes[3]).toContain('so it ignites');
+    expect(cold.notes[2]).toContain('so it fails');
   });
 
   it('law 2: ash takes the weakest substance out, and only when there is one', () => {
@@ -91,7 +91,41 @@ describe('the sequence is the recipe', () => {
     // Two essences went in; the weaker was removed rather than diluted.
     expect(purified.essences).toHaveLength(1);
     const useless = seq('bone_ash', 'spring_water', 'emberbloom');
-    expect(useless.notes.some((n) => n.includes('nothing to purify'))).toBe(true);
+    expect(useless.notes[0]).toContain('No essence before it');
+  });
+});
+
+describe('the reading', () => {
+  it('has exactly one line per step, in order, each naming its reagent', () => {
+    const ids = ['grain_spirit', 'quicksilver', 'emberbloom', 'brimstone', 'fixing_salt'];
+    const s = seq(...ids);
+    expect(s.notes).toHaveLength(ids.length);
+    ids.forEach((id, i) => expect(s.notes[i]).toContain(REAGENTS[id].name));
+  });
+
+  it('opens the summary with the form and the dial that decided it', () => {
+    expect(seq('grain_spirit', 'quicksilver', 'emberbloom').summary[0]).toBe(
+      'Form: spirit base, volatility 1.8 (1.0 or more) → Flask.',
+    );
+    expect(seq('emberbloom', 'quicksilver').summary[0]).toBe('Form: no base → Residue.');
+  });
+
+  it('names what a form leaves unused instead of dropping it silently', () => {
+    // ALCHEMY.md §7: a storm oil loses its mana and its buff; the reading says so.
+    expect(seq('pressed_oil', 'quicksilver', 'thunderbloom').summary.join(' ')).toContain(
+      'Not used by an Oil: Storm (buffs, Mana restore)',
+    );
+    expect(seq('spring_water', 'emberbloom').summary.join(' ')).toContain('Ember (heat damage, afflictions)');
+    // A form that reads everything its essences carry has nothing to report.
+    expect(seq('grain_spirit', 'quicksilver', 'emberbloom').summary.join(' ')).not.toContain('Not used');
+  });
+
+  it('quotes the numbers the fold actually used', () => {
+    const s = seq('grain_spirit', 'quicksilver', 'emberbloom', 'brimstone');
+    // 3.76 × 1.55 = 5.83 raw, into a base that holds 5: 5 + 0.83 × 0.35 = 5.29.
+    expect(s.notes[3]).toContain('Potency ×1.55 → 5.83');
+    expect(s.summary.join(' ')).toContain('35% of the excess stays → 5.29');
+    expect(s.potency).toBeCloseTo(5.29, 2);
   });
 });
 
@@ -173,7 +207,7 @@ describe('solvents', () => {
   it('caps what a brew can hold, and spills the rest', () => {
     // Spirit holds least; four heavy essences into it must run over.
     const s = seq('grain_spirit', 'emberbloom', 'nightcap', 'thunderbloom', 'frostmoss');
-    expect(s.notes.some((n) => n.includes('runs over'))).toBe(true);
+    expect(s.summary.some((n) => n.startsWith('Over the limit'))).toBe(true);
   });
 
   it('a second solvent thins what is already there', () => {

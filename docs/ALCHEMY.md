@@ -147,9 +147,11 @@ wrong would punish twice for one mistake (cooking's rule).
   `restore` and `cures`, so an oil cannot reach any of them. A storm oil built
   on thunderbloom silently drops both its mana restore and its `clear_headed`
   grant, keeping only the weight they contributed to potency. Whatever register
-  lands, the floor is that a discarded payload must be **named in `notes`** —
-  the alembic already talks to the player that way, and silent evaporation is
-  the one outcome the table may not have.
+  lands, the floor is that a discarded payload must be **named** — silent
+  evaporation is the one outcome the table may not have. The floor is met
+  (2026-10-23): `BrewSpec.summary` ends with `Not used by <form>: <essence>
+  (<registers>)` for every form, oils included. The register itself is still
+  open.
 
 - **A graze does not spend a coating** (decided 2026-08-10, previously true only
   by omission — `landGraze` never called `spendCoating`). The edge did touch, so
