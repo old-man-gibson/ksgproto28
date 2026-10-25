@@ -818,8 +818,11 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     // teaches, because the Warden's iron has to become something somewhere.
     // The bronze line is SECRET (RecipeDef.secret): listed only once the
     // Smith's Pattern found working the bellows has been studied.
-    recipes: ['iron_ingot', 'iron_dagger', 'iron_sword', 'copper_ingot', 'tin_ingot', 'bronze_ingot', 'bronze_dagger'],
-    benches: ['assembling'],
+    // The last five had a recipe and no counter to craft it at.
+    recipes: ['iron_ingot', 'iron_dagger', 'iron_sword', 'copper_ingot', 'tin_ingot', 'bronze_ingot', 'bronze_dagger', 'rapier', 'parrying_dagger', 'katana', 'uchigatana', 'iron_breastplate'],
+    // The anvil. This was `assembling`, which is cooking's Cold Counter and had
+    // stood in the smithy since the prototype import.
+    benches: ['forging'],
     connections: [],
   },
   the_long_bench: {

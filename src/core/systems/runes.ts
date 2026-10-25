@@ -22,6 +22,7 @@ import { ITEMS, RUNES } from '../registry';
 import { NAMED_RUNES, RUNE_ADORNMENTS, RUNE_PATTERNS } from '../data/runes.data';
 import { QUALITY_TIERS, qualityAtLeast, qualityMult } from '../data/quality.data';
 import { nextUid } from './equipment';
+import { exemplarSpec, forgedClassOf, itemDefOf } from './assembly';
 import { getDerivedStats } from './derived';
 import { bumpStat } from './achievements';
 import { text } from '../text/log';
@@ -88,6 +89,20 @@ export function rollRuneSlots(state: GameState, def: ItemDef): number {
  * Loot drops, craft results, and quest rewards all come through here.
  */
 export function createItem(state: GameState, defId: string): ItemInstance {
+  // A `forged:<class>` id is a class stub with no numbers of its own. Minted
+  // from loot, a reward or the debug panel it becomes the class's exemplar at
+  // Fair grade, a real forged item with no rune slots.
+  const forgedClass = forgedClassOf(defId);
+  if (forgedClass) {
+    return {
+      uid: nextUid(state),
+      defId,
+      slots: 0,
+      runes: [],
+      size: 'medium',
+      forged: exemplarSpec(forgedClass),
+    };
+  }
   const def = ITEMS[defId];
   return {
     uid: nextUid(state),
@@ -422,7 +437,7 @@ export function socketRune(state: GameState, bus: EventBus, uid: number, ref: st
     state.runes[ref] -= 1;
     if (state.runes[ref] <= 0) delete state.runes[ref];
   }
-  const def = ITEMS[item.defId];
+  const def = itemDefOf(item);
   bus.emit({
     type: 'log',
     msg: text('runes.socketed', { icon: rune.icon, name: rune.name, itemIcon: def?.icon ?? '', item: def?.name ?? item.defId }),

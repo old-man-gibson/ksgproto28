@@ -411,7 +411,8 @@
     return 'circular reference';
   }
 
-  const refKind = (key: string, parentKey?: string) => refKindFor(kind, key, parentKey);
+  const refKind = (key: string, parentKey?: string, path?: (string | number)[]) =>
+    refKindFor(kind, key, parentKey, path);
   const refAllow = (key: string) => refAllowFor(kind, key);
 
   /**
@@ -746,7 +747,7 @@
 
 {#snippet node(n: Node)}
   {@const shape = shapeOf(n.value)}
-  {@const ref = refKind(n.key, n.parentKey)}
+  {@const ref = refKind(n.key, n.parentKey, n.path)}
   {@const vocab = n.depth === 0 ? tagVocab(n.key) : undefined}
   {@const slot = n.path.join('.')}
   {@const problem = n.depth === 0 ? (fieldProblems.get(n.key) ?? null) : null}

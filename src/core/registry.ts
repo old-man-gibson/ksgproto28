@@ -13,6 +13,8 @@ import {
 } from './data/monsters.data';
 import { BESTIARY_FACTS, BESTIARY_TUNING, MONSTER_TAGS } from './data/bestiary.data';
 import { MATERIALS } from './data/materials.data';
+import { PART_KINDS } from './data/parts.data';
+import { ITEM_CLASSES } from './data/itemclasses.data';
 import { RECIPES } from './data/recipes.data';
 import { NPCS } from './data/npcs.data';
 import { QUESTS } from './data/quests.data';
@@ -41,6 +43,8 @@ export {
   ITEMS,
   AFFIXES,
   MATERIALS,
+  PART_KINDS,
+  ITEM_CLASSES,
   RECIPES,
   NPCS,
   QUESTS,

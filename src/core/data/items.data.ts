@@ -1,6 +1,8 @@
 import type { Affix, ItemDef } from '../types';
 import { prose } from '../text/prose';
 import { ITEMS_TEXT } from '../text/items.text';
+import { ITEM_CLASSES, forgedIdOf } from './itemclasses.data';
+import { placementCells, runeClassForCells } from './parts.data';
 
 export const ITEMS = prose<ItemDef>('ITEMS', ITEMS_TEXT, {
   rusty_sword: {
@@ -585,6 +587,36 @@ export const ITEMS = prose<ItemDef>('ITEMS', ITEMS_TEXT, {
     wield: 'offhand',
   },
 });
+
+/*
+ * ---- Smithing: one stub per item class, generated ----
+ *
+ * A forged item's `defId` is `forged:<classId>`, so every `ITEMS[defId]` lookup
+ * that has not learned about the anvil still lands on something with the right
+ * slot, hands and family tags, instead of undefined. The numbers are NOT here:
+ * a stub grants nothing (empty mods), and the real definition of a given forged
+ * item is derived from its parts by `itemDefOf` (systems/assembly.ts).
+ *
+ * Generated rather than written out so the class list has exactly one source,
+ * the way materials.data.ts generates preps and genes. The rune class is the
+ * class's exemplar placement read through the same cell thresholds the derived
+ * definition uses.
+ */
+for (const cls of Object.values(ITEM_CLASSES)) {
+  const id = forgedIdOf(cls.id);
+  ITEMS[id] = {
+    id,
+    name: cls.name,
+    icon: cls.icon,
+    slot: cls.slot,
+    ...(cls.wield ? { wield: cls.wield } : {}),
+    tags: [...cls.tags],
+    mods: [],
+    value: 1,
+    ...(cls.desc ? { desc: cls.desc } : {}),
+    runeClass: runeClassForCells(placementCells(cls.exemplar)),
+  };
+}
 
 /** Affixes randomly attached to monster drops; better monster rarity → higher chance. */
 export const AFFIXES: Affix[] = [

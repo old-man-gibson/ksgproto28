@@ -7,6 +7,7 @@ import { computeDerivedStats, getDerivedStats } from '../src/core/systems/derive
 import { grantAttrXp, attrXpNeeded } from '../src/core/systems/attributes';
 import { applyStatus } from '../src/core/systems/statuses';
 import { monsterTagSet } from '../src/core/systems/bestiary';
+import { createItem } from '../src/core/systems/runes';
 import { STATUSES } from '../src/core/registry';
 
 /**
@@ -43,6 +44,34 @@ describe('derived-stats cache', () => {
     const disarmed = getDerivedStats(g.state);
     expect(disarmed).not.toBe(armed);
     expect(disarmed).toEqual(computeDerivedStats(g.state));
+  });
+
+  it('invalidates when the parts or the grade of a forged piece change under the same uid', () => {
+    // A forged item's definition is derived from `forged`, and the uid never
+    // moves, so the parts and the grade have to be in the fingerprint
+    // themselves (modFingerprint appends forgeKey to the equipment entry).
+    const g = huntingGame();
+    const sword = createItem(g.state, 'forged:sword');
+    g.state.inventory.push(sword);
+    g.equip(sword.uid);
+    const first = getDerivedStats(g.state);
+    expect(first).toEqual(computeDerivedStats(g.state));
+    expect(getDerivedStats(g.state)).toBe(first);
+
+    // Re-forge the blade in place: same instance, different parts.
+    const worn = g.state.equipment.weapon!;
+    worn.forged!.parts[0].kind = 'short';
+    const shorter = getDerivedStats(g.state);
+    expect(shorter).not.toBe(first);
+    expect(shorter).toEqual(computeDerivedStats(g.state));
+    expect(shorter.damage).toBeLessThan(first.damage);
+
+    // And the grade alone.
+    worn.forged!.q = 's';
+    const fine = getDerivedStats(g.state);
+    expect(fine).not.toBe(shorter);
+    expect(fine).toEqual(computeDerivedStats(g.state));
+    expect(fine.damage).toBeGreaterThan(shorter.damage);
   });
 
   it('invalidates on the exertion toggle', () => {

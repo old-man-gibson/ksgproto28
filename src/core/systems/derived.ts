@@ -12,6 +12,7 @@ import {
   type BreakdownLine,
   type ResolvedMod,
 } from './attributes';
+import { forgeKey } from './assembly';
 import { effectiveStyleDef, effectiveStyleId } from './styles';
 import { exerting } from './stamina';
 import { lockMods } from './resources';
@@ -618,7 +619,10 @@ function modFingerprint(state: GameState): string {
     // The uid pins the instance (def, affix); runes are the one thing that
     // mutates inside it, so they are spelled out. Carved runes are objects —
     // rare enough per slot that stringifying them stays cheap.
-    parts.push(`e${slot}:${item.uid}`);
+    //
+    // A forged item's whole definition is derived from its parts and grade, so
+    // those are spelled out too (and, in a later slice, its finish).
+    parts.push(`e${slot}:${item.uid}${item.forged ? `#${forgeKey(item.forged)}` : ''}`);
     for (const ref of item.runes ?? []) {
       parts.push(typeof ref === 'string' ? ref : `c${JSON.stringify(ref)}`);
     }

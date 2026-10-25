@@ -39,6 +39,7 @@ import {
 } from './resources';
 import { STATUSES } from '../registry';
 import { createItem, grantRune } from './runes';
+import { classifyPlacement } from './assembly';
 import { bumpStat, setStat } from './achievements';
 import { feedFloating, floatingRun, logRepeat, settleFloating } from './log';
 import { endFight, noteConditionDamage } from './ledger';
@@ -533,6 +534,9 @@ export function tickAction(state: GameState, bus: EventBus): void {
         grantAttrXpSplit(state, bus, attrXpWeights(act), 0.5 * recipe.ticks * stats.trainXp);
         grantActivityExposure(state, bus, tags, recipe.ticks);
         bumpStat(state, bus, 'crafts');
+        // A recipe made of parts still mints its declared item, and also fills
+        // in the form chart: the class its parts name has now been forged.
+        if (recipe.forge) bumpStat(state, bus, `forged:${classifyPlacement(recipe.forge).id}`);
         bus.emit({ type: 'craft', recipe: recipe.id });
         logRepeat(bus, {
           group: `act:${act.id}`,

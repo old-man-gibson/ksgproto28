@@ -25,7 +25,8 @@ import { LEVEL_ATTR_BONUS } from '../data/levels.data';
 import { ATTRIBUTE_PROGRESSION } from '../data/progression.data';
 import { bandedXpNeeded, settleLevels } from './progression';
 import type { EventBus } from '../engine/events';
-import { ACHIEVEMENTS, ITEMS, SKILLS, SUPERATTRS, TITLES } from '../registry';
+import { ACHIEVEMENTS, SKILLS, SUPERATTRS, TITLES } from '../registry';
+import { itemDefOf } from './assembly';
 import { endowmentBonus, talentBonus } from './legacy';
 
 // ---------- Training (the skill-like base layer) ----------
@@ -71,7 +72,7 @@ export function equippedTags(state: GameState): Set<string> {
   const tags = new Set<string>();
   for (const item of Object.values(state.equipment)) {
     if (!item) continue;
-    for (const t of ITEMS[item.defId]?.tags ?? []) tags.add(t);
+    for (const t of itemDefOf(item)?.tags ?? []) tags.add(t);
   }
   // Pseudo-tag: bare-handed counts as wielding 'unarmed'.
   if (!state.equipment.weapon) tags.add('unarmed');
@@ -194,12 +195,12 @@ export function collectBaseMods(
   /** What the OTHER hand is carrying — hand bonuses ask about the pairing. */
   const tagsIn = (slot: SlotId): Set<string> => {
     const held = state.equipment[slot];
-    return new Set(held ? (ITEMS[held.defId]?.tags ?? []) : []);
+    return new Set(held ? (itemDefOf(held)?.tags ?? []) : []);
   };
 
   for (const [slot, item] of Object.entries(state.equipment) as [SlotId, ItemInstance][]) {
     if (!item) continue;
-    const def = ITEMS[item.defId];
+    const def = itemDefOf(item);
     if (!def) continue;
     const label = item.affix ? `${item.affix.name} ${def.name}` : def.name;
     // A piece held somewhere it wasn't made for gives only part of itself —

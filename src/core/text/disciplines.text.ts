@@ -39,6 +39,8 @@ export const DISCIPLINES_TEXT: ProseTable = {
   'alchemy.desc': 'Alembic. Takes two to six reagents in order (steps three to six unlock at Alchemy 5, 12, 22 and 35). Start with a base (water, oil or spirit): it sets the form. The list under the strip says what each step did. Brew time is fixed regardless of skill.',
   'alchemy.outcomes.brew.desc': 'The brew the reagent sequence resolves to.',
 
-  'preparing.desc': 'Cutting Board. Takes one whole ingredient and one cutting technique, and returns the ingredient in that cut. The output grade is the cut\'s uniformity: a higher grade narrows the range the ingredient\'s contribution rolls in at the next bench.',
+  'forging.desc': 'Anvil. Takes up to five parts, each a part kind in a material: a head, a guard (Smithing 5), a haft, a binding (Smithing 3) and a second head (Smithing 15). The proportions of the parts name the piece: a 2×3 blade on a handle is a dagger, a 2×6 blade a sword. The cost is the parts\' cells in each material, rounded up to whole units. Work time grows with the cells and shrinks with Smithing, and the grade is rolled from Smithing when the piece is finished.',
+
+  'preparing.desc':'Cutting Board. Takes one whole ingredient and one cutting technique, and returns the ingredient in that cut. The output grade is the cut\'s uniformity: a higher grade narrows the range the ingredient\'s contribution rolls in at the next bench.',
   'preparing.outcomes.prep.desc': 'The same ingredient in the chosen cut, for a bench that favors that cut.',
 };

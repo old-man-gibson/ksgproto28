@@ -16,7 +16,9 @@ describe('alpha shutters, save v55', () => {
     expect(subsystemUnlocked(s, 'prep')).toBe(false);
     expect(visibleBenches(s, SPOTS.granary_kitchens)).toEqual(['cooking']);
     expect(visibleBenches(s, SPOTS.the_alembics)).toEqual(['alchemy']);
-    expect(visibleBenches(s, SPOTS.the_forges)).toEqual([]);
+    // The smithy stands the anvil, not the Cold Counter (it listed `assembling`
+    // until modular smithing), so no kitchen shutter touches it.
+    expect(visibleBenches(s, SPOTS.the_forges)).toEqual(['forging']);
     s.stats[unlockKey('prep')] = 1;
     expect(visibleBenches(s, SPOTS.granary_kitchens)).toEqual(['cooking', 'preparing']);
   });

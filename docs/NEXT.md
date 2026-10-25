@@ -415,86 +415,10 @@ last.
 
 ---
 
-## Parked: blueprint weaponsmithing (idea, not scheduled)
+## Moved: blueprint weaponsmithing → modular smithing (2026-10-23)
 
-Weapon crafting as a **shape grammar**: nobody selects "dagger" from a menu.
-A blueprint fixes the general shape (sword, polearm), the *dimensions* of the
-parts you fit determine what the thing IS — tiny blade on a sword frame → a
-dagger, short → shortsword, medium → longsword, large → two-hander; long stick
-+ short blade → spear, + medium blade → glaive, short stick + long blade →
-lance. Materials keep doing what they do everywhere else (stats/quality);
-dimensions do the new work (taxonomy). Distinct crafting identity from the
-existing set — sum (cooking), when (stove), sequence (alchemy), topology
-(mutagens), breadth (runecarving) — this one is *the proportions name the
-product*.
-
-Rules agreed when parking it:
-
-- **The resolution function must be total.** Every dimension combo yields
-  *something*, degenerate combos included (long stick + no blade = quarterstaff;
-  the game dryly names the cursed ones). If bad combos just fail, it collapses
-  into hidden recipes, i.e. runecarving-with-metal, and isn't worth building.
-- **Discovery replaces unlocks.** No pattern-knowledge gate; the archetype
-  chart fills in as combos are tried — a free collection layer.
-- **Reuse the disciplines chassis** (slots/placements/tool/quality — same
-  framework as runecarving): blueprint where the slab goes, parts where
-  patterns go. The chassis is shared; the identity is not.
-- **Economy (partly settled).** Weapons today come from drops and from basic
-  forge recipes. The basic recipes get absorbed: a basic recipe is just a
-  blueprint with fixed proportions, i.e. the tutorial tier of this system.
-- **Materials carry tactical tags, not just stats.** Iron haft instead of wood
-  → quarterstaff good against armored/inorganic targets. Not a new system —
-  an affinity field on the material definition, same lane as stats.
-- **Process layer (idea on the idea): repeated verbs as a new identity —
-  *count*.** "Keep hammering" → serrated edge (bonus vs living scaled by how
-  little armor), "keep sharpening" → razor edge (heavy bleed). A finishing
-  stage after assembly that accumulates a verb counter map
-  (`hammer: n, sharpen: m`) resolved at completion. Two rules keep it a
-  distinct identity: **order-insensitive** (or it poaches alchemy's sequence)
-  and **verbs antagonistic** (hammering coarsens what sharpening polished, so
-  the ratio is the decision and "more of everything" is never optimal).
-  Count fills an empty slot in the identity table: sum / when / sequence /
-  topology / breadth / proportion / count. UI prior art: cooking's stove
-  timeline (count-driven here, not timing-driven, so no overlap with "when").
-  **Lane refinement so the drops rule survives:** process verbs grant a small
-  closed set of *generic conditional finishes*; drops remain the only source
-  of *named, unique* effects. Finishes are spice; souls are loot.
-- **Prototype sketch (no blueprints — rework established weapons).** The eight
-  verbs pair into four signed axes, and the counters ARE the state:
-  hammer↔sharpen = **Edge** (serrated↔razor), fill↔hollow = **Heft**
-  (weighted↔light), bend↔straighten = **Line** (curved↔true),
-  segment↔fuse = **Body** (jointed↔solid). Net ±3 → finish tier 1, ±6 →
-  tier 2. **Temper** = total verb applications a piece tolerates (~6 at C,
-  scales with quality) — this is what makes antagonism cost: canceling burns
-  temper, and quality buys breadth of finishing. Axis effects, all on
-  existing hooks: serrated = bonus vs living scaled by *missing* armor;
-  razor = inflicts `bleeding`; weighted = +damage/−speed/ignores armor;
-  light = +speed +Deflection/riposte; curved = counter/riposte bonus;
-  true = opening-blow bonus; jointed = harder to parry; solid = disarm
-  resist (`ground` verb) + small armor. Materials are reachable regions:
-  bronze loves hammer/bend/fuse, razor capped, refunds wasted temper
-  (recast); iron does everything moderately (hollowing iron = cutting a
-  fuller); wood can't be hammered, and *filling wood consumes a second
-  material and inherits its tag* (the iron-cored quarterstaff); bone can't
-  be hammered or bent (Line locked — it grew that shape), hollows at half
-  cost, best bleed; crystal shatters if hammered (one blow destroys it —
-  keep that), best razor, segments perfectly. Families don't gate axes —
-  the same axis *expresses* differently (segmented blunt = flail, segmented
-  staff = three-section, segmented sword = urumi; katana starts Curved +2;
-  bow locks Line). Mechanically: a forge-bench job on an owned instance,
-  verbs queued over idle ticks, net vector resolves to **affixes stamped on
-  the instance uid** (coatings already target `weaponUid`; display/stat
-  plumbing exists). Engineering: new mod source ⇒ add to derived-stats
-  `modFingerprint`; verb/material matrix is a data table with the rule
-  mirrored in both validation layers.
-- **Open question, settle before building: bespoke weapons with special
-  effects.** Leading candidate: *effects are transplantable parts* — breaking
-  down a named weapon yields its effect as a component that can be slotted
-  into a blueprint (re-house the effect, re-choose the form). Drops stay the
-  only source of permanent effects (alchemy oils already own temporary ones),
-  so the generator never obsoletes loot. Rejected: effects-from-exotic-
-  materials (generator could reproduce named drops, killing their uniqueness)
-  and sealed-bespoke (generator becomes a mid-game dead end). Not decided.
+In execution. The design, the user's rulings and the old parked sketch live in
+[plans/blueprint-weaponsmithing.md](plans/blueprint-weaponsmithing.md).
 
 ---
 

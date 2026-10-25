@@ -371,7 +371,8 @@
     <div class="row">
       <select bind:value={itemId}>
         {#each itemList as def (def.id)}
-          <option value={def.id}>{def.icon} {def.name}</option>
+          <!-- A forged class stub mints that class's exemplar (createItem): said so, since "Katana" is also a shop item. -->
+          <option value={def.id}>{def.icon} {def.name}{def.id.startsWith('forged:') ? ' (forged exemplar)' : ''}</option>
         {/each}
       </select>
       <input type="number" min="1" max="999" bind:value={itemQty} title="How many" />

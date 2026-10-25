@@ -36,7 +36,8 @@ import {
   attrValue,
   type BreakdownLine,
 } from '../../core/systems/attributes';
-import { ITEMS, MONSTERS, MONSTER_TAGS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
+import { MONSTERS, MONSTER_TAGS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
+import { itemDefOf } from '../../core/systems/assembly';
 import { resolveModValue } from '../../core/systems/derived';
 import { resolveRune } from '../../core/systems/runes';
 import { OTHERS_POWER, counterEfficiency, matchCeiling } from '../../core/systems/arcane';
@@ -902,7 +903,7 @@ export function statTipLines(state: GameState, key: StatKey): string[] {
   // Typed on-hit extras (enchants, weapon runes) ride along with Damage.
   if (key === 'damage') {
     const weapon = state.equipment.weapon;
-    const wdef = weapon ? ITEMS[weapon.defId] : undefined;
+    const wdef = weapon ? itemDefOf(weapon) : undefined;
     if (wdef?.bonusDamage) {
       lines.push(
         `on hit: +${fmt(wdef.bonusDamage.value)} ${DAMAGE_TYPE_NAMES[wdef.bonusDamage.type]} — ${wdef.name}`,

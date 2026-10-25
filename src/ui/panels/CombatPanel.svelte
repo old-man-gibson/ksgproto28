@@ -1,7 +1,8 @@
 <script lang="ts">
   import { gs, game, stepTicks, stepEvent, ui, view } from '../state.svelte';
   import { dropFight } from '../../core/systems/ledger';
-  import { ITEMS, POSITIONS, SKILLS, STATUSES, STYLES, TECHNIQUES, TIERS, getSpot } from '../../core/registry';
+  import { POSITIONS, SKILLS, STATUSES, STYLES, TECHNIQUES, TIERS, getSpot } from '../../core/registry';
+  import { itemDefOf } from '../../core/systems/assembly';
   import { ANY_POSITION_COLOR, MAX_DRILLED, NEUTRAL_POSITION } from '../../core/data/martial.data';
   import {
     entryPositions,
@@ -600,14 +601,14 @@
 
   <!-- Concealed carry: only daggers sheathe. While hidden you are genuinely
        unarmed — tags, schools and stats all read bare hands. -->
-  {#if gs.sheathed || (gs.equipment.weapon && (ITEMS[gs.equipment.weapon.defId]?.tags ?? []).includes('dagger'))}
+  {#if gs.sheathed || (gs.equipment.weapon && (itemDefOf(gs.equipment.weapon)?.tags ?? []).includes('dagger'))}
     <button class="exert sheathe" class:on={!!gs.sheathed} onclick={() => game.toggleSheathe()}>
       <span class="exert-mark">{gs.sheathed ? '🫥' : '🔪'}</span>
       <span>
         <b>{gs.sheathed ? 'Concealed' : 'Carrying openly'}</b>
         <span class="dim small">
           {#if gs.sheathed}
-            — {ITEMS[gs.sheathed.defId]?.name} hidden; you fight bare-handed until it matters
+            — {itemDefOf(gs.sheathed)?.name} hidden; you fight bare-handed until it matters
           {:else}
             — click to sheathe the dagger and fight as unarmed
           {/if}
@@ -684,12 +685,12 @@
     {/if}
     {#if gs.combat?.impaled}
       <p class="small grounded">
-        🗡 Your {ITEMS[gs.combat.impaled.defId]?.name ?? 'weapon'} is buried in something.
+        🗡 Your {itemDefOf(gs.combat.impaled)?.name ?? 'weapon'} is buried in something.
       </p>
     {/if}
     {#if gs.combat?.grounded}
       <p class="small grounded">
-        🤲 Your {ITEMS[gs.combat.grounded.defId]?.name ?? 'weapon'} lies in the dirt.
+        🤲 Your {itemDefOf(gs.combat.grounded)?.name ?? 'weapon'} lies in the dirt.
       </p>
     {/if}
   {/if}
