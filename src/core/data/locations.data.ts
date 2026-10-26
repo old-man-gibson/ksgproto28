@@ -64,6 +64,11 @@ export const AREAS: Record<string, AreaDef> = {
   ascent_f1_area: { id: 'ascent_f1_area', name: 'The Flooded Offices', regionId: 'the_ascent', scene: 'hall' },
   ascent_f2_area: { id: 'ascent_f2_area', name: 'The Long Hall', regionId: 'the_ascent', scene: 'hall' },
   ascent_f3_area: { id: 'ascent_f3_area', name: 'The Descent', regionId: 'the_ascent', scene: 'hall' },
+  // Band 2 (bands-2-3.md). No forest scene exists yet; the swamp borrows the
+  // cistern's and the warren the crypt's.
+  ascent_f4_area: { id: 'ascent_f4_area', name: 'The Greenwood', regionId: 'the_ascent' },
+  ascent_f5_area: { id: 'ascent_f5_area', name: 'The Mire', regionId: 'the_ascent', scene: 'cistern' },
+  ascent_f6_area: { id: 'ascent_f6_area', name: 'The Warren', regionId: 'the_ascent', scene: 'crypt' },
 };
 
 /**
@@ -1485,6 +1490,386 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { monsterId: 'puppet_bureaucrat', weight: 1, once: true, level: [11, 11], requires: [{ type: 'stat', key: 'flag:f3_strings_cut', value: 1 }, { type: 'statMax', key: 'flag:f3_strings_cut', value: 1 }] },
       { monsterId: 'puppet_bureaucrat', weight: 1, once: true, level: [10, 10], requires: [{ type: 'stat', key: 'flag:f3_strings_cut', value: 2 }, { type: 'statMax', key: 'flag:f3_strings_cut', value: 2 }] },
       { monsterId: 'puppet_bureaucrat', weight: 1, once: true, level: [9, 9], requires: [{ type: 'stat', key: 'flag:f3_strings_cut', value: 3 }] },
+    ],
+    connections: [],
+  },
+
+  // ---------- The Ascent: band 2, the Wilds (floors 4–6) ----------
+  //
+  // docs/plans/bands-2-3.md. Sketch fidelity: names, numbers and text are
+  // placeholders for the user to caption. Unlike band 1, every hunt here is
+  // ENDLESS (no fightLimit): the dens stay open after the clear, and which den
+  // to hunt for which material is the band's decision. Goblin kills anywhere
+  // in the band pay the next floor's gate (kills:tag:goblin).
+
+  // --- Floor 4: the Greenwood. Forest, hills and a ravine; goblin raid
+  // parties roll into the hunts. The raid leader at the ravine floor is the
+  // clear. Herbs feed alchemy, game meat feeds cooking, hill ore feeds the anvil.
+  f4_treeline: {
+    id: 'f4_treeline',
+    name: 'The Treeline',
+    icon: '🌲',
+    areaId: 'ascent_f4_area',
+    map: { x: 50, y: 6 },
+    activities: [{ id: 'camp_f4', kind: 'rest', name: 'Camp at the Treeline', icon: '🏕️' }],
+    connections: [{ to: 'f4_woods_edge', ticks: 20 }],
+  },
+  f4_woods_edge: {
+    id: 'f4_woods_edge',
+    name: 'The Woods Edge',
+    icon: '🌳',
+    areaId: 'ascent_f4_area',
+    map: { x: 50, y: 20 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Edge', icon: '🏹' },
+      { id: 'explore', kind: 'explore', name: 'Forage', icon: '🌿' },
+    ],
+    groupWeights: { 1: 75, 2: 25 },
+    encounters: [
+      { monsterId: 'forest_rat', weight: 35, level: [7, 8] },
+      { monsterId: 'young_wolf', weight: 35, level: [7, 9] },
+      { monsterId: 'goblin', weight: 30, level: [7, 9] },
+    ],
+    exploreTicks: 240,
+    finds: [
+      { id: 'f4_edge_herbs', at: 0.25, material: { id: 'common_herb', qty: 4 } },
+      { id: 'f4_edge_berries', at: 0.6, material: { id: 'forest_berries', qty: 4 } },
+      { id: 'f4_edge_purse', at: 1, gold: [30, 60] },
+    ],
+    connections: [
+      { to: 'f4_deep_woods', ticks: 30 },
+      { to: 'f4_hills', ticks: 30 },
+    ],
+  },
+  f4_hills: {
+    id: 'f4_hills',
+    name: 'The Barrow Hills',
+    icon: '⛰️',
+    areaId: 'ascent_f4_area',
+    map: { x: 82, y: 36 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Hills', icon: '🏹' },
+      { id: 'explore', kind: 'explore', name: 'Search the Barrows', icon: '🔍' },
+    ],
+    groupWeights: { 1: 80, 2: 20 },
+    encounters: [
+      { monsterId: 'boar', weight: 45, level: [8, 9] },
+      { monsterId: 'cliff_hawk', weight: 35, level: [8, 9] },
+      { monsterId: 'goblin', weight: 20, level: [8, 9] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f4_hills_ore', at: 0.3, material: { id: 'copper_ore', qty: 3 } },
+      { id: 'f4_hills_barrow', at: 0.7, gold: [50, 90], material: { id: 'iron_scrap', qty: 2 } },
+    ],
+    connections: [{ to: 'f4_ravine_rim', ticks: 30 }],
+  },
+  f4_deep_woods: {
+    id: 'f4_deep_woods',
+    name: 'The Deep Woods',
+    icon: '🌲',
+    areaId: 'ascent_f4_area',
+    map: { x: 40, y: 36 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Deep Woods', icon: '🏹' },
+      { id: 'explore', kind: 'explore', name: 'Explore', icon: '🧭' },
+    ],
+    // The raid parties: two and three goblins at a time, rolled into the hunt.
+    groupWeights: { 1: 55, 2: 25, 3: 20 },
+    encounters: [
+      { monsterId: 'wolf', weight: 35, level: [8, 9] },
+      { monsterId: 'boar', weight: 25, level: [8, 9] },
+      { monsterId: 'goblin', weight: 40, level: [8, 9] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f4_deep_mushrooms', at: 0.3, material: { id: 'cave_mushroom', qty: 3 } },
+      { id: 'f4_deep_camp', at: 0.8, gold: [40, 80], material: { id: 'iron_scrap', qty: 2 } },
+    ],
+    connections: [{ to: 'f4_ravine_rim', ticks: 30 }],
+  },
+  f4_ravine_rim: {
+    id: 'f4_ravine_rim',
+    name: 'The Ravine Rim',
+    icon: '🪨',
+    areaId: 'ascent_f4_area',
+    map: { x: 55, y: 52 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Rim', icon: '🏹' },
+      { id: 'explore', kind: 'explore', name: 'Look Over the Edge', icon: '🔭' },
+    ],
+    groupWeights: { 1: 70, 2: 20, 3: 10 },
+    encounters: [
+      { monsterId: 'cliff_hawk', weight: 45, level: [8, 10] },
+      { monsterId: 'goblin', weight: 55, level: [8, 10] },
+    ],
+    exploreTicks: 240,
+    finds: [
+      { id: 'f4_rim_nest', at: 0.4, gold: [20, 40], material: { id: 'gold_leaf', qty: 1 } },
+      { id: 'f4_rim_camp', at: 0.75, spot: 'f4_ravine_floor' },
+    ],
+    connections: [{ to: 'f4_ravine_floor', ticks: 40, label: 'Down into the Ravine', returnLabel: 'Climb Out' }],
+  },
+  f4_ravine_floor: {
+    id: 'f4_ravine_floor',
+    name: 'The Raid Camp',
+    icon: '⛺',
+    areaId: 'ascent_f4_area',
+    map: { x: 55, y: 70 },
+    // The raid leader's camp: one fight, the floor's clear. Not forced — the
+    // player walks in when ready.
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Raid the Camp', icon: '⚔️' }],
+    encounters: [{ monsterId: 'goblin_raid_leader', weight: 1, once: true, level: [9, 9] }],
+    connections: [],
+  },
+
+  // --- Floor 5: the Mire. A swamp and the caves under it: the first
+  // firetongues (burning) and hobgoblins (techniques you can learn by
+  // watching), and the dark. Searching the Hollows finds the warren's back
+  // door; the hobgoblin champion guarding it is the clear.
+  f5_causeway: {
+    id: 'f5_causeway',
+    name: 'The Causeway',
+    icon: '🪵',
+    areaId: 'ascent_f5_area',
+    map: { x: 50, y: 6 },
+    activities: [{ id: 'camp_f5', kind: 'rest', name: 'Camp on the Causeway', icon: '🏕️' }],
+    connections: [{ to: 'f5_bog', ticks: 25 }],
+  },
+  f5_bog: {
+    id: 'f5_bog',
+    name: 'The Bog',
+    icon: '🟤',
+    areaId: 'ascent_f5_area',
+    map: { x: 50, y: 20 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Bog', icon: '🏹' },
+      { id: 'explore', kind: 'explore', name: 'Wade the Bog', icon: '🌿' },
+    ],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'slime_water', weight: 30, level: [9, 10] },
+      { monsterId: 'slime_zombie', weight: 20, level: [9, 10] },
+      { monsterId: 'goblin_firetongue', weight: 25, level: [9, 10] },
+      { monsterId: 'goblin', weight: 25, level: [9, 10] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f5_bog_herbs', at: 0.3, material: { id: 'common_herb', qty: 5 } },
+      { id: 'f5_bog_purse', at: 0.8, gold: [50, 90] },
+    ],
+    connections: [
+      { to: 'f5_drowned_village', ticks: 30 },
+      { to: 'f5_cave_mouth', ticks: 30 },
+    ],
+  },
+  f5_drowned_village: {
+    id: 'f5_drowned_village',
+    name: 'The Drowned Village',
+    icon: '🛖',
+    areaId: 'ascent_f5_area',
+    map: { x: 18, y: 32 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Clear the Huts', icon: '⚔️' },
+      { id: 'explore', kind: 'explore', name: 'Search the Huts', icon: '🔍' },
+    ],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
+    encounters: [
+      { monsterId: 'goblin_firetongue', weight: 45, level: [9, 11] },
+      { monsterId: 'goblin', weight: 55, level: [9, 11] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f5_village_salves', at: 0.4, material: { id: 'healing_salve', qty: 2 } },
+      { id: 'f5_village_cache', at: 0.8, gold: [70, 120] },
+    ],
+    connections: [{ to: 'f5_cave_mouth', ticks: 35 }],
+  },
+  f5_cave_mouth: {
+    id: 'f5_cave_mouth',
+    name: 'The Cave Mouth',
+    icon: '🕳️',
+    areaId: 'ascent_f5_area',
+    map: { x: 50, y: 38 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt the Cave Mouth', icon: '🏹' }],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'hobgoblin', weight: 40, level: [9, 11] },
+      { monsterId: 'slime_spider', weight: 25, level: [9, 11] },
+      { monsterId: 'goblin', weight: 35, level: [9, 11] },
+    ],
+    connections: [{ to: 'f5_hollows', ticks: 30 }],
+  },
+  f5_hollows: {
+    id: 'f5_hollows',
+    name: 'The Hollows',
+    icon: '🦇',
+    areaId: 'ascent_f5_area',
+    map: { x: 50, y: 54 },
+    // Dark: footwork suffers until Darkvision pays it off (combat.ts).
+    tags: ['dark'],
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Hollows', icon: '🏹' },
+      { id: 'explore', kind: 'explore', name: 'Map the Hollows', icon: '🔦' },
+    ],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'hobgoblin', weight: 50, level: [10, 11] },
+      { monsterId: 'slime_spider', weight: 30, level: [10, 11] },
+      { monsterId: 'stone_golem', weight: 20, level: [10, 11] },
+    ],
+    exploreTicks: 360,
+    finds: [
+      { id: 'f5_hollows_ore', at: 0.3, material: { id: 'copper_ore', qty: 4 } },
+      { id: 'f5_hollows_door', at: 0.6, stat: { key: 'flag:f5_back_door' } },
+      { id: 'f5_hollows_scrap', at: 0.9, material: { id: 'iron_scrap', qty: 4 } },
+    ],
+    connections: [
+      {
+        to: 'f5_back_door',
+        ticks: 30,
+        label: 'To the Back Door',
+        requires: [{ type: 'stat', key: 'flag:f5_back_door', value: 1 }],
+        revealWhen: [{ type: 'stat', key: 'flag:f5_back_door', value: 1 }],
+      },
+    ],
+  },
+  f5_back_door: {
+    id: 'f5_back_door',
+    name: 'The Back Door',
+    icon: '🚪',
+    areaId: 'ascent_f5_area',
+    map: { x: 50, y: 70 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Take the Door', icon: '⚔️' }],
+    encounters: [{ monsterId: 'hobgoblin_champion', weight: 1, once: true, level: [8, 8] }],
+    connections: [],
+  },
+
+  // --- Floor 6: the Warren, two maps. The outer warren (mouth, tunnels,
+  // pens, kitchens, shrine) and, down the drop, the deep encampment. Each of
+  // the three sabotages takes a level off the warchief (11 with none, 8 with
+  // all three), the floor 3 pattern. Arriving in the great hall is the fight.
+  f6_warren_mouth: {
+    id: 'f6_warren_mouth',
+    name: 'The Warren Mouth',
+    icon: '🕳️',
+    areaId: 'ascent_f6_area',
+    map: { x: 50, y: 6 },
+    activities: [{ id: 'camp_f6', kind: 'rest', name: 'Camp at the Mouth', icon: '🏕️' }],
+    connections: [{ to: 'f6_tunnels', ticks: 20 }],
+  },
+  f6_tunnels: {
+    id: 'f6_tunnels',
+    name: 'The Tunnels',
+    icon: '🪨',
+    areaId: 'ascent_f6_area',
+    map: { x: 50, y: 20 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight Through the Tunnels', icon: '⚔️' }],
+    groupWeights: { 1: 50, 2: 30, 3: 20 },
+    encounters: [
+      { monsterId: 'goblin', weight: 40, level: [10, 12] },
+      { monsterId: 'hobgoblin', weight: 30, level: [10, 12] },
+      { monsterId: 'goblin_firetongue', weight: 15, level: [10, 12] },
+      { monsterId: 'goblin_witch_doctor', weight: 15, level: [10, 12] },
+    ],
+    connections: [
+      { to: 'f6_pens', ticks: 20 },
+      { to: 'f6_kitchens', ticks: 20 },
+      { to: 'f6_shrine', ticks: 25 },
+    ],
+  },
+  f6_pens: {
+    id: 'f6_pens',
+    name: 'The Pens',
+    icon: '🐗',
+    areaId: 'ascent_f6_area',
+    map: { x: 18, y: 20 },
+    activities: [{ id: 'explore', kind: 'explore', name: 'Break Open the Pens', icon: '🔓' }],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f6_pens_meat', at: 0.3, material: { id: 'raw_meat', qty: 4 } },
+      { id: 'f6_pens_sabotage', at: 0.7, stat: { key: 'flag:f6_sabotage' } },
+    ],
+    connections: [],
+  },
+  f6_kitchens: {
+    id: 'f6_kitchens',
+    name: 'The Kitchens',
+    icon: '🍲',
+    areaId: 'ascent_f6_area',
+    map: { x: 82, y: 20 },
+    activities: [{ id: 'explore', kind: 'explore', name: 'Foul the Stores', icon: '🧪' }],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f6_kitchens_food', at: 0.3, material: { id: 'rustic_loaf', qty: 3 } },
+      { id: 'f6_kitchens_sabotage', at: 0.7, stat: { key: 'flag:f6_sabotage' } },
+    ],
+    connections: [],
+  },
+  f6_shrine: {
+    id: 'f6_shrine',
+    name: 'The Shrine',
+    icon: '🗿',
+    areaId: 'ascent_f6_area',
+    map: { x: 50, y: 34 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Clear the Shrine', icon: '⚔️' },
+      { id: 'explore', kind: 'explore', name: 'Desecrate the Shrine', icon: '🔥' },
+    ],
+    groupWeights: { 1: 60, 2: 40 },
+    encounters: [
+      { monsterId: 'goblin_witch_doctor', weight: 50, level: [11, 12] },
+      { monsterId: 'goblin_firetongue', weight: 50, level: [11, 12] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f6_shrine_offering', at: 0.3, gold: [80, 140] },
+      { id: 'f6_shrine_sabotage', at: 0.7, stat: { key: 'flag:f6_sabotage' } },
+    ],
+    connections: [{ to: 'f6_drop', ticks: 30, label: 'Down the Drop', returnLabel: 'Back Up the Drop' }],
+  },
+  f6_drop: {
+    id: 'f6_drop',
+    name: 'The Drop',
+    icon: '🕳️',
+    areaId: 'ascent_f6_area',
+    map: { x: 50, y: 52 },
+    tags: ['dark'],
+    activities: [
+      { id: 'camp_f6_deep', kind: 'rest', name: 'Camp in the Drop', icon: '🏕️' },
+      { id: 'hunt', kind: 'hunt', name: 'Hold the Drop', icon: '⚔️' },
+    ],
+    groupWeights: { 1: 40, 2: 35, 3: 25 },
+    encounters: [
+      { monsterId: 'hobgoblin', weight: 45, level: [11, 13] },
+      { monsterId: 'goblin_witch_doctor', weight: 20, level: [11, 13] },
+      { monsterId: 'goblin_firetongue', weight: 20, level: [11, 13] },
+      { monsterId: 'goblin', weight: 15, level: [11, 13] },
+    ],
+    connections: [{ to: 'f6_great_hall', ticks: 30, label: 'Into the Great Hall' }],
+  },
+  f6_great_hall: {
+    id: 'f6_great_hall',
+    name: 'The Great Hall',
+    icon: '🔥',
+    areaId: 'ascent_f6_area',
+    map: { x: 50, y: 70 },
+    forced: true,
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Face the Warchief', icon: '⚔️' }],
+    // One line per sabotage count, as on floor 3: every sabotage is a level
+    // off. `once` latches slain:f6_great_hall:goblin_warchief, the clear and
+    // PRESTIGE_UNLOCK.
+    encounters: [
+      { monsterId: 'goblin_warchief', weight: 1, once: true, level: [11, 11], requires: [{ type: 'statMax', key: 'flag:f6_sabotage', value: 0 }] },
+      { monsterId: 'goblin_warchief', weight: 1, once: true, level: [10, 10], requires: [{ type: 'stat', key: 'flag:f6_sabotage', value: 1 }, { type: 'statMax', key: 'flag:f6_sabotage', value: 1 }] },
+      { monsterId: 'goblin_warchief', weight: 1, once: true, level: [9, 9], requires: [{ type: 'stat', key: 'flag:f6_sabotage', value: 2 }, { type: 'statMax', key: 'flag:f6_sabotage', value: 2 }] },
+      { monsterId: 'goblin_warchief', weight: 1, once: true, level: [8, 8], requires: [{ type: 'stat', key: 'flag:f6_sabotage', value: 3 }] },
     ],
     connections: [],
   },

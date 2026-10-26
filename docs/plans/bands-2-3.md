@@ -208,6 +208,42 @@ One builder at a time; each step merges before the next starts.
 6. Band 3: the castle and four direction floors, sketch fidelity.
 7. John through floor 10.
 
+Done so far: 0 (PRs #15–#21; trial-merge still held), 2 (#22), and 1 + 3
+below.
+
+### Floors 4–6 as built (2026-10-25, branch `band2-floors`)
+
+Band `ascent_middle`, renamed "The Wilds". Every hunt is endless; only the
+three boss rooms have a `fightLimit` (1). Gates read `kills:tag:goblin`.
+
+| Floor | Spots (landing first) | Gate | Clear |
+|---|---|---|---|
+| 4 Greenwood | treeline, woods edge, deep woods, barrow hills (wing joining the edge and the rim), ravine rim, raid camp | — | `slain:f4_ravine_floor:goblin_raid_leader` (new veteran, L9, two goblins) |
+| 5 Mire | causeway, bog, drowned village (wing joining the bog and the cave mouth), cave mouth, the Hollows (dark), back door | 12 goblins | `slain:f5_back_door:hobgoblin_champion` (now elite, L8, one hobgoblin) |
+| 6 Warren | mouth, tunnels, pens, kitchens, shrine; down the drop (dark, a haven): the great hall | 40 goblins | `slain:f6_great_hall:goblin_warchief` (new elite, two escorts, L11 down to L8 by sabotage) |
+
+- **M1:** `PRESTIGE_UNLOCK` is the warchief's kill. The harvest's floors source
+  now pays 6 points for a first run instead of 3.
+- **M2 needed no code:** floor 0's road out is one-way and it is off the
+  ladder, so a run that starts at the Foot cannot reach it. `tests/band2.test.ts`
+  asserts it.
+- **Materials:** herbs and berries (floor 4 foraging, the bog), game meat
+  (wildlife drops, the pens), copper ore (the barrows, the Hollows), iron scrap.
+- **John** climbs through floor 6 with `through: 6` (`tests/john.ts`), walking
+  each new floor in order because floors start fogged. Measured on four climbs
+  after tuning: floor 6 cleared 19–28 minutes into the run; most bosses
+  beaten first try; the weak case is a plain hammer against the unsabotaged
+  warchief (13 losses). The first draft (legendary bosses at L13 and L18 with
+  full squads) took 29–171 losses against the champion and 45–184 against
+  the warchief.
+- **Not built yet from the spine:** the sabotages only take levels off; each
+  weakening a different part of the fight is open. Variant bosses, rolled
+  raid parties as their own encounter, and knowledge carrying across prestige
+  are open. There is no forest scene: floor 4's banner falls back to the town.
+- **Tuning note (user, 2026-10-25):** smithing XP is too fast (one iron
+  nodachi is about seven Smithing levels), and the Growth panel can show skill
+  XP ×2.5 on a modest save. Tuning later, not part of this card.
+
 ## 7. Questions
 
 ### Answered (user, 2026-10-24)

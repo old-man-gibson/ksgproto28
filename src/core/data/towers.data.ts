@@ -64,7 +64,7 @@ export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
   },
   ascent_middle: {
     id: 'ascent_middle',
-    name: 'The Middle Galleries',
+    name: 'The Wilds',
     towerId: 'the_ascent',
     index: 2,
     clearsToAdvance: 2,
@@ -153,5 +153,44 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     // 2026-10-21; that floor is on the shelf.)
     clear: [{ type: 'stat', key: 'slain:f3_hearing_room:puppet_bureaucrat', value: 1 }],
     clearXp: 200,
+  },
+  // ---- Band 2: the Wilds (docs/plans/bands-2-3.md), sketch fidelity. Every
+  // hunt on these floors is endless, so each gate reads goblin kills, which
+  // any den in the band pays (COMPLETABILITY §2: an endless source).
+  ascent_f4: {
+    id: 'ascent_f4',
+    name: 'The Greenwood',
+    towerId: 'the_ascent',
+    bandId: 'ascent_middle',
+    index: 4,
+    areaId: 'ascent_f4_area',
+    landing: 'f4_treeline',
+    clear: [{ type: 'stat', key: 'slain:f4_ravine_floor:goblin_raid_leader', value: 1 }],
+    clearXp: 250,
+  },
+  ascent_f5: {
+    id: 'ascent_f5',
+    name: 'The Mire',
+    towerId: 'the_ascent',
+    bandId: 'ascent_middle',
+    index: 5,
+    areaId: 'ascent_f5_area',
+    landing: 'f5_causeway',
+    gate: [{ type: 'stat', key: 'kills:tag:goblin', value: 12 }],
+    clear: [{ type: 'stat', key: 'slain:f5_back_door:hobgoblin_champion', value: 1 }],
+    clearXp: 300,
+  },
+  ascent_f6: {
+    id: 'ascent_f6',
+    name: 'The Warren',
+    towerId: 'the_ascent',
+    bandId: 'ascent_middle',
+    index: 6,
+    areaId: 'ascent_f6_area',
+    landing: 'f6_warren_mouth',
+    gate: [{ type: 'stat', key: 'kills:tag:goblin', value: 40 }],
+    // The warchief's kill: also PRESTIGE_UNLOCK (prestige.data.ts).
+    clear: [{ type: 'stat', key: 'slain:f6_great_hall:goblin_warchief', value: 1 }],
+    clearXp: 400,
   },
 });

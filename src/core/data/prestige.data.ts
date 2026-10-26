@@ -16,9 +16,14 @@ import { PRESTIGE_BOONS_TEXT } from '../text/prestige.text';
  * "show the tab when the player defeats the spider queen"; since the floors
  * redesign (2026-10-21) that boss is the puppet bureaucrat. Same latch the
  * floor's clear reads, so the two can never disagree.
+ *
+ * Moved to floor 6 (user, 2026-10-24, docs/plans/bands-2-3.md R1): the goblin
+ * warchief at the bottom of band 2. A run now climbs six floors before it can
+ * reset. A save that killed the bureaucrat but never prestiged loses the tab
+ * until floor 6 (accepted, Q7); a save that has prestiged keeps it.
  */
 export const PRESTIGE_UNLOCK: UnlockCondition[] = [
-  { type: 'stat', key: 'slain:f3_hearing_room:puppet_bureaucrat', value: 1 },
+  { type: 'stat', key: 'slain:f6_great_hall:goblin_warchief', value: 1 },
 ];
 
 /**
