@@ -135,14 +135,57 @@
   </div>
 
   {#if anvil.view === 'chart'}
-    <FormChart />
+    <div class="chart-view"><FormChart /></div>
   {:else}
-    <div class="top">
-      <div class="plate">
-        <ForgeSilhouette {placement} label={empty ? 'Empty anvil' : preview.def.name} />
+    <!-- Three columns that scroll on their own: the piece and the forge buttons,
+         what it resolves to, and the parts. Changing a part never moves the
+         numbers out of view. -->
+    <div class="work">
+      <div class="col col-piece">
+        <div class="plate">
+          <ForgeSilhouette {placement} label={empty ? 'Empty anvil' : preview.def.name} />
+        </div>
+
+        <div class="run-bar">
+          {#if job}
+            {@const single = job.done === 0 && job.remaining === 1}
+            <div class="run">
+              <div class="progress">
+                <div
+                  class="progress-fill"
+                  style="width: {((1 - Math.max(0, job.ticksLeft) / job.ticksPer) * 100).toFixed(1)}%"
+                ></div>
+              </div>
+              <span class="small dim">
+                {(Math.max(0, job.ticksLeft) / 10).toFixed(1)}s
+                {#if !single}
+                  · {job.done}{job.remaining != null ? ` / ${job.done + job.remaining}` : ''} done
+                {/if}
+                {#if job.batch > 1}· ×{job.batch} per pass{/if}
+              </span>
+            </div>
+            <button class="small" onclick={() => game.stopBenchWork()}>Stop</button>
+          {:else}
+            <button disabled={!preview.ok} onclick={() => game.forge(placement, 1)}>
+              {FORGING.icon} {FORGING.verb}
+            </button>
+            {#if affordableCopies >= 2}
+              <button class="small" disabled={!preview.ok} onclick={() => game.forge(placement, batchCopies)}>
+                ×{batchCopies}
+              </button>
+              <button class="small" disabled={!preview.ok} onclick={() => game.forge(placement, null)}>
+                Until out of stock
+              </button>
+            {/if}
+            <button class="small" onclick={clear}>Clear</button>
+          {/if}
+        </div>
+        {#if !preview.ok && !job}
+          <div class="small reason">{preview.reason}</div>
+        {/if}
       </div>
 
-      <div class="readout">
+      <div class="col col-info">
         {#if empty}
           <div>
             <div class="small dim">Resolves to</div>
@@ -230,116 +273,85 @@
           </div>
         {/if}
       </div>
-    </div>
 
-    <div class="run-bar">
-      {#if job}
-        {@const single = job.done === 0 && job.remaining === 1}
-        <div class="run">
-          <div class="progress">
-            <div
-              class="progress-fill"
-              style="width: {((1 - Math.max(0, job.ticksLeft) / job.ticksPer) * 100).toFixed(1)}%"
-            ></div>
-          </div>
-          <span class="small dim">
-            {(Math.max(0, job.ticksLeft) / 10).toFixed(1)}s
-            {#if !single}
-              · {job.done}{job.remaining != null ? ` / ${job.done + job.remaining}` : ''} done
-            {/if}
-            {#if job.batch > 1}· ×{job.batch} per pass{/if}
-          </span>
-        </div>
-        <button class="small" onclick={() => game.stopBenchWork()}>Stop</button>
-      {:else}
-        <button disabled={!preview.ok} onclick={() => game.forge(placement, 1)}>
-          {FORGING.icon} {FORGING.verb}
-        </button>
-        {#if affordableCopies >= 2}
-          <button class="small" disabled={!preview.ok} onclick={() => game.forge(placement, batchCopies)}>
-            ×{batchCopies}
-          </button>
-          <button class="small" disabled={!preview.ok} onclick={() => game.forge(placement, null)}>
-            Until out of stock
-          </button>
-        {/if}
-        <button class="small" onclick={clear}>Clear</button>
-      {/if}
-    </div>
-    {#if !preview.ok && !job}
-      <div class="small reason">{preview.reason}</div>
-    {/if}
-
-    <div class="slots">
-      {#each FORGING.slots as def (def.id)}
-        {@const slot = def.id as ForgeSlot}
-        {@const part = placement[slot]}
-        {@const partKind = part ? PART_KINDS[part.kind] : undefined}
-        {@const lock = preview.slotLocks[slot]}
-        <div class="slot">
-          <h4 class="slot-name">
-            {def.name}
-            {#if def.unlockLevel}<small class="dim">Smithing {def.unlockLevel}</small>{/if}
-          </h4>
-          <div class="slot-body">
-            {#if lock !== undefined}
-              <div class="small dim">The {def.name.toLowerCase()} slot opens at Smithing {lock}.</div>
-              {#if part}<button class="small" onclick={() => setPart(slot, null)}>Clear the slot</button>{/if}
-            {:else}
-              <div class="picks">
-                <button class="small" class:selected={!part} onclick={() => setPart(slot, null)}>none</button>
-                {#each kindsByRole(roleOf(slot)) as kind (kind.id)}
-                  <button
-                    class="small pick"
-                    class:selected={part?.kind === kind.id}
-                    title="{kind.w}×{kind.l} = {kind.w * kind.l} cells"
-                    onclick={() => setPart(slot, kind.id)}
-                  >
-                    <span class="glyph" style="grid-template-columns: repeat({Math.min(kind.w, 4)}, 3px)" aria-hidden="true">
-                      {#each { length: Math.min(kind.w, 4) * Math.min(kind.l, 10) } as _}<i></i>{/each}
-                    </span>
-                    {kind.name}
-                    <span class="dim">{kind.w}×{kind.l}</span>
-                  </button>
-                {/each}
-              </div>
-              {#if part && partKind}
-                <div class="mats">
-                  {#each offeredMaterials(partKind, gs.materials, part.mat) as mat (mat.id)}
-                    <button class="small" class:selected={part.mat === mat.id} onclick={() => setMaterial(slot, mat.id)}>
-                      <span class="swatch" style="background: {materialColor(mat.id)}"></span>
-                      {mat.name}
-                      <span class="dim">{gs.materials[mat.id] ?? 0}</span>
-                    </button>
-                  {/each}
-                  {#if (partKind.qtyMax ?? 1) > 1}
-                    <span class="stepper">
-                      <span class="small dim">count</span>
-                      <button class="small" aria-label="Fewer" disabled={(part.qty ?? 1) <= 1} onclick={() => stepQty(slot, -1)}>−</button>
-                      <span>{part.qty ?? 1}</span>
+      <div class="col col-parts">
+        <div class="slots">
+          {#each FORGING.slots as def (def.id)}
+            {@const slot = def.id as ForgeSlot}
+            {@const part = placement[slot]}
+            {@const partKind = part ? PART_KINDS[part.kind] : undefined}
+            {@const lock = preview.slotLocks[slot]}
+            <div class="slot">
+              <h4 class="slot-name">
+                {def.name}
+                {#if def.unlockLevel}<small class="dim">Smithing {def.unlockLevel}</small>{/if}
+              </h4>
+              <div class="slot-body">
+                {#if lock !== undefined}
+                  <div class="small dim">The {def.name.toLowerCase()} slot opens at Smithing {lock}.</div>
+                  {#if part}<button class="small" onclick={() => setPart(slot, null)}>Clear the slot</button>{/if}
+                {:else}
+                  <div class="picks">
+                    <button class="small" class:selected={!part} onclick={() => setPart(slot, null)}>none</button>
+                    {#each kindsByRole(roleOf(slot)) as kind (kind.id)}
                       <button
-                        class="small"
-                        aria-label="More"
-                        disabled={(part.qty ?? 1) >= (partKind.qtyMax ?? 1)}
-                        onclick={() => stepQty(slot, 1)}>+</button
+                        class="small pick"
+                        class:selected={part?.kind === kind.id}
+                        title="{kind.w}×{kind.l} = {kind.w * kind.l} cells"
+                        onclick={() => setPart(slot, kind.id)}
                       >
-                    </span>
+                        <span class="glyph" style="grid-template-columns: repeat({Math.min(kind.w, 4)}, 3px)" aria-hidden="true">
+                          {#each { length: Math.min(kind.w, 4) * Math.min(kind.l, 10) } as _}<i></i>{/each}
+                        </span>
+                        {kind.name}
+                        <span class="dim">{kind.w}×{kind.l}</span>
+                      </button>
+                    {/each}
+                  </div>
+                  {#if part && partKind}
+                    <div class="mats">
+                      {#each offeredMaterials(partKind, gs.materials, part.mat) as mat (mat.id)}
+                        <button class="small" class:selected={part.mat === mat.id} onclick={() => setMaterial(slot, mat.id)}>
+                          <span class="swatch" style="background: {materialColor(mat.id)}"></span>
+                          {mat.name}
+                          <span class="dim">{gs.materials[mat.id] ?? 0}</span>
+                        </button>
+                      {/each}
+                      {#if (partKind.qtyMax ?? 1) > 1}
+                        <span class="stepper">
+                          <span class="small dim">count</span>
+                          <button class="small" aria-label="Fewer" disabled={(part.qty ?? 1) <= 1} onclick={() => stepQty(slot, -1)}>−</button>
+                          <span>{part.qty ?? 1}</span>
+                          <button
+                            class="small"
+                            aria-label="More"
+                            disabled={(part.qty ?? 1) >= (partKind.qtyMax ?? 1)}
+                            onclick={() => stepQty(slot, 1)}>+</button
+                          >
+                        </span>
+                      {/if}
+                    </div>
                   {/if}
-                </div>
-              {/if}
-            {/if}
-          </div>
+                {/if}
+              </div>
+            </div>
+          {/each}
         </div>
-      {/each}
+      </div>
     </div>
   {/if}
 </div>
 
 <style>
+  /* Fills the window's body (Modal `fill`): the switch on top, the work area
+     takes the rest of the height, and each column scrolls on its own. */
   .anvil {
     display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 12px;
     min-width: 0;
+    height: 100%;
+    min-height: 0;
   }
 
   .view-switch {
@@ -347,15 +359,60 @@
     gap: 6px;
   }
 
-  .top {
-    display: grid;
-    grid-template-columns: minmax(150px, 230px) 1fr;
-    gap: 16px;
+  .chart-view {
+    min-height: 0;
+    overflow: auto;
   }
 
-  @media (max-width: 560px) {
-    .top {
+  .work {
+    display: grid;
+    grid-template-areas: 'piece info parts';
+    grid-template-columns: minmax(170px, 0.7fr) minmax(250px, 1fr) minmax(300px, 1.3fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 18px;
+    min-height: 0;
+  }
+
+  .col {
+    display: grid;
+    gap: 9px;
+    align-content: start;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .col-piece {
+    grid-area: piece;
+  }
+
+  .col-info {
+    grid-area: info;
+  }
+
+  .col-parts {
+    grid-area: parts;
+  }
+
+  /* Phone: one column, and the window body scrolls instead (Modal `fill`). */
+  @media (max-width: 900px) {
+    .anvil {
+      height: auto;
+    }
+
+    .work {
+      grid-template-areas:
+        'piece'
+        'info'
+        'parts';
       grid-template-columns: 1fr;
+      grid-template-rows: auto;
+    }
+
+    .col {
+      overflow: visible;
+      padding-right: 0;
     }
   }
 
@@ -373,13 +430,6 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
-  }
-
-  .readout {
-    display: grid;
-    gap: 9px;
-    align-content: start;
-    min-width: 0;
   }
 
   .form-name {
@@ -477,7 +527,6 @@
 
   .reason {
     color: var(--danger);
-    margin-top: -6px;
   }
 
   .run {

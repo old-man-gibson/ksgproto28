@@ -330,6 +330,12 @@ which covers a hard reset, an import and a prestige without hooking any of them.
   that form is known), then the five slot pickers. A shut slot shows its
   Smithing level. Forge, ×N (up to 5, as many as the pack pays for) and "until
   out of stock" call `Game.forge`.
+- **Layout (user, 2026-10-25: "I have to constantly scroll to see what changes
+  when I use different parts").** Three columns that scroll on their own: the
+  piece with the forge buttons under it, then what it resolves to (name,
+  chips, stats, bill, "one change away"), then the slot pickers. The window is
+  `Modal fill` (most of the screen, fixed height, no body scroll); under 900px
+  it is one column and the window body scrolls.
 - **Material choices.** Each part lists the forgeable materials it accepts that
   the pack holds, plus the one already in the slot. When nothing accepted is
   held, one stand-in per accepted tag (iron for metal) is offered as well, even
