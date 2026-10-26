@@ -601,17 +601,11 @@
   }
 
   /* The plate the piece is drawn on: a well with a faint cell grid. */
+  /* The drawing brings its own drafting grid (ForgeSilhouette), cell-aligned; the plate only frames it. */
   .plate {
     position: relative;
     display: grid;
-    place-items: center;
-    min-height: 240px;
-    padding: 10px;
     background-color: var(--bg-sunken);
-    background-image:
-      linear-gradient(color-mix(in srgb, var(--border) 45%, transparent) 1px, transparent 1px),
-      linear-gradient(90deg, color-mix(in srgb, var(--border) 45%, transparent) 1px, transparent 1px);
-    background-size: 20px 20px;
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
@@ -905,7 +899,9 @@
     color: var(--danger);
   }
 
-  @container (max-width: 500px) {
+  /* Stack only when the column is genuinely narrow: the three-column window's parts
+     column is about 490px, and one line per kind is what keeps the table scannable. */
+  @container (max-width: 420px) {
     .kind-head {
       display: none;
     }

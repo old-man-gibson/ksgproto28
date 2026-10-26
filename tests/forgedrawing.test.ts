@@ -116,5 +116,6 @@ describe('the pattern drawing', () => {
     }
     expect(checked).toBeGreaterThan(1000);
     expect(misses.slice(0, 5)).toEqual([]);
-  });
+    // About 4 s alone; the full suite runs files in parallel, so allow well past the 5 s default.
+  }, 60_000);
 });
