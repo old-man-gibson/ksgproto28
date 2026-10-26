@@ -455,8 +455,10 @@
                               onblur={() => endPreview(slot, row.kind.id)}
                             >
                               <span class="kind-name">
-                                {@render glyph(row.kind)}
-                                <span>{row.kind.name}</span>
+                                <span class="kind-title">
+                                  {@render glyph(row.kind)}
+                                  <span>{row.kind.name}</span>
+                                </span>
                                 <span class="dim">{row.kind.w}×{row.kind.l}</span>
                                 {#if row.current}<span class="kind-tag">current</span>{/if}
                               </span>
@@ -855,6 +857,14 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 1px 7px;
+    min-width: 0;
+  }
+
+  /* The glyph stays beside the first word of the name; the size and the tag wrap under them. */
+  .kind-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
     min-width: 0;
   }
 
