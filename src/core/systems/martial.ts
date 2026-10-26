@@ -7,7 +7,8 @@ import type {
   TechniqueDef,
   TechniqueEntry,
   TechniqueForm,
-  TechniqueLesson,
+  Lesson,
+  SchoolLesson,
   TechniqueMove,
   TechniqueState,
 } from '../types';
@@ -35,7 +36,8 @@ import { weaponTechniqueMods } from './runes';
 import { preparedSpells, resolveSpell } from './spellcraft';
 import { resourceValue } from './resources';
 import { subsystemUnlocked } from './unlocks';
-import { NPCS } from '../registry';
+import { NPCS, SKILLS } from '../registry';
+import { setStat } from './achievements';
 import { itemDefOf } from './assembly';
 import { text } from '../text/log';
 
@@ -226,7 +228,11 @@ export function checkTechniqueLearning(state: GameState, bus: EventBus): void {
  */
 export type LessonState = 'open' | 'held' | 'taught';
 
-export function lessonState(state: GameState, lesson: TechniqueLesson): LessonState {
+export function lessonState(state: GameState, lesson: Lesson): LessonState {
+  if ('school' in lesson) {
+    if (state.skills[lesson.school]) return 'taught';
+    return lesson.requires && !conditionsMet(state, lesson.requires) ? 'held' : 'open';
+  }
   if (techniqueForm(state, lesson.technique) === 'canonical') return 'taught';
   if (lesson.requires && !conditionsMet(state, lesson.requires)) return 'held';
   const def = TECHNIQUES[lesson.technique];
@@ -242,7 +248,7 @@ export function lessonState(state: GameState, lesson: TechniqueLesson): LessonSt
  * Teaching ignores the `martial` shutter.
  */
 export function teachTechnique(state: GameState, bus: EventBus, npcId: string, techniqueId: string): boolean {
-  const lesson = NPCS[npcId]?.teaches?.find((l) => l.technique === techniqueId);
+  const lesson = NPCS[npcId]?.teaches?.find((l) => 'technique' in l && l.technique === techniqueId);
   const def = TECHNIQUES[techniqueId];
   if (!lesson || !def || lessonState(state, lesson) !== 'open') return false;
   const refined = techniqueForm(state, def.id) === 'rough';
@@ -254,6 +260,42 @@ export function teachTechnique(state: GameState, bus: EventBus, npcId: string, t
       name: def.name,
       teacher: NPCS[npcId].name,
     }),
+    kind: 'skill',
+  });
+  return true;
+}
+
+/** The stat a school lesson stamps; the school's skill names it in `unlock`. */
+export function schoolTaughtKey(skillId: string): string {
+  return `taught:${skillId}`;
+}
+
+/** The lesson that teaches this school, and who gives it — for the skill tree's hint. */
+export function schoolTeacher(skillId: string): { npcId: string; lesson: SchoolLesson } | null {
+  for (const npc of Object.values(NPCS)) {
+    for (const lesson of npc.teaches ?? []) {
+      if ('school' in lesson && lesson.school === skillId) return { npcId: npc.id, lesson };
+    }
+  }
+  return null;
+}
+
+/**
+ * Take a school lesson: stamp `taught:<skill>` and manifest the school's skill
+ * at level 1, so its stance opens at once. Refused for a school this NPC does
+ * not teach, an unmet requirement, or one already known. The skill's other
+ * `unlock` conditions are not checked: the lesson's `requires` is the gate.
+ */
+export function teachSchool(state: GameState, bus: EventBus, npcId: string, skillId: string): boolean {
+  const lesson = NPCS[npcId]?.teaches?.find((l): l is SchoolLesson => 'school' in l && l.school === skillId);
+  const def = SKILLS[skillId];
+  if (!lesson || !def || lessonState(state, lesson) !== 'open') return false;
+  setStat(state, bus, schoolTaughtKey(skillId), 1);
+  state.skills[skillId] = { level: 1, xp: 0 };
+  bus.emit({ type: 'skill:unlock', id: skillId });
+  bus.emit({
+    type: 'log',
+    msg: text('martial.school_taught', { icon: def.icon, name: def.name, teacher: NPCS[npcId].name }),
     kind: 'skill',
   });
   return true;

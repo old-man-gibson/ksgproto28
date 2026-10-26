@@ -224,6 +224,7 @@ export const LOG_TEXT = {
   'martial.technique_learned': '🥋 Technique learned (rough): {icon} {name}.',
   'martial.technique_taught': '🥋 {teacher} teaches you {icon} {name} (canonical form).',
   'martial.technique_refined': '🥋 {teacher} corrects your {icon} {name}: canonical form, practice kept.',
+  'martial.school_taught': '🥋 {teacher} teaches you the {icon} {name} school. Its stance is now in the Combat tab.',
 
   // ---------- music ----------
   'music.stopped': '⏹️ Performance stopped{reason}.',

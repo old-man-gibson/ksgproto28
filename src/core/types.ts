@@ -4711,15 +4711,30 @@ export interface NpcDef {
    * lesson grants the CANONICAL form, or upgrades a rough one, through
    * `teachTechnique` in systems/martial.ts. Teaching ignores the `martial`
    * shutter on purpose: while it is shut, teachers are the only way in.
+   * A school lesson manifests a combat school's skill instead (`teachSchool`).
    */
-  teaches?: TechniqueLesson[];
+  teaches?: Lesson[];
 }
 
-/** One lesson on a teacher's list. */
+/** One lesson on a teacher's list: a technique, or a whole combat school. */
+export type Lesson = TechniqueLesson | SchoolLesson;
+
 export interface TechniqueLesson {
   /** A TECHNIQUES id. */
   technique: string;
   /** Held back until these hold — a curriculum, not a price list. */
+  requires?: UnlockCondition[];
+}
+
+/**
+ * A school taught rather than found. The school's skill declares
+ * `{ type: 'stat', key: schoolTaughtKey(id), value: 1 }` in its `unlock`, so
+ * it never manifests on its own; the lesson stamps that key and manifests the
+ * skill at level 1 (systems/martial.ts `teachSchool`).
+ */
+export interface SchoolLesson {
+  /** A SKILLS id, the school's skill (e.g. 'school_magic_combat'). */
+  school: string;
   requires?: UnlockCondition[];
 }
 

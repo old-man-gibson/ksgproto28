@@ -840,6 +840,26 @@ hall_tutor: {
   Order lessons so each one's way in is taught first.
 - Both validation layers check that each lesson names a real technique, once.
 
+**A school lesson** teaches a whole combat school (its skill, and so its
+stance) instead of a technique. Magic Combat is the first (user, 2026-10-25):
+
+```ts
+teaches: [
+  { school: 'school_magic_combat', requires: [/* what the skill used to manifest on */] },
+],
+// and on the school's skill in skills.data.ts, as the LAST unlock condition:
+unlock: [..., { type: 'stat', key: 'taught:school_magic_combat', value: 1 }],
+```
+
+- `teachSchool` (systems/martial.ts) stamps `taught:<skill>` and manifests the
+  skill at level 1; its stance appears in the Combat tab at once. Without the
+  stamp the skill never manifests from fighting, which is the point.
+- Keep the skill's other conditions in its `unlock`: the skill tree uses them
+  to reveal it as the player gets close, and prints the stamp as "lessons from
+  <teacher>".
+- Both validation layers fail a school lesson whose skill does not wait on
+  `taught:<skill>`, and the counter lint fails a `taught:` key no NPC teaches.
+
 ### Shop (a `shop` on an `NpcDef`)
 
 A vendor is an NPC with wares. Nothing about a shop is saved: stock is

@@ -37,7 +37,7 @@
   import { describeMod, grantLine, fmt } from '../lib/format';
   import { stockOf } from '../../core/systems/disciplines';
   import type { ShopLine } from '../../core/types';
-  import { QUESTS } from '../../core/registry';
+  import { QUESTS, SKILLS, STYLES } from '../../core/registry';
   import { ticksToTime, condsText, factorLabel, attrSplitText } from '../lib/format';
   import MapCard from '../MapCard.svelte';
   import SceneBackdrop from '../lib/SceneBackdrop.svelte';
@@ -381,10 +381,31 @@
           {#if npc.teaches?.length}
             <div class="lessons">
               <b class="small">🥋 Training</b>
-              {#each npc.teaches as lesson (lesson.technique)}
-                {@const tech = TECHNIQUES[lesson.technique]}
+              {#each npc.teaches as lesson ('technique' in lesson ? lesson.technique : lesson.school)}
+                {@const tech = 'technique' in lesson ? TECHNIQUES[lesson.technique] : undefined}
+                {@const school = 'school' in lesson ? SKILLS[lesson.school] : undefined}
                 {@const status = lessonState(gs, lesson)}
-                {#if tech}
+                {#if school}
+                  <!-- A school lesson: the skill and the stance it opens. -->
+                  {@const stance = Object.values(STYLES).find((s) => s.skill === school.id)}
+                  <div class="quest-row">
+                    <div>
+                      <b>{school.icon} {school.name}</b>
+                      <span class="dim small">School{stance ? ` · ${stance.name} stance` : ''}</span>
+                      {#if stance}<div class="dim small">{stance.desc}</div>{/if}
+                      {#if status === 'held' && lesson.requires}
+                        <div class="dim small">Needs {condsText(lesson.requires)}</div>
+                      {/if}
+                    </div>
+                    {#if status === 'taught'}
+                      <span class="met small">✓ learned</span>
+                    {:else}
+                      <button class="small" disabled={status === 'held'} onclick={() => game.learnSchoolFromTeacher(npc.id, school.id)}>
+                        Learn
+                      </button>
+                    {/if}
+                  </div>
+                {:else if tech && 'technique' in lesson}
                   {@const from = declaredPositions(tech)}
                   <div class="quest-row">
                     <div>

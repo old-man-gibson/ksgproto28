@@ -13,7 +13,7 @@ export const STYLES_TEXT: ProseTable = {
 
   'cleave.desc': 'Cleave stance. +20% damage, +10% splash, −5% dodge. Exertion: 5% stamina per attack for +10% damage and +25% splash on that hit.',
 
-  'quick.desc': 'Quick stance. +30% attack speed, −10% damage. Exertion: 2.5% stamina per attack, building +3% attack speed per exchange up to +45% for the rest of the fight.',
+  'quick.desc': 'Quick stance. +30% attack speed, −10% damage. Exertion: 2.5% stamina per attack. Each exerting attack builds momentum: +3% attack speed per exchange, up to +45%, for the rest of the fight. Techniques with momentum (Gather) add to it. Momentum resets when the fight ends.',
 
   'evasive.desc': 'Evasive stance. +12% dodge, +10% attack speed, −10% damage. Exertion: 5% stamina per incoming attack for +20% dodge against it.',
 
@@ -29,7 +29,7 @@ export const STYLES_TEXT: ProseTable = {
 
   'eishin_ryu.desc': 'Katana school replacing Finesse. +18% crit, +60% crit damage, −5% damage; crit and crit damage scale with the school\'s level. Exertion: 7% stamina per attack for +15% crit and −10% attack speed.',
 
-  'ittou_ryu_style.desc': 'Katana school replacing Quick. +35% attack speed, +10% crit, +30% crit damage, −5% damage; crit and crit damage scale with the school\'s level. Exertion: 3% stamina per attack, building +3.5% attack speed per exchange up to +50% for the rest of the fight.',
+  'ittou_ryu_style.desc': 'Katana school replacing Quick. +35% attack speed, +10% crit, +30% crit damage, −5% damage; crit and crit damage scale with the school\'s level. Exertion: 3% stamina per attack. Each exerting attack builds momentum: +3.5% attack speed per exchange, up to +50%, for the rest of the fight. Techniques with momentum (Gather) add to it. Momentum resets when the fight ends.',
 
   'destreza.desc': 'Rapier school replacing Evasive. +14% parry, +25% riposte, +4% dodge, +4% crit, −10% damage; parry and riposte scale with the school\'s level. Exertion: 5.5% stamina per incoming attack for +18% parry against it.',
 

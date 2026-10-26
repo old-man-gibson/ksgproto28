@@ -217,7 +217,12 @@ breakdown behind the tooltip (`steps` carries a `{ label: <name>, mult }` row).
   `combat.momentum`, but only while the effective stance has an exertion
   `ramp` (there is nothing for it to buy otherwise), and never past the ramp's
   cap. Magic's currencies (mana, favor) live *between* fights; martial's lives
-  inside one and dies with it.
+  inside one and dies with it. In play it is extra attack speed: Quick
+  (+3%/exchange, cap +45%) and Ittou-ryu (+3.5%, cap +50%) are the two
+  ramping stances today. Every place a player reads the word now says so —
+  the technique text, the technique tooltip (format.ts names the ramping
+  stances from data), and the two stance descriptions (user found it
+  unexplained, 2026-10-25).
 - **Cooldowns** are the tempo knob. At 10 ticks/s and ~1.7 s swings, a 30-tick
   cooldown means "most swings", 60 means "every third or so", 120 means "once
   per short fight".
