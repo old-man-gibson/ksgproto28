@@ -16,25 +16,38 @@ import { benchJobTicks, benchPace } from '../src/core/systems/benchwork';
 import { FORGING, previewForge } from '../src/core/systems/forging';
 import { FORGE_SLOTS } from '../src/core/data/parts.data';
 import type { GameState, Placement } from '../src/core/types';
-import { anvil, loadOnAnvil, resetAnvil, runKey, syncAnvil } from '../src/ui/lib/anvil.svelte';
+import { anvil, loadOnAnvil, resetAnvil, runKey, setLayout, syncAnvil } from '../src/ui/lib/anvil.svelte';
 import { clearFloors } from './fixtures/floors';
 import {
+  COMPARE_COLUMNS,
+  PART_FAMILIES,
   adaptMaterials,
   cellsOfMaterial,
   chartEntries,
   classesForIndex,
+  compareKinds,
   distinctNeighbours,
+  familiesOf,
+  familyOf,
+  kindRowLabel,
+  kindsOfFamily,
   materialColor,
   materialsFor,
+  metalUnits,
   neighbourLabel,
   offeredMaterials,
+  pairStatLines,
   partText,
   pickMaterial,
+  pieceLines,
   placementText,
   sameShape,
   silhouetteOf,
+  slotRole,
   statLines,
+  withPart,
   type ChartSetup,
+  type PartFamilyId,
 } from '../src/ui/lib/anvilView';
 
 /**
@@ -411,6 +424,8 @@ describe('anvil view: the layout belongs to one run', () => {
     syncAnvil(state);
     anvil.placement = { ...bronzeDagger };
     anvil.view = 'chart';
+    anvil.open = 'haft';
+    anvil.family.head = 'axes';
     anvil.chart.guard = 'cross';
     anvil.chart.bind = 'strap';
     anvil.chart.count = 8;
@@ -420,6 +435,9 @@ describe('anvil view: the layout belongs to one run', () => {
   function expectDefault(state: GameState) {
     expect(placementKey(anvil.placement)).toBe(swordKey);
     expect(anvil.view).toBe('anvil');
+    // The head's picker is the one open on a new run, and no family was picked by hand.
+    expect(anvil.open).toBe('head');
+    expect({ ...anvil.family }).toEqual({});
     expect({ ...anvil.chart }).toEqual({ guard: null, bind: null, count: 1 });
     expect(placementText(anvil.placement)).not.toMatch(/Bronze/);
     const preview = previewForge(state, anvil.placement);
@@ -485,6 +503,20 @@ describe('anvil view: the layout belongs to one run', () => {
     expect({ ...anvil.chart }).toEqual({ guard: null, bind: null, count: 1 });
   });
 
+  it('replacing the whole layout drops the families picked by hand, and leaves the open slot alone', () => {
+    const state = createInitialState(8_500);
+    dirty(state);
+    setLayout(sword);
+    expect(placementKey(anvil.placement)).toBe(swordKey);
+    expect({ ...anvil.family }).toEqual({});
+    expect(anvil.open).toBe('haft');
+    // The layout is a copy: editing the caller's object afterwards does not reach the store.
+    const mine: Placement = { head: part('long', IRON) };
+    setLayout(mine);
+    mine.head!.mat = BRONZE;
+    expect(anvil.placement.head?.mat).toBe(IRON);
+  });
+
   it('resets on request, with fresh objects each time', () => {
     const state = createInitialState(10_000);
     dirty(state);
@@ -507,5 +539,325 @@ describe('anvil view: the job time', () => {
         );
       }
     }
+  });
+});
+
+describe('anvil view: part families', () => {
+  const kinds = Object.values(PART_KINDS);
+  const idsOf = (family: PartFamilyId) => kindsOfFamily(family).map((k) => k.id);
+
+  it('puts every part kind in a family of its own role', () => {
+    for (const kind of kinds) {
+      const family = familyOf(kind);
+      expect(family, kind.id).toBeDefined();
+      expect(family.role, kind.id).toBe(kind.role);
+    }
+  });
+
+  it('reads the family off shape and mount: an edge across the haft is an axe head, any other edge a blade', () => {
+    expect(idsOf('blades')).toEqual(['thin', 'short', 'medium', 'long', 'great', 'curved', 'curved_l']);
+    expect(idsOf('points')).toEqual(['spearhead']);
+    expect(idsOf('axes')).toEqual(['axehead']);
+    expect(idsOf('mauls')).toEqual(['maulhead']);
+    expect(idsOf('plates')).toEqual(['plate_s', 'plate_m', 'plate_w', 'plate_t']);
+    expect(idsOf('bent')).toEqual(['bent_s', 'bent_m', 'bent_l']);
+    expect(idsOf('rings')).toEqual(['ring']);
+    expect(idsOf('handles')).toEqual(['h3', 'h4', 'h6', 'pole', 'club']);
+    expect(idsOf('guards')).toEqual(['cross', 'swept', 'boss']);
+    expect(idsOf('bindings')).toEqual(['strap', 'cord']);
+    // A curved blade is still a blade, and a cross-mounted mass is a maul, not an axe.
+    expect(familyOf(PART_KINDS.curved).id).toBe('blades');
+    expect(PART_KINDS.maulhead.cross).toBe(true);
+    expect(familyOf(PART_KINDS.maulhead).id).toBe('mauls');
+  });
+
+  it('lists each kind in exactly one family, and no family is empty', () => {
+    const listed = PART_FAMILIES.flatMap((f) => idsOf(f.id));
+    expect(listed.sort()).toEqual(kinds.map((k) => k.id).sort());
+    for (const f of PART_FAMILIES) expect(idsOf(f.id).length, f.id).toBeGreaterThan(0);
+  });
+
+  it('gives the head seven families, in order, and every other role one', () => {
+    expect(familiesOf('head').map((f) => f.name)).toEqual([
+      'Blades',
+      'Points',
+      'Axe heads',
+      'Maul heads',
+      'Plates',
+      'Bent metal',
+      'Rings',
+    ]);
+    expect(familiesOf('haft').map((f) => f.name)).toEqual(['Handles']);
+    expect(familiesOf('guard').map((f) => f.name)).toEqual(['Guards']);
+    expect(familiesOf('bind').map((f) => f.name)).toEqual(['Bindings']);
+  });
+
+  it('takes the second head for a head', () => {
+    expect(slotRole('head2')).toBe('head');
+    expect(slotRole('head')).toBe('head');
+    expect(slotRole('guard')).toBe('guard');
+    expect(slotRole('haft')).toBe('haft');
+    expect(slotRole('bind')).toBe('bind');
+  });
+});
+
+describe('anvil view: setting one part', () => {
+  it("keeps the slot's material when the new kind accepts it, else takes the first it accepts", () => {
+    const bronze: Placement = { head: part('long', BRONZE), haft: part('h3', WOOD) };
+    expect(withPart(bronze, 'head', 'great')?.head).toEqual(part('great', BRONZE));
+    // A wooden long bent piece swapped for a metal-only blade: wood is not accepted, iron is the first metal.
+    const bow: Placement = { head: part('bent_l', WOOD) };
+    expect(withPart(bow, 'head', 'long')?.head).toEqual(part('long', IRON));
+    // A plate takes wood or metal: the material stays whichever it was.
+    expect(withPart(bow, 'head', 'plate_m')?.head).toEqual(part('plate_m', WOOD));
+  });
+
+  it("gives a head the other head's material when the slot has none to keep", () => {
+    const twin: Placement = { head: part('long', BRONZE), haft: part('h3', WOOD) };
+    expect(withPart(twin, 'head2', 'short')?.head2).toEqual(part('short', BRONZE));
+    expect(withPart({ head2: part('long', BRONZE) }, 'head', 'short')?.head).toEqual(part('short', BRONZE));
+  });
+
+  it("clamps the count to the new kind's maximum and drops it when that is one", () => {
+    const mail: Placement = { head: part('ring', IRON, 8) };
+    expect(withPart(mail, 'head', 'bent_m')?.head).toEqual(part('bent_m', IRON, 2));
+    expect(withPart(mail, 'head', 'long')?.head).toEqual(part('long', IRON));
+  });
+
+  it('empties a slot, refuses a kind of the wrong role, and never edits the placement it was given', () => {
+    const before = placementKey(sword);
+    expect(withPart(sword, 'haft', null)).toEqual({ head: part('long', IRON) });
+    expect(withPart(sword, 'haft', 'long')).toBeNull();
+    expect(withPart(sword, 'guard', 'h3')).toBeNull();
+    expect(withPart(sword, 'head', 'nothing_like_this')).toEqual({ haft: part('h3', WOOD) });
+    expect(placementKey(sword)).toBe(before);
+  });
+});
+
+describe('anvil view: comparing the kinds of a family', () => {
+  const fresh = () => createInitialState(12_000);
+  const rowOf = (rows: ReturnType<typeof compareKinds>, id: string) => rows.find((r) => r.kind.id === id)!;
+
+  it('has one row per kind of the family, in registry order, each placing only that kind in the slot', () => {
+    const state = fresh();
+    const rows = compareKinds(state, sword, 'head', 'blades');
+    expect(rows.map((r) => r.kind.id)).toEqual(kindsOfFamily('blades').map((k) => k.id));
+    for (const row of rows) {
+      expect(row.placement.head?.kind).toBe(row.kind.id);
+      expect(row.placement.haft).toEqual(sword.haft);
+      expect(placementKey(row.placement)).toBe(placementKey(withPart(sword, 'head', row.kind.id)!));
+    }
+    // Every family of every slot yields a row per kind.
+    for (const [slot, role] of [
+      ['head', 'head'],
+      ['head2', 'head'],
+      ['guard', 'guard'],
+      ['haft', 'haft'],
+      ['bind', 'bind'],
+    ] as const) {
+      for (const family of familiesOf(role)) {
+        expect(compareKinds(state, sword, slot, family.id), `${slot} ${family.id}`).toHaveLength(
+          kindsOfFamily(family.id).length,
+        );
+      }
+    }
+  });
+
+  it('marks the kind the slot holds, and shows no difference on it', () => {
+    const rows = compareKinds(fresh(), sword, 'head', 'blades');
+    expect(rows.filter((r) => r.current).map((r) => r.kind.id)).toEqual(['long']);
+    const here = rowOf(rows, 'long');
+    expect(placementKey(here.placement)).toBe(placementKey(sword));
+    for (const col of COMPARE_COLUMNS) expect(here.cells[col.key], col.key).toMatchObject({ delta: '', tone: 'none' });
+    // A family the held kind is not in has no marked row, but still differs from the piece as it stands.
+    const axes = compareKinds(fresh(), sword, 'head', 'axes');
+    expect(axes.some((r) => r.current)).toBe(false);
+    expect(axes[0].cells.power.delta).not.toBe('');
+  });
+
+  it("prints each row's numbers from previewForge on the swapped placement", () => {
+    const state = fresh();
+    for (const row of compareKinds(state, sword, 'head', 'blades')) {
+      const result = previewForge(state, row.placement);
+      expect(row.cells.power.text, row.kind.id).toBe(String(result.stats.damage));
+      expect(row.cells.crit.text, row.kind.id).toBe(`${(result.stats.crit! * 100).toFixed(1)}%`);
+      expect(row.cells.str.text, row.kind.id).toBe(result.stats.str ? String(result.stats.str) : '–');
+      expect(row.cells.metal.text, row.kind.id).toBe(String(metalUnits(result.cost)));
+    }
+  });
+
+  it('writes the difference from the current piece, better or worse by which way is good', () => {
+    const state = fresh();
+    const base = previewForge(state, sword);
+    const rows = compareKinds(state, sword, 'head', 'blades');
+    const great = rowOf(rows, 'great');
+    const wide = previewForge(state, great.placement);
+    // More damage and crit are better; a higher STR need and more metal are worse; slower is worse.
+    expect(wide.stats.damage!).toBeGreaterThan(base.stats.damage!);
+    expect(great.cells.power).toEqual({
+      text: String(wide.stats.damage),
+      delta: `+${wide.stats.damage! - base.stats.damage!}`,
+      tone: 'better',
+    });
+    expect(great.cells.crit.tone).toBe('better');
+    expect(great.cells.speed.tone).toBe('worse');
+    expect(great.cells.speed.text).toMatch(/^−\d+%$/);
+    expect(great.cells.speed.delta).toMatch(/^−\d+%$/);
+    expect(great.cells.str).toMatchObject({
+      text: String(wide.stats.str),
+      delta: `+${wide.stats.str - base.stats.str}`,
+      tone: 'worse',
+    });
+    expect(great.cells.metal).toMatchObject({
+      delta: `+${metalUnits(wide.cost) - metalUnits(base.cost)}`,
+      tone: 'worse',
+    });
+    // The other way round: a short blade is lighter, cheaper and quicker, and hits for less.
+    const short = rowOf(rows, 'short');
+    expect(short.cells.power.tone).toBe('worse');
+    expect(short.cells.power.delta).toMatch(/^−\d+$/);
+    expect(short.cells.speed.tone).toBe('better');
+    expect(short.cells.speed.delta).toMatch(/^\+\d+%$/);
+    expect(short.cells.metal.tone).toBe('better');
+  });
+
+  it('shows a difference only against a figure the current piece has: none for armour against a weapon', () => {
+    const state = fresh();
+    const plate = rowOf(compareKinds(state, sword, 'head', 'plates'), 'plate_m');
+    expect(previewForge(state, plate.placement).stats.armour).toBeGreaterThan(0);
+    expect(plate.cells.power).toMatchObject({ delta: '', tone: 'none' });
+    // The unit is named when it is not the current piece's, and left off when it is.
+    expect(plate.cells.power.text).toMatch(/ armour$/);
+    expect(plate.cells.crit).toMatchObject({ text: '–', delta: '' });
+    expect(rowOf(compareKinds(state, sword, 'head', 'blades'), 'great').cells.power.text).not.toMatch(/[a-z]/);
+  });
+
+  it('compares nothing on an empty anvil', () => {
+    const rows = compareKinds(fresh(), {}, 'head', 'blades');
+    expect(rows).toHaveLength(kindsOfFamily('blades').length);
+    expect(rows.some((r) => r.current)).toBe(false);
+    for (const row of rows) {
+      for (const col of COMPARE_COLUMNS) expect(row.cells[col.key].delta, `${row.kind.id} ${col.key}`).toBe('');
+    }
+  });
+
+  it("keeps the slot's material across the rows, or takes the first accepted where it is not accepted", () => {
+    const state = fresh();
+    const bronze: Placement = { head: part('long', BRONZE), haft: part('h3', WOOD) };
+    for (const row of compareKinds(state, bronze, 'head', 'blades')) {
+      expect(row.placement.head?.mat, row.kind.id).toBe(BRONZE);
+    }
+    // The haft stays wooden through its own family.
+    for (const row of compareKinds(state, bronze, 'haft', 'handles')) {
+      expect(row.placement.haft?.mat, row.kind.id).toBe(WOOD);
+    }
+    // A wooden bow limb has no wooden blade to become: the blades are iron.
+    const bow: Placement = { head: part('bent_l', WOOD), bind: part('cord', LEATHER) };
+    for (const row of compareKinds(state, bow, 'head', 'blades')) {
+      expect(row.placement.head?.mat, row.kind.id).toBe(IRON);
+    }
+  });
+
+  it('masks a form the save has not made, and names it once it has', () => {
+    const state = fresh();
+    const before = compareKinds(state, sword, 'head', 'blades');
+    for (const row of before) {
+      expect(row.known, row.kind.id).toBe(false);
+      expect(row.form, row.kind.id).toBe('?');
+    }
+    // The same rule as "one change away": the counter `forged:<class>` is what unmasks a class.
+    state.stats['forged:sword'] = 1;
+    const after = compareKinds(state, sword, 'head', 'blades');
+    for (const row of after) {
+      const cls = classifyPlacement(row.placement);
+      expect(row.known, row.kind.id).toBe(cls.id === 'sword');
+      expect(row.form, row.kind.id).toBe(cls.id === 'sword' ? cls.name : '?');
+    }
+    expect(rowOf(after, 'long').form).toBe(ITEM_CLASSES.sword.name);
+    // The numbers are not masked.
+    expect(rowOf(before, 'great').cells.power.text).toBe(rowOf(after, 'great').cells.power.text);
+  });
+
+  it('describes a row as one sentence for a screen reader', () => {
+    const state = fresh();
+    state.stats['forged:sword'] = 1;
+    const rows = compareKinds(state, sword, 'head', 'blades');
+    const label = kindRowLabel(rowOf(rows, 'long'));
+    expect(label).toContain('Long blade 2×6');
+    expect(label).toContain('in the slot');
+    expect(label).toContain(`makes ${ITEM_CLASSES.sword.name}`);
+    const great = kindRowLabel(rowOf(rows, 'great'));
+    expect(great).toMatch(/damage \/ armour 12 \(\+5\)/);
+    expect(great).not.toContain('in the slot');
+  });
+
+  it('counts the metal of a bill, whatever the metal', () => {
+    const bill = [
+      { id: IRON, qty: 2 },
+      { id: BRONZE, qty: 1 },
+      { id: WOOD, qty: 3 },
+      { id: LEATHER, qty: 1 },
+    ];
+    expect(metalUnits(bill)).toBe(3);
+    expect(metalUnits([])).toBe(0);
+  });
+});
+
+describe('anvil view: a previewed piece against the current one', () => {
+  const line = (label: string, value: string) => ({ label, value });
+
+  it('carries the current value only on a line that changed', () => {
+    const now = [line('Damage', '+7'), line('Weight', '13.2'), line('Cells', '15')];
+    const next = [line('Damage', '+12'), line('Weight', '13.2'), line('Cells', '24')];
+    expect(pairStatLines(now, next)).toEqual([
+      { label: 'Damage', value: '+12', from: '+7' },
+      { label: 'Weight', value: '13.2' },
+      { label: 'Cells', value: '24', from: '15' },
+    ]);
+    // A piece set against itself pairs nothing.
+    expect(pairStatLines(now, now).some((l) => l.from !== undefined)).toBe(false);
+  });
+
+  it('keeps a line only one of them has, with a dash on the missing side, in the order a piece prints them', () => {
+    const now = [line('Damage', '+7'), line('Crit chance', '+2.0%'), line('Weight', '13.2')];
+    const next = [line('Attack speed', '+4%'), line('Damage', '+6'), line('Weight', '10.2')];
+    expect(pairStatLines(now, next)).toEqual([
+      { label: 'Attack speed', value: '+4%', from: '—' },
+      { label: 'Damage', value: '+6', from: '+7' },
+      { label: 'Crit chance', value: '—', from: '+2.0%' },
+      { label: 'Weight', value: '10.2', from: '13.2' },
+    ]);
+    // Lines left over at the end are kept too.
+    expect(pairStatLines([line('Damage', '+7'), line('Value', '30 gold')], [line('Damage', '+7')])).toEqual([
+      { label: 'Damage', value: '+7' },
+      { label: 'Value', value: '—', from: '30 gold' },
+    ]);
+    expect(pairStatLines([], [line('Damage', '+7')])).toEqual([{ label: 'Damage', value: '+7', from: '—' }]);
+    expect(pairStatLines([line('Damage', '+7')], [])).toEqual([{ label: 'Damage', value: '—', from: '+7' }]);
+  });
+
+  it('pairs the lines of two real pieces: damage drops, crit goes, speed arrives', () => {
+    const state = createInitialState(13_000);
+    const sworded = previewForge(state, sword);
+    const mauled = previewForge(state, { head: part('maulhead', IRON), haft: part('h3', WOOD) });
+    const lines = pairStatLines(pieceLines(sworded.stats, sworded.def.mods), pieceLines(mauled.stats, mauled.def.mods));
+    const byLabel = Object.fromEntries(lines.map((l) => [l.label, l]));
+    expect(byLabel['Damage'].from).toBe('+7');
+    expect(byLabel['Crit chance']).toMatchObject({ value: '—', from: '+2.0%' });
+    expect(lines[lines.length - 1].label).toBe('Value');
+  });
+
+  it('lists the strength a piece needs and its value after the stat lines', () => {
+    const state = createInitialState(14_000);
+    const great = previewForge(state, { head: part('great', IRON), haft: part('h4', WOOD) });
+    expect(great.stats.str).toBeGreaterThan(0);
+    const lines = pieceLines(great.stats, great.def.mods);
+    expect(lines.slice(-2)).toEqual([
+      { label: 'Requires', value: `STR ${great.stats.str}` },
+      { label: 'Value', value: `${great.stats.value} gold` },
+    ]);
+    const light = previewForge(state, { head: part('short', IRON), haft: part('h3', WOOD) });
+    expect(light.stats.str).toBe(0);
+    expect(pieceLines(light.stats, light.def.mods).some((l) => l.label === 'Requires')).toBe(false);
   });
 });

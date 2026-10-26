@@ -1,5 +1,6 @@
-import type { GameState, Placement } from '../../core/types';
+import type { ForgeSlot, GameState, Placement } from '../../core/types';
 import { clonePlacement } from '../../core/systems/assembly';
+import type { PartFamilyId } from './anvilView';
 
 /**
  * The anvil's working layout and which screen of it is open. UI-only, like
@@ -26,6 +27,14 @@ function fresh() {
       haft: { kind: 'h3', mat: 'hardwood' },
     } as Placement,
     view: 'anvil' as 'anvil' | 'chart',
+    /** The slot whose picker is open (one at a time), or none. The head's is open on a new run. */
+    open: 'head' as ForgeSlot | null,
+    /**
+     * The shape family a slot's picker was switched to by hand. A slot with no
+     * entry shows the family of the part it holds, so this is only set while
+     * the player browses a family other than the held part's.
+     */
+    family: {} as Partial<Record<ForgeSlot, PartFamilyId>>,
     /** The form chart's selectors. */
     chart: { guard: null as string | null, bind: null as string | null, count: 1 },
   };
@@ -50,6 +59,8 @@ export function resetAnvil(): void {
   const next = fresh();
   anvil.placement = next.placement;
   anvil.view = next.view;
+  anvil.open = next.open;
+  anvil.family = next.family;
   anvil.chart = next.chart;
 }
 
@@ -65,9 +76,19 @@ export function syncAnvil(state: Pick<GameState, 'createdAt' | 'prestige'>): voi
   owner = key;
 }
 
-/** Put a placement on the anvil (a copy: the caller's object, often a recipe's, is never edited). */
+/**
+ * Replace the whole layout (a copy: the caller's object, often a recipe's, is
+ * never edited). The hand-picked families belonged to the old layout, so they
+ * go with it; editing one slot sets `anvil.placement` directly and keeps them.
+ */
+export function setLayout(placement: Placement): void {
+  anvil.placement = clonePlacement(placement);
+  anvil.family = {};
+}
+
+/** Put a placement on the anvil. */
 export function loadOnAnvil(state: Pick<GameState, 'createdAt' | 'prestige'>, placement: Placement): void {
   syncAnvil(state);
-  anvil.placement = clonePlacement(placement);
+  setLayout(placement);
   anvil.view = 'anvil';
 }

@@ -327,15 +327,59 @@ which covers a hard reset, an import and a prestige without hooking any of them.
   degenerate chips (a family no combat skill claims is flagged), the kernel's
   stat lines at Fair quality, the bill (units, cells, held) and the job time,
   "one change away" (`neighbours`, one button per distinct product, "?" until
-  that form is known), then the five slot pickers. A shut slot shows its
-  Smithing level. Forge, ×N (up to 5, as many as the pack pays for) and "until
-  out of stock" call `Game.forge`.
+  that form is known; a closed disclosure, "Other forms one change away (N)"),
+  then the five slot pickers (below). A shut slot shows its Smithing level.
+  Forge, ×N (up to 5, as many as the pack pays for) and "until out of stock"
+  call `Game.forge`; they and their reason line always read the anvil's own
+  layout, never a preview.
 - **Layout (user, 2026-10-25: "I have to constantly scroll to see what changes
   when I use different parts").** Three columns that scroll on their own: the
   piece with the forge buttons under it, then what it resolves to (name,
   chips, stats, bill, "one change away"), then the slot pickers. The window is
   `Modal fill` (most of the screen, fixed height, no body scroll); under 900px
   it is one column and the window body scrolls.
+- **Part picker (user, 2026-10-26: the way the player picks shapes
+  "is overwhelming the player with options and too much stuff at once").** The
+  third column is five compact rows, one per slot: the slot's name and what it
+  holds (footprint glyph, kind, w×l, material swatch and name, count when above
+  one), "empty", or the Smithing level while the slot is shut. Clicking a row
+  opens that slot's picker and shuts the one that was open; the open one shuts
+  again, so the list can be fully collapsed. The head's picker is open on a new
+  run. Which slot is open, and a family picked by hand, are UI state in
+  `anvil.svelte.ts` (reset with the rest of it; `setLayout` replaces the whole
+  layout and drops the picked families). An open picker has three steps:
+  1. **Shape family**, only for a role with more than one (the head has seven).
+     Derived from the part data by `familyOf` (`lib/anvilView.ts`), no data
+     field: an edge with no `cross` is a Blade (curved blades included), a
+     point is a Point, an edge with `cross` an Axe head, a mass a Maul head,
+     then Plate, Bent metal, Ring, and one family each for Handles, Guards and
+     Bindings. A chip shows the name and the number of kinds; "none" empties
+     the slot. The family of the held part is selected when the slot opens; an
+     empty slot has none selected and says to choose one.
+  2. **A comparison table** of the family, one row per kind. Each row is
+     `previewForge` on the current layout with only this slot swapped to that
+     kind (`compareKinds` over `withPart`, the same function a click uses, so a
+     row shows exactly what the click makes: the slot's material is kept when
+     the kind accepts it, else the other head's, else the first it lists; the
+     count is clamped to the kind's maximum). Columns: glyph, name, w×l, the
+     form it makes ("?" until `formKnown`, the rule "one change away" follows;
+     the numbers are not masked), damage or armour, speed, crit, STR needed,
+     and metal units in the bill (all slots, whole units, any metal). The held
+     kind's row is marked "current". Every other number is followed by its
+     difference from the piece as it stands, green when better (more damage,
+     armour, speed or crit; less STR or metal) and red when worse. No
+     difference is shown against an empty anvil, against a figure the current
+     piece lacks, or between damage and armour (the unit is named instead).
+     Clicking a row puts the kind in the slot.
+  3. **Material and count** for the slot's held part, as below.
+- **Preview.** Hovering a row with a mouse, or focusing it with the keyboard,
+  previews it without applying it: the drawing on the left shows the layout
+  with a "Preview" caption and a dashed edge, and the middle column shows the
+  previewed form (masked "?" while unknown, and its family tag hidden with it),
+  its stat lines each as "current → preview" where they differ ("Damage +7 →
+  +12", "Requires — → STR 11"), the previewed bill and time. Leaving or
+  blurring the row, any click, or shutting the slot reverts it. A touch tap
+  selects as before (touch pointers never start a preview).
 - **Material choices.** Each part lists the forgeable materials it accepts that
   the pack holds, plus the one already in the slot. When nothing accepted is
   held, one stand-in per accepted tag (iron for metal) is offered as well, even
