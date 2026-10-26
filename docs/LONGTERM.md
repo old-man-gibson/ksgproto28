@@ -190,3 +190,39 @@ fake doors that glitch until revealed. The design and the nine decisions the
 user took are on that card and its three draft stories; the Tiled readers
 already return the Rules and Wang sets the autotile would need. Shelved by
 the user the day it was planned — revisit only when they raise it.
+
+## Elemental stances (shelved 2026-10-26, never built)
+
+The user's words: elemental stances/disciplines that come with their own set
+of techniques and favoured discipline weapons. They work a bit differently by
+locking out martial techniques that do not carry the corresponding tag or the
+"any"/"universal" tag.
+
+**What it adds to what exists.** Stances today are `CombatStyleDef`s
+(styles.data.ts): generic stances that a weapon school can replace while its
+weapon is held (`replaces`, `requiresTag: <family>`). Techniques fire from any
+stance; the only filter is `TechniqueDef.family`, a weapon family that must be
+in hand (absent = usable with anything). An elemental stance would be the
+first stance that **narrows** the technique graph instead of buffing it:
+
+- An element tag on techniques (say `element?: 'fire' | 'water' | …`), with
+  untagged techniques counting as universal and always allowed.
+- On the stance, the element it admits. While it is the effective style,
+  rotation and the position-graph planner (martial.ts, MARTIAL.md §9b) skip
+  techniques whose element differs. The lockout is the price; the stance's
+  own techniques and mods are what it buys.
+- Favoured weapons: the same `requiresTag` pattern the schools use, so a
+  stance can ask for its weapon family or be stronger with it.
+- Its own techniques would need a way in: a teacher (`NpcDef.teaches`,
+  including the school lesson Magic Combat uses since 2026-10-25), learning by
+  watching (`learn.watch`), or `learn.self`. The reach rule (MARTIAL.md §6)
+  applies as it does to every technique, so each set needs an entry its
+  stance can stand in.
+
+**Things to settle if it comes back.** "Discipline" already names the
+crafting benches in code (`disciplines.data.ts`); call these stances or
+schools, or rename one of the two. Whether an elemental stance replaces a
+generic one (as the weapon schools do) or sits beside them. Whether the
+element follows the arcane damage types (heat, cold, lightning, …) or its own
+list. How the lockout reads on the Combat tab, so a player never wonders why a
+known technique stopped firing.
