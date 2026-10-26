@@ -606,6 +606,8 @@ function drawSideBySide(s: Sheet, heads: Piece[], guardP: Piece | undefined, bin
   let ringX = 0;
   let tallest = 0;
   const below: { piece: Piece; from: number; to: number }[] = [];
+  /** Every piece a strap can go on: each gets its own (the user: a strap is sized for one piece, not tying two together). */
+  const strapped: { x: number; w: number; l: number }[] = [];
   for (const h of heads) {
     if (h.kind.shape === 'ring') {
       if (rings === 0) ringX = x;
@@ -632,6 +634,7 @@ function drawSideBySide(s: Sheet, heads: Piece[], guardP: Piece | undefined, bin
         // A weapon head among armour (a degenerate form): drawn upright at its size.
         drawTipAt(s, h, x, 0);
       }
+      strapped.push({ x, w: h.kind.w, l: h.kind.l });
       tallest = Math.max(tallest, h.kind.l);
       x += h.kind.w + 0.6;
     }
@@ -654,21 +657,43 @@ function drawSideBySide(s: Sheet, heads: Piece[], guardP: Piece | undefined, bin
       const half = Math.max(1.6, (last - first) / 2 + 1.1);
       s.line(`M${n(mid - half)},${n(-2.2)} Q${n(mid)},${n(2.4)} ${n(mid + half)},${n(-2.2)}`);
       s.box(mid - half, -2.2, mid + half, 0.2);
+    } else if (strapped.length) {
+      // One strap per piece, fitted to it: a helm's runs under the chin, a boot's
+      // round the ankle, a gauntlet's round the wrist, a plate's across the middle.
+      for (const p of strapped) strapOn(s, bindP, p, cls);
     } else {
-      // A strap across the pieces at mid-height, with a buckle.
-      const width = Math.max(bindP.kind.l, x - 0.6);
-      const y = Math.max(0.6, tallest * 0.55);
-      s.line(rect(-0.2, y, width + 0.4, 0.35), bindP.tint);
-      s.line(rect(width / 2 - 0.2, y - 0.08, 0.4, 0.51));
-      s.box(-0.2, y, width + 0.2, y + 0.35);
+      // Nothing to strap (a guard alone): the strap lies on its own, at its length.
+      s.line(rect(0, tallest + 0.4, bindP.kind.l, 0.35), bindP.tint);
+      s.box(0, tallest + 0.4, bindP.kind.l, tallest + 0.75);
     }
-    below.push({ piece: bindP, from: 0, to: Math.max(1, x - 0.6) });
+    const first = strapped[0];
+    below.push({ piece: bindP, from: first ? first.x : 0, to: first ? first.x + first.w : bindP.kind.l });
   }
   // One row per bracket: a piece's label never runs into its neighbour's.
   const at = s.maxY + 0.3;
   below.forEach((b, row) => {
     s.measure({ from: b.from, to: b.to, at: at + row * 1.1, side: 'below', label: `${partName(b.piece)} ${sizeLabel(b.piece)}` });
   });
+}
+
+/** A strap fitted to one piece, with a buckle, placed where that kind of piece is fastened. */
+function strapOn(s: Sheet, bindP: Piece, p: { x: number; w: number; l: number }, cls: ItemClassDef) {
+  const band = 0.3;
+  if (cls.id === 'helm') {
+    // A chin strap: hung from both sides of the helm's rim.
+    s.line(`M${n(p.x + 0.15)},${n(p.l - 0.1)} Q${n(p.x + p.w / 2)},${n(p.l + 1.1)} ${n(p.x + p.w - 0.15)},${n(p.l - 0.1)}`);
+    s.line(rect(p.x + p.w / 2 - 0.15, p.l + 0.32, 0.3, 0.3));
+    s.box(p.x, p.l - 0.1, p.x + p.w, p.l + 0.7);
+    return;
+  }
+  // Where the piece is fastened, as a share of its length from the top.
+  const at = cls.id === 'boots' ? 0.32 : cls.id === 'gauntlets' ? 0.78 : 0.55;
+  // A boot's strap goes round its shaft, which is the narrower part of it.
+  const w = cls.id === 'boots' ? p.w * 0.62 : p.w;
+  const y = p.l * at - band / 2;
+  s.line(rect(p.x - 0.12, y, w + 0.24, band), bindP.tint);
+  s.line(rect(p.x + w / 2 - 0.16, y - 0.08, 0.32, band + 0.16));
+  s.box(p.x - 0.12, y - 0.08, p.x + w + 0.12, y + band + 0.08);
 }
 
 /** A weapon head drawn upright at a given x (for degenerate armour forms). */

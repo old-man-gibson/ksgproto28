@@ -6,7 +6,6 @@ import { deserialize, serialize } from '../src/core/save/save';
 import { getDerivedStats } from '../src/core/systems/derived';
 import {
   classifyPlacement,
-  enumeratePlacements,
   forgeStats,
   forgeTicks,
   neighbours,
@@ -14,7 +13,6 @@ import {
 } from '../src/core/systems/assembly';
 import { benchJobTicks, benchPace } from '../src/core/systems/benchwork';
 import { FORGING, previewForge } from '../src/core/systems/forging';
-import { FORGE_SLOTS } from '../src/core/data/parts.data';
 import type { GameState, Placement } from '../src/core/types';
 import { anvil, loadOnAnvil, resetAnvil, runKey, setLayout, syncAnvil } from '../src/ui/lib/anvil.svelte';
 import { clearFloors } from './fixtures/floors';
@@ -42,7 +40,6 @@ import {
   pieceLines,
   placementText,
   sameShape,
-  silhouetteOf,
   slotRole,
   statLines,
   withPart,
@@ -151,71 +148,6 @@ describe('anvil view: text', () => {
     expect(mods.length).toBeGreaterThan(0);
     const withMods = statLines(forgeStats(bronze, 'c'), mods);
     expect(withMods.filter((l) => l.label === 'Material')).toHaveLength(mods.length);
-  });
-});
-
-describe('anvil view: silhouette', () => {
-  it('draws one rect per cell, with a plain blade narrowed at the tip', () => {
-    const sil = silhouetteOf(sword);
-    const rects = sil.shapes.filter((s) => s.t === 'rect');
-    // Blade 2×6 less the narrowed tip row (1 cell), plus the 1×3 handle.
-    expect(rects).toHaveLength(2 * 6 - 1 + 3);
-    expect(sil.shapes.every((s) => s.t === 'rect')).toBe(true);
-    // The handle is below the blade: the piece is taller than it is wide.
-    expect(sil.maxY - sil.minY).toBe(9);
-    expect(sil.maxX - sil.minX).toBe(2);
-  });
-
-  it('draws rings as circles, four to a row, and a coif or mail shirt side by side', () => {
-    const mail = silhouetteOf({ head: part('ring', IRON, 8) });
-    expect(mail.shapes.filter((s) => s.t === 'ring')).toHaveLength(8);
-    expect(mail.shapes.some((s) => s.t === 'rect')).toBe(false);
-    const rows = new Set(mail.shapes.map((s) => (s.t === 'ring' ? s.cy : -1)));
-    expect(rows.size).toBe(2);
-  });
-
-  it('keeps the rings of two head slots apart', () => {
-    const both = silhouetteOf({ head: part('ring', IRON, 2), head2: part('ring', IRON, 2) });
-    const centres = both.shapes.flatMap((s) => (s.t === 'ring' ? [`${s.cx},${s.cy}`] : []));
-    expect(new Set(centres).size).toBe(4);
-  });
-
-  it('draws a bow as an arc with a string, and a necklace as a curve over its ring', () => {
-    const bow = silhouetteOf({ head: part('bent_l', WOOD), bind: part('cord', LEATHER) });
-    expect(bow.shapes.filter((s) => s.t === 'line')).toHaveLength(1);
-    const amulet = silhouetteOf({ head: part('ring', IRON), bind: part('cord', LEATHER) });
-    expect(amulet.shapes.filter((s) => s.t === 'arc')).toHaveLength(1);
-    expect(amulet.shapes.filter((s) => s.t === 'ring')).toHaveLength(1);
-  });
-
-  it('hangs an axe head to one side of its haft', () => {
-    const axe = silhouetteOf({ head: part('axehead', IRON), haft: part('h3', WOOD) });
-    const xs = axe.shapes.flatMap((s) => (s.t === 'rect' ? [s.x] : []));
-    expect(Math.min(...xs)).toBe(-3);
-    expect(Math.max(...xs)).toBe(0);
-  });
-
-  it('gives an empty anvil a unit box and nothing to draw', () => {
-    const sil = silhouetteOf({});
-    expect(sil.shapes).toHaveLength(0);
-    expect([sil.minX, sil.minY, sil.maxX, sil.maxY]).toEqual([0, 0, 1, 1]);
-  });
-
-  it('is total: placements across the catalogue have finite bounds and hold their shapes', () => {
-    // Every 31st placement (the sweep is tens of thousands, and each draw classifies it) plus every exemplar.
-    const sample: Placement[] = Object.values(ITEM_CLASSES).map((c) => c.exemplar);
-    let n = 0;
-    for (const p of enumeratePlacements({ materials: 'tags' })) if (n++ % 31 === 0) sample.push(p);
-    for (const p of sample) {
-      // The empty layout is enumerated (it resolves) but has nothing to draw: the panel says so instead.
-      if (Object.keys(p).length === 0) continue;
-      const sil = silhouetteOf(p);
-      const key = placementKey(p);
-      expect(Number.isFinite(sil.minX + sil.minY + sil.maxX + sil.maxY), key).toBe(true);
-      expect(sil.maxX).toBeGreaterThan(sil.minX);
-      expect(sil.maxY).toBeGreaterThan(sil.minY);
-      expect(sil.shapes.length, key).toBeGreaterThan(0);
-    }
   });
 });
 
@@ -346,72 +278,6 @@ describe('anvil view: form chart', () => {
     const firstNonWeapon = list.findIndex((c) => c.slot !== 'weapon');
     expect(list.slice(0, firstNonWeapon).every((c) => c.slot === 'weapon')).toBe(true);
     expect(list.slice(firstNonWeapon).some((c) => c.slot === 'weapon')).toBe(false);
-  });
-});
-
-describe('anvil view: the silhouette draws every part that is billed', () => {
-  const sig = (p: Placement) => JSON.stringify(silhouetteOf(p).shapes);
-
-  /** Every slot of a placement, removed one at a time; the drawing must change each time. */
-  function removalsThatChangeNothing(p: Placement): string[] {
-    const filled = FORGE_SLOTS.filter((s) => p[s]);
-    if (filled.length < 2) return [];
-    const base = sig(p);
-    const same: string[] = [];
-    for (const slot of filled) {
-      const rest: Placement = { ...p };
-      delete rest[slot];
-      if (sig(rest) === base) same.push(`${placementKey(p)} without ${slot} (${classifyPlacement(p).id})`);
-    }
-    return same;
-  }
-
-  it('draws a guard on armour and jewellery', () => {
-    const plain: Placement = { head: part('plate_w', IRON), bind: part('strap', LEATHER) };
-    const bossed: Placement = { ...plain, guard: part('boss', IRON) };
-    expect(classifyPlacement(bossed).id).toBe('breastplate');
-    expect(sig(bossed)).not.toBe(sig(plain));
-    // The guard is beside the plate, not on it: it widens the drawing.
-    expect(silhouetteOf(bossed).maxX).toBeGreaterThan(silhouetteOf(plain).maxX);
-  });
-
-  it('draws a second head and a guard on a bow, below it', () => {
-    const bow: Placement = { head: part('bent_l', WOOD), bind: part('cord', LEATHER) };
-    const armed: Placement = { ...bow, head2: part('long', IRON) };
-    expect(classifyPlacement(bow).id).toBe('bow');
-    expect(classifyPlacement(armed).id).toBe('bow');
-    expect(sig(armed)).not.toBe(sig(bow));
-    expect(silhouetteOf(armed).maxY).toBeGreaterThan(silhouetteOf(bow).maxY);
-    const guarded: Placement = { ...bow, guard: part('cross', IRON) };
-    expect(classifyPlacement(guarded).id).toBe('bow');
-    expect(sig(guarded)).not.toBe(sig(bow));
-  });
-
-  it('places rings after a bent piece beside it instead of on top of it', () => {
-    const p: Placement = { head: part('bent_s', IRON), head2: part('ring', IRON, 2) };
-    const sil = silhouetteOf(p);
-    const bentX = sil.shapes.flatMap((s) => (s.t === 'rect' ? [s.x] : []));
-    const ringX = sil.shapes.flatMap((s) => (s.t === 'ring' ? [s.cx] : []));
-    expect(ringX).toHaveLength(2);
-    expect(Math.min(...ringX)).toBeGreaterThan(Math.max(...bentX) + 1);
-  });
-
-  it('changes when any part of a multi-part exemplar is removed', () => {
-    for (const cls of Object.values(ITEM_CLASSES)) {
-      expect(removalsThatChangeNothing(cls.exemplar), cls.id).toEqual([]);
-    }
-  });
-
-  it('changes when any part of a sample of the whole catalogue is removed, degenerate classes included', () => {
-    // Every 13th placement (the sweep is 157,000 and each drawing classifies it). The full sweep
-    // was run once by hand when this was written: no removal in any class left the drawing alone,
-    // so no class is exempt.
-    let n = 0;
-    const same: string[] = [];
-    for (const p of enumeratePlacements({ materials: 'tags' })) {
-      if (n++ % 13 === 0) same.push(...removalsThatChangeNothing(p));
-    }
-    expect(same.slice(0, 5)).toEqual([]);
   });
 });
 

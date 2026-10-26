@@ -79,6 +79,23 @@ describe('the pattern drawing', () => {
     expect(amulet.measures.map((m) => m.label)).toContain('cord 1×4');
   });
 
+  it('gives each strapped piece its own strap and buckle, never one strap across two pieces', () => {
+    // Strap bands are the strokes tinted with leather.
+    const bands = (p: Placement) => drawingOf(p).strokes.filter((s) => s.tint?.includes('--mat-leather')).length;
+    expect(bands({ head: part('bent_s', IRON, 2), bind: part('strap', LEATHER) })).toBe(2);
+    expect(bands({ head: part('bent_m', IRON, 2), bind: part('strap', LEATHER) })).toBe(2);
+    expect(bands({ head: part('plate_w', IRON), bind: part('strap', LEATHER) })).toBe(1);
+  });
+
+  it('draws a guard beside armour, and a second head and a guard below a bow', () => {
+    const plain = { head: part('plate_w', IRON), bind: part('strap', LEATHER) };
+    expect(drawingOf({ ...plain, guard: part('boss', IRON) }).maxX).toBeGreaterThan(drawingOf(plain).maxX);
+    const bow = { head: part('bent_l', WOOD), bind: part('cord', LEATHER) };
+    const armed = { ...bow, head2: part('long', IRON), guard: part('cross', IRON) };
+    expect(classifyPlacement(armed).id).toBe('bow');
+    expect(drawingOf(armed).maxY).toBeGreaterThan(drawingOf(bow).maxY + 6);
+  });
+
   it('changes when any part is removed, across the catalogue', () => {
     let checked = 0;
     let i = 0;
