@@ -6,7 +6,7 @@ post-prestige overlay.*
 
 ## 1. What it is
 
-A run ends by choice once band 1 of the Ascent is cleared. The **harvest**
+A run ends by choice once bands 1 and 2 of the Ascent are cleared (floor 6, since 2026-10-25). The **harvest**
 measures how far the run went along several axes and pays whole **points**;
 the next run starts fresh with only the **legacy block** (`state.prestige`)
 carried over. Points buy **boons**, which hold across every later run.
@@ -20,9 +20,10 @@ yet, so the boons are the small set of hooks that already do — see §4.
 
 All declarative, so the preview can be computed from them.
 
-- **`PRESTIGE_UNLOCK`** — what lights the button. The brood queen
-  (`slain:f3_brood_den:giant_spider_queen ≥ 1`), the same latch floor 3's
-  clear reads, so the two can never disagree.
+- **`PRESTIGE_UNLOCK`** — what lights the button. The goblin warchief
+  (`slain:f6_great_hall:goblin_warchief ≥ 1`), the same latch floor 6's
+  clear reads, so the two can never disagree. It was floor 3's boss until
+  2026-10-25 (docs/plans/bands-2-3.md R1).
 - **`PRESTIGE_SOURCES`** — what the harvest measures. Each has a `measure`
   (a `stats` counter, cleared ladder floors across all towers, the sum of
   skill levels, or achievement tiers claimed) and `per`, the units per point.

@@ -586,8 +586,69 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
       ],
     },
   },
-  // The goblin casters (docs/plans/bands-2-3.md M7). Not placed yet; band 2
-  // puts them on floors 5 and 6. Stats are first guesses beside the goblin's.
+  // Band 2's two goblin bosses (docs/plans/bands-2-3.md). Stats and levels
+  // are first guesses for the sketch pass; names are placeholders.
+  // Floor 4's clear: a raid leader in the ravine with two goblins.
+  goblin_raid_leader: {
+    id: 'goblin_raid_leader',
+    name: 'Goblin Raid Leader',
+    icon: '👹',
+    tags: ['living', 'goblin', 'humanoid'],
+    tier: 'veteran',
+    damageType: 'slashing',
+    group: { min: 3, max: 3 },
+    escorts: ['goblin'],
+    inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.2 }],
+    resistances: { poison: 0.15 },
+    rotation: [{ technique: 'pocket_sand' }, { technique: 'dirty_stab' }, { technique: 'gather' }],
+    attrs: { str: 11, dex: 9, con: 10, int: 4, wis: 4, cha: 5 },
+    growth: { str: 1.2, dex: 1.0, con: 1.1, int: 0.5, wis: 0.5, cha: 0.6 },
+    xp: 50,
+    gold: [20, 40],
+    loot: {
+      rolls: 2,
+      entries: [
+        { kind: 'material', id: 'torn_fur', weight: 25, qty: [1, 2] },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [1, 3] },
+        { kind: 'item', id: 'iron_gauntlets', weight: 4 },
+        { kind: 'rune', id: 'minor_rune_might', weight: 6 },
+        { kind: 'nothing', weight: 45 },
+      ],
+    },
+  },
+  // Floor 6's clear and the prestige unlock: the warchief in the great hall,
+  // with three escorts drawn from the warren's casters and fighters.
+  goblin_warchief: {
+    id: 'goblin_warchief',
+    name: 'Goblin Warchief',
+    icon: '👹',
+    tags: ['living', 'goblin', 'humanoid', 'large'],
+    tier: 'elite',
+    damageType: 'slashing',
+    group: { min: 3, max: 3 },
+    escorts: ['goblin_witch_doctor', 'goblin_firetongue', 'hobgoblin'],
+    inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.25 }],
+    resistances: { poison: 0.3, heat: 0.2 },
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'dirty_stab' }, { technique: 'gather' }],
+    attrs: { str: 17, dex: 11, con: 16, int: 6, wis: 7, cha: 8 },
+    growth: { str: 1.6, dex: 1.1, con: 1.6, int: 0.6, wis: 0.8, cha: 0.9 },
+    xp: 200,
+    gold: [80, 160],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 20 },
+        { kind: 'material', id: 'pristine_fur', weight: 15, qty: [1, 2] },
+        { kind: 'item', id: 'iron_gauntlets', weight: 8 },
+        { kind: 'item', id: 'moonlit_katana', weight: 4 },
+        { kind: 'rune', id: 'greater_rune_might', weight: 8 },
+        { kind: 'gold', weight: 20, qty: [60, 120] },
+        { kind: 'nothing', weight: 25 },
+      ],
+    },
+  },
+  // The goblin casters (docs/plans/bands-2-3.md M7). Placed on floors 5 and 6
+  // by the band 2 sketch. Stats are first guesses beside the goblin's.
   goblin_firetongue: {
     id: 'goblin_firetongue',
     name: 'Goblin Firetongue',
@@ -695,9 +756,9 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     name: 'Hobgoblin Champion',
     icon: '👹',
     tags: ['living', 'goblin', 'humanoid', 'large'],
-    tier: 'legendary',
+    tier: 'elite',
     damageType: 'slashing',
-    group: { min: 3, max: 3 },
+    group: { min: 2, max: 2 },
     escorts: ['hobgoblin'],
     inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.25 }],
     resistances: { poison: 0.3, slashing: 0.2 },

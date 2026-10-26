@@ -265,7 +265,7 @@ describe('the submerged toll collector', () => {
     grantKeyItem(g.state, g.bus, 'toll_clerk_book');
     g.state.stats[searchKey('f1_archive', 'search')] = 4;
     g.state.stats[TOLL_SPELL_FLAG] = 1;
-    clearFloors(g.state.stats, ['ascent_f3']);
+    clearFloors(g.state.stats, ['ascent_f6']);
     const next = prestigeNow(g.state)!;
     expect(next).not.toBeNull();
     expect(hasKeyItem(next, 'toll_clerk_book')).toBe(false);

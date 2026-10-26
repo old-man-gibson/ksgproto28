@@ -47,13 +47,17 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'goblin_boss.desc': 'Legendary goblin. Slashing attacks. Always spawns in a group of five with Goblin escorts. Takes 25% less poison damage. Two loot rolls; drops include a Boss Token, Iron Gauntlets, the Moonlit Katana and greater runes.',
 
+  'goblin_raid_leader.desc': 'Veteran goblin. Slashing attacks with a 20% chance to inflict Bleeding. Fights with Pocket Sand, Dirty Stab and Gather. Always leads two Goblins. Takes 15% less poison damage. Floor 4\'s boss, at the Raid Camp. Two loot rolls.',
+
+  'goblin_warchief.desc': 'Large elite goblin. Slashing attacks with a 25% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Always leads two escorts drawn from Witch Doctors, Firetongues and Hobgoblins. Takes 30% less poison and 20% less heat damage. Floor 6\'s boss, in the Great Hall; killing it opens prestige. Three loot rolls.',
+
   'goblin_firetongue.desc': 'Small basic goblin. Fights from range with arcane fire: "quickly fire pierce" and "fire pierce", which can set you On Fire. Takes 25% less heat and 10% less poison damage. Drops fur and iron scrap.',
 
   'goblin_witch_doctor.desc': 'Small veteran goblin. Fights from range with goblin miracles: heals its allies with Mud Poultice (twice a fight, only when it has allies), then casts Vermin Swarm and Cinder Curse. Takes 20% less poison damage. Drops fur.',
 
   'hobgoblin.desc': 'Veteran goblin. Slashing attacks with a 20% chance to inflict Bleeding. Fights with Gather, Hamstring, Lunge, Dirty Stab and Pocket Sand; with martial open, seeing a technique used on you 50 times teaches it. Takes 15% less poison damage. Drops fur and iron scrap.',
 
-  'hobgoblin_champion.desc': 'Large legendary goblin. Slashing attacks with a 25% chance to inflict heavy Bleeding. Fights with Gather, Heavy Blow, Hamstring and Dirty Stab. Spawns in a group of three with Hobgoblin escorts. Takes 30% less poison and 20% less slashing damage. Three loot rolls; drops include a Boss Token, gold, Iron Gauntlets and the Moonlit Katana.',
+  'hobgoblin_champion.desc': 'Large elite goblin. Slashing attacks with a 25% chance to inflict heavy Bleeding. Fights with Gather, Heavy Blow, Hamstring and Dirty Stab. Spawns with one Hobgoblin escort. Floor 5’s boss, at the Back Door. Takes 30% less poison and 20% less slashing damage. Three loot rolls; drops include a Boss Token, gold, Iron Gauntlets and the Moonlit Katana.',
 
   'slime_golem.desc': 'Gargantuan ancient slime construct, earth element. Bludgeoning attacks. Takes 75% less slashing and piercing damage, 70% less heat and cold, 75% more bludgeoning and double arcane damage. Three loot rolls; drops Warm Slime Gel, gold and a Boss Token.',
 

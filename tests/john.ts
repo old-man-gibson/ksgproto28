@@ -52,7 +52,11 @@ const DESCENT = [
 ];
 
 /** The stretches a climb is cut into, in the order they are played. */
-export const SEGMENTS = ['tutorial', 'vermin', 'floor1', 'floor2', 'gate3', 'descent', 'floor3'] as const;
+export const SEGMENTS = [
+  'tutorial', 'vermin', 'floor1', 'floor2', 'gate3', 'descent', 'floor3',
+  // Band 2, run only with `through: 6` (docs/plans/bands-2-3.md).
+  'floor4', 'gate5', 'floor5', 'gate6', 'floor6',
+] as const;
 export type ClimbSegment = (typeof SEGMENTS)[number];
 
 export interface ClimbOptions {
@@ -64,6 +68,8 @@ export interface ClimbOptions {
   attentive?: boolean;
   /** Give up after this many ticks of play. Default: two hours. */
   budget?: number;
+  /** The last floor John climbs: 3 (band 1, the default) or 6 (band 2 too). */
+  through?: 3 | 6;
 }
 
 export interface FightRecord {
@@ -105,7 +111,7 @@ function gateValue(conds: UnlockCondition[] | undefined): number {
 }
 
 export function runJohn(options: ClimbOptions): ClimbReport {
-  const opts: Required<ClimbOptions> = { spell: 'fire', attentive: false, budget: 2 * 3600 * TPS, ...options };
+  const opts: Required<ClimbOptions> = { spell: 'fire', attentive: false, budget: 2 * 3600 * TPS, through: 3, ...options };
   const g = new Game(createInitialState(opts.seed));
   const s = g.state;
   const report: ClimbReport = {
@@ -293,7 +299,49 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   mark('descent', 'floor3');
   // The Hearing Room forces its one fight on arrival.
   if (!persist('f3_hearing_room', 'hunt', () => stat('slain:f3_hearing_room:puppet_bureaucrat') >= 1)) return finish();
-  mark('floor3', 'floor3');
+  mark('floor3', opts.through === 6 ? 'floor4' : 'floor3');
+  if (opts.through !== 6) return finish();
+
+  // ---- Band 2 (bands-2-3.md). Every hunt is endless, so John grinds where the
+  // goblins are until the next gate's kill count is met, then takes the boss.
+  const goblins = () => stat('kills:tag:goblin');
+  const GATE5 = FLOORS.ascent_f5.gate?.find((c) => c.type === 'stat')?.value ?? 0;
+  const GATE6 = FLOORS.ascent_f6.gate?.find((c) => c.type === 'stat')?.value ?? 0;
+  // A floor starts fogged: the route planner only knows rooms John has stood
+  // next to, so he walks a new floor in order, the way a player would.
+  const scout = (route: string[]) => route.every((spot) => walk(spot));
+  if (!climbTo('ascent_f4')) return finish();
+  // The raid parties in the deep woods pay floor 5's gate and the levels the
+  // raid leader asks for, in the same hunt.
+  if (!scout(['f4_woods_edge', 'f4_deep_woods'])) return finish();
+  if (!persist('f4_deep_woods', 'hunt', () => goblins() >= GATE5)) return finish();
+  if (!scout(['f4_ravine_rim', 'f4_ravine_floor'])) return finish();
+  if (!persist('f4_ravine_floor', 'hunt', () => stat('slain:f4_ravine_floor:goblin_raid_leader') >= 1)) return finish();
+  mark('floor4', 'gate5');
+
+  if (!climbTo('ascent_f5')) return finish();
+  mark('gate5', 'floor5');
+  if (!scout(['f5_bog', 'f5_cave_mouth', 'f5_hollows'])) return finish();
+  if (!persist('f5_hollows', 'explore', () => stat('flag:f5_back_door') >= 1)) return finish();
+  if (!persist('f5_back_door', 'hunt', () => stat('slain:f5_back_door:hobgoblin_champion') >= 1)) return finish();
+  mark('floor5', 'gate6');
+
+  // Floor 6's gate: goblins at the drowned village, firetongues counted too.
+  if (!scout(['f5_cave_mouth', 'f5_bog', 'f5_drowned_village'])) return finish();
+  if (!persist('f5_drowned_village', 'hunt', () => goblins() >= GATE6)) return finish();
+  if (!climbTo('ascent_f6')) return finish();
+  mark('gate6', 'floor6');
+  if (!scout(['f6_tunnels'])) return finish();
+  if (opts.attentive) {
+    // The three sabotages, each a level off the warchief.
+    for (const room of ['f6_pens', 'f6_kitchens', 'f6_shrine']) {
+      const finds = SPOTS[room].finds?.length ?? 0;
+      if (!persist(room, 'explore', () => (s.finds[room] ?? []).length >= finds)) return finish();
+    }
+  }
+  if (!scout(['f6_shrine', 'f6_drop'])) return finish();
+  if (!persist('f6_great_hall', 'hunt', () => stat('slain:f6_great_hall:goblin_warchief') >= 1)) return finish();
+  mark('floor6', 'floor6');
   return finish();
 
   function finish(): ClimbReport {

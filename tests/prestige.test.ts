@@ -30,7 +30,7 @@ import { clearFloors } from './fixtures/floors';
 
 const fresh = (): GameState => createInitialState(0);
 
-/** A run that has cleared band 1 — the brood queen is down. */
+/** A run that can prestige: floors 1–6 cleared, the warchief down. */
 function bandOneCleared(): GameState {
   const s = fresh();
   clearFloors(s.stats);
@@ -93,13 +93,13 @@ describe('the harvest', () => {
     s.achievements = { a: 2, b: 5 }; // 7 tiers, 3 per point → 2
     const preview = harvest(s);
     const byId = Object.fromEntries(preview.lines.map((l) => [l.id, l.points]));
-    expect(byId).toEqual({ floors: 3, quests: 2, bestiary: 2, skills: 2, achievements: 2, gold: 2 });
-    expect(preview.total).toBe(13);
+    expect(byId).toEqual({ floors: 6, quests: 2, bestiary: 2, skills: 2, achievements: 2, gold: 2 });
+    expect(preview.total).toBe(16);
     expect(preview.ordinal).toBe(1);
 
     const next = prestigeNow(s, 1)!;
     expect(next.prestige.lastHarvest).toEqual(preview);
-    expect(next.prestige.points).toBe(13);
+    expect(next.prestige.points).toBe(16);
   });
 
   it('gold pays geometrically: each point ten times further than the last, from 10,000', () => {
@@ -173,7 +173,7 @@ describe('the reset', () => {
     const again = { ...first, stats: clearFloors({ ...first.stats }) };
     const second = prestigeNow(again as GameState, 2)!;
     expect(second.prestige.count).toBe(2);
-    expect(second.prestige.points).toBe(first.prestige.points + 3);
+    expect(second.prestige.points).toBe(first.prestige.points + 6);
     expect(second.prestige.lastHarvest?.ordinal).toBe(2);
   });
 
@@ -245,7 +245,7 @@ describe('the post-prestige review', () => {
     expect(next.prestige.review).toBe(true);
     const loaded = deserialize(serialize(next));
     expect(loaded.prestige.review).toBe(true);
-    expect(loaded.prestige.lastHarvest?.total).toBe(3);
+    expect(loaded.prestige.lastHarvest?.total).toBe(6);
     leaveReview(loaded);
     expect(loaded.prestige.review).toBe(false);
   });
@@ -273,7 +273,7 @@ describe('talent', () => {
     s.skills.scouting = lvl(12);
     const next = prestigeNow(s, 1)!;
     expect(next.prestige.purchases.talent).toBe(1);
-    expect(next.prestige.points).toBe(5); // 3 floors + 52 skill levels; the free rank cost nothing
+    expect(next.prestige.points).toBe(8); // 6 floors + 52 skill levels; the free rank cost nothing
     expect(next.prestige.peakLevels).toEqual({ fighting: 40, scouting: 12 });
     expect(nextBoonCost(next, 'talent')).toBe(PRESTIGE_BOONS.talent.cost[1]);
   });
