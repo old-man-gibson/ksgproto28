@@ -55,11 +55,9 @@ describe('the pattern drawing', () => {
     }
   });
 
-  it('labels the sword the way the anvil names its parts', () => {
+  it('labels each part of the sword with its size alone, as a smith\'s pattern does', () => {
     const d = drawingOf({ head: part('long', IRON), guard: part('cross', IRON), haft: part('h3', WOOD) });
-    const labels = d.measures.map((m) => m.label);
-    expect(labels).toContain('long blade 2×6');
-    expect(labels).toContain('short handle 1×3');
+    expect(d.measures.map((m) => m.label)).toEqual(['2×6', '3×1', '1×3']);
   });
 
   it('draws a shield in two views with the grip as a hidden line behind the face', () => {
@@ -74,9 +72,24 @@ describe('the pattern drawing', () => {
 
   it('counts rings and pairs in the brackets', () => {
     const mail = drawingOf({ head: part('ring', IRON, 8) });
-    expect(mail.measures.map((m) => m.label)).toContain('metal ring 1×1 ×8');
+    expect(mail.measures.map((m) => m.label)).toContain('1×1 ×8');
     const amulet = drawingOf({ head: part('ring', IRON), bind: part('cord', LEATHER) });
-    expect(amulet.measures.map((m) => m.label)).toContain('cord 1×4');
+    expect(amulet.measures.map((m) => m.label)).toContain('1×4');
+  });
+
+  it('brackets a part once however many copies it has, in every layout', () => {
+    const count = (p: Placement, label: string) => drawingOf(p).measures.filter((m) => m.label === label).length;
+    const rings8 = '1×1 ×8';
+    expect(classifyPlacement({ head: part('ring', IRON, 8), haft: part('h4', WOOD) }).id).toBe('hoop_pole');
+    expect(count({ head: part('ring', IRON, 8), haft: part('h4', WOOD) }, rings8)).toBe(1);
+    expect(count({ head: part('bent_m', IRON, 2), haft: part('h3', WOOD) }, '2×3 ×2')).toBe(1);
+    expect(count({ head: part('plate_m', WOOD), head2: part('ring', IRON, 8), haft: part('h3', WOOD) }, rings8)).toBe(1);
+    const bow = { head: part('bent_l', WOOD), head2: part('ring', IRON, 8), bind: part('cord', LEATHER) };
+    expect(classifyPlacement(bow).id).toBe('bow');
+    expect(count(bow, rings8)).toBe(1);
+    // The extras' brackets share one column instead of stepping right one per copy.
+    const d = drawingOf(bow);
+    expect(d.maxX - d.minX).toBeLessThan(15);
   });
 
   it('gives each strapped piece its own strap and buckle, never one strap across two pieces', () => {

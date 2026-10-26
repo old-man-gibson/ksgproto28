@@ -18,16 +18,62 @@
   /** The sheet is at least this tall, in pixels, so a dagger does not sit in a sliver. */
   const MIN_HEIGHT = 260;
 
+  /** Average character width of a label, in ems (body faces, digits and ×). */
+  const CHAR = 0.56;
+  /** Labels stay readable when the drawing is scaled down: at least 10px. */
+  const fontAt = (z: number) => Math.max(0.5, 10 / z);
+
   let sheetWidth = $state(0);
   const drawing = $derived(drawingOf(placement));
-  const dw = $derived(drawing.maxX - drawing.minX + 2 * MARGIN);
-  const dh = $derived(drawing.maxY - drawing.minY + 2 * MARGIN);
-  const zoom = $derived(Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, sheetWidth > 0 ? sheetWidth / dw : MAX_ZOOM)));
+
+  /**
+   * The drawing's extent at a zoom, its labels measured in the font that zoom
+   * gives them. The geometry's own bounds are a floor: they already hold an
+   * estimate for every label, and only a larger real label widens them.
+   */
+  function extentAt(z: number) {
+    const font = fontAt(z);
+    let { minX, minY, maxX, maxY } = drawing;
+    for (const m of drawing.measures) {
+      const w = m.label.length * font * CHAR;
+      if (m.side === 'right') maxX = Math.max(maxX, m.at + 0.55 + w);
+      else if (m.side === 'left') minX = Math.min(minX, m.at - 0.55 - w);
+      else {
+        const mid = (m.from + m.to) / 2;
+        minX = Math.min(minX, mid - w / 2);
+        maxX = Math.max(maxX, mid + w / 2);
+        maxY = Math.max(maxY, m.at + 0.35 + font);
+      }
+    }
+    for (const c of drawing.captions) {
+      maxX = Math.max(maxX, c.x + c.text.length * font * 1.1 * CHAR);
+      minY = Math.min(minY, c.y - font * 1.1);
+    }
+    return { minX, minY, maxX, maxY };
+  }
+
+  // The zoom sets the font, the font sets the labels' width, the width sets the zoom: settle it.
+  const fit = $derived.by(() => {
+    const zoomFor = (e: ReturnType<typeof extentAt>) =>
+      sheetWidth > 0 ? Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, sheetWidth / (e.maxX - e.minX + 2 * MARGIN))) : MAX_ZOOM;
+    let zoom = MAX_ZOOM;
+    let e = extentAt(zoom);
+    for (let i = 0; i < 6; i++) {
+      const next = zoomFor(e);
+      if (Math.abs(next - zoom) < 0.01) break;
+      zoom = next;
+      e = extentAt(zoom);
+    }
+    return { zoom, e };
+  });
+  const zoom = $derived(fit.zoom);
+  const dw = $derived(fit.e.maxX - fit.e.minX + 2 * MARGIN);
+  const dh = $derived(fit.e.maxY - fit.e.minY + 2 * MARGIN);
   // The view spans the whole sheet so the grid reaches its edges; the drawing is centred in it.
   const vw = $derived(Math.max(dw, sheetWidth / zoom));
   const vh = $derived(Math.max(dh, MIN_HEIGHT / zoom));
-  const vx = $derived((drawing.minX + drawing.maxX) / 2 - vw / 2);
-  const vy = $derived((drawing.minY + drawing.maxY) / 2 - vh / 2);
+  const vx = $derived((fit.e.minX + fit.e.maxX) / 2 - vw / 2);
+  const vy = $derived((fit.e.minY + fit.e.maxY) / 2 - vh / 2);
   const span = (from: number, to: number) => {
     const out: number[] = [];
     for (let v = Math.ceil(from); v <= Math.floor(to); v++) out.push(v);
@@ -35,8 +81,7 @@
   };
   const gridX = $derived(span(vx, vx + vw));
   const gridY = $derived(span(vy, vy + vh));
-  /** Labels stay readable when the drawing is scaled down: at least 10px. */
-  const font = $derived(Math.max(0.5, 10 / zoom));
+  const font = $derived(fontAt(zoom));
 </script>
 
 <div class="sheet" bind:clientWidth={sheetWidth}>

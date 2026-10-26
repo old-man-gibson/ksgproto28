@@ -72,7 +72,8 @@
   const cls = $derived(shown.class);
   const known = $derived(formKnown(gs, cls.id));
   /** A previewed form is "?" until the save has made it, as in the table and "one change away". */
-  const shownName = $derived(previewing && !known ? '?' : shown.def.name);
+  const masked = $derived(previewing && !known);
+  const shownName = $derived(masked ? '?' : shown.def.name);
   /** Every line of the middle column, a previewed value set against the current one. */
   const lines = $derived(
     pairStatLines(pieceLines(preview.stats, preview.def.mods), pieceLines(shown.stats, shown.def.mods)),
@@ -276,23 +277,26 @@
               A changed line reads current → preview. Click the row to apply it.
             </div>
           {/if}
+          <!-- A previewed form still masked as "?" shows nothing that names it: no slot, hands,
+               family or degenerate chip and no description, as in the table and the chart. -->
           <div class="chips">
-            <span class="chip">{SLOT_NAMES[cls.slot]}</span>
-            {#if cls.wield}<span class="chip">{WIELD_NAMES[cls.wield]}</span>{/if}
-            <!-- The family tag is the form's own name for most weapons: not shown for a previewed form still masked as "?". -->
-            {#if family && !(previewing && !known)}
-              {#if familyClaimed}
-                <span class="chip">family: {family}</span>
-              {:else}
-                <span class="chip warn" title="It equips and fights, but no combat skill trains on it.">
-                  family: {family}, no combat skill claims it
-                </span>
+            {#if !masked}
+              <span class="chip">{SLOT_NAMES[cls.slot]}</span>
+              {#if cls.wield}<span class="chip">{WIELD_NAMES[cls.wield]}</span>{/if}
+              {#if family}
+                {#if familyClaimed}
+                  <span class="chip">family: {family}</span>
+                {:else}
+                  <span class="chip warn" title="It equips and fights, but no combat skill trains on it.">
+                    family: {family}, no combat skill claims it
+                  </span>
+                {/if}
               {/if}
+              {#if cls.degenerate}<span class="chip deg">degenerate form</span>{/if}
             {/if}
-            {#if cls.degenerate}<span class="chip deg">degenerate form</span>{/if}
             {#if !known}<span class="chip new">new form: added to the chart when forged</span>{/if}
           </div>
-          {#if cls.degenerate && cls.desc}<div class="small dim">{cls.desc}</div>{/if}
+          {#if !masked && cls.degenerate && cls.desc}<div class="small dim">{cls.desc}</div>{/if}
 
           <dl class="stats">
             {#each lines as line}

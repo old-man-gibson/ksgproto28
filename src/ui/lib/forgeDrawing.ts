@@ -74,7 +74,7 @@ function tintOf(color: string): string {
 }
 
 const n = (v: number) => +v.toFixed(3);
-/** "2×6", "1×1 ×8". */
+/** A bracket's label, the size alone as on a smith's pattern: "2×6", "1×1 ×8". The part names are in the slot list beside it. */
 const sizeLabel = (p: Piece) => `${p.kind.w}×${p.kind.l}${p.qty > 1 ? ` ×${p.qty}` : ''}`;
 
 /** The axis every weapon stands on: the middle of a one-cell haft. */
@@ -419,22 +419,33 @@ export function drawingOf(placement: Placement): Drawing {
 
 /** Weapons on one axis: tip heads on top, guard, haft; cross heads ride the haft's top; a second tip head points down from the haft's end. */
 function drawStack(s: Sheet, heads: Piece[], haftP?: Piece, guardP?: Piece, bindP?: Piece) {
-  const all = heads.flatMap(copies);
-  const tips = all.filter((p) => !isCrossHead(p));
-  const crosses = all.filter(isCrossHead);
+  const tipPieces = heads.filter((p) => !isCrossHead(p));
+  const crosses = heads.filter(isCrossHead).flatMap(copies);
   const right = () => Math.max(AXIS + 1.2, s.maxX) + 0.35;
+  // One bracket per part, spanning all its copies: "metal ring 1×1 ×8" once, not eight times.
   const spans: { piece: Piece; from: number; to: number; side: 'left' | 'right' }[] = [];
+  const span = (piece: Piece, from: number, to: number, side: 'left' | 'right') => {
+    const prev = spans.find((sp) => sp.piece === piece && sp.side === side);
+    if (prev) {
+      prev.from = Math.min(prev.from, from);
+      prev.to = Math.max(prev.to, to);
+    } else spans.push({ piece, from, to, side });
+  };
 
+  // The first tip head, every copy of it, stands on top; a second one points down from the haft's end.
   let y = 0;
-  const first = tips.shift();
+  const first = tipPieces[0];
   if (first) {
-    drawTip(s, first, y, false);
-    spans.push({ piece: first, from: y, to: y + first.kind.l, side: 'right' });
-    y += first.kind.l;
+    for (let i = 0; i < first.qty; i++) {
+      drawTip(s, first, y, false);
+      span(first, y, y + first.kind.l, 'right');
+      y += first.kind.l;
+    }
   }
+  const tips = tipPieces.slice(1).flatMap(copies);
   if (guardP) {
     guard(s, guardP, y);
-    spans.push({ piece: guardP, from: y, to: y + guardP.kind.l, side: 'right' });
+    span(guardP, y, y + guardP.kind.l, 'right');
     y += guardP.kind.l;
   }
   // Cross heads sit on the haft's top end; with nothing above them, the haft pokes through.
@@ -445,14 +456,14 @@ function drawStack(s: Sheet, heads: Piece[], haftP?: Piece, guardP?: Piece, bind
   for (const c of crosses) {
     if (c.kind.shape === 'mass') maulHead(s, c, cy);
     else axeHead(s, c, cy);
-    spans.push({ piece: c, from: cy, to: cy + c.kind.l, side: 'left' });
+    span(c, cy, cy + c.kind.l, 'left');
     cy += c.kind.l + 0.15;
     end = Math.max(end, cy);
   }
   if (haftP) {
     // A grip under a blade ends in a pommel unless a second blade points down from it.
     haft(s, haftP, haftTop, { pommel: !!first && tips.length === 0 && haftP.kind.l <= 4 });
-    spans.push({ piece: haftP, from: haftTop, to: haftTop + haftP.kind.l, side: 'right' });
+    span(haftP, haftTop, haftTop + haftP.kind.l, 'right');
     if (bindP) wraps(s, haftTop, Math.min(bindP.kind.l, haftP.kind.l));
     end = Math.max(end, haftTop + haftP.kind.l);
   } else if (bindP) {
@@ -460,18 +471,21 @@ function drawStack(s: Sheet, heads: Piece[], haftP?: Piece, guardP?: Piece, bind
     wraps(s, end, bindP.kind.l);
     end += bindP.kind.l;
   }
-  if (bindP) spans.push({ piece: bindP, from: haftP ? haftTop : end - bindP.kind.l, to: (haftP ? haftTop : end - bindP.kind.l) + bindP.kind.l, side: 'left' });
-  // Further tip heads: the first points down from the haft's end; any more continue below it.
+  if (bindP) {
+    const from = haftP ? haftTop : end - bindP.kind.l;
+    span(bindP, from, from + bindP.kind.l, 'left');
+  }
+  // The second tip head points down from the haft's end; its copies continue below it.
   for (const t of tips) {
     drawTip(s, t, end, true);
-    spans.push({ piece: t, from: end, to: end + t.kind.l, side: 'right' });
+    span(t, end, end + t.kind.l, 'right');
     end += t.kind.l;
   }
   // Brackets: right-hand ones in a column clear of the drawing, left-hand ones clear of the cross heads.
   const rx = right();
   const lx = Math.min(AXIS - 1.2, s.minX) - 0.35;
   for (const sp of spans) {
-    s.measure({ from: sp.from, to: sp.to, at: sp.side === 'right' ? rx : lx, side: sp.side, label: `${partName(sp.piece)} ${sizeLabel(sp.piece)}` });
+    s.measure({ from: sp.from, to: sp.to, at: sp.side === 'right' ? rx : lx, side: sp.side, label: sizeLabel(sp.piece) });
   }
 }
 
@@ -512,22 +526,25 @@ function drawShield(s: Sheet, heads: Piece[], haftP: Piece | undefined, guardP: 
     s.line(ellipse(AXIS, l * 0.42, guardP.kind.w / 2.6, guardP.kind.l / 2.6), guardP.tint);
   }
   // A blade on a shield's rim, pointing up.
-  const blades = heads.slice(1).flatMap(copies).concat(copies(face).slice(1));
   let rimTop = 0;
   let layers = 0;
-  for (const b of blades) {
+  for (const b of heads.slice(1)) {
     if (b.kind.shape === 'plate') {
       // A second plate doubles the face: drawn behind it, offset, with its own bracket.
       layers++;
       const off = 0.3 * layers;
       s.detail(roundRect(x + off, off, b.kind.w, b.kind.l, 0.2));
       s.box(x + off, off, x + off + b.kind.w, off + b.kind.l);
-      s.measure({ from: x + off, to: x + off + b.kind.w, at: Math.max(l + 0.6, s.maxY + 0.25) + 0.9 * layers, side: 'below', label: `${partName(b)} ${sizeLabel(b)}` });
+      s.measure({ from: x + off, to: x + off + b.kind.w, at: Math.max(l + 0.6, s.maxY + 0.25) + 0.9 * layers, side: 'below', label: sizeLabel(b) });
       continue;
     }
-    rimTop -= b.kind.l;
-    drawTip(s, b, rimTop, false);
-    s.measure({ from: rimTop, to: rimTop + b.kind.l, at: x + w + 0.35, side: 'right', label: `${partName(b)} ${sizeLabel(b)}` });
+    // Anything else on the rim stands on it, every copy stacked, under one bracket.
+    const bottom = rimTop;
+    for (let i = 0; i < b.qty; i++) {
+      rimTop -= b.kind.l;
+      drawTip(s, b, rimTop, false);
+    }
+    s.measure({ from: rimTop, to: bottom, at: x + w + 0.35, side: 'right', label: sizeLabel(b) });
   }
   // The grip behind the face, dashed: centred, as long as it is.
   if (haftP) {
@@ -536,7 +553,7 @@ function drawShield(s: Sheet, heads: Piece[], haftP: Piece | undefined, guardP: 
     s.hidden(rect(AXIS - 0.22, gy, 0.44, gl));
     s.box(AXIS - 0.22, gy, AXIS + 0.22, gy + gl);
   }
-  s.measure({ from: x, to: x + w, at: Math.max(l + 0.6, s.maxY + 0.25), side: 'below', label: `${partName(face)} ${sizeLabel(face)}` });
+  s.measure({ from: x, to: x + w, at: Math.max(l + 0.6, s.maxY + 0.25), side: 'below', label: sizeLabel(face) });
 
   // Side view: the face edge-on, the grip standing off its back.
   const sx = x + w + 2.6;
@@ -551,13 +568,13 @@ function drawShield(s: Sheet, heads: Piece[], haftP: Piece | undefined, guardP: 
     s.line(`M${n(sx + depth)},${n(gy)} H${n(gx)} V${n(gy + gl)} H${n(sx + depth)}`, haftP.tint);
     if (bindP) wrapsAt(s, gx - 0.15, gy, Math.min(bindP.kind.l, gl));
     s.box(sx + depth, gy, gx + 0.1, gy + gl);
-    s.measure({ from: gy, to: gy + gl, at: gx + 0.4, side: 'right', label: `${partName(haftP)} ${sizeLabel(haftP)}` });
+    s.measure({ from: gy, to: gy + gl, at: gx + 0.4, side: 'right', label: sizeLabel(haftP) });
   } else if (bindP) {
     wrapsAt(s, sx + depth + 0.2, 0.2, bindP.kind.l);
     s.box(sx + depth, 0.2, sx + depth + 0.6, 0.2 + bindP.kind.l);
   }
-  if (guardP) s.measure({ from: sx - 1.2, to: sx - 1.2 + guardP.kind.w, at: s.maxY + 0.25, side: 'below', label: `${partName(guardP)} ${sizeLabel(guardP)}` });
-  if (bindP) s.measure({ from: sx, to: sx + 1, at: s.maxY + 0.25, side: 'below', label: `${partName(bindP)} ${sizeLabel(bindP)}` });
+  if (guardP) s.measure({ from: sx - 1.2, to: sx - 1.2 + guardP.kind.w, at: s.maxY + 0.25, side: 'below', label: sizeLabel(guardP) });
+  if (bindP) s.measure({ from: sx, to: sx + 1, at: s.maxY + 0.25, side: 'below', label: sizeLabel(bindP) });
   // Both captions on one line above everything drawn.
   const captionY = Math.min(rimTop, s.minY) - 0.3;
   s.caption({ x, y: captionY, text: 'Front' });
@@ -580,22 +597,30 @@ function drawBow(s: Sheet, heads: Piece[], guardP?: Piece, bindP?: Piece) {
   s.line(rect(-0.05, L / 2 - 0.45, 0.35, 0.9));
   if (bindP) {
     s.line(segment(tipX, 0, tipX, L), bindP.tint);
-    s.measure({ from: 0, to: L, at: tipX + 0.4, side: 'right', label: `${partName(bindP)} ${sizeLabel(bindP)}` });
+    s.measure({ from: 0, to: L, at: tipX + 0.4, side: 'right', label: sizeLabel(bindP) });
   }
-  s.measure({ from: -0.3, to: tipX, at: L + 0.35, side: 'below', label: `${partName(limb)} ${sizeLabel(limb)}` });
+  s.measure({ from: -0.3, to: tipX, at: L + 0.35, side: 'below', label: sizeLabel(limb) });
   let y = L + 1.6;
-  const extra = heads.slice(1).flatMap(copies).concat(copies(limb).slice(1));
-  for (const h of extra) {
+  // Everything else hangs below, one bracket per part in one column: a second limb (its
+  // count is already on the limb's bracket), then the second head's copies, then the guard.
+  const extras = heads.slice(1);
+  const col = Math.max(tipX, ...extras.map((h) => AXIS + h.kind.w / 2), guardP ? AXIS + guardP.kind.w / 2 : 0) + 0.45;
+  const hang = (h: Piece) => {
     if (isCrossHead(h)) {
       if (h.kind.shape === 'mass') maulHead(s, h, y);
       else axeHead(s, h, y);
     } else drawTip(s, h, y, false);
-    s.measure({ from: y, to: y + h.kind.l, at: s.maxX + 0.35, side: 'right', label: `${partName(h)} ${sizeLabel(h)}` });
     y += h.kind.l + 0.3;
+  };
+  for (let i = 1; i < limb.qty; i++) hang(limb);
+  for (const h of extras) {
+    const from = y;
+    for (let i = 0; i < h.qty; i++) hang(h);
+    s.measure({ from, to: y - 0.3, at: col, side: 'right', label: sizeLabel(h) });
   }
   if (guardP) {
     guard(s, guardP, y);
-    s.measure({ from: y, to: y + guardP.kind.l, at: s.maxX + 0.35, side: 'right', label: `${partName(guardP)} ${sizeLabel(guardP)}` });
+    s.measure({ from: y, to: y + guardP.kind.l, at: col, side: 'right', label: sizeLabel(guardP) });
   }
 }
 
@@ -672,7 +697,7 @@ function drawSideBySide(s: Sheet, heads: Piece[], guardP: Piece | undefined, bin
   // One row per bracket: a piece's label never runs into its neighbour's.
   const at = s.maxY + 0.3;
   below.forEach((b, row) => {
-    s.measure({ from: b.from, to: b.to, at: at + row * 1.1, side: 'below', label: `${partName(b.piece)} ${sizeLabel(b.piece)}` });
+    s.measure({ from: b.from, to: b.to, at: at + row * 1.1, side: 'below', label: sizeLabel(b.piece) });
   });
 }
 
@@ -708,7 +733,3 @@ function drawTipAt(s: Sheet, p: Piece, x: number, top: number) {
   }
 }
 
-/** The bracket's word for a part: "blade", "handle", "strap". */
-function partName(p: Piece): string {
-  return p.kind.name.toLowerCase();
-}
