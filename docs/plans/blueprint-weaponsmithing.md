@@ -319,10 +319,19 @@ one run: the store is keyed on `createdAt` plus the prestige count and resets
 itself when either changes (`syncAnvil`, called on mount and by `loadOnAnvil`),
 which covers a hard reset, an import and a prestige without hooking any of them.
 
-- **Anvil view.** Silhouette (`lib/ForgeSilhouette.svelte`, geometry in
-  `lib/anvilView.ts`: weapons stack head, guard, haft; armour lays pieces side
-  by side with a guard in the next column; a bow is an arc with any second head
-  or guard hung below it; every billed part is drawn, which a test sweeps), the
+- **Anvil view.** The drawing is a smith's pattern (user's vote, 2026-10-26,
+  over forged, pixel, silhouette and engraved styles): ink outlines at true
+  size on a drafting grid, one square per cell, each part's w×l bracketed
+  beside it (`lib/ForgeSilhouette.svelte`, pure geometry in
+  `lib/forgeDrawing.ts`). Weapons stand on one axis, blade up; cross heads
+  ride the haft's top; a second blade points down from the haft's end. A
+  shield is drawn twice, front (the grip as a dashed hidden line behind the
+  face) and side (the grip on the back), because a handle under a shield
+  read wrong. Armour lays pieces side by side, and a strap is fitted to each
+  piece where that piece is fastened (chin, wrist, ankle, middle), never one
+  strap across two. A bow is a limb with its string; anything else billed
+  hangs below. Every billed part is drawn and bracketed, which a test sweeps
+  over the catalogue. Then the
   resolved name with slot, hands, family and
   degenerate chips (a family no combat skill claims is flagged), the kernel's
   stat lines at Fair quality, the bill (units, cells, held) and the job time,
@@ -437,9 +446,10 @@ authority; this list says where to look.
   references. Recipe `cost[].id` is still not a reference (pre-existing).
 - **Debug.** `createItem('forged:<class>')` mints the class exemplar at grade C,
   so the debug "one of every item" still gives numbers.
-- **Silhouette class.** The SVG cells use class `piece-cell`, not `cell`: an
-  SVG rect takes its width from CSS whenever any rule sets one, and several
-  panels style a `.cell` of their own.
+- **Generic class names in SVG.** The first drawing's cells used `piece-cell`,
+  not `cell`: an SVG rect takes its width from CSS whenever any rule sets one,
+  and several panels style a `.cell` of their own. The pattern drawing keeps
+  the rule (`ink`, `measure`, `caption`).
 - **Recipe cost changes.** Rapier 3 → 2 iron ingots + 1 hardwood; iron
   breastplate 4 iron ingots → 3 + 1 leather. Uchigatana keeps its authored
   cost (no placement).
