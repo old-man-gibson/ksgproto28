@@ -443,6 +443,15 @@ export function validate(store: S): Issue[] {
       if (!monsters[e.monsterId]) err('spot', spot.id, `spawns unknown monster '${e.monsterId}'`, ['encounters']);
       if (e.level?.[0] > e.level?.[1]) err('spot', spot.id, `encounter '${e.monsterId}' has an inverted level range`, ['encounters']);
     }
+    // Preparation rules (SpotDef.preparation): mirrors tests/band2.test.ts.
+    (spot.preparation ?? []).forEach((p, i) => {
+      const at = ['preparation', i];
+      if (!p.when?.length) err('spot', spot.id, `preparation ${i} has no condition`, at);
+      if (!(p.escortsLost ?? 0) && !p.leader?.length) err('spot', spot.id, `preparation ${i} does nothing`, at);
+      for (const app of p.leader ?? []) {
+        if (!statuses[app.id]) err('spot', spot.id, `preparation ${i} names unknown status '${app.id}'`, at);
+      }
+    });
 
     validateFinds(spot, { materials, items, runes, spots, claimedTags }, err, warn);
     for (const message of searchContentIssues(spot, { materials, items, runes, keyItems: store.all('keyItem') })) err('spot', spot.id, message);

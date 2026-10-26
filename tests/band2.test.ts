@@ -1,6 +1,9 @@
 import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
-import { FLOORS, PRESTIGE_UNLOCK, SPOTS } from '../src/core/registry';
+import { FLOORS, MATERIALS, PRESTIGE_UNLOCK, SPOTS, STATUSES } from '../src/core/registry';
+import { createInitialState } from '../src/core/state';
+import { spawnGroup } from '../src/core/systems/combat';
+import { findStatus } from '../src/core/systems/statuses';
 import { TPS } from '../src/core/engine/loop';
 import { runJohn, secs, type ClimbReport } from './john';
 
@@ -44,6 +47,56 @@ describe('band 2 structure', () => {
     }
     for (const floor of ['ascent_f5', 'ascent_f6']) {
       expect(FLOORS[floor].gate?.every((c) => c.type === 'stat' && c.key === 'kills:tag:goblin'), floor).toBe(true);
+    }
+  });
+});
+
+describe('the warchief and the four sabotages', () => {
+  const hall = SPOTS.f6_great_hall;
+  const squad = (flags: string[]) => {
+    const state = createInitialState(11);
+    for (const f of flags) state.stats[f] = 1;
+    const slots = spawnGroup(state, hall);
+    const members = slots.filter((m) => m !== null);
+    const chief = members.find((m) => m!.defId === 'goblin_warchief')!;
+    return { state, members, chief };
+  };
+
+  it('comes with a full squad of five, none of them hurt, when nothing was done', () => {
+    const { members, chief } = squad([]);
+    expect(members).toHaveLength(5);
+    expect(chief.statuses).toEqual([]);
+  });
+
+  it('the boars take two escorts, the sluice soaks him, the barbs bleed him', () => {
+    expect(squad(['flag:f6_sab_boars']).members).toHaveLength(3);
+    expect(findStatus(squad(['flag:f6_sab_flood']).chief, 'soaked')).toBeTruthy();
+    expect(findStatus(squad(['flag:f6_sab_barbs']).chief, 'bleeding')?.intensity).toBe(3);
+    const all = squad(['flag:f6_sab_boars', 'flag:f6_sab_flood', 'flag:f6_sab_barbs']);
+    expect(all.members).toHaveLength(3);
+    expect(findStatus(all.chief, 'soaked')).toBeTruthy();
+    expect(all.state.combatFeed.some((l) => l.text.includes('escorts did not come'))).toBe(true);
+  });
+
+  it('every sabotage is hidden: a long search, or a room shown only by searching the one before it to the end', () => {
+    expect(SPOTS.f6_pens.finds?.find((f) => f.id === 'f6_pens_boars')?.at).toBeGreaterThanOrEqual(0.9);
+    for (const [from, to] of [['f6_kitchens', 'f6_larder'], ['f6_shrine', 'f6_cistern'], ['f6_drop', 'f6_armory']]) {
+      expect(SPOTS[from].connections.find((c) => c.to === to)?.hidden, `${from} → ${to}`).toBe(true);
+    }
+  });
+
+  it('the roast is a dish the player eats', () => {
+    expect(SPOTS.f6_larder.finds?.[0].material?.id).toBe('warchiefs_roast');
+    expect(MATERIALS.warchiefs_roast.consumable?.grants?.length).toBeGreaterThan(0);
+  });
+
+  it('every preparation rule in the world names real statuses and asks for something', () => {
+    for (const spot of Object.values(SPOTS)) {
+      for (const p of spot.preparation ?? []) {
+        expect(p.when.length, spot.id).toBeGreaterThan(0);
+        expect((p.escortsLost ?? 0) > 0 || (p.leader?.length ?? 0) > 0, `${spot.id}: a rule that does nothing`).toBe(true);
+        for (const app of p.leader ?? []) expect(STATUSES[app.id], `${spot.id}: ${app.id}`).toBeDefined();
+      }
     }
   });
 });

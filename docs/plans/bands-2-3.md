@@ -220,7 +220,7 @@ three boss rooms have a `fightLimit` (1). Gates read `kills:tag:goblin`.
 |---|---|---|---|
 | 4 Greenwood | treeline, woods edge, deep woods, barrow hills (wing joining the edge and the rim), ravine rim, raid camp | — | `slain:f4_ravine_floor:goblin_raid_leader` (new veteran, L9, two goblins) |
 | 5 Mire | causeway, bog, drowned village (wing joining the bog and the cave mouth), cave mouth, the Hollows (dark), back door | 12 goblins | `slain:f5_back_door:hobgoblin_champion` (now elite, L8, one hobgoblin) |
-| 6 Warren | mouth, tunnels, pens, kitchens, shrine; down the drop (dark, a haven): the great hall | 40 goblins | `slain:f6_great_hall:goblin_warchief` (new elite, two escorts, L11 down to L8 by sabotage) |
+| 6 Warren | mouth, tunnels, pens, kitchens, shrine; down the drop (dark, a haven): the great hall. Hidden: the larder (behind the kitchens), the cistern (under the shrine), the armory (off the drop) | 40 goblins | `slain:f6_great_hall:goblin_warchief` (new elite, L11, a full squad of five) |
 
 - **M1:** `PRESTIGE_UNLOCK` is the warchief's kill. The harvest's floors source
   now pays 6 points for a first run instead of 3.
@@ -236,8 +236,17 @@ three boss rooms have a `fightLimit` (1). Gates read `kills:tag:goblin`.
   warchief (13 losses). The first draft (legendary bosses at L13 and L18 with
   full squads) took 29–171 losses against the champion and 45–184 against
   the warchief.
-- **Not built yet from the spine:** the sabotages only take levels off; each
-  weakening a different part of the fight is open. Variant bosses, rolled
+- **Sabotages (user, 2026-10-26):** hard to find, each changing the fight its
+  own way. The pens' search pays at 90%: the war boars are loosed and two
+  escorts never arrive. The kitchens, the shrine and the drop each show a
+  hidden room only when searched to 100%: the larder holds the Warchief's
+  Roast (a dish the player eats: Well Fed ×2, Steady Hand ×1), the cistern's
+  sluice leaves him Soaked, the armory's barbs give him Bleeding ×3. Built as
+  a generic `SpotDef.preparation` rule (conditions → escorts lost, statuses
+  on the leader), checked in both validation layers. Measured: without
+  sabotage John lost 12 and 25 times on two climbs before winning by
+  grinding; with all four, every attentive climb won first try.
+- **Not built yet from the spine:** variant bosses, rolled
   raid parties as their own encounter, and knowledge carrying across prestige
   are open. There is no forest scene: floor 4's banner falls back to the town.
 - **Tuning note (user, 2026-10-25):** smithing XP is too fast (one iron

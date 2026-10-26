@@ -4,8 +4,9 @@ import { TPS } from '../src/core/engine/loop';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { hasKeyItem } from '../src/core/systems/keyitems';
 import { xpToReach } from '../src/core/systems/levels';
-import { FLOORS, NPCS, SPOTS } from '../src/core/registry';
-import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
+import { FLOORS, NPCS, QUALITY_TIERS, SPOTS } from '../src/core/registry';
+import { isExplored } from '../src/core/systems/actions';
+import type { QualityTier, TutorialWeapon, UnlockCondition } from '../src/core/types';
 
 /**
  * JOHN (docs/COMPLETABILITY.md §8) — the floor build, played up the tower.
@@ -332,14 +333,23 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   if (!climbTo('ascent_f6')) return finish();
   mark('gate6', 'floor6');
   if (!scout(['f6_tunnels'])) return finish();
+  // Attentive John takes all four sabotages: the pens' search to its end, and
+  // the three hidden rooms, each shown by searching the room before it to
+  // 100% (Connection.hidden).
+  const searchAll = (room: string) => persist(room, 'explore', () => isExplored(s, room));
   if (opts.attentive) {
-    // The three sabotages, each a level off the warchief.
-    for (const room of ['f6_pens', 'f6_kitchens', 'f6_shrine']) {
-      const finds = SPOTS[room].finds?.length ?? 0;
-      if (!persist(room, 'explore', () => (s.finds[room] ?? []).length >= finds)) return finish();
-    }
+    if (!searchAll('f6_pens')) return finish();
+    if (!searchAll('f6_kitchens') || !searchAll('f6_larder')) return finish();
+    if (!searchAll('f6_shrine') || !searchAll('f6_cistern')) return finish();
   }
   if (!scout(['f6_shrine', 'f6_drop'])) return finish();
+  if (opts.attentive) {
+    if (!searchAll('f6_drop') || !searchAll('f6_armory')) return finish();
+    if (!walk('f6_drop')) return finish();
+    restUp();
+    // The warchief's roast, eaten at the door, whatever grade the find gave.
+    for (const q of Object.keys(QUALITY_TIERS)) if (g.useConsumable('warchiefs_roast', q as QualityTier)) break;
+  }
   if (!persist('f6_great_hall', 'hunt', () => stat('slain:f6_great_hall:goblin_warchief') >= 1)) return finish();
   mark('floor6', 'floor6');
   return finish();

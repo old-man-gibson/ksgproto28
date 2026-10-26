@@ -617,7 +617,8 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     },
   },
   // Floor 6's clear and the prestige unlock: the warchief in the great hall,
-  // with three escorts drawn from the warren's casters and fighters.
+  // with a full squad of four drawn from the warren's casters and fighters
+  // (user, 2026-10-26). The boar sabotage kills two before the fight.
   goblin_warchief: {
     id: 'goblin_warchief',
     name: 'Goblin Warchief',
@@ -625,7 +626,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     tags: ['living', 'goblin', 'humanoid', 'large'],
     tier: 'elite',
     damageType: 'slashing',
-    group: { min: 3, max: 3 },
+    group: { min: 5, max: 5 },
     escorts: ['goblin_witch_doctor', 'goblin_firetongue', 'hobgoblin'],
     inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.25 }],
     resistances: { poison: 0.3, heat: 0.2 },

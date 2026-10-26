@@ -961,7 +961,17 @@ function rollGroupSize(state: GameState, spot: SpotDef, leader: MonsterDef): num
  */
 export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | null)[] {
   const leader = spawnMonster(state, spot);
-  const size = rollGroupSize(state, spot, MONSTERS[leader.defId]);
+  // The player's preparation, read as the group is rolled (SpotDef.preparation).
+  const prepared = (spot.preparation ?? []).filter((p) => conditionsMet(state, p.when));
+  const lost = prepared.reduce((n, p) => n + (p.escortsLost ?? 0), 0);
+  const size = Math.max(1, rollGroupSize(state, spot, MONSTERS[leader.defId]) - lost);
+  for (const p of prepared) {
+    for (const app of p.leader ?? []) applyStatus(state, leader, app, leader.name);
+  }
+  if (lost > 0) feed(state, `🪦 ${lost === 1 ? 'One of the' : `${lost} of the`} ${leader.name}'s escorts did not come.`);
+  for (const app of prepared.flatMap((p) => p.leader ?? [])) {
+    feed(state, `🎯 The ${leader.name} comes into the fight ${STATUSES[app.id]?.name ?? app.id}.`);
+  }
   const escorts = MONSTERS[leader.defId].escorts;
 
   // Who may fill the remaining slots: not encounter LEADERS (they demand a

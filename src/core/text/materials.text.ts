@@ -67,6 +67,8 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'hearty_stew.desc': 'Eat: Well Fed ×1 for 10 minutes (+8 max HP, +10% stamina regen, slow HP restore).',
 
+  'warchiefs_roast.desc': 'Eat: Well Fed ×2 and Steady Hand ×1. The meal cooked for the goblin warchief, found in his larder on floor 6. Not cookable yet.',
+
   'skewered_fish.desc': 'Eat: Steady Hand ×1 for 8 minutes (+3% crit, +2% parry). Cooked filling; can go onto the Cold Counter as an ingredient.',
 
   'seared_steak.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.5. Cooked filling; can go onto the Cold Counter as an ingredient.',

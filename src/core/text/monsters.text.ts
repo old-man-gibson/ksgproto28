@@ -49,7 +49,7 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'goblin_raid_leader.desc': 'Veteran goblin. Slashing attacks with a 20% chance to inflict Bleeding. Fights with Pocket Sand, Dirty Stab and Gather. Always leads two Goblins. Takes 15% less poison damage. Floor 4\'s boss, at the Raid Camp. Two loot rolls.',
 
-  'goblin_warchief.desc': 'Large elite goblin. Slashing attacks with a 25% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Always leads two escorts drawn from Witch Doctors, Firetongues and Hobgoblins. Takes 30% less poison and 20% less heat damage. Floor 6\'s boss, in the Great Hall; killing it opens prestige. Three loot rolls.',
+  'goblin_warchief.desc': 'Large elite goblin. Slashing attacks with a 25% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Always leads four escorts drawn from Witch Doctors, Firetongues and Hobgoblins. Takes 30% less poison and 20% less heat damage. Floor 6\'s boss, in the Great Hall; killing it opens prestige. Three loot rolls.',
 
   'goblin_firetongue.desc': 'Small basic goblin. Fights from range with arcane fire: "quickly fire pierce" and "fire pierce", which can set you On Fire. Takes 25% less heat and 10% less poison damage. Drops fur and iron scrap.',
 

@@ -4304,6 +4304,16 @@ export interface SpotEncounter {
   once?: boolean;
 }
 
+/** One preparation rule on a spot (`SpotDef.preparation`). */
+export interface SpotPreparation {
+  /** Applies when all of these hold at the moment the group is rolled. */
+  when: UnlockCondition[];
+  /** Escort slots that arrive empty: those escorts died before the fight. */
+  escortsLost?: number;
+  /** Statuses the leader carries into the fight. */
+  leader?: StatusApplication[];
+}
+
 export interface SpotDef {
   id: string;
   name: string;
@@ -4312,6 +4322,13 @@ export interface SpotDef {
   desc: string;
   activities: ActivityDef[];
   encounters?: SpotEncounter[];
+  /**
+   * What the player's preparation did to the fight before it starts: each rule
+   * whose `when` holds as the group is rolled takes escort slots away and
+   * puts statuses on the leader (combat.ts spawnGroup). The floor 6 sabotages
+   * are the first (bands-2-3.md): dead escorts, a bleeding or soaked warchief.
+   */
+  preparation?: SpotPreparation[];
   /**
    * The spot holds only this many winnable fights: every encounter WON here
    * bumps `fights:<spotId>` (only counted when this field is set), and at the

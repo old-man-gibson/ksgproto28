@@ -289,6 +289,20 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
       grants: [{ id: 'well_fed', intensity: 1 }],
     },
   },
+  // The fourth floor 6 sabotage (bands-2-3.md): the meal cooked for the
+  // warchief, found in his larder and eaten by the player instead. Not
+  // cookable yet; a find is its only source.
+  warchiefs_roast: {
+    id: 'warchiefs_roast',
+    name: 'Warchief’s Roast',
+    icon: '🍖',
+    value: 40,
+    graded: true,
+    consumable: {
+      useVerb: 'Ate',
+      grants: [{ id: 'well_fed', intensity: 2 }, { id: 'steady_hand', intensity: 1 }],
+    },
+  },
   skewered_fish: {
     id: 'skewered_fish',
     name: 'Skewered Fish',

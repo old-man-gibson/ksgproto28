@@ -1750,9 +1750,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   },
 
   // --- Floor 6: the Warren, two maps. The outer warren (mouth, tunnels,
-  // pens, kitchens, shrine) and, down the drop, the deep encampment. Each of
-  // the three sabotages takes a level off the warchief (11 with none, 8 with
-  // all three), the floor 3 pattern. Arriving in the great hall is the fight.
+  // pens, kitchens, shrine) and, down the drop, the deep encampment. Four
+  // sabotages, hard to find, each change the warchief's fight a different way
+  // (see f6_great_hall). Arriving in the great hall is the fight.
   f6_warren_mouth: {
     id: 'f6_warren_mouth',
     name: 'The Warren Mouth',
@@ -1782,17 +1782,21 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { to: 'f6_shrine', ticks: 25 },
     ],
   },
+  // The four sabotages (user, 2026-10-26): hard to find, each changing the
+  // warchief's fight in its own way (f6_great_hall.preparation). The pens'
+  // is at the end of a long search; the other three sit in rooms that only
+  // appear once the room before them is searched to the end (hidden edges).
   f6_pens: {
     id: 'f6_pens',
     name: 'The Pens',
     icon: '🐗',
     areaId: 'ascent_f6_area',
     map: { x: 18, y: 20 },
-    activities: [{ id: 'explore', kind: 'explore', name: 'Break Open the Pens', icon: '🔓' }],
-    exploreTicks: 300,
+    activities: [{ id: 'explore', kind: 'explore', name: 'Search the Pens', icon: '🔍' }],
+    exploreTicks: 600,
     finds: [
       { id: 'f6_pens_meat', at: 0.3, material: { id: 'raw_meat', qty: 4 } },
-      { id: 'f6_pens_sabotage', at: 0.7, stat: { key: 'flag:f6_sabotage' } },
+      { id: 'f6_pens_boars', at: 0.9, stat: { key: 'flag:f6_sab_boars' } },
     ],
     connections: [],
   },
@@ -1802,12 +1806,20 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🍲',
     areaId: 'ascent_f6_area',
     map: { x: 82, y: 20 },
-    activities: [{ id: 'explore', kind: 'explore', name: 'Foul the Stores', icon: '🧪' }],
+    activities: [{ id: 'explore', kind: 'explore', name: 'Search the Kitchens', icon: '🔍' }],
+    exploreTicks: 480,
+    finds: [{ id: 'f6_kitchens_food', at: 0.3, material: { id: 'rustic_loaf', qty: 3 } }],
+    connections: [{ to: 'f6_larder', ticks: 15, hidden: true, label: 'Behind the Ovens' }],
+  },
+  f6_larder: {
+    id: 'f6_larder',
+    name: 'The Warchief’s Larder',
+    icon: '🍖',
+    areaId: 'ascent_f6_area',
+    map: { x: 94, y: 34 },
+    activities: [{ id: 'explore', kind: 'explore', name: 'Search the Larder', icon: '🔍' }],
     exploreTicks: 300,
-    finds: [
-      { id: 'f6_kitchens_food', at: 0.3, material: { id: 'rustic_loaf', qty: 3 } },
-      { id: 'f6_kitchens_sabotage', at: 0.7, stat: { key: 'flag:f6_sabotage' } },
-    ],
+    finds: [{ id: 'f6_larder_roast', at: 0.6, material: { id: 'warchiefs_roast', qty: 1 } }],
     connections: [],
   },
   f6_shrine: {
@@ -1818,19 +1830,30 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 50, y: 34 },
     activities: [
       { id: 'hunt', kind: 'hunt', name: 'Clear the Shrine', icon: '⚔️' },
-      { id: 'explore', kind: 'explore', name: 'Desecrate the Shrine', icon: '🔥' },
+      { id: 'explore', kind: 'explore', name: 'Search the Shrine', icon: '🔍' },
     ],
     groupWeights: { 1: 60, 2: 40 },
     encounters: [
       { monsterId: 'goblin_witch_doctor', weight: 50, level: [11, 12] },
       { monsterId: 'goblin_firetongue', weight: 50, level: [11, 12] },
     ],
-    exploreTicks: 300,
-    finds: [
-      { id: 'f6_shrine_offering', at: 0.3, gold: [80, 140] },
-      { id: 'f6_shrine_sabotage', at: 0.7, stat: { key: 'flag:f6_sabotage' } },
+    exploreTicks: 480,
+    finds: [{ id: 'f6_shrine_offering', at: 0.3, gold: [80, 140] }],
+    connections: [
+      { to: 'f6_drop', ticks: 30, label: 'Down the Drop', returnLabel: 'Back Up the Drop' },
+      { to: 'f6_cistern', ticks: 15, hidden: true, label: 'Under the Altar' },
     ],
-    connections: [{ to: 'f6_drop', ticks: 30, label: 'Down the Drop', returnLabel: 'Back Up the Drop' }],
+  },
+  f6_cistern: {
+    id: 'f6_cistern',
+    name: 'The Cistern',
+    icon: '💧',
+    areaId: 'ascent_f6_area',
+    map: { x: 22, y: 44 },
+    activities: [{ id: 'explore', kind: 'explore', name: 'Search the Cistern', icon: '🔍' }],
+    exploreTicks: 300,
+    finds: [{ id: 'f6_cistern_sluice', at: 0.6, stat: { key: 'flag:f6_sab_flood' } }],
+    connections: [],
   },
   f6_drop: {
     id: 'f6_drop',
@@ -1842,6 +1865,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     activities: [
       { id: 'camp_f6_deep', kind: 'rest', name: 'Camp in the Drop', icon: '🏕️' },
       { id: 'hunt', kind: 'hunt', name: 'Hold the Drop', icon: '⚔️' },
+      { id: 'explore', kind: 'explore', name: 'Search the Drop', icon: '🔦' },
     ],
     groupWeights: { 1: 40, 2: 35, 3: 25 },
     encounters: [
@@ -1850,7 +1874,24 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { monsterId: 'goblin_firetongue', weight: 20, level: [11, 13] },
       { monsterId: 'goblin', weight: 15, level: [11, 13] },
     ],
-    connections: [{ to: 'f6_great_hall', ticks: 30, label: 'Into the Great Hall' }],
+    exploreTicks: 480,
+    finds: [{ id: 'f6_drop_scrap', at: 0.4, material: { id: 'iron_scrap', qty: 3 } }],
+    connections: [
+      { to: 'f6_great_hall', ticks: 30, label: 'Into the Great Hall' },
+      { to: 'f6_armory', ticks: 15, hidden: true, label: 'A Gap in the Wall' },
+    ],
+  },
+  f6_armory: {
+    id: 'f6_armory',
+    name: 'The Armory',
+    icon: '🛡️',
+    areaId: 'ascent_f6_area',
+    map: { x: 78, y: 58 },
+    tags: ['dark'],
+    activities: [{ id: 'explore', kind: 'explore', name: 'Search the Armory', icon: '🔍' }],
+    exploreTicks: 300,
+    finds: [{ id: 'f6_armory_barbs', at: 0.6, stat: { key: 'flag:f6_sab_barbs' } }],
+    connections: [],
   },
   f6_great_hall: {
     id: 'f6_great_hall',
@@ -1862,14 +1903,14 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     fightLimit: 1,
     modifierWeights: { normal: 100 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Face the Warchief', icon: '⚔️' }],
-    // One line per sabotage count, as on floor 3: every sabotage is a level
-    // off. `once` latches slain:f6_great_hall:goblin_warchief, the clear and
-    // PRESTIGE_UNLOCK.
-    encounters: [
-      { monsterId: 'goblin_warchief', weight: 1, once: true, level: [11, 11], requires: [{ type: 'statMax', key: 'flag:f6_sabotage', value: 0 }] },
-      { monsterId: 'goblin_warchief', weight: 1, once: true, level: [10, 10], requires: [{ type: 'stat', key: 'flag:f6_sabotage', value: 1 }, { type: 'statMax', key: 'flag:f6_sabotage', value: 1 }] },
-      { monsterId: 'goblin_warchief', weight: 1, once: true, level: [9, 9], requires: [{ type: 'stat', key: 'flag:f6_sabotage', value: 2 }, { type: 'statMax', key: 'flag:f6_sabotage', value: 2 }] },
-      { monsterId: 'goblin_warchief', weight: 1, once: true, level: [8, 8], requires: [{ type: 'stat', key: 'flag:f6_sabotage', value: 3 }] },
+    // The warchief and his full squad of four. `once` latches
+    // slain:f6_great_hall:goblin_warchief, the clear and PRESTIGE_UNLOCK.
+    encounters: [{ monsterId: 'goblin_warchief', weight: 1, once: true, level: [11, 11] }],
+    // The sabotages. The roast is not here: it is a dish the player eats.
+    preparation: [
+      { when: [{ type: 'stat', key: 'flag:f6_sab_boars', value: 1 }], escortsLost: 2 },
+      { when: [{ type: 'stat', key: 'flag:f6_sab_flood', value: 1 }], leader: [{ id: 'soaked', intensity: 1 }] },
+      { when: [{ type: 'stat', key: 'flag:f6_sab_barbs', value: 1 }], leader: [{ id: 'bleeding', intensity: 3 }] },
     ],
     connections: [],
   },

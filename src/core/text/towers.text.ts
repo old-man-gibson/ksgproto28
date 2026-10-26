@@ -30,5 +30,5 @@ export const FLOORS_TEXT: ProseTable = {
 
   'ascent_f5.desc': 'Floor 5, a swamp and the caves under it. Gate: 12 goblins killed. Firetongues cast fire; hobgoblins fight with techniques you can learn by watching; the Hollows are dark. Clear: find the warren’s back door in the Hollows and kill the Hobgoblin Champion guarding it. Placeholder text.',
 
-  'ascent_f6.desc': 'Floor 6, the goblin warren, two maps. Gate: 40 goblins killed. Three sabotages in the outer warren each take a level off the Goblin Warchief. Clear: kill the warchief in the Great Hall, which also opens prestige. Placeholder text.',
+  'ascent_f6.desc': 'Floor 6, the goblin warren, two maps. Gate: 40 goblins killed. Four sabotages, three of them in hidden rooms, each change the Goblin Warchief’s fight. Clear: kill the warchief in the Great Hall, which also opens prestige. Placeholder text.',
 };
