@@ -319,23 +319,76 @@ one run: the store is keyed on `createdAt` plus the prestige count and resets
 itself when either changes (`syncAnvil`, called on mount and by `loadOnAnvil`),
 which covers a hard reset, an import and a prestige without hooking any of them.
 
-- **Anvil view.** Silhouette (`lib/ForgeSilhouette.svelte`, geometry in
-  `lib/anvilView.ts`: weapons stack head, guard, haft; armour lays pieces side
-  by side with a guard in the next column; a bow is an arc with any second head
-  or guard hung below it; every billed part is drawn, which a test sweeps), the
+- **Anvil view.** The drawing is a smith's pattern (user's vote, 2026-10-26,
+  over forged, pixel, silhouette and engraved styles): ink outlines at true
+  size on a drafting grid, one square per cell, each part's w×l bracketed
+  beside it (`lib/ForgeSilhouette.svelte`, pure geometry in
+  `lib/forgeDrawing.ts`). Weapons stand on one axis, blade up; cross heads
+  ride the haft's top; a second blade points down from the haft's end. A
+  shield is drawn twice, front (the grip as a dashed hidden line behind the
+  face) and side (the grip on the back), because a handle under a shield
+  read wrong. Armour lays pieces side by side, and a strap is fitted to each
+  piece where that piece is fastened (chin, wrist, ankle, middle), never one
+  strap across two. A bow is a limb with its string; anything else billed
+  hangs below. Every billed part is drawn and bracketed, which a test sweeps
+  over the catalogue. Then the
   resolved name with slot, hands, family and
   degenerate chips (a family no combat skill claims is flagged), the kernel's
   stat lines at Fair quality, the bill (units, cells, held) and the job time,
   "one change away" (`neighbours`, one button per distinct product, "?" until
-  that form is known), then the five slot pickers. A shut slot shows its
-  Smithing level. Forge, ×N (up to 5, as many as the pack pays for) and "until
-  out of stock" call `Game.forge`.
+  that form is known; a closed disclosure, "Other forms one change away (N)"),
+  then the five slot pickers (below). A shut slot shows its Smithing level.
+  Forge, ×N (up to 5, as many as the pack pays for) and "until out of stock"
+  call `Game.forge`; they and their reason line always read the anvil's own
+  layout, never a preview.
 - **Layout (user, 2026-10-25: "I have to constantly scroll to see what changes
   when I use different parts").** Three columns that scroll on their own: the
   piece with the forge buttons under it, then what it resolves to (name,
   chips, stats, bill, "one change away"), then the slot pickers. The window is
   `Modal fill` (most of the screen, fixed height, no body scroll); under 900px
   it is one column and the window body scrolls.
+- **Part picker (user, 2026-10-26: the way the player picks shapes
+  "is overwhelming the player with options and too much stuff at once").** The
+  third column is five compact rows, one per slot: the slot's name and what it
+  holds (footprint glyph, kind, w×l, material swatch and name, count when above
+  one), "empty", or the Smithing level while the slot is shut. Clicking a row
+  opens that slot's picker and shuts the one that was open; the open one shuts
+  again, so the list can be fully collapsed. The head's picker is open on a new
+  run. Which slot is open, and a family picked by hand, are UI state in
+  `anvil.svelte.ts` (reset with the rest of it; `setLayout` replaces the whole
+  layout and drops the picked families). An open picker has three steps:
+  1. **Shape family**, only for a role with more than one (the head has seven).
+     Derived from the part data by `familyOf` (`lib/anvilView.ts`), no data
+     field: an edge with no `cross` is a Blade (curved blades included), a
+     point is a Point, an edge with `cross` an Axe head, a mass a Maul head,
+     then Plate, Bent metal, Ring, and one family each for Handles, Guards and
+     Bindings. A chip shows the name and the number of kinds; "none" empties
+     the slot. The family of the held part is selected when the slot opens; an
+     empty slot has none selected and says to choose one.
+  2. **A comparison table** of the family, one row per kind. Each row is
+     `previewForge` on the current layout with only this slot swapped to that
+     kind (`compareKinds` over `withPart`, the same function a click uses, so a
+     row shows exactly what the click makes: the slot's material is kept when
+     the kind accepts it, else the other head's, else the first it lists; the
+     count is clamped to the kind's maximum). Columns: glyph, name, w×l, the
+     form it makes ("?" until `formKnown`, the rule "one change away" follows;
+     the numbers are not masked), damage or armour, speed, crit, STR needed,
+     and metal units in the bill (all slots, whole units, any metal). The held
+     kind's row is marked "current". Every other number is followed by its
+     difference from the piece as it stands, green when better (more damage,
+     armour, speed or crit; less STR or metal) and red when worse. No
+     difference is shown against an empty anvil, against a figure the current
+     piece lacks, or between damage and armour (the unit is named instead).
+     Clicking a row puts the kind in the slot.
+  3. **Material and count** for the slot's held part, as below.
+- **Preview.** Hovering a row with a mouse, or focusing it with the keyboard,
+  previews it without applying it: the drawing on the left shows the layout
+  with a "Preview" caption and a dashed edge, and the middle column shows the
+  previewed form (masked "?" while unknown, and its family tag hidden with it),
+  its stat lines each as "current → preview" where they differ ("Damage +7 →
+  +12", "Requires — → STR 11"), the previewed bill and time. Leaving or
+  blurring the row, any click, or shutting the slot reverts it. A touch tap
+  selects as before (touch pointers never start a preview).
 - **Material choices.** Each part lists the forgeable materials it accepts that
   the pack holds, plus the one already in the slot. When nothing accepted is
   held, one stand-in per accepted tag (iron for metal) is offered as well, even
@@ -393,9 +446,10 @@ authority; this list says where to look.
   references. Recipe `cost[].id` is still not a reference (pre-existing).
 - **Debug.** `createItem('forged:<class>')` mints the class exemplar at grade C,
   so the debug "one of every item" still gives numbers.
-- **Silhouette class.** The SVG cells use class `piece-cell`, not `cell`: an
-  SVG rect takes its width from CSS whenever any rule sets one, and several
-  panels style a `.cell` of their own.
+- **Generic class names in SVG.** The first drawing's cells used `piece-cell`,
+  not `cell`: an SVG rect takes its width from CSS whenever any rule sets one,
+  and several panels style a `.cell` of their own. The pattern drawing keeps
+  the rule (`ink`, `measure`, `caption`).
 - **Recipe cost changes.** Rapier 3 → 2 iron ingots + 1 hardwood; iron
   breastplate 4 iron ingots → 3 + 1 leather. Uchigatana keeps its authored
   cost (no placement).
