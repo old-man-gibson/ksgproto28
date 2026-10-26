@@ -9,13 +9,19 @@
     children,
     /** A workbench needs room; an item tooltip does not. */
     wide = false,
-  }: { title: Snippet; onclose: () => void; children: Snippet; wide?: boolean } = $props();
+    /**
+     * Most of the screen, at a fixed height, and the body does not scroll: the
+     * content lays itself out in columns that scroll on their own (the anvil).
+     * Below 900px it falls back to one scrolling body.
+     */
+    fill = false,
+  }: { title: Snippet; onclose: () => void; children: Snippet; wide?: boolean; fill?: boolean } = $props();
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
 <div class="overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
-  <div class="window panel" class:wide role="dialog" aria-modal="true">
+  <div class="window panel" class:wide class:fill role="dialog" aria-modal="true">
     <header>
       <div class="title">{@render title()}</div>
       <button class="close" aria-label="Close" onclick={onclose}>✕</button>
@@ -55,6 +61,28 @@
     width: 720px;
     max-height: 88vh;
     box-shadow: 0 10px 34px rgb(0 0 0 / 55%);
+  }
+
+  .window.fill {
+    width: 1400px;
+    height: 92vh;
+    max-height: 92vh;
+    box-shadow: 0 10px 34px rgb(0 0 0 / 55%);
+  }
+
+  .window.fill .body {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  @media (max-width: 900px) {
+    .window.fill {
+      height: auto;
+    }
+
+    .window.fill .body {
+      overflow-y: auto;
+    }
   }
 
   header {

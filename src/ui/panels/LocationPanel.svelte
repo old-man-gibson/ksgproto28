@@ -614,7 +614,7 @@
     </Modal>
   {:else if openBench}
     {@const bench = DISCIPLINES[openBench]}
-    <Modal wide onclose={() => (openBench = null)}>
+    <Modal wide fill={!!bench.assembles} onclose={() => (openBench = null)}>
       {#snippet title()}
         <div class="win-title">{bench.icon} {bench.benchName ?? bench.name}</div>
         <div class="small dim">{bench.desc}</div>
