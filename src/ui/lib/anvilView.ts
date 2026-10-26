@@ -9,17 +9,21 @@
  */
 import type {
   ForgeSlot,
+  GameState,
   ItemClassDef,
   MaterialDef,
   Modifier,
   PartKindDef,
+  PartRole,
+  PartShape,
   PlacedPart,
   Placement,
   SlotId,
 } from '../../core/types';
 import { ITEM_CLASSES, MATERIALS, PART_KINDS } from '../../core/registry';
 import { FORGE_SLOTS } from '../../core/data/parts.data';
-import { classifyPlacement, type ForgeNeighbour, type ForgeStats } from '../../core/systems/assembly';
+import { classifyPlacement, clonePlacement, type ForgeNeighbour, type ForgeStats } from '../../core/systems/assembly';
+import { formKnown, previewForge, type ForgePreview } from '../../core/systems/forging';
 import { describeMod } from './format';
 
 // ---------- Materials ----------
@@ -106,12 +110,16 @@ export function kindLabel(kind: PartKindDef): string {
   return `${kind.name} ${kind.w}×${kind.l}`;
 }
 
+/** A material as the part lines write it: "Iron", "Hardwood". */
+export function materialLabel(matId: string): string {
+  return MATERIALS[matId]?.smith?.label ?? MATERIALS[matId]?.name ?? matId;
+}
+
 /** One placed part as a line: "Metal ring 1×1 ×8 (Iron)". */
 export function partText(part: PlacedPart): string {
   const kind = PART_KINDS[part.kind];
-  const mat = MATERIALS[part.mat]?.smith?.label ?? MATERIALS[part.mat]?.name ?? part.mat;
   const qty = (part.qty ?? 1) > 1 ? ` ×${part.qty}` : '';
-  return `${kind ? kindLabel(kind) : part.kind}${qty} (${mat})`;
+  return `${kind ? kindLabel(kind) : part.kind}${qty} (${materialLabel(part.mat)})`;
 }
 
 /** The parts of a placement in slot order, joined: what a recipe line shows under its name. */
@@ -493,4 +501,281 @@ export function classesForIndex(): ItemClassDef[] {
     return i < 0 ? SLOT_ORDER.length : i;
   };
   return Object.values(ITEM_CLASSES).sort((a, b) => rank(a.slot) - rank(b.slot) || b.priority - a.priority);
+}
+
+// ---------- Part pickers: shape families and the comparison table ----------
+
+/** The groups a slot's part kinds are offered in, so a slot never lists every kind at once. */
+export type PartFamilyId =
+  | 'blades'
+  | 'points'
+  | 'axes'
+  | 'mauls'
+  | 'plates'
+  | 'bent'
+  | 'rings'
+  | 'handles'
+  | 'guards'
+  | 'bindings';
+
+export interface PartFamily {
+  id: PartFamilyId;
+  name: string;
+  role: PartRole;
+}
+
+/** Display order: the head's families first, then the single family of each other role. */
+const FAMILIES: Record<PartFamilyId, PartFamily> = {
+  blades: { id: 'blades', name: 'Blades', role: 'head' },
+  points: { id: 'points', name: 'Points', role: 'head' },
+  axes: { id: 'axes', name: 'Axe heads', role: 'head' },
+  mauls: { id: 'mauls', name: 'Maul heads', role: 'head' },
+  plates: { id: 'plates', name: 'Plates', role: 'head' },
+  bent: { id: 'bent', name: 'Bent metal', role: 'head' },
+  rings: { id: 'rings', name: 'Rings', role: 'head' },
+  handles: { id: 'handles', name: 'Handles', role: 'haft' },
+  guards: { id: 'guards', name: 'Guards', role: 'guard' },
+  bindings: { id: 'bindings', name: 'Bindings', role: 'bind' },
+};
+
+export const PART_FAMILIES: readonly PartFamily[] = Object.values(FAMILIES);
+
+/** The family each shape belongs to. An edge mounted across the haft is split off as an axe head (`familyOf`). */
+const FAMILY_OF_SHAPE: Record<PartShape, PartFamilyId> = {
+  edge: 'blades',
+  point: 'points',
+  mass: 'mauls',
+  plate: 'plates',
+  bent: 'bent',
+  ring: 'rings',
+  bar: 'handles',
+  guard: 'guards',
+  cord: 'bindings',
+};
+
+/** Read off the kind's shape and mount, so a part added to the data lands in a family without a new field. */
+export function familyOf(kind: PartKindDef): PartFamily {
+  return FAMILIES[kind.shape === 'edge' && kind.cross ? 'axes' : FAMILY_OF_SHAPE[kind.shape]];
+}
+
+/** The part kinds of one family, in registry order. */
+export function kindsOfFamily(id: PartFamilyId): PartKindDef[] {
+  return Object.values(PART_KINDS).filter((k) => familyOf(k).id === id);
+}
+
+/** The families a role's kinds fall into, in display order; those with no kind are left out. */
+export function familiesOf(role: PartRole): PartFamily[] {
+  return PART_FAMILIES.filter((f) => f.role === role && kindsOfFamily(f.id).length > 0);
+}
+
+/** The role of part a slot takes: both head slots take heads. */
+export function slotRole(slot: ForgeSlot): PartRole {
+  return slot === 'head2' ? 'head' : (slot as PartRole);
+}
+
+/**
+ * The placement with one slot set to a kind, or emptied when `kindId` is null;
+ * null when nothing could be placed (a kind of the wrong role, or no
+ * forgeable material accepts it). The slot keeps its material when the new
+ * kind accepts it, a head otherwise follows the other head's, and the count
+ * is clamped to the new kind's maximum. This is the one rule behind clicking a
+ * kind and behind the comparison rows, so a row shows exactly what the click makes.
+ */
+export function withPart(placement: Placement, slot: ForgeSlot, kindId: string | null): Placement | null {
+  const next = clonePlacement(placement);
+  const kind = kindId ? PART_KINDS[kindId] : undefined;
+  if (!kind) {
+    delete next[slot];
+    return next;
+  }
+  if (kind.role !== slotRole(slot)) return null;
+  const prev = placement[slot];
+  const other = slot === 'head' ? placement.head2?.mat : slot === 'head2' ? placement.head?.mat : undefined;
+  const mat = pickMaterial(kind, [prev?.mat, other]);
+  if (!mat) return null;
+  const qty = Math.min(prev?.qty ?? 1, kind.qtyMax ?? 1);
+  next[slot] = { kind: kind.id, mat, ...(qty > 1 ? { qty } : {}) };
+  return next;
+}
+
+/** One number of the comparison table: what it prints, how it differs from the current piece, and whether that is for the better. */
+export interface CompareCell {
+  /** "12", "+8%", "2.0%"; "–" when the piece has none. */
+  text: string;
+  /** Signed difference from the current piece ("+5", "−1.2%"); empty when equal or not comparable. */
+  delta: string;
+  tone: 'better' | 'worse' | 'none';
+}
+
+export type CompareKey = 'power' | 'speed' | 'crit' | 'str' | 'metal';
+
+/** The table's number columns, in order. `hint` is the long form for a tooltip. */
+export const COMPARE_COLUMNS: readonly { key: CompareKey; label: string; hint: string }[] = [
+  { key: 'power', label: 'Damage / armour', hint: 'Damage for a weapon, armour for armour. At Fair quality.' },
+  { key: 'speed', label: 'Speed', hint: 'Attack speed change from the weight of the piece.' },
+  { key: 'crit', label: 'Crit', hint: 'Crit chance of an edge or point weapon.' },
+  { key: 'str', label: 'STR', hint: 'Strength needed to equip the piece.' },
+  { key: 'metal', label: 'Metal', hint: 'Whole units of metal in the bill, all slots.' },
+];
+
+/** One kind of a family, as the piece would be with it in the slot. */
+export interface KindRow {
+  kind: PartKindDef;
+  /** The current placement with only this slot set to this kind (`withPart`). */
+  placement: Placement;
+  /** This is the kind the slot holds now. */
+  current: boolean;
+  /** The form the placement resolves to has been forged or recipe-made on this save. */
+  known: boolean;
+  /** Its name, or "?" while unknown (the rule "one change away" follows). */
+  form: string;
+  cells: Record<CompareKey, CompareCell>;
+}
+
+/** The figures a result prints, as numbers that compare exactly. */
+interface Figures {
+  power?: { unit: 'damage' | 'armour'; value: number };
+  /** Whole percent. */
+  speed: number;
+  /** Tenths of a percent; absent on forms with no crit chance. */
+  crit?: number;
+  str: number;
+  metal: number;
+}
+
+/** Whole units of metal in a bill. */
+export function metalUnits(cost: { id: string; qty: number }[]): number {
+  return cost.reduce((n, c) => (MATERIALS[c.id]?.craftTags?.includes('metal') ? n + c.qty : n), 0);
+}
+
+function figuresOf(result: ForgePreview): Figures {
+  const s = result.stats;
+  const power =
+    s.damage !== undefined
+      ? { unit: 'damage' as const, value: s.damage }
+      : s.armour !== undefined
+        ? { unit: 'armour' as const, value: s.armour }
+        : undefined;
+  return {
+    ...(power ? { power } : {}),
+    // `|| 0` keeps a rounded negative zero from printing as a sign.
+    speed: Math.round(s.attackSpeed * 100) || 0,
+    ...(s.crit !== undefined ? { crit: Math.round(s.crit * 1000) } : {}),
+    str: s.str,
+    metal: metalUnits(result.cost),
+  };
+}
+
+/** A figure against the current piece's. No difference is shown when either is missing or they are equal. */
+function compareCell(
+  value: number | undefined,
+  ref: number | undefined,
+  better: 'higher' | 'lower',
+  show: (v: number) => string,
+  showDelta: (v: number) => string = show,
+): CompareCell {
+  const text = value === undefined ? '–' : show(value);
+  if (value === undefined || ref === undefined || value === ref) return { text, delta: '', tone: 'none' };
+  const d = value - ref;
+  const good = better === 'higher' ? d > 0 : d < 0;
+  return { text, delta: `${SIGN(d)}${showDelta(Math.abs(d))}`, tone: good ? 'better' : 'worse' };
+}
+
+/**
+ * The kinds of one family for one slot, each resolved with `previewForge` on
+ * the current placement with only that slot swapped (`withPart`). A number's
+ * difference is against the piece as it stands, whether or not the slot's
+ * current kind is in this family; an empty anvil has nothing to differ from.
+ * The form is "?" until the save has made it.
+ */
+export function compareKinds(
+  state: GameState,
+  placement: Placement,
+  slot: ForgeSlot,
+  family: PartFamilyId,
+): KindRow[] {
+  const here = previewForge(state, placement);
+  const ref = here.parts.length > 0 ? figuresOf(here) : undefined;
+  const held = placement[slot]?.kind;
+  const rows: KindRow[] = [];
+  for (const kind of kindsOfFamily(family)) {
+    const next = withPart(placement, slot, kind.id);
+    if (!next) continue;
+    const result = previewForge(state, next);
+    const fig = figuresOf(result);
+    const known = formKnown(state, result.class.id);
+    // Damage against armour is not a difference: name the unit when it is not the current piece's.
+    const sameUnit = !!ref?.power && ref.power.unit === fig.power?.unit;
+    rows.push({
+      kind,
+      placement: next,
+      current: kind.id === held,
+      known,
+      form: known ? result.class.name : '?',
+      cells: {
+        power: compareCell(
+          fig.power?.value,
+          sameUnit ? ref?.power?.value : undefined,
+          'higher',
+          (v) => (sameUnit ? String(v) : `${v} ${fig.power?.unit}`),
+          String,
+        ),
+        speed: compareCell(fig.speed, ref?.speed, 'higher', (v) => (v === 0 ? '0%' : `${SIGN(v)}${Math.abs(v)}%`), (v) => `${v}%`),
+        crit: compareCell(fig.crit, ref?.crit, 'higher', (v) => `${(v / 10).toFixed(1)}%`),
+        str: compareCell(fig.str, ref?.str, 'lower', (v) => (v === 0 ? '–' : String(v)), String),
+        metal: compareCell(fig.metal, ref?.metal, 'lower', String),
+      },
+    });
+  }
+  return rows;
+}
+
+/** A row as one sentence, for the button's accessible name (its cells are laid out as columns). */
+export function kindRowLabel(row: KindRow): string {
+  const cells = COMPARE_COLUMNS.map((c) => {
+    const cell = row.cells[c.key];
+    return `${c.label.toLowerCase()} ${cell.text}${cell.delta ? ` (${cell.delta})` : ''}`;
+  });
+  return `${kindLabel(row.kind)}${row.current ? ', in the slot' : ''}, makes ${row.form}, ${cells.join(', ')}`;
+}
+
+/** Every line the middle column prints for a piece: the stat lines, the strength it needs and its value. */
+export function pieceLines(stats: ForgeStats, mods: Modifier[]): StatLine[] {
+  const lines = statLines(stats, mods);
+  if (stats.str > 0) lines.push({ label: 'Requires', value: `STR ${stats.str}` });
+  lines.push({ label: 'Value', value: `${stats.value} gold` });
+  return lines;
+}
+
+/** A line of the piece being previewed, with the current piece's value when that differs. */
+export interface PairedLine extends StatLine {
+  /** The current piece's value ("—" when it has no such line); absent when the two agree. */
+  from?: string;
+}
+
+/**
+ * The previewed piece's lines set against the current piece's, in the order a
+ * piece prints them. A line only the current piece has is kept with "—" as
+ * its new value ("Damage +7 → —"); one only the preview has carries "—" as
+ * its old value. Equal lines carry no `from`.
+ */
+export function pairStatLines(current: StatLine[], next: StatLine[]): PairedLine[] {
+  const out: PairedLine[] = [];
+  let cursor = 0;
+  const dropped = (from: number, to: number) => {
+    for (let i = from; i < to; i++) out.push({ label: current[i].label, value: '—', from: current[i].value });
+  };
+  for (const line of next) {
+    let at = -1;
+    for (let i = cursor; i < current.length && at < 0; i++) if (current[i].label === line.label) at = i;
+    if (at < 0) {
+      out.push({ ...line, from: '—' });
+      continue;
+    }
+    dropped(cursor, at);
+    out.push(current[at].value === line.value ? { ...line } : { ...line, from: current[at].value });
+    cursor = at + 1;
+  }
+  dropped(cursor, current.length);
+  return out;
 }
