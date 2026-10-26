@@ -100,7 +100,13 @@
 
   let floaterSeq = 1;
   const seen = new Map<number, Seen>();
-  let last = { hp: -1, bar: 0, dodges: 0, fights: -1, inCombat: false };
+  let last: { hp: number; bar: number; dodges: number; fights: number; fight: typeof gs.combat } = {
+    hp: -1,
+    bar: 0,
+    dodges: 0,
+    fights: -1,
+    fight: null,
+  };
 
   function float(x: number, y: number, text: string, kind: Floater['kind']) {
     const f = { id: floaterSeq++, x: x + (Math.random() * 6 - 3), y, text, kind };
@@ -138,7 +144,7 @@
         const before = seen.get(id);
         const at = SLOTS[slot];
         if (!before) {
-          if (last.inCombat || seen.size > 0 || last.hp >= 0) strike(id, 'spawn', 420);
+          if (last.fight || seen.size > 0 || last.hp >= 0) strike(id, 'spawn', 420);
         } else {
           const lost = before.hp - m.hp;
           if (lost > 0.5) {
@@ -173,15 +179,17 @@
       seen.delete(id);
     }
 
-    // You.
+    // You. Read off the fight that stood LAST tick, not the one standing now:
+    // the blow that ends a fight nulls `gs.combat` in the same tick it lands,
+    // and the old object still holds the bar that swing emptied.
     const hp = gs.resources.hp ?? 0;
     const dodges = gs.stats['combat:dodges'] ?? 0;
-    if (c && last.inCombat) {
+    if (last.fight) {
       if (last.hp - hp > 0.5) {
         float(PLAYER.x, PLAYER.y + 34, `−${fmt(last.hp - hp)}`, 'hurt');
         strike(0, 'hit', 260);
       }
-      if (last.bar - c.playerBar > stats.actionBar * 0.5) strike(0, 'lunge', 320);
+      if (last.bar - last.fight.playerBar > stats.actionBar * 0.5) strike(0, 'lunge', 320);
       if (dodges > last.dodges) float(PLAYER.x, PLAYER.y + 40, 'dodge', 'note');
     }
 
@@ -192,7 +200,7 @@
       setTimeout(() => (banner = null), 4200);
     }
 
-    last = { hp, bar: c?.playerBar ?? 0, dodges, fights, inCombat: !!c };
+    last = { hp, bar: c?.playerBar ?? 0, dodges, fights, fight: c };
   }
 
   // A new place is a new stage: nothing carries across a road.
@@ -203,7 +211,7 @@
       ghosts = [];
       floaters = [];
       banner = null;
-      last = { ...last, fights: -1, inCombat: false };
+      last = { ...last, fights: -1, fight: null };
     });
   });
 
