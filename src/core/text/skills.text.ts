@@ -59,7 +59,7 @@ export const HAND_WRITTEN_TEXT: ProseTable = {
 
   'herbalism.desc': 'Trained at herb-gathering sites. Each level adds +1% loot, plus a step bonus every 5 levels. Herbalism 3 unlocks Alchemy.',
 
-  'cooking.desc': 'Trained by cooking. Each level adds +0.8% craft speed.',
+  'cooking.desc': 'Trained by cooking, and a dish new to you pays most. Each level adds +0.8% craft speed. Food you eat lasts 6% longer every 10 levels and hits 5% harder every 20, up to +50% each (Duration at level 90, Potency at 200).',
 
   'alchemy.desc': 'Manifests at Herbalism 3; trained by brewing. Levels buy sequence length (2 steps to 6, at levels 5, 12, 22 and 35) and reagent vocabulary, never brew quality; quality comes from the sequence. Each level adds +0.6% craft speed.',
 

@@ -24,4 +24,6 @@ export const PRESTIGE_BOONS_TEXT: ProseTable = {
   'wayfinding.desc': 'Go buttons outside town: quest givers and objectives anywhere on the map, and skills link to a spot that trains them (that activity starts on arrival). Town places have Go buttons on the Quests tab without it.',
 
   'head_start.desc': 'Every run starts 1 character level higher, per rank: +1 to every attribute per level. Never lowers a level already reached.',
+
+  'cooks_notes.desc': 'The Cook’s Book resets with each run; the notes keep part of it. Rank 1: dishes you cooked 25 times keep their cook time shown. Rank 2: dishes you cooked 100 times also keep their Signature. The cook counts themselves still reset.',
 };

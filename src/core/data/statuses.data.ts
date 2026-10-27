@@ -25,15 +25,18 @@ const SECOND = 10;
 export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
   toll_steam: {
     id: 'toll_steam', name: 'Steam-blinded', icon: '♨️', duration: 80,
+    unresistable: "environmental: a phase of the Toll Collector's fight",
     stacking: { mode: 'highest', cap: 1, refreshDuration: true }, missChance: 0.65,
   },
   toll_ice: {
     id: 'toll_ice', name: 'Ice-locked Joints', icon: '🧊', duration: 80,
+    unresistable: "environmental: a phase of the Toll Collector's fight",
     stacking: { mode: 'highest', cap: 1, refreshDuration: true },
     mods: [{ stat: 'dodge', op: 'mult', value: -1 }, { stat: 'armor', op: 'mult', value: -0.75 }],
   },
   toll_overdrive: {
     id: 'toll_overdrive', name: 'Stamping Overdrive', icon: '⚡', duration: 80,
+    unresistable: "environmental: a phase of the Toll Collector's fight",
     stacking: { mode: 'highest', cap: 1, refreshDuration: true },
     mods: [{ stat: 'attackSpeed', op: 'mult', value: 0.65 }],
     bar: { onFill: { type: 'lightning', flat: 12 } },
@@ -127,6 +130,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     icon: '💢',
     // No element of its own: what douses a regenerating body is the FACT of
     // heat or acid arriving, not any particular source of it.
+    unresistable: 'ruled no resistance (2026-10-24)',
     stacking: { mode: 'highest', cap: 1 },
     duration: 4 * SECOND,
     // Zeroes regeneration rather than slowing it. A troll that is on fire is
@@ -194,6 +198,8 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     // STRONGER dose matters, and enough of them turn the wound septic.
     stacking: { mode: 'highest', cap: 4, onCap: 'escalate' },
     duration: 30 * SECOND,
+    // An antidote ('poison' is the tag alchemy's Mendroot salve carries) ends it.
+    removal: [{ on: 'cure', tag: 'poison', effect: 'remove' }],
     dot: { type: 'poison', flat: 0.05 },
     mods: [{ stat: 'staminaRegen', op: 'mult', value: -0.2 }],
   },
@@ -206,6 +212,8 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     baseForm: 'poison',
     stacking: { mode: 'highest' },
     duration: 45 * SECOND,
+    // One antidote brings it back to ordinary poison; the next one ends that.
+    removal: [{ on: 'cure', tag: 'poison', effect: 'deescalate' }],
     dot: { type: 'poison', flat: 0.12 },
     mods: [{ stat: 'staminaRegen', op: 'mult', value: -0.35 }],
     // Half of everything you spend is eaten rather than merely used.
@@ -317,7 +325,11 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     // itself one tick after the fight ended and `outOfCombat` below would never
     // mean anything.
     duration: null,
-    removal: [{ on: 'heal', healKinds: ['rest', 'salve', 'spell'], effect: 'remove' }],
+    removal: [
+      { on: 'heal', healKinds: ['rest', 'salve', 'spell'], effect: 'remove' },
+      // A styptic ('bleed' is the tag alchemy's Mendroot salve carries).
+      { on: 'cure', tag: 'bleed', effect: 'remove' },
+    ],
     // Several cuts bleed more blood (the flat part adds up), but they do not
     // each open you wider — the proportional part is the deepest cut alone.
     dot: {
@@ -338,6 +350,8 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     stacking: { mode: 'count', cap: 5 },
     duration: null,
     // One treatment brings it back to an ordinary bleed; the next one closes it.
+    // No `cure` rule on purpose: a Mendroot Salve is treatment AND a bleed cure,
+    // and a cure rule here would let one flask ease this and close the bleed.
     removal: [{ on: 'heal', healKinds: ['rest', 'salve', 'spell'], effect: 'deescalate' }],
     dot: { type: 'slashing', maxHp: 0.002, outOfCombat: 0.3 },
     ceilings: [{ resource: 'hp', per: 0.04, max: 0.3 }],
@@ -701,6 +715,8 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     id: 'overgrowth',
     name: 'Overgrown',
     icon: '🌿',
+    // Resisted through poison, the element its burst detonates as.
+    element: 'poison',
     escalatesTo: 'proliferating',
     stacking: { mode: 'highest' },
     // No clock of its own: the LEDGER is the clock. A swelling lasts exactly
@@ -721,6 +737,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     id: 'proliferating',
     name: 'Proliferating',
     icon: '🧬',
+    element: 'poison',
     baseForm: 'overgrowth',
     stacking: { mode: 'highest' },
     // Like its milder form, it lasts exactly as long as the ledger does.
@@ -967,10 +984,43 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     ],
   },
 
+  // The two below come from windowed stove dishes (CraftOutcomeDef.heat). Both
+  // are elementless like the rest of this block: you do not resist your own
+  // dinner. Per point of intensity; a dish's grade multiplies the intensity.
+
+  stoked: {
+    id: 'stoked',
+    name: 'Stoked',
+    icon: '🥩',
+    color: '#d9692c',
+    stacking: { mode: 'highest' },
+    duration: 300 * SECOND,
+    mods: [
+      { stat: 'damage', op: 'mult', value: 0.05 },
+      { stat: 'critDamage', op: 'add', value: 0.05 },
+    ],
+  },
+
+  steeped: {
+    id: 'steeped',
+    name: 'Steeped',
+    icon: '🫖',
+    color: '#6f9a58',
+    stacking: { mode: 'highest' },
+    duration: 600 * SECOND,
+    mods: [
+      { stat: 'resPoison', op: 'add', value: 0.25 },
+      { stat: 'resAcid', op: 'add', value: 0.1 },
+    ],
+  },
+
   queasy: {
     id: 'queasy',
     name: 'Queasy',
     icon: '🤮',
+    // Spoiled food's illness. Poison resistance thins it, and an earned title
+    // (Iron Stomach) can refuse it outright.
+    element: 'poison',
     color: '#6f8a3c',
     stacking: { mode: 'highest' },
     duration: 90 * SECOND,
@@ -978,6 +1028,52 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     mods: [{ stat: 'staminaRegen', op: 'mult', value: -0.25 }],
     // Settles once you have properly rested.
     removal: [{ on: 'heal', healKinds: ['rest'], effect: 'remove' }],
+  },
+
+  // ---------- Alchemy: what an Elixir grants ----------
+  //
+  // One condition per reagent that grants something. Alchemy does not hand out
+  // a deity's signature (Xima's Rime, Veiled and Blood Communion stay with the
+  // divine), so Frostmoss, Gloomcap and Bloodwort each carry their own. Sized
+  // for a short flask: the Elixir sets the duration (45 s base, 150 s at most),
+  // and a Fair-grade essence lands near 0.65 to 1.4 intensity, so each figure
+  // here is per point of intensity and modest on purpose. Elementless like every
+  // self-granted condition: you do not resist your own drink.
+
+  frosted: {
+    id: 'frosted',
+    name: 'Frosted',
+    icon: '🧊',
+    color: '#7ab0d8',
+    stacking: { mode: 'highest' },
+    duration: 45 * SECOND,
+    mods: [
+      { stat: 'resCold', op: 'add', value: 0.2 },
+      { stat: 'resHeat', op: 'add', value: 0.1 },
+    ],
+  },
+
+  concealed: {
+    id: 'concealed',
+    name: 'Concealed',
+    icon: '🌚',
+    color: '#9aa4b0',
+    stacking: { mode: 'highest' },
+    duration: 45 * SECOND,
+    // Not harder to hit, harder to find: a share of blows go wide after dodge,
+    // and a little footwork on top.
+    incomingMissChance: 0.1,
+    mods: [{ stat: 'dodge', op: 'add', value: 0.03 }],
+  },
+
+  invigorated: {
+    id: 'invigorated',
+    name: 'Invigorated',
+    icon: '🌡️',
+    color: '#c94f4f',
+    stacking: { mode: 'highest' },
+    duration: 45 * SECOND,
+    mods: [{ stat: 'staminaRegen', op: 'mult', value: 0.25 }],
   },
 
   // ---------- Miracles ----------
@@ -990,6 +1086,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     id: 'unfolded',
     name: 'Unfolded',
     icon: '📐',
+    unresistable: 'ruled no resistance (2026-10-24)',
     color: '#8f7ad8',
     stacking: { mode: 'highest' },
     duration: 15 * SECOND,
@@ -1188,6 +1285,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     id: 'psionic_compression',
     name: 'Compressed',
     icon: '🌀',
+    unresistable: 'ruled no resistance (2026-10-24)',
     color: '#5591e0',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1201,6 +1299,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     id: 'psionic_read',
     name: 'Read',
     icon: '🔍',
+    unresistable: 'ruled no resistance (2026-10-24)',
     color: '#8f7ad8',
     stacking: { mode: 'highest' },
     duration: 20 * SECOND,
@@ -1253,6 +1352,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     id: 'flat_footed',
     name: 'Flat-Footed',
     icon: '😦',
+    unresistable: 'state: caught off guard, not an element',
     color: '#c9a13c',
     stacking: { mode: 'highest' },
     // A long backstop; the removal rule below is what actually ends it.
@@ -1278,6 +1378,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     id: 'surprised',
     name: 'Surprised',
     icon: '😲',
+    unresistable: 'state: caught off guard, not an element',
     color: '#e0a855',
     stacking: { mode: 'highest' },
     duration: 60 * SECOND,
@@ -1336,6 +1437,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     id: 'fasting',
     name: 'Fasting',
     icon: '🕳️',
+    unresistable: "unique: Anupama's rule, not an affliction",
     hidden: true,
     stacking: { mode: 'highest', cap: 1 },
     duration: null,

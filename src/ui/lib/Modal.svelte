@@ -1,5 +1,10 @@
+<script module lang="ts">
+  /** Windows open now, oldest first. Escape closes only the newest, so a window opened from another (the Cook's Book from a bench) closes alone. */
+  const open: symbol[] = [];
+</script>
+
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
 
   // Small floating window for inspecting one thing. Clicking the backdrop —
   // anywhere outside the window — or pressing Escape closes it.
@@ -16,9 +21,18 @@
      */
     fill = false,
   }: { title: Snippet; onclose: () => void; children: Snippet; wide?: boolean; fill?: boolean } = $props();
+
+  const me = Symbol('modal');
+  onMount(() => {
+    open.push(me);
+    return () => {
+      const at = open.indexOf(me);
+      if (at >= 0) open.splice(at, 1);
+    };
+  });
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && open[open.length - 1] === me && onclose()} />
 
 <div class="overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div class="window panel" class:wide class:fill role="dialog" aria-modal="true">

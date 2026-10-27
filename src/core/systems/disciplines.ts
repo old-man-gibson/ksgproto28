@@ -6,7 +6,10 @@ import type {
   GradedStack,
   MaterialDef,
   QualityTier,
+  StatusApplication,
+  StatusDef,
 } from '../types';
+import { harmOf } from './conditionHarm';
 import { MATERIALS } from '../data/materials.data';
 import { DISCIPLINES } from '../data/disciplines.data';
 import { QUALITY_ORDER, qualityAtLeast, qualityMult, qualityRank } from '../data/quality.data';
@@ -252,6 +255,300 @@ function tagCounts(placement: Placement): Map<string, number> {
   return counts;
 }
 
+// ---------- Heat windows ----------
+
+/** The duration a timed bench cooks for: the chosen one, or its default. */
+export function timelineUnits(disc: CraftDisciplineDef, duration?: number): number | undefined {
+  return disc.timeline ? (duration ?? disc.timeline.default) : undefined;
+}
+
+/**
+ * The mean exposure, in timeline units, of the placed parts carrying `tag`:
+ * duration × (1 − slot.at) per part, over timed slots only. Null when the bench
+ * has no timeline or no timed part carries the tag. A part in a slot without
+ * `at` (seasoning, cookware) stands outside time and is not counted.
+ */
+export function meanExposure(
+  disc: CraftDisciplineDef,
+  placement: Placement,
+  tag: string,
+  duration?: number,
+): number | null {
+  const units = timelineUnits(disc, duration);
+  if (units === undefined) return null;
+  let sum = 0;
+  let n = 0;
+  for (const [slotId, part] of Object.entries(placement)) {
+    if (!part) continue;
+    const at = disc.slots.find((s) => s.id === slotId)?.at;
+    if (at == null || !craftTagsOf(part.id).includes(tag)) continue;
+    sum += units * (1 - at);
+    n++;
+  }
+  return n > 0 ? sum / n : null;
+}
+
+/** Whether a mean exposure lies in the half-open window [from, to). */
+export function inHeatWindow(mean: number, window: { from?: number; to?: number }): boolean {
+  return (window.from === undefined || mean >= window.from) && (window.to === undefined || mean < window.to);
+}
+
+/**
+ * A hypothetical mean exposure for one tag, in timeline units. The UI's
+ * cook-time row asks "what would this basket make if its meat averaged 9
+ * units?" without moving any ingredient (`matchOutcome`'s last argument).
+ */
+export interface HeatOverride {
+  tag: string;
+  mean: number;
+}
+
+/** Whether a layout satisfies every heat window an outcome declares. */
+function heatMatches(
+  o: CraftOutcomeDef,
+  disc: CraftDisciplineDef,
+  placement: Placement,
+  duration?: number,
+  override?: HeatOverride,
+): boolean {
+  return (o.heat ?? []).every((w) => {
+    const mean = override?.tag === w.tag ? override.mean : meanExposure(disc, placement, w.tag, duration);
+    return mean !== null && inHeatWindow(mean, w);
+  });
+}
+
+/** A window in the words the bench uses: "under 6", "14 or more", "8 to 14". */
+export function describeHeatWindow(window: { from?: number; to?: number }): string {
+  const { from, to } = window;
+  if (from !== undefined && to !== undefined) return `${from} to ${to}`;
+  if (to !== undefined) return `under ${to}`;
+  return `${from ?? 0} or more`;
+}
+
+/** Every way to choose `size` of `items`, order ignored. */
+function subsetsOf<T>(items: T[], size: number): T[][] {
+  if (size <= 0) return [[]];
+  if (items.length < size) return [];
+  const [head, ...rest] = items;
+  return [...subsetsOf(rest, size - 1).map((tail) => [head, ...tail]), ...subsetsOf(rest, size)];
+}
+
+/**
+ * Problems with the heat windows on one bench, as plain sentences keyed by
+ * outcome id. Shared by `tests/content.test.ts` and `forge/lib/validate.ts`, so
+ * the two layers cannot drift. `materials` is the material registry being
+ * checked (the live one, or the forge's staged copy).
+ *
+ *  - A windowed outcome needs a bench with a `timeline`.
+ *  - A window must not be empty (`from` at or above `to`).
+ *  - Each windowed outcome needs a window-less fallback on the same bench: lower
+ *    priority, no recipe, level, or grade gate, and requirements the windowed
+ *    outcome's own requirements already cover. Without one, a player outside
+ *    every window, or without the recipe card, would cook something other than
+ *    what the same basket makes today.
+ *  - Every window is reachable: some timeline option and some choice of open
+ *    slots at the outcome's level put the tagged parts' MEAN exposure inside it.
+ *    A tag the outcome requires `count` times is tried over every `count` slots
+ *    that can hold it (a count above the number of slots is unreachable). When
+ *    an outcome declares several windows, one option must reach all of them
+ *    (distinct slots across windows are not checked).
+ */
+export function heatWindowProblems(
+  disc: CraftDisciplineDef,
+  materials: Record<string, { craftTags?: string[] }>,
+): { outcome: string; message: string }[] {
+  const problems: { outcome: string; message: string }[] = [];
+  const stock = Object.values(materials);
+  for (const o of disc.outcomes) {
+    const windows = o.heat ?? [];
+    if (windows.length === 0) continue;
+    const say = (message: string) => problems.push({ outcome: o.id, message });
+    if (!disc.timeline) {
+      say(`${disc.id}/${o.id} has heat windows, but ${disc.id} has no timeline`);
+      continue;
+    }
+    for (const w of windows) {
+      if (w.from !== undefined && w.to !== undefined && w.from >= w.to) {
+        say(`${disc.id}/${o.id}: the window on '${w.tag}' is empty (from ${w.from} is not below to ${w.to})`);
+      }
+    }
+
+    const demand = (tag: string) =>
+      o.requires.filter((r) => r.tag === tag).reduce((sum, r) => sum + (r.count ?? 1), 0);
+    const fallback = disc.outcomes.find(
+      (f) =>
+        f !== o &&
+        !f.heat?.length &&
+        !f.recipe &&
+        !f.minLevel &&
+        !f.minQuality &&
+        !f.maxQuality &&
+        (f.priority ?? 0) < (o.priority ?? 0) &&
+        f.requires.every((r) => demand(r.tag) >= (r.count ?? 1)),
+    );
+    if (!fallback) {
+      say(
+        `${disc.id}/${o.id} has no window-less fallback: needs an outcome of lower priority on this bench, ` +
+          `with no recipe, minLevel, minQuality or maxQuality, whose requires its own requires cover`,
+      );
+    }
+
+    const level = o.minLevel ?? 0;
+    const entries = disc.slots.filter(
+      (s) => s.at != null && slotPicks(s) === 'material' && (s.unlockLevel ?? 0) <= level,
+    );
+    const holders = (tag: string) =>
+      entries.filter((s) =>
+        stock.some((m) => {
+          const tags = m.craftTags ?? [];
+          return tags.includes(tag) && s.accepts.some((a) => tags.includes(a));
+        }),
+      );
+    // Matching reads the MEAN over every tagged part, and the outcome needs at
+    // least `count` of them, so a window is reachable when some `count` slots
+    // average inside it: one slot landing there is not enough once two parts
+    // have to carry the tag.
+    const need = (tag: string) => Math.max(1, demand(tag));
+    const reachable = disc.timeline.options.some((opt) =>
+      windows.every((w) =>
+        subsetsOf(holders(w.tag), need(w.tag)).some((set) =>
+          inHeatWindow(set.reduce((sum, s) => sum + opt.units * (1 - s.at!), 0) / set.length, w),
+        ),
+      ),
+    );
+    if (!reachable) {
+      const named = windows
+        .map((w) => `${need(w.tag) > 1 ? `${need(w.tag)} × ` : ''}'${w.tag}' ${describeHeatWindow(w)}`)
+        .join(' and ');
+      say(
+        `${disc.id}/${o.id}: no timeline option and entry slot open at level ${level} puts a part inside ` +
+          `${named} — the dish could never be made`,
+      );
+    }
+  }
+  return problems;
+}
+
+/**
+ * Problems with the `food` flag, what food grants, and Signatures, as plain
+ * sentences keyed by material id. Shared by `tests/content.test.ts` and
+ * `forge/lib/validate.ts` like `heatWindowProblems`. `statuses` is the
+ * condition registry being checked (optional: without it only the rules that
+ * need no condition run).
+ *
+ *  - Food is exactly what a cooking-skill bench makes: every material a bench
+ *    with `skill: 'cooking'` produces is marked `consumable.food`, and nothing
+ *    else is. An alchemy flask or a salve marked food would be scaled by the
+ *    cook's skill; a dish left unmarked would not be.
+ *  - A Signature belongs to food only, names real conditions, repeats none of the
+ *    dish's own grants (a second dose of a `highest` condition adds nothing) and
+ *    none of its own entries, and is never the spoilage condition.
+ *  - Every dish carries one, except the bench's failure dish (a material only
+ *    ever made by outcomes with `maxQuality`, like the Scorched Mess), which
+ *    carries none. The spoilage condition is whatever the failure dishes grant.
+ *  - What food grants must run out and must land: no `duration: 'permanent'`
+ *    (nor a duration of zero or less), no intensity or chance of zero or less.
+ *    A missing intensity is the default 1 and a missing chance is certain, so
+ *    neither needs checking.
+ *  - Nothing harmful is food, except what the failure dish grants. Harm is read
+ *    from the condition's own data (`harmOf`, conditionHarm.ts), so a dish
+ *    cannot be authored to hurt the eater and be amplified by the cook.
+ */
+export function foodProblems(
+  disciplines: CraftDisciplineDef[],
+  materials: Record<string, MaterialDef>,
+  statuses?: Record<string, StatusDef>,
+): { material: string; message: string }[] {
+  const problems: { material: string; message: string }[] = [];
+  const say = (material: string, message: string) => problems.push({ material, message });
+
+  const made = new Map<string, { from: string[]; failureOnly: boolean }>();
+  for (const disc of disciplines) {
+    if (disc.skill !== 'cooking') continue;
+    for (const o of disc.outcomes) {
+      if (o.result.kind !== 'material') continue;
+      const entry = made.get(o.result.id) ?? { from: [], failureOnly: true };
+      entry.from.push(`${disc.id}/${o.id}`);
+      if (!o.maxQuality) entry.failureOnly = false;
+      made.set(o.result.id, entry);
+    }
+  }
+
+  // The spoilage condition: what the failure dishes grant.
+  const failureDishes = new Set([...made].filter(([, e]) => e.failureOnly).map(([id]) => id));
+  const spoilage = new Set<string>();
+  for (const id of failureDishes) {
+    for (const g of materials[id]?.consumable?.grants ?? []) spoilage.add(g.id);
+  }
+
+  for (const [id, entry] of made) {
+    const mat = materials[id];
+    if (!mat) continue; // an unresolved result is another lint's problem
+    const spec = mat.consumable;
+    if (!spec?.food) {
+      say(id, `'${id}' is made by ${entry.from.join(', ')}, a cooking bench, but is not marked food`);
+    } else if (entry.failureOnly && spec.signature?.length) {
+      say(id, `'${id}' is a failure dish (only ${entry.from.join(', ')} make it) and carries a signature`);
+    } else if (!entry.failureOnly && !spec.signature?.length) {
+      say(id, `'${id}' is a dish and has no signature`);
+    }
+  }
+
+  /** One list of applications (grants or signature) on one food. */
+  const checkApplications = (
+    id: string,
+    label: 'grants' | 'signature',
+    apps: StatusApplication[],
+    harmAllowed: boolean,
+  ) => {
+    for (const app of apps) {
+      const what = `'${id}' ${label} '${app.id}'`;
+      if (app.duration === 'permanent') {
+        say(id, `${what} with duration 'permanent': a dish's effect must run out`);
+      } else if (app.duration !== undefined && !(app.duration > 0)) {
+        say(id, `${what} with duration ${app.duration}: it would end at once`);
+      }
+      if (app.intensity !== undefined && !(app.intensity > 0)) {
+        say(id, `${what} with intensity ${app.intensity}: it would do nothing`);
+      }
+      if (app.chance !== undefined && !(app.chance > 0)) {
+        say(id, `${what} with chance ${app.chance}: it would never land`);
+      }
+      const def = statuses?.[app.id];
+      const harm = def ? harmOf(def) : null;
+      if (harm && !harmAllowed) {
+        say(id, `${what} is a harmful condition (${harm}); food only nourishes`);
+      }
+    }
+  };
+
+  for (const mat of Object.values(materials)) {
+    const spec = mat.consumable;
+    if (!spec) continue;
+    if (spec.food && !made.has(mat.id)) {
+      say(mat.id, `'${mat.id}' is marked food but no cooking bench makes it`);
+    }
+    if (spec.signature?.length && !spec.food) {
+      say(mat.id, `'${mat.id}' has a signature but is not food`);
+    }
+    if (spec.food) {
+      const failure = failureDishes.has(mat.id);
+      checkApplications(mat.id, 'grants', spec.grants ?? [], failure);
+      checkApplications(mat.id, 'signature', spec.signature ?? [], false);
+    }
+    const own = new Set((spec.grants ?? []).map((g) => g.id));
+    const seen = new Set<string>();
+    for (const sig of spec.signature ?? []) {
+      if (statuses && !statuses[sig.id]) say(mat.id, `'${mat.id}' signature names unknown condition '${sig.id}'`);
+      if (own.has(sig.id)) say(mat.id, `'${mat.id}' signature repeats its own grant '${sig.id}'`);
+      if (seen.has(sig.id)) say(mat.id, `'${mat.id}' signature lists '${sig.id}' twice`);
+      seen.add(sig.id);
+      if (spoilage.has(sig.id)) say(mat.id, `'${mat.id}' signature is the spoilage condition '${sig.id}'`);
+    }
+  }
+  return problems;
+}
+
 /** Only what is spent INTO the result — a tool is not part of what you made. */
 export function consumedParts(disc: CraftDisciplineDef, placement: Placement): GradedStack[] {
   const spend = new Set(disc.slots.filter((s) => slotConsumes(s)).map((s) => s.id));
@@ -264,11 +561,19 @@ export function consumedParts(disc: CraftDisciplineDef, placement: Placement): G
  * What this combination makes. Outcomes state what they need as tags, so the
  * data describes recipes without enumerating them; the most specific match
  * wins, and ties break on how much the outcome demanded.
+ *
+ * `duration` is a timed bench's chosen length (its default when absent); only
+ * outcomes with `heat` windows read it. A bench without a timeline never
+ * matches a windowed outcome. `override` replaces the measured mean exposure of
+ * one tag with a stated one, for read-only what-ifs; the match is otherwise the
+ * same, and nothing is changed.
  */
 export function matchOutcome(
   state: GameState,
   disc: CraftDisciplineDef,
   placement: Placement,
+  duration?: number,
+  override?: HeatOverride,
 ): CraftOutcomeDef | undefined {
   const counts = tagCounts(placement);
   const level = skillLevel(state, disc);
@@ -279,7 +584,8 @@ export function matchOutcome(
     if (o.recipe && !knowsRecipe(state, o.recipe)) return false;
     if (o.minQuality && (!best || !qualityAtLeast(best, o.minQuality))) return false;
     if (o.maxQuality && best && qualityRank(best) > qualityRank(o.maxQuality)) return false;
-    return o.requires.every((r) => (counts.get(r.tag) ?? 0) >= (r.count ?? 1));
+    if (!o.requires.every((r) => (counts.get(r.tag) ?? 0) >= (r.count ?? 1))) return false;
+    return heatMatches(o, disc, placement, duration, override);
   });
 
   return matches.sort(
@@ -298,11 +604,12 @@ export interface CraftCheck {
   outcome?: CraftOutcomeDef;
 }
 
-/** Whether the bench as laid out could actually be worked. */
+/** Whether the bench as laid out could actually be worked (`duration`: see matchOutcome). */
 export function checkCraft(
   state: GameState,
   disc: CraftDisciplineDef,
   placement: Placement,
+  duration?: number,
 ): CraftCheck {
   const open = openSlots(state, disc);
   // Slots that spend the same material at the same grade draw on one stack:
@@ -341,7 +648,7 @@ export function checkCraft(
     }
   }
 
-  const outcome = matchOutcome(state, disc, placement);
+  const outcome = matchOutcome(state, disc, placement, duration);
   if (!outcome) return { ok: false, reason: text('disciplines.reason.no_outcome') };
   return { ok: true, outcome };
 }

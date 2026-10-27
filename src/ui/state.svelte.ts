@@ -14,6 +14,7 @@ import { OFFLINE_CAP_MS, runOfflineProgress, type OfflineSummary } from '../core
 import { dropFight, isKept, keepFight, NOTEBOOK_MAX } from '../core/systems/ledger';
 import { setSkipSettling } from '../core/systems/mutagens';
 import type { SortMode } from '../core/systems/inventory';
+import { forgetLayouts } from './lib/benchLayouts';
 
 /**
  * Bridge between the pure core and Svelte. The game state is a deep-reactive
@@ -216,6 +217,7 @@ export async function importSave(file: File): Promise<void> {
     const loaded = deserialize(await file.text());
     Object.assign(gs, loaded);
     game.resyncAnnouncers();
+    forgetLayouts();
     save();
     game.bus.emit({ type: 'log', msg: '💾 Save imported.', kind: 'info' });
   } catch {
@@ -236,6 +238,8 @@ export function hardReset(): void {
   clearStorage();
   Object.assign(gs, createInitialState(Date.now()));
   game.resyncAnnouncers();
+  // The benches' remembered layouts belong to the run that is gone.
+  forgetLayouts();
   ui.offline = null;
   ui.defeat = null;
   ui.defeatShown = -1;

@@ -51,6 +51,7 @@ import {
   BANDS,
   FLOORS,
   STARTING_SPOT,
+  TIERS,
 } from '../src/core/registry';
 import { RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/types';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
@@ -58,10 +59,12 @@ import { RESOURCES } from '../src/core/data/resources.data';
 import { XP_BASE, XP_RATE } from '../src/core/data/progression.data';
 import { TERRAIN_PROFILES } from '../src/core/data/climate.data';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
-import { TAG_RESISTANCES } from '../src/core/systems/monsterStats';
+import { TAG_RESISTANCES, penetrationProblems } from '../src/core/systems/monsterStats';
+import { resistanceProblems } from '../src/core/systems/conditionHarm';
 import { monsterTags } from '../src/core/systems/bestiary';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
 import { isCard } from '../src/core/systems/consumables';
+import { foodProblems, heatWindowProblems } from '../src/core/systems/disciplines';
 import { askingPrice, lineValue } from '../src/core/systems/shops';
 import { wordTag } from '../src/core/data/wordskills.data';
 import { attrXpWeights } from '../src/core/systems/actions';
@@ -1246,6 +1249,16 @@ describe('status conditions', () => {
       for (const id of def.blockedBy ?? []) {
         expect(STATUSES[id], `${def.id}.blockedBy -> ${id}`).toBeTruthy();
       }
+      // Mirrored in forge/lib/validate.ts.
+      for (const id of def.immune?.ids ?? []) {
+        expect(STATUSES[id], `${def.id}.immune -> ${id}`).toBeTruthy();
+      }
+      if (def.immune) {
+        expect(
+          (def.immune.ids?.length ?? 0) + (def.immune.elements?.length ?? 0),
+          `${def.id}.immune names nothing`,
+        ).toBeGreaterThan(0);
+      }
     }
   });
 
@@ -1368,6 +1381,31 @@ describe('status conditions', () => {
       }
     }
   });
+
+  it('every harmful condition says what resists it: an element, or unresistable, never both', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against the
+    // staged copy. Mutation cases for each rule are in tests/conditionResist.test.ts.
+    // Titles are checked too: a title may not switch off an unresistable condition.
+    const problems = resistanceProblems(STATUSES, TITLES).map((p) => `${p.kind} ${p.id}: ${p.message}`);
+    expect(problems).toEqual([]);
+  });
+});
+
+describe('monster penetration', () => {
+  it('is a share on every tier', () => {
+    // The tier table is code, not forge data, so this is not mirrored in the forge.
+    for (const tier of Object.values(TIERS)) {
+      expect(tier.penetration, `${tier.id} penetration`).toBeGreaterThanOrEqual(0);
+      expect(tier.penetration, `${tier.id} penetration`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('is zero for everything that can appear on floors 1 to 3, and a share elsewhere', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against the
+    // staged copy. Mutation cases are in tests/conditionResist.test.ts.
+    const problems = penetrationProblems(MONSTERS, TIERS, SPOTS, FLOORS).map((p) => p.message);
+    expect(problems).toEqual([]);
+  });
 });
 
 describe('crafting disciplines', () => {
@@ -1445,6 +1483,29 @@ describe('crafting disciplines', () => {
       const loosest = Math.min(...disc.outcomes.map((o) => o.requires.length));
       expect(loosest, `${disc.id} has no broad fallback outcome`).toBe(1);
     }
+  });
+
+  it('heat windows sit on a timed bench, over a fallback, and can be reached', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against
+    // the staged copy. A windowed outcome on an untimed bench never matches; one
+    // with no window-less fallback makes a player outside the window (or without
+    // the card) cook something other than what the same basket makes today; one
+    // no timeline option can land in is a dish nobody can make.
+    const problems = DISCIPLINE_LIST.flatMap((disc) =>
+      heatWindowProblems(disc, MATERIALS).map((p) => p.message),
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it('food and signatures: exactly what a cooking bench makes is food, and each dish has a signature', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against the
+    // staged copy. A flask marked food would be scaled by the cook's skill; a dish
+    // left unmarked would not be; a signature that repeats the dish's own grant
+    // (or names no condition) does nothing; food that grants a permanent or a
+    // harmful condition (the failure dish aside) would last forever or hurt, and
+    // the cook's skill would amplify it.
+    const problems = foodProblems(DISCIPLINE_LIST, MATERIALS, STATUSES).map((p) => p.message);
+    expect(problems).toEqual([]);
   });
 
   it('tools are never consumed by the craft', () => {

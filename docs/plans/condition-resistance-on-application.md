@@ -19,6 +19,27 @@ done:
 
 # Conditions should be resisted on application
 
+**Amended 2026-10-23 (cooking round 1): resistance of 1 or more, after the
+applier's penetration, is now immunity.** `applyStatus` returns null instead of
+landing at the floor, for players and monsters; below 1 everything here still
+holds. `StatusDef.immune` adds explicit immunity by element or id. See
+CONTENT_GUIDE §"Status condition". The "never gates landing" line in the front
+matter describes the 2026-08-14 build.
+
+**Amended 2026-10-24 (condition resistance core): every harmful condition says
+what resists it.** `StatusDef.unresistable` (a reason) marks the ten exempt by
+design (`fasting`, `flat_footed`, `surprised`, the three `toll_*` phases,
+`doused`, `psionic_compression`, `psionic_read`, `unfolded`); `queasy`,
+`overgrowth` and `proliferating` gained the poison element. A harmful condition
+has an `element` or `unresistable`, never both, and nothing may `immune`-name an
+unresistable one (`resistanceProblems`, both layers). Also in that change: a
+condition's damage ticks read the damage path's capped figure instead of the
+narrow declared-plus-mods value (`resistBlock`, `monsterDamageResistance`);
+monsters apply conditions with penetration by tier (`TierDef.penetration`,
+`MonsterDef.penetration`; 0 on floors 1 to 3); a held condition's tooltip names
+what resists it; and an earned title may confer `immune` (Iron Stomach refuses
+`queasy`). See CONTENT_GUIDE §"Status condition".
+
 **Built 2026-08-14. `npm run verify` green: 1607 tests, 0 type errors.** No save
 change — the whole thing is arithmetic at the point of application, so `save`
 stays empty.

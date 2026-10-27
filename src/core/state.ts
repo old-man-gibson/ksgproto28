@@ -3,7 +3,7 @@ import { STARTING_SPOT } from './data/locations.data';
 import { freshMutagenState } from './data/mutagens.data';
 import { freshPrestigeState } from './data/prestige.data';
 
-export const SAVE_VERSION = 57;
+export const SAVE_VERSION = 59;
 
 
 function freshAttrs(): Record<AttributeId, AttrState> {
@@ -45,6 +45,9 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     resourceLocks: {},
     statuses: [],
     useCooldowns: {},
+    meals: [],
+    foreignClaims: [],
+    queuedMeal: null,
     exerting: false, // opt in to the style's stamina bargain when you want it
     skills: {},
     style: 'balanced',

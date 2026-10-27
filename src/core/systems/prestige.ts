@@ -6,6 +6,7 @@ import { TUTORIAL_DONE_KEY, TUTORIAL_EXIT } from '../data/tutorial.data';
 import { conditionsMet } from './conditions';
 import { floorCleared, ladderFloors } from './towers';
 import { boonRank } from './legacy';
+import { carriedCookbook } from './cookbook';
 import { revealMapped } from './mapped';
 import { applyStartingLevel } from './levels';
 import { text } from '../text/log';
@@ -208,6 +209,9 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
     purchases,
     peakLevels,
     peakAttrs,
+    // Which dishes reached 25 and 100 cooks, kept whatever Cook's Notes rank is
+    // held now: points are spent after the harvest, and the rank gates the read.
+    cookbook: carriedCookbook(state),
     lastHarvest: report,
     review: true,
     spentThisReview: 0,

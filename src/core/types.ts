@@ -67,6 +67,14 @@ export type StatKey =
   | 'goldGain'
   | 'travelSpeed'
   | 'craftSpeed'
+  /**
+   * What the cook's skill does to the food you EAT (consumables.ts `foodScale`),
+   * not to the food you make. Base 1; read at most ×1.5 (derived.ts FOOD_MULT_CAP).
+   * Duration scales how long a dish's conditions last, Potency how hard they hit
+   * and how much a dish restores. Player-side only: monsters do not eat.
+   */
+  | 'foodDuration'
+  | 'foodPotency'
   | 'critDamage'
   | 'penetration'
   | 'splash'
@@ -238,6 +246,8 @@ export const STAT_NAMES: Record<StatKey, string> = {
   goldGain: 'Gold Gain',
   travelSpeed: 'Travel Speed',
   craftSpeed: 'Craft Speed',
+  foodDuration: 'Food Duration',
+  foodPotency: 'Food Potency',
   critDamage: 'Crit Damage',
   penetration: 'Penetration',
   splash: 'Splash Damage',
@@ -911,7 +921,15 @@ export interface ProgressionBand {
  * a library knows a book is unread. Skills declare which domain they learn in,
  * so the domain never has to know which skills are listening.
  */
-export type NoveltyDomain = 'bestiary' | 'library' | 'dialogue' | 'arcana' | 'geneshaping' | 'weather';
+export type NoveltyDomain =
+  | 'bestiary'
+  | 'library'
+  | 'dialogue'
+  | 'arcana'
+  | 'geneshaping'
+  | 'weather'
+  /** Dishes cooked, keyed by dish material id (systems/cooking.ts `cook`). */
+  | 'cookery';
 
 /**
  * Novelty learning: a skill that advances on NEW information rather than on
@@ -1279,6 +1297,18 @@ export interface StatusDef {
    * set you on fire, but heat usually does.
    */
   element?: DamageType;
+  /**
+   * Marks a harmful condition that no resistance answers, with the reason in a
+   * few words ("state: caught off guard", "the Toll Collector's phase"). The
+   * other half of a rule both validation layers enforce (`resistanceProblems`,
+   * conditionHarm.ts): a condition that hurts its bearer has an `element` or
+   * this, never both, so "can this be resisted?" always has an answer.
+   *
+   * `applyStatus` lands such a condition in full whatever the bearer's stats
+   * are, and `immune.ids` may not name one, so it cannot be switched off.
+   * Developer-facing; the tooltip only says "Cannot be resisted".
+   */
+  unresistable?: string;
   /** The worse condition this becomes when it is pushed far enough. */
   escalatesTo?: string;
   /** The milder condition a 'deescalate' removal drops this back to. */
@@ -1306,6 +1336,14 @@ export interface StatusDef {
   };
   /** Conditions that prevent this one being applied at all while held. */
   blockedBy?: string[];
+  /**
+   * While the bearer holds this, applications that match do not land: any
+   * condition whose `element` is listed, and any condition named by id. The
+   * mirror of `blockedBy`, written on the protecting status instead of the
+   * blocked one. A monster can wear it (`MonsterDef.wears`) as readily as a dish
+   * can grant it. Only applications are refused; a condition already held stays.
+   */
+  immune?: { elements?: DamageType[]; ids?: string[] };
   stacking: StatusStacking;
   /** Default lifetime in ticks; null means only a removal rule can end it. */
   duration: number | null;
@@ -2015,6 +2053,14 @@ export interface TierDef {
   /** Stat multiplier rolled uniformly within this range at spawn. */
   multiplierRange: [number, number];
   rewardMult: number;
+  /**
+   * The penetration a monster of this tier applies conditions with, unless its
+   * def sets its own (`MonsterDef.penetration`). It comes off the player's
+   * resistance in the immunity test only: a condition lands nothing at all once
+   * resistance minus penetration reaches 1, and the share that lands below
+   * that is untouched (`applyStatus`).
+   */
+  penetration: number;
 }
 
 export interface ModifierTierDef {
@@ -2105,6 +2151,12 @@ export interface MonsterDef {
   /** Intrinsic tier — part of the monster's identity, not rolled. */
   tier: TierId;
   /**
+   * Overrides the tier's penetration (`TierDef.penetration`) for the conditions
+   * this species applies to the player. Omit for the tier's value; 0 is the
+   * explicit "none". Only the immunity line reads it, never the partial dose.
+   */
+  penetration?: number;
+  /**
    * Every blow that LANDS deals exactly this much — no crit, no jitter, no
    * armour, no resistance, no counter reduction. Training equipment: the
    * tutorial's Cell Slime deals 1 so a first fight can be read while it
@@ -2157,7 +2209,9 @@ export interface MonsterDef {
   escorts?: string[];
   /**
    * Fractional damage reduction per incoming type: 0.5 = takes half damage,
-   * negative = vulnerable (−0.5 = takes 50% more). Missing = 0.
+   * negative = vulnerable (−0.5 = takes 50% more). Missing = 0. Damage is capped
+   * at 0.9 on read, but a value of 1 or more also makes the species immune to
+   * conditions of that element: they do not land (`applyStatus`).
    */
   resistances?: Partial<Record<DamageType, number>>;
   /**
@@ -2427,6 +2481,21 @@ export interface ConsumableSpec {
   grants?: StatusApplication[];
   /** Cure tags fired at whatever the eater is suffering (see StatusRemoval). */
   cures?: string[];
+  /**
+   * Conditions a dish also grants once the player has cooked it
+   * `SIGNATURE_COOKS` times (systems/cookbook.ts `signatureEarned`), scaled by
+   * grade like `grants`. Food only.
+   */
+  signature?: StatusApplication[];
+  /**
+   * This is FOOD: the cook's skill scales it as eaten. A status it grants lasts
+   * `foodDuration` times as long and lands `foodPotency` times as hard, and
+   * `restore` amounts are multiplied by `foodPotency` (consumables.ts
+   * `foodScale`). Exactly the materials a cooking bench makes carry it, and
+   * nothing else does (`foodProblems`, systems/disciplines.ts; linted in both
+   * validation layers).
+   */
+  food?: boolean;
   /** Ticks before it can be used again; absent = no cooldown. */
   cooldown?: number;
   /** Flavour shown on the use button. */
@@ -2451,6 +2520,43 @@ export interface ConsumableSpec {
    * each one after is 1 floating favor, assigned on the Divine tab.
    */
   votive?: boolean;
+}
+
+/**
+ * One dose's claim on a condition (systems/meals.ts): what a dish, or a flask,
+ * gave it and for how long. A held condition is one instance whatever gave it, so
+ * the claims are what remember each source apart. The instance is kept at the
+ * strongest live claim's dose and the longest live claim's time; a claim that
+ * runs out stops counting at once.
+ */
+export interface MealClaim {
+  /** The condition's id. */
+  id: string;
+  /** The intensity this dose gave it. */
+  dose: number;
+  /**
+   * Ticks of this dose's own clock left, counted at the pace the conditions'
+   * clocks run (a knockout's faster clock, no tick while travelling). Null when
+   * the dose never runs out by clock.
+   */
+  left: number | null;
+  /** The grade of the helping that gave it, for a dish's claim: what the slot's label reads. */
+  grade?: QualityTier;
+}
+
+/**
+ * A dish holding one of the player's dish slots (`dishLimit`, systems/meals.ts).
+ * One slot per dish, holding everything the dish gave (its grants and its
+ * Signature) as one claim per condition. Its time left is its own claims', never
+ * the held condition's, which another source may have set.
+ */
+export interface MealSlot {
+  /** The dish's material id. */
+  dish: string;
+  /** The best grade eaten into this slot. */
+  quality: QualityTier;
+  /** The nourishing conditions the dish gave. A dish with none holds no slot. */
+  claims: MealClaim[];
 }
 
 // ---------- Quality ----------
@@ -2642,8 +2748,26 @@ export interface CraftOutcomeDef {
    * (`recipe:<id>`, taught by a recipe card — `ConsumableSpec.teaches`).
    */
   recipe?: string;
+  /**
+   * Heat windows, for outcomes on a bench with a `timeline`. Each entry names a
+   * craft tag and a half-open exposure range [from, to) in timeline units
+   * (`from` absent = 0, `to` absent = no upper end). The outcome matches only
+   * when, for every entry, the MEAN exposure of the placed parts carrying that
+   * tag (duration × (1 − slot.at), timed slots only) falls inside the range. If
+   * no placed part carries the tag, or the bench has no timeline, it does not
+   * match. Pair every windowed outcome with a window-less fallback on the same
+   * tags (linted in both layers).
+   */
+  heat?: HeatWindow[];
   /** What comes out. */
   result: CraftResult;
+}
+
+/** One heat window: parts tagged `tag` must average an exposure in [from, to). */
+export interface HeatWindow {
+  tag: string;
+  from?: number;
+  to?: number;
 }
 
 export type CraftResult =
@@ -4632,7 +4756,15 @@ export type PrestigeBoonEffect =
    * level's attribute bonus. Applied at run start and at purchase; never
    * lowers a level already reached (systems/levels.ts applyStartingLevel).
    */
-  | { kind: 'startLevel'; levels: number };
+  | { kind: 'startLevel'; levels: number }
+  /**
+   * Cook's Notes: the Cook's Book (systems/cookbook.ts) resets with the run, and
+   * this carries part of it over. Rank 1 keeps which dishes had their cook time
+   * shown (`COOK_TIME_COOKS` cooks); rank 2 also keeps Signatures
+   * (`SIGNATURE_COOKS`). What a prestige carries is stored in
+   * `PrestigeState.cookbook` whatever the rank then; the rank gates the READ.
+   */
+  | { kind: 'cookbook' };
 
 /** Something prestige points buy. Rank r (1-based) costs `cost[r-1]`; `cost.length` is the max rank. */
 export interface PrestigeBoonDef {
@@ -4678,6 +4810,13 @@ export interface PrestigeState {
   peakLevels: Record<string, number>;
   /** Attribute id → the highest TRAINED level reached in any run that ended in a prestige. Endowment's lever. */
   peakAttrs: Partial<Record<AttributeId, number>>;
+  /**
+   * Dish ids whose Cook's Book entry reached a threshold in any run that ended
+   * in a prestige: `timed` at `COOK_TIME_COOKS` cooks (cook time shown), `signed`
+   * at `SIGNATURE_COOKS` (Signature earned). Written by `prestigeNow`, never
+   * shortened. The Cook's Notes boon decides how much of it the Book reads.
+   */
+  cookbook: { timed: string[]; signed: string[] };
   /** The most recent harvest, shown on the post-prestige overlay. */
   lastHarvest: HarvestReport | null;
   /** The post-prestige overlay is owed: it survives a reload and closes only through `leaveReview`. */
@@ -4868,6 +5007,13 @@ export interface TitleDef {
   unlock: UnlockCondition[];
   passive?: Modifier[];
   equipped?: Modifier[];
+  /**
+   * Once earned, conditions of these elements and these ids do not land on the
+   * player: the same refusal as `StatusDef.immune`, with the title as the
+   * source instead of a held condition. Passive (always on, not only worn). It
+   * refuses applications only, and may not name an `unresistable` condition.
+   */
+  immune?: { elements?: DamageType[]; ids?: string[] };
   /** Hidden from the UI until earned. */
   secret?: boolean;
   /**
@@ -5267,6 +5413,25 @@ export interface GameState {
   statuses: StatusInstance[];
   /** totalTicks at which each consumable may next be used. */
   useCooldowns: Record<string, number>;
+  /**
+   * Dishes holding a dish slot, oldest first (systems/meals.ts). Run state: it
+   * resets with the run like the conditions it points at. A condition already
+   * held when the field was added (save v59) belongs to no slot.
+   */
+  meals: MealSlot[];
+  /**
+   * Claims on dish conditions by sources that are not dishes (a flask, a
+   * condition running in a pre-v59 save), each with its own clock, so a dish
+   * evicted while one is live leaves the condition at that source's strength and
+   * time, and once it lapses the condition can end (systems/meals.ts).
+   */
+  foreignClaims: MealClaim[];
+  /**
+   * The dish to eat once the fight or the knockout is over (systems/eating.ts),
+   * at most one. Fired by the first tick with no fight and no knockout recovery.
+   * `why` is what it was queued during, for its log line.
+   */
+  queuedMeal: { dish: string; quality: QualityTier; why?: 'fight' | 'recovery' } | null;
   /** Opted in to paying your style's exertion cost for its bonuses. */
   exerting: boolean;
   skills: Record<string, SkillState>;
@@ -6090,6 +6255,23 @@ export type GameEvent =
   | { type: 'arrive'; spot: string }
   /** A finished craft: recipe crafts name the recipe, bench work its discipline. */
   | { type: 'craft'; recipe?: string; discipline?: string }
+  /**
+   * A dish came off a cooking bench (cutting-board cuts are not dishes). The plate
+   * card's payload: `outcome` is the bench outcome that matched, `dish` the
+   * material made, `quality` the grade rolled and `low`..`high` the range the
+   * preview promised (equal when the basket had no uniformity roll). Emitted
+   * beside `craft`, not instead of it.
+   */
+  | {
+      type: 'cooked';
+      discipline: string;
+      outcome: string;
+      dish: string;
+      quality: QualityTier;
+      low: QualityTier;
+      high: QualityTier;
+      qty: number;
+    }
   /** A first greeting — `talkTo` stamped `met:<npcId>` just now. */
   | { type: 'talk'; npcId: string }
   | { type: 'quest:accept'; id: string }

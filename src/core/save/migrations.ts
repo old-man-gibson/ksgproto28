@@ -648,6 +648,33 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     });
     raw.version = 57;
   },
+  // v57 → v58: the Cook's Book (systems/cookbook.ts). The cook counters it reads
+  // (`cooked:*`) start at zero: no earlier save recorded which dish a cook made,
+  // so there is nothing honest to seed them or the `cookery` novelty domain from
+  // (the dish counts and `state.novelty.cooking` are new). An existing save pays
+  // each dish's first-cook bonus once, and its Book fills from here. Only the
+  // legacy block changes shape: it gains the lists Cook's Notes reads.
+  57: (raw) => {
+    const prestige =
+      (raw.prestige as { cookbook?: { timed?: string[]; signed?: string[] } } | undefined) ??
+      freshPrestigeState();
+    const kept = prestige.cookbook;
+    prestige.cookbook = { timed: kept?.timed ?? [], signed: kept?.signed ?? [] };
+    raw.prestige = prestige;
+    raw.version = 58;
+  },
+  // v58 → v59: dish slots, other sources' claims on dish conditions, and the
+  // queued dish (systems/meals.ts, eating.ts). All start empty. A food condition
+  // already running is left running and belongs to no slot: no earlier save
+  // recorded which dish gave it, so there is nothing honest to attach it to. It
+  // counts toward no limit; a dish eaten onto it records the condition's strength
+  // and time left as another source's claim, which lapses when that time does.
+  58: (raw) => {
+    if (!Array.isArray(raw.meals)) raw.meals = [];
+    if (!Array.isArray(raw.foreignClaims)) raw.foreignClaims = [];
+    if (raw.queuedMeal === undefined) raw.queuedMeal = null;
+    raw.version = 59;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {
