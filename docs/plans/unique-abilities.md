@@ -46,6 +46,10 @@ clause grammar, vows as currency, a naming language, save-derived seeds.
 Nothing here is composed by the player. Abilities are authored entries,
 earned, worn one at a time. Keep it that way: no clauses, vows, naming, seeds.
 
+**Reversed 2026-10-27 by the user**: rolled abilities (seeded, generated from
+a grammar) are now wanted, beside these authored ones. See
+[rolled-abilities](rolled-abilities.md). This epic stays the runtime.
+
 **Not the classes seed.** Classes stay a separate system (user, 2026-09-26);
 [classes.md](classes.md) is untouched. A future class would be a second slot,
 not an entry in this one.
