@@ -5,6 +5,7 @@ import type {
   MaterialDef,
   QualityTier,
   StatusApplication,
+  StatusInstance,
 } from '../types';
 import type { EventBus } from '../engine/events';
 import { MATERIALS } from '../data/materials.data';
@@ -12,11 +13,12 @@ import { QUALITY_TIERS, qualityMult } from '../data/quality.data';
 import { getDerivedStats } from './derived';
 import { availableMax, resourceValue, restoreResource } from './resources';
 import { heal } from './health';
-import { applyStatus, fireStatusEvent, statusesOf } from './statuses';
+import { applyStatus, findStatus, fireStatusEvent, statusesOf } from './statuses';
 import { gradesHeld, knowsRecipe, recipeKey, recipeName, stockOf } from './disciplines';
 import { bumpStat } from './achievements';
 import { STATUSES, TECHNIQUES } from '../registry';
 import { signatureEarned } from './cookbook';
+import { dishHoldsSlot, mealToReplace, recordMeal, type MealLanding } from './meals';
 import { isHarmful } from './conditionHarm';
 import { learnTechnique, techniqueReachable } from './martial';
 import { wordUnlocked, wordUnlockKey } from './unlocks';
@@ -79,6 +81,10 @@ import { text } from '../text/log';
  * time by the eater's cook: conditions last `foodDuration` times as long and land
  * `foodPotency` times as hard, and `restore` amounts follow potency. A dish the
  * player has cooked `SIGNATURE_COOKS` times also grants its `signature`.
+ *
+ * Food is eaten between fights only (`canUse`), and at most `dishLimit` dishes
+ * are active at once: each food holds a slot (`recordMeal`, systems/meals.ts).
+ * A dish pressed during a fight waits in a queue instead (systems/eating.ts).
  */
 
 /** What eating something spoiled does to you, whatever it was meant to be. */
@@ -127,6 +133,19 @@ export interface UseCheck {
 }
 
 export function canUse(state: GameState, id: string, quality: QualityTier): UseCheck {
+  return checkUse(state, id, quality, !!state.combat);
+}
+
+/**
+ * `canUse` as if no fight were on: stock, cooldown and the card rules, without
+ * the one that keeps dishes out of a fight. What a queued dish is checked
+ * against (systems/eating.ts), both when it is queued and when it fires.
+ */
+export function canUseOutOfFight(state: GameState, id: string, quality: QualityTier): UseCheck {
+  return checkUse(state, id, quality, false);
+}
+
+function checkUse(state: GameState, id: string, quality: QualityTier, fighting: boolean): UseCheck {
   const spec = consumableSpec(id);
   if (!spec) return { ok: false, reason: text('consumables.reason.not_usable') };
   const held = MATERIALS[id]?.graded
@@ -142,6 +161,11 @@ export function canUse(state: GameState, id: string, quality: QualityTier): UseC
   if (tech && !techniqueReachable(state, tech)) {
     return { ok: false, reason: text('consumables.reason.technique_unreachable', { name: tech.name }) };
   }
+  // Dishes are long-lasting and eaten between fights (user, 2026-10-24: cooking
+  // is eaten only out of combat, alchemy is usable any time). The respawn gap
+  // and a hunt's rest before the next fight have no `state.combat`, so they are
+  // between fights. Flasks, salves and cards are not food and are unaffected.
+  if (spec.food && fighting) return { ok: false, reason: text('consumables.reason.in_combat') };
   const left = cooldownLeft(state, id);
   if (left > 0) return { ok: false, reason: text('consumables.reason.cooldown', { seconds: (left / 10).toFixed(1) }) };
   return { ok: true };
@@ -244,6 +268,13 @@ function eatenApplication(app: StatusApplication, scale: number, food: FoodScale
   return out;
 }
 
+/** A dose's full lifetime in ticks; null when it does not run out by clock. */
+function doseTicks(app: StatusApplication): number | null {
+  if (app.duration === 'permanent') return null;
+  const base = app.duration ?? STATUSES[app.id]?.duration;
+  return typeof base === 'number' ? base : null;
+}
+
 export interface UseResult {
   /** What each pool actually gained, for the log. */
   restored: { resource: string; amount: number }[];
@@ -269,6 +300,8 @@ export function useConsumable(
   bus: EventBus,
   id: string,
   quality: QualityTier = 'c',
+  /** `queued`: eaten from the queue (systems/eating.ts), and the log line says what it waited for. */
+  opts: { queued?: 'fight' | 'recovery' } = {},
 ): UseResult | null {
   const check = canUse(state, id, quality);
   if (!check.ok) {
@@ -294,6 +327,32 @@ export function useConsumable(
   // The cook's skill improves food. It reaches the benefit side only: a spoiled
   // grade (scale < 0) is not helped by a better cook, and non-food is untouched.
   const food = spec.food && scale > 0 ? foodScale(stats) : NO_FOOD_SCALE;
+  // What this dish puts on you, for its dish slot (systems/meals.ts). Which dish
+  // a full set of slots would drop is chosen NOW, before any dose lands, because
+  // that is the dish the screen named; and the conditions held before the first
+  // dose are remembered, so one no dish accounts for is recorded as it stood.
+  const victim =
+    spec.food && dishHoldsSlot(state, id, quality) ? mealToReplace(state, id)?.slot.dish : undefined;
+  const before = new Map(
+    statusesOf(state).map((s) => [s.id, { intensity: s.intensity, ticksLeft: s.ticksLeft }] as const),
+  );
+  const landings: MealLanding[] = [];
+  const land = (dose: StatusApplication, resistedBy?: typeof stats): StatusInstance | null => {
+    const held = findStatus(state, dose.id)?.intensity;
+    const inst = applyStatus(state, state, dose, def.name, resistedBy);
+    if (inst && spec.food) {
+      // The dose's own strength: what it raised the condition to, else what it
+      // offered (a weaker dose that the stacking rule ignored is still a dose).
+      const raised = held === undefined || inst.intensity > held;
+      landings.push({
+        id: inst.id,
+        dose: raised ? inst.intensity : (dose.intensity ?? 1),
+        ticks: doseTicks(dose),
+        before: before.get(inst.id) ?? null,
+      });
+    }
+    return inst;
+  };
 
   // Instant: the whole thing, now.
   for (const r of spec.restore ?? []) {
@@ -331,13 +390,7 @@ export function useConsumable(
       // spoilage condition); that is done to the eater too, where nourishment
       // is not resisted.
       const granted = STATUSES[app.id];
-      const inst = applyStatus(
-        state,
-        state,
-        eatenApplication(app, scale, food),
-        def.name,
-        granted && isHarmful(granted) ? stats : undefined,
-      );
+      const inst = land(eatenApplication(app, scale, food), granted && isHarmful(granted) ? stats : undefined);
       if (inst) result.granted.push(inst.id);
     }
     // A Signature rides along once the dish has been cooked enough times
@@ -345,7 +398,7 @@ export function useConsumable(
     if (signatureEarned(state, id)) {
       for (const app of spec.signature ?? []) {
         const dose = eatenApplication(app, scale, food);
-        const inst = applyStatus(state, state, dose, def.name);
+        const inst = land(dose);
         if (inst) {
           result.granted.push(inst.id);
           result.signature.push(inst.id);
@@ -372,15 +425,27 @@ export function useConsumable(
 
   const grade = QUALITY_TIERS[quality];
   const verb = spec.useVerb ?? 'Used';
+  const note = text(opts.queued === 'recovery' ? 'meals.note_recovery' : 'meals.note_fight');
   const msg = signatureText.length
-    ? text('consumables.used_signature', {
-        icon: def.icon,
-        verb,
-        grade: grade.name,
-        name: def.name,
-        status: signatureText.join(' and '),
-      })
-    : text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name });
+    ? opts.queued
+      ? text('consumables.used_signature_queued', {
+          icon: def.icon,
+          verb,
+          grade: grade.name,
+          name: def.name,
+          note,
+          status: signatureText.join(' and '),
+        })
+      : text('consumables.used_signature', {
+          icon: def.icon,
+          verb,
+          grade: grade.name,
+          name: def.name,
+          status: signatureText.join(' and '),
+        })
+    : opts.queued
+      ? text('consumables.used_queued', { icon: def.icon, verb, grade: grade.name, name: def.name, note })
+      : text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name });
   bus.emit({ type: 'log', msg, kind: scale < 0 ? 'danger' : 'action' });
 
   // Bad food eaten is counted whether or not the sickness landed (a resistant or
@@ -389,6 +454,8 @@ export function useConsumable(
     bumpStat(state, bus, SPOILED_EATEN_KEY);
     checkTitleUnlocks(state, bus);
   }
+  // After the eating line, so a dish pushed out reads as what eating caused.
+  if (landings.length > 0) recordMeal(state, bus, id, quality, landings, victim);
   return result;
 }
 

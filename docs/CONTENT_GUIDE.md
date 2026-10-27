@@ -1465,6 +1465,84 @@ refuses a signature that repeats one of the dish's own grants (a second dose of
 a `highest` condition adds nothing), lists a condition twice, or is the spoilage
 condition (whatever the failure dish grants).
 
+**Eating rules** (user, 2026-10-24: cooking makes long-term dishes eaten only out
+of combat; alchemy makes short consumables usable any time. Save v59.)
+
+- *Out of combat only.* `canUse` refuses a food (`consumable.food`) while
+  `state.combat` is set: "Not during a fight." The respawn gap between chained hunt
+  fights and a hunt's rest before the next fight (`huntrest.ts`) have no
+  `state.combat`, so they allow it. Flasks, salves and cards are not food and are
+  unaffected. `canUseOutOfFight` is the same check without the fight rule.
+- *Eat after this fight* (`systems/eating.ts`). The Provisions window's Eat button
+  calls `Game.eat`, which eats a dish at once, or during a fight queues it in
+  `state.queuedMeal` (one dish; another replaces it; `Game.cancelQueuedMeal`
+  clears it). `tickMeals` runs at the start of every tick and eats it on the first
+  tick with no fight and no knockout recovery (`state.recovering`: recovery runs
+  conditions several times faster, so a dish eaten there would burn down). It
+  re-runs `canUse` first; if stock or cooldown fail, the queue is dropped and the
+  log says why. The queue is run state, so offline catch-up fires it too. The eat
+  line then ends "(queued during the fight)". Eat pressed while knocked out with no
+  fight on queues too (the dish would burn at the recovery clock): it waits for the
+  recovery, the button reads "Eat after recovering", and the eat line ends "(queued
+  while knocked out)". `canUse` itself still refuses food only in a fight.
+- *At most 3 dishes active* (`systems/meals.ts`; `MAX_ACTIVE_DISHES` behind
+  `dishLimit(state)`, the one place a skill or mutagen would raise it). A dish is
+  one slot holding everything it gave, Signature included. A held condition is one
+  instance whatever gave it, and its stacking rule keeps only the strongest dose and
+  the last clock, so the slots keep their own books: **a claim** (`MealClaim`) is one
+  dose with its own strength and its own clock. `state.meals` holds each dish's claims
+  (one per condition it gave); `state.foreignClaims` holds the claims of anything that
+  is not a dish (a flask, a condition already running in an old save).
+  - *Clocks.* A claim's clock runs at the pace the conditions' clocks run: 5 a tick
+    while knocked out, none while travelling (`Game.advance` reads the rate
+    (`conditionClockRate`) before anything moves and `tickMealClaims` applies it
+    after). A slot's time left is the longest of its own claims, never the instance's,
+    so a flask that overwrote the instance changes nothing about a dish's time. A claim
+    that has run out counts for nothing, and a slot with no live claim is free.
+  - *The instance follows its leading claim* (`reconcile`, for `highest` conditions,
+    which every food condition is): the strongest live dose with that claim's own
+    remaining time (the longest among equals). A strong flask leads for its own clock
+    only, and a dish's longer clock cannot lend the flask more time. When the leader
+    is about to run out, `handOffMeals` (before the conditions tick) hands the
+    condition to the next claim, so it never expires in between. `Game.advance` fires
+    a queued dish BEFORE the hand-off: a dish that lands reconciles the instance onto
+    the leader, which can be the claim lapsing that very tick, and only a hand-off run
+    after it moves the condition on instead of letting it expire (a queued dish eaten
+    on that tick once took the condition and every slot that claimed it with it).
+  - *Eating a dish already in a slot* (user, 2026-10-26: "weaker buffs never replace
+    stronger ones"). A helping at least as strong as a live claim of the slot replaces
+    and renews it. A weaker helping never lowers or extends the stronger claim: it is
+    a second claim of the slot on the condition and takes over only when the stronger
+    one lapses. A claim another claim of the slot outlasts at an equal or higher dose
+    is dropped. The slot's time left is its longest claim, and its label (the grade in
+    the sidebar row and the log) is the best grade among its live claims, so it reads
+    the grade still in effect and drops when that claim does.
+  - *Eviction.* Eating a different dish with every slot full drops the dish with the
+    least time left (oldest on a tie). `useConsumable` chooses it before any dose
+    lands, the same dish the Eat button's tooltip named (`mealToReplace`). The dish's
+    claims go. A condition with another live claim (another dish's, or an unexpired
+    flask's) drops to that claim's dose and its remaining time; with none it ends. The
+    log names the dish that took the slot.
+  - *Other sources.* `Game.useFlask` passes the brew's grants, with the doses and
+    durations they carry, to `noteForeignDoses`, so even a dose the stacking rule
+    ignored as weaker is remembered with a clock. A dish eaten onto a condition no claim
+    accounts for (an old save) records it as it stood, with the time it had left. A
+    change nobody recorded (a flask used through alchemy's own `useFlask`) is noticed by
+    the tick when the instance is stronger or longer than its leading claim explains, and
+    recorded from what it shows; a weaker dose that was ignored leaves nothing to notice.
+  - A dish that gave nothing nourishing (spoiled grades, the Scorched Mess, or every
+    dose resisted) holds no slot and drops nobody: the Queasy immunity title asks for
+    bad food to be eaten on purpose.
+- *Old saves.* Migration 58 adds `meals: []`, `foreignClaims: []` and `queuedMeal: null`.
+  A food condition already running belongs to no slot (nothing recorded which dish
+  gave it): it counts toward no limit and runs out on its own.
+- *Screen.* The sidebar lists "Dishes 2/3" under the condition pills, one row per
+  dish with its time left (`ui/lib/DishSlots.svelte`, words in `ui/lib/meals.ts`)
+  and, while a dish waits, "After this fight:" (or "After recovering:") with a Cancel
+  button. In a fight the Eat button reads "Eat after this fight", and "Eat after
+  recovering" while knocked out; its tooltip says what the press does and, with every
+  slot full, which dish a new one replaces and how long it has left.
+
 ### Status condition (`statuses.data.ts`)
 
 A condition is one entry with an **intensity**; everything it does scales off

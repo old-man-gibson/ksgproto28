@@ -4,7 +4,7 @@ Live scratchpad for work that is designed but not finished. Delete a section
 once it ships and the real docs cover it. Everything here was agreed in
 conversation; the specs are the user's, written down so they survive a new chat.
 
-Current save version: **58** (v58: the Cook's Book carry, PRESTIGE.md; v57: floors 2 and 3 as one building, ONE_BUILDING.md; v56: character level, LEVELS.md). Older history: **48** (v41 added music: `compositions` +
+Current save version: **59** (v59: dish slots and the queued dish, CONTENT_GUIDE "Eating rules"; v58: the Cook's Book carry, PRESTIGE.md; v57: floors 2 and 3 as one building, ONE_BUILDING.md; v56: character level, LEVELS.md). Older history: **48** (v41 added music: `compositions` +
 `performance`; v42 stamped meters onto sheets — the grid also went 48 → 240
 units/bar, save-transparently, since notes store duration ids; v43 added
 repeat spans; v44 added tempo; v45 added the pedal tone; v46 added `mercy`,

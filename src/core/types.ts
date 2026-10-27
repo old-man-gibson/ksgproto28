@@ -2522,6 +2522,43 @@ export interface ConsumableSpec {
   votive?: boolean;
 }
 
+/**
+ * One dose's claim on a condition (systems/meals.ts): what a dish, or a flask,
+ * gave it and for how long. A held condition is one instance whatever gave it, so
+ * the claims are what remember each source apart. The instance is kept at the
+ * strongest live claim's dose and the longest live claim's time; a claim that
+ * runs out stops counting at once.
+ */
+export interface MealClaim {
+  /** The condition's id. */
+  id: string;
+  /** The intensity this dose gave it. */
+  dose: number;
+  /**
+   * Ticks of this dose's own clock left, counted at the pace the conditions'
+   * clocks run (a knockout's faster clock, no tick while travelling). Null when
+   * the dose never runs out by clock.
+   */
+  left: number | null;
+  /** The grade of the helping that gave it, for a dish's claim: what the slot's label reads. */
+  grade?: QualityTier;
+}
+
+/**
+ * A dish holding one of the player's dish slots (`dishLimit`, systems/meals.ts).
+ * One slot per dish, holding everything the dish gave (its grants and its
+ * Signature) as one claim per condition. Its time left is its own claims', never
+ * the held condition's, which another source may have set.
+ */
+export interface MealSlot {
+  /** The dish's material id. */
+  dish: string;
+  /** The best grade eaten into this slot. */
+  quality: QualityTier;
+  /** The nourishing conditions the dish gave. A dish with none holds no slot. */
+  claims: MealClaim[];
+}
+
 // ---------- Quality ----------
 
 /**
@@ -5376,6 +5413,25 @@ export interface GameState {
   statuses: StatusInstance[];
   /** totalTicks at which each consumable may next be used. */
   useCooldowns: Record<string, number>;
+  /**
+   * Dishes holding a dish slot, oldest first (systems/meals.ts). Run state: it
+   * resets with the run like the conditions it points at. A condition already
+   * held when the field was added (save v59) belongs to no slot.
+   */
+  meals: MealSlot[];
+  /**
+   * Claims on dish conditions by sources that are not dishes (a flask, a
+   * condition running in a pre-v59 save), each with its own clock, so a dish
+   * evicted while one is live leaves the condition at that source's strength and
+   * time, and once it lapses the condition can end (systems/meals.ts).
+   */
+  foreignClaims: MealClaim[];
+  /**
+   * The dish to eat once the fight or the knockout is over (systems/eating.ts),
+   * at most one. Fired by the first tick with no fight and no knockout recovery.
+   * `why` is what it was queued during, for its log line.
+   */
+  queuedMeal: { dish: string; quality: QualityTier; why?: 'fight' | 'recovery' } | null;
   /** Opted in to paying your style's exertion cost for its bonuses. */
   exerting: boolean;
   skills: Record<string, SkillState>;
