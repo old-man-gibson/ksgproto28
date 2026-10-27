@@ -2486,6 +2486,8 @@ export interface MealClaim {
    * the dose never runs out by clock.
    */
   left: number | null;
+  /** The grade of the helping that gave it, for a dish's claim: what the slot's label reads. */
+  grade?: QualityTier;
 }
 
 /**

@@ -214,8 +214,11 @@ export class Game {
     // Before the world moves, so a queued dish is eaten on the first tick that
     // opens with no fight and no recovery, ahead of the hunt's next encounter
     // (a reloaded save has no fight and may start one on its first tick).
-    handOffMeals(this.state, clock);
     tickMeals(this.state, this.bus);
+    // After the queued dish: a dish that lands reconciles each condition onto its
+    // leading claim, which may be the one lapsing this very tick; only a hand-off
+    // that runs after it moves the condition on instead of letting it expire.
+    handOffMeals(this.state, clock);
     if (this.state.travel) {
       tickTravel(this.state, this.bus);
     } else {

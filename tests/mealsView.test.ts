@@ -80,6 +80,26 @@ describe('the Eat button words', () => {
   });
 });
 
+describe('the Eat button for a worse grade of an active dish', () => {
+  it('says the better grade stays, and a worse one takes over when it runs out', () => {
+    const g = fighting();
+    idle(g);
+    grantGraded(g.state, 'hearty_stew', 'b', 2);
+    grantGraded(g.state, 'hearty_stew', 'd', 1);
+    g.eat('hearty_stew', 'b');
+    expect(eatButton(g.state, 'hearty_stew', 'd').tip.join(' ')).toMatch(
+      /Already active as Fine \(\d+m \d+s left\): a worse grade takes over when that one runs out\./,
+    );
+    expect(eatButton(g.state, 'hearty_stew', 'b').tip.join(' ')).toContain('eating it again renews its time');
+    g.eat('hearty_stew', 'd');
+    const rows = dishRows(g.state);
+    expect(rows).toHaveLength(1);
+    // The label is the grade in effect; one line per condition, with the longest time on it.
+    expect(rows[0].name).toBe('Fine Hearty Stew');
+    expect(rows[0].conditions).toHaveLength(1);
+  });
+});
+
 describe('the Eat button while knocked out', () => {
   it('reads "Eat after recovering", says why in its tooltip, and cancels once queued', () => {
     const g = fighting();
@@ -146,5 +166,11 @@ describe('the dish list', () => {
   it('reads a clockless condition as no time limit', () => {
     expect(timeLeftText(null)).toBe('no time limit');
     expect(timeLeftText(650)).toBe('1m 5s');
+    // Rounded up to whole seconds: never "9m 60s", never zero with time left.
+    expect(timeLeftText(5999)).toBe('10m 0s');
+    expect(timeLeftText(5991)).toBe('10m 0s');
+    expect(timeLeftText(5990)).toBe('9m 59s');
+    expect(timeLeftText(1)).toBe('1s');
+    expect(timeLeftText(0)).toBe('0s');
   });
 });

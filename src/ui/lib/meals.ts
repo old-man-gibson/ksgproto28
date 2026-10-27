@@ -1,10 +1,9 @@
 import type { GameState, QualityTier } from '../../core/types';
 import { MATERIALS, STATUSES } from '../../core/registry';
-import { QUALITY_TIERS } from '../../core/data/quality.data';
+import { QUALITY_TIERS, qualityRank } from '../../core/data/quality.data';
 import { activeMeals, dishLimit, type ActiveMeal } from '../../core/systems/meals';
 import { eatPlan } from '../../core/systems/eating';
 import { cooldownLeft, consumableSpec } from '../../core/systems/consumables';
-import { ticksToTime } from './format';
 
 /**
  * The words and numbers for dish slots and the queued dish, read from the core
@@ -12,14 +11,39 @@ import { ticksToTime } from './format';
  * list) and the Provisions window's Eat button.
  */
 
+/**
+ * One line per condition a dish still gives, with the longest time any of its
+ * claims on it has left (a dish eaten twice at different grades has two).
+ */
+function conditionLines(m: ActiveMeal): string[] {
+  const ids: string[] = [];
+  const left = new Map<string, number | null>();
+  for (const c of m.slot.claims) {
+    if (c.left !== null && c.left <= 0) continue;
+    if (!left.has(c.id)) ids.push(c.id);
+    const was = left.get(c.id);
+    left.set(c.id, was === undefined ? c.left : was === null || c.left === null ? null : Math.max(was, c.left));
+  }
+  return ids.map((id) => {
+    const def = STATUSES[id];
+    return `${def?.icon ?? ''} ${def?.name ?? id}: ${timeLeftText(left.get(id) ?? null)}`.trim();
+  });
+}
+
 /** "Fair Hearty Stew". */
 export function dishLabel(dish: string, quality: QualityTier): string {
   return `${QUALITY_TIERS[quality].name} ${MATERIALS[dish]?.name ?? dish}`;
 }
 
-/** Time left as the list shows it; a dish with no clock has no time limit. */
+/**
+ * Time left as the list shows it, counted down in whole seconds and rounded up, so
+ * it never reads "9m 60s" and never reads zero while any time is left. A dish with
+ * no clock has no time limit.
+ */
 export function timeLeftText(ticksLeft: number | null): string {
-  return ticksLeft === null ? 'no time limit' : ticksToTime(ticksLeft);
+  if (ticksLeft === null) return 'no time limit';
+  const seconds = Math.ceil(Math.max(0, ticksLeft) / 10);
+  return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
 
 export interface DishRow {
@@ -51,14 +75,9 @@ export function dishRows(state: GameState): DishRow[] {
   return meals.map((m) => ({
     dish: m.slot.dish,
     icon: MATERIALS[m.slot.dish]?.icon ?? '🍽️',
-    name: dishLabel(m.slot.dish, m.slot.quality),
+    name: dishLabel(m.slot.dish, m.quality),
     time: timeLeftText(m.ticksLeft),
-    conditions: m.slot.claims
-      .filter((c) => c.left === null || c.left > 0)
-      .map((c) => {
-        const def = STATUSES[c.id];
-        return `${def?.icon ?? ''} ${def?.name ?? c.id}: ${timeLeftText(c.left)}`.trim();
-      }),
+    conditions: conditionLines(m),
     replacedFirst: full && m === least,
   }));
 }
@@ -107,7 +126,7 @@ export function eatButton(state: GameState, id: string, quality: QualityTier): E
   const meals = activeMeals(state);
   const active = meals.find((m) => m.slot.dish === id);
   const replaces = plan.replaces
-    ? `Replaces ${dishLabel(plan.replaces.slot.dish, plan.replaces.slot.quality)}${
+    ? `Replaces ${dishLabel(plan.replaces.slot.dish, plan.replaces.quality)}${
         plan.replaces.ticksLeft === null ? '' : ` (${timeLeftText(plan.replaces.ticksLeft)} left)`
       }`
     : null;
@@ -121,7 +140,15 @@ export function eatButton(state: GameState, id: string, quality: QualityTier): E
     return { label: base, disabled: true, cancels: false, tip, replaces: null };
   }
 
-  if (active) tip.push(`Already active (${timeLeftText(active.ticksLeft)} left): eating it again renews its time.`);
+  if (active) {
+    // A helping at least as good as the one still in effect renews it; a worse
+    // one never lowers or extends it, and only takes over when it runs out.
+    tip.push(
+      qualityRank(quality) < qualityRank(active.quality)
+        ? `Already active as ${QUALITY_TIERS[active.quality].name} (${timeLeftText(active.ticksLeft)} left): a worse grade takes over when that one runs out.`
+        : `Already active (${timeLeftText(active.ticksLeft)} left): eating it again renews its time.`,
+    );
+  }
   if (replaces) tip.push(`${replaces}. At most ${dishLimit(state)} dishes can be active at once.`);
 
   if (plan.mode === 'queue') {

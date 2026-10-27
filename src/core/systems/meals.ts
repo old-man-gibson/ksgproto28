@@ -1,11 +1,11 @@
-import type { GameState, MealClaim, MealSlot, QualityTier, StatusApplication } from '../types';
+import type { GameState, MealClaim, MealSlot, QualityTier, StatusApplication, StatusInstance } from '../types';
 import type { EventBus } from '../engine/events';
 import { MATERIALS } from '../data/materials.data';
 import { QUALITY_TIERS, qualityMult, qualityRank } from '../data/quality.data';
 import { STATUSES } from '../registry';
 import { isHarmful } from './conditionHarm';
 import { signatureEarned } from './cookbook';
-import { findStatus, removeStatus } from './statuses';
+import { removeStatus } from './statuses';
 import { text } from '../text/log';
 
 /**
@@ -37,8 +37,16 @@ import { text } from '../text/log';
  *    more time: when the flask's claim is about to lapse the instance is handed
  *    to the next claim before the conditions tick (`handOffMeals`), so the dish's
  *    dose carries on for the dish's time without the condition ever expiring in
- *    between. Re-eating a dish needs no special case: its new claim renews its
- *    own clock, and the instance follows only if that claim leads.
+ *    between. `Game.advance` fires a queued dish BEFORE the hand-off: a dish that
+ *    lands reconciles the instance onto the leader, which may be the claim
+ *    lapsing this very tick, and only a hand-off that runs after it can move the
+ *    condition on.
+ *  - Re-eating a dish: a helping at least as strong as a live claim of the same
+ *    slot replaces and renews it. A weaker one never lowers or extends the
+ *    stronger claim; it is a second claim on the condition, which takes over when
+ *    the stronger one lapses. Claims another claim of the slot outlasts at an
+ *    equal or higher dose are dropped. The slot's label is the best grade among
+ *    its live claims, so it reads the grade that is still in effect.
  *  - Evicting a dish removes its claims. A condition another live claim still
  *    gives is left at that claim's dose and remaining time, not the evicted
  *    dish's; with none left it ends. A claim that has run out counts for nothing.
@@ -51,6 +59,10 @@ import { text } from '../text/log';
  *  - A condition whose stacking is not `highest` (none of the food conditions)
  *    is not re-derived: it ends only when no claim is left, and is otherwise
  *    left as it is.
+ *
+ * The per-tick work runs while a dish is live through every tick of an offline
+ * catch-up, so it scans the claims in place and allocates nothing when nothing
+ * changes.
  *
  * A dish that gave nothing nourishing (every condition it gave is harmful, as
  * with spoiled food, or none landed) holds no slot and evicts nobody: eating a
@@ -102,58 +114,95 @@ export function dishHoldsSlot(state: GameState, id: string, quality: QualityTier
 
 const live = (c: MealClaim): boolean => c.left === null || c.left > 0;
 
-/** Every live claim on a condition: the dishes' and the other sources'. */
-function claimsOn(state: GameState, id: string): MealClaim[] {
-  const out: MealClaim[] = [];
-  for (const slot of state.meals ?? []) {
-    for (const c of slot.claims ?? []) if (c.id === id && live(c)) out.push(c);
-  }
-  for (const c of state.foreignClaims ?? []) if (c.id === id && live(c)) out.push(c);
-  return out;
+/** The held condition with this id, scanned in place (no closure per call). */
+function heldStatus(state: GameState, id: string): StatusInstance | undefined {
+  const list = state.statuses;
+  if (!list) return undefined;
+  for (let i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+  return undefined;
 }
 
 const longerThan = (a: number | null, b: number | null): boolean =>
   a === null ? b !== null : b !== null && a > b;
 
-/** The claim that sets the condition: the strongest dose, the longest clock among equals. */
-function leading(claims: MealClaim[]): MealClaim {
-  let lead = claims[0];
-  for (const c of claims) {
-    if (c.dose > lead.dose || (c.dose === lead.dose && longerThan(c.left, lead.left))) lead = c;
+/** The better of two claims on one condition: the stronger dose, the longer clock among equals. */
+function lead(best: MealClaim | undefined, c: MealClaim): MealClaim {
+  if (!best || c.dose > best.dose || (c.dose === best.dose && longerThan(c.left, best.left))) return c;
+  return best;
+}
+
+/**
+ * The leading live claim on a condition, the dishes' and the other sources', or
+ * undefined when none is live. `exclude` leaves one claim out; `survive` counts
+ * only claims still live after that many more ticks. Scans in place.
+ */
+function leadOn(state: GameState, id: string, exclude?: MealClaim, survive = 0): MealClaim | undefined {
+  let best: MealClaim | undefined;
+  const slots = state.meals;
+  if (slots) {
+    for (let i = 0; i < slots.length; i++) {
+      const claims = slots[i].claims;
+      if (!claims) continue;
+      for (let j = 0; j < claims.length; j++) {
+        const c = claims[j];
+        if (c.id === id && c !== exclude && (c.left === null || c.left > survive)) best = lead(best, c);
+      }
+    }
   }
-  return lead;
+  const foreign = state.foreignClaims;
+  if (foreign) {
+    for (let j = 0; j < foreign.length; j++) {
+      const c = foreign[j];
+      if (c.id === id && c !== exclude && (c.left === null || c.left > survive)) best = lead(best, c);
+    }
+  }
+  return best;
 }
 
 const longer = (a: number | null, b: number | null): number | null =>
   a === null || b === null ? null : Math.max(a, b);
 
-/** The conditions some dish slot holds a claim on. */
-function dishConditions(state: GameState): Set<string> {
-  const ids = new Set<string>();
-  for (const slot of state.meals ?? []) for (const c of slot.claims ?? []) ids.add(c.id);
-  return ids;
+/** Scratch for `dishConditions`: reused, so the per-tick calls allocate nothing. */
+const scratchIds: string[] = [];
+
+/**
+ * The conditions some dish slot holds a claim on. The returned array is shared
+ * scratch: read it before calling this again.
+ */
+function dishConditions(state: GameState): readonly string[] {
+  scratchIds.length = 0;
+  const slots = state.meals;
+  if (slots) {
+    for (let i = 0; i < slots.length; i++) {
+      const claims = slots[i].claims;
+      if (!claims) continue;
+      for (let j = 0; j < claims.length; j++) {
+        if (!scratchIds.includes(claims[j].id)) scratchIds.push(claims[j].id);
+      }
+    }
+  }
+  return scratchIds;
 }
 
 const modelled = (id: string): boolean => STATUSES[id]?.stacking.mode === 'highest';
 
 /**
  * Put a held condition at its leading claim's dose and remaining time. Only for a
- * condition that stacks as `highest` and that a dish holds a claim on (`always`:
- * or one a dish has just let go of, which another source's claim now leads);
+ * condition that stacks as `highest` and that is in `ids`, the conditions a dish
+ * holds a claim on (null: skip that test, for one a dish has just let go of that
+ * another source's claim now leads, or when the caller has already checked);
  * anything else is left to the status system.
  */
-function reconcile(state: GameState, id: string, always = false): void {
-  if (!modelled(id) || (!always && !dishConditions(state).has(id))) return;
-  const held = findStatus(state, id);
-  if (!held) return;
-  const claims = claimsOn(state, id);
-  if (claims.length === 0) return;
-  const lead = leading(claims);
-  if (held.intensity !== lead.dose) {
-    held.intensity = lead.dose;
-    held.peak = lead.dose;
+function reconcile(state: GameState, id: string, ids: readonly string[] | null): void {
+  if (!modelled(id) || (ids !== null && !ids.includes(id))) return;
+  const inst = heldStatus(state, id);
+  const top = inst ? leadOn(state, id) : undefined;
+  if (!inst || !top) return;
+  if (inst.intensity !== top.dose) {
+    inst.intensity = top.dose;
+    inst.peak = top.dose;
   }
-  if (held.ticksLeft !== lead.left) held.ticksLeft = lead.left;
+  if (inst.ticksLeft !== top.left) inst.ticksLeft = top.left;
 }
 
 /** A dish in a slot, with the time it has left. */
@@ -161,6 +210,8 @@ export interface ActiveMeal {
   slot: MealSlot;
   /** Ticks until its last claim runs out; null when one has no clock. */
   ticksLeft: number | null;
+  /** The best grade among its live claims: the grade still in effect. */
+  quality: QualityTier;
 }
 
 /** The slots with a live claim on a condition that is still held, oldest first. */
@@ -169,13 +220,16 @@ export function activeMeals(state: GameState): ActiveMeal[] {
   for (const slot of state.meals ?? []) {
     let any = false;
     let left: number | null = 0;
+    let quality: QualityTier | undefined;
     for (const c of slot.claims ?? []) {
-      if (!live(c) || !findStatus(state, c.id)) continue;
+      if (!live(c) || !heldStatus(state, c.id)) continue;
       any = true;
       if (c.left === null) left = null;
       else if (left !== null) left = Math.max(left, c.left);
+      const grade = c.grade ?? slot.quality;
+      if (!quality || qualityRank(grade) > qualityRank(quality)) quality = grade;
     }
-    if (any) out.push({ slot, ticksLeft: left });
+    if (any) out.push({ slot, ticksLeft: left, quality: quality ?? slot.quality });
   }
   return out;
 }
@@ -202,27 +256,47 @@ export function mealToReplace(state: GameState, dish: string): ActiveMeal | unde
   return leastTimeLeft(meals);
 }
 
+/** Whether any claim has stopped counting: run out, or its condition gone. */
+function anyLapsed(state: GameState): boolean {
+  const slots = state.meals;
+  if (slots) {
+    for (let i = 0; i < slots.length; i++) {
+      const claims = slots[i].claims;
+      if (!Array.isArray(claims)) return true;
+      for (let j = 0; j < claims.length; j++) {
+        if (!live(claims[j]) || !heldStatus(state, claims[j].id)) return true;
+      }
+    }
+  }
+  const foreign = state.foreignClaims;
+  if (foreign) {
+    for (let j = 0; j < foreign.length; j++) {
+      if (!live(foreign[j]) || !heldStatus(state, foreign[j].id)) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Drop what has stopped counting: claims that ran out or whose condition is no
- * longer held, then the slots left with none. Writes only when something changed.
+ * longer held, then the slots left with none. Does nothing, and allocates
+ * nothing, when every claim still counts.
  */
 export function pruneClaims(state: GameState): void {
+  if (!anyLapsed(state)) return;
   const slots = state.meals;
   if (slots && slots.length > 0) {
-    let changed = false;
     const kept: MealSlot[] = [];
     for (const slot of slots) {
       const all = Array.isArray(slot.claims) ? slot.claims : [];
-      const held = all.filter((c) => live(c) && findStatus(state, c.id) !== undefined);
-      if (!Array.isArray(slot.claims) || held.length !== all.length) changed = true;
+      const held = all.filter((c) => live(c) && heldStatus(state, c.id) !== undefined);
       if (held.length > 0) kept.push(held.length === all.length ? slot : { ...slot, claims: held });
     }
-    if (changed) state.meals = kept;
+    state.meals = kept;
   }
   const foreign = state.foreignClaims;
   if (foreign && foreign.length > 0) {
-    const held = foreign.filter((c) => live(c) && findStatus(state, c.id) !== undefined);
-    if (held.length !== foreign.length) state.foreignClaims = held;
+    state.foreignClaims = foreign.filter((c) => live(c) && heldStatus(state, c.id) !== undefined);
   }
 }
 
@@ -238,11 +312,11 @@ export function noteForeignDoses(state: GameState, doses: StatusApplication[]): 
   const ours = dishConditionIds();
   for (const app of doses) {
     const def = STATUSES[app.id];
-    if (!def || !ours.has(app.id) || !findStatus(state, app.id)) continue;
+    if (!def || !ours.has(app.id) || !heldStatus(state, app.id)) continue;
     const span = app.duration === 'permanent' ? null : (app.duration ?? def.duration ?? null);
     if (!state.foreignClaims) state.foreignClaims = [];
     state.foreignClaims.push({ id: app.id, dose: app.intensity ?? 1, left: span });
-    reconcile(state, app.id);
+    reconcile(state, app.id, dishConditions(state));
   }
 }
 
@@ -256,6 +330,16 @@ export interface MealLanding {
   ticks: number | null;
   /** The condition as it stood before the dish's first dose; null when not held. */
   before: { intensity: number; ticksLeft: number | null } | null;
+}
+
+/**
+ * Whether claim `b` makes claim `a` of the same slot pointless: the same
+ * condition, at least as strong and lasting at least as long, and either better
+ * in one of them or (`bLater`) newer.
+ */
+function dominates(b: MealClaim, a: MealClaim, bLater: boolean): boolean {
+  if (b.id !== a.id || b.dose < a.dose || longerThan(a.left, b.left)) return false;
+  return b.dose > a.dose || longerThan(b.left, a.left) || bLater;
 }
 
 /**
@@ -283,36 +367,42 @@ export function recordMeal(
   pruneClaims(state);
 
   const prior = state.meals.find((s) => s.dish === dish);
-  // One claim per condition: a dish that gives one twice (a grant and its
-  // Signature) holds the stronger dose for the longer clock.
-  const claims: MealClaim[] = [];
+  // One claim per condition from one helping: a dish that gives one twice (a
+  // grant and its Signature) holds the stronger dose for the longer clock.
+  const fresh: MealClaim[] = [];
   for (const l of nourishing) {
-    const have = claims.find((c) => c.id === l.id);
+    const have = fresh.find((c) => c.id === l.id);
     if (have) {
       have.dose = Math.max(have.dose, l.dose);
       have.left = longer(have.left, l.ticks);
     } else {
-      claims.push({ id: l.id, dose: l.dose, left: l.ticks });
+      fresh.push({ id: l.id, dose: l.dose, left: l.ticks, grade: quality });
     }
   }
   // A condition that was held before the dish and that no claim accounts for is
   // some other source's (an old save, a blessing): record it as it stood, so it
   // keeps the condition only for the time it had left.
   for (const l of nourishing) {
-    if (!l.before || claimsOn(state, l.id).length > 0) continue;
+    if (!l.before || leadOn(state, l.id)) continue;
     state.foreignClaims.push({ id: l.id, dose: l.before.intensity, left: l.before.ticksLeft });
   }
-  // What the earlier helping gave and this one did not land (a dose can be
-  // resisted) stays while its clock runs.
+  // The slot's claims: what the earlier helpings gave and still runs, and this
+  // helping's, less any claim another of the slot's outlasts at as high a dose.
+  // A weaker helping therefore never lowers or extends the stronger one: it stays
+  // a claim of its own and takes over when the stronger lapses.
+  const merged: MealClaim[] = [];
   for (const c of prior?.claims ?? []) {
-    if (live(c) && !claims.some((x) => x.id === c.id) && findStatus(state, c.id)) claims.push({ ...c });
+    if (live(c) && heldStatus(state, c.id)) merged.push({ ...c, grade: c.grade ?? prior!.quality });
   }
-  const best = prior && qualityRank(prior.quality) > qualityRank(quality) ? prior.quality : quality;
+  for (const c of fresh) merged.push(c);
+  const claims = merged.filter((a, i) => !merged.some((b, j) => j !== i && dominates(b, a, j > i)));
+  let best = claims[0].grade ?? quality;
+  for (const c of claims) if (qualityRank(c.grade ?? quality) > qualityRank(best)) best = c.grade ?? quality;
   const slot: MealSlot = { dish, quality: best, claims };
   state.meals = [...state.meals.filter((s) => s.dish !== dish), slot];
 
   // Make room. The dish just eaten is never the one that goes.
-  const by = `${QUALITY_TIERS[best].name} ${MATERIALS[dish]?.name ?? dish}`;
+  const by = `${QUALITY_TIERS[quality].name} ${MATERIALS[dish]?.name ?? dish}`;
   let named = victim;
   for (;;) {
     const meals = activeMeals(state);
@@ -321,9 +411,10 @@ export function recordMeal(
     const chosen = rest.find((m) => m.slot.dish === named) ?? leastTimeLeft(rest);
     named = undefined;
     if (!chosen) break;
-    release(state, bus, chosen.slot, by);
+    release(state, bus, chosen, by);
   }
-  for (const c of claims) reconcile(state, c.id);
+  const ids = dishConditions(state);
+  for (const c of claims) reconcile(state, c.id, ids);
 }
 
 /**
@@ -331,15 +422,18 @@ export function recordMeal(
  * left on it; otherwise it drops to the strongest remaining claim's dose and that
  * claim's remaining time.
  */
-function release(state: GameState, bus: EventBus, slot: MealSlot, by: string): void {
+function release(state: GameState, bus: EventBus, meal: ActiveMeal, by: string): void {
+  const slot = meal.slot;
   state.meals = state.meals.filter((s) => s.dish !== slot.dish);
   const ended: string[] = [];
   const kept: string[] = [];
+  const seen: string[] = [];
   for (const claim of slot.claims) {
-    if (!findStatus(state, claim.id)) continue;
+    if (seen.includes(claim.id) || !heldStatus(state, claim.id)) continue;
+    seen.push(claim.id);
     const name = STATUSES[claim.id]?.name ?? claim.id;
-    if (claimsOn(state, claim.id).length > 0) {
-      reconcile(state, claim.id, true);
+    if (leadOn(state, claim.id)) {
+      reconcile(state, claim.id, null);
       kept.push(name);
     } else {
       removeStatus(state, claim.id);
@@ -355,7 +449,7 @@ function release(state: GameState, bus: EventBus, slot: MealSlot, by: string): v
   bus.emit({
     type: 'log',
     msg: text('meals.replaced', {
-      grade: QUALITY_TIERS[slot.quality].name,
+      grade: QUALITY_TIERS[meal.quality].name,
       name: MATERIALS[slot.dish]?.name ?? slot.dish,
       by,
       limit: dishLimit(state),
@@ -365,28 +459,51 @@ function release(state: GameState, bus: EventBus, slot: MealSlot, by: string): v
   });
 }
 
+/** Whether any claim runs out within `rate` more ticks. One pass, the common answer is no. */
+function anyDue(state: GameState, rate: number): boolean {
+  const slots = state.meals;
+  if (slots) {
+    for (let i = 0; i < slots.length; i++) {
+      const claims = slots[i].claims;
+      if (!claims) continue;
+      for (let j = 0; j < claims.length; j++) {
+        const left = claims[j].left;
+        if (left !== null && left <= rate) return true;
+      }
+    }
+  }
+  const foreign = state.foreignClaims;
+  if (foreign) {
+    for (let j = 0; j < foreign.length; j++) {
+      const left = foreign[j].left;
+      if (left !== null && left <= rate) return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Before the conditions tick: hand a condition over to its next claim when its
  * leading claim runs out this tick, so the condition does not expire on the
  * leader's clock and leave a dish's longer claim with nothing behind it. `rate`
  * is how far the conditions' clocks advance this tick (`Game.advance` reads it
- * before anything moves).
+ * before anything moves). Run it AFTER the queued dish has been eaten: a dish
+ * landing reconciles the instance back onto the leader.
  */
 export function handOffMeals(state: GameState, rate: number): void {
-  if (rate <= 0) return;
-  for (const id of dishConditions(state)) {
+  if (rate <= 0 || !state.meals || state.meals.length === 0 || !anyDue(state, rate)) return;
+  const ids = dishConditions(state);
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
     if (!modelled(id)) continue;
-    const held = findStatus(state, id);
-    const claims = claimsOn(state, id);
-    if (!held || claims.length === 0) continue;
-    const lead = leading(claims);
-    if (lead.left === null || lead.left - rate > 0) continue;
-    const rest = claims.filter((c) => c !== lead && (c.left === null || c.left - rate > 0));
-    if (rest.length === 0) continue;
-    const next = leading(rest);
-    held.intensity = next.dose;
-    held.peak = next.dose;
-    held.ticksLeft = next.left;
+    const inst = heldStatus(state, id);
+    const top = inst ? leadOn(state, id) : undefined;
+    if (!inst || !top || top.left === null || top.left - rate > 0) continue;
+    const next = leadOn(state, id, top, rate);
+    if (!next) continue;
+    inst.intensity = next.dose;
+    inst.peak = next.dose;
+    inst.ticksLeft = next.left;
   }
 }
 
@@ -397,35 +514,48 @@ export function handOffMeals(state: GameState, rate: number): void {
  *
  *  1. Run every claim's clock down by `rate`, and drop claims that ran out or
  *     whose condition is gone, and the slots left with none.
- *  2. Notice what nobody recorded: a condition a dish holds that is now stronger
- *     or longer than its leading claim explains gets a foreign claim from what it
- *     shows.
- *  3. Put each condition a dish holds back at its leading claim.
+ *  2. For each condition a dish holds, in one pass: if it is now stronger or
+ *     longer than its leading claim explains, nobody recorded the change, so it
+ *     gets a foreign claim from what it shows; otherwise it is put back at its
+ *     leading claim.
  */
 export function tickMealClaims(state: GameState, rate: number): void {
-  if ((state.meals ?? []).length === 0 && (state.foreignClaims ?? []).length === 0) return;
+  const slots = state.meals;
+  const foreign = state.foreignClaims;
+  if ((!slots || slots.length === 0) && (!foreign || foreign.length === 0)) return;
   if (rate > 0) {
-    for (const slot of state.meals ?? []) {
-      for (const c of slot.claims ?? []) if (c.left !== null) c.left -= rate;
+    if (slots) {
+      for (let i = 0; i < slots.length; i++) {
+        const claims = slots[i].claims;
+        if (!claims) continue;
+        for (let j = 0; j < claims.length; j++) if (claims[j].left !== null) claims[j].left! -= rate;
+      }
     }
-    for (const c of state.foreignClaims ?? []) if (c.left !== null) c.left -= rate;
+    if (foreign) {
+      for (let j = 0; j < foreign.length; j++) if (foreign[j].left !== null) foreign[j].left! -= rate;
+    }
   }
   pruneClaims(state);
+  if (!state.meals || state.meals.length === 0) return;
 
-  const adopted: MealClaim[] = [];
-  for (const id of dishConditions(state)) {
+  const ids = dishConditions(state);
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
     if (!modelled(id)) continue;
-    const held = findStatus(state, id);
-    const claims = claimsOn(state, id);
-    if (!held || claims.length === 0) continue;
-    const lead = leading(claims);
-    const stronger = held.intensity > lead.dose;
-    const extended = held.ticksLeft !== null && lead.left !== null && held.ticksLeft > lead.left;
-    if (stronger || extended) adopted.push({ id, dose: held.intensity, left: held.ticksLeft });
+    const inst = heldStatus(state, id);
+    const top = inst ? leadOn(state, id) : undefined;
+    if (!inst || !top) continue;
+    if (inst.intensity > top.dose || (inst.ticksLeft !== null && top.left !== null && inst.ticksLeft > top.left)) {
+      // Nobody recorded this: take the instance as it stands as a claim of its own.
+      if (!state.foreignClaims) state.foreignClaims = [];
+      state.foreignClaims.push({ id, dose: inst.intensity, left: inst.ticksLeft });
+      continue;
+    }
+    // Otherwise put the condition back at its leading claim.
+    if (inst.intensity !== top.dose) {
+      inst.intensity = top.dose;
+      inst.peak = top.dose;
+    }
+    if (inst.ticksLeft !== top.left) inst.ticksLeft = top.left;
   }
-  if (adopted.length > 0) {
-    if (!state.foreignClaims) state.foreignClaims = [];
-    for (const c of adopted) state.foreignClaims.push(c);
-  }
-  for (const id of dishConditions(state)) reconcile(state, id);
 }

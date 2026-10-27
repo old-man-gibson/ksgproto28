@@ -1466,8 +1466,19 @@ of combat; alchemy makes short consumables usable any time. Save v59.)
     remaining time (the longest among equals). A strong flask leads for its own clock
     only, and a dish's longer clock cannot lend the flask more time. When the leader
     is about to run out, `handOffMeals` (before the conditions tick) hands the
-    condition to the next claim, so it never expires in between. A dish re-eaten
-    renews its own claim; the instance follows only if that claim leads.
+    condition to the next claim, so it never expires in between. `Game.advance` fires
+    a queued dish BEFORE the hand-off: a dish that lands reconciles the instance onto
+    the leader, which can be the claim lapsing that very tick, and only a hand-off run
+    after it moves the condition on instead of letting it expire (a queued dish eaten
+    on that tick once took the condition and every slot that claimed it with it).
+  - *Eating a dish already in a slot* (user, 2026-10-26: "weaker buffs never replace
+    stronger ones"). A helping at least as strong as a live claim of the slot replaces
+    and renews it. A weaker helping never lowers or extends the stronger claim: it is
+    a second claim of the slot on the condition and takes over only when the stronger
+    one lapses. A claim another claim of the slot outlasts at an equal or higher dose
+    is dropped. The slot's time left is its longest claim, and its label (the grade in
+    the sidebar row and the log) is the best grade among its live claims, so it reads
+    the grade still in effect and drops when that claim does.
   - *Eviction.* Eating a different dish with every slot full drops the dish with the
     least time left (oldest on a tie). `useConsumable` chooses it before any dose
     lands, the same dish the Eat button's tooltip named (`mealToReplace`). The dish's

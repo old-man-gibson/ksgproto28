@@ -798,6 +798,146 @@ describe('claims: every dose has a clock of its own', () => {
   });
 });
 
+describe('a dish that lands on the tick the leading claim lapses', () => {
+  /** Stew eaten, then a Divine flask leads Well Fed (x2.6, 450): 449 ticks later it has 1 left. */
+  function flaskOnItsLastTick() {
+    const g = idle();
+    stock(g, 'hearty_stew');
+    grantGraded(g.state, 'berry_pie', 'c', 3);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    drink(g, 's');
+    g.step(449);
+    expect(g.state.foreignClaims.map((c) => c.left)).toEqual([1]);
+    return g;
+  }
+
+  const survives = (g: Game, dishes: string[]) => {
+    expect(logLines(g).some((l) => l.includes('Well Fed has passed'))).toBe(false);
+    expect(hasStatus(g.state, 'well_fed')).toBe(true);
+    expect(slots(g)).toEqual(dishes);
+    // The condition moved on to a claim that outlasts the tick, and is the stronger of them.
+    expect(held(g, 'well_fed')!.ticksLeft!).toBeGreaterThan(1000);
+    expect(g.state.foreignClaims).toEqual([]);
+  };
+
+  it('a queued dish fired on that tick leaves the condition and every slot that claimed it', () => {
+    const g = flaskOnItsLastTick();
+    g.state.queuedMeal = { dish: 'berry_pie', quality: 'c', why: 'fight' };
+    g.tick();
+    expect(logLines(g)).toContain(`🥧 Ate ${QUALITY_TIERS.c.name} Berry Pie (queued during the fight).`);
+    survives(g, ['hearty_stew', 'berry_pie']);
+  });
+
+  it('the same with dishes only: the leader is a dish whose clock runs out as the queued one lands', () => {
+    const g = idle();
+    stock(g, 'feast_platter', 'hearty_stew');
+    grantGraded(g.state, 'berry_pie', 'c', 3);
+    useConsumable(g.state, g.bus, 'feast_platter', 'c'); // Well Fed x2, 6000
+    g.step(3000);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c'); // x1, 6000: the platter still leads
+    expect(held(g, 'well_fed')!.intensity).toBe(2);
+    g.step(2999);
+    expect(claim(g, 'feast_platter', 'well_fed')!.left).toBe(1);
+    g.state.queuedMeal = { dish: 'berry_pie', quality: 'c', why: 'fight' };
+    g.tick();
+    expect(logLines(g).some((l) => l.includes('Well Fed has passed'))).toBe(false);
+    expect(hasStatus(g.state, 'well_fed')).toBe(true);
+    // The platter's own time ran out with the tick, so its slot is free; the other two stand.
+    expect(slots(g)).toEqual(['hearty_stew', 'berry_pie']);
+    expect(held(g, 'well_fed')!.ticksLeft!).toBeGreaterThan(1000);
+  });
+
+  it('a dish eaten between ticks at that point is fine too (the control)', () => {
+    const g = flaskOnItsLastTick();
+    useConsumable(g.state, g.bus, 'berry_pie', 'c');
+    g.tick();
+    survives(g, ['hearty_stew', 'berry_pie']);
+  });
+});
+
+describe('a worse helping of a dish already active', () => {
+  /** A Fine Hearty Stew (Well Fed x1.6), then 100 ticks, then a Common one (x0.6). */
+  function fineThenCommon() {
+    const g = idle();
+    grantGraded(g.state, 'hearty_stew', 'b', 1);
+    grantGraded(g.state, 'hearty_stew', 'd', 1);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'b');
+    g.step(100);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'd');
+    return g;
+  }
+
+  it('never lowers or extends the stronger claim: it is a second claim on the same slot', () => {
+    const g = fineThenCommon();
+    expect(held(g, 'well_fed')!.intensity).toBe(1.6);
+    expect(held(g, 'well_fed')!.ticksLeft).toBe(STATUSES.well_fed.duration! - 100);
+    expect(slots(g)).toEqual(['hearty_stew']);
+    const claims = g.state.meals[0].claims.filter((c) => c.id === 'well_fed');
+    expect(claims.map((c) => c.dose).sort()).toEqual([0.6, 1.6]);
+    // The slot's time left is its longest claim: the Common helping's fresh clock.
+    expect(own(g, 'hearty_stew')).toBe(STATUSES.well_fed.duration);
+    // And the label is the grade still in effect.
+    expect(activeMeals(g.state)[0].quality).toBe('b');
+    expect(g.state.stock.hearty_stew).toBeUndefined();
+  });
+
+  it('takes over when the stronger one runs out, and the label follows', () => {
+    const g = fineThenCommon();
+    g.step(STATUSES.well_fed.duration! - 100 - 5); // the Fine claim has 5 left
+    expect(held(g, 'well_fed')!.intensity).toBe(1.6);
+    g.step(10);
+    expect(held(g, 'well_fed')!.intensity).toBe(0.6);
+    expect(held(g, 'well_fed')!.ticksLeft).toBe(own(g, 'hearty_stew'));
+    expect(activeMeals(g.state)[0].quality).toBe('d');
+    expect(g.state.meals[0].claims.filter((c) => c.id === 'well_fed')).toHaveLength(1);
+    expect(logLines(g).some((l) => l.includes('Well Fed has passed'))).toBe(false);
+    g.step(120);
+    expect(slots(g)).toEqual([]);
+    expect(hasStatus(g.state, 'well_fed')).toBe(false);
+  });
+
+  it('a stronger helping later replaces the weaker one, which it outlasts', () => {
+    const g = idle();
+    grantGraded(g.state, 'hearty_stew', 'b', 1);
+    grantGraded(g.state, 'hearty_stew', 'd', 1);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'd');
+    g.step(100);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'b');
+    expect(g.state.meals[0].claims.filter((c) => c.id === 'well_fed').map((c) => c.dose)).toEqual([1.6]);
+    expect(held(g, 'well_fed')!.intensity).toBe(1.6);
+    expect(held(g, 'well_fed')!.ticksLeft).toBe(STATUSES.well_fed.duration);
+    expect(activeMeals(g.state)[0].quality).toBe('b');
+  });
+
+  it('an equal helping renews, and does not pile up claims', () => {
+    const g = idle();
+    stock(g, 'hearty_stew');
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    g.step(500);
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    expect(g.state.meals[0].claims).toHaveLength(1);
+    expect(own(g, 'hearty_stew')).toBe(STATUSES.well_fed.duration);
+  });
+});
+
+describe('the per-tick bookkeeping writes nothing when nothing changed', () => {
+  it('leaves the slot and claim arrays alone while every claim still counts', () => {
+    const g = idle();
+    stock(g, 'hearty_stew', 'mushroom_broth');
+    useConsumable(g.state, g.bus, 'hearty_stew', 'c');
+    useConsumable(g.state, g.bus, 'mushroom_broth', 'c');
+    drink(g, 'c');
+    const meals = g.state.meals;
+    const foreign = g.state.foreignClaims;
+    const claims = g.state.meals.map((m) => m.claims);
+    g.step(100);
+    expect(g.state.meals).toBe(meals);
+    expect(g.state.foreignClaims).toBe(foreign);
+    expect(g.state.meals.map((m) => m.claims)).toEqual(claims);
+    g.state.meals.forEach((m, i) => expect(m.claims).toBe(claims[i]));
+  });
+});
+
 describe('save v59', () => {
   function v58(): Record<string, unknown> {
     const s = createInitialState(3);
