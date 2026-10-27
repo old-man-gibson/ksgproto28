@@ -648,6 +648,21 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     });
     raw.version = 57;
   },
+  // v57 → v58: the Cook's Book (systems/cookbook.ts). The cook counters it reads
+  // (`cooked:*`) start at zero: no earlier save recorded which dish a cook made,
+  // so there is nothing honest to seed them or the `cookery` novelty domain from
+  // (the dish counts and `state.novelty.cooking` are new). An existing save pays
+  // each dish's first-cook bonus once, and its Book fills from here. Only the
+  // legacy block changes shape: it gains the lists Cook's Notes reads.
+  57: (raw) => {
+    const prestige =
+      (raw.prestige as { cookbook?: { timed?: string[]; signed?: string[] } } | undefined) ??
+      freshPrestigeState();
+    const kept = prestige.cookbook;
+    prestige.cookbook = { timed: kept?.timed ?? [], signed: kept?.signed ?? [] };
+    raw.prestige = prestige;
+    raw.version = 58;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {

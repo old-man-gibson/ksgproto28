@@ -7,11 +7,11 @@ import type {
   MonsterInstance,
   StatKey,
 } from '../types';
-import { RES_STAT_BY_TYPE } from '../types';
+import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE } from '../types';
 import { MONSTERS, TIERS } from '../data/monsters.data';
 import { rand } from '../engine/rng';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
-import { statusMods, statusResFloor, statusResOverrides } from './statuses';
+import { setMonsterResistanceReader, statusMods, statusResFloor, statusResOverrides } from './statuses';
 
 /**
  * A monster's stat block, derived from its attributes rather than baked at
@@ -474,10 +474,30 @@ export function mindInDebt(inst: MonsterInstance): boolean {
  * its bearer is the same chill whichever side of the fight is wearing it.
  */
 export function monsterStats(inst: MonsterInstance): MonsterStats {
+  return clampMonsterStats(monsterStatsUnclamped(inst));
+}
+
+/**
+ * A live monster's resistance to one damage type exactly as its damage pipeline
+ * stacks it, BEFORE the body's clamp: innate (declared, else from its tags),
+ * conditions' mods, derived mods, overrides and floors, plus `resElemental` for
+ * the elemental types (`monsterSlice` adds it the same way). This is the figure
+ * condition immunity and the landed share of a dose read for a monster, so a
+ * lightning-tagged species resists `jolted` for the same reason it resists a
+ * bolt. Handed to `statuses.ts` below, which cannot import this module.
+ */
+export function monsterResistanceUnclamped(inst: MonsterInstance, type: DamageType): number {
+  const stats = monsterStatsUnclamped(inst);
+  return stats.resistances[type] + (ELEMENTAL_TYPES.has(type) ? stats.resElemental : 0);
+}
+setMonsterResistanceReader(monsterResistanceUnclamped);
+
+/** `monsterStats` up to, and not including, `clampMonsterStats`. */
+function monsterStatsUnclamped(inst: MonsterInstance): MonsterStats {
   const innate = innateResistances(inst.defId);
   const mods = statusMods(inst);
   if (mods.length === 0) {
-    return clampMonsterStats(applyResOverrides(inst, statsFromAttrs(inst.attrs, innate, innateArmor(inst.defId), MONSTERS[inst.defId]?.regen ?? 0, inst.level)));
+    return applyResOverrides(inst, statsFromAttrs(inst.attrs, innate, innateArmor(inst.defId), MONSTERS[inst.defId]?.regen ?? 0, inst.level));
   }
 
   const attrs = { ...inst.attrs };
@@ -507,7 +527,7 @@ export function monsterStats(inst: MonsterInstance): MonsterStats {
     }
   }
   applyDerivedMods(stats, mods);
-  return clampMonsterStats(applyResOverrides(inst, stats));
+  return applyResOverrides(inst, stats);
 }
 
 /**

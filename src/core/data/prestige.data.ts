@@ -142,6 +142,18 @@ export const PRESTIGE_BOONS = prose<PrestigeBoonDef>('PRESTIGE_BOONS', PRESTIGE_
     cost: [1, 2, 3, 4, 5],
     effect: { kind: 'startLevel', levels: 1 },
   },
+  // The Cook's Book resets with the run (user, 2026-10-23: "it resets but
+  // prestige boons can carry some parts over"). Rank 1 keeps which dishes had
+  // their cook time shown, rank 2 also keeps Signatures. What was reached is
+  // stored at every prestige (`PrestigeState.cookbook`); the rank gates the
+  // reading, so points spent in the overlay apply to every earlier run too.
+  cooks_notes: {
+    id: 'cooks_notes',
+    name: "Cook's Notes",
+    icon: '📒',
+    cost: [1, 2],
+    effect: { kind: 'cookbook' },
+  },
 });
 
 /** A save that has never prestiged. */
@@ -152,6 +164,7 @@ export function freshPrestigeState(): PrestigeState {
     purchases: {},
     peakLevels: {},
     peakAttrs: {},
+    cookbook: { timed: [], signed: [] },
     lastHarvest: null,
     review: false,
     spentThisReview: 0,

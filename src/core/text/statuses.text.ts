@@ -94,6 +94,10 @@ export const STATUSES_TEXT: ProseTable = {
 
   'clear_headed.desc': 'Restores 0.1% of maximum mana per tick, +8% spell power and +5% skill experience for 8 minutes.',
 
+  'stoked.desc': '+5% damage and +0.05 critical damage multiplier per intensity, for 5 minutes. Granted by Seared Stew.',
+
+  'steeped.desc': '+25% poison resistance and +10% acid resistance per intensity, for 10 minutes. Granted by Steeped Broth. Poison or acid resistance of 100% or more stops those conditions from landing; damage resistance still stops at its cap.',
+
   'queasy.desc': 'Deals 0.03 poison damage per tick and cuts stamina regeneration by 25% for 90 seconds. Rest removes it.',
 
   'unfolded.desc': 'Slashing, piercing and bludgeoning resistance -12%; arcane resistance -15%. Lasts 15 seconds.',

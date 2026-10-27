@@ -1,4 +1,11 @@
-import type { ConsumableSpec, GameState, MaterialDef, QualityTier } from '../types';
+import type {
+  ConsumableSpec,
+  DerivedStats,
+  GameState,
+  MaterialDef,
+  QualityTier,
+  StatusApplication,
+} from '../types';
 import type { EventBus } from '../engine/events';
 import { MATERIALS } from '../data/materials.data';
 import { QUALITY_TIERS, qualityMult } from '../data/quality.data';
@@ -8,7 +15,9 @@ import { heal } from './health';
 import { applyStatus, fireStatusEvent, statusesOf } from './statuses';
 import { gradesHeld, knowsRecipe, recipeKey, recipeName, stockOf } from './disciplines';
 import { bumpStat } from './achievements';
-import { TECHNIQUES } from '../registry';
+import { STATUSES, TECHNIQUES } from '../registry';
+import { signatureEarned } from './cookbook';
+import { isHarmful } from './conditionHarm';
 import { learnTechnique, techniqueReachable } from './martial';
 import { wordUnlocked, wordUnlockKey } from './unlocks';
 import { checkTitleUnlocks } from './titles';
@@ -65,6 +74,11 @@ import { text } from '../text/log';
  *
  * Quality scales the lot. A dish is a graded material, so the same recipe
  * cooked from better ingredients is simply a better grade of the same thing.
+ *
+ * Food (`ConsumableSpec.food`: what the cooking benches make) is scaled a second
+ * time by the eater's cook: conditions last `foodDuration` times as long and land
+ * `foodPotency` times as hard, and `restore` amounts follow potency. A dish the
+ * player has cooked `SIGNATURE_COOKS` times also grants its `signature`.
  */
 
 /** What eating something spoiled does to you, whatever it was meant to be. */
@@ -186,11 +200,51 @@ function useCard(state: GameState, bus: EventBus, def: MaterialDef, spec: Consum
   }
 }
 
+/** How the cook's skill scales food as eaten. 1 and 1 is no scaling. */
+export interface FoodScale {
+  /** Multiplies how long each granted condition lasts. */
+  duration: number;
+  /** Multiplies each granted condition's intensity and each `restore` amount. */
+  potency: number;
+}
+
+const NO_FOOD_SCALE: FoodScale = { duration: 1, potency: 1 };
+
+/**
+ * What Cooking does to a dish when it is eaten. Both factors are read from the
+ * stat block, which already holds them at `FOOD_MULT_CAP` (derived.ts) — there is
+ * no second clamp here to drift from it.
+ */
+export function foodScale(stats: DerivedStats): FoodScale {
+  return { duration: stats.foodDuration, potency: stats.foodPotency };
+}
+
+/**
+ * One granted condition as eaten: intensity × grade × potency, and a lifetime
+ * scaled by duration — the application's own, else the condition's. A condition
+ * that never ends on its own (`'permanent'`, or a null duration) keeps its
+ * terms. A harmful condition (`isHarmful`, conditionHarm.ts: read from the
+ * condition's data, so it covers the spoilage condition and anything a dish is
+ * ever authored to carry) is harm, not nourishment, and is never scaled.
+ */
+function eatenApplication(app: StatusApplication, scale: number, food: FoodScale): StatusApplication {
+  const def = STATUSES[app.id];
+  const f = def && isHarmful(def) ? NO_FOOD_SCALE : food;
+  const out: StatusApplication = { ...app, intensity: (app.intensity ?? 1) * scale * f.potency };
+  if (f.duration !== 1 && app.duration !== 'permanent') {
+    const base = app.duration ?? STATUSES[app.id]?.duration;
+    if (typeof base === 'number') out.duration = Math.round(base * f.duration);
+  }
+  return out;
+}
+
 export interface UseResult {
   /** What each pool actually gained, for the log. */
   restored: { resource: string; amount: number }[];
-  /** Status ids granted. */
+  /** Status ids granted (a Signature's included). */
   granted: string[];
+  /** The subset of `granted` that came from the dish's Signature. */
+  signature: string[];
   /** Status ids a cure cleared. */
   cured: string[];
 }
@@ -223,17 +277,22 @@ export function useConsumable(
   // gone. No grade and no effects, so none of the eating rules below apply.
   if (isCard(spec)) {
     useCard(state, bus, def, spec);
-    return { restored: [], granted: [], cured: [] };
+    return { restored: [], granted: [], signature: [], cured: [] };
   }
 
   const stats = getDerivedStats(state);
   const scale = qualityMult(quality);
-  const result: UseResult = { restored: [], granted: [], cured: [] };
+  const result: UseResult = { restored: [], granted: [], signature: [], cured: [] };
+  /** Each Signature condition granted, with its dose, for the log line. */
+  const signatureText: string[] = [];
+  // The cook's skill improves food. It reaches the benefit side only: a spoiled
+  // grade (scale < 0) is not helped by a better cook, and non-food is untouched.
+  const food = spec.food && scale > 0 ? foodScale(stats) : NO_FOOD_SCALE;
 
   // Instant: the whole thing, now.
   for (const r of spec.restore ?? []) {
     const amount =
-      ((r.flat ?? 0) + (r.ofMax ?? 0) * availableMax(state, stats, r.resource)) * scale;
+      ((r.flat ?? 0) + (r.ofMax ?? 0) * availableMax(state, stats, r.resource)) * scale * food.potency;
     if (amount === 0) continue;
     const before = resourceValue(state, r.resource);
     if (amount > 0) {
@@ -259,13 +318,22 @@ export function useConsumable(
     if (inst) result.granted.push(inst.id);
   } else {
     for (const app of spec.grants ?? []) {
-      const inst = applyStatus(
-        state,
-        state,
-        { ...app, intensity: (app.intensity ?? 1) * scale },
-        def.name,
-      );
+      const inst = applyStatus(state, state, eatenApplication(app, scale, food), def.name);
       if (inst) result.granted.push(inst.id);
+    }
+    // A Signature rides along once the dish has been cooked enough times
+    // (systems/cookbook.ts), graded and scaled like the dish's own grants.
+    if (signatureEarned(state, id)) {
+      for (const app of spec.signature ?? []) {
+        const dose = eatenApplication(app, scale, food);
+        const inst = applyStatus(state, state, dose, def.name);
+        if (inst) {
+          result.granted.push(inst.id);
+          result.signature.push(inst.id);
+          // The log line names it with the dose it landed at, e.g. "Stoked ×0.8".
+          signatureText.push(`${STATUSES[inst.id]?.name ?? inst.id} ×${+(dose.intensity ?? 1).toFixed(2)}`);
+        }
+      }
     }
   }
 
@@ -285,10 +353,15 @@ export function useConsumable(
 
   const grade = QUALITY_TIERS[quality];
   const verb = spec.useVerb ?? 'Used';
-  bus.emit({
-    type: 'log',
-    msg: text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name }),
-    kind: scale < 0 ? 'danger' : 'action',
-  });
+  const msg = signatureText.length
+    ? text('consumables.used_signature', {
+        icon: def.icon,
+        verb,
+        grade: grade.name,
+        name: def.name,
+        status: signatureText.join(' and '),
+      })
+    : text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name });
+  bus.emit({ type: 'log', msg, kind: scale < 0 ? 'danger' : 'action' });
   return result;
 }

@@ -7,9 +7,11 @@ import type {
   Modifier,
   MutagenArm,
   MutagenDef,
+  QualityTier,
   SpellSpec,
   SpellTarget,
   StatusApplication,
+  StatusDef,
   TechniqueDef,
   UnlockCondition,
 } from '../../core/types';
@@ -36,8 +38,21 @@ import {
   attrValue,
   type BreakdownLine,
 } from '../../core/systems/attributes';
-import { MONSTERS, MONSTER_TAGS, NPCS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
+import {
+  ITEMS,
+  MATERIALS,
+  MONSTERS,
+  MONSTER_TAGS,
+  NPCS,
+  QUALITY_TIERS,
+  QUESTS,
+  SKILLS,
+  SPOTS,
+  STATUSES,
+  STYLES,
+} from '../../core/registry';
 import { itemDefOf } from '../../core/systems/assembly';
+import { SPOILED } from '../../core/systems/consumables';
 import { resolveModValue } from '../../core/systems/derived';
 import { resolveRune } from '../../core/systems/runes';
 import { OTHERS_POWER, counterEfficiency, matchCeiling } from '../../core/systems/arcane';
@@ -235,6 +250,10 @@ const PERCENT_STATS = new Set<string>([
   'splash',
   'parry',
   'riposte',
+  // Cooking's two food multipliers: base 1, so 1.06 reads "106%" and a milestone
+  // adds "+6%" (derived.ts holds both at FOOD_MULT_CAP).
+  'foodDuration',
+  'foodPotency',
   // Every resistance is a share of a blow, not a count of anything — derived
   // from the damage-type table so a new element can never fall out of this
   // list again (resWater/Wind/Earth/Light/Dark once did, and read "+0.05").
@@ -426,7 +445,51 @@ export function conditionEffects(id: string, intensity = 1, self = false): strin
   // a psionic haste granted at intensity 10 is +30% speed, not the +3% the
   // definition carries.
   for (const m of def.mods ?? []) bits.push(describeMod({ ...m, value: m.value * intensity }));
+  if (def.immune) bits.push(immuneText(def.immune));
   return bits;
+}
+
+/**
+ * What a status that grants immunity refuses (`StatusDef.immune`): every
+ * condition of a listed element, and every condition named by id.
+ * "Immune to poison conditions", "Immune to Bleeding and Burning".
+ */
+export function immuneText(immune: NonNullable<StatusDef['immune']>): string {
+  const what = [
+    ...(immune.elements ?? []).map((e) => `${DAMAGE_TYPE_NAMES[e].toLowerCase()} conditions`),
+    ...(immune.ids ?? []).map((id) => STATUSES[id]?.name ?? id),
+  ];
+  if (what.length === 0) return 'Immune to nothing';
+  const last = what.pop()!;
+  return `Immune to ${what.length ? `${what.join(', ')} and ` : ''}${last}`;
+}
+
+/** One restore entry as words: "+25 HP", "+10% of max Mana". */
+export function restoreText(r: { resource: string; flat?: number; ofMax?: number }): string {
+  const name = RESOURCES[r.resource as keyof typeof RESOURCES]?.name ?? r.resource;
+  const bits: string[] = [];
+  if (r.flat) bits.push(`+${fmt(r.flat)}`);
+  if (r.ofMax) bits.push(`+${Math.round(r.ofMax * 100)}% of max`);
+  return `${bits.join(' and ')} ${name}`;
+}
+
+/**
+ * What eating a dish at a grade does, as the game applies it
+ * (`useConsumable`): the grade's multiplier scales every restore and every
+ * granted condition's intensity, and a negative multiplier (Refuse) swaps the
+ * whole effect for the illness. Empty for a material that cannot be eaten.
+ */
+export function foodLines(materialId: string, quality: QualityTier): string[] {
+  const spec = MATERIALS[materialId]?.consumable;
+  if (!spec) return [];
+  const scale = QUALITY_TIERS[quality].mult;
+  if (scale < 0) return [grantLine({ id: SPOILED, intensity: -scale })];
+  return [
+    ...(spec.restore ?? []).map((r) =>
+      restoreText({ ...r, ...(r.flat ? { flat: r.flat * scale } : {}), ...(r.ofMax ? { ofMax: r.ofMax * scale } : {}) }),
+    ),
+    ...(spec.grants ?? []).map((g) => grantLine({ ...g, intensity: (g.intensity ?? 1) * scale })),
+  ];
 }
 
 /**
@@ -447,7 +510,7 @@ export function grantLine(app: StatusApplication): string {
   const bits = conditionEffects(app.id, strength, true);
   // The application may set its own lifetime (psionic coherence buys duration).
   const held = app.duration ?? def.duration;
-  const time = typeof held === 'number' && held ? ` ⌛ ${Math.round(held / TPS)}s` : '';
+  const time = typeof held === 'number' && held ? ` ⌛ ${ticksToTime(held)}` : '';
   return `${def.icon} ${def.name}${time}${bits.length ? ` — ${bits.join(', ')}` : ''}`;
 }
 
@@ -1094,6 +1157,7 @@ export function statusTipLines(
   for (const mod of def.mods ?? []) {
     lines.push(`— ${describeMod({ ...mod, value: mod.value * held.intensity })}`);
   }
+  if (def.immune) lines.push(`— ${immuneText(def.immune)}`);
   for (const c of def.ceilings ?? []) {
     const sealed = Math.min(c.max ?? 1, c.per * held.intensity);
     lines.push(`— ${pct(sealed)} of your ${RESOURCES[c.resource]?.name ?? c.resource} is closed off`);

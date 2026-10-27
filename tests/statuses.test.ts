@@ -3,7 +3,7 @@ import './fixtures/shelved-world';
 import { describe, expect, it } from 'vitest';
 import { ITEMS, MAIN_GENES, MONSTERS, SPOTS, STATUSES, TITLES } from '../src/core/registry';
 import { HUNGER_SLOW_CEILING } from '../src/core/data/statuses.data';
-import { RES_STAT_BY_TYPE } from '../src/core/types';
+import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE, type MonsterDef, type StatusDef } from '../src/core/types';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { getDerivedStats } from '../src/core/systems/derived';
@@ -1589,5 +1589,322 @@ describe('conditions are resisted on APPLICATION, not only on their damage', () 
     expect(cuts('stone_golem')).toBe(cuts('goblin'));
     // But each of those cuts is shallower, so the bleed still bites less.
     expect(STATUSES.bleeding?.stacking.mode).toBe('count');
+  });
+});
+
+describe('immunity: resistance of 1, or a status that grants it', () => {
+  // The floor means resistance below 1 never stops a condition outright. At
+  // 1 and above, once the applier's penetration is taken off, nothing lands.
+
+  /** Run `body` with extra conditions registered, then remove them. */
+  function withStatuses(extra: Record<string, StatusDef>, body: () => void) {
+    Object.assign(STATUSES, extra);
+    try {
+      body();
+    } finally {
+      for (const id of Object.keys(extra)) delete STATUSES[id];
+    }
+  }
+
+  const ironblood: StatusDef = {
+    id: 'test_ironblood',
+    name: 'Ironblood',
+    icon: '🩸',
+    desc: 'Test-only: +100% poison resistance.',
+    stacking: { mode: 'highest' },
+    duration: null,
+    removal: [{ on: 'combatEnd', effect: 'remove' }],
+    mods: [{ stat: 'resPoison', op: 'add', value: 1 }],
+  };
+  const ward: StatusDef = {
+    id: 'test_ward',
+    name: 'Warded',
+    icon: '🛡️',
+    desc: 'Test-only: immune to poison conditions and to bleeding.',
+    stacking: { mode: 'highest' },
+    duration: null,
+    removal: [{ on: 'combatEnd', effect: 'remove' }],
+    immune: { elements: ['poison'], ids: ['bleeding'] },
+  };
+
+  const monsterOf = (g: Game, defId: string) => {
+    const m = spawnMonster(g.state, getSpot('woods_edge'));
+    m.defId = defId;
+    return m;
+  };
+
+  it('a player at resistance 1 is not poisoned; at 0.99 the dose lands at the floor', () => {
+    const g = fresh(40);
+    expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang', { resPoison: 1 })).toBeNull();
+    expect(hasStatus(g.state, 'poison')).toBe(false);
+    const landed = applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang', { resPoison: 0.99 });
+    expect(landed!.intensity).toBeCloseTo(APPLICATION_FLOOR);
+  });
+
+  it('only the condition’s own element is stopped, and only by an afflicting dose', () => {
+    const g = fresh(41);
+    const block = { resPoison: 1.5 };
+    expect(applyStatus(g.state, g.state, { id: 'bleeding', intensity: 1 }, 'a claw', block)).not.toBeNull();
+    // A buff has no element, so no resistance reaches it however high.
+    expect(STATUSES.steady_hand?.element).toBeUndefined();
+    expect(applyStatus(g.state, g.state, { id: 'steady_hand', intensity: 1 }, 'a meal', block)).not.toBeNull();
+    // Without a block the caller cannot see one: nothing is invented.
+    expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang')).not.toBeNull();
+  });
+
+  it('the applier’s penetration comes off the resistance before the test', () => {
+    const poison = (res: number, pen?: number) => {
+      const fresher = fresh(42);
+      return applyStatus(fresher.state, fresher.state, { id: 'poison', intensity: 1 }, 'a fang', { resPoison: res }, pen);
+    };
+    expect(poison(1)).toBeNull();
+    expect(poison(1, 0)).toBeNull();
+    expect(poison(1, 0.2)!.intensity).toBeCloseTo(APPLICATION_FLOOR);
+    // Resistance past 1 needs more to get through: 1.5 − 0.4 is still 1.1.
+    expect(poison(1.5, 0.4)).toBeNull();
+    expect(poison(1.5, 0.6)).not.toBeNull();
+  });
+
+  it('penetration only opens the door: below 1 the dose is the dose it always was', () => {
+    const lands = (pen: number) => {
+      const g = fresh(43);
+      return applyStatus(g.state, g.state, { id: 'bleeding', intensity: 1 }, 'a claw', { resSlashing: 0.5 }, pen)!
+        .intensity;
+    };
+    expect(lands(0)).toBeCloseTo(0.5);
+    expect(lands(0.4)).toBeCloseTo(0.5);
+  });
+
+  it('reads the player’s resistance before the cap that holds the stat under 1', () => {
+    withStatuses({ test_ironblood: ironblood }, () => {
+      const g = fresh(44);
+      applyStatus(g.state, g.state, { id: 'test_ironblood', intensity: 1 }, 'test');
+      const stats = getDerivedStats(g.state);
+      // The damage cap holds the stat at 0.75…
+      expect(stats.resPoison).toBeCloseTo(0.75);
+      // …but the condition test saw the 1.0 under it.
+      expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang', stats)).toBeNull();
+      expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang', stats, 0.2)).not.toBeNull();
+      // A copy of the block loses the record and falls back to the capped
+      // number: immunity fails closed, never open.
+      const copy = { ...stats };
+      const landed = applyStatus(g.state, g.state, { id: 'poison', intensity: 2 }, 'a fang', copy);
+      expect(landed).not.toBeNull();
+    });
+  });
+
+  it('a monster at resistance 1 is immune; at 0.9 it is only slowed', () => {
+    const g = fresh(45);
+    const knight = monsterOf(g, 'death_knight');
+    expect(MONSTERS.death_knight.resistances?.poison).toBe(1);
+    expect(applyStatus(g.state, knight, { id: 'poison', intensity: 1 }, 'a fang')).toBeNull();
+    expect(hasStatus(knight, 'poison')).toBe(false);
+    // Its other elements still answer by the old arithmetic.
+    expect(applyStatus(g.state, knight, { id: 'bleeding', intensity: 1 }, 'a blade')!.intensity).toBeCloseTo(1);
+
+    // The player's penetration reaches a monster's condition immunity too.
+    const pen = applyStatus(g.state, knight, { id: 'poison', intensity: 1 }, 'a fang', undefined, 0.2);
+    expect(pen!.intensity).toBeCloseTo(APPLICATION_FLOOR);
+
+    // Metal slime guards slashing at 0.9, one short: the floor, not a wall.
+    const metal = monsterOf(g, 'slime_metal');
+    expect(MONSTERS.slime_metal.resistances?.slashing).toBe(0.9);
+    expect(applyStatus(g.state, metal, { id: 'bleeding', intensity: 1 }, 'a blade')!.intensity).toBeCloseTo(APPLICATION_FLOOR);
+  });
+
+  it('every species that declares resistance 1 or more is immune to that element’s conditions', () => {
+    const g = fresh(46);
+    const pairs: string[] = [];
+    for (const def of Object.values(MONSTERS)) {
+      for (const [type, res] of Object.entries(def.resistances ?? {})) {
+        if ((res ?? 0) < 1) continue;
+        pairs.push(`${def.id}:${type}`);
+        for (const cond of Object.values(STATUSES).filter((s) => s.element === type)) {
+          const m = monsterOf(g, def.id);
+          expect(applyStatus(g.state, m, { id: cond.id, intensity: 1 }, 'test'), `${def.id} ${cond.id}`).toBeNull();
+        }
+      }
+    }
+    expect(pairs).toContain('death_knight:poison');
+  });
+
+  /** Run `body` with an extra species registered, then remove it. */
+  function withSpecies(def: MonsterDef, body: () => void) {
+    MONSTERS[def.id] = def;
+    try {
+      body();
+    } finally {
+      delete MONSTERS[def.id];
+    }
+  }
+
+  it('a species whose TAGS give it resistance 1 is immune with nothing declared', () => {
+    // Lightning-tagged slimes resist lightning 0.7 at basic plus 0.1 per tier
+    // step (TAG_RESISTANCES), which is 1.0 at ancient. Damage already sees it;
+    // so must the condition.
+    const storm = (id: string, tier: MonsterDef['tier']): MonsterDef => ({
+      ...MONSTERS.slime_thunder_elite,
+      id,
+      tier,
+      resistances: undefined,
+    });
+    withSpecies(storm('test_storm_ancient', 'ancient'), () => {
+      withSpecies(storm('test_storm_elite', 'elite'), () => {
+        const g = fresh(52);
+        const ancient = monsterOf(g, 'test_storm_ancient');
+        expect(monsterStats(ancient).resistances.lightning).toBeCloseTo(0.9); // the damage clamp
+        expect(applyStatus(g.state, ancient, { id: 'jolted', intensity: 1 }, 'a spark')).toBeNull();
+        // One tier down it is 0.9: the floor, not a wall.
+        const elite = monsterOf(g, 'test_storm_elite');
+        expect(applyStatus(g.state, elite, { id: 'jolted', intensity: 1 }, 'a spark')!.intensity).toBeCloseTo(
+          APPLICATION_FLOOR,
+        );
+      });
+    });
+  });
+
+  it('a condition that dictates the resistance can take a declared 1 away', () => {
+    // `soaked` decides what poison resistance is (-0.5). It must lower the
+    // immunity too, or a drenched death knight would stay untouchable.
+    const g = fresh(53);
+    const knight = monsterOf(g, 'death_knight');
+    expect(applyStatus(g.state, knight, { id: 'poison', intensity: 1 }, 'a fang')).toBeNull();
+    applyStatus(g.state, knight, { id: 'soaked', intensity: 1 }, 'a bucket');
+    expect(hasStatus(knight, 'soaked')).toBe(true);
+    expect(monsterStats(knight).resistances.poison).toBeCloseTo(-0.5);
+    // And the dose lands deeper than a plain one: vulnerability, not just no wall.
+    expect(applyStatus(g.state, knight, { id: 'poison', intensity: 1 }, 'a fang')!.intensity).toBeGreaterThan(1);
+  });
+
+  it('elemental resistance counts toward the line for the elemental types only', () => {
+    // incomingSlice and monsterSlice both add resElemental to an elemental
+    // type's own resistance before the cap, so 0.95 + 0.05 is a full 1.
+    const g = fresh(54);
+    const poison = (stats: Record<string, number>) => {
+      const f = fresh(54);
+      return applyStatus(f.state, f.state, { id: 'poison', intensity: 1 }, 'a fang', stats);
+    };
+    expect(poison({ resPoison: 0.95, resElemental: 0.05 })).toBeNull();
+    expect(poison({ resPoison: 0.95, resElemental: 0.04 })).not.toBeNull();
+    // Slashing is not elemental: the bonus never reaches a bleed.
+    expect(ELEMENTAL_TYPES.has('slashing')).toBe(false);
+    const bleed = applyStatus(g.state, g.state, { id: 'bleeding', intensity: 1 }, 'a claw', {
+      resSlashing: 0.95,
+      resElemental: 0.05,
+    });
+    expect(bleed!.intensity).toBeCloseTo(APPLICATION_FLOOR);
+  });
+
+  it('the player’s elemental resistance is read through the real stat pipeline', () => {
+    const warding: StatusDef = {
+      id: 'test_warding',
+      name: 'Warding',
+      icon: '🛡️',
+      desc: 'Test-only: +90% poison resistance and +10% elemental resistance.',
+      stacking: { mode: 'highest' },
+      duration: null,
+      removal: [{ on: 'combatEnd', effect: 'remove' }],
+      mods: [
+        { stat: 'resPoison', op: 'add', value: 0.9 },
+        { stat: 'resElemental', op: 'add', value: 0.1 },
+      ],
+    };
+    withStatuses({ test_warding: warding }, () => {
+      const g = fresh(55);
+      applyStatus(g.state, g.state, { id: 'test_warding', intensity: 1 }, 'test');
+      const stats = getDerivedStats(g.state);
+      expect(stats.resPoison).toBeCloseTo(0.75); // capped; the 0.9 under it and the 0.1 beside it are not
+      expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang', stats)).toBeNull();
+      // Not a poison, not an element: still lands.
+      expect(applyStatus(g.state, g.state, { id: 'bleeding', intensity: 1 }, 'a claw', stats)).not.toBeNull();
+    });
+  });
+
+  it('a monster’s elemental resistance counts toward the line too', () => {
+    const bog: MonsterDef = { ...MONSTERS.death_knight, id: 'test_bog', resistances: { poison: 0.95, slashing: 0.95 } };
+    const plus5: StatusDef = {
+      id: 'test_hardened',
+      name: 'Hardened',
+      icon: '🛡️',
+      desc: 'Test-only: +5% elemental resistance.',
+      stacking: { mode: 'highest' },
+      duration: null,
+      removal: [{ on: 'combatEnd', effect: 'remove' }],
+      mods: [{ stat: 'resElemental', op: 'add', value: 0.05 }],
+    };
+    withSpecies(bog, () => {
+      withStatuses({ test_hardened: plus5 }, () => {
+        const g = fresh(56);
+        const m = monsterOf(g, 'test_bog');
+        expect(applyStatus(g.state, m, { id: 'poison', intensity: 1 }, 'a fang')!.intensity).toBeCloseTo(
+          APPLICATION_FLOOR,
+        );
+        removeStatus(m, 'poison');
+        applyStatus(g.state, m, { id: 'test_hardened', intensity: 1 }, 'test');
+        expect(applyStatus(g.state, m, { id: 'poison', intensity: 1 }, 'a fang')).toBeNull();
+        // The physical type has no elemental share.
+        expect(applyStatus(g.state, m, { id: 'bleeding', intensity: 1 }, 'a claw')).not.toBeNull();
+      });
+    });
+  });
+
+  it('a condition that grants resistance 1 makes its bearer immune, monster or player', () => {
+    withStatuses({ test_ironblood: ironblood }, () => {
+      const g = fresh(47);
+      const wolf = monsterOf(g, 'goblin');
+      expect(applyStatus(g.state, wolf, { id: 'poison', intensity: 1 }, 'a fang')).not.toBeNull();
+      removeStatus(wolf, 'poison');
+      applyStatus(g.state, wolf, { id: 'test_ironblood', intensity: 1 }, 'test');
+      expect(applyStatus(g.state, wolf, { id: 'poison', intensity: 1 }, 'a fang')).toBeNull();
+    });
+  });
+
+  it('`immune` refuses the elements and ids it names, and nothing else', () => {
+    withStatuses({ test_ward: ward }, () => {
+      const g = fresh(48);
+      applyStatus(g.state, g.state, { id: 'test_ward', intensity: 1 }, 'test');
+      expect(applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang')).toBeNull(); // element
+      expect(applyStatus(g.state, g.state, { id: 'rotting', intensity: 1 }, 'a fang')).toBeNull(); // element
+      expect(applyStatus(g.state, g.state, { id: 'bleeding', intensity: 1 }, 'a claw')).toBeNull(); // id
+      expect(applyStatus(g.state, g.state, { id: 'on_fire', intensity: 1 }, 'a torch')).not.toBeNull();
+      expect(applyStatus(g.state, g.state, { id: 'steady_hand', intensity: 1 }, 'a meal')).not.toBeNull();
+    });
+  });
+
+  it('`immune` blocks applications only: a condition already held stays', () => {
+    withStatuses({ test_ward: ward }, () => {
+      const g = fresh(49);
+      applyStatus(g.state, g.state, { id: 'poison', intensity: 1 }, 'a fang');
+      applyStatus(g.state, g.state, { id: 'test_ward', intensity: 1 }, 'test');
+      expect(hasStatus(g.state, 'poison')).toBe(true);
+      // And a fresh dose of the same thing does not deepen it.
+      applyStatus(g.state, g.state, { id: 'poison', intensity: 3 }, 'a fang');
+      expect(findStatus(g.state, 'poison')!.intensity).toBeCloseTo(1);
+    });
+  });
+
+  it('a monster can wear `immune`, and losing it ends the protection', () => {
+    withStatuses({ test_ward: ward }, () => {
+      const g = fresh(50);
+      const goblin = monsterOf(g, 'goblin');
+      applyStatus(g.state, goblin, { id: 'test_ward', intensity: 1 }, 'test');
+      expect(applyStatus(g.state, goblin, { id: 'poison', intensity: 1 }, 'a fang')).toBeNull();
+      expect(applyStatus(g.state, goblin, { id: 'bleeding', intensity: 1 }, 'a blade')).toBeNull();
+      removeStatus(goblin, 'test_ward');
+      expect(applyStatus(g.state, goblin, { id: 'poison', intensity: 1 }, 'a fang')).not.toBeNull();
+    });
+  });
+
+  it('a transformation is refused by `immune` the way `blockedBy` refuses it', () => {
+    // A condition that tips into something the bearer is immune to loses the
+    // old one and gains nothing; it does not slip through as a successor.
+    withStatuses({ test_ward: { ...ward, immune: { ids: ['frozen'] } } }, () => {
+      const g = fresh(51);
+      applyStatus(g.state, g.state, { id: 'test_ward', intensity: 1 }, 'test');
+      applyStatus(g.state, g.state, { id: 'chilled', intensity: 0.6 }, 'frost');
+      applyStatus(g.state, g.state, { id: 'chilled', intensity: 0.6 }, 'frost');
+      expect(hasStatus(g.state, 'frozen')).toBe(false);
+      expect(hasStatus(g.state, 'chilled')).toBe(false);
+    });
   });
 });

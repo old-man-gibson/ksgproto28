@@ -132,6 +132,8 @@ export const LOG_TEXT = {
   'divine.favor_assigned': '🕊️ 1 unassigned favor placed with {deity}.',
   'consumables.recipe_learned': '📜 Recipe learned: {name}. It is listed on the bench that cooks it.',
   'consumables.used': '{icon} {verb} {grade} {name}.',
+  // A dish cooked SIGNATURE_COOKS times also grants its Signature (systems/cookbook.ts).
+  'consumables.used_signature': '{icon} {verb} {grade} {name}. Signature: also {status}.',
 
   // ---------- cooking ----------
   'cooking.reason.no_outcome': 'No recipe matches',
@@ -139,6 +141,11 @@ export const LOG_TEXT = {
   'cooking.reason.no_such_technique': 'No such technique',
   'cooking.reason.technique_level': 'Technique needs Cooking {level}',
   'cooking.reason.not_preppable': 'Not a preppable ingredient',
+  // The Cook's Book crossing a threshold while cooking (systems/cooking.ts). Each
+  // is a tally entry on the "Cooked:" line of the cook that crossed it, and the
+  // tally joins its entries with ", ": so neither ends with a period.
+  'cooking.book.time': "Cook's Book: {name} cook time noted ({cooks} cooks)",
+  'cooking.book.signature': '{name} is now a Signature dish: eating it also gives {status} ({cooks} cooks)',
 
   // ---------- forging (systems/assembly.ts, systems/forging.ts) ----------
   'forging.reason.empty': 'Nothing is on the anvil',

@@ -33,8 +33,7 @@
   import { WIELD_NAMES, wieldOf } from '../../core/systems/wield';
   import { DAMAGE_TYPE_NAMES } from '../../core/types';
   import type { NpcDef } from '../../core/types';
-  import { RESOURCES } from '../../core/data/resources.data';
-  import { describeMod, grantLine, fmt } from '../lib/format';
+  import { describeMod, grantLine, fmt, restoreText } from '../lib/format';
   import { stockOf } from '../../core/systems/disciplines';
   import type { ShopLine } from '../../core/types';
   import { QUESTS, SKILLS, STYLES } from '../../core/registry';
@@ -53,6 +52,7 @@
   import SpellcraftPanel from './SpellcraftPanel.svelte';
   import AscentPanel from './AscentPanel.svelte';
   import Modal from '../lib/Modal.svelte';
+  import CookBook from '../lib/CookBook.svelte';
   import { DISCIPLINES } from '../../core/data/disciplines.data';
   import { conditionsMet } from '../../core/systems/conditions';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
@@ -68,18 +68,11 @@
 
   /** Which workbench is open, if any. */
   let openBench = $state<string | null>(null);
+  /** The Cook's Book, opened from the header of a cooking bench. */
+  let bookOpen = $state(false);
   /** The ware whose card was clicked — the detail window reads the live shelf by index. */
   let openWare = $state<{ npc: NpcDef; index: number } | null>(null);
   const wareLine = $derived(openWare ? visibleLines(gs, openWare.npc)[openWare.index] : undefined);
-
-  /** One restore entry as words: "+25 HP", "+10% of max Mana". */
-  function restoreText(r: { resource: string; flat?: number; ofMax?: number }): string {
-    const name = RESOURCES[r.resource as keyof typeof RESOURCES]?.name ?? r.resource;
-    const bits: string[] = [];
-    if (r.flat) bits.push(`+${fmt(r.flat)}`);
-    if (r.ofMax) bits.push(`+${Math.round(r.ofMax * 100)}% of max`);
-    return `${bits.join(' and ')} ${name}`;
-  }
 
   const spot = $derived(getSpot(gs.spot));
 
@@ -635,17 +628,34 @@
     </Modal>
   {:else if openBench}
     {@const bench = DISCIPLINES[openBench]}
-    <Modal wide fill={!!bench.assembles} onclose={() => (openBench = null)}>
+    <Modal
+      wide
+      fill={!!bench.assembles}
+      onclose={() => {
+        openBench = null;
+        bookOpen = false;
+      }}
+    >
       {#snippet title()}
-        <div class="win-title">{bench.icon} {bench.benchName ?? bench.name}</div>
+        <div class="win-head">
+          <div class="win-title">{bench.icon} {bench.benchName ?? bench.name}</div>
+          {#if bench.skill === 'cooking'}
+            <button class="small" onclick={() => (bookOpen = true)}>📒 Cook's Book</button>
+          {/if}
+        </div>
         <div class="small dim">{bench.desc}</div>
       {/snippet}
       {#if bench.assembles}
         <AnvilPanel />
       {:else}
-        <BenchPanel disciplineId={openBench} large />
+        <!-- Keyed: the bench remembers its last layout per discipline, so a panel
+             reused for a different bench would file one bench's layout under another. -->
+        {#key openBench}
+          <BenchPanel disciplineId={openBench} large />
+        {/key}
       {/if}
     </Modal>
+    {#if bookOpen}<CookBook onclose={() => (bookOpen = false)} />{/if}
   {/if}
 
   {#if recipes.length > 0}
@@ -695,6 +705,13 @@
 {/if}
 
 <style>
+  /* A workbench's window header: its name, and the Cook's Book button on a kitchen bench. */
+  .win-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
   .place {
     padding-top: 0;
     overflow: hidden;

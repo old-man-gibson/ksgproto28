@@ -62,6 +62,7 @@ import { TAG_RESISTANCES } from '../src/core/systems/monsterStats';
 import { monsterTags } from '../src/core/systems/bestiary';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
 import { isCard } from '../src/core/systems/consumables';
+import { foodProblems, heatWindowProblems } from '../src/core/systems/disciplines';
 import { askingPrice, lineValue } from '../src/core/systems/shops';
 import { wordTag } from '../src/core/data/wordskills.data';
 import { attrXpWeights } from '../src/core/systems/actions';
@@ -1246,6 +1247,16 @@ describe('status conditions', () => {
       for (const id of def.blockedBy ?? []) {
         expect(STATUSES[id], `${def.id}.blockedBy -> ${id}`).toBeTruthy();
       }
+      // Mirrored in forge/lib/validate.ts.
+      for (const id of def.immune?.ids ?? []) {
+        expect(STATUSES[id], `${def.id}.immune -> ${id}`).toBeTruthy();
+      }
+      if (def.immune) {
+        expect(
+          (def.immune.ids?.length ?? 0) + (def.immune.elements?.length ?? 0),
+          `${def.id}.immune names nothing`,
+        ).toBeGreaterThan(0);
+      }
     }
   });
 
@@ -1445,6 +1456,29 @@ describe('crafting disciplines', () => {
       const loosest = Math.min(...disc.outcomes.map((o) => o.requires.length));
       expect(loosest, `${disc.id} has no broad fallback outcome`).toBe(1);
     }
+  });
+
+  it('heat windows sit on a timed bench, over a fallback, and can be reached', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against
+    // the staged copy. A windowed outcome on an untimed bench never matches; one
+    // with no window-less fallback makes a player outside the window (or without
+    // the card) cook something other than what the same basket makes today; one
+    // no timeline option can land in is a dish nobody can make.
+    const problems = DISCIPLINE_LIST.flatMap((disc) =>
+      heatWindowProblems(disc, MATERIALS).map((p) => p.message),
+    );
+    expect(problems).toEqual([]);
+  });
+
+  it('food and signatures: exactly what a cooking bench makes is food, and each dish has a signature', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against the
+    // staged copy. A flask marked food would be scaled by the cook's skill; a dish
+    // left unmarked would not be; a signature that repeats the dish's own grant
+    // (or names no condition) does nothing; food that grants a permanent or a
+    // harmful condition (the failure dish aside) would last forever or hurt, and
+    // the cook's skill would amplify it.
+    const problems = foodProblems(DISCIPLINE_LIST, MATERIALS, STATUSES).map((p) => p.message);
+    expect(problems).toEqual([]);
   });
 
   it('tools are never consumed by the craft', () => {
