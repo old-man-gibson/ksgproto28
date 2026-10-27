@@ -39,7 +39,6 @@ import {
   type BreakdownLine,
 } from '../../core/systems/attributes';
 import {
-  ITEMS,
   MATERIALS,
   MONSTERS,
   MONSTER_TAGS,
