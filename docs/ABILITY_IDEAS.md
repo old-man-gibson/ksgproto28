@@ -27,11 +27,30 @@ fields are optional.
 
 ## 1. The user's ideas
 
-Written by the user on 2026-10-27, quoted as given.
+Written by the user on 2026-10-27, quoted as given, plus the three from
+2026-09-26 (Calorie Burn, Solar, Weakest Weapon Master) as their cards record
+them. No other user-named abilities are recorded in docs/; the 2026-07-30 nen
+evening left none.
 
 ### Calorie Burn
 "Increase power the more calories you burn but take damage and lose power if
 the player stays beyond 100% for too long without eating."
+
+The 2026-09-26 version, from the card:
+
+> Eat a lot to bank excess calories; higher stats store more. Full, the player
+> takes a small penalty to all stats that slowly shrinks and turns into bonuses
+> as calories burn. The longer a fight lasts, the higher the burn rate — but
+> burn more than you can and you "run out of control": unconscious, or even
+> dead. The power increase grows exponentially toward 100% burned. If the fight
+> has not ended after X seconds, max HP burns; below 10% of its normal total,
+> no save, instant death. It recovers over time if the player eats back to 0%
+> burned.
+>
+> User's rulings (2026-09-26): the collapse is a **death that is a setback** —
+> the `dead` fight outcome with knockout consequences; the stop-burning
+> **cutoff defaults to 10%**. Running dry at cutoff 0 is a knockout: that is the
+> proposal's reading, which the user did not object to but did not rule on.
 
 Already designed in detail: [plans/ability-calorie-burn.md](plans/ability-calorie-burn.md).
 
@@ -54,6 +73,16 @@ disappear again."
 "The player character gets empowered and charges up in the sun, but loses
 power as the charge falls below a certain %, down to a -30% debuff at 0%
 sunlight charge."
+
+The 2026-09-26 version, from the card:
+
+> Bank solar energy outside in the sun. While energy is available, the player
+> is empowered (stat bonuses). Where there is no sunlight — open fields at night
+> included — the bank is slowly consumed. Higher main attributes mean a higher
+> cap, higher consumption and so a higher buff, but consumption grows slower
+> than the cap and the absorption rate. As power grows: bursts that empower
+> techniques directly, boost fire/electric/light magic, or fire unique special
+> attacks like **Disintegration Ray**.
 
 Already designed in detail: [plans/ability-solar-reactor.md](plans/ability-solar-reactor.md).
 
@@ -93,7 +122,27 @@ similar to miracles but is extremely expensive and costs a very limited
 resource that only recharges once per in-game day."
 
 ### Weakest Weapon Master
-Authored 2026-09-26: [plans/ability-weakest-weapon-master.md](plans/ability-weakest-weapon-master.md).
+From the card ([plans/ability-weakest-weapon-master.md](plans/ability-weakest-weapon-master.md)), 2026-09-26:
+
+> Attributes capped relatively low; technique usage grows exponentially faster;
+> martial skills lose their caps and gain WWM-only bonuses. Four melee stances
+> (unarmed included): **Power** (damage ∝ total skill level and technique
+> usages), **Flowing** (parry ∝ Power against the blow, up to 100%, striking
+> back), **Heavy** (damage reduced by Power against the blow, down to 0, where
+> the blow never counts as a hit; rattles the attacker, never below 1/3 speed),
+> **Empty** (less damage than Power, proportional to it, ignores dodge,
+> deflection and parry).
+>
+> User's additions (2026-09-26): the ceiling **stays fixed**, and attribute XP
+> past it **routes into Power**; reps are real and multiplied, every technique
+> drilled; and **new technique-use thresholds past 10,000** — "a single
+> technique becoming impossibly powerful once the player manages to use it
+> 100k, 1m, 100m, 1b times (and all inbetween)".
+>
+> Settled 2026-09-26: **one rung per power of ten** (10m included), and the
+> rungs **apply to every build**, not only while WWM is worn — "it just won't
+> be feasible for most to achieve those thresholds". WWM's rep multiplier is
+> what makes them reachable. The exact bonus per rung is still to be designed.
 
 ---
 
