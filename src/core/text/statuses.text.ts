@@ -20,9 +20,9 @@ export const STATUSES_TEXT: ProseTable = {
 
   'melting.desc': 'Armour gives nothing for 15 seconds. Bludgeoning, heat and cold resistance each drop by 12%.',
 
-  'poison.desc': 'Deals 0.05 poison damage per tick per intensity for 30 seconds and cuts stamina regeneration by 20%. Only a stronger dose replaces it; at intensity 4 it escalates to Rotting.',
+  'poison.desc': 'Deals 0.05 poison damage per tick per intensity for 30 seconds and cuts stamina regeneration by 20%. Only a stronger dose replaces it; at intensity 4 it escalates to Rotting. A poison cure (a Mendroot Salve) removes it.',
 
-  'rotting.desc': 'Deals 0.12 poison damage per tick for 45 seconds and cuts stamina regeneration by 35%. Half of every stamina spend is also removed from maximum stamina, up to 60%. When it ends the lost maximum returns slowly (Wasted).',
+  'rotting.desc': 'Deals 0.12 poison damage per tick for 45 seconds and cuts stamina regeneration by 35%. Half of every stamina spend is also removed from maximum stamina, up to 60%. When it ends the lost maximum returns slowly (Wasted). A poison cure (a Mendroot Salve) reduces it to Poisoned.',
 
   'rot_recovery.desc': 'Maximum stamina removed by Rotting returns over time, about 20 seconds for a full 60% loss.',
 
@@ -36,9 +36,9 @@ export const STATUSES_TEXT: ProseTable = {
 
   'frozen.desc': 'Speed is reduced by 95% and bludgeoning resistance by 50% for 3 seconds. Any damage taken removes it.',
 
-  'bleeding.desc': 'Deals 0.08 slashing damage per tick plus 0.15% of current health, at 30% rate out of combat. No timer. Each cut is its own stack; at 5 it escalates to Lacerated. Removed only by rest, a salve, or a healing spell.',
+  'bleeding.desc': 'Deals 0.08 slashing damage per tick plus 0.15% of current health, at 30% rate out of combat. No timer. Each cut is its own stack; at 5 it escalates to Lacerated. Removed only by rest, a salve, a healing spell, or a bleed cure (a Mendroot Salve).',
 
-  'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and seals off 4% of maximum health per stack, up to 30%. No timer. Rest, a salve, or a healing spell reduces it to Bleeding; a second treatment closes that.',
+  'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and seals off 4% of maximum health per stack, up to 30%. No timer. Rest, a salve (a Mendroot Salve included), or a healing spell reduces it to Bleeding; a second treatment closes that.',
 
   'concussed.desc': 'Spells cannot be cast and attacks have a 12% miss chance per intensity, for 25 seconds. Rest, a salve, or a healing spell reduces intensity by 0.4. At intensity 3 it escalates to Dazed.',
 
@@ -111,6 +111,12 @@ export const STATUSES_TEXT: ProseTable = {
   'honor_bound.desc': 'Enemies other than your target do not attack. +10% damage. Lasts 20 seconds.',
 
   'veiled.desc': 'Attacks against you have a 12% chance to miss, for 30 seconds.',
+
+  'frosted.desc': '+20% cold resistance and +10% heat resistance per intensity. Lasts as long as the Elixir. Granted by Frostmoss.',
+
+  'concealed.desc': 'Attacks against you have a 10% chance to miss and you gain +3% dodge, per intensity. Lasts as long as the Elixir. Granted by Gloomcap.',
+
+  'invigorated.desc': '+25% stamina regeneration per intensity. Lasts as long as the Elixir. Granted by Bloodwort.',
 
   'night_shroud.desc': 'Attacks against you have a 12% chance to miss, for 30 seconds.',
 

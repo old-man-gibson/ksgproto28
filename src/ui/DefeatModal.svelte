@@ -32,6 +32,7 @@
     rest: 'Resting',
     idle: 'Natural mending',
     salve: 'Salves',
+    draught: 'Draughts',
     spell: 'Restorative magic',
     lifesteal: 'Drawn from the wound',
     other: 'Other',

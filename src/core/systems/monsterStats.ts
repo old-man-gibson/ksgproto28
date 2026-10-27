@@ -1,17 +1,26 @@
 import type {
   AttributeId,
   DamageType,
+  FloorDef,
   GameState,
   Modifier,
   MonsterDef,
   MonsterInstance,
+  SpotDef,
   StatKey,
+  TierDef,
 } from '../types';
 import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE } from '../types';
 import { MONSTERS, TIERS } from '../data/monsters.data';
 import { rand } from '../engine/rng';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
-import { setMonsterResistanceReader, statusMods, statusResFloor, statusResOverrides } from './statuses';
+import {
+  setMonsterDamageResistanceReader,
+  setMonsterResistanceReader,
+  statusMods,
+  statusResFloor,
+  statusResOverrides,
+} from './statuses';
 
 /**
  * A monster's stat block, derived from its attributes rather than baked at
@@ -491,6 +500,106 @@ export function monsterResistanceUnclamped(inst: MonsterInstance, type: DamageTy
   return stats.resistances[type] + (ELEMENTAL_TYPES.has(type) ? stats.resElemental : 0);
 }
 setMonsterResistanceReader(monsterResistanceUnclamped);
+
+/**
+ * The same pipeline, read the way a blow reads it: `monsterSlice`'s own figure
+ * (the body's clamped resistance plus `resElemental` for the elemental types,
+ * held at its cap). A condition's damage ticks shed this much, so a dot and a
+ * blow of the same type meet the same wall. Handed to `statuses.ts` below for
+ * the reason the reader above is.
+ */
+export function monsterDamageResistance(inst: MonsterInstance, type: DamageType): number {
+  const stats = monsterStats(inst);
+  return Math.min(
+    Math.max(0, stats.resistCap),
+    stats.resistances[type] + (ELEMENTAL_TYPES.has(type) ? stats.resElemental : 0),
+  );
+}
+setMonsterDamageResistanceReader(monsterDamageResistance);
+
+/**
+ * The penetration a monster brings to the conditions it applies to the player:
+ * its species' own (`MonsterDef.penetration`), else its tier's
+ * (`TierDef.penetration`), else none. It comes off the player's resistance in
+ * the immunity test only (`applyStatus`), so it never thins a dose that lands.
+ */
+export function penetrationOf(def: Pick<MonsterDef, 'penetration' | 'tier'>, tiers = TIERS): number {
+  return def.penetration ?? tiers[def.tier]?.penetration ?? 0;
+}
+
+/** `penetrationOf` for a live specimen. 0 for a def that no longer exists. */
+export function monsterPenetration(inst: MonsterInstance): number {
+  const def = MONSTERS[inst.defId];
+  return def ? penetrationOf(def) : 0;
+}
+
+/**
+ * Floors up to and including this index apply conditions with no penetration:
+ * every species that can spawn there resolves to 0 (`penetrationProblems`).
+ * Floors 1 to 3 are the Lower Reaches; floor 0 is the tutorial under them.
+ */
+export const NO_PENETRATION_THROUGH_FLOOR = 3;
+
+/**
+ * Problems with monster penetration, as plain sentences keyed by monster id.
+ * Shared by `tests/content.test.ts` and `forge/lib/validate.ts` like
+ * `foodProblems`, so it takes the registries rather than importing them (the
+ * forge runs it against the staged copy).
+ *
+ *  - A species' own penetration is a share, 0 to 1. (The tier table is code,
+ *    not forge data, and `tests/content.test.ts` checks it directly.)
+ *  - Every species that can appear on a floor at or below
+ *    `NO_PENETRATION_THROUGH_FLOOR` (through an encounter, an escort or a
+ *    keeper's dare) resolves to 0. The early floors are where resistance is
+ *    first built; a monster that erodes it there would undo the lesson.
+ */
+export function penetrationProblems(
+  monsters: Record<string, MonsterDef>,
+  tiers: Record<string, TierDef>,
+  spots: Record<string, SpotDef>,
+  floors: Record<string, Pick<FloorDef, 'id' | 'index' | 'areaId'>>,
+): { monster: string; message: string }[] {
+  const problems: { monster: string; message: string }[] = [];
+  const say = (monster: string, message: string) => problems.push({ monster, message });
+
+  for (const def of Object.values(monsters)) {
+    const own = def.penetration;
+    if (own !== undefined && !(Number.isFinite(own) && own >= 0 && own <= 1)) {
+      say(def.id, `'${def.id}' has penetration ${own}: it is a share, 0 to 1`);
+    }
+  }
+
+  const early = new Map(
+    Object.values(floors)
+      .filter((f) => f.index <= NO_PENETRATION_THROUGH_FLOOR)
+      .map((f) => [f.areaId, f] as const),
+  );
+  const seen = new Set<string>();
+  const check = (id: string, where: string) => {
+    const def = monsters[id];
+    if (!def || seen.has(`${id}@${where}`)) return;
+    seen.add(`${id}@${where}`);
+    const pen = penetrationOf(def, tiers);
+    if (pen !== 0) {
+      say(
+        id,
+        `'${id}' appears on ${where} and applies conditions with penetration ${pen}; ` +
+          `floors up to ${NO_PENETRATION_THROUGH_FLOOR} take none (set penetration: 0 on it)`,
+      );
+    }
+  };
+  for (const spot of Object.values(spots)) {
+    const floor = early.get(spot.areaId);
+    if (!floor) continue;
+    const where = `${spot.id} (${floor.id})`;
+    for (const enc of spot.encounters ?? []) {
+      check(enc.monsterId, where);
+      for (const escort of monsters[enc.monsterId]?.escorts ?? []) check(escort, where);
+    }
+    if (spot.dare) check(spot.dare.monsterId, where);
+  }
+  return problems;
+}
 
 /** `monsterStats` up to, and not including, `clampMonsterStats`. */
 function monsterStatsUnclamped(inst: MonsterInstance): MonsterStats {

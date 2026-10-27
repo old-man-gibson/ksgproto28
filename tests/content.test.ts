@@ -51,6 +51,7 @@ import {
   BANDS,
   FLOORS,
   STARTING_SPOT,
+  TIERS,
 } from '../src/core/registry';
 import { RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/types';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
@@ -58,7 +59,8 @@ import { RESOURCES } from '../src/core/data/resources.data';
 import { XP_BASE, XP_RATE } from '../src/core/data/progression.data';
 import { TERRAIN_PROFILES } from '../src/core/data/climate.data';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
-import { TAG_RESISTANCES } from '../src/core/systems/monsterStats';
+import { TAG_RESISTANCES, penetrationProblems } from '../src/core/systems/monsterStats';
+import { resistanceProblems } from '../src/core/systems/conditionHarm';
 import { monsterTags } from '../src/core/systems/bestiary';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
 import { isCard } from '../src/core/systems/consumables';
@@ -1378,6 +1380,31 @@ describe('status conditions', () => {
         }
       }
     }
+  });
+
+  it('every harmful condition says what resists it: an element, or unresistable, never both', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against the
+    // staged copy. Mutation cases for each rule are in tests/conditionResist.test.ts.
+    // Titles are checked too: a title may not switch off an unresistable condition.
+    const problems = resistanceProblems(STATUSES, TITLES).map((p) => `${p.kind} ${p.id}: ${p.message}`);
+    expect(problems).toEqual([]);
+  });
+});
+
+describe('monster penetration', () => {
+  it('is a share on every tier', () => {
+    // The tier table is code, not forge data, so this is not mirrored in the forge.
+    for (const tier of Object.values(TIERS)) {
+      expect(tier.penetration, `${tier.id} penetration`).toBeGreaterThanOrEqual(0);
+      expect(tier.penetration, `${tier.id} penetration`).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('is zero for everything that can appear on floors 1 to 3, and a share elsewhere', () => {
+    // Mirrored in forge/lib/validate.ts, which runs the same function against the
+    // staged copy. Mutation cases are in tests/conditionResist.test.ts.
+    const problems = penetrationProblems(MONSTERS, TIERS, SPOTS, FLOORS).map((p) => p.message);
+    expect(problems).toEqual([]);
   });
 });
 

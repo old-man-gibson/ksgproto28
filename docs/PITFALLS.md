@@ -144,6 +144,16 @@ overload-recovery all ride them), so their sharp edges cut everywhere:
   the damage pipeline's own pre-clamp figure (`monsterResistanceUnclamped`),
   which `monsterStats.ts` hands to `statuses.ts` at load because the import
   runs the other way. Both bearers add `resElemental` for the elemental types.
+  A condition's damage TICKS read the other figure, the damage path's own and
+  capped (`resistBlock`; `monsterDamageResistance`, a second registered reader):
+  a tick is damage, and only the immunity test wants the number past the cap.
+- **Every harmful condition has an `element` or is `unresistable`, never
+  both.** `unresistable` lands in full and no `immune.ids` may name one
+  (`resistanceProblems`, both layers). A new harmful condition without either
+  fails the content test.
+- **Monster penetration is 0 on floors 1 to 3** (`penetrationProblems`): a new
+  species there that resolves above 0 (its tier's value, unless it sets
+  `penetration: 0`) fails the content test. It only moves the 100% line.
 - **Never let a school borrow another's signature condition** — author a
   native one (a test sweeps for this). Borrowed conditions also carry the
   wrong intensity scale (a unit-scale condition fed a quantity-scale

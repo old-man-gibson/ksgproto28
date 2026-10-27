@@ -3,8 +3,9 @@ import { conditionEffects, damageTipLines, describeMod, fmt, foodLines, immuneTe
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { applyStatus, findStatus } from '../src/core/systems/statuses';
+import { getDerivedStats } from '../src/core/systems/derived';
 import { STATUSES } from '../src/core/registry';
-import { RES_STAT_BY_TYPE, type DamageReport, type DamageSlice, type StatusDef } from '../src/core/types';
+import { RES_STAT_BY_TYPE, type DamageReport, type DamageSlice, type MonsterInstance, type StatusDef } from '../src/core/types';
 
 function slice(over: Partial<DamageSlice> = {}): DamageSlice {
   return {
@@ -162,6 +163,109 @@ describe('affliction tooltips', () => {
     applyStatus(game.state, game.state, { id: 'blazing', intensity: 1 });
     const burn = statusTipLines(game.state, findStatus(game.state, 'blazing')!);
     expect(burn.some((l) => l.includes('Healing may undo only 50%'))).toBe(true);
+  });
+
+  it('names a cure by what it cures, not by a bare tag', () => {
+    const game = g();
+    applyStatus(game.state, game.state, { id: 'bleeding', intensity: 1 });
+    const lines = statusTipLines(game.state, findStatus(game.state, 'bleeding')!);
+    const ends = lines.find((l) => l.startsWith('Ends:'))!;
+    expect(ends).toContain('clears with a bleed cure');
+  });
+});
+
+describe('the resistance line of a condition tooltip', () => {
+  const g = () => new Game(createInitialState(1));
+  const resistLine = (lines: string[]) => lines.find((l) => /Resisted by|Immune|Cannot be resisted/.test(l));
+  /** Poison resistance past the cap, from a condition the player wears. */
+  const warding = (value: number): StatusDef => ({
+    id: 'test_warding',
+    name: 'Warded',
+    icon: '🛡️',
+    desc: 'Test-only.',
+    stacking: { mode: 'highest' },
+    duration: null,
+    removal: [{ on: 'combatEnd', effect: 'remove' }],
+    mods: [{ stat: 'resPoison', op: 'add', value }],
+  });
+  function withWarding(value: number, body: (game: Game) => void) {
+    STATUSES.test_warding = warding(value);
+    try {
+      const game = g();
+      applyStatus(game.state, game.state, { id: 'test_warding', intensity: 1 });
+      body(game);
+    } finally {
+      delete STATUSES.test_warding;
+    }
+  }
+
+  it('says what resists it, with the real total', () => {
+    const game = g();
+    applyStatus(game.state, game.state, { id: 'poison', intensity: 1 });
+    expect(resistLine(statusTipLines(game.state, findStatus(game.state, 'poison')!))).toBe(
+      '— Resisted by: Poison resistance 0%',
+    );
+    withWarding(0.5, (w) => {
+      applyStatus(w.state, w.state, { id: 'poison', intensity: 1 });
+      expect(resistLine(statusTipLines(w.state, findStatus(w.state, 'poison')!))).toBe(
+        '— Resisted by: Poison resistance 50%',
+      );
+    });
+  });
+
+  it('reads the figure before the cap, and says Immune at 100% or more', () => {
+    withWarding(1.1, (w) => {
+      // The stat is held at 75% by the cap; the line shows what the game tests.
+      expect(getDerivedStats(w.state).resPoison).toBeCloseTo(0.75);
+      w.state.statuses.push({ id: 'poison', intensity: 1, peak: 1, stacks: 1, ticksLeft: 100, data: {} });
+      const held = w.state.statuses.find((s) => s.id === 'poison')!;
+      expect(resistLine(statusTipLines(w.state, held))).toBe('— Immune (Poison resistance 110%)');
+    });
+  });
+
+  it('says a vulnerability as a negative figure', () => {
+    withWarding(-0.5, (w) => {
+      w.state.statuses.push({ id: 'poison', intensity: 1, peak: 1, stacks: 1, ticksLeft: 100, data: {} });
+      const held = w.state.statuses.find((s) => s.id === 'poison')!;
+      expect(resistLine(statusTipLines(w.state, held))).toBe('— Resisted by: Poison resistance -50%');
+    });
+  });
+
+  it('says Cannot be resisted for a condition that is exempt by design', () => {
+    const game = g();
+    applyStatus(game.state, game.state, { id: 'surprised', intensity: 1 });
+    expect(resistLine(statusTipLines(game.state, findStatus(game.state, 'surprised')!))).toBe(
+      '— Cannot be resisted',
+    );
+  });
+
+  it('says nothing for a buff', () => {
+    const game = g();
+    applyStatus(game.state, game.state, { id: 'steady_hand', intensity: 1 });
+    expect(resistLine(statusTipLines(game.state, findStatus(game.state, 'steady_hand')!))).toBeUndefined();
+  });
+
+  it('says Immune when an earned title refuses it, with no resistance involved', () => {
+    const game = g();
+    game.state.titles.push('iron_stomach');
+    game.state.statuses.push({ id: 'queasy', intensity: 1, peak: 1, stacks: 1, ticksLeft: 100, data: {} });
+    expect(resistLine(statusTipLines(game.state, findStatus(game.state, 'queasy')!))).toBe('— Immune');
+  });
+
+  it('reads a monster by its own resistances', () => {
+    // The Death Knight declares poison 1 and nothing for slashing.
+    const knight: MonsterInstance = {
+      defId: 'death_knight', name: 'Death Knight', icon: '📦', level: 5, tier: 'veteran', modifier: 'normal',
+      rarity: 'common', mutation: null, hp: 500,
+      statuses: [
+        { id: 'poison', intensity: 1, peak: 1, stacks: 1, ticksLeft: 100, data: {} },
+        { id: 'bleeding', intensity: 1, peak: 1, stacks: 1, ticksLeft: null, data: {} },
+      ],
+      attrs: { str: 5, dex: 5, con: 5, int: 5, wis: 5, cha: 5 },
+      range: 'melee', bar: 0, stunSpent: 0, xp: 0, gold: 0,
+    };
+    expect(resistLine(statusTipLines(knight, knight.statuses[0]))).toBe('— Immune (Poison resistance 100%)');
+    expect(resistLine(statusTipLines(knight, knight.statuses[1]))).toBe('— Resisted by: Slashing resistance 0%');
   });
 });
 

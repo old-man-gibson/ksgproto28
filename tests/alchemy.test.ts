@@ -16,12 +16,14 @@ import {
   spendCoating,
   useFlask,
 } from '../src/core/systems/alchemy';
-import { REAGENTS, formulaFor } from '../src/core/data/alchemy.data';
+import { BREW_MAX_DURATION, REAGENTS, formulaFor } from '../src/core/data/alchemy.data';
 import { deserialize, serialize } from '../src/core/save/save';
 import { noveltyKeys } from '../src/core/systems/disciplines';
-import { hasStatus } from '../src/core/systems/statuses';
+import { applyStatus, fireStatusEvent, hasStatus } from '../src/core/systems/statuses';
+import { isHarmful } from '../src/core/systems/conditionHarm';
+import { MIRACLES, STATUSES } from '../src/core/registry';
 import { DISCIPLINES } from '../src/core/data/disciplines.data';
-import type { GradedStack, QualityTier } from '../src/core/types';
+import type { GradedStack, QualityTier, StatusApplication } from '../src/core/types';
 import { text } from '../src/core/text/log';
 
 const fresh = (seed = 1) => new Game(createInitialState(seed));
@@ -164,7 +166,7 @@ describe('the outcome table', () => {
   it('makes an elixir out of still water, and it grants rather than restores', () => {
     const s = seq('spring_water', 'mendroot', 'gloomcap');
     expect(s.form).toBe('elixir');
-    expect(s.grants.some((g) => g.id === 'veiled')).toBe(true);
+    expect(s.grants.some((g) => g.id === 'concealed')).toBe(true);
     expect(s.restore).toHaveLength(0);
   });
 
@@ -303,7 +305,7 @@ describe('using what came out', () => {
     shelf(g);
     brew(g.state, g.bus, lay('spring_water', 'mendroot', 'gloomcap'));
     expect(useFlask(g.state, g.bus, 0)).not.toBeNull();
-    expect(hasStatus(g.state, 'veiled')).toBe(true);
+    expect(hasStatus(g.state, 'concealed')).toBe(true);
     expect(g.state.flasks).toHaveLength(0);
   });
 
@@ -463,5 +465,176 @@ describe('determinism', () => {
     const a = seq('grain_spirit', 'nightcap', 'quicksilver', 'green_vitriol');
     const b = seq('grain_spirit', 'nightcap', 'quicksilver', 'green_vitriol');
     expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+});
+
+describe('alchemy carries its own conditions', () => {
+  const GRANTED = { frostmoss: 'frosted', gloomcap: 'concealed', bloodwort: 'invigorated' } as const;
+
+  it('Frostmoss, Gloomcap and Bloodwort each grant one of their own, not a deity’s', () => {
+    for (const [reagent, id] of Object.entries(GRANTED)) {
+      expect(REAGENTS[reagent].essence!.grants?.map((g) => g.id), reagent).toEqual([id]);
+      const def = STATUSES[id];
+      expect(def, id).toBeTruthy();
+      // Self-granted, so elementless and harmless like every other buff.
+      expect(def.element, id).toBeUndefined();
+      expect(isHarmful(def), id).toBe(false);
+    }
+  });
+
+  it('no reagent grants a condition a miracle grants — alchemy borrows no deity’s signature', () => {
+    const divine = new Set(
+      Object.values(MIRACLES).flatMap((m) => [...(m.spec.grants ?? []), ...(m.spec.afflicts ?? [])].map((a) => a.id)),
+    );
+    expect(divine.size).toBeGreaterThan(5);
+    for (const [id, def] of Object.entries(REAGENTS)) {
+      for (const g of def.essence?.grants ?? []) expect(divine.has(g.id), `${id} grants '${g.id}'`).toBe(false);
+    }
+  });
+
+  it('the divine originals are untouched and still granted by their miracles', () => {
+    const granted = Object.values(MIRACLES).flatMap((m) => (m.spec.grants ?? []).map((a) => a.id));
+    for (const id of ['ximas_rime', 'veiled', 'blood_communion']) {
+      expect(STATUSES[id], id).toBeTruthy();
+      expect(granted, id).toContain(id);
+    }
+  });
+
+  it('is sized for a short flask: each runs the Elixir’s own clock and a modest intensity', () => {
+    for (const [reagent, id] of Object.entries(GRANTED)) {
+      const spec = seq('spring_water', reagent);
+      expect(spec.form, reagent).toBe('elixir');
+      const grant = spec.grants.find((g) => g.id === id)!;
+      expect(grant, reagent).toBeTruthy();
+      expect(grant.duration!, reagent).toBeLessThanOrEqual(BREW_MAX_DURATION);
+      expect(grant.intensity!, reagent).toBeGreaterThan(0.3);
+      expect(grant.intensity!, reagent).toBeLessThan(2);
+      expect(STATUSES[id].duration, id).toBeLessThanOrEqual(BREW_MAX_DURATION);
+    }
+  });
+
+  it('drinking each Elixir wears its condition', () => {
+    for (const [reagent, id] of Object.entries(GRANTED)) {
+      const g = fresh();
+      shelf(g);
+      brew(g.state, g.bus, lay('spring_water', reagent));
+      expect(useFlask(g.state, g.bus, 0)).not.toBeNull();
+      expect(hasStatus(g.state, id), id).toBe(true);
+    }
+  });
+});
+
+describe('cures that work', () => {
+  /** Brew and use a Mendroot Salve (settled oil) on a player carrying `held`. */
+  function applySalve(held: StatusApplication[]) {
+    const g = fresh();
+    shelf(g);
+    for (const app of held) applyStatus(g.state, g.state, app, 'test');
+    brew(g.state, g.bus, lay('pressed_oil', 'mendroot'));
+    expect(g.state.flasks).toHaveLength(1);
+    expect(resolveBrew(g.state.flasks[0]).form).toBe('salve');
+    expect(useFlask(g.state, g.bus, 0)).not.toBeNull();
+    return g;
+  }
+
+  it('the tags Mendroot emits are the ones the conditions listen for', () => {
+    expect(REAGENTS.mendroot.essence!.cures).toEqual(['poison', 'bleed']);
+    const listens = (id: string, tag: string) =>
+      (STATUSES[id].removal ?? []).some((r) => r.on === 'cure' && r.tag === tag);
+    expect(listens('poison', 'poison')).toBe(true);
+    expect(listens('rotting', 'poison')).toBe(true);
+    expect(listens('bleeding', 'bleed')).toBe(true);
+    // A laceration answers treatment (the salve's heal), not the cure: one rung a flask.
+    expect(listens('lacerated', 'bleed')).toBe(false);
+  });
+
+  it('a brewed salve removes a held poison', () => {
+    const g = applySalve([{ id: 'poison', intensity: 2 }]);
+    expect(hasStatus(g.state, 'poison')).toBe(false);
+  });
+
+  it('...and a held bleed', () => {
+    const g = applySalve([{ id: 'bleeding', intensity: 1 }]);
+    expect(hasStatus(g.state, 'bleeding')).toBe(false);
+  });
+
+  it('a rot eases to poison: one rung a flask, and the next flask ends it', () => {
+    const rot = applySalve([{ id: 'rotting', intensity: 1 }]);
+    expect(hasStatus(rot.state, 'rotting')).toBe(false);
+    expect(hasStatus(rot.state, 'poison')).toBe(true);
+
+    // The cure alone fires one rung each time it is spoken.
+    const again = fresh();
+    applyStatus(again.state, again.state, { id: 'rotting', intensity: 1 }, 'test');
+    fireStatusEvent(again.state, again.state, 'cure', { tag: 'poison' });
+    expect(hasStatus(again.state, 'poison')).toBe(true);
+    fireStatusEvent(again.state, again.state, 'cure', { tag: 'poison' });
+    expect(hasStatus(again.state, 'poison')).toBe(false);
+  });
+
+  it('a laceration eases to a bleed in ONE flask, not two: the next flask closes it', () => {
+    // A Mendroot Salve is treatment (heal kind 'salve') and cure at once. The
+    // cure goes first and names no laceration; the heal then eases it one rung.
+    // Were the heal first, the bleed it leaves would meet the cure and close:
+    // two rungs, against what the tooltip and BREWING.md promise.
+    const cut = applySalve([{ id: 'lacerated', intensity: 1 }]);
+    expect(hasStatus(cut.state, 'lacerated')).toBe(false);
+    expect(hasStatus(cut.state, 'bleeding')).toBe(true);
+
+    // A second salve (flasks share one clock) closes what is left.
+    cut.state.totalTicks += 1000;
+    brew(cut.state, cut.bus, lay('pressed_oil', 'mendroot'));
+    expect(useFlask(cut.state, cut.bus, 0)).not.toBeNull();
+    expect(hasStatus(cut.state, 'bleeding')).toBe(false);
+  });
+
+  it('the cure alone does nothing to a laceration (it answers treatment)', () => {
+    const cut = fresh();
+    applyStatus(cut.state, cut.state, { id: 'lacerated', intensity: 1 }, 'test');
+    fireStatusEvent(cut.state, cut.state, 'cure', { tag: 'bleed' });
+    expect(hasStatus(cut.state, 'lacerated')).toBe(true);
+  });
+
+  it('leaves what it does not name alone', () => {
+    const g = applySalve([{ id: 'on_fire', intensity: 1 }, { id: 'poison', intensity: 1 }]);
+    expect(hasStatus(g.state, 'poison')).toBe(false);
+    expect(hasStatus(g.state, 'on_fire')).toBe(true);
+  });
+});
+
+describe('only the Salve treats a wound', () => {
+  /** Brew and use this sequence on a player at 1 HP who is bleeding. */
+  function bleedingWith(...ids: string[]) {
+    const g = fresh();
+    shelf(g);
+    g.state.resources.hp = 1;
+    applyStatus(g.state, g.state, { id: 'bleeding', intensity: 1 }, 'test');
+    brew(g.state, g.bus, lay(...ids));
+    expect(useFlask(g.state, g.bus, 0)).not.toBeNull();
+    return g;
+  }
+
+  it('a Draught restores health but closes nothing', () => {
+    expect(seq('spring_water', 'quicksilver', 'mendroot').form).toBe('draught');
+    const g = bleedingWith('spring_water', 'quicksilver', 'mendroot');
+    expect(g.state.resources.hp).toBeGreaterThan(1);
+    expect(hasStatus(g.state, 'bleeding')).toBe(true);
+  });
+
+  it('a Salve restores health and closes the wound', () => {
+    const g = bleedingWith('pressed_oil', 'mendroot');
+    expect(g.state.resources.hp).toBeGreaterThan(1);
+    expect(hasStatus(g.state, 'bleeding')).toBe(false);
+  });
+
+  it('a Draught leaves a laceration as it found it', () => {
+    const g = fresh();
+    shelf(g);
+    g.state.resources.hp = 1;
+    applyStatus(g.state, g.state, { id: 'lacerated', intensity: 1 }, 'test');
+    brew(g.state, g.bus, lay('spring_water', 'quicksilver', 'mendroot'));
+    useFlask(g.state, g.bus, 0);
+    expect(hasStatus(g.state, 'lacerated')).toBe(true);
+    expect(hasStatus(g.state, 'bleeding')).toBe(false);
   });
 });

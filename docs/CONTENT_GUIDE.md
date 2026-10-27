@@ -337,6 +337,9 @@ frost_wraith: {
   desc: 'Field-notes flavour, revealed by the bestiary’s Field Notes fact.',
   tier: 'elite',            // basic|veteran|elite|ancient|legendary|mythic|divine
                             // → stat multiplier ROLLED in the tier's range + reward mult
+                            // → and the penetration its conditions apply with (TIERS)
+  penetration: 0,           // optional: overrides the tier's. Floors 1-3 must be 0
+                            // (linted); it only moves the 100% immunity line
   damageType: 'cold',       // what its attacks count as (player resistances apply)
   passive: true,            // optional: harmless — it swings, you can dodge and
                             // brace, but nothing it does lands (training dummy)
@@ -1154,6 +1157,10 @@ first_blade: {
   passive: [{ stat: 'damage', op: 'mult', value: 0.03 }],      // forever, once earned
   equipped: [{ stat: 'damage', op: 'mult', value: 0.08 }],     // only while worn
   // secret: true,  → hidden from the Titles list until earned
+  // immune: { ids: ['queasy'] },   → once earned, these conditions never land
+  //   on you (same shape as StatusDef.immune; passive, not only while worn;
+  //   may not name an `unresistable` condition). Say it in `desc`: the title
+  //   list prints only passive and worn modifiers.
 },
 ```
 
@@ -1510,11 +1517,35 @@ for the reason it resists a bolt, and a `soaked` death knight is no longer
 immune to poison. `statuses.ts` cannot import that module, so `monsterStats.ts`
 registers it at load (`setMonsterResistanceReader`). For the player it is the
 pre-cap record `computeDerivedStats` leaves on the stat block, because
-`resistCap` (0.75) holds the stat itself under 1. A condition's damage ticks
-on a monster still read the narrower declared-plus-mods value. `applyStatus` takes the
-applier's penetration as its last argument: the player's stat where the player
-inflicts, the flask's own where a flask does, 0 everywhere else. Monsters have no
-penetration stat.
+`resistCap` (0.75) holds the stat itself under 1.
+
+**A condition's damage ticks read the damage path's own figure instead**, since
+a tick is damage and the cap holds damage under 1: a player's
+`resistBlock(stats)` (the type's resistance plus `resElemental`, held at their
+`resistCap`, what `incomingSlice` stacks) and a monster's
+`monsterDamageResistance` (what `monsterSlice` stacks: tag-derived innate value,
+conditions' mods, overrides, floors and `resElemental`, held at its cap), handed
+over by a second reader (`setMonsterDamageResistanceReader`). A tick therefore
+sheds what a blow of the same type would. The narrower declared-plus-mods
+reading survives only as the fallback for a tool that never loads
+`monsterStats.ts`.
+
+`applyStatus` takes the applier's penetration as its last argument: the player's
+stat where the player inflicts, the flask's own where a flask does, a monster's
+where a monster inflicts on the player (below), 0 everywhere else.
+
+**Monster penetration.** `TierDef.penetration` (`TIERS`, monsters.data.ts) is
+what a monster of that tier applies conditions with, and `MonsterDef.penetration`
+overrides it for one species (0 is the explicit "none"). `monsterPenetration`
+(monsterStats.ts) resolves it and every monster-to-player application passes it:
+a monster's attack riders, a working's strike riders and `afflicts`, a
+counterspell's manaburn. Floors 1 to 3 (and the tutorial floor under them) apply
+conditions with none: `penetrationProblems` fails, in both validation layers, any
+species that can appear there (encounter, escort or dare) and resolves above 0.
+The table today is basic, veteran and elite 0 (the floor 3 boss is an elite),
+ancient 0.15, legendary 0.25, mythic 0.35, divine 0.5. Band 2 has no content, so
+only 0.15 is anchored; a band 2 species authored below ancient needs its own
+`penetration: 0.15`.
 
 `immune: { elements?, ids? }` is the explicit form: while the bearer holds a
 status that has it, matching applications are refused (checked beside
@@ -1522,20 +1553,41 @@ status that has it, matching applications are refused (checked beside
 would land, `immune` on the one that protects). Monsters can wear it
 (`MonsterDef.wears`). It refuses applications only; a condition already held
 stays, and an escalation into a refused condition drops the old one with
-nothing in its place.
+nothing in its place. A title can confer it too (`TitleDef.immune`, same shape):
+Iron Stomach, earned by eating 25 spoiled dishes, refuses `queasy` for good.
 
-Where escalation is measured in **depth** (`sum`, `highest`, `absorb` — 14 of
-the 16 element-bearing conditions) resistance raises applications-to-escalation
+**`unresistable: 'reason'` is the other answer.** Every harmful condition
+(`isHarmful`, conditionHarm.ts: it damages, drains, seals off, forbids or
+worsens something) says what resists it: an `element`, or `unresistable`, never
+both (`resistanceProblems`, both validation layers). Ten are exempt by design:
+`fasting` (a unique rule), `flat_footed` and `surprised` (states), the three
+`toll_*` phases of the Toll Collector fight, and `doused`, `psionic_compression`,
+`psionic_read` and `unfolded` (ruled no resistance, 2026-10-24). `applyStatus`
+lands such a condition in full whatever the bearer's stats, and no `immune.ids`
+(on a condition or a title) may name one, so a phase cannot be switched off.
+The reason is for the next author; the tooltip says "Cannot be resisted".
+
+The tooltip of a held condition carries one line: "Resisted by: Poison
+resistance 12%" with the real total, before any cap (so it may read above 100%);
+"Immune (Poison resistance 112%)" when that figure reaches 100%, or just
+"Immune" when an `immune` rule refuses it; "Cannot be resisted" for an
+unresistable one. Buffs say nothing (`conditionResistance`, statuses.ts).
+
+Where escalation is measured in **depth** (`sum`, `highest`, `absorb` — most of
+the element-bearing conditions) resistance raises applications-to-escalation
 directly. Where it is measured in **count** (`bleeding`) or **duration**
 (`dazzled`) it deliberately does not: the number of applications IS the mechanic
 in those two, so scaling depth must not move it.
 
-⚠️ **Omit `element` for anything a body does to itself.** All 37 conditions
-carrying one today are afflictions, and every self-granted buff is elementless —
+⚠️ **Omit `element` for anything a body does to itself.** Every condition
+carrying one is an affliction, and every self-granted buff is elementless —
 that absence is the authoring, not an oversight. You do not resist your own
 steadying hand. The day a *beneficial* condition wants an `element`, the fix is
 to stop passing the player's stat block at `spec.grants` sites, not to weaken
-the rule; see the note on `applyStatus`.
+the rule; see the note on `applyStatus`. The one grant that IS an affliction is
+spoiled food: `queasy` carries poison, and `useConsumable` passes the stat block
+for a refuse-grade dish and for any harmful grant (only the failure dish may
+carry one), so poison resistance thins it.
 
 **A `duration` is wall-clock time, not screen time.** While the bearer is out
 cold the clock runs at `UNCONSCIOUS_CLOCK_RATE` (5×, in `systems/actions.ts`),
@@ -1592,7 +1644,18 @@ remembered between fights).
 > **Watch the heal kinds.** A bare `{ on: 'heal' }` fires on the passive trickle
 > the player gets from working quietly, so a wound would close itself one tick
 > after a fight. If it should need real treatment, say
-> `healKinds: ['rest', 'salve', 'spell']`.
+> `healKinds: ['rest', 'salve', 'spell']`. A brewed Draught heals as kind
+> `draught`, which no rule names: only the Salve form (and a `healing_salve`)
+> closes a wound.
+
+**Cure tags.** A `cure` event carries a tag, and a rule answers only its own:
+`poison` and `bleed` are what alchemy's Mendroot Salve emits, so `poison`
+(remove), `rotting` (back to poison) and `bleeding` (remove) listen for theirs;
+`corrupted` waits on `cleansing`. `lacerated` listens for treatment only. A
+Mendroot Salve is both (its heal is kind `salve`), and the flask is one rung:
+`swallow` fires the cure BEFORE the heal, so the heal eases a laceration to a
+bleed and the cure never meets that bleed. Do not reorder them, and do not give
+`lacerated` a cure rule: either makes one flask close a laceration outright.
 
 **Other fields:** `ceilings` seal off part of a pool; `ceilingFromSpend` eats a
 share of what you spend from one; `ceilingPerTick` widens a wound for as long as

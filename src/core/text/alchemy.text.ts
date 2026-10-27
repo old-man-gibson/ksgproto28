@@ -13,15 +13,15 @@ export const REAGENTS_TEXT: ProseTable = {
 
   'emberbloom.desc': 'Essence: Ember, heat, power 3.2. Inflicts On Fire in a Flask or Oil. No effect in drinkable forms.',
 
-  'frostmoss.desc': "Essence: Rime, cold, power 2.8. Inflicts Chilled in a Flask, Fume or Oil; grants Xima's Rime in an Elixir.",
+  'frostmoss.desc': "Essence: Rime, cold, power 2.8. Inflicts Chilled in a Flask, Fume or Oil; grants Frosted in an Elixir.",
 
   'nightcap.desc': 'Essence: Venom, poison, power 3.4. Inflicts Poisoned in a Flask, Fume or Oil. Alchemy 3.',
 
-  'gloomcap.desc': 'Essence: Gloom, dark, power 2.6. Inflicts Dazzled in a Flask, Fume or Oil; grants Veiled in an Elixir. Alchemy 6.',
+  'gloomcap.desc': 'Essence: Gloom, dark, power 2.6. Inflicts Dazzled in a Flask, Fume or Oil; grants Concealed in an Elixir. Alchemy 6.',
 
   'mendroot.desc': 'Essence: Mending, power 2.6. Restores 3.2 HP per potency in a Draught or Salve; grants Well Fed in an Elixir; cures poison and bleed in a Salve.',
 
-  'bloodwort.desc': 'Essence: Vigor, power 2.4. Restores 2.6 stamina per potency in a Draught or Salve; grants Blood Communion in an Elixir. Alchemy 5.',
+  'bloodwort.desc': 'Essence: Vigor, power 2.4. Restores 2.6 stamina per potency in a Draught or Salve; grants Invigorated in an Elixir. Alchemy 5.',
 
   'thunderbloom.desc': 'Essence: Storm, lightning, power 3.0. Inflicts Jolted in a Flask, Fume or Oil; restores 1.6 mana per potency in a Draught or Salve; grants Clear-Headed in an Elixir. Alchemy 9.',
 
@@ -40,9 +40,9 @@ export const REAGENTS_TEXT: ProseTable = {
 export const BREW_FORMS_TEXT: ProseTable = {
   'elixir.desc': "Calm water brew. Drink. Grants the essences' buffs for the duration (45 seconds, longer with Fixing Salt). Does not restore.",
 
-  'draught.desc': "Roused water brew. Drink. Restores at once from the essences' restore values. Does not grant conditions.",
+  'draught.desc': "Roused water brew. Drink. Restores at once from the essences' restore values. Does not grant conditions, cure, or close wounds.",
 
-  'salve.desc': 'Calm oil brew. Apply. Restores at once. The only form that cures.',
+  'salve.desc': 'Calm oil brew. Apply. Restores at once. The only form that cures, and the only one that counts as treatment for wounds such as Bleeding.',
 
   'oil.desc': "Roused oil brew. Coat your drawn weapon. Lasts 3 + potency × 0.8 blows (max 12); each blow adds typed damage and applies the essences' afflictions. A second oil replaces the first.",
 
@@ -57,7 +57,7 @@ export const BREW_FORMS_TEXT: ProseTable = {
 export const BREW_FORMULAS_TEXT: ProseTable = {
   'smoulder_flask.desc': 'Grain Spirit, Quicksilver, Emberbloom, Brimstone. Spirit and quicksilver put volatility past 1.2, so the brimstone ignites: a Flask of about 13 heat damage plus On Fire at Fair grade.',
 
-  'thief_draught.desc': 'Spring Water, Gloomcap, Fixing Salt. An Elixir granting Veiled (×0.65 at Fair grade) for 45 seconds. The salt has no effect: nothing roused the brew.',
+  'thief_draught.desc': 'Spring Water, Gloomcap, Fixing Salt. An Elixir granting Concealed (×0.65 at Fair grade) for 45 seconds. The salt has no effect: nothing roused the brew.',
 
   'field_salve.desc': 'Pressed Oil, Mendroot, Mendroot, Fixing Salt. A Salve: about 19 HP at Fair grade, and cures poison and bleed. The salt has no effect: nothing roused the brew.',
 

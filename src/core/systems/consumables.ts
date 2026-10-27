@@ -84,6 +84,12 @@ import { text } from '../text/log';
 /** What eating something spoiled does to you, whatever it was meant to be. */
 export const SPOILED = 'queasy';
 
+/**
+ * Spoiled dishes eaten so far (`isSpoiledFood`), a persistent counter in
+ * `state.stats`. The hidden title Iron Stomach reads it.
+ */
+export const SPOILED_EATEN_KEY = 'food:spoiled';
+
 export function consumableSpec(id: string): ConsumableSpec | undefined {
   return MATERIALS[id]?.consumable;
 }
@@ -314,11 +320,24 @@ export function useConsumable(
   // (which would make eating rubbish merely pointless) it replaces whatever the
   // dish meant to do with the consequences of having eaten it.
   if (scale < 0) {
-    const inst = applyStatus(state, state, { id: SPOILED, intensity: -scale }, def.name);
+    // Spoilage is something done TO the eater, so the stat block goes in and
+    // poison resistance thins it (applyStatus documents the one exception to
+    // "a grant is not resisted").
+    const inst = applyStatus(state, state, { id: SPOILED, intensity: -scale }, def.name, stats);
     if (inst) result.granted.push(inst.id);
   } else {
     for (const app of spec.grants ?? []) {
-      const inst = applyStatus(state, state, eatenApplication(app, scale, food), def.name);
+      // Only the failure dish may grant harm (the Scorched Mess grants the
+      // spoilage condition); that is done to the eater too, where nourishment
+      // is not resisted.
+      const granted = STATUSES[app.id];
+      const inst = applyStatus(
+        state,
+        state,
+        eatenApplication(app, scale, food),
+        def.name,
+        granted && isHarmful(granted) ? stats : undefined,
+      );
       if (inst) result.granted.push(inst.id);
     }
     // A Signature rides along once the dish has been cooked enough times
@@ -363,5 +382,23 @@ export function useConsumable(
       })
     : text('consumables.used', { icon: def.icon, verb, grade: grade.name, name: def.name });
   bus.emit({ type: 'log', msg, kind: scale < 0 ? 'danger' : 'action' });
+
+  // Bad food eaten is counted whether or not the sickness landed (a resistant or
+  // immune eater still ate it). Titles do not watch stats, so ask them.
+  if (isSpoiledFood(spec, scale)) {
+    bumpStat(state, bus, SPOILED_EATEN_KEY);
+    checkTitleUnlocks(state, bus);
+  }
   return result;
+}
+
+/**
+ * Whether eating this was eating something spoiled: a dish at refuse grade
+ * (a negative multiplier, whatever it was meant to be) or the failure dish, the
+ * one dish that grants the spoilage condition outright (the Scorched Mess).
+ * Food only: a refuse-grade salve is not a meal. Read from the dish's data, so
+ * a second failure dish counts without being listed.
+ */
+export function isSpoiledFood(spec: ConsumableSpec, scale: number): boolean {
+  return !!spec.food && (scale < 0 || !!spec.grants?.some((g) => g.id === SPOILED));
 }

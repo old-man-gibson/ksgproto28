@@ -794,10 +794,27 @@ function swallow(state: GameState, bus: EventBus, spec: BrewSpec): void {
   const stats = getDerivedStats(state);
   const gained: string[] = [];
 
+  // The cure goes first. A Salve is also treatment (its heal is kind 'salve'),
+  // and if the heal went first it would ease a laceration to a bleed that the
+  // cure, arriving after, would then close: two rungs from one flask. Cured
+  // first, a laceration (which no cure names) is left for the heal to ease one
+  // rung, and a bleed is closed by whichever comes first.
+  const cured: string[] = [];
+  for (const tag of spec.cures) {
+    const before = statusesOf(state).map((s) => s.id);
+    fireStatusEvent(state, state, 'cure', { tag });
+    const after = new Set(statusesOf(state).map((s) => s.id));
+    for (const id of before) {
+      if (!after.has(id)) cured.push(`cured ${STATUSES[id]?.name ?? id}`);
+    }
+  }
+
   for (const r of spec.restore) {
     if (r.amount <= 0) continue;
     const before = state.resources[r.resource];
-    if (r.resource === 'hp') heal(state, stats, r.amount, 'salve');
+    // Only the Salve is applied to a wound. A Draught heals as much but closes
+    // nothing: wound removal rules listen for 'salve' and no other brew kind.
+    if (r.resource === 'hp') heal(state, stats, r.amount, spec.form === 'salve' ? 'salve' : 'draught');
     else restoreResource(state, stats, r.resource, r.amount);
     const got = Math.round(state.resources[r.resource] - before);
     if (got > 0) gained.push(`+${got} ${RESOURCES[r.resource].name}`);
@@ -806,14 +823,7 @@ function swallow(state: GameState, bus: EventBus, spec: BrewSpec): void {
     const inst = applyStatus(state, state, app, spec.name);
     if (inst) gained.push(STATUSES[inst.id]?.name ?? inst.id);
   }
-  for (const tag of spec.cures) {
-    const before = statusesOf(state).map((s) => s.id);
-    fireStatusEvent(state, state, 'cure', { tag });
-    const after = new Set(statusesOf(state).map((s) => s.id));
-    for (const id of before) {
-      if (!after.has(id)) gained.push(`cured ${STATUSES[id]?.name ?? id}`);
-    }
-  }
+  gained.push(...cured);
 
   bus.emit({
     type: 'log',

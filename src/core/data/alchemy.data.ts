@@ -75,7 +75,7 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
       power: 2.8,
       type: 'cold',
       inflicts: [{ id: 'chilled', intensity: 1 }],
-      grants: [{ id: 'ximas_rime', intensity: 1 }],
+      grants: [{ id: 'frosted', intensity: 1 }],
     },
   },
   nightcap: {
@@ -104,7 +104,7 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
       inflicts: [{ id: 'dazzled', intensity: 1 }],
       // The invisibility line: a brew of it does not stop blows, it stops
       // being found.
-      grants: [{ id: 'veiled', intensity: 1 }],
+      grants: [{ id: 'concealed', intensity: 1 }],
     },
   },
   mendroot: {
@@ -130,7 +130,7 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
       name: 'Vigor',
       power: 2.4,
       restore: [{ resource: 'stamina', per: 2.6 }],
-      grants: [{ id: 'blood_communion', intensity: 1 }],
+      grants: [{ id: 'invigorated', intensity: 1 }],
     },
   },
   thunderbloom: {

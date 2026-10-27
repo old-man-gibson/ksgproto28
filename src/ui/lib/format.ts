@@ -25,13 +25,13 @@ import type {
   StatusInstance,
   StatusRemoval,
 } from '../../core/types';
-import { DAMAGE_TYPE_NAMES, RES_STAT_BY_TYPE, STAT_NAMES, runeRiders } from '../../core/types';
+import { DAMAGE_TYPE_NAMES, isMonsterBearer, RES_STAT_BY_TYPE, runeRiders, STAT_NAMES } from '../../core/types';
 import { RESOURCES } from '../../core/data/resources.data';
 import { TPS } from '../../core/engine/loop';
 import { ATTRIBUTE_LIST } from '../../core/data/attributes.data';
 import { BASE_SPEED, getDerivedStats, statBreakdown } from '../../core/systems/derived';
 import { monsterStats } from '../../core/systems/monsterStats';
-import { escalationPrimed } from '../../core/systems/statuses';
+import { conditionResistance, escalationPrimed } from '../../core/systems/statuses';
 import {
   attrBreakdown,
   attrName,
@@ -1158,6 +1158,7 @@ export function statusTipLines(
     lines.push(`— ${describeMod({ ...mod, value: mod.value * held.intensity })}`);
   }
   if (def.immune) lines.push(`— ${immuneText(def.immune)}`);
+  lines.push(...resistanceTipLines(bearer, def));
   for (const c of def.ceilings ?? []) {
     const sealed = Math.min(c.max ?? 1, c.per * held.intensity);
     lines.push(`— ${pct(sealed)} of your ${RESOURCES[c.resource]?.name ?? c.resource} is closed off`);
@@ -1228,6 +1229,26 @@ export function statusTipLines(
 }
 
 /**
+ * What resists this condition on this bearer, in one line, or none for a
+ * condition nothing resists by design (a buff). The total is the figure the
+ * game's immunity test reads, before any cap, so it can read above 100%.
+ */
+export function resistanceTipLines(bearer: GameState | MonsterInstance, def: StatusDef): string[] {
+  const reading = conditionResistance(bearer, def, isMonsterBearer(bearer) ? undefined : getDerivedStats(bearer));
+  switch (reading.kind) {
+    case 'unresistable':
+      return ['— Cannot be resisted'];
+    case 'resisted': {
+      const what = `${DAMAGE_TYPE_NAMES[reading.element]} resistance ${pct(reading.total)}`;
+      if (!reading.immune) return [`— Resisted by: ${what}`];
+      return [reading.total >= 1 - 1e-9 ? `— Immune (${what})` : '— Immune'];
+    }
+    default:
+      return [];
+  }
+}
+
+/**
  * The bearer's maximum health, from whichever side of the fight it is on.
  * Used to say what a surplus ledger is worth against the body carrying it.
  */
@@ -1256,6 +1277,6 @@ function describeRemoval(rule: StatusRemoval): string {
     case 'combatEnd':
       return `${what} when the fight ends`;
     case 'cure':
-      return `${what} with ${rule.tag ?? 'a cure'}`;
+      return `${what} with ${rule.tag ? `a ${rule.tag} cure` : 'a cure'}`;
   }
 }
