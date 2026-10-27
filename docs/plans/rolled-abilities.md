@@ -26,6 +26,12 @@ done:
 
 # What this is
 
+**Parked 2026-10-27.** The user was not convinced by the generated examples
+("I see the logic you go for and I'm just not feeling it"). Abilities are
+hand-authored in plain English first, in [ABILITY_IDEAS.md](../ABILITY_IDEAS.md);
+a later system has to be able to build those entries. The rulings below still
+hold for any system.
+
 The user's ask (2026-10-27): a unique-ability system that produces a large
 range of abilities, mostly by luck, later also from the player's play, with
 minimal authored content, so players discover an ability that is "quite unique"
