@@ -15,7 +15,7 @@ invariants:
   - player-only-carve-out
   - proc-cap
 done:
-  - An Awakening offers a draft of rolled abilities; the pick is stored as a recipe plus its compiled AbilityDef, and reloading shows the same draft
+  - One ability per run is rolled at an early discovery moment and stored as a recipe plus its compiled AbilityDef; reloading rolls the same ability
   - Every recipe the tables can produce compiles and passes the chassis validators (an enumeration test over the finite recipe space), and deserialize re-validates stored defs
   - A source atom whose event or tag this save cannot produce rolls at weight 0
   - A payload that points at the player's own spell, flask or miracle pays that content's own price through the rotation's affordability gate, and falls back to a basic attack when unaffordable
@@ -141,8 +141,8 @@ interface AbilityRecipe {
 | edit | burst: reveal the front enemy's stats, then lower one attribute for the rest of the fight | burst output `edit { attr, by }`, floor 0 | ~70 |
 | summon | an ally in a new player-side slot; policy random or fixed; lifetime counted in actions | `CombatState.allies` (no save change: combat is dropped on save) | ~280 |
 | field | an encounter-scoped zone that adds an escalating mark to enemies per event; a full mark kills through `onKill` | `CombatState.field`; threshold scales with max HP | ~200 |
-| lie | see open question 2 | — | — |
-| overcap | see open question 1 | — | — |
+| lie | burst: a stated claim; the target makes a save; on a failure a native `lie:*` condition becomes real, on a success nothing happens | save roll, lie conditions | ~150 |
+| overcap | the ability unlocks an overcap rite on equipment: rising cost, break chance rising with overshoot, a break destroys the item and all it consumed | item field + fingerprint entry, smithing hook | ~180 |
 | mode: deck | replaces `pickActive` while worn: deck, hand, lands, graveyard | its own epic; singular tier only, from a closed list of authored modes | 600–900 |
 
 **Sources**: engaged seconds, technique landed, unarmed hit (a new `bumpStat`
@@ -195,9 +195,9 @@ Objection 6, accepted. There is one RNG (engine/rng.ts) and no
 | 5 | Sun charge | empower | sunlight | passive | env dependency to −30% | — | chassis + Solar story |
 | 6 | Stat Breaker | edit | engaged seconds | burst | high cost + long cooldown | — | edit card; "permanently" becomes "for this fight" (instances are per-fight) |
 | 7 | Amalgam | summon → summon (chain) | allyDeath, stats as payload | threshold | no feed-forward | your summons | summon card + a vector gauge |
-| 8 | Overforge | overcap | resources sunk | out-of-combat action | ruin on failure | equipped item | open question 1 |
+| 8 | Overforge | overcap | resources sunk | out-of-combat action | ruin on failure | equipped item | overcap card; state lives in the item |
 | 9 | Coins | gamble + skew | skill level | burst | penalties are real | — | gamble card + skew |
-| 10 | Lies | lie | daily charge | burst (manual) | very high cost, backfire | — | open question 2 |
+| 10 | Lies | lie | daily charge | burst (manual) | very high cost; the target saves | — | lie card |
 
 Honest count (objection 3, accepted): examples 1, 5 and 6 are table fills on
 the chassis. The other seven each need a verb card. "Minimal authored content"
@@ -207,30 +207,18 @@ verb exists when its card ships, never before.
 
 # Mockups
 
-The Awakening (a quest per run; draft of three):
+The discovery (once per run, early; the ability is fixed for the run):
 
 ```
-AWAKENING                                   run 3 · draft 1 of 1
-pick one. the other two are discarded.
+AWAKENING                                   run 3
 
-[1] SALT FIELD                     uncommon   budget 6/6
+    SALT FIELD                     uncommon   budget 6/6
     verb     field: enemies gain salt per unarmed hit
     source   unarmed hit
     fill     mark at 40% of max HP → killed (normal loot)
     twist    none
 
-[2] GRAVE CHOIR                    rare       budget 8/8
-    verb     summon: a ghost acts once, then is gone
-    source   engaged seconds, 1 ghost per 12s
-    binding  your grimoire (pays its own mana)
-    twist    self-harm 2% HP per ghost
-
-[3] SOLAR SURGE                   uncommon   budget 6/6
-    verb     empower: +power by sun charge
-    source   sunlight
-    twist    env dependency: −30% at 0 charge
-
-seed: fixed for this run · reload shows the same three
+fixed for this run · reload rolls the same ability · [ rename ]
 ```
 
 The ability card, once worn:
@@ -305,9 +293,9 @@ From the brainstorm, kept so phase 2 starts from something:
 | 2 | Rolled defs skip both validation layers | Accepted: enumeration test + re-validate on load |
 | 3 | The grammar is a label; seven bespoke runtimes | Accepted: verbs are cards, and the enumeration test is the cut line |
 | 4 | A roll can land on a source the save never fires | Accepted: feasibility predicate, weight 0 |
-| 5 | Overforge is permanent item state outside the slot | To the user (open question 1) |
+| 5 | Overforge is permanent item state outside the slot | User: the upgrade lives in the item; stacking accepted (one ability per run removes swapping) |
 | 6 | No favourability choke point; direness is player-held | Accepted: skew inside `procRate`, under the cap |
-| 7 | Lies duplicate divine | To the user (open question 2) |
+| 7 | Lies duplicate divine | User: lies are player-exclusive abilities; the target saves or the lie becomes real |
 | 8 | Allies leave the carve-out when a gene uses them | Accepted: summon is ability-only until it is built bearer-agnostic |
 
 Also verified by the attack: no terminal states; `onKill` is the one kill
@@ -315,20 +303,17 @@ path (combat.ts:1525-1600), so a salt kill pays loot as normal; instance edits
 floor at 1 HP, and rewards stay on the instance. The chassis card's "save v55"
 is stale: `SAVE_VERSION` is 57.
 
-# Open for the user
+# Settled with the user (2026-10-27)
 
-1. **Overforge**: on the chassis (a gauge of resources sunk; a break zeroes
-   the gauge; the bonus ends when unworn) or a smithing rite (the item itself
-   goes past temper with a break chance; permanent; not an ability)?
-2. **Lies**: native (the target contests the claim, a failed lie backfires,
-   3–5 native `lie:*` conditions) or a trickster deity's miracles?
-3. **Allies**: can enemies hit them? Default: summons with HP are targetable;
-   one-action ghosts are not.
-4. Draft of three, or a single roll? Default: three.
-5. Calorie, Solar and WWM: do they stay quest-earned authored abilities that
-   also compile on this grammar (as an acceptance test)? Default: yes.
-6. Player renaming of a rolled ability? Default: yes, cosmetic.
-7. One Awakening per run, or more (prestige boons for a second draft or a
-   reroll)? Default: one.
-8. Build order: chassis → generator core with empower, gamble and edit →
-   summon → field → lie/overcap → deck epic → the read. Veto or reorder.
+| Question | Answer |
+|---|---|
+| Overforge | **Lives in the item itself; the ability only makes it possible.** The upgrade is permanent item state, the item can break past its bounds and every resource sunk is lost. Consequence: the item field enters `modFingerprint` (PITFALLS §4), and the overcap rite sits next to temper in smithing (blueprint-weaponsmithing.md) and is gated on the ability. |
+| Lies | **Exclusive to the player.** The target makes a save; on a failure the lie becomes real, on a success nothing happens. No backfire, not divine content. Native `lie:*` conditions. |
+| Allies | **Enemies can hit them.** |
+| How many | **One ability per run, a single roll, discovered early.** The player is stuck with it for the run. There is no draft, no swap and no unworn state, so the chassis's settle-only rules and swap refusals have nothing to guard within a run. |
+| Calorie, Solar, WWM | **Acceptance tests**: the grammar must be able to build them. They are not separate quest rewards in this model. |
+| Renaming | Yes, cosmetic. |
+| Awakenings per run | One. |
+| Build order | Manager's call: chassis (trimmed for one fixed ability per run) → generator core with empower, gamble, edit → summon → field → lie → overcap → deck epic → the read. |
+
+Open after this round: whether the prestige keep boon (unique-abilities.md, user 2026-09-26) survives "one per run, stuck with it"; when "early" is (the discovery moment); the rarity odds.
