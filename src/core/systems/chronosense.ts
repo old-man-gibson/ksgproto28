@@ -2,7 +2,7 @@ import type { GameState } from '../types';
 import type { EventBus } from '../engine/events';
 import { checkDiscovery, grantSkillXp } from './skills';
 import { TICKS_PER_GAME_MINUTE, WEEKDAYS } from '../data/climate.data';
-import { formatDate, formatTime, TICKS_PER_DAY, type WorldClock } from './clock';
+import { formatDate, formatMoon, formatTime, TICKS_PER_DAY, type WorldClock } from './clock';
 
 /**
  * Chronosense: the body keeping its own calendar.
@@ -130,4 +130,18 @@ export function describeTimeSense(clock: WorldClock, level: number): string | nu
     if (clock.holyDay) parts.push('a holy day');
   }
   return parts.join(' · ');
+}
+
+/**
+ * The moons as this player can read them, one line per moon. Nothing below
+ * season-sense; the phase names from there, since moons and seasons are both
+ * read off the sky rather than counted; the day inside each cycle from
+ * date-sense, the tier that counts days.
+ *
+ *   L4  "Middle Moon: waxing gibbous"
+ *   L16 "Middle Moon: waxing gibbous (day 12 of 28)"
+ */
+export function describeMoons(clock: WorldClock, level: number): string[] {
+  if (level < SENSE_LEVELS.season) return [];
+  return clock.moons.map((m) => formatMoon(m, level >= SENSE_LEVELS.date));
 }

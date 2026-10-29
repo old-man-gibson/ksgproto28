@@ -123,7 +123,9 @@ export function weatherExposure(
 // ---------- Darkness ----------
 
 /** How dark the SKY is at this hour: 1 through the night, half at the
- *  twilight fringes, 0 in daylight. Moonless on purpose, for now. */
+ *  twilight fringes, 0 in daylight. Moonlight is not counted: the world has
+ *  three moons (`WorldClock.moons`), but whether they lighten the night is an
+ *  open design question (docs/WEATHER.md, "The moons"). */
 export function naturalDarkness(hour: number): number {
   if (hour >= 20 || hour <= 4) return 1;
   if (hour === 19 || hour === 5) return 0.5;

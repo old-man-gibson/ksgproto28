@@ -37,9 +37,58 @@ preview seed; every save rolls its own sky.
   but re-flavourable.
 
 `clockOf(totalTicks)` returns the whole picture (year, month, day, weekday,
-hour, holy day, season, phase); `formatDate`/`formatTime` render it. On a holy
+hour, holy day, season, phase, moons); `formatDate`/`formatTime` render it. On a holy
 day, `monthIndex`, `dayOfMonth` and `weekday` are all null — those days are
 genuinely outside the system, which is what makes them holy.
+
+## The moons
+
+Three moons (user, 2026-10-29). Data: `MOONS` and `MOON_PHASES` in
+climate.data.ts. State: `WorldClock.moons`, derived like the rest of the clock,
+so there are no save fields and nothing to catch up.
+
+| moon | cycle | size |
+|---|---|---|
+| Large Moon | 79 days | largest |
+| Middle Moon | 28 days | medium |
+| Small Moon | 37 days | smallest |
+
+The names are scaffolding (TODO in the data file), like the months.
+
+- **Moons count month-days.** On a holy day every moon holds the phase it had
+  at the end of the day before, the same way holy days stand outside the week.
+- **The 28-day moon is locked to the month.** Every month opens on its new
+  moon, every year. The holy days land on its four principal phases: Vernal
+  Equinox first quarter, Summer Solstice full, Autumnal Equinox last quarter,
+  Winter Solstice new.
+- **The 37- and 79-day moons drift** against the calendar. All three are new
+  at the epoch (Firstday, 1st of First Month, Year 1) and are all new together
+  again after 28 × 37 × 79 = 81,844 month-days, about 225 years.
+- Each `MoonState` carries `phase` (0..1: 0 new, 0.25 first quarter, 0.5 full,
+  0.75 last quarter, continuous through the day), `age` (whole days into the
+  cycle), `illumination` (lit fraction, 0 at new, 1 at full), `phaseId` and
+  `phaseName`.
+- **Phase names**: new moon, waxing crescent, first quarter, waxing gibbous,
+  full moon, waning gibbous, last quarter, waning crescent. A principal phase
+  (new, the quarters, full) names the one day that starts at its exact
+  moment; the crescents and gibbouses fill the days between. For the 28-day
+  moon that is new on day 1 of the cycle, waxing crescent days 2–7, first
+  quarter day 8, and so on.
+- `cycleDays` is a knob. The month lock holds only while a cycle divides 28;
+  any other value still works, it just drifts.
+- **Where the player reads them**: the header clock chip, as three glyphs drawn
+  at each moon's relative size, from Chronosense **season tier (4)**. Hover
+  names each moon's phase; from **date tier (16)** the hover adds the day of
+  the cycle ("day 12 of 79"). Season tier because moons and seasons are both
+  read off the sky rather than counted; the date tier is the one that counts
+  days. The forge's World Atlas Sky bar shows the same glyphs, with the full
+  line on hover.
+- **The moons change nothing yet.** `naturalDarkness` ignores them, so night
+  darkness, Darkvision training and the night-fighting penalties are as
+  before. If moonlight ever lightens the night, it changes exposure training
+  (the dark tag) and combat, so it needs a ruling first. It would read
+  `illumination` weighted by `size`, keyed on a bucket (not the raw float) for
+  the same memo reason as weather.
 
 ## The weather
 
@@ -87,7 +136,7 @@ variable.
 - The player-facing clock is **Chronosense** (`systems/chronosense.ts`, skill
   `chronosense`): manifests after one lived day, gains XP passively per game
   minute (offline replay included — time away counts), and each precision
-  tier widens the header chip — daypart (1), season (4), hour (8), weekday
+  tier widens the header chip — daypart (1), season and moons (4), hour (8), weekday
   (12), full date (16), exact minute (25). A holy day is *felt* at
   season-tier, *named* at date-tier. Exists for time-gated content: post-
   prestige events and the base's hint system will point at dates, which only

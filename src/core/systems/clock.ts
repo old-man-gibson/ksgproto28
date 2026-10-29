@@ -6,10 +6,15 @@ import {
   HOLY_DAYS,
   HOURS_PER_DAY,
   MINUTES_PER_HOUR,
+  MONTH_DAYS_PER_YEAR,
   MONTHS,
+  MOON_PHASES,
+  MOONS,
   SEASONS,
   TICKS_PER_GAME_MINUTE,
   WEEKDAYS,
+  type MoonDef,
+  type MoonPhaseId,
   type SeasonId,
 } from '../data/climate.data';
 
@@ -19,10 +24,12 @@ import {
  * Nothing about the date is stored anywhere: the tick counter the game
  * already keeps IS the calendar, and offline catch-up replays ticks, so the
  * clock catches up by construction. See data/climate.data.ts for the year's
- * shape (13 × 28 + 4 holy days) and why weekdays never drift.
+ * shape (13 × 28 + 4 holy days) and why weekdays never drift. The moons are
+ * part of the same reading; nothing about them is stored either.
  */
 
-export const TICKS_PER_DAY = TICKS_PER_GAME_MINUTE * MINUTES_PER_HOUR * HOURS_PER_DAY;
+const MINUTES_PER_DAY = MINUTES_PER_HOUR * HOURS_PER_DAY;
+export const TICKS_PER_DAY = TICKS_PER_GAME_MINUTE * MINUTES_PER_DAY;
 export const TICKS_PER_YEAR = TICKS_PER_DAY * DAYS_PER_YEAR;
 
 /** 0-based day-of-year positions of the four holy days. Quarter q's holy day
@@ -55,12 +62,43 @@ export interface WorldClock {
    * number the climate reads; the season label is just its name.
    */
   seasonPhase: number;
+  /** Every moon, in MOONS order. */
+  moons: MoonState[];
+}
+
+export interface MoonState extends MoonDef {
+  /** 0..1 through the cycle: 0 new, 0.25 first quarter, 0.5 full, 0.75 last quarter. */
+  phase: number;
+  /** Whole month-days into the cycle, 0..cycleDays−1. */
+  age: number;
+  /** Lit fraction of the disc, 0 at new, 1 at full. */
+  illumination: number;
+  phaseId: MoonPhaseId;
+  /** 'waxing gibbous' */
+  phaseName: string;
+}
+
+/** One moon at `monthDays` month-days (fractional) since the epoch. */
+function moonOf(moon: MoonDef, monthDays: number): MoonState {
+  const days = monthDays % moon.cycleDays;
+  const quarter = moon.cycleDays / 4;
+  const q = Math.floor(days / quarter);
+  // A principal phase names the one day that starts at its exact moment.
+  const { id, name } = MOON_PHASES[q * 2 + (days - q * quarter < 1 ? 0 : 1)];
+  return {
+    ...moon,
+    phase: days / moon.cycleDays,
+    age: Math.floor(days),
+    illumination: (1 - Math.cos((2 * Math.PI * days) / moon.cycleDays)) / 2,
+    phaseId: id,
+    phaseName: name,
+  };
 }
 
 export function clockOf(totalTicks: number): WorldClock {
   const totalMinutes = Math.floor(totalTicks / TICKS_PER_GAME_MINUTE);
-  const minuteOfDay = totalMinutes % (MINUTES_PER_HOUR * HOURS_PER_DAY);
-  const dayIndex = Math.floor(totalMinutes / (MINUTES_PER_HOUR * HOURS_PER_DAY));
+  const minuteOfDay = totalMinutes % MINUTES_PER_DAY;
+  const dayIndex = Math.floor(totalMinutes / MINUTES_PER_DAY);
   const dayOfYear = dayIndex % DAYS_PER_YEAR;
   const year = Math.floor(dayIndex / DAYS_PER_YEAR) + 1;
 
@@ -76,6 +114,11 @@ export function clockOf(totalTicks: number): WorldClock {
   // midsummer is a day, not a boundary.
   const season = SEASONS[Math.floor(((dayOfYear + 46) % DAYS_PER_YEAR) / (DAYS_PER_YEAR / 4))];
 
+  // The moons count month-days only, so on a holy day they hold where the day
+  // before left them (`monthDay` already counts the month-days passed).
+  const monthDays =
+    (year - 1) * MONTH_DAYS_PER_YEAR + monthDay + (holy >= 0 ? 0 : minuteOfDay / MINUTES_PER_DAY);
+
   return {
     totalMinutes,
     minute: minuteOfDay % MINUTES_PER_HOUR,
@@ -89,6 +132,7 @@ export function clockOf(totalTicks: number): WorldClock {
     holyDay: holy >= 0 ? HOLY_DAYS[holy] : null,
     season,
     seasonPhase,
+    moons: MOONS.map((m) => moonOf(m, monthDays)),
   };
 }
 
@@ -111,4 +155,22 @@ export function formatDate(clock: WorldClock): string {
 /** "07:05" — the world runs on a 24-hour bell. */
 export function formatTime(clock: WorldClock): string {
   return `${String(clock.hour).padStart(2, '0')}:${String(clock.minute).padStart(2, '0')}`;
+}
+
+/** One glyph per phase, shared by the game header and the forge's atlas. */
+export const MOON_ICONS: Record<MoonPhaseId, string> = {
+  new: '🌑',
+  waxing_crescent: '🌒',
+  first_quarter: '🌓',
+  waxing_gibbous: '🌔',
+  full: '🌕',
+  waning_gibbous: '🌖',
+  last_quarter: '🌗',
+  waning_crescent: '🌘',
+};
+
+/** "Large Moon: waxing gibbous", or with the day, "… (day 12 of 79)". */
+export function formatMoon(moon: MoonState, withDay = false): string {
+  const day = withDay ? ` (day ${moon.age + 1} of ${moon.cycleDays})` : '';
+  return `${moon.name}: ${moon.phaseName}${day}`;
 }

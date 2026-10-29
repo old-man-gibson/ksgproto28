@@ -32,8 +32,8 @@
   import { fmt } from './lib/format';
   import { applyTheme, loadTheme, nextTheme, THEME_NAMES } from './lib/theme';
   import DebugPanel from './panels/DebugPanel.svelte';
-  import { clockOf } from '../core/systems/clock';
-  import { CHRONOSENSE_ID, describeTimeSense } from '../core/systems/chronosense';
+  import { clockOf, MOON_ICONS } from '../core/systems/clock';
+  import { CHRONOSENSE_ID, describeMoons, describeTimeSense } from '../core/systems/chronosense';
   import { WEATHER_ICONS, weatherAt, worldSeedOf } from '../core/systems/weather';
   import { forecastFor, PROGNOSIS_TOOLTIP_AT, WEATHERSENSE_ID } from '../core/systems/weathersense';
   import Tip from './lib/Tip.svelte';
@@ -72,7 +72,10 @@
   // Chronosense manifests, then as precise as its level allows (see
   // systems/chronosense.ts for the ladder).
   const senseLevel = $derived(gs.skills[CHRONOSENSE_ID]?.level ?? 0);
-  const timeSense = $derived(describeTimeSense(clockOf(gs.totalTicks), senseLevel));
+  const clock = $derived(clockOf(gs.totalTicks));
+  const timeSense = $derived(describeTimeSense(clock, senseLevel));
+  // The moons join the chip at season-sense, as glyphs; the names are on hover.
+  const moonLines = $derived(describeMoons(clock, senseLevel));
 
   // The sky needs no skill — skin reads weather for free. Null while the
   // player's region has no atlas pin (no geography, no weather).
@@ -325,6 +328,21 @@
       <div class="timesense" title="{SKILLS[CHRONOSENSE_ID].name} {senseLevel}">
         🕰️ {timeSense}
       </div>
+    {/if}
+    {#if moonLines.length && !screen}
+      <!-- Glyphs drawn at each moon's relative size; hover names them. -->
+      <Tip block>
+        <div class="moonchip">
+          {#each clock.moons as m (m.id)}
+            <span class="moonglyph {m.size}">{MOON_ICONS[m.phaseId]}</span>
+          {/each}
+        </div>
+        {#snippet tip()}
+          {#each moonLines as line (line)}
+            <div class="tip-line">{line}</div>
+          {/each}
+        {/snippet}
+      </Tip>
     {/if}
     {#if weather && !screen}
       <!-- Same tooltip system as stats and resources. It grows with
@@ -595,6 +613,22 @@
     white-space: nowrap;
     color: var(--text-dim);
     font-size: 13px;
+  }
+
+  .moonchip {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+  }
+  .moonglyph.large {
+    font-size: 17px;
+  }
+  .moonglyph.medium {
+    font-size: 13px;
+  }
+  .moonglyph.small {
+    font-size: 10px;
   }
 
   .weather {

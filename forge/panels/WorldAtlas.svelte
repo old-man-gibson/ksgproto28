@@ -21,7 +21,14 @@
   import type { AreaDef, RegionDef, SpotDef } from '../../src/core/types';
   // The game's OWN clock and weather — imported, not reimplemented, so the
   // overlay can never drift from what players will live under.
-  import { clockOf, formatDate, formatTime, TICKS_PER_DAY } from '../../src/core/systems/clock';
+  import {
+    clockOf,
+    formatDate,
+    formatMoon,
+    formatTime,
+    MOON_ICONS,
+    TICKS_PER_DAY,
+  } from '../../src/core/systems/clock';
   import { WEATHER_ICONS, weatherAt, worldSeedOf } from '../../src/core/systems/weather';
   import { DAYS_PER_YEAR } from '../../src/core/data/climate.data';
 
@@ -423,6 +430,11 @@
     <div class="skybar">
       <span class="date">{formatDate(previewClock)} · {formatTime(previewClock)}</span>
       <span class="season">{previewClock.season}</span>
+      <span class="moons">
+        {#each previewClock.moons as m (m.id)}
+          <span class="{m.size}" title={formatMoon(m, true)}>{MOON_ICONS[m.phaseId]}</span>
+        {/each}
+      </span>
       <input
         class="scrub grow"
         type="range"
@@ -727,6 +739,24 @@
     text-transform: uppercase;
     font-size: 10px;
     letter-spacing: 0.7px;
+  }
+
+  /* Each moon's glyph at its relative size; hover for phase and cycle day. */
+  .skybar .moons {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+    cursor: help;
+  }
+  .skybar .moons .large {
+    font-size: 16px;
+  }
+  .skybar .moons .medium {
+    font-size: 12.5px;
+  }
+  .skybar .moons .small {
+    font-size: 10px;
   }
 
   .skybar .scrub {

@@ -6,8 +6,15 @@ import {
   HOLY_DAY_INDICES,
   TICKS_PER_DAY,
 } from '../src/core/systems/clock';
-import { DAYS_PER_YEAR, HOLY_DAYS, TICKS_PER_GAME_MINUTE } from '../src/core/data/climate.data';
+import {
+  DAYS_PER_YEAR,
+  HOLY_DAYS,
+  MOON_PHASES,
+  MOONS,
+  TICKS_PER_GAME_MINUTE,
+} from '../src/core/data/climate.data';
 import { createInitialState } from '../src/core/state';
+import { deserialize, serialize } from '../src/core/save/save';
 
 /** Ticks at day `d` (0-based absolute), hour `h`, minute `m`. */
 const at = (d: number, h = 0, m = 0) => (d * 1440 + h * 60 + m) * TICKS_PER_GAME_MINUTE;
@@ -87,5 +94,95 @@ describe('the world clock', () => {
     // gate at the end of it lets out at the Foot, the door every district reaches.
     expect(fresh.spot).toBe('f0_cell');
     expect(fresh.discovered).toEqual(['f0_cell']);
+  });
+});
+
+describe('the moons', () => {
+  const middle = (t: number) => clockOf(t).moons.find((m) => m.id === 'middle_moon')!;
+
+  it('three moons: 79 days largest, 28 days medium, 37 days smallest', () => {
+    expect(MOONS.map((m) => [m.cycleDays, m.size])).toEqual([
+      [79, 'large'],
+      [28, 'medium'],
+      [37, 'small'],
+    ]);
+    expect(clockOf(0).moons.map((m) => m.id)).toEqual(MOONS.map((m) => m.id));
+  });
+
+  it('all three are new at the epoch', () => {
+    for (const m of clockOf(0).moons) {
+      expect(m.phase).toBe(0);
+      expect(m.phaseId).toBe('new');
+      expect(m.illumination).toBe(0);
+    }
+  });
+
+  it('the phase is a pure function of the tick', () => {
+    for (const t of [0, at(3, 7, 15), at(200, 23, 59), at(DAYS_PER_YEAR * 5 + 41, 12)]) {
+      expect(clockOf(t).moons).toEqual(clockOf(t).moons);
+      for (const m of clockOf(t).moons) {
+        expect(m.phase).toBeGreaterThanOrEqual(0);
+        expect(m.phase).toBeLessThan(1);
+      }
+    }
+  });
+
+  it('each moon wraps at its cycle length', () => {
+    // Days 0..90 hold no holy day, so absolute days are month-days here.
+    for (const [i, moon] of MOONS.entries()) {
+      for (let d = 0; d + moon.cycleDays <= 90; d += 3) {
+        const a = clockOf(at(d, 13, 20)).moons[i];
+        const b = clockOf(at(d + moon.cycleDays, 13, 20)).moons[i];
+        expect(b.phase, `${moon.id} day ${d}`).toBeCloseTo(a.phase, 9);
+        expect(b.phaseId).toBe(a.phaseId);
+      }
+      expect(clockOf(at(moon.cycleDays) - 1).moons[i].phase).toBeGreaterThan(0.99);
+      expect(clockOf(at(moon.cycleDays)).moons[i].phase).toBe(0);
+    }
+  });
+
+  it('the 28-day moon opens every month new, for years', () => {
+    for (let d = 0; d < DAYS_PER_YEAR * 3; d++) {
+      const c = clockOf(at(d, 6));
+      if (c.dayOfMonth === 1) expect(middle(at(d)).phaseId, `day ${d}`).toBe('new');
+      if (c.dayOfMonth === 8) expect(middle(at(d)).phaseId).toBe('first_quarter');
+      if (c.dayOfMonth === 15) expect(middle(at(d)).phaseId).toBe('full');
+      if (c.dayOfMonth === 22) expect(middle(at(d)).phaseId).toBe('last_quarter');
+    }
+  });
+
+  it('a holy day holds every moon; the 28-day moon sits on a principal phase', () => {
+    const expected = ['first_quarter', 'full', 'last_quarter', 'new'];
+    HOLY_DAY_INDICES.forEach((day, q) => {
+      const dawn = clockOf(at(day));
+      const dusk = clockOf(at(day, 23, 59));
+      expect(dusk.moons).toEqual(dawn.moons);
+      expect(middle(at(day)).phaseId).toBe(expected[q]);
+      // The day after picks up exactly where the holy day held.
+      expect(clockOf(at(day + 1)).moons).toEqual(dawn.moons);
+    });
+  });
+
+  it('names the 28-day cycle one principal day per quarter, six between', () => {
+    const counts: Record<string, number> = {};
+    for (let d = 0; d < 28; d++) {
+      const id = middle(at(d, 12)).phaseId;
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    expect(counts).toEqual(
+      Object.fromEntries(MOON_PHASES.map((p, i) => [p.id, i % 2 === 0 ? 1 : 6])),
+    );
+    expect(middle(at(14)).illumination).toBeCloseTo(1, 9);
+    expect(middle(at(14)).phaseName).toBe('full moon');
+  });
+
+  it('adds nothing to the save: a round trip keeps the save and the sky identical', () => {
+    const state = createInitialState(1);
+    state.totalTicks = at(DAYS_PER_YEAR + 200, 21, 30);
+    const json = serialize(state, 1_000);
+    expect(json).not.toMatch(/"moons?"\s*:/);
+    const loaded = deserialize(json);
+    expect(serialize(loaded, 1_000)).toBe(json);
+    expect(clockOf(loaded.totalTicks).moons).toEqual(clockOf(state.totalTicks).moons);
   });
 });

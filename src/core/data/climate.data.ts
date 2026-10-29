@@ -18,6 +18,9 @@ import type { TerrainId } from '../types';
  * the equinoxes exactly on its zeroes. The calendar and the climate agree by
  * construction.
  *
+ * The three moons count month-days too, so the 28-day one keeps the same
+ * phase on the same date forever; see MOONS.
+ *
  * Everything here is a knob. Tune freely; the systems in systems/clock.ts and
  * systems/weather.ts read this file and hard-code nothing.
  */
@@ -82,6 +85,66 @@ export type SeasonId = 'winter' | 'spring' | 'summer' | 'autumn';
 
 /** Year order, starting from the season the year opens in. */
 export const SEASONS: SeasonId[] = ['winter', 'spring', 'summer', 'autumn'];
+
+// ---------- The moons ----------
+
+/**
+ * Three moons, each on its own cycle, all three new at the epoch (Firstday,
+ * 1st of First Month, Year 1). A moon counts MONTH-days: on a holy day every
+ * moon holds the phase it had at the end of the day before, the same way holy
+ * days stand outside the week. With that rule the 28-day moon is locked to
+ * the month — every month opens on its new moon, every year — and the four
+ * holy days land on its four principal phases (Vernal Equinox first quarter,
+ * Summer Solstice full, Autumnal Equinox last quarter, Winter Solstice new).
+ * The 37- and 79-day moons do not divide the month and drift against the
+ * calendar; all three are new together again after 28 × 37 × 79 = 81,844
+ * month-days, about 225 years.
+ *
+ * `size` is relative and only drawn so far; a future moonlight rule would
+ * weigh by it.
+ */
+export type MoonSize = 'small' | 'medium' | 'large';
+
+export interface MoonDef {
+  id: string;
+  name: string;
+  /** Month-days from one new moon to the next. */
+  cycleDays: number;
+  size: MoonSize;
+}
+
+// TODO: name the moons — scaffolding, like the months.
+export const MOONS: MoonDef[] = [
+  { id: 'large_moon', name: 'Large Moon', cycleDays: 79, size: 'large' },
+  { id: 'middle_moon', name: 'Middle Moon', cycleDays: 28, size: 'medium' },
+  { id: 'small_moon', name: 'Small Moon', cycleDays: 37, size: 'small' },
+];
+
+export type MoonPhaseId =
+  | 'new'
+  | 'waxing_crescent'
+  | 'first_quarter'
+  | 'waxing_gibbous'
+  | 'full'
+  | 'waning_gibbous'
+  | 'last_quarter'
+  | 'waning_crescent';
+
+/**
+ * The eight phase names, in cycle order. Even indices are the principal
+ * phases: each names the one day that starts at its exact moment. The odd
+ * ones (crescents, gibbouses) fill the days between.
+ */
+export const MOON_PHASES: { id: MoonPhaseId; name: string }[] = [
+  { id: 'new', name: 'new moon' },
+  { id: 'waxing_crescent', name: 'waxing crescent' },
+  { id: 'first_quarter', name: 'first quarter' },
+  { id: 'waxing_gibbous', name: 'waxing gibbous' },
+  { id: 'full', name: 'full moon' },
+  { id: 'waning_gibbous', name: 'waning gibbous' },
+  { id: 'last_quarter', name: 'last quarter' },
+  { id: 'waning_crescent', name: 'waning crescent' },
+];
 
 // ---------- The climate ----------
 

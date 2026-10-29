@@ -5,6 +5,7 @@ import { clockOf, TICKS_PER_DAY } from '../src/core/systems/clock';
 import {
   CHRONOSENSE_ID,
   CHRONOSENSE_MANIFEST_TICKS,
+  describeMoons,
   describeTimeSense,
   SENSE_LEVELS,
   tickChronosense,
@@ -70,6 +71,20 @@ describe('the sense ladder', () => {
     expect(describeTimeSense(noon, SENSE_LEVELS.minute)).toBe(
       'Sixthday, 13th of First Month, Year 1 · 09:23',
     );
+  });
+
+  it('reads the moons from season-sense, and their cycle day from date-sense', () => {
+    expect(describeMoons(noon, SENSE_LEVELS.season - 1)).toEqual([]);
+    expect(describeMoons(noon, SENSE_LEVELS.season)).toEqual([
+      'Large Moon: waxing crescent',
+      'Middle Moon: waxing gibbous',
+      'Small Moon: waxing gibbous',
+    ]);
+    expect(describeMoons(noon, SENSE_LEVELS.date)).toEqual([
+      'Large Moon: waxing crescent (day 13 of 79)',
+      'Middle Moon: waxing gibbous (day 13 of 28)',
+      'Small Moon: waxing gibbous (day 13 of 37)',
+    ]);
   });
 
   it('a holy day is felt before it can be named', () => {
