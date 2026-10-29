@@ -259,13 +259,19 @@ Band: · Floors: · Verdict:
 ### 1. The Five Moons (posted 2026-10-28)
 
 Band: none (off-ladder, no `bandId`); band 2's goblins, entered from band 3 ·
-Floors: one map, about 10 spots · Verdict: **Bank**. It waits on band 3
-([plans/bands-2-3.md](plans/bands-2-3.md) build order step 6: M3 key boon,
-M4, M5, the direction floors) and on goblin gods 4 and 5. The escape streak
-can be built and tested on a band 2 spot before either.
+Floors: one map, about 10 spots · Verdict: **Bank**.
 
-**As posted.** *"a subfloor to floors 4-6. can only be accessed on the
-forest-facing section of band 3 (floors 7-10) by fighting a goblin and
+It waits on:
+- band 3 ([plans/bands-2-3.md](plans/bands-2-3.md) build order step 6: the M3
+  key boon, M4, M5 and the direction floors)
+- goblin gods 4 and 5
+- a moon in the sky (Q2)
+
+The escape streak can be built and tested on a band 2 spot before any of
+these.
+
+**As posted (2026-10-28).** *"a subfloor to floors 4-6. can only be accessed
+on the forest-facing section of band 3 (floors 7-10) by fighting a goblin and
 escaping the fight 5 times in a row. this unlocks an exploration activity
 that lets the player access the goblin five moons festival, where five
 tribes, each aligned with one of the goblin gods, are vying for who gets to be
@@ -274,225 +280,225 @@ as a mercenary, fight them all, or become a mediator to help them unite as
 one. each of those endings should set a flag that can become relevant later
 on"*
 
-**The place in one line.** The thief tribe hosts the Moot on neutral ground
-and takes a tenth of every wager and contract. The other four tribes pay it,
-and whichever tribe takes the head fire levies the city's outlying farms. The
-seat is empty because the player killed the warchief on floor 6.
+**Rulings (user, 2026-10-29).**
 
-**The procedure: the Count.** This is band 1's shape (§1.3 finding 5): an
-institution running a procedure, and the player's preparation is reading it.
-The rule is written at the Moot gate:
+- No tracker, counter or log line for the escape streak until the whole
+  requirement is met. It is a secret floor, so there is no hint either.
+- A player who is too strong cannot meet the streak as first drafted. Fixing
+  that is Q1.
+- An eighth ending: the player unites the tribes under the player.
+- The world has a moon. The smithing card's "the world has no moon" was an
+  over-reading of a code comment (Q2).
 
-- Five moons, one per tribe. "Moon" is the goblin count-word for one tribe's
-  turn at the head fire. The world has no moon
-  ([plans/blueprint-weaponsmithing.md](plans/blueprint-weaponsmithing.md),
-  `night_anneal`), so no sky object is added.
-- Each tribe has a ground, a champion and a speaker. The champion is a staged
-  fight with `fightLimit` 1; the speaker gives a terms quest.
-- When one tribe holds three marks, it takes the head fire. That reading is
-  **Hired**.
-- When an outsider beats all five champions, the fire goes out. That reading
-  is **Ash**.
-- When each of the five tribes holds one mark, the Long Table is seated. That
-  reading is **Table**.
+**The place in one line.** The thief tribe hosts the festival and takes 10%
+of every bet and contract. The other four tribes pay it. The winning tribe
+becomes head tribe and taxes the city's outlying farms. The seat is open
+because the warchief died on floor 6.
 
-Marks are read from state; they are not a counter of their own. The
-conditions are order-free:
+**Contest rules.** They are posted at the festival entrance for the player to
+read.
 
-- Hired for T requires T's contract quest turned in. The contract's
-  objectives are three rival `slain:<ground>:<champion>` keys.
-- Ash requires all five `slain:` keys, plus `statMax` 0 on every contract's
-  accepted stamp.
-- A tribe's terms quest requires `statMax` 0 on that tribe's champion
-  `slain:` key. A tribe whose champion fell gives no terms this run, and the
-  Count says so.
+- Each tribe has a camp, a champion and a speaker. The champion is a one-time
+  fight (`fightLimit` 1); the speaker gives a quest.
+- A tribe with three wins becomes head tribe. That is the mercenary ending.
+- An outsider who beats all five champions ends the contest with no head
+  tribe. That is the fight-them-all ending.
+- If every tribe agrees to terms, the five tribes form a council. That is the
+  mediator ending.
+- An outsider who has every tribe's terms and then beats every champion
+  becomes head. That is the ruler ending (proposal, Q7).
 
-New code: `acceptQuest` stamps `flag:quest:<id>:accepted` (generic, about
-3 lines). Today it writes no stat, so "took a contract" cannot be read.
+Wins are read from existing state rather than counted separately. The
+conditions do not depend on order:
 
-| Tribe | God | At the Moot | Role it asks for |
+- **Mercenary for tribe T:** T's contract quest turned in. Its objectives
+  are three rival `slain:<camp>:<champion>` keys.
+- **Fight them all:** all five champion `slain:` keys, plus `statMax` 0 on
+  every contract's accepted stamp.
+- **Mediator:** all five terms quests turned in. A terms quest requires
+  `statMax` 0 on its tribe's champion `slain:` key, so a tribe whose champion
+  died gives no terms this run, and the rules say so.
+- **Ruler:** all five terms quests turned in, then all five champion
+  `slain:` keys.
+
+New code: `acceptQuest` stamps `flag:quest:<id>:accepted`, about 3 lines.
+Today accepting a quest writes no stat, so "took a contract" cannot be read.
+
+| Tribe | God | Champion's fight | Role it asks for |
 |---|---|---|---|
-| Fire | `goblin_fire` | pyre trial; the ground burns. The warchief's tribe, now leaderless | condition defence (burning) |
-| Mud | `goblin_mud` | mire trial; the champion fights with healers | damage (outpace the heals) |
-| Hunt | `goblin_hunt` | the drive; the champion fights with a rat, bird and worm swarm | sustain |
-| Thief | thievery (planned 4th, unshipped) | hosts the Moot and keeps the Count; strongroom behind an `ExploreGate` | access |
-| Witch | witch magic (planned 5th, unshipped) | hex trial; the champion curses | condition defence (curse) |
+| Fire | `goblin_fire` | on burning ground; the warchief's tribe | condition defence (burning) |
+| Mud | `goblin_mud` | with healers | damage (outpace the heals) |
+| Hunt | `goblin_hunt` | with a rat, bird and worm swarm | sustain |
+| Thief | thievery (planned, unshipped) | the host; its champion sits behind a locked strongroom (`ExploreGate`) | access |
+| Witch | witch magic (planned, unshipped) | casts curses | condition defence (curse) |
 
-**The way in: five escapes.** The thief tribe hosts, so it gates the way in.
-Its god's creed prizes the one who gets away. Its wardens watch the forest
-road and admit anyone who has walked away from a goblin fight alive five
-times running.
+**The way in: five escapes.**
 
-- Data: `SpotDef.escape?: { tag: 'goblin'; minTicks: 30; minTaken: 0.3;
-  streak: 5; opens: 'flag:fest_open' }`, on one spot of the forest-facing
-  direction. `minTicks` and `minTaken` are dials, set at build time against
-  measured band 3 goblin fights. The test: John meets the bar in an ordinary
-  fight without unequipping.
-- What counts: the player walks away (travel, caravan, activity switch,
-  climb) from a live, non-forced fight. The fight must be at least
-  `minTicks` old, have a living enemy with the tag, and have dealt damage of
-  at least 30% of max HP, summed from `state.fight.incoming`. Because it is a
-  sum, a potion drunk mid-fight does not refund it. Walking off instantly does
-  not count. The damage bar is what stops free clicks; `minTicks` is a small
-  floor.
-- Feedback: every walk-away at the spot writes a log line, "the wardens mark
-  your going: 3 of 5" or "the wardens do not count that". Without it, a walk
-  below the bar is silent.
-- Where the hook goes: at the decision points (`locations.ts:49`, `:345`,
+- **Rule.** At one spot of the forest-facing direction, walk away from a
+  fight with a goblin five times in a row.
+- **What the player sees.** Nothing until the fifth escape. Then one log line
+  appears, and so does the new path.
+- **Data.** `SpotDef.escape?: { tag: 'goblin'; streak: 5; opens:
+  'flag:fest_open' }`, plus whatever Q1 adds.
+- **What counts.** The player leaves a live, non-forced fight that still has
+  a living enemy with the tag. Leaving means travel, caravan, an activity
+  switch or a climb.
+- **Hook.** At the decision points (`locations.ts:49`, `:345`,
   `actions.ts:95`, `towers.ts:122`), not inside `abandonCombat`. The
   condition-fatal path (`actions.ts:687`) calls `abandonCombat` without
   `endFight`, so a hook there would count a knockout as an escape.
-- What breaks it: a fight at that spot that ends `won` or `knocked_out` sets
-  the streak to 0. A walk below the bar neither counts nor breaks it.
-- Stored as `stats['escape:streak:goblin']`. At 5 it latches
-  `flag:fest_open`, which never re-locks.
-- After the latch: a hidden `Connection` (`revealWhen` the latch) opens to a
-  new spot, the wardens' road. Its explore activity is the "exploration
-  activity" of the post. Searching it to 100% reveals the edge to the
-  off-ladder Moot map. Every edge is two-way. `explore` activities take no
-  `requires` (types.ts:4295), so the gate is on the edge, not the activity.
-- Hint: a bestiary fact on that goblin at 3 kills, plus one line from a
-  castle NPC. Without them the way in cannot be found.
-- Cost: no save change, since `stats` is an open map. About 40 lines, plus a
-  lint that an escape spot is never `forced` and no `Connection.forced` leads
-  into it (precedent: `tests/content.test.ts:318-345`).
+- **Reset.** A fight at that spot that ends `won` or `knocked_out` sets the
+  streak to 0.
+- **Storage.** `stats['escape:streak:goblin']`. At 5 it sets
+  `flag:fest_open`, which stays set.
+- **After.** A hidden `Connection` (`revealWhen` the flag) opens to a new
+  spot. That spot's explore activity is the post's exploration activity; at
+  100% it reveals the edge to the festival map. All edges are two-way.
+  `explore` activities take no `requires` (types.ts:4295), which is why the
+  gate is on the edge.
+- **Cost.** No save change. About 40 lines, plus a lint: the escape spot is
+  never `forced`, and no `Connection.forced` leads into it (precedent
+  `tests/content.test.ts:318-345`).
 
-| Path | The player | Climax (forced, `once`) | Flag | Read later by (proposal, off-ladder only) |
-|---|---|---|---|---|
-| Hired (tribe T) | takes T's contract and beats three rival champions in T's name | the fourth rival champion with two escorts, level −1 per rival already beaten (the floor 6 sabotage pattern) | `flag:fest_end_hired` + `flag:fest_patron_<T>` | T's god met (`meetDeity`), T's shop lines, T's champion teaches goblin techniques |
-| Ash | takes no contract and beats all five champions | a ring of all five tribes' rank-and-file | `flag:fest_end_ash` | no goblin trade at the Moot or the castle; the levy grounds (H1) |
-| Table | delivers five terms quests, one per speaker, each paying one tribe's price | forced fight against the dissenters, level −2 per consent | `flag:fest_end_table` | a goblin quarter at the castle, a five-tribe shop, all five gods met |
+**Endings: eight flags.**
 
-- The five Hired variants are five rows `{ tribe, god, champion, rewards }`
-  on one template.
-- Commitment happens on the climax **win**, not on reaching it.
-  - A find reveals the `path` to the climax spot. A find cannot start a
+| Ending | The player | Final fight (forced, `once`) | Flag |
+|---|---|---|---|
+| Mercenary (one per tribe, ×5) | takes tribe T's contract and beats three rival champions | the fourth rival champion with two escorts, level −1 per rival already beaten | `flag:fest_end_merc_<T>` |
+| Fight them all | takes no contract and beats all five champions | all five tribes' regular goblins at once | `flag:fest_end_conquest` |
+| Mediator | turns in all five terms quests | the goblins who reject the deal, level −2 per tribe that agreed | `flag:fest_end_mediator` |
+| Ruler | turns in all five terms quests, then beats all five champions | the host tribe's guards (Q7) | `flag:fest_end_ruler` |
+
+- The ending is set by **winning** the final fight, not by reaching it.
+  - A find reveals the path to the final fight's spot. A find cannot start a
     fight (`SpotFind` payloads, types.ts:4317-4360).
-  - The ending is the climax kill, `slain:<ring>:<boss>`. Its `flag:fest_end_*`
-    is stamped by a find on the ring that `requires` that kill.
-  - Each climax encounter `requires` `statMax` 0 on the other two climax
-    kills, so the first win shuts the other two for the run.
-  - A player who reaches a climax and keeps losing holds no ending.
-- Readers add content off the ladder only: the Moot, the castle quarter,
-  shops, gods and techniques. None changes a ladder floor's encounter table
-  (L7).
-- The Moot requires nothing about floor 6. With a band 2 pass the warchief
-  is alive in that run, and the vacancy is lore.
+  - The ending flag is stamped by a find on that spot that `requires` the
+    final fight's `slain:` key.
+  - Each final fight's encounter `requires` `statMax` 0 on the other final
+    fights' `slain:` keys, so the first win closes the others for the run.
+  - A player who keeps losing a final fight has no ending.
+- The five mercenary endings are five rows `{ tribe, god, champion, rewards
+  }` on one template.
+- Readers (proposal, off-ladder only):
+  - mercenary: that tribe's god is met (`meetDeity`), and the tribe has a
+    shop and a technique teacher
+  - fight them all: no goblin shops
+  - mediator: a goblin quarter at the castle, a shop with all five tribes'
+    goods, all five gods met
+  - ruler: Q7
+- The festival requires nothing about floor 6. With a band 2 pass, the
+  warchief is alive in that run.
 
 **Hours.**
 
-- **H1 The loop that stays.**
-  - Hired: four rival border grounds, each dropping a different material
-    (the pick-a-den loop). The patron's quartermaster sells for gold.
-  - Ash: endless levy grounds per tribe, level stepped by tribes beaten (the
-    M5 table reused).
-  - Table: five `gather` activities feeding Moot benches (a cooking bench
-    for the feast, an alchemy bench for the poultice).
+- **H1 What stays after the ending.**
+  - Mercenary: four rival camps, each dropping a different material. The
+    patron tribe's shop sells for gold.
+  - Fight them all: each camp keeps an endless hunt, its monster level
+    stepped by tribes beaten (the M5 table).
+  - Mediator: five `gather` activities feeding festival benches (cooking,
+    alchemy).
 - **H4 What it feeds.**
-  - Champion trophies feed smithing parts.
+  - Champion drops feed smithing parts.
   - Terms quests consume cooking, alchemy and smithing output.
-  - Patron gods become prayable (`meetDeity`, which has no caller today).
-  - The festival is the first use of the goblin pantheon by the player.
-- **H5 Novelty.** Five champions plus tribal rank-and-file. The witch and
-  thief tribes add species of their own.
-- **H6 Re-climb.** Run flags reset at prestige, so every run picks an ending
-  again. A carried record (see the questions below) skips the streak on
-  later runs.
-- **H7 Idle form.**
-  - Hired: a camp-watch `job` that is safe to leave running.
-  - Table: the `gather` activities.
-  - Ash: none, because hunts are not safe to leave.
-- **H8 A use for each system.**
-  - Arcane: burning and damage in the trials.
+  - Gods are met through `meetDeity`, which has no caller today.
+- **H5 Novelty.** Five champions plus the tribes' goblins. The thief and
+  witch tribes add species.
+- **H6 Re-climb.** Flags reset at prestige, so each run picks an ending again
+  (Q3).
+- **H7 Idle form.** Mercenary has a camp-watch `job`; mediator has the
+  `gather` activities. Fight them all has none, because hunts are not safe to
+  leave running.
+- **H8 Systems.**
+  - Arcane: burning and damage.
   - Divine: the gods.
-  - Martial: the champions, and techniques learned by watching.
+  - Martial: the champions, plus techniques learned by watching.
   - Cooking, smithing and alchemy: the terms quests and benches.
-  - Psionics, mutagens and runecarving stay shut (§1.4) and get no use here.
+  - Psionics, mutagens and runecarving stay shut (§1.4).
 
 **Laws.**
 
-- **L1.** Every Moot edge is two-way. The entrance is a hidden edge, revealed
-  once and kept.
+- **L1.** Every festival edge is two-way. The entrance is a hidden edge that
+  stays revealed once found.
 - **L2.** Champions have `fightLimit` 1 and sit under no ladder gate. The
-  grounds' hunts are endless.
-- **L3.** A knockout resets the streak and nothing else. The latch holds.
-  Festival losses cost time.
-- **L4.** The whole map is optional content, so mastery may gate it. The way
-  in is secret but hinted.
-- **L7.** No reader of a `flag:fest_*` key may sit in the critical-path
-  closure, and both states of every flag must leave the ladder completable.
+  camps' hunts are endless.
+- **L3.** A knockout resets the streak and nothing else. `flag:fest_open`
+  stays set. A lost festival fight costs time.
+- **L4.** The whole map is optional content, so it may be secret and may be
+  hard.
+- **L7.** No reader of a `flag:fest_*` key may be on a ladder floor (Q4).
   Lint: every `flag:fest_end_*` has at least one reader, and none of those
-  readers is on a ladder floor. Until the closure exists (COMPLETABILITY
-  §8), "off-ladder" means no `bandId` on the reader's spot.
+  readers has a `bandId`.
 
-**Build cost** (estimate, nothing measured): about 6 sessions.
+**Build cost** (estimate, nothing measured): about 7 sessions.
 
 1. The streak, the hook, the lint and the tests.
-2. The Moot map, the climax finds and `SpotFind.meet`.
-3. Hired.
-4. Ash.
-5. Table (1.5 sessions).
-6. Tribes 4 and 5 and their gods.
+2. The festival map, the final-fight finds and `SpotFind.meet`.
+3. Mercenary.
+4. Fight them all.
+5. Mediator (1.5 sessions).
+6. Ruler.
+7. Tribes 4 and 5 and their gods.
 
-The first slice is session 1 tested on a band 2 goblin spot (band 3 does not
-exist yet), plus a stub with one tribe camp that writes
-`flag:fest_end_hired`. It stays on a branch: on main it would leave a hidden
-edge to a half-built camp. The streak moves to the forest direction when band
-3 lands.
+The moon (Q2) is separate. The first slice is session 1, tested on a band 2
+goblin spot, and it stays on a branch.
 
-**Objections and rulings.** antagonist-design, 2026-10-28, verdict *fix
-first*. All five fixes are taken into the entry above.
+**Objections and rulings.** From antagonist-design, 2026-10-28, verdict *fix
+first*.
 
-1. **The escape bar was unreachable by fighting.** Probe: John through floor
-   6, seeds 42, 7 and 1234, 90 goblin fights on floors 4–5.
-   - Median fight length was 27–69 ticks.
-   - One fight reached 150 ticks; 16 took 30% of max HP; none did both.
-   - Only a player who unequips could age a fight to 150 ticks, and a walk
-     below the bar gave no feedback.
-   - *Taken:* `minTicks` 30 as a floor, damage taken as the real bar, a log
-     line per walk-away, and both dials set against measured band 3 fights.
-2. **Derived marks could not tell "took a contract" apart.** `acceptQuest`
-   writes no stat, and quests cannot be abandoned. *Taken:* the accepted
-   stamp, plus order-free conditions.
-3. **A climax find cannot start a fight.** A find-set flag would fire before
-   the win, so a player could hold an ending while losing forever. *Taken:*
-   commitment reads the climax kill.
-4. **Readers on later goblin tables leaked onto the ladder.** *Taken:*
-   readers are off-ladder only.
-5. **`explore` takes no `requires`.** *Taken:* the gate moved to a hidden
-   edge into a new spot.
+1. **The escape bar was unreachable by fighting.**
+   - Probe: John through floor 6, seeds 42, 7 and 1234, 90 goblin fights.
+     Median fight 27–69 ticks; none lasted 150 ticks with 30% of max HP
+     taken.
+   - First fix: a lower time bar, a damage bar, and a log line per
+     walk-away. The user's rulings of 2026-10-29 replaced it: no log line,
+     and the strong-player gap is Q1.
+2. **"Took a contract" could not be read.** *Taken:* the accepted stamp, and
+   conditions that do not depend on order.
+3. **A find cannot start a fight.** *Taken:* the ending is set by the final
+   fight's win.
+4. **Readers on later goblin fights leaked onto the ladder.** *Taken:*
+   readers are off-ladder only (Q4).
+5. **`explore` takes no `requires`.** *Taken:* the gate is on a hidden edge.
 
-Low-rated, also taken: nothing on the Moot reads the warchief's kill; the
-quartermaster's currency is gold, so it does not collide with the Count's
-marks; slice 1 stays on a branch.
+Also taken: nothing reads the warchief's kill, and slice 1 stays on a branch.
 
-Clean: invariant A (return edges carry no `revealWhen`; a knockout goes to a
-haven; the run's flags reset at prestige), invariant C (integer counters,
-the latch is a marker), no troll arbitrage (the streak pays a one-time latch,
-and the `incoming` sum is unrefundable).
+Clean:
+- invariant A: return edges carry no `revealWhen`, a knockout goes to a
+  haven, and flags reset at prestige
+- invariant C: the counters are integers
+- troll: the streak pays out once
 
 **Open questions.**
 
-1. **Flag lifetime.** Today every `flag:` dies at prestige
-   (`prestigeNow` keeps only the `prestige` block).
-   - *Default:* run-scoped `flag:fest_end_*`, so each run picks an ending
-     again.
-   - Plus a carried `flag:keep_fest_<ending>`: `prestigeNow` copies every
-     `flag:keep_` key (about 10 lines, no migration).
-   - The carried key skips the streak on later runs and grants a title per
-     ending. The same prefix serves the Reruns ruling (knowledge carries).
-2. **What "relevant later on" may touch.** *Default:* off-ladder content
-   only (the castle quarter, shops, gods, techniques). An ending that
-   changes a band 3 direction floor is possible, but both states must then
-   stay completable, and it needs the critical-path closure lint first.
-3. **"Five moons".** The smithing card ruled that the world has no moon.
-   *Default:* a goblin count-word, with no sky object.
-4. **Which direction faces the forest.** *Default:* West (floor 8), with a
-   forest as its outside map. This settles one quarter of bands-2-3 Q9.
-5. **Gods 4 and 5** (thievery, witch magic): R11 says the user writes the
-   gods. *Default:* placeholders as in M7, captioned by the user later.
-6. **Disarming as the puzzle.** *Default:* no. The bar is met in an ordinary
-   fight, and the castle NPC's hint says "walk away hurt".
+1. **Strong players.** A player who kills goblins faster than they can walk
+   away cannot meet the streak.
+   - *Default:* the goblin at that spot scales with the player (its level or
+     HP is set from the player's damage), so the fight always lasts long
+     enough to leave. No damage or time bar.
+   - Alternative: no bar and no scaling, and accept the gap.
+2. **The moon.** The "no moon" line came from `exposure.ts:126` ("Moonless
+   on purpose, for now", in the darkness model since the prototype import).
+   The smithing card (c5c69fb) turned that into a world rule.
+   - *Default:* the sky gets a moon with phases.
+   - Nothing about the festival waits on the moon; "five moons" is the
+     festival's name.
+3. **Flag lifetime.** Every `flag:` resets at prestige today.
+   - *Default:* the ending flags are per run, so each run picks again.
+   - Plus a carried `flag:keep_fest_<ending>`: `prestigeNow` copies
+     `flag:keep_` keys (about 10 lines, no migration). It skips the streak
+     on later runs.
+4. **What the flags may change.** *Default:* off-ladder content only. An
+   ending that changes a band 3 floor needs the critical-path lint
+   (COMPLETABILITY §8) first.
+5. **Which direction faces the forest.** *Default:* West (floor 8), with a
+   forest as its outside map.
+6. **Gods 4 and 5** (thievery, witch magic). *Default:* placeholders as in
+   M7; the user writes them later.
+7. **The ruler ending.**
+   - *Default:* all five terms quests, then all five champions, then a final
+     fight against the host tribe's guards.
+   - Readers: open.
 
 ---
 
