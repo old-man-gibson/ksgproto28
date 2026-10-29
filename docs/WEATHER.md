@@ -85,10 +85,100 @@ The names are scaffolding (TODO in the data file), like the months.
   line on hover.
 - **The moons change nothing yet.** `naturalDarkness` ignores them, so night
   darkness, Darkvision training and the night-fighting penalties are as
-  before. If moonlight ever lightens the night, it changes exposure training
-  (the dark tag) and combat, so it needs a ruling first. It would read
-  `illumination` weighted by `size`, keyed on a bucket (not the raw float) for
-  the same memo reason as weather.
+  before. Moonlight is designed below, not built.
+
+### Moonlight — proposal, not built (2026-10-29)
+
+The user asked for moonlight to lighten the night. This is the design.
+Defaults are marked; the four questions at the end are open.
+
+**What it changes today: nothing.** Sky darkness only exists outdoors, away
+from lamplight. Every region in the game is either `sheltered` (the Ascent,
+which holds every tower floor including band 2's; the Hold) or a `settlement`
+(Threshold, the Holding Level), so `placeDarkness` returns 0 everywhere except
+`dark`-tagged places. Moonlight starts to matter when the first region is open
+to the night sky: the Hold's yard (TODO in locations.data.ts), an outdoor
+band-3 direction, or an off-ladder site.
+
+**The rule.** Moonlight lowers the darkness of the open night sky:
+
+```
+moonlight   = Σ moon.illumination × MOONLIGHT_WEIGHT[moon.size]      0..1
+through     = MOONLIGHT_THROUGH[weather.kind]                        0..1
+skyDarkness = naturalDarkness(hour) × (1 − MOONLIGHT_MAX × moonlight × through)
+```
+
+| knob | default | meaning |
+|---|---|---|
+| `MOONLIGHT_WEIGHT` | large 0.5, medium 0.3, small 0.2 | share of the light per moon; sums to 1 |
+| `MOONLIGHT_MAX` | 0.6 | three full moons on a clear night remove 60% of the dark |
+| `MOONLIGHT_THROUGH` | clear 1, mist 0.5, gale 0.5, others 0 | how much moonlight each sky lets through; keyed on the weather `kind` (the bucket rule above), never the raw floats |
+
+`placeDarkness` uses `skyDarkness` in place of `naturalDarkness` on the one
+branch where the sky decides (outdoors, no roof, no lamplight). Everything else
+stays as it is:
+
+- `dark`-tagged places stay at 1. Caves get no moonlight.
+- Roofs, `indoor`, `sheltered` and `settlement` stay at 0.
+- **Night stays night.** `naturalDarkness(hour)` is still the night boundary
+  for `daypart: 'night'` encounters (`isNightNow` in combat.ts). Moonlight
+  changes how dark the night is, not whether it is night.
+- `eyeless` still zeroes the factor; monsters still pay nothing.
+- Darkvision erodes what is left, as before: `darknessFactor = darkness ×
+  (1 − level / 50)`.
+
+**Numbers.** Simulated for an open-sky plains region at the Foot's pin, three
+seeds, three years of nights each (hours 20–04, every 10 game minutes):
+
+| measure | today | with moonlight |
+|---|---|---|
+| clear sky at night | — | 20–25% of samples |
+| mean night darkness | 1.00 | 0.92 |
+| darkest / brightest night | 1.00 / 1.00 | 1.00 / 0.41–0.44 |
+| header chip, untrained: Blind dark (≥ 0.85) | 100% | 76–80% |
+| header chip, untrained: Dark (0.4–0.85) | 0% | 20–24% |
+
+One full Large Moon on a clear night alone gives darkness 0.70: an untrained
+fighter loses 17.5% dodge instead of 25% and swings at shadows 10.5% of the
+time instead of 15%. Darkvision training slows by the same 8% on average.
+
+**What the player sees.** The header's dark chip already bands the factor
+(Blind dark / Dark / Gloom); on a moonlit night it drops a band. Its tooltip
+gains one line: "Moonlight: −30% darkness" or "Moonlight: none (overcast)".
+No Chronosense gate: you see moonlight whether or not you can name the phase.
+The Weathersense forecast already shows which coming hours are clear, so a
+player who reads both chips can pick a moonlit night to hunt in. No new
+system teaches this; it is not on the critical path.
+
+**Laws.** Every factor is in 0..1, so darkness stays in 0.4..1 at night: no
+new arithmetic edge (COMPLETABILITY C). No save field; offline replay gets the
+same nights. Darkness is applied at roll time in combat, not through
+`getDerivedStats`, so the derived-stats fingerprint is untouched.
+
+**Build cost.** About 40 lines: the three knobs, `moonlight(moons)` in
+clock.ts, `skyDarkness` and the `placeDarkness` change in exposure.ts (it
+needs the weather kind, so it takes the state or a pre-sampled kind), the
+tooltip line in App.svelte. `weatherAt` is computed only when the place is open
+sky at night, which is never in current content; if a future open region makes
+it hot (it runs per attack roll), memoize it per region per game minute.
+Tests: all moons new → today's values exactly; three full + clear → 0.4 at
+midnight; overcast → 1; `dark` tag → 1; settlement → 0; a `daypart: 'night'`
+encounter still rolls under a full moon; Darkvision XP per minute drops with
+moonlight.
+
+**Open questions (default first):**
+
+1. **When to build.** Now (inert until an open-sky region exists, covered by
+   unit tests), or together with the first open-sky region.
+2. **Rise and set.** No: each moon lights the whole night by its phase. Or:
+   moons rise and set by phase, so a first quarter sets at midnight and a last
+   quarter rises at midnight (a moon is up for the 12 hours centred on
+   12:00 + phase × 24 h).
+3. **Strength.** `MOONLIGHT_MAX` 0.6 and weights 0.5 / 0.3 / 0.2. Higher means
+   moonlit nights drop more often to Dark or Gloom.
+4. **Training.** Yes, moonlight slows Darkvision training: one darkness number
+   feeds both the penalties and the XP, as today. Or: XP reads the moonless
+   darkness and only the penalties get moonlight.
 
 ## The weather
 
