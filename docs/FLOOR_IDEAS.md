@@ -265,10 +265,8 @@ It waits on:
 - band 3 ([plans/bands-2-3.md](plans/bands-2-3.md) build order step 6: the M3
   key boon, M4, M5 and the direction floors)
 - goblin gods 4 and 5
-- a moon in the sky (Q2)
 
-The escape streak can be built and tested on a band 2 spot before any of
-these.
+The escape streak can be built and tested on a band 2 spot before either.
 
 **As posted (2026-10-28).** *"a subfloor to floors 4-6. can only be accessed
 on the forest-facing section of band 3 (floors 7-10) by fighting a goblin and
@@ -284,11 +282,12 @@ on"*
 
 - No tracker, counter or log line for the escape streak until the whole
   requirement is met. It is a secret floor, so there is no hint either.
-- A player who is too strong cannot meet the streak as first drafted. Fixing
-  that is Q1.
+- A player who is too strong cannot meet the streak as first drafted. The
+  goblins at that spot scale with the player, up to a cap (Q1, answered).
 - An eighth ending: the player unites the tribes under the player.
-- The world has a moon. The smithing card's "the world has no moon" was an
-  over-reading of a code comment (Q2).
+- The world has a moon, as part of the time and weather system. The festival
+  does not depend on it (Q2, answered). The smithing card's "the world has no
+  moon" was an over-reading of a code comment.
 
 **The place in one line.** The thief tribe hosts the festival and takes 10%
 of every bet and contract. The other four tribes pay it. The winning tribe
@@ -339,7 +338,10 @@ Today accepting a quest writes no stat, so "took a contract" cannot be read.
 - **What the player sees.** Nothing until the fifth escape. Then one log line
   appears, and so does the new path.
 - **Data.** `SpotDef.escape?: { tag: 'goblin'; streak: 5; opens:
-  'flag:fest_open' }`, plus whatever Q1 adds.
+  'flag:fest_open'; scaleCap: number }`.
+- **Scaling.** The goblins at that spot spawn scaled to the player, up to
+  `scaleCap` (Q1). This needs new code in `spawnMonster`, a spot-level
+  override like M5's direction step.
 - **What counts.** The player leaves a live, non-forced fight that still has
   a living enemy with the tag. Leaving means travel, caravan, an activity
   switch or a climb.
@@ -440,8 +442,8 @@ Today accepting a quest writes no stat, so "took a contract" cannot be read.
 6. Ruler.
 7. Tribes 4 and 5 and their gods.
 
-The moon (Q2) is separate. The first slice is session 1, tested on a band 2
-goblin spot, and it stays on a branch.
+The first slice is session 1, tested on a band 2 goblin spot, and it stays on
+a branch.
 
 **Objections and rulings.** From antagonist-design, 2026-10-28, verdict *fix
 first*.
@@ -471,18 +473,23 @@ Clean:
 
 **Open questions.**
 
-1. **Strong players.** A player who kills goblins faster than they can walk
-   away cannot meet the streak.
-   - *Default:* the goblin at that spot scales with the player (its level or
-     HP is set from the player's damage), so the fight always lasts long
-     enough to leave. No damage or time bar.
-   - Alternative: no bar and no scaling, and accept the gap.
-2. **The moon.** The "no moon" line came from `exposure.ts:126` ("Moonless
-   on purpose, for now", in the darkness model since the prototype import).
-   The smithing card (c5c69fb) turned that into a world rule.
-   - *Default:* the sky gets a moon with phases.
-   - Nothing about the festival waits on the moon; "five moons" is the
-     festival's name.
+1. **Strong players.** *Answered (user, 2026-10-29): "the goblins scale to
+   some point."*
+   - The goblins at the escape spot scale with the player up to a cap, so
+     the fight lasts long enough to leave.
+   - Scaling: level or HP set from the player's damage.
+   - The cap is a dial, set at build time.
+   - There is no damage bar and no time bar.
+   - Above the cap, a strong enough player can still end the fight before
+     leaving. The user accepts this.
+2. **The moon.** *Answered (user, 2026-10-29): "the moon doesn't matter in
+   this case, it just matters that the moon exists and is part of the time
+   and weather system."*
+   - The moon is world work in `clock.ts`, `weather.ts`, `exposure.ts` and
+     `WEATHER.md`, not part of this entry.
+   - The "no moon" line came from `exposure.ts:126` ("Moonless on purpose,
+     for now", in the darkness model since the prototype import). The
+     smithing card (c5c69fb) turned that into a world rule; it is corrected.
 3. **Flag lifetime.** Every `flag:` resets at prestige today.
    - *Default:* the ending flags are per run, so each run picks again.
    - Plus a carried `flag:keep_fest_<ending>`: `prestigeNow` copies
