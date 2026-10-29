@@ -3,6 +3,7 @@ import { createInitialState } from '../src/core/state';
 import { SPOTS } from '../src/core/registry';
 import { eligibleEncounters, encounterPowerRatio } from '../src/core/systems/combat';
 import { TICKS_PER_GAME_MINUTE } from '../src/core/data/climate.data';
+import { clockOf } from '../src/core/systems/clock';
 import type { GameState } from '../src/core/types';
 
 /**
@@ -46,6 +47,14 @@ describe('the keeper changes with the clock', () => {
     const midnight = ids(at(0));
     expect(midnight).toContain('slime_base_advanced');
     expect(midnight).not.toContain('hobgoblin');
+  });
+
+  it('a full moon is still night: moonlight never moves the boundary', () => {
+    const fullMoon = at(0);
+    fullMoon.totalTicks += 14 * 24 * 60 * TICKS_PER_GAME_MINUTE; // the 15th: Middle Moon full
+    expect(clockOf(fullMoon.totalTicks).moons.find((m) => m.id === 'middle_moon')?.phaseId).toBe('full');
+    expect(ids(fullMoon)).toContain('slime_base_advanced');
+    expect(ids(fullMoon)).not.toContain('hobgoblin');
   });
 
   it('the trash table ignores the clock', () => {

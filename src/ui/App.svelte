@@ -37,7 +37,14 @@
   import { WEATHER_ICONS, weatherAt, worldSeedOf } from '../core/systems/weather';
   import { forecastFor, PROGNOSIS_TOOLTIP_AT, WEATHERSENSE_ID } from '../core/systems/weathersense';
   import Tip from './lib/Tip.svelte';
-  import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from '../core/systems/exposure';
+  import {
+    DARK_DODGE_PENALTY,
+    DARK_MISS_CHANCE,
+    darknessFactor,
+    MOONLIGHT_MAX,
+    MOONLIGHT_THROUGH,
+    moonlightOn,
+  } from '../core/systems/exposure';
   import { subsystemUnlocked } from '../core/systems/unlocks';
   import { AREAS, REGIONS, SKILLS, SPOTS } from '../core/registry';
   import {
@@ -91,8 +98,18 @@
     const miss = Math.round(DARK_MISS_CHANCE * dark * 100);
     const level = gs.skills.darkvision?.level ?? 0;
     const seen = level > 0 ? ` · ${SKILLS.darkvision.name} ${level} is buying it back` : '';
-    return `You are fighting in the dark: −${dodge}% dodge, +${miss}% chance of swinging at shadows${seen}`;
+    const moon = moonLine(moonlightOn(gs));
+    return `You are fighting in the dark: −${dodge}% dodge, +${miss}% chance of swinging at shadows${seen}${moon}`;
   });
+
+  /** The dark chip's moonlight line; empty where the dark is not the open sky's. */
+  function moonLine(moon: ReturnType<typeof moonlightOn>): string {
+    if (!moon) return '';
+    const cut = Math.round(MOONLIGHT_MAX * moon.lit * 100);
+    if (cut > 0) return `\nMoonlight: −${cut}% darkness`;
+    if (moon.kind && MOONLIGHT_THROUGH[moon.kind] === 0) return `\nMoonlight: none (${moon.kind})`;
+    return '\nMoonlight: none';
+  }
 
   const wxRegion = $derived(REGIONS[AREAS[SPOTS[gs.spot]?.areaId]?.regionId]);
   const weather = $derived(

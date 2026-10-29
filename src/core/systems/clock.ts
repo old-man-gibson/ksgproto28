@@ -9,6 +9,7 @@ import {
   MONTH_DAYS_PER_YEAR,
   MONTHS,
   MOON_PHASES,
+  MOONLIGHT_WEIGHT,
   MOONS,
   SEASONS,
   TICKS_PER_GAME_MINUTE,
@@ -93,6 +94,12 @@ function moonOf(moon: MoonDef, monthDays: number): MoonState {
     phaseId: id,
     phaseName: name,
   };
+}
+
+/** The moons' combined light above the clouds, 0 (all new) to 1 (all full):
+ *  each moon's illumination weighted by its size (MOONLIGHT_WEIGHT). */
+export function moonlight(moons: MoonState[]): number {
+  return moons.reduce((sum, m) => sum + m.illumination * MOONLIGHT_WEIGHT[m.size], 0);
 }
 
 export function clockOf(totalTicks: number): WorldClock {

@@ -100,8 +100,8 @@ export const SEASONS: SeasonId[] = ['winter', 'spring', 'summer', 'autumn'];
  * calendar; all three are new together again after 28 × 37 × 79 = 81,844
  * month-days, about 225 years.
  *
- * `size` is relative and only drawn so far; a future moonlight rule would
- * weigh by it.
+ * `size` is relative: it sets how big the glyph is drawn and how much of the
+ * night's moonlight the moon gives (MOONLIGHT_WEIGHT).
  */
 export type MoonSize = 'small' | 'medium' | 'large';
 
@@ -119,6 +119,13 @@ export const MOONS: MoonDef[] = [
   { id: 'middle_moon', name: 'Middle Moon', cycleDays: 28, size: 'medium' },
   { id: 'small_moon', name: 'Small Moon', cycleDays: 37, size: 'small' },
 ];
+
+/**
+ * Each moon's share of the moonlight when full. Sums to 1, so three full
+ * moons are moonlight 1. What moonlight does to the dark is
+ * systems/exposure.ts (MOONLIGHT_MAX, MOONLIGHT_THROUGH).
+ */
+export const MOONLIGHT_WEIGHT: Record<MoonSize, number> = { large: 0.5, medium: 0.3, small: 0.2 };
 
 export type MoonPhaseId =
   | 'new'

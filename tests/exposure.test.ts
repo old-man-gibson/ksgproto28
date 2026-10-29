@@ -9,11 +9,25 @@ import {
   darknessFactor,
   grantActivityExposure,
   HEAT_TRAINS_AT,
+  MOONLIGHT_MAX,
+  MOONLIGHT_THROUGH,
+  moonlightOn,
+  moonlightThrough,
   naturalDarkness,
+  placeDarkness,
+  skyDarkness,
   tickExposure,
   weatherExposure,
 } from '../src/core/systems/exposure';
-import type { WeatherSample } from '../src/core/systems/weather';
+import {
+  weatherAt,
+  worldSeedOf,
+  type WeatherKind,
+  type WeatherSample,
+} from '../src/core/systems/weather';
+import { clockOf, moonlight } from '../src/core/systems/clock';
+import { MOONLIGHT_WEIGHT } from '../src/core/data/climate.data';
+import { AREAS, REGIONS, SPOTS } from '../src/core/registry';
 
 const at = (d: number, h = 0) => (d * 1440 + h * 60) * 10;
 
@@ -73,7 +87,8 @@ describe('the dark', () => {
     expect(darknessFactor(world('living_room', night).state)).toBe(0); // indoor
     expect(darknessFactor(world('deep_woods', at(3, 12)).state)).toBe(0); // daylight
 
-    const wild = world('deep_woods', night).state;
+    // Tick 0 is midnight with all three moons new: no moonlight, whatever the sky.
+    const wild = world('deep_woods', 0).state;
     expect(darknessFactor(wild)).toBe(1);
     wild.skills.darkvision = { level: 25, xp: 0 };
     expect(darknessFactor(wild)).toBe(0.5);
@@ -106,6 +121,97 @@ describe('the dark', () => {
     tickExposure(state, bus);
     expect(state.skills.darkvision).toBeDefined();
     expect(state.skills.dark_resistance).toBeDefined();
+  });
+});
+
+describe('moonlight', () => {
+  const newMoons = clockOf(0).moons;
+  const fullMoons = newMoons.map((m) => ({ ...m, illumination: 1 }));
+
+  it('is 0 with every moon new and 1 with every moon full', () => {
+    expect(moonlight(newMoons)).toBe(0);
+    expect(moonlight(fullMoons)).toBeCloseTo(1, 12);
+    expect(Object.values(MOONLIGHT_WEIGHT).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 12);
+  });
+
+  it('clouds decide how much gets through; no weather sample means no clouds', () => {
+    expect(moonlightThrough(fullMoons, 'clear')).toBeCloseTo(1, 12);
+    expect(moonlightThrough(fullMoons, 'mist')).toBeCloseTo(0.5, 12);
+    expect(moonlightThrough(fullMoons, 'overcast')).toBe(0);
+    expect(moonlightThrough(fullMoons, 'snow')).toBe(0);
+    expect(moonlightThrough(fullMoons, null)).toBeCloseTo(1, 12);
+    for (const through of Object.values(MOONLIGHT_THROUGH)) {
+      expect(through).toBeGreaterThanOrEqual(0);
+      expect(through).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('no moonlight leaves the sky as dark as before; the brightest night is still 0.4 dark', () => {
+    for (let hour = 0; hour < 24; hour++) {
+      expect(skyDarkness(hour, 0)).toBe(naturalDarkness(hour));
+    }
+    expect(skyDarkness(23, 1)).toBeCloseTo(1 - MOONLIGHT_MAX, 12);
+    expect(skyDarkness(23, 1)).toBeCloseTo(0.4, 12);
+    expect(skyDarkness(19, 1)).toBeCloseTo(0.2, 12);
+    expect(skyDarkness(12, 1)).toBe(0);
+  });
+
+  it('never reaches a dark place, a roof or lamplight, and is not even sampled by day', () => {
+    const full = () => 1;
+    expect(placeDarkness(undefined, new Set(['dark']), 23, full)).toBe(1);
+    expect(placeDarkness(undefined, new Set(['settlement']), 23, full)).toBe(0);
+    expect(placeDarkness({ sheltered: true }, new Set(), 23, full)).toBe(0);
+    const never = () => {
+      throw new Error('sampled the sky');
+    };
+    expect(placeDarkness(undefined, new Set(), 12, never)).toBe(0);
+    expect(placeDarkness(undefined, new Set(['indoor']), 23, never)).toBe(0);
+    expect(placeDarkness(undefined, new Set(), 23, full)).toBeCloseTo(0.4, 12);
+  });
+
+  /** The first 23:00 in the woods whose sky is `kind`, under a fixed seed. */
+  function woodsNightWith(kind: WeatherKind) {
+    const region = REGIONS[AREAS[SPOTS.deep_woods.areaId].regionId];
+    const createdAt = 20260804;
+    for (let d = 1; d < 368; d++) {
+      const t = at(d, 23);
+      if (weatherAt(worldSeedOf(createdAt), region, t)?.kind !== kind) continue;
+      if (kind === 'clear' && moonlight(clockOf(t).moons) < 0.2) continue;
+      const w = world('deep_woods', t);
+      w.state.createdAt = createdAt;
+      return w;
+    }
+    throw new Error(`no ${kind} night found`);
+  }
+
+  it('a clear moonlit night in the woods is lighter; an overcast one is not', () => {
+    const clear = woodsNightWith('clear');
+    const lit = moonlightThrough(clockOf(clear.state.totalTicks).moons, 'clear');
+    expect(darknessFactor(clear.state)).toBeCloseTo(1 - MOONLIGHT_MAX * lit, 12);
+    expect(darknessFactor(clear.state)).toBeLessThan(0.9);
+    expect(moonlightOn(clear.state)).toEqual({ lit, kind: 'clear' });
+
+    const overcast = woodsNightWith('overcast');
+    expect(darknessFactor(overcast.state)).toBe(1);
+    expect(moonlightOn(overcast.state)).toEqual({ lit: 0, kind: 'overcast' });
+  });
+
+  it('the readout stays silent where moonlight cannot matter', () => {
+    expect(moonlightOn(world('village_square', at(3, 23)).state)).toBeNull(); // lamplight
+    expect(moonlightOn(world('malgeri_dc_central_hub', at(3, 23)).state)).toBeNull(); // dark place
+    expect(moonlightOn(world('deep_woods', at(3, 12)).state)).toBeNull(); // daylight
+  });
+
+  it('a moonlit night teaches Darkvision less than a clouded one', () => {
+    const xpAfterOneMinute = (w: ReturnType<typeof woodsNightWith>) => {
+      w.state.skills.darkvision = { level: 1, xp: 0 };
+      tickExposure(w.state, w.bus);
+      return w.state.skills.darkvision.xp;
+    };
+    const moonlit = xpAfterOneMinute(woodsNightWith('clear'));
+    const clouded = xpAfterOneMinute(woodsNightWith('overcast'));
+    expect(moonlit).toBeGreaterThan(0);
+    expect(moonlit).toBeLessThan(clouded);
   });
 });
 

@@ -457,8 +457,10 @@ REGION darkens every chamber without tagging each one. Elemental tags
 ('heat', 'poison'…) seep passive resist XP into loiterers; `dark` is
 darkness at any hour (trains Darkvision, applies night-fighting penalties,
 beats roofs and lamplight); `indoor` roofs out the weather; `settlement`
-means lamplight. The same elemental tags on an *activity* pay resist XP per
-completed cycle. Both linter layers check the vocabulary at all three levels
+means lamplight. A place with none of these in an unsheltered region is
+open sky: dark at night, lighter under moonlight on a clear night
+(WEATHER.md, "Moonlight"). No region is open sky yet. The same elemental
+tags on an *activity* pay resist XP per completed cycle. Both linter layers check the vocabulary at all three levels
 (`ELEMENT_TAGS`/`PLACE_TAGS` in systems/exposure.ts).
 
 A region may also carry `world: { x, y }` — its pin on the **World Atlas**
