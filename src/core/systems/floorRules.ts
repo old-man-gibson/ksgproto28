@@ -392,8 +392,42 @@ function wingIssues(
  * counted as eligible, because the clear has already been paid by then.
  */
 export function clearTableIssues(spot: Pick<SpotDef, 'id' | 'encounters'>): string[] {
-  const lines = spot.encounters ?? [];
-  if (!lines.length) return [];
+  const { gaps, overflow } = tableGaps([spot]);
+  if (overflow) return [overflow];
+  if (!gaps.length) return [];
+  return [`no encounter line without a daypart or window is eligible at '${spot.id}' when ${shownGaps(gaps)}`];
+}
+
+/**
+ * The same rule for a stamp clear (`SpotDef.stampOnClear`): the floor's forms
+ * finish in different spots (band 3's ward 7), each eligible only in its own
+ * form, so the spots are checked as ONE table. At every sample some spot must
+ * have an eligible line, except where the stamp itself is already set: the
+ * floor is cleared then and nothing needs to be.
+ */
+export function stampClearTableIssues(spots: Pick<SpotDef, 'id' | 'encounters'>[], stamp: string): string[] {
+  const { gaps, overflow } = tableGaps(spots, (sample) => (sample[stamp] ?? 0) >= 1);
+  if (overflow) return [overflow];
+  if (!gaps.length) return [];
+  const ids = spots.map((sp) => `'${sp.id}'`).join(', ');
+  return [`no encounter line without a daypart or window is eligible at any of ${ids} (stamp ${stamp}) when ${shownGaps(gaps)}`];
+}
+
+function shownGaps(gaps: string[]): string {
+  const more = gaps.length > 3 ? `; and ${gaps.length - 3} more` : '';
+  return gaps.slice(0, 3).join('; ') + more;
+}
+
+/**
+ * The samples at which none of `spots` has an eligible plain line, described;
+ * `skip` drops a sample. `overflow` instead when there are too many to check.
+ */
+function tableGaps(
+  spots: Pick<SpotDef, 'id' | 'encounters'>[],
+  skip?: (sample: Record<string, number>) => boolean,
+): { gaps: string[]; overflow?: string } {
+  const lines = spots.flatMap((sp) => sp.encounters ?? []);
+  if (!lines.length) return { gaps: [] };
   const marks = new Map<string, Set<number>>();
   for (const line of lines) {
     for (const c of line.requires ?? []) {
@@ -411,7 +445,8 @@ export function clearTableIssues(spot: Pick<SpotDef, 'id' | 'encounters'>): stri
   const axes = keys.map((k) => [...marks.get(k)!].sort((a, b) => a - b));
   const total = axes.reduce((n, a) => n * a.length, 1);
   if (total > CLEAR_TABLE_SAMPLE_CAP) {
-    return [`'${spot.id}' reads ${keys.length} counters (${total} combinations); too many to check`];
+    const ids = spots.map((sp) => `'${sp.id}'`).join(', ');
+    return { gaps: [], overflow: `${ids} reads ${keys.length} counters (${total} combinations); too many to check` };
   }
   const plain = lines.filter((l) => !l.daypart && !l.window);
   const covers = (requires: UnlockCondition[] | undefined, sample: Record<string, number>): boolean =>
@@ -424,7 +459,7 @@ export function clearTableIssues(spot: Pick<SpotDef, 'id' | 'encounters'>): stri
   for (let n = 0; n < total; n++) {
     const sample: Record<string, number> = {};
     keys.forEach((k, i) => (sample[k] = axes[i][at[i]]));
-    if (!plain.some((l) => covers(l.requires, sample))) {
+    if (!skip?.(sample) && !plain.some((l) => covers(l.requires, sample))) {
       gaps.push(keys.length ? keys.map((k) => `${k} = ${sample[k]}`).join(', ') : 'any state');
     }
     for (let i = keys.length - 1; i >= 0; i--) {
@@ -432,12 +467,7 @@ export function clearTableIssues(spot: Pick<SpotDef, 'id' | 'encounters'>): stri
       at[i] = 0;
     }
   }
-  if (!gaps.length) return [];
-  const shown = gaps.slice(0, 3).join('; ');
-  const more = gaps.length > 3 ? `; and ${gaps.length - 3} more` : '';
-  return [
-    `no encounter line without a daypart or window is eligible at '${spot.id}' when ${shown}${more}`,
-  ];
+  return { gaps };
 }
 
 // ---------- All floor rules for one banded floor ----------
@@ -464,7 +494,19 @@ export function floorStructureIssues(
   const gates = floorGates(adj, within, floor.landing, floorCounters(floorSpots));
   issues.push(...skipIssues(floor, adj, within, gates));
   issues.push(...wingIssues(floor, adj, within, spine));
-  for (const id of targets) {
+  // A stamp clear's spots are one table (stampClearTableIssues); every other
+  // clear spot is checked on its own.
+  const stamped = new Set<string>();
+  for (const c of floor.clear ?? []) {
+    if (c.type !== 'stat' || !c.key) continue;
+    const group = targets.filter((id) => spots[id].stampOnClear === c.key);
+    if (!group.length) continue;
+    group.forEach((id) => stamped.add(id));
+    for (const message of stampClearTableIssues(group.map((id) => spots[id]), c.key)) {
+      issues.push({ rule: 'clear-table', floor: floor.id, message });
+    }
+  }
+  for (const id of targets.filter((t) => !stamped.has(t))) {
     for (const message of clearTableIssues(spots[id])) issues.push({ rule: 'clear-table', floor: floor.id, message });
   }
   return { issues, spine: [...spine] };

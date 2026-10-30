@@ -5165,7 +5165,7 @@ export interface WardWindowDef {
   doneKey: string;
   /** The tick the window opened. */
   atKey: string;
-  /** Set to 1 when the window closes unkilled; the threat's row reads it (`statMax` 0). */
+  /** Set to 1 when the window closes unkilled, always together with `doneKey`, which is what the threat's row reads (`statMax` 0). */
   goneKey: string;
   /** Set to 1 once any fight with the threat has happened. */
   foughtKey: string;

@@ -2193,8 +2193,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   },
   // Position 3: the demon. Not forced: walking away mid-fight is the
   // retreat, and the demon keeps half of what it lost (keepsWounds). Its row
-  // shuts when the window lapses (`ward:f7:demon:gone`, WARD_WINDOWS); the
-  // ward is cleared by the lapse then, so the empty table finishes nothing.
+  // shuts on `ward:f7:done`, which the kill writes (stampOnClear) and the
+  // window's lapse writes together with `ward:f7:demon:gone` (WARD_WINDOWS):
+  // gone always comes with done, so the row reads done alone and the floor
+  // rules can check the three finishing spots as one table.
   f7_burnt_camp: {
     id: 'f7_burnt_camp',
     name: 'The Burnt Camp',
@@ -2213,7 +2215,6 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
         level: [12, 12],
         requires: [
           { type: 'stat', key: 'band:pos:ascent_f7', value: 3 },
-          { type: 'statMax', key: 'ward:f7:demon:gone', value: 0 },
           { type: 'statMax', key: 'ward:f7:done', value: 0 },
         ],
       },

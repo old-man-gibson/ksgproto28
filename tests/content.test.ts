@@ -154,13 +154,6 @@ function statCounterValid(key: string): boolean {
     const [, spotId, monsterId] = key.split(':');
     return !!SPOTS[spotId]?.encounters?.some((e) => e.once && e.monsterId === monsterId);
   }
-  // `band:pos:<floor>` is a ward's position: the other floors of its any-order
-  // band cleared this run, kept live while the floor is uncleared (the ward
-  // engine; docs/plans/bands-2-3.md, "The four wards").
-  if (key.startsWith('band:pos:')) {
-    const floor = FLOORS[key.slice(9)];
-    return !!floor?.bandId && BANDS[floor.bandId]?.order === 'any';
-  }
   if (key.startsWith('kills:')) return key.slice(6) in MONSTERS;
   if (key.startsWith('gather:')) return key.slice(7) in MATERIALS;
   // `forged:<class>` is bumped when the anvil makes a piece of that class, and
@@ -2319,21 +2312,14 @@ describe('towers, bands & floors', () => {
     // the spine rules below. Each one is listed here and in towers.data.ts
     // SPINE_EXEMPT, with its reason, so the exemption is a decision and not an
     // accident:
-    // - ascent_f7: the city's south ward (bands-2-3.md "The four wards"), until
-    //   floorRules reads stampOnClear (integration removes this). Its clear is
-    //   ward:f7:done, stamped by whichever form its position picks.
-    //   tests/band3-ward7.test.ts runs the rules on each form meanwhile.
     // - ascent_f14: the harbor's final mission (FLOOR_IDEAS.md idea 3, ruling
     //   Q2). Its clear is any one of four side wings, stamped as
     //   flag:sea:14:done by the side's boss kill (systems/sea.ts).
     const skipped = reports()
       .filter(({ report }) => report.skipped !== undefined)
       .map(({ floor, report }) => `${floor.id} (${report.skipped})`);
-    expect(skipped, 'floors whose spine rules did not run').toEqual([
-      'ascent_f7 (no-clear-spot)',
-      'ascent_f14 (no-clear-spot)',
-    ]);
-    expect(Object.keys(SPINE_EXEMPT), 'the forge stays quiet for exactly these').toEqual(['ascent_f7', 'ascent_f14']);
+    expect(skipped, 'floors whose spine rules did not run').toEqual(['ascent_f14 (no-clear-spot)']);
+    expect(Object.keys(SPINE_EXEMPT), 'the forge stays quiet for exactly these').toEqual(['ascent_f14']);
     expect(issuesOf('spine')).toEqual([]);
   });
 

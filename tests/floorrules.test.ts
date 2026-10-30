@@ -6,6 +6,7 @@ import { createInitialState } from '../src/core/state';
 import { isExplored } from '../src/core/systems/actions';
 import {
   clearTableIssues,
+  stampClearTableIssues,
   exploreIssues,
   floorStructureIssues,
   type FloorAdjacency,
@@ -444,5 +445,29 @@ describe('the forge validator reports the same rules', () => {
     expect(mine(forgeIssues(() => {}, questClear))).toEqual([
       expect.objectContaining({ severity: 'warn', subject: { kind: 'floor', id: 'ascent_f2' } }),
     ]);
+  });
+});
+
+describe("a stamp clear's spots are one table (band 3's ward 7)", () => {
+  const at = (pos: number) => ({ type: 'stat' as const, key: 'band:pos:x', value: pos });
+  const upTo = (pos: number) => ({ type: 'statMax' as const, key: 'band:pos:x', value: pos });
+  const open = { type: 'statMax' as const, key: 'ward:x:done', value: 0 };
+  const line = (...requires: object[]) => ({ monsterId: 'm', weight: 1, level: [1, 1] as [number, number], requires });
+
+  it('passes when some spot is eligible at every position, and ignores samples where the stamp is set', () => {
+    const road = { id: 'road', encounters: [line(upTo(0), open)] };
+    const camp = { id: 'camp', encounters: [line(at(1), open)] };
+    expect(stampClearTableIssues([road, camp] as never, 'ward:x:done')).toEqual([]);
+    // Each alone has gaps: the single-spot rule would flag both.
+    expect(clearTableIssues(road as never)).not.toEqual([]);
+    expect(clearTableIssues(camp as never)).not.toEqual([]);
+  });
+
+  it('flags a position no spot covers', () => {
+    const road = { id: 'road', encounters: [line(upTo(0), open)] };
+    const camp = { id: 'camp', encounters: [line(at(2), open)] };
+    const issues = stampClearTableIssues([road, camp] as never, 'ward:x:done');
+    expect(issues).toHaveLength(1);
+    expect(issues[0]).toContain('band:pos:x = 1');
   });
 });

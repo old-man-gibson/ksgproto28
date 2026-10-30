@@ -178,10 +178,11 @@ describe("ward 7: the chief's tent", () => {
 });
 
 describe('ward 7: the demon', () => {
-  it("its row shuts when the window's gone key is set", () => {
+  it('its row shuts when the window lapses, which writes gone and done together', () => {
     const s = atPosition(3);
     expect(ids(s, 'f7_burnt_camp')).toEqual(['ph_camp_demon']);
     s.stats[GONE] = 1;
+    s.stats[DONE] = 1;
     expect(ids(s, 'f7_burnt_camp')).toEqual([]);
   });
 
@@ -205,10 +206,11 @@ describe('ward 7: the demon', () => {
     expect(win.doneKey).toBe(DONE);
     expect(spot.stampOnClear).toBe(win.doneKey);
     expect(FLOOR.clear).toEqual([{ type: 'stat', key: win.doneKey, value: 1 }]);
-    // The row is the window's monster, open from the window's position until gone.
+    // The row is the window's monster, open from the window's position until
+    // the ward is done; the lapse writes done with gone (systems/wards.ts).
     const row = spot.encounters!.find((e) => e.monsterId === win.monsterId)!;
     expect(row.requires).toContainEqual({ type: 'stat', key: `band:pos:${win.floorId}`, value: win.position });
-    expect(row.requires).toContainEqual({ type: 'statMax', key: win.goneKey, value: 0 });
+    expect(row.requires).toContainEqual({ type: 'statMax', key: win.doneKey, value: 0 });
     // Every key the window writes is its own.
     const keys = [win.doneKey, win.atKey, win.goneKey, win.foughtKey, win.flags.fought, win.flags.unmet];
     expect(new Set(keys).size).toBe(keys.length);

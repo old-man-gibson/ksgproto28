@@ -480,9 +480,6 @@ export function offLadderDoor(from: string, to: string): boolean {
  * - Floor 14, the harbor's final mission (FLOOR_IDEAS.md idea 3, ruling Q2).
  */
 export const SPINE_EXEMPT: Record<string, string> = {
-  // until floorRules reads stampOnClear (integration removes this)
-  ascent_f7:
-    'cleared by ward:f7:done, stamped by whichever form its position picks (the merchant road, the chief’s tent, the burnt camp); tests/band3-ward7.test.ts checks each form',
   ascent_f14:
     'cleared by any one of four side wings, stamped as flag:sea:14:done by the side’s boss kill (systems/sea.ts); an AND-only clear cannot name four spots of which one is enough',
 };
