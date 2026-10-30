@@ -1610,7 +1610,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   death_knight: {
     id: 'death_knight',
     name: 'Death Knight',
-    icon: '📦',
+    icon: '☠️',
     tier: 'veteran',
     tags: ['humanoid', 'inorganic', 'dark', 'medium'],
     damageType: 'slashing',
@@ -1619,11 +1619,19 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     // Fractions, not percentages (see psionic_slime above). `nature` is not a
     // damage type — the closest living-world one is `earth`.
     resistances: { poison: 1, dark: 0.8, cold: 0.75, heat: -0.4, light: -1, earth: -0.4 },
-    xp: 0,
-    gold: [0, 0],
-    // Drops nothing yet, expressed as one roll of a `nothing` entry the way
-    // benchmark_dummy does, since a table with no rolls never runs.
-    loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 100 }] },
+    // Floor 9's keeper at positions 2–3 (band 3 wards): paid a step above the
+    // death squire, its lower form. Placeholder numbers.
+    xp: 160,
+    gold: [40, 80],
+    loot: {
+      rolls: 2,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 15 },
+        { kind: 'material', id: 'bone_dust', weight: 30, qty: [3, 5] },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [3, 5] },
+        { kind: 'nothing', weight: 35 },
+      ],
+    },
     /*
      * Arcane, and authored as SENTENCES — the same word ids the player speaks,
      * composed by the same grammar. Word order is meaning here too: the second

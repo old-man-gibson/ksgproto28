@@ -39,6 +39,8 @@ import {
   type BreakdownLine,
 } from '../../core/systems/attributes';
 import {
+  BANDS,
+  FLOORS,
   MATERIALS,
   MONSTERS,
   MONSTER_TAGS,
@@ -52,6 +54,7 @@ import {
   STYLES,
 } from '../../core/registry';
 import { itemDefOf } from '../../core/systems/assembly';
+import { eligibleEncounters, spotCleared } from '../../core/systems/combat';
 import { SPOILED } from '../../core/systems/consumables';
 import { resolveModValue } from '../../core/systems/derived';
 import { resolveRune } from '../../core/systems/runes';
@@ -189,14 +192,40 @@ export function condText(cond: UnlockCondition): string {
         const teacher = schoolTeacher(cond.key.slice('taught:'.length));
         return teacher ? `lessons from ${NPCS[teacher.npcId].name}` : 'a teacher';
       }
+      if (cond.key.startsWith('fights:')) {
+        return `win ${cond.value} fight${cond.value === 1 ? '' : 's'} at ${SPOTS[cond.key.slice(7)]?.name ?? cond.key.slice(7)}`;
+      }
+      if (cond.key.startsWith('band:pos:')) return `${cond.value}+ ${otherFloorsOf(cond.key)} cleared`;
       return `${cond.key} ≥ ${cond.value}`;
     case 'statMax':
+      if (cond.key.startsWith('band:pos:')) return `at most ${cond.value} ${otherFloorsOf(cond.key)} cleared`;
       return `${cond.key} ≤ ${cond.value}`;
     case 'quest':
       return `quest "${QUESTS[cond.id]?.name ?? cond.id}" completed`;
     case 'boon':
       return `own the ${PRESTIGE_BOONS[cond.id]?.name ?? cond.id} boon`;
   }
+}
+
+/** "other floors of The City" for a ward position key (`band:pos:<floor>`). */
+function otherFloorsOf(key: string): string {
+  const floor = FLOORS[key.slice('band:pos:'.length)];
+  const band = floor?.bandId === undefined ? undefined : BANDS[floor.bandId];
+  return band ? `other floors of ${band.name}` : 'other floors';
+}
+
+/**
+ * The spots that write a stamp clear (`SpotDef.stampOnClear`), live ones
+ * first: a floor whose forms finish in different places (band 3's ward 7)
+ * names the place that can finish it now, or every place if none can.
+ */
+function stampTerm(key: string, state: GameState): string | null {
+  const spots = Object.values(SPOTS).filter((sp) => sp.stampOnClear === key);
+  if (!spots.length) return null;
+  const live = spots.filter((sp) => !spotCleared(state, sp) && eligibleEncounters(state, sp).length > 0);
+  const names = (live.length ? live : spots).map((sp) => sp.name);
+  const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}` : names[0];
+  return `Win ${list}`;
 }
 
 export function condsText(conds: UnlockCondition[] | undefined): string {
@@ -235,6 +264,8 @@ export function termText(cond: UnlockCondition, state: GameState): string {
       const where = SPOTS[boss[1]]?.name ?? boss[1];
       return `Defeat the keeper of ${where}${done}`;
     }
+    const stamp = stampTerm(cond.key, state);
+    if (stamp) return `${stamp}${done}`;
     if (cond.key === 'gold:earned') {
       return `Earn ${cond.value} gold all-time (${Math.min(Math.floor(have), cond.value)}/${cond.value})`;
     }
