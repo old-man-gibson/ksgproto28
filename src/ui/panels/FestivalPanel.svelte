@@ -62,7 +62,7 @@
       {/if}
     {/if}
     <p class="dim small">
-      🚪 The door holds {heldPieces} piece{heldPieces === 1 ? '' : 's'} of your gear, your flasks and your provisions until the attempt ends, won or lost.
+      🚪 The door holds {heldPieces} piece{heldPieces === 1 ? '' : 's'} of your gear{run.held.flasks ? ', your flasks and your provisions' : ''} until the attempt ends, won or lost.
       🪜 Leaving by the ladder before the royale ends forfeits it: you land outside the tower and floors 15–16 shut for
       three days or until the next prestige. A knockout does the same. ⏸️ The festival's clock runs only while the game
       does; time away goes to banked bonus time.

@@ -204,6 +204,22 @@ describe('the door: gear held and returned', () => {
     expect(s.equipment.weapon?.defId).toBe('iron_sword');
   });
 
+  it('a held piece never goes back into a hand the body lost during the attempt', () => {
+    const s = atFourteen();
+    s.mutagens.chromosome.main = { id: 'dvibahu', quality: 'c' };
+    const shield = createItem(s, 'wooden_shield');
+    const dagger = createItem(s, 'iron_dagger');
+    s.equipment.offhand = shield;
+    s.equipment.hand3 = dagger;
+    const game = new Game(s);
+    climb(game, DARK_FLOOR);
+    s.mutagens.chromosome.main = null; // the third arm is gone
+    climb(game, 'ascent_f14');
+    expect(s.equipment.offhand?.uid).toBe(shield.uid);
+    expect(s.equipment.hand3).toBeUndefined();
+    expect(s.inventory.some((i) => i.uid === dagger.uid)).toBe(true);
+  });
+
   it('an attempt started before the door took flasks returns its gear all the same', () => {
     const s = geared(atFourteen());
     s.flasks = [{ steps: [] }];

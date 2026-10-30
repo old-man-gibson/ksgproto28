@@ -4,7 +4,7 @@ import { MATERIALS } from '../registry';
 import { itemDefOf } from './assembly';
 import { getDerivedStats } from './derived';
 import { conditionsMet } from './conditions';
-import { HAND_SLOTS, armCost, armsFrom, armsUsed, wieldNote, wieldScale } from './wield';
+import { BASE_ARMS, HAND_SLOTS, armCost, armsFrom, armsUsed, wieldNote, wieldScale } from './wield';
 import { bearerGrants } from './mutagens';
 import { bumpStat } from './achievements';
 import { stockOf, takeGraded } from './disciplines';
@@ -154,16 +154,20 @@ export function equipItem(state: GameState, bus: EventBus, uid: number, slot?: S
 
 /**
  * Put an item back on without turning anything out: only into an empty
- * slot, only if its requirements hold, and in a hand only if the arms
- * budget has room. The item is placed directly, not taken from the pack.
- * Returns false, placing nothing, when it does not fit.
+ * slot, only if its requirements hold, and in a hand only if the body has
+ * that hand (allowedSlots' rule) and the arms budget has room. The item is
+ * placed directly, not taken from the pack. Returns false, placing nothing,
+ * when it does not fit.
  */
 export function wearIfFree(state: GameState, slot: SlotId, item: ItemInstance): boolean {
   const def = itemDefOf(item);
   if (!def || state.equipment[slot] || !canEquip(state, item) || wieldScale(def, slot) <= 0) return false;
-  if (HAND_SLOTS.includes(slot)) {
+  const hand = HAND_SLOTS.indexOf(slot);
+  if (hand >= 0) {
     const grants = bearerGrants(state);
-    if (armsUsed(state, grants) + armCost(grants, def, slot) > armsFrom(grants)) return false;
+    const arms = armsFrom(grants);
+    if (hand >= Math.max(BASE_ARMS, arms)) return false;
+    if (armsUsed(state, grants) + armCost(grants, def, slot) > arms) return false;
   }
   state.equipment[slot] = item;
   return true;
