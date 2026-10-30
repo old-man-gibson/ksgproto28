@@ -139,6 +139,10 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'ph_corsair.desc': 'Placeholder elite humanoid, a skeleton floor’s keeper. Spawns with a raider. Piercing attacks. Fights with Lunge, Dirty Stab and Gather. Drops a Boss Token, gold and leather.',
 
+  // ==== WARD7: monster text (base 2026-10-30; the ward 7 builder's section) ====
+
+  // ==== WARDS8-10: monster text (base 2026-10-30; the wards 8-10 builder's section) ====
+
   // ==== HARBOR: monster text (skeleton 2026-10-30; the harbor builder's section) ====
   'ph_reef_eel.desc': 'Placeholder basic sea monster on the harbor band’s waters. Piercing bite with a 15% chance to inflict Bleeding. Fights with Lunge and Gather. The navy’s and the merchants’ prey. Drops bone dust and biomatter.',
   'ph_deep_serpent.desc': 'Placeholder veteran sea monster on the harbor band’s waters. Bludgeoning attacks. Fights with Heavy Blow and Gather. The navy’s and the merchants’ prey. Drops bone dust and biomatter.',

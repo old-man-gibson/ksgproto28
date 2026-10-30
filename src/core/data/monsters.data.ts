@@ -1832,6 +1832,10 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
     },
   },
 
+  // ==== WARD7: monsters (base 2026-10-30; the ward 7 builder's section) ====
+
+  // ==== WARDS8-10: monsters (base 2026-10-30; the wards 8-10 builder's section) ====
+
   // ==== HARBOR: monsters (skeleton 2026-10-30; the harbor builder's section) ====
   // Band 4, the harbor (docs/FLOOR_IDEAS.md idea 3), at placeholder fidelity:
   // stats beside the floor-11 siege placeholders, the shared basic techniques,

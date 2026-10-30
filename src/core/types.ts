@@ -2167,6 +2167,13 @@ export interface MonsterDef {
   /** Intrinsic tier — part of the monster's identity, not rolled. */
   tier: TierId;
   /**
+   * It keeps part of its wounds between fights: when a fight ends without its
+   * death (the player walks away or is knocked out), `share` of the HP it lost
+   * is written to the run stat `key`, and its next spawn starts that much
+   * lower. Its death clears the stat. (bands-2-3.md, "The four wards", M11.)
+   */
+  keepsWounds?: { key: string; share: number };
+  /**
    * Overrides the tier's penetration (`TierDef.penetration`) for the conditions
    * this species applies to the player. Omit for the tier's value; 0 is the
    * explicit "none". Only the immunity line reads it, never the partial dose.
@@ -4485,6 +4492,13 @@ export interface SpotDef {
    * counter (see `SpotFind.stat`).
    */
   fightLimit?: number;
+  /**
+   * A run stat set to 1 the moment this spot's `fightLimit` is spent, so a
+   * floor whose forms finish in different places can name one clear (band 3's
+   * ward 7: `ward:f7:done`). Needs `fightLimit`. (docs/plans/bands-2-3.md,
+   * "The four wards", M10.)
+   */
+  stampOnClear?: string;
   /** How the place is drawn (see SceneId). Overrides the area's. */
   scene?: SceneId;
   /**
