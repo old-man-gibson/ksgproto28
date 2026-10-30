@@ -165,6 +165,57 @@ describe('the door: gear held and returned', () => {
     expect(uids(after.filter((i) => i.defId !== FESTIVAL_REWARD))).toEqual(before);
     expect(s.equipment.weapon?.defId).toBe('iron_sword');
   });
+
+  it('holds flasks and provisions, leaves cards, and adds the held ones to what the attempt left', () => {
+    const s = atFourteen();
+    s.flasks = [{ steps: [] }, { steps: [] }];
+    s.stock.travelers_ration = { c: 4, b: 1 };
+    s.materials.healing_salve = 2; // a plain count is held as well as graded stock
+    s.materials.recipe_herb_rubbed_meat = 1;
+    const game = new Game(s);
+    climb(game, DARK_FLOOR);
+    const held = festivalRun(s)!.held;
+    expect(held.flasks).toHaveLength(2);
+    expect(held.provisions!.stock.travelers_ration).toEqual({ c: 4, b: 1 });
+    expect(held.provisions!.materials.healing_salve).toBe(2);
+    expect(s.flasks).toEqual([]);
+    expect(s.stock.travelers_ration).toBeUndefined();
+    expect(s.materials.healing_salve).toBeUndefined();
+    expect(s.materials.recipe_herb_rubbed_meat).toBe(1);
+    // The stores' rations, found during the attempt, are kept on top.
+    s.stock.travelers_ration = { c: 2 };
+    climb(game, 'ascent_f14');
+    expect(s.flasks).toHaveLength(2);
+    expect(s.stock.travelers_ration).toEqual({ c: 6, b: 1 });
+    expect(s.materials.healing_salve).toBe(2);
+  });
+
+  it('a find worn at the end stays worn; the held piece for that slot goes to the pack', () => {
+    const s = geared(atFourteen());
+    const heldVest = s.equipment.chest!.uid;
+    const game = new Game(s);
+    climb(game, DARK_FLOOR);
+    const found = createItem(s, 'leather_vest');
+    s.equipment.chest = found;
+    climb(game, 'ascent_f14');
+    expect(s.equipment.chest!.uid).toBe(found.uid);
+    expect(s.inventory.some((i) => i.uid === heldVest)).toBe(true);
+    // The issued weapon was taken back, so the held sword's slot was free.
+    expect(s.equipment.weapon?.defId).toBe('iron_sword');
+  });
+
+  it('an attempt started before the door took flasks returns its gear all the same', () => {
+    const s = geared(atFourteen());
+    s.flasks = [{ steps: [] }];
+    const game = new Game(s);
+    climb(game, DARK_FLOOR);
+    const held = festivalRun(s)!.held;
+    delete held.flasks;
+    delete held.provisions;
+    climb(game, 'ascent_f14');
+    expect(s.equipment.weapon?.defId).toBe('iron_sword');
+    expect(s.flasks).toEqual([]);
+  });
 });
 
 describe('the issued weapon', () => {

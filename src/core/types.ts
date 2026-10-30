@@ -5133,14 +5133,23 @@ export interface TitleDef {
 
 /**
  * What the festival's door holds for the length of an attempt: everything
- * worn and carried, plus the oil on the held blade. Returned whole when the
- * attempt ends, won or lost.
+ * worn and carried, the oil on the held blade, the flasks and the
+ * provisions. Returned when the attempt ends, won or lost: each piece back
+ * into its slot if the slot is empty, otherwise into the pack.
  */
 export interface HeldGear {
   equipment: Partial<Record<SlotId, ItemInstance>>;
   inventory: ItemInstance[];
   sheathed: ItemInstance | null;
   coating: WeaponCoating | null;
+  /** Absent on an attempt started before the door took flasks (2026-10-30). */
+  flasks?: BrewedFlask[];
+  /**
+   * Food and potions: every consumable material that is not a card, as plain
+   * counts and graded stock. Absent on an attempt started before the door
+   * took them (2026-10-30).
+   */
+  provisions?: { materials: Record<string, number>; stock: Record<string, Partial<Record<QualityTier, number>>> };
 }
 
 /** An attempt's phases: the dark room's waves, the hub's ten days, the royale. */

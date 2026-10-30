@@ -20,7 +20,7 @@ time in a run; losing shuts both floors for three days.
 | | |
 |---|---|
 | Starts | arriving in `f15_dark_room`, floor 15's landing (the `arrive` event) |
-| The door | holds everything worn and carried; issues one plain weapon |
+| The door | holds everything worn and carried, flasks and provisions too; issues one plain weapon |
 | Floor 15's clear | `boss:f15_dark_room`: the room's last fighter, fought alone |
 | The hub | `f15_hall` and `f15_stores`: ten festival days, no fights |
 | Floor 16's clear | `boss:f16_arena`: the field's champion, fought alone and last |
@@ -29,16 +29,25 @@ time in a run; losing shuts both floors for three days.
 
 ## 2. The door (`startFestival`, `returnGear`)
 
-- **Held**: `inventory`, `equipment`, `sheathed` and `coating`, as plain
-  copies in `run.held`. Materials, provisions, flasks, runes and gold stay
-  with the player.
+- **Held**: `inventory`, `equipment`, `sheathed`, `coating` and `flasks`,
+  and the provisions: every consumable material that is not a card (food and
+  potions; `run.held.provisions`, plain counts and graded stock both), as
+  plain copies in `run.held`. Cards, other materials, runes and gold stay
+  with the player. An attempt saved before the door took flasks and
+  provisions has neither field and returns without them (FLOOR_IDEAS §5.3
+  item 26).
 - **Issued**: the family whose weapon skill level is highest, ties broken by
   `kills:weapon:<family>` (counted on every kill from now on), then by
   `ISSUED_WEAPONS` order. The family's starter item with no affix and no rune
   slots; `unarmed` issues nothing. It is lent, so `sellItems` refuses it.
 - **Returned** when the attempt ends, won or lost: the issued weapon is taken
-  back wherever it is, anything else the attempt put in the player's hands
-  goes to the pack, and the held set goes back on whole.
+  back wherever it is, and whatever else the attempt put in the player's
+  hands stays where it is, so a find worn at the end stays on. Each held piece
+  goes back into its slot if the slot is empty and it fits (`wearIfFree`:
+  requirements and the arms budget), otherwise into the pack, with a log line
+  counting the pieces that were turned away. The held oil comes back unless
+  the weapon left in hand carries one of its own. Held flasks and provisions
+  are added to what the attempt left, so the stores' rations are kept.
 
 ## 3. The festival's clock (`run.clock`)
 
@@ -151,5 +160,4 @@ play in probes with strong fighters). John stops at floor 6.
 
 - The festival's own monsters, the technique pool and the rewards are
   placeholders.
-- Whether "carried" should also take provisions and flasks at the door.
 - The stash's UI sits on the Prestige tab, not in the hold.

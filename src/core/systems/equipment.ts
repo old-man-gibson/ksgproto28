@@ -152,6 +152,23 @@ export function equipItem(state: GameState, bus: EventBus, uid: number, slot?: S
   return true;
 }
 
+/**
+ * Put an item back on without turning anything out: only into an empty
+ * slot, only if its requirements hold, and in a hand only if the arms
+ * budget has room. The item is placed directly, not taken from the pack.
+ * Returns false, placing nothing, when it does not fit.
+ */
+export function wearIfFree(state: GameState, slot: SlotId, item: ItemInstance): boolean {
+  const def = itemDefOf(item);
+  if (!def || state.equipment[slot] || !canEquip(state, item) || wieldScale(def, slot) <= 0) return false;
+  if (HAND_SLOTS.includes(slot)) {
+    const grants = bearerGrants(state);
+    if (armsUsed(state, grants) + armCost(grants, def, slot) > armsFrom(grants)) return false;
+  }
+  state.equipment[slot] = item;
+  return true;
+}
+
 export function unequipSlot(state: GameState, slot: keyof GameState['equipment']): void {
   const item = state.equipment[slot];
   if (!item) return;

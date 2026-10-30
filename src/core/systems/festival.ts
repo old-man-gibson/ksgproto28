@@ -1,6 +1,6 @@
 import type { EventBus } from '../engine/events';
-import type { FestivalRun, FestivalState, GameState, HeldGear, ItemInstance } from '../types';
-import { ITEMS, SPOTS } from '../registry';
+import type { FestivalRun, FestivalState, GameState, HeldGear, ItemInstance, MaterialDef, QualityTier, SlotId } from '../types';
+import { ITEMS, MATERIALS, SPOTS } from '../registry';
 import {
   ARENA,
   DARK_ROOM,
@@ -23,7 +23,9 @@ import { rand } from '../engine/rng';
 import { bumpStat, setStat } from './achievements';
 import { itemDefOf } from './assembly';
 import { startStagedGroup } from './combat';
-import { equipItem } from './equipment';
+import { isCard } from './consumables';
+import { grantGraded } from './disciplines';
+import { equipItem, wearIfFree } from './equipment';
 import { festivalRun, lockoutEnd, onFestivalFloor } from './festivalRules';
 import { royaleFightWon, tickRoyale } from './royale';
 import { createItem } from './runes';
@@ -38,9 +40,10 @@ import { text } from '../text/log';
  * 23–25). One attempt runs from the dark room to the royale's end:
  *
  * - **The door.** Arriving in the dark room (floor 15's landing) starts an
- *   attempt: everything worn and carried is held, and one plain weapon of
- *   the player's family is issued. The gear comes back when the attempt
- *   ends, won or lost.
+ *   attempt: everything worn and carried is held, flasks and provisions
+ *   too, and one plain weapon of the player's family is issued. It all
+ *   comes back when the attempt ends, won or lost: into its slot if the
+ *   slot is empty, otherwise into the pack.
  * - **The dark room.** Nine others, in four waves; the last fights alone and
  *   is floor 15's boss line. The room emptied, its door opens onto the hub.
  * - **The hub.** Ten festival days to prepare. The festival keeps its own
@@ -102,6 +105,26 @@ function plainCopy<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+/** Food and potions: a consumable that is eaten or drunk. Cards are read, not carried into a fight. */
+function isProvision(def: MaterialDef): boolean {
+  return !!def.consumable && !isCard(def.consumable);
+}
+
+/** Take the provisions out of the pouch, plain counts and graded stock both. */
+function holdProvisions(state: GameState): NonNullable<HeldGear['provisions']> {
+  const held: NonNullable<HeldGear['provisions']> = { materials: {}, stock: {} };
+  for (const def of Object.values(MATERIALS)) {
+    if (!isProvision(def)) continue;
+    const count = state.materials[def.id];
+    if (count) held.materials[def.id] = count;
+    delete state.materials[def.id];
+    const grades = state.stock?.[def.id];
+    if (grades && Object.values(grades).some((n) => (n ?? 0) > 0)) held.stock[def.id] = plainCopy(grades);
+    if (state.stock) delete state.stock[def.id];
+  }
+  return held;
+}
+
 /** Take everything worn and carried off the player, as the door holds it. */
 function holdGear(state: GameState): HeldGear {
   const held: HeldGear = plainCopy({
@@ -109,31 +132,61 @@ function holdGear(state: GameState): HeldGear {
     inventory: state.inventory,
     sheathed: state.sheathed,
     coating: state.coating,
+    flasks: state.flasks ?? [],
   });
+  held.provisions = holdProvisions(state);
   state.equipment = {};
   state.inventory = [];
   state.sheathed = null;
   state.coating = null;
+  state.flasks = [];
   return held;
 }
 
 /**
- * Give the held set back. The issued weapon is taken back wherever it is;
- * anything else the attempt put in the player's hands (a reward, a find)
- * goes to the pack, so the held equipment goes back on whole.
+ * Give the held set back (ruling 2026-10-30). The issued weapon is taken back
+ * wherever it is. Whatever else the attempt put in the player's hands stays
+ * where it is: a find worn stays worn. Each held piece goes back into its
+ * slot if the slot is empty and the piece fits, otherwise into the pack.
+ * Flasks and provisions are added to what the attempt left. Returns how many
+ * held pieces went to the pack for want of a slot.
  */
-function returnGear(state: GameState, run: FestivalRun): void {
+function returnGear(state: GameState, run: FestivalRun): number {
   const issued = run.issued;
-  const gained: ItemInstance[] = state.inventory.filter((i) => i.uid !== issued);
-  for (const item of Object.values(state.equipment) as (ItemInstance | undefined)[]) {
-    if (item && item.uid !== issued) gained.push(item);
+  for (const [slot, item] of Object.entries(state.equipment) as [SlotId, ItemInstance | undefined][]) {
+    if (item?.uid === issued) delete state.equipment[slot];
   }
-  if (state.sheathed && state.sheathed.uid !== issued) gained.push(state.sheathed);
+  if (state.sheathed?.uid === issued) state.sheathed = null;
+  const gained = state.inventory.filter((i) => i.uid !== issued);
   const held = plainCopy(run.held);
-  state.equipment = held.equipment;
-  state.inventory = [...held.inventory, ...gained];
-  state.sheathed = held.sheathed;
-  state.coating = held.coating;
+  const bumped: ItemInstance[] = [];
+  for (const [slot, item] of Object.entries(held.equipment) as [SlotId, ItemInstance | undefined][]) {
+    if (item && !wearIfFree(state, slot, item)) bumped.push(item);
+  }
+  if (held.sheathed) {
+    if (state.sheathed) bumped.push(held.sheathed);
+    else state.sheathed = held.sheathed;
+  }
+  state.inventory = [...held.inventory, ...bumped, ...gained];
+  // The oil stays on a blade the attempt left in hand; otherwise the held oil
+  // comes back, live again whenever its own weapon is.
+  const weapon = state.equipment.weapon;
+  if (!state.coating || state.coating.weaponUid !== weapon?.uid) state.coating = held.coating;
+  state.flasks = [...(held.flasks ?? []), ...(state.flasks ?? [])];
+  for (const [id, count] of Object.entries(held.provisions?.materials ?? {})) {
+    state.materials[id] = (state.materials[id] ?? 0) + count;
+  }
+  for (const [id, grades] of Object.entries(held.provisions?.stock ?? {})) {
+    for (const [quality, count] of Object.entries(grades) as [QualityTier, number | undefined][]) {
+      if (count) grantGraded(state, id, quality, count);
+    }
+  }
+  return bumped.length;
+}
+
+/** The log line for held pieces that went to the pack because their slot was taken. */
+function reportBumped(bus: EventBus, count: number): void {
+  if (count > 0) bus.emit({ type: 'log', msg: text('festival.bumped', { count, plural: count === 1 ? '' : 's' }), kind: 'item' });
 }
 
 /** Every attempt opens on a full store: the stores' search limits restart. */
@@ -240,10 +293,11 @@ function loseFestival(state: GameState, bus: EventBus): void {
   const fest = festivalOf(state);
   const run = fest.run;
   if (!run) return;
-  returnGear(state, run);
+  const bumped = returnGear(state, run);
   delete fest.run;
   fest.lockedUntil = lockoutEnd(state);
   bus.emit({ type: 'log', msg: text('festival.lost'), kind: 'danger' });
+  reportBumped(bus, bumped);
 }
 
 /**
@@ -259,11 +313,12 @@ function winFestival(state: GameState, bus: EventBus): void {
   const run = fest.run;
   if (!run) return;
   const swift = run.enteredAt !== undefined && run.enteredAt <= SWIFT_ENTRY_TICKS;
-  returnGear(state, run);
+  const bumped = returnGear(state, run);
   delete fest.run;
   const first = (state.stats[FESTIVAL_WINS_KEY] ?? 0) === 0;
   bumpStat(state, bus, FESTIVAL_WINS_KEY);
   bus.emit({ type: 'log', msg: text('festival.won'), kind: 'quest' });
+  reportBumped(bus, bumped);
   if (first && ITEMS[FESTIVAL_REWARD]) {
     const reward = createItem(state, FESTIVAL_REWARD);
     state.inventory.push(reward);

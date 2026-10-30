@@ -661,7 +661,8 @@ adds less than one level to the line, and keep the ceiling at or under the
 band's top monster level, or a repeatable rising boss becomes the band's best
 XP (FLOOR_IDEAS §4, the Weighing). Leave headroom between the base and the
 ceiling: with only a few levels between them, the first pieces reach the cap
-and the rest are free (floor 19's base sits 12 under it).
+and the rest are free (floor 19's base sits 12 under it). Floor 19's base
+of 33 is kept for now and may be low (FLOOR_IDEAS §4, ruling 5).
 
 **How a place is drawn — `scene`.** The Location header and the Combat tab's
 battle stage paint the same backdrop behind a place. `scene` on an AREA sets

@@ -222,7 +222,8 @@ export const LOG_TEXT = {
   'equipment.sold_material': 'Sold {icon} {name} ×{qty} for {price} gold.',
 
   // ---------- festival (systems/festival.ts, systems/royale.ts) ----------
-  'festival.door_held': '🚪 The door holds {pieces} piece{plural} of gear until the festival ends, won or lost. Issued: {issued}.',
+  'festival.door_held': '🚪 The door holds {pieces} piece{plural} of gear, your flasks and your provisions until the festival ends, won or lost. Issued: {issued}.',
+  'festival.bumped': '🎒 {count} held piece{plural} went to the pack: the slot was taken.',
   'festival.door_shut': '🚪 The dark room’s door is shut until the room is empty.',
   'festival.issued_unsold': '🚪 The festival’s issued weapon is lent for the attempt and taken back at its end; it cannot be sold.',
   'festival.royale_closed': '🏟️ Floor 16 is the festival’s royale, entered only from floor 15’s hall during an attempt. Attempts start in the dark room on floor 15.',
