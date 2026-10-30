@@ -295,6 +295,60 @@ the outside maps as second maps, residents in the castle), step 7 (John
 through floor 10: he must prestige at floor 6, buy the key and use two
 systems). `npm run pacing` does not cover floors 7-10.
 
+### The four wards (user, 2026-10-30; answers Q9)
+
+The user's design replaces the skeleton's stand-ins. Each ward's threat
+takes a different **form** depending on its **position**: how many of the
+other three wards are already cleared this run (0 = tackled first, 3 =
+tackled last). The ladder order is the player's choice, so the order now
+changes what each ward is, not only its monster levels.
+
+| Ward | Threat | Position 0 | Position 1 | Position 2 | Position 3 |
+|---|---|---|---|---|---|
+| 7 south | Roving bandits starving the city by raiding merchants and convoys | Many fights of mostly 2–4 bandits on the roads | The bandits have a base in the salt flats: siege the camp and break it down | (as 1) | The camp is destroyed; a demon summoned into it has absorbed the bandits. 24 in-game hours to fight it from the third ward's clear |
+| 8 west | A rogue beast in phase polyphenism under some constraint (replaces the goblin remnant: band 2 was all goblins) | Large beast, smaller than its final form | (as 0) | Formidable beast, final form | (as 2) |
+| 9 north | The dead (unchanged theme) | Death Squire, a lower death knight | (as 0) | Death Knight | (as 2) |
+| 10 east | A tough-shelled ore eater (copper, iron or coal eater) destroying the mine's resources | Smallest | Larger | Larger again | Largest, most monstrous |
+
+User's notes: ward 7 is close to the harbor band (11–14) in theme; *"it's
+tough to be wholly original, really"*. Ward 9's death knight may be too hard
+as a first keeper, hence the squire.
+
+**Ward 7's demon, as ruled.** Only when ward 7 is the last ward left.
+- Defeated within the window: a pass (the ward is cleared).
+- Not defeated in time: still a pass, and a flag is set for a hidden stage.
+- Fought and retreated from (the demon keeps part of the HP it lost), then
+  not defeated in time: a different flag, marking the player as the demon's
+  target in a hidden stage.
+- The two flags are mutually exclusive. Whatever the outcome, the player can
+  progress after the 24 hours: the danger disappears.
+
+#### How it builds (proposal)
+
+Mechanism first; names and text are placeholders for the user to caption.
+
+| Piece | Shape | New code |
+|---|---|---|
+| Position | A run counter `cleared:count:ascent_upper`, set by `checkFloorClears` to the band's cleared-floor count. For a ward not yet cleared, that count is its position | One `setStat` beside the `cleared:band:` stamp |
+| Forms | Each form is encounter rows and edges gated with the existing `stat` / `statMax` conditions on that counter. No new condition type | None |
+| Keeper wards (8, 9, 10) | One keeper spot each (`fightLimit: 1`) holding one row per form. The clear becomes `fights:<keeper spot>` ≥ 1, whichever form fell (today it names the monster: `slain:<spot>:<monster>`) | None |
+| Ward 7's clear | Its forms finish in three places, and a floor clear is an AND list. M10: `SpotDef.stampOnClear`, a stat a spot writes once when its `fightLimit` is spent. Ward 7's clear is that stamp, `ward:f7:done` ≥ 1, written by whichever form finished | M10, small and generic |
+| Position 0, the roads | A merchant road spot with `fightLimit` 20 and groups of 2–4 bandits (`groupWeights`). Coarse: fights only | None |
+| Positions 1–2, the siege | The salt-flats camp as three spots: the stockade (4 fights), the watchtowers (3 fights), then the chief's tent (1 fight), whose edge requires both spent. The tent writes the stamp. A built band 2 sabotage shape without `SpotDef.preparation` (that field is on `band2-floors` only) | None |
+| Position 3, the demon | The burnt camp: one demon row, not `forced`, so walking away is a retreat. M11 and M12 below | M11, M12 |
+| M11, kept wounds | `MonsterDef.keepsWounds: { key, share }`. When a fight ends without the monster's death (walking away, a knockout), the HP it lost × `share` is written to a run stat; the next spawn starts that much lower. Its death clears the stat | M11 |
+| M12, the window | When the counter reaches 3 with ward 7 uncleared, stamp the tick (`f7:demon:at`). Each tick, one comparison: at `at + 14,400` (24 in-game hours) set `f7:demon:gone`, which shuts the demon's row (`statMax` 0), write `ward:f7:done`, and set exactly one silent flag: `flag:f7:demon_marked` if any demon fight happened, else `flag:f7:demon_unmet`. A kill in the window writes the stamp instead and sets neither. No tracker, log line or hint for the flags (secret content rule) | M12, one listener and a tick check |
+| Levels | The band's `levelSteps` `[0, 2, 5, 9]` stay on every rolled spawn, forms included; each form's base level is written low enough to absorb them. One dial, as now | None |
+
+Cost offline: forms are encounter rows; M12 is one comparison a tick. Nothing
+continuous. The 24 hours are world-clock ticks, so they pass during catch-up
+too (Q16).
+
+Monsters: ward 7 bandits (thug, archer, cutthroat; a chief) and the demon;
+ward 8's beast in two forms; ward 9's death squire (the death knight exists);
+ward 10's ore eater in four stages. Placeholders with level-appropriate stats
+and basic techniques, as for floors 11–20.
+
 ## 7. Questions
 
 ### Answered (user, 2026-10-24)
@@ -309,14 +363,23 @@ systems). `npm run pacing` does not cover floors 7-10.
 | Q6 | Goblin deities | Fire, mud, hunting (rats, birds, worms) first; thievery and witch magic later |
 | Q7 | Bureaucrat killed, never prestiged: tab gone until floor 6 | Accepted |
 | Q8 | Direction level steps | `[0, 2, 5, 9]` |
+| Q9 | Theme of each direction (answered 2026-10-30) | South: roving bandits on the roads, a salt-flats camp, or a demon. West: a rogue beast in phase polyphenism. North: the dead, a death squire or a death knight. East: a shelled ore eater that grows. Each ward's form depends on its position in the order. "The four wards" in §6 |
+| Q10 | What threatens the city once the goblins are gone | Read from Q9: each ward has its own problem; no band-wide villain |
 
 ### Open
 
 | # | Question | Default |
 |---|---|---|
-| Q9 | Theme of each direction's district and the map beyond it | The skeleton's: south docks and salt marsh (poison), west forest gate and old forest (bleeding, the goblin remnant), north cathedral and barrow fields (the dead), east artificers and quarry (armour). The spine's reward cycle to go with it: west's reward answers south's poison (herbs, an antidote), south's answers east's armour (a blunt weapon pattern), east's answers north's dead (a ward or light source), north's answers west's bleeding (a healing blessing) |
-| Q10 | What threatens the city once the goblins are gone | Each district has its own problem; no band-wide villain |
 | Q11 | Wards climbable from anywhere, or only from the castle | From anywhere (built). The castle is the haven and the place the band's terms are read |
 | Q12 | Does a cleared ward keep rising as later wards fall | Yes (built): one step for all four from the cleared count. The alternative records each ward's step at its clear |
 | Q13 | On a run with the band 2 pass, what opens prestige | The warchief's kill (built): floor 6 stays open to walk into. The alternative also opens prestige on the castle safe |
 | Q14 | Prices | Key 3, band 1 pass 10, band 2 pass 20 (built) |
+| Q15 | Is a ward's position read live, or fixed when the player first fights there | Live: the form reads how many other wards are cleared right now. A ward left half done changes form if another ward falls meanwhile; its earlier fights stay counted but finish nothing. The demon needs this: it replaces whatever ward 7 was doing when the third ward falls |
+| Q16 | The demon's 24 in-game hours are 24 minutes of play at normal speed (an in-game hour is 600 ticks). Does the window run offline | Yes, on the world clock like everything else: missing it is a branch (the hidden-stage flag), not a loss. The alternative is the festival's rule, a clock that runs only while the game is open |
+| Q17 | What counts as "fought and retreated" for the target flag | Any demon fight that ended without its death: walking away or a knockout |
+| Q18 | How much of the lost HP the demon keeps between fights | Half (`share: 0.5`), a dial |
+| Q19 | The hidden-stage flags: this run only, or kept through prestige | This run only, like other run stats; decide again when the hidden stages are designed |
+| Q20 | The roads at position 0: how many fights | 20 fights of 2–4 bandits |
+| Q21 | The ore eater's resource damage | Flavour only for now; the four sizes are the mechanic. Later: the mine's yields fall with each stage |
+| Q22 | The spine's reward cycle with the new threats (each ward's reward answers another's threat) | South's recovered convoy gives a pick or maul pattern for East's shell. East's ore eater yields silver for North's dead. North's cathedral gives a healing blessing for West's beast (bleeding). West's beast gives a trophy that breaks bandit morale (smaller groups) for South |
+| Q23 | Ward 8's beast: which phase does the "constraint" come from | The city's own fighting: each ward cleared crowds the beasts into the forest, which drives the phase change. Caption only; no mechanic |
