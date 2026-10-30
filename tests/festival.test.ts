@@ -357,6 +357,17 @@ describe('losing: ejection and the lockout', () => {
     expect(floorUnlocked(next, FLOORS[DARK_FLOOR])).toBe(true);
   });
 
+  it('Game.prestige ends the lockout too: the next run is assigned into the live state', () => {
+    const game = new Game(atFourteen());
+    const s = game.state;
+    climb(game, DARK_FLOOR);
+    climb(game, null);
+    expect(lockoutLeft(s)).toBeGreaterThan(0);
+    expect(game.prestige(1)).toBe(true);
+    expect(s.festival).toBeUndefined();
+    expect(lockoutLeft(s)).toBe(0);
+  });
+
   it('a festival floor is never a haven: a later knockout elsewhere does not land inside it', () => {
     const game = inHall();
     expect(game.state.safeSpots.nearest).not.toBe('f15_hall');
