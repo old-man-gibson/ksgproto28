@@ -371,6 +371,17 @@ drop over any long run — it just stops arriving in clumps. Two rules follow:
   line, or a padded weight to be reachable — the tail is already handled, and
   padding now overshoots.
 
+**Method drops — `killedBy`.** A row may name the damage types its kill must
+come by: `{ kind: 'material', id: 'bone_ash', weight: 6, killedBy: ['heat'] }`.
+The killing blow's type is `MonsterInstance.lastHit`, stamped beside every HP
+decrement in combat (a blow of several types counts as the one that dealt the
+most; damage over time counts as its condition's type). On any other kill the
+row leaves the table before the drought pick and its weight rolls as
+`nothing`, so the other rows keep their authored shares (what the bestiary
+prints) and no miss is banked toward the next matching kill. Gates count
+every kill; the method only picks the loot. Floor 18's mummy is the worked
+example (`ph_mummy`): bone ash by heat, bone dust by bludgeoning.
+
 Place it in a spot's `encounters` list: `{ monsterId: 'frost_wraith', weight: 40,
 level: [8, 12] }`. Spawns also roll a **modifier** (Demiboss/Boss/Aberrant —
 override odds per spot with `modifierWeights`) and a **rarity** on top. All
@@ -637,6 +648,21 @@ after. Cleared forced spots also reopen to the auto-router and drop their ⚔️
 warnings. The budget is drawn as a row of pips in the spot's Location header
 and on the battle stage (`ui/lib/RaidTrack.svelte`).
 
+**A line whose level rises — `levelRise`.** `{ monsterId: 'ph_sabaket',
+weight: 1, boss: true, level: [33, 33], levelRise: { stat: 'flag:tomb:taken',
+share: 0.1, ceiling: 45 } }` spawns at `min(ceiling, rolled + max(k,
+round(k × share × P)))`, k the counter, P the character level
+(`encounterLevel`, levels.ts). Applied after the level roll, before the band
+step, and to a group filler rolled from the line; never to escorts or staged
+fights (pinned `override` spawns). The bestiary's level range reads the same
+function. Both validation layers demand `share > 0` and `ceiling >=
+level[1]`. Keep `share × (the counter's top) < 1` so each character level
+adds less than one level to the line, and keep the ceiling at or under the
+band's top monster level, or a repeatable rising boss becomes the band's best
+XP (FLOOR_IDEAS §4, the Weighing). Leave headroom between the base and the
+ceiling: with only a few levels between them, the first pieces reach the cap
+and the rest are free (floor 19's base sits 12 under it).
+
 **How a place is drawn — `scene`.** The Location header and the Combat tab's
 battle stage paint the same backdrop behind a place. `scene` on an AREA sets
 it for every spot in the area; `scene` on a SPOT overrides its area's:
@@ -819,6 +845,10 @@ with the Wayfinding boon).
 A ladder floor (`towers.data.ts`) pays `clearXp` level XP the first time
 its `clear` holds in a run. Band 1: 100 / 150 / 200. A floor's rooms, gates
 and clear spot are linted against the floor standard (§8, FLOOR_STANDARD.md).
+A band's last floor may carry `seam: { verb: 'Sailing' }`: the climb log's
+word for the step from it to the rung directly above (default `Climbing`),
+read only on a climb of exactly one rung (FLOOR_IDEAS §1.5). A literal in
+the data file, not prose; it moves no one and reads no flag.
 
 ### Teacher (a `teaches` list on an `NpcDef`)
 

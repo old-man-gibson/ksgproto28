@@ -18,7 +18,7 @@ export const BANDS_TEXT: ProseTable = {
 
   'ascent_aberrant.desc': 'Floor 17, a special floor. Skeleton; theme not set. Placeholder text.',
 
-  'ascent_desert.desc': 'Floors 18 to 20, the desert. Skeletons. Placeholder text.',
+  'ascent_desert.desc': 'Floors 18 to 20: the Necropolis Road, the Pyramid and the Delta Port. Each floor must be cleared before the next opens. Floors 19 and 20 also need desert kills: 60, then 150 in all. Placeholder text.',
 
   'ascent_middle.desc': 'Floors 4 to 6: the Greenwood, the Mire and the Warren. A goblin war band holds the wilds above the Lower Reaches; its warchief waits at the bottom of the Warren. Placeholder text.',
 
@@ -63,7 +63,7 @@ export const FLOORS_TEXT: ProseTable = {
   'ascent_f17.desc': 'Floor 17, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
 
   // ==== DESERT: floor text (skeleton 2026-10-30; the desert builder's section) ====
-  'ascent_f18.desc': 'Floor 18, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
-  'ascent_f19.desc': 'Floor 19, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
-  'ascent_f20.desc': 'Floor 20, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+  'ascent_f18.desc': 'Floor 18, the Necropolis Road: open desert between five obelisks, each a haven, with dens of desert monsters along the road. Each obelisk read adds one to your chart; with three, the roadstead crew on floor 20 starts its fight surprised. The forecourt guardian’s kill is the clear, and it fights again on every visit. Placeholder text.',
+  'ascent_f19.desc': 'Floor 19, the Pyramid. Opens at 60 desert kills. The treasury off the burial chamber holds six grave goods; each one taken raises the judge at the door. The judge’s kill is the clear, and seals the treasury for the rest of the run. Placeholder text.',
+  'ascent_f20.desc': 'Floor 20, the Delta Port. Opens at 150 desert kills. A quay, a broker, warehouses and the roadstead. The roadstead fight is the crossing to floor 21 and the clear. Placeholder text.',
 };

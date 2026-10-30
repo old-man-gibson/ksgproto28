@@ -1,4 +1,4 @@
-import type { GameState, MonsterInstance, QuestDef } from '../types';
+import type { GameState, MonsterInstance, QuestDef, SpotEncounter } from '../types';
 import type { EventBus } from '../engine/events';
 import { BANDS, FLOORS } from '../registry';
 import { setStat } from './achievements';
@@ -64,6 +64,33 @@ export function levelGapXpMult(playerLevel: number, monsterLevel: number): numbe
  */
 export function killXp(state: GameState, monster: Pick<MonsterInstance, 'xp' | 'level'>): number {
   return Math.max(MIN_KILL_XP, monster.xp * levelGapXpMult(state.level ?? 1, monster.level));
+}
+
+/**
+ * The level an encounter line spawns at, from the level its range rolled.
+ * A line with `levelRise` (SpotEncounter) adds the counter it names priced
+ * against the character level, capped at its ceiling; any other line keeps
+ * the roll. With k the counter and P the character level:
+ *
+ *   min(ceiling, rolled + max(k, round(k × share × P)))
+ *
+ * The `max(k, …)` floor costs every unit at least one level, so a weak
+ * character's greed always shows. The product is rounded once, not per unit,
+ * so one character level never moves the line by k. On floor 19 k tops out at
+ * six, and 6 × share < 1 there: each character level adds less than one to a
+ * full-greed judge, so levelling always closes the gap (FLOOR_IDEAS §4).
+ *
+ * `spawnMonster` applies it after the roll (never to a pinned `override`
+ * spawn), `spawnGroup` applies it to a table-rolled filler before pinning
+ * that filler's level, and the bestiary's level range reads it, so the book
+ * and the fight quote the same number.
+ */
+export function encounterLevel(state: GameState, e: Pick<SpotEncounter, 'levelRise'>, rolled: number): number {
+  const rise = e.levelRise;
+  if (!rise) return rolled;
+  const k = state.stats[rise.stat] ?? 0;
+  const p = state.level ?? 1;
+  return Math.min(rise.ceiling, rolled + Math.max(k, Math.round(k * rise.share * p)));
 }
 
 /** The flat bonus every attribute gets from the current level. */

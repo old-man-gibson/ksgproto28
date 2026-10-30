@@ -14,6 +14,7 @@ import { SPINE_EXEMPT, offLadderDoor } from '../../src/core/data/towers.data';
 import { seaContentIssues } from '../../src/core/systems/seaValidation';
 import type { ConvoyDef, SeaSideDef } from '../../src/core/data/sea.data';
 import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
+import { DAMAGE_TYPE_NAMES } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../../src/core/systems/monsterStats';
 import { resistanceProblems } from '../../src/core/systems/conditionHarm';
@@ -446,6 +447,16 @@ export function validate(store: S): Issue[] {
         err('spot', spot.id, `${e.monsterId}: ambush window needs 0 < min < max`, ['encounters']);
       }
     }
+    // A rising line (SpotEncounter.levelRise). Mirrors tests/content.test.ts.
+    for (const e of spot.encounters ?? []) {
+      if (!e.levelRise) continue;
+      if (!(e.levelRise.share > 0)) {
+        err('spot', spot.id, `${e.monsterId}: levelRise.share must be > 0`, ['encounters']);
+      }
+      if (!(e.levelRise.ceiling >= e.level?.[1])) {
+        err('spot', spot.id, `${e.monsterId}: levelRise.ceiling must be at least level[1]`, ['encounters']);
+      }
+    }
     const bossEntries = (spot.encounters ?? []).filter((e) => e.boss);
     if (bossEntries.length && !bossEntries.some((e) => !e.window)) {
       err('spot', spot.id, 'every boss hides behind a power window — keep one windowless keeper', ['encounters']);
@@ -743,6 +754,20 @@ export function validate(store: S): Issue[] {
   for (const [id, def] of Object.entries(store.all<MonsterDef>('monster'))) {
     const seen = new Set<string>();
     for (const [i, e] of (def?.loot?.entries ?? []).entries()) {
+      // A method row (DropEntry.killedBy) with no type matches no kill and
+      // never drops. Mirrors tests/content.test.ts.
+      if (e.killedBy && e.killedBy.length === 0) {
+        err('monster', id, `drop line ${i} has an empty killedBy — it matches no kill, so it never drops`, [
+          'loot',
+          'entries',
+          i,
+        ]);
+      }
+      for (const t of e.killedBy ?? []) {
+        if (!(t in DAMAGE_TYPE_NAMES)) {
+          err('monster', id, `drop line ${i}: killedBy names '${t}', which is not a damage type`, ['loot', 'entries', i]);
+        }
+      }
       if (e.kind === 'nothing') continue;
       const key = `${e.kind}:${e.id ?? ''}`;
       if (seen.has(key)) {

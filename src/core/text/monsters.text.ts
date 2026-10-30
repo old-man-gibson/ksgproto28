@@ -159,6 +159,19 @@ export const MONSTERS_TEXT: ProseTable = {
   // ==== ABERRANT: monster text (skeleton 2026-10-30; the aberrant builder's section) ====
 
   // ==== DESERT: monster text (skeleton 2026-10-30; the desert builder's section) ====
+  'ph_scarab.desc': 'Placeholder vermin of the desert band, floors 18 to 20. Piercing attacks. Fights with Gather and Lunge. Killed by heat it can drop brimstone; killed by bludgeoning, copper ore. Sometimes drops gold leaf.',
+
+  'ph_cobra.desc': 'Placeholder beast of the desert band. Piercing bite with a 30% chance to inflict Poison. Takes 30% less poison damage. Fights with Lunge, Dirty Stab and Gather. Killed by a blade (slashing or piercing) it can drop leather; killed by heat, green vitriol. Sometimes drops raw meat.',
+
+  'ph_scorpion.desc': 'Placeholder vermin of the desert band. Piercing sting with a 25% chance to inflict Poison. Takes 40% less poison damage. Fights with Hamstring, Crosscut and Gather. Killed by bludgeoning it can drop tin ore; killed by heat, fixing salt.',
+
+  'ph_mummy.desc': 'Placeholder undead of the desert band. Bludgeoning attacks. Takes 50% more heat damage and 50% less poison damage. Fights with Heavy Blow and Gather. Two drop rolls: killed by heat it can drop bone ash, killed by bludgeoning bone dust; any other kill drops neither.',
+
+  'ph_sand_colossus.desc': 'Placeholder construct, floor 18’s forecourt guardian. Always fights alone. Bludgeoning attacks. Takes 90% less heat damage. Fights with Heavy Blow and Gather. Drops a Boss Token, gold, copper ore and tin ore; killed by bludgeoning it can also drop quicksilver.',
+
+  'ph_sabaket.desc': 'Sabaket, the Weigher at the Door: the judge of floor 19’s pyramid. Placeholder stats. Always fights alone. Slashing attacks with a 25% chance to inflict Bleeding. Takes 50% less dark and 30% less poison damage. Fights with Heavy Blow, Hamstring, Finishing Cut and Gather. With nothing taken from the treasury it is weaker than the floor’s dens; each grave good taken raises its level, up to the band’s strongest. Drops a Boss Token, gold, bronze ingots and quicksilver.',
+
+  'ph_roadstead_crew.desc': 'Placeholder crew of the ferry at floor 20’s roadstead. Always three at once. Piercing attacks. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops gold, leather and sometimes a Boss Token.',
 
   'giant_spider_queen.desc': 'Huge elite vermin, toxic element. Always fights alone. Poison bite with a 60% chance to inflict heavy Poison. Takes 40% less slashing, 50% less poison, 35% less earth and 20% less bludgeoning; takes 50% more piercing, 40% more heat and 20% more cold damage. Appears in the Brood Den. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
 };

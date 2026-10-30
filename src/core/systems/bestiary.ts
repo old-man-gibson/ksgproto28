@@ -14,6 +14,7 @@ import { attackIntervalOf, innateArmor, scaledMonsterAttrs, statsFromAttrs } fro
 import { attrValue } from './attributes';
 import { grantDiscoveryXp } from './skills';
 import { bumpStat } from './achievements';
+import { encounterLevel } from './levels';
 import { text } from '../text/log';
 
 /**
@@ -265,16 +266,21 @@ export interface MonsterProfile {
   gold: [number, number];
 }
 
-/** Level range a monster spawns at, including as somebody else's escort. */
-export function spawnLevels(monsterId: string): [number, number] {
+/**
+ * Level range a monster spawns at, including as somebody else's escort. With
+ * `state`, a line whose level follows a counter (SpotEncounter.levelRise) is
+ * read as it stands now, through the same `encounterLevel` spawning uses;
+ * without it, the authored range.
+ */
+export function spawnLevels(monsterId: string, state?: GameState): [number, number] {
   let lo = Infinity;
   let hi = -Infinity;
   for (const spot of Object.values(SPOTS)) {
     for (const enc of spot.encounters ?? []) {
       const escorted = MONSTERS[enc.monsterId]?.escorts?.includes(monsterId);
       if (enc.monsterId !== monsterId && !escorted) continue;
-      lo = Math.min(lo, enc.level[0]);
-      hi = Math.max(hi, enc.level[1]);
+      lo = Math.min(lo, state ? encounterLevel(state, enc, enc.level[0]) : enc.level[0]);
+      hi = Math.max(hi, state ? encounterLevel(state, enc, enc.level[1]) : enc.level[1]);
     }
   }
   return Number.isFinite(lo) ? [lo, hi] : [1, 1];
@@ -288,11 +294,11 @@ export function spawnLevels(monsterId: string): [number, number] {
  * the player actually meets. Only the *averaging* is the book's own work:
  * no per-specimen jitter, no rolled modifier or rarity.
  */
-export function monsterProfile(monsterId: string): MonsterProfile {
+export function monsterProfile(monsterId: string, state?: GameState): MonsterProfile {
   const def = MONSTERS[monsterId];
   const tier = TIERS[def.tier];
   const mult = (tier.multiplierRange[0] + tier.multiplierRange[1]) / 2;
-  const levels = spawnLevels(monsterId);
+  const levels = spawnLevels(monsterId, state);
 
   const statsAt = (level: number) =>
     statsFromAttrs(scaledMonsterAttrs(def, level, mult), undefined, innateArmor(monsterId), def.regen ?? 0, level);

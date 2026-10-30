@@ -698,6 +698,17 @@ describe('world graph', () => {
           `${spot.id}/${e.monsterId}: window needs min < max`,
         ).toBeGreaterThan(e.window.min);
       }
+      // A rising line (SpotEncounter.levelRise): a share of 0 or less never
+      // rises, and a ceiling under the authored range would pull the line
+      // DOWN with nothing taken. Mirrored in forge/lib/validate.ts.
+      for (const e of spot.encounters ?? []) {
+        if (!e.levelRise) continue;
+        expect(e.levelRise.share, `${spot.id}/${e.monsterId}: levelRise.share must be > 0`).toBeGreaterThan(0);
+        expect(
+          e.levelRise.ceiling,
+          `${spot.id}/${e.monsterId}: levelRise.ceiling must be at least level[1]`,
+        ).toBeGreaterThanOrEqual(e.level[1]);
+      }
       const bosses = (spot.encounters ?? []).filter((e) => e.boss);
       if (bosses.length) {
         // COMPLETABILITY: the clock is not a wall (time passes on its own),
@@ -753,6 +764,13 @@ describe('monsters', () => {
           expect(MATERIALS[e.id!], `${m.id} drops material ${e.id}`).toBeDefined();
         if (e.kind === 'rune') expect(RUNES[e.id!], `${m.id} drops rune ${e.id}`).toBeDefined();
         if (e.qty) expect(e.qty[0]).toBeLessThanOrEqual(e.qty[1]);
+        // A method row (DropEntry.killedBy) names at least one real type:
+        // `killedBy: []` matches no kill and is a row that never drops.
+        // Mirrored in forge/lib/validate.ts.
+        if (e.killedBy) {
+          expect(e.killedBy.length, `${m.id} drops ${e.id ?? e.kind} on no kill: killedBy is empty`).toBeGreaterThan(0);
+          for (const t of e.killedBy) expect(VALID_DAMAGE_TYPES.has(t), `${m.id} killedBy ${t}`).toBe(true);
+        }
       }
     }
   });

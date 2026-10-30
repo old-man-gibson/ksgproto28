@@ -13,6 +13,8 @@ export const MONSTER_TAGS_TEXT: ProseTable = {
 
   'eldritch.desc': 'Taxon tag for eldritch creatures. Attaches no mechanical rule.',
 
+  'desert.desc': 'Taxon tag for the desert roster, floors 18 to 20. Every kill of a tagged monster counts toward the floor 19 gate (60) and the floor 20 gate (150). Attaches no armour or resistance rule.',
+
   'non_elemental.desc': 'Element tag assigned when a monster claims no element. No elemental resistance or weakness follows from it.',
 
   'ranged.desc': 'Derived from the monster reach: it attacks from the back rank. Ranged resistance applies to its hits.',

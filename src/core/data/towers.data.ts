@@ -391,38 +391,49 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     clearXp: 900,
   },
   // ==== DESERT: floors (skeleton 2026-10-30; the desert builder's section) ====
+  // Band 5, the desert (FLOOR_IDEAS.md §4), placeholder fidelity. Every hunt
+  // is endless except the roadstead, so the gates read desert kills, which
+  // every den in the band pays (band 2's kills:tag:goblin precedent).
   ascent_f18: {
     id: 'ascent_f18',
-    name: 'The Necropolis Road (placeholder)',
+    name: 'The Necropolis Road',
     towerId: 'the_ascent',
     bandId: 'ascent_desert',
     index: 18,
     areaId: 'ascent_f18_area',
-    landing: 'f18_landing',
-    clear: [{ type: 'stat', key: 'fights:f18_keeper', value: 1 }],
+    landing: 'f18_well_head',
+    // The forecourt guardian's kill. A boss row, so it latches on every kill
+    // and stays repeatable.
+    clear: [{ type: 'stat', key: 'boss:f18_forecourt', value: 1 }],
     clearXp: 950,
   },
   ascent_f19: {
     id: 'ascent_f19',
-    name: 'The Pyramid (placeholder)',
+    name: 'The Pyramid',
     towerId: 'the_ascent',
     bandId: 'ascent_desert',
     index: 19,
     areaId: 'ascent_f19_area',
-    landing: 'f19_landing',
-    clear: [{ type: 'stat', key: 'fights:f19_keeper', value: 1 }],
+    landing: 'f19_causeway',
+    gate: [{ type: 'stat', key: 'kills:tag:desert', value: 60 }],
+    // The judge's kill (the Weighing). The grave goods seal on the first one.
+    clear: [{ type: 'stat', key: 'boss:f19_door', value: 1 }],
     clearXp: 1000,
   },
   ascent_f20: {
     id: 'ascent_f20',
-    name: 'The Delta Port (placeholder)',
+    name: 'The Delta Port',
     towerId: 'the_ascent',
     bandId: 'ascent_desert',
     index: 20,
     areaId: 'ascent_f20_area',
-    landing: 'f20_landing',
-    clear: [{ type: 'stat', key: 'fights:f20_keeper', value: 1 }],
+    landing: 'f20_river_road',
+    gate: [{ type: 'stat', key: 'kills:tag:desert', value: 150 }],
+    // The crossing: the roadstead's one fight.
+    clear: [{ type: 'stat', key: 'fights:f20_roadstead', value: 1 }],
     clearXp: 1050,
+    // The seam to the island (floors 21 to 30): the step up is a ferry.
+    seam: { verb: 'Sailing' },
   },
 });
 

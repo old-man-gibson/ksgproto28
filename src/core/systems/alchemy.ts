@@ -4,6 +4,7 @@ import type {
   BrewSpec,
   BrewedFlask,
   CraftDisciplineDef,
+  DamageSlice,
   DamageType,
   EssenceSpec,
   GameState,
@@ -34,7 +35,7 @@ import { RESOURCES } from '../data/resources.data';
 import { heal } from './health';
 import { applyStatus, fireStatusEvent, statusIncomingDamageMult, statusesOf } from './statuses';
 import { itemName } from './equipment';
-import { feed, monsterSlice, sweepDead } from './combat';
+import { feed, heaviestType, monsterSlice, sweepDead } from './combat';
 import { checkCraft, consumePlacement, noveltyKeys, skillLevel, type Placement } from './disciplines';
 import { text } from '../text/log';
 
@@ -852,10 +853,12 @@ function hurl(state: GameState, bus: EventBus, spec: BrewSpec): void {
     // The front slot takes the burst; the rest are caught by the edge of it.
     const share = i === 0 ? 1 : 0.5;
     let total = 0;
+    const landed: DamageSlice[] = [];
     for (const strike of spec.strikes) {
       const raw = strike.power * share * (0.9 + rand(state) * 0.2);
       const slice = monsterSlice(target, strike.type, spec.name, raw, strike.penetration ?? 0);
       total += slice.dealt;
+      landed.push(slice);
       if (slice.dealt > 0) {
         // The flask is its own applier: its penetration was set at the bench,
         // and the thrower's stat has no say (see the note above).
@@ -872,6 +875,7 @@ function hurl(state: GameState, bus: EventBus, spec: BrewSpec): void {
       // the damageTaken event just below is what spends the surprise.
       const dealt = Math.max(1, Math.round(total * statusIncomingDamageMult(target)));
       target.hp -= dealt;
+      target.lastHit = heaviestType(landed);
       fireStatusEvent(state, target, 'damageTaken');
       feed(state, `${spec.icon} ${spec.name} hits the ${target.name} for ${dealt}.`);
     } else if (spec.inflicts.length) {
