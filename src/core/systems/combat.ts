@@ -995,10 +995,13 @@ export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | 
       );
     } else if (filler.length) {
       const pick = weightedPick(state, filler);
+      // Rolled from the table, so it rises as its line does (levelRise) and
+      // takes the band's step, exactly as a leader rolled from that line
+      // would; only then is the level pinned.
       members.push(
         spawnMonster(state, spot, {
           monsterId: pick.monsterId,
-          level: randInt(state, pick.level[0], pick.level[1]) + bandLevelStep(state, spot),
+          level: encounterLevel(state, pick, randInt(state, pick.level[0], pick.level[1])) + bandLevelStep(state, spot),
         }),
       );
     } else {

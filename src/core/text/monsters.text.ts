@@ -156,7 +156,7 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'ph_sand_colossus.desc': 'Placeholder construct, floor 18’s forecourt guardian. Always fights alone. Bludgeoning attacks. Takes 90% less heat damage. Fights with Heavy Blow and Gather. Drops a Boss Token, gold, copper ore and tin ore; killed by bludgeoning it can also drop quicksilver.',
 
-  'ph_sabaket.desc': 'Sabaket, the Weigher at the Door: the judge of floor 19’s pyramid. Placeholder stats. Always fights alone. Slashing attacks with a 25% chance to inflict Bleeding. Takes 50% less dark and 30% less poison damage. Fights with Heavy Blow, Hamstring, Finishing Cut and Gather. Each grave good taken from the treasury raises its level. Drops a Boss Token, gold, bronze ingots and quicksilver.',
+  'ph_sabaket.desc': 'Sabaket, the Weigher at the Door: the judge of floor 19’s pyramid. Placeholder stats. Always fights alone. Slashing attacks with a 25% chance to inflict Bleeding. Takes 50% less dark and 30% less poison damage. Fights with Heavy Blow, Hamstring, Finishing Cut and Gather. With nothing taken from the treasury it is weaker than the floor’s dens; each grave good taken raises its level, up to the band’s strongest. Drops a Boss Token, gold, bronze ingots and quicksilver.',
 
   'ph_roadstead_crew.desc': 'Placeholder crew of the ferry at floor 20’s roadstead. Always three at once. Piercing attacks. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops gold, leather and sometimes a Boss Token.',
 

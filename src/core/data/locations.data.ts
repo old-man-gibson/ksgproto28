@@ -2637,8 +2637,11 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   // tomb seals when the judge first falls and `taken` always prices the
   // judge the clear is paid with. The goods sit in their own room: exploring
   // the chamber takes nothing. The judge is one boss row with levelRise
-  // (levels.ts encounterLevel): base 40, share 0.1 (6 × 0.1 < 1), ceiling 45,
+  // (levels.ts encounterLevel): base 33, share 0.1 (6 × 0.1 < 1), ceiling 45,
   // the band's top monster level, so the door is never the band's best XP.
+  // The 12 levels between base and ceiling keep every piece priced: at
+  // character level 25, three pieces fight a 41 and six a 45; at 20, 39 and
+  // 45. Restraint fights a judge below the floor's dens, on purpose.
   //
   // The chamber -> door edge is the first live Connection.forced. It is
   // authored on the chamber ONLY: buildAdjacency keeps the first edge it sees
@@ -2671,14 +2674,17 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { monsterId: 'ph_scorpion', weight: 50, level: [40, 41] },
     ],
     // The skill door (FLOOR_STANDARD §2.2): optional, and the only use heat
-    // resistance has on this floor besides heat damage.
+    // resistance has on this floor besides heat damage. Level 10, not the
+    // entry's 15, while heat trains through spot tags alone (about 60 real
+    // minutes; 15 would take about 158). It returns to 15 once the area has
+    // open sky and its own climate pin (FLOOR_IDEAS idea 4, "It waits on").
     connections: [
       {
         to: 'f19_side_tomb',
         ticks: 40,
         label: 'Into the Side Tomb',
         returnLabel: 'Out to the Temples',
-        requires: [{ type: 'skill', id: 'heat_resistance', level: 15 }],
+        requires: [{ type: 'skill', id: 'heat_resistance', level: 10 }],
       },
     ],
   },
@@ -2771,7 +2777,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
         monsterId: 'ph_sabaket',
         weight: 1,
         boss: true,
-        level: [40, 40],
+        level: [33, 33],
         levelRise: { stat: 'flag:tomb:taken', share: 0.1, ceiling: 45 },
       },
     ],

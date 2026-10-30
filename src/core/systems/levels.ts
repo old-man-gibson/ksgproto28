@@ -81,8 +81,9 @@ export function killXp(state: GameState, monster: Pick<MonsterInstance, 'xp' | '
  * full-greed judge, so levelling always closes the gap (FLOOR_IDEAS §4).
  *
  * `spawnMonster` applies it after the roll (never to a pinned `override`
- * spawn), and the bestiary's level range reads it, so the book and the fight
- * quote the same number.
+ * spawn), `spawnGroup` applies it to a table-rolled filler before pinning
+ * that filler's level, and the bestiary's level range reads it, so the book
+ * and the fight quote the same number.
  */
 export function encounterLevel(state: GameState, e: Pick<SpotEncounter, 'levelRise'>, rolled: number): number {
   const rise = e.levelRise;

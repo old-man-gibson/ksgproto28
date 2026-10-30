@@ -753,6 +753,13 @@ describe('monsters', () => {
           expect(MATERIALS[e.id!], `${m.id} drops material ${e.id}`).toBeDefined();
         if (e.kind === 'rune') expect(RUNES[e.id!], `${m.id} drops rune ${e.id}`).toBeDefined();
         if (e.qty) expect(e.qty[0]).toBeLessThanOrEqual(e.qty[1]);
+        // A method row (DropEntry.killedBy) names at least one real type:
+        // `killedBy: []` matches no kill and is a row that never drops.
+        // Mirrored in forge/lib/validate.ts.
+        if (e.killedBy) {
+          expect(e.killedBy.length, `${m.id} drops ${e.id ?? e.kind} on no kill: killedBy is empty`).toBeGreaterThan(0);
+          for (const t of e.killedBy) expect(VALID_DAMAGE_TYPES.has(t), `${m.id} killedBy ${t}`).toBe(true);
+        }
       }
     }
   });

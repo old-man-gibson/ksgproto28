@@ -649,16 +649,19 @@ warnings. The budget is drawn as a row of pips in the spot's Location header
 and on the battle stage (`ui/lib/RaidTrack.svelte`).
 
 **A line whose level rises — `levelRise`.** `{ monsterId: 'ph_sabaket',
-weight: 1, boss: true, level: [40, 40], levelRise: { stat: 'flag:tomb:taken',
+weight: 1, boss: true, level: [33, 33], levelRise: { stat: 'flag:tomb:taken',
 share: 0.1, ceiling: 45 } }` spawns at `min(ceiling, rolled + max(k,
 round(k × share × P)))`, k the counter, P the character level
 (`encounterLevel`, levels.ts). Applied after the level roll, before the band
-step; never to escorts or staged fights (pinned `override` spawns). The
-bestiary's level range reads the same function. Both validation layers demand
-`share > 0` and `ceiling >= level[1]`. Keep `share × (the counter's top) < 1`
-so each character level adds less than one level to the line, and keep the
-ceiling at or under the band's top monster level, or a repeatable rising boss
-becomes the band's best XP (FLOOR_IDEAS §4, the Weighing).
+step, and to a group filler rolled from the line; never to escorts or staged
+fights (pinned `override` spawns). The bestiary's level range reads the same
+function. Both validation layers demand `share > 0` and `ceiling >=
+level[1]`. Keep `share × (the counter's top) < 1` so each character level
+adds less than one level to the line, and keep the ceiling at or under the
+band's top monster level, or a repeatable rising boss becomes the band's best
+XP (FLOOR_IDEAS §4, the Weighing). Leave headroom between the base and the
+ceiling: with only a few levels between them, the first pieces reach the cap
+and the rest are free (floor 19's base sits 12 under it).
 
 **How a place is drawn — `scene`.** The Location header and the Combat tab's
 battle stage paint the same backdrop behind a place. `scene` on an AREA sets

@@ -20,7 +20,7 @@ import { getDerivedStats } from '../src/core/systems/derived';
 import { spawnLevels, monsterTagSet } from '../src/core/systems/bestiary';
 import { materialSellPrice, sellMaterial } from '../src/core/systems/equipment';
 import { resaleCeiling, visibleLines } from '../src/core/systems/shops';
-import type { GameState, MonsterInstance, SpotEncounter } from '../src/core/types';
+import type { GameState, MonsterInstance, SpotDef, SpotEncounter } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
 /**
@@ -137,6 +137,58 @@ describe('the judge’s level (SpotEncounter.levelRise)', () => {
     );
     expect(rise.ceiling).toBeLessThanOrEqual(top);
     expect(rise.ceiling).toBeGreaterThanOrEqual(judgeRow().level[1]);
+  });
+
+  it('the live judge is priced per piece: it rises with every piece taken until the ceiling', () => {
+    // Pins the LIVE row, so a dial change that flattens the Weighing fails
+    // here: with too little room between base and ceiling, the first piece or
+    // two reach the cap and the rest are free.
+    const row = judgeRow();
+    const ceiling = row.levelRise!.ceiling;
+    const curve = (level: number): number[] =>
+      [0, 1, 2, 3, 4, 5, 6].map((taken) => {
+        const s = fresh();
+        s.stats[TAKEN] = taken;
+        s.level = level;
+        return encounterLevel(s, row, row.level[0]);
+      });
+    for (const level of [15, 25, 35]) {
+      const c = curve(level);
+      for (let k = 1; k < c.length; k++) {
+        // Never falls; strictly rises while there is room under the ceiling.
+        if (c[k - 1] < ceiling) expect(c[k], `P ${level}: piece ${k}`).toBeGreaterThan(c[k - 1]);
+        else expect(c[k], `P ${level}: piece ${k}`).toBe(ceiling);
+      }
+    }
+    expect(new Set(curve(25)).size, 'P 25: the curve flattened').toBeGreaterThanOrEqual(3);
+    // The manager's reference points (fix round 1).
+    expect(curve(25)[3]).toBe(41);
+    expect(curve(25)[6]).toBe(45);
+    expect(curve(20)[3]).toBe(39);
+    expect(curve(20)[6]).toBe(45);
+  });
+
+  it('a group filler rolled from a rising line rises with it', () => {
+    const spot: SpotDef = {
+      id: 'test_rising_den',
+      name: 'Rising Den',
+      icon: '🧪',
+      areaId: 'oakrest',
+      desc: '',
+      activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '🏹' }],
+      groupWeights: { 3: 100 },
+      encounters: [
+        { monsterId: 'ph_scarab', weight: 1, level: [30, 30], levelRise: { stat: 'flag:test_rise', share: 0.1, ceiling: 45 } },
+      ],
+      connections: [],
+    };
+    const s = fresh();
+    s.stats['flag:test_rise'] = 6;
+    s.level = 20;
+    const group = spawnGroup(s, spot).filter((m): m is MonsterInstance => m !== null);
+    expect(group).toHaveLength(3);
+    // 30 + max(6, round(6 × 0.1 × 20)) = 42, leader and both fillers.
+    expect(group.map((m) => m.level)).toEqual([42, 42, 42]);
   });
 
   it('spawning applies it after the roll; a pinned override spawn does not', () => {

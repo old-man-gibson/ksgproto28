@@ -120,6 +120,16 @@
     }
   }
 
+  /**
+   * A method row's condition (DropEntry.killedBy), e.g. " (heat kill)". The
+   * chance beside it is the row's authored share, which it pays only on a
+   * kill of that type; any other kill rolls it as nothing.
+   */
+  function methodNote(d: DropEntry): string {
+    if (!d.killedBy?.length) return '';
+    return ` (${d.killedBy.map((t) => DAMAGE_TYPE_NAMES[t].toLowerCase()).join(' or ')} kill)`;
+  }
+
   /** Drop rows for one half of the table, keeping the original indices. */
   function drops(def: MonsterDef, common: boolean) {
     return def.loot.entries
@@ -438,7 +448,7 @@
                     <span class="resrow">
                       {dropLabel(row.entry)}{row.entry.qty && row.entry.kind !== 'gold'
                         ? ` ×${row.entry.qty[0]}–${row.entry.qty[1]}`
-                        : ''}
+                        : ''}{methodNote(row.entry)}
                       <b>{pct(dropChance(def, row.index))}</b>
                     </span>
                   {/each}
@@ -461,7 +471,7 @@
                     <span class="resrow">
                       {dropLabel(row.entry)}{row.entry.qty && row.entry.kind !== 'gold'
                         ? ` ×${row.entry.qty[0]}–${row.entry.qty[1]}`
-                        : ''}
+                        : ''}{methodNote(row.entry)}
                       <b>{pct(dropChance(def, row.index))}</b>
                     </span>
                   {/each}

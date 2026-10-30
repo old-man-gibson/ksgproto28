@@ -4453,9 +4453,10 @@ export interface SpotEncounter {
    * judge: each grave good taken raises it). With k = `stats[stat]` and P =
    * `state.level`, a rolled level L spawns at
    * `min(ceiling, L + max(k, round(k × share × P)))` (levels.ts
-   * `encounterLevel`, which the bestiary's level range reads too). Pinned
-   * `override` spawns ignore it. Both validation layers demand share > 0 and
-   * ceiling ≥ `level[1]`.
+   * `encounterLevel`, which the bestiary's level range reads too). Escorts
+   * and staged fights (pinned `override` spawns) ignore it; a group filler
+   * rolled from the line rises with it. Both validation layers demand
+   * share > 0 and ceiling ≥ `level[1]`.
    */
   levelRise?: { stat: string; share: number; ceiling: number };
 }

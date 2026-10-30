@@ -291,8 +291,8 @@ export const SPOTS_TEXT: ProseTable = {
   'f18_forecourt.desc': 'The forecourt guardian, a sand colossus, level 41, alone. Fights whenever you hunt here, cleared or not. Its first kill clears floor 18. It resists heat; a kill by bludgeoning can drop quicksilver. Placeholder text.',
 
   'f19_causeway.desc': 'Landing of floor 19, a causeway to the pyramid. Camp on the Causeway is a rest activity, and the landing is a haven. Hot: standing here trains Heat Resistance. Gate: 60 desert monsters killed in total. Placeholder text.',
-  'f19_valley.desc': 'Endless hunt: cobras and giant scorpions, level 40 to 41. Hot. The side tomb opens at Heat Resistance 15. Placeholder text.',
-  'f19_side_tomb.desc': 'A sealed side tomb, open at Heat Resistance 15. Hot. Search the Side Tomb explores (36 s) for quicksilver, bone ash and a coffer. Placeholder text.',
+  'f19_valley.desc': 'Endless hunt: cobras and giant scorpions, level 40 to 41. Hot. The side tomb opens at Heat Resistance 10. Placeholder text.',
+  'f19_side_tomb.desc': 'A sealed side tomb, open at Heat Resistance 10. Hot. Search the Side Tomb explores (36 s) for quicksilver, bone ash and a coffer. Placeholder text.',
   'f19_side_tomb.finds.f19_side_quicksilver.desc': '🪙 A stoppered jar: 3 Quicksilver.',
   'f19_side_tomb.finds.f19_side_ash.desc': '🦴 A burial urn: 4 Bone Ash.',
   'f19_side_tomb.finds.f19_side_coffer.desc': '💰 A coffer under the bier: 150 to 250 gold and 2 Brimstone.',
@@ -306,7 +306,7 @@ export const SPOTS_TEXT: ProseTable = {
   'f19_treasury.finds.f19_good_chest.desc': '🏺 Grave good taken: a chest of tools. 80 to 140 gold and 2 Bronze Ingots.',
   'f19_treasury.finds.f19_good_figures.desc': '🏺 Grave good taken: a box of servant figures. 80 to 140 gold and 2 Tin Ingots.',
   'f19_treasury.finds.f19_good_collar.desc': '🏺 Grave good taken: a broad collar. 80 to 140 gold and 2 Gold Leaf.',
-  'f19_door.desc': 'Sabaket, the Weigher at the Door: the judge, alone. Each grave good taken from the treasury raises its level. Arriving from the chamber starts the fight and it cannot be fled; it fights again whenever you hunt here. Its first kill clears floor 19 and seals the treasury. Placeholder text.',
+  'f19_door.desc': 'Sabaket, the Weigher at the Door: the judge, alone. With nothing taken from the treasury it is weaker than the floor’s dens; each grave good taken raises its level. Arriving from the chamber starts the fight and it cannot be fled; it fights again whenever you hunt here. Its first kill clears floor 19 and seals the treasury. Placeholder text.',
 
   'f20_river_road.desc': 'Landing of floor 20, the road down to the delta. Camp on the River Road is a rest activity, and the landing is a haven. Hot. Endless hunt: cobras, giant scorpions and scarabs, level 42 to 44. Gate: 150 desert monsters killed in total. Placeholder text.',
   'f20_quay.desc': 'The port house quay, a haven. The broker buys at the posted rates, the same price any counter pays. The way out to the roadstead starts a fight that cannot be fled. Placeholder text.',
