@@ -221,6 +221,15 @@ export const LOG_TEXT = {
   'equipment.discarded_stack': 'Discarded {icon} {grade}{name} ×{qty}.',
   'equipment.sold_material': 'Sold {icon} {name} ×{qty} for {price} gold.',
 
+  // ---------- festival (systems/festival.ts, systems/royale.ts) ----------
+  'festival.door_held': '🚪 The door holds {pieces} piece{plural} of gear until the festival ends, won or lost. Issued: {issued}.',
+  'festival.door_shut': '🚪 The dark room’s door is shut until the room is empty.',
+  'festival.door_open': '🚪 The dark room is empty and its door opens onto the hub. Ten festival days until the royale on floor 16; the other ninety-nine prepare too.',
+  'festival.forfeit': 'Leaving floors 15–16 by the ladder before the royale ends forfeits the festival.',
+  'festival.field_left': '🏟️ {alive} left on the field.',
+  'festival.lost': '🎪 Festival lost. Your gear is returned; floors 15 and 16 are shut for three days or until the next prestige.',
+  'festival.won': '🏆 The royale is won. Your gear is returned.',
+
   // ---------- game ----------
   'game.prestiged': '♻️ Prestige {count}: {points} points harvested.',
   'game.exerting_on': '🔥 Exerting: {style} spends stamina on every bonus it offers.',

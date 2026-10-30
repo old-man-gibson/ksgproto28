@@ -14,7 +14,7 @@ export const BANDS_TEXT: ProseTable = {
 
   'ascent_harbor.desc': 'Floors 11 to 14, the harbor band. Floors 12 to 14 are skeletons. Placeholder text.',
 
-  'ascent_festival.desc': 'Floors 15 and 16, the Vermin Festival. Skeletons. Placeholder text.',
+  'ascent_festival.desc': 'Floors 15 and 16, the Vermin Festival: ten rooms of ten, one survivor from each, then one of a hundred. The festival keeps its own clock, which runs only while the game does; time away inside it goes to banked bonus time. Placeholder text.',
 
   'ascent_aberrant.desc': 'Floor 17, a special floor. Skeleton; theme not set. Placeholder text.',
 
@@ -56,8 +56,8 @@ export const FLOORS_TEXT: ProseTable = {
   'ascent_f14.desc': 'Floor 14, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
 
   // ==== FESTIVAL: floor text (skeleton 2026-10-30; the festival builder's section) ====
-  'ascent_f15.desc': 'Floor 15, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
-  'ascent_f16.desc': 'Floor 16, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+  'ascent_f15.desc': 'Floor 15, the Vermin Festival’s first floor. Landing here starts an attempt: your gear is held at the door and one plain weapon is issued. Empty the dark room of its nine to clear the floor and open the hall, where ten festival days pass before the royale. Losing a fight here, or taking the ladder anywhere but floor 16, loses the attempt: you land outside the tower and floors 15 and 16 shut for three days or until the next prestige. Placeholder text.',
+  'ascent_f16.desc': 'Floor 16, the royale: ninety-nine survivors of the other rooms and you, on one field. Climbing here from the hall before the ten days are out jumps the festival’s clock to the end; the survivors get the rest of their preparation either way. Win the royale to clear the floor and get your gear back. Placeholder text.',
 
   // ==== ABERRANT: floor text (skeleton 2026-10-30; the aberrant builder's section) ====
   'ascent_f17.desc': 'Floor 17, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',

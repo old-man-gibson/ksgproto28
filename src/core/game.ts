@@ -24,6 +24,7 @@ import {
 import { registerBestiaryListeners } from './systems/bestiary';
 import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
 import { registerLevelListeners } from './systems/levels';
+import { registerFestivalListeners, tickFestival } from './systems/festival';
 import { setHuntRest } from './systems/huntrest';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
@@ -153,6 +154,9 @@ export class Game {
     // Training spots heal and dare off a won fight (systems/training.ts).
     registerTrainingListeners(state, this.bus);
     registerLevelListeners(state, this.bus);
+    // The Vermin Festival: attempts start on arrival in its dark room, and its
+    // staged fights report back through fight:won (systems/festival.ts).
+    registerFestivalListeners(state, this.bus);
     this.bus.on('log', (ev) => {
       if (this.suppressLog) return;
       appendLog(this.state, {
@@ -239,6 +243,10 @@ export class Game {
       tickBenchWork(this.state, this.bus);
       tickPerformance(this.state, this.bus);
     }
+    // The Vermin Festival's own clock and its staged fights, after whatever
+    // the tick resolved (systems/festival.ts). Travel included: the clock
+    // runs during a climb between its floors.
+    tickFestival(this.state, this.bus);
     // Time passes whatever you are doing — travel included — and the sense of
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);

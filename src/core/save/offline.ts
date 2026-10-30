@@ -3,6 +3,8 @@ import type { Game } from '../game';
 import { MS_PER_TICK } from '../engine/loop';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { SKILLS } from '../registry';
+import { bankTicks } from '../systems/bonustime';
+import { festivalHolds } from '../systems/festivalRules';
 
 /** Cap offline progress at 8 hours of game time. */
 export const OFFLINE_CAP_MS = 8 * 60 * 60 * 1000;
@@ -18,6 +20,11 @@ export interface OfflineSummary {
   itemsGained: number;
   attrLevels: { attr: AttributeId; gained: number }[];
   skillLevels: { id: string; name: string; gained: number }[];
+  /**
+   * Ticks banked as bonus time instead of simulated: the absence was spent
+   * inside the Vermin Festival, whose clock runs only while the game does.
+   */
+  festivalBanked?: number;
 }
 
 /**
@@ -28,6 +35,11 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
   // A frozen world owes nobody catch-up: `tick()` would no-op every one of
   // these anyway, and reporting a summary of nothing happening is worse.
   if (game.state.paused) return null;
+  // Inside the Vermin Festival nothing is simulated: the festival keeps its
+  // own clock, which runs only while the game does, and the time away goes
+  // to the bonus-time bank, 1:1 up to its cap (docs/FLOOR_IDEAS.md §5.3 item
+  // 19). Short gaps bank too; only a long one gets a summary.
+  if (festivalHolds(game.state)) return bankFestivalAbsence(game, elapsedMs);
   if (elapsedMs < OFFLINE_MIN_MS) return null;
   const capped = elapsedMs > OFFLINE_CAP_MS;
   const simMs = Math.min(elapsedMs, OFFLINE_CAP_MS);
@@ -71,5 +83,24 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
     itemsGained: Math.max(0, s.inventory.length - before.items),
     attrLevels,
     skillLevels,
+  };
+}
+
+/** Time away inside the festival, banked rather than simulated. Summarised like any long absence. */
+function bankFestivalAbsence(game: Game, elapsedMs: number): OfflineSummary | null {
+  const simMs = Math.min(Math.max(0, elapsedMs), OFFLINE_CAP_MS);
+  const ticks = Math.floor(simMs / MS_PER_TICK);
+  bankTicks(game.state, ticks);
+  if (elapsedMs < OFFLINE_MIN_MS || ticks <= 0) return null;
+  return {
+    ticks: 0,
+    ms: simMs,
+    capped: elapsedMs > OFFLINE_CAP_MS,
+    kills: 0,
+    goldGained: 0,
+    itemsGained: 0,
+    attrLevels: [],
+    skillLevels: [],
+    festivalBanked: ticks,
   };
 }

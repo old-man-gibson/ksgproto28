@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { OfflineSummary } from '../core/save/offline';
   import { ATTRIBUTE_LIST } from '../core/data/attributes.data';
+  import { MS_PER_TICK } from '../core/engine/loop';
   import { fmt, msToTime } from './lib/format';
 
   let { summary, onclose }: { summary: OfflineSummary; onclose: () => void } = $props();
@@ -30,7 +31,10 @@
       {#each summary.skillLevels as s}
         <li>📜 {s.name} +{s.gained} levels</li>
       {/each}
-      {#if summary.kills === 0 && summary.goldGained <= 0 && summary.itemsGained === 0 && summary.attrLevels.length === 0 && summary.skillLevels.length === 0}
+      {#if summary.festivalBanked}
+        <!-- The festival's clock runs only while the game does: nothing moved. -->
+        <li>🎪 Inside the Vermin Festival: nothing was simulated. {msToTime(summary.festivalBanked * MS_PER_TICK)} went to banked bonus time (⏩).</li>
+      {:else if summary.kills === 0 && summary.goldGained <= 0 && summary.itemsGained === 0 && summary.attrLevels.length === 0 && summary.skillLevels.length === 0}
         <li class="dim">Not much happened — pick an activity before you leave next time!</li>
       {/if}
     </ul>

@@ -5075,6 +5075,64 @@ export interface TitleDef {
   defiesDogma?: boolean;
 }
 
+// ---------- The Vermin Festival (systems/festival.ts, docs/FLOOR_IDEAS.md §5.3) ----------
+
+/**
+ * What the festival's door holds for the length of an attempt: everything
+ * worn and carried, plus the oil on the held blade. Returned whole when the
+ * attempt ends, won or lost.
+ */
+export interface HeldGear {
+  equipment: Partial<Record<SlotId, ItemInstance>>;
+  inventory: ItemInstance[];
+  sheathed: ItemInstance | null;
+  coating: WeaponCoating | null;
+}
+
+/** An attempt's phases: the dark room's waves, the hub's ten days, the royale. */
+export type FestivalPhase = 'dark' | 'prep' | 'royale';
+
+/**
+ * The royale's field: the survivors still standing, the player not counted
+ * (systems/royale.ts). `engaged` of them are in the fight with the player.
+ */
+export interface RoyaleField {
+  alive: number;
+  engaged: number;
+  /** World tick of the field's next thinning: one survivor falls to another. */
+  nextThin: number;
+}
+
+/** One attempt at the festival, from the dark room to the royale's end. */
+export interface FestivalRun {
+  phase: FestivalPhase;
+  /** Dark room waves won this attempt. */
+  wave: number;
+  /** World tick at which the next dark room wave or royale engagement may start. */
+  nextAt: number;
+  /**
+   * The festival's own clock: ticks since the dark room's door opened. It
+   * moves only while the game runs with the player on floors 15–16, and the
+   * climb into the royale sets it forward to the end of the ten days.
+   */
+  clock: number;
+  /** The clock when the climb into the royale began, before the jump. */
+  enteredAt?: number;
+  held: HeldGear;
+  /** uid of the issued weapon, taken back when the attempt ends. Absent when the pick was bare hands. */
+  issued?: number;
+  /** The royale's field, once the climb into it has begun. */
+  field?: RoyaleField;
+}
+
+/** Run state: absent on saves from before the festival, and reset by a prestige. */
+export interface FestivalState {
+  /** The attempt in progress, if any. */
+  run?: FestivalRun;
+  /** World tick until which floors 15–16 are shut after a lost attempt. */
+  lockedUntil?: number;
+}
+
 // ---------- Game state ----------
 
 export interface AttrState {
@@ -5653,6 +5711,12 @@ export interface GameState {
   achievements: Record<string, number>;
   /** Legacy-scoped: the only field a prestige carries forward (systems/prestige.ts). */
   prestige: PrestigeState;
+  /**
+   * The Vermin Festival on floors 15–16 (systems/festival.ts): the attempt in
+   * progress and the lockout after a lost one. Optional: read with defaults,
+   * absent on saves from before it existed.
+   */
+  festival?: FestivalState;
   /** Earned title ids (permanent). */
   titles: string[];
   /** Worn title id (at most one at a time). */

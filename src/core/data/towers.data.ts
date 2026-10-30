@@ -338,26 +338,32 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     clearXp: 750,
   },
   // ==== FESTIVAL: floors (skeleton 2026-10-30; the festival builder's section) ====
+  // The Vermin Festival (FLOOR_IDEAS.md §5.3 items 6, 10–20, 23–25; runtime in
+  // systems/festival.ts). Landing on floor 15 starts an attempt. Floor 15's
+  // clear is the dark room's last fighter, who only ever fights alone at the
+  // end of a room emptied in one attempt.
   ascent_f15: {
     id: 'ascent_f15',
-    name: 'The Dark Room (placeholder)',
+    name: 'The Dark Room',
     towerId: 'the_ascent',
     bandId: 'ascent_festival',
     index: 15,
     areaId: 'ascent_f15_area',
-    landing: 'f15_landing',
-    clear: [{ type: 'stat', key: 'fights:f15_keeper', value: 1 }],
+    landing: 'f15_dark_room',
+    clear: [{ type: 'stat', key: 'boss:f15_dark_room', value: 1 }],
     clearXp: 800,
   },
+  // A royale won: its champion is the field's last survivor, always fought
+  // alone after every other has fallen, so its latch is the win.
   ascent_f16: {
     id: 'ascent_f16',
-    name: 'The Royale (placeholder)',
+    name: 'The Royale',
     towerId: 'the_ascent',
     bandId: 'ascent_festival',
     index: 16,
     areaId: 'ascent_f16_area',
-    landing: 'f16_landing',
-    clear: [{ type: 'stat', key: 'fights:f16_keeper', value: 1 }],
+    landing: 'f16_arena',
+    clear: [{ type: 'stat', key: 'boss:f16_arena', value: 1 }],
     clearXp: 850,
   },
   // ==== ABERRANT: floors (skeleton 2026-10-30; the aberrant builder's section) ====
