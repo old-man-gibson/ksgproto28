@@ -1076,6 +1076,13 @@ bonus time or counts, never both) adds to `sea:crates:won`.
 - **Cooking: morale.** Rations (spent per leg) raise `morale`, which adds to
   the rating; further indirect effects of morale are left for a later round.
 - Salves are drunk in the boardings, as usual.
+- **Combat: the fourth way in** (user, 2026-10-29). A player who uses none
+  of the three crafting systems contributes by fighting: repelling
+  boarders, boarding the enemy themselves, or joining any fight on the
+  water. Every kill subtracts from the leg's threat (or guard, or pirate
+  crew) per the side table, so kills and the battery add up to the same
+  result. Kills alone clear every floor (the antagonist's check), so a pure
+  combat character is a full build here, not a fallback.
 - Example (merchants): threat [3, 3, 4, 4]. Base battery (rating 1) alone
   loses 2 + 2 + 3 + 3, clamped to all 8 crates. Two cannons and a cannonball
   per leg (volleys 3) with base powder (hit 1) and one ration (morale 1):
@@ -1251,12 +1258,7 @@ except the battery's new items (cannons, cannonballs, powder charges).
 
 ### 5.2 Open
 
-1. **A later wave left unstarted** (§5.3 item 21). *Default:* nothing is
-   lost while a threat waits; the base keeps producing and the warning
-   stays until the player starts the wave. A cost for ignoring it would
-   make the optional base a chore, and its output is materials only.
-
-Parked by the user, to be decided later:
+None with a default. Parked by the user, to be decided later:
 - the hundred-festival reward (§5.3 item 20)
 - worker creation (§5.3 item 8), a later part of base building
 - themes for floors 11–14, 17 and 18–20 (§5.3 item 5)
@@ -1339,6 +1341,9 @@ Round 4 (with idea 3's rulings):
     told when another wave threatens the base. A later wave never triggers
     a prestige, and the player starts it when they choose. Because the
     player starts it, a later wave never begins during offline catch-up.
+22. **A later wave left unstarted.** *"You gain nothing, and you lose
+    nothing."* The warning stays and the base keeps producing; no decay,
+    no reward for waiting.
 
 ### 5.4 Asked in round 2 (kept for the record)
 
