@@ -44,7 +44,9 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
   };
 
   game.suppressLog = true;
+  game.catchingUp = true;
   for (let i = 0; i < ticks; i++) game.tick();
+  game.catchingUp = false;
   game.suppressLog = false;
 
   const attrLevels = ATTRIBUTE_LIST.map((a) => ({

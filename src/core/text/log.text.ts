@@ -342,6 +342,14 @@ export const LOG_TEXT = {
   // ---------- safety ----------
   'safety.wake': '{reason} You wake at {icon} {spot}.',
 
+  // ---------- sea (systems/sea.ts) ----------
+  'sea.leg_convoy': '⛵ Leg {leg}/{legs}: threat {threat}, battery {rating}, kills {kills}. {lost} crates lost, {crates} aboard.',
+  'sea.leg_escort': '⛵ Leg {leg}/{legs}: monsters {monsters}, battery {rating}, kills {kills}. {lost} crates lost, {crates} aboard.',
+  'sea.leg_raid': '🏴‍☠️ Leg {leg}/{legs}: guard {guard}, battery {rating}, kills {kills}. {seized} crates seized.',
+  'sea.leg_recover': '📜 Leg {leg}/{legs}: pirate crew {crew}, battery {rating}, kills {kills}. {recovered} crates recovered, {carried} still aboard the pirates.',
+  'sea.sold': '💰 {crates} crates sold at port, {price} gold each: {gold} gold. Crates won this run: {total}.',
+  'sea.won': '📦 {crates} crates won: {list}. Crates won this run: {total}.',
+
   // ---------- shops ----------
   'shops.bought': 'Bought {icon} {name}{qty} for {total} gold.',
 
