@@ -149,9 +149,9 @@ constraints, condensed from the post:
 | 1–3 | band 1, the Lower Reaches | sequential | shipped |
 | 4–6 | band 2, the Wilds | sequential, goblin camp; prestige at 6 | PR #26 merged |
 | 7–10 | band 3, the castle | hub, four wards any order | skeleton on `band3-machinery` |
-| 11 | the stronghold | one-time aberrant floor; normal floor after the required prestige | unwritten |
-| 11–14 | band 4 | own band, four floors | unwritten |
-| 15–16 | the Vermin Festival | horror double floor, the Gu ritual | unwritten |
+| 11 | the stronghold | take it, fix it up, make workers, hold a monster wave; normal floor from the next prestige on (§5.3) | unwritten |
+| 11–14 | band 4 | own band, four floors; themes come later | unwritten |
+| 15–16 | the Vermin Festival | dark room of 10, a 10-day prep hub, a 100-body battle royale (§5.3) | unwritten |
 | 17 | special floor | aberrant, one floor | unwritten |
 | 18–20 | band 5 | own band, three floors | unwritten |
 | 21–30 | the Great Island at War | idea 2 | banked |
@@ -161,7 +161,8 @@ constraints, condensed from the post:
 - §5.1 Q1 (band size 1, 3 or ~10) no longer limits: 11–14 holds four floors,
   15–16 two.
 - Idea 2 moves to floors 21–30 and is no longer how the player first gains a
-  base; its floor-12 hold ruling (Q9) is re-read in §5.2 Q7.
+  base; its floor-12 hold ruling (Q9) is dropped for access to the
+  factions' war room (§5.3 Q7).
 - The offline row in §1.4 applies to every idea from here on. Idea 2's
   presence clock already fits it (absent floors do not advance); its fronts
   must resolve as per-turn counters, which they already are.
@@ -638,7 +639,9 @@ quoted.
   2026-10-29:** floors 21–30, after band 5 (§1.5). Floor numbers below are
   the original 11–20; add 10.
 - **The hold** (Q9): *"No matter how the player clears floor 12, the player
-  gains a base."*
+  gains a base."* **Superseded 2026-10-29:** the base comes from the floor
+  11 stronghold; floor 12 (now 22) gives access to the factions' war room
+  instead (§5.3 Q7).
 - **Finales** (Q10): a visible side fights the other two sides' leaders on
   floor 20; the hidden paths fight all three.
 - **Titles' first rows** (Q11): six baselines (3 sides × 2 ranks) plus one
@@ -1015,31 +1018,79 @@ Clean:
 
 ### 5.2 Open
 
-From the ladder restructure (§1.5, 2026-10-29). Each has a default.
+From the ladder rulings (§5.3). Each has a default.
 
-1. **"The required prestige."** Prestige unlocks at floor 6 today
-   (`PRESTIGE_UNLOCK` = the goblin warchief). *Default:* clearing the
-   stronghold writes a legacy flag; the next prestige after that flag swaps
-   floor 11 to the normal floor for every later run. No second prestige gate.
-2. **What the stronghold is.** A base the player takes, holds or builds on
-   floor 11. *Default:* the player takes it (a siege floor), then holds it
-   against one counter-attack; that clear is the swap flag.
-3. **One base or two.** The hold already exists behind the prestige-1 door.
-   *Default:* one base. The stronghold becomes the hold's fiction; the
-   para-floor is the hold's map, its door moves from the Foot to a spot
-   reached after the swap, and the prestige-1 door is removed. Cost: no
-   base on floors 6–11, where the hold opens today.
-4. **What the para-floor feeds.** *Default:* room rates into shipped
-   systems only (ore for smithing, herbs for alchemy, ingredients for
-   cooking), with no stat modifiers, so `modFingerprint` is untouched and
-   the critical path never needs it.
-5. **Floor 17 and the 18–20 band.** Themes unset. *Default:* left blank
-   until posted as ideas.
-6. **Vermin Festival placement in the Gu shape.** The ritual seals vermin
-   together until one remains. *Default:* floor 15 is the jar (the field
-   that thins), floor 16 the survivor; both resolve on kill counters, so they
-   coarsen.
-7. **Idea 2's base ruling.** Q9 gave a base on floor 12 "no matter how the
-   player clears" it. With the base from floor 11, *default:* drop it; at
-   21–30 the visible sides fight from faction bases and the hidden paths use
-   the hold the player already owns.
+1. **Worker creation in the stronghold tutorial.** No worker code exists
+   (no `worker` anywhere in `src/core`), and base building's settled recipe
+   makes workers from mutagens + alchemy + divine, which a narrow build may
+   not have picked (mutagens are also shut in alpha). *Default:* the
+   tutorial's first workers come from a plain recipe any build can pay
+   (gold and floor materials); the mutagen/alchemy/divine route makes
+   better workers later.
+2. **The prestige-1 hold door.** The hold opens at prestige 1 today, which
+   band 2 reaches at floor 6. With one base that is the stronghold,
+   *default:* the Foot door goes; there is no base between floor 6 and
+   floor 11 on a first climb. Saves that already opened the hold keep it
+   (stamped as the stronghold unlocked).
+3. **The wave.** *Default:* a fixed count of monsters in rounds; the
+   workers and fixes the player made shave rounds or escorts, the way band
+   2's sabotages do (`SpotDef.preparation`). Losing it is an ordinary
+   knockout: the player retries the wave, the fixes stay.
+4. **Gear in the Vermin Festival.** *Default:* everything equipped and
+   carried is held at the door and returned when the player leaves floor
+   16, won or lost. The issued weapon is the weapon type with the highest
+   skill, ties broken by kills with it, at a plain grade.
+5. **Losing in the dark room (floor 15's first fight).** *Default:* the
+   same as losing the royale: ejected, both floors locked.
+6. **The royale's shape.** The combat engine fights one target and a small
+   squad (escorts), not 99 bodies at once. *Default:* the field is a
+   counter. It thins by itself every tick (the others kill each other) and
+   the player fights a chain of encounters drawn from it, stronger as it
+   shrinks; the last encounter is the strongest survivor. This coarsens for
+   offline as a rate.
+7. **The others prepare too.** *Default:* the 99 grow stronger over the 10
+   days on a fixed curve, so entering early trades the player's prep for a
+   weaker field. The time jump spends the rest of the curve, so entering
+   early does not freeze them.
+8. **The time jump.** The clock is `state.totalTicks` (clock.ts), 14,400
+   ticks a day, so 10 days is 4 real hours of ticks. *Default:* a jump adds
+   the skipped ticks to the clock without simulating them; anything that
+   runs on elapsed ticks (buffs, cooking timers, upkeep) is checked for
+   what a jump does to it before this is built.
+9. **The lockout.** *Default:* 3 in-game days (72 real minutes) or the next
+   prestige, whichever comes first. Floors 15–16 are on the critical path,
+   so the lock must always expire; COMPLETABILITY's no-terminal-state rule
+   is met by the timer.
+10. **After a win.** *Default:* the reward is once per run; floor 16 reads
+    cleared, the hub stays visitable, and a new run fights the festival
+    again.
+
+### 5.3 Answered (user, 2026-10-29, the ladder)
+
+1. **The required prestige.** The next prestige after the stronghold clear.
+2. **The stronghold.** *"You take it, spruce it up a little, then the player
+   has to defend against a monster wave."* Before the wave triggers, the
+   player creates some workers as part of the tutorial.
+3. **One base.** *"Once the player stronghold is unlocked, it remains
+   unlocked on all subsequent prestiges."*
+4. **The para-floor's output.** Materials only, for now.
+5. **Themes.** Floors 11–14, 17 and 18–20 are undefined; they come later.
+6. **The Vermin Festival.**
+   - The player wakes in a dark room with no equipment but a simple weapon
+     of their preferred type (from skill level and usage).
+   - Nine other enemies, *"decently strong but manageable"*. When only the
+     player remains, the door opens.
+   - The next room holds 99 more survivors, much stronger. Nobody fights
+     yet: everyone gets 10 in-game days to prepare, in a small hub like the
+     Foot of the Ascent but with limited resources.
+   - When the player is ready, or the 10 days pass, they move to floor 16.
+     Entering early is a time jump. The battle royale begins.
+   - Defeat ejects the player out of the floors; floors 15 and 16 lock for
+     some time or until the prestige.
+   - A win rewards powerful equipment.
+   - The arithmetic is the Gu ritual's: ten rooms of ten, one survivor each,
+     then one of a hundred.
+   - Defeat here is an exception to the defeat rule (every knockout
+     retreats to the last haven): the player lands outside the tower.
+7. **Idea 2's base ruling** is dropped. It becomes access to the factions'
+   war room.
