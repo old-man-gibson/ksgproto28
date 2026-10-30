@@ -156,7 +156,7 @@ export const KEY_ORDER: Record<string, string[]> = {
   gate: ['at', 'requires'],
   connection: ['to', 'ticks', 'oneWay', 'hidden', 'forced', 'requires', 'label', 'returnLabel', 'approach'],
   npc: ['id', 'name', 'icon', 'spotId', 'quests'],
-  area: ['id', 'name', 'regionId', 'tags', 'scene'],
+  area: ['id', 'name', 'regionId', 'sheltered', 'tags', 'scene'],
   region: ['id', 'name', 'terrain', 'sheltered', 'mapped', 'tags', 'world'],
   tower: ['id', 'name', 'icon', 'hubSpot', 'direction', 'foreknown'],
   band: ['id', 'name', 'towerId', 'index', 'clearsToAdvance'],

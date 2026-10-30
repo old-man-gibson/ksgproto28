@@ -46,7 +46,7 @@
     moonlightOn,
   } from '../core/systems/exposure';
   import { subsystemUnlocked } from '../core/systems/unlocks';
-  import { AREAS, REGIONS, SKILLS, SPOTS } from '../core/registry';
+  import { SKILLS, skyRegionOf } from '../core/registry';
   import {
     barCapacity,
     barTickStarts,
@@ -111,7 +111,7 @@
     return '\nMoonlight: none';
   }
 
-  const wxRegion = $derived(REGIONS[AREAS[SPOTS[gs.spot]?.areaId]?.regionId]);
+  const wxRegion = $derived(skyRegionOf(gs.spot));
   const weather = $derived(
     wxRegion ? weatherAt(worldSeedOf(gs.createdAt), wxRegion, gs.totalTicks) : null,
   );

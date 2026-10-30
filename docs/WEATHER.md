@@ -90,13 +90,29 @@ The names are scaffolding (TODO in the data file), like the months.
 The user asked for moonlight to lighten the night and took the defaults of
 the design (record at the end of this section).
 
-**What it changes today: nothing.** Sky darkness only exists outdoors, away
-from lamplight. Every region in the game is either `sheltered` (the Ascent,
-which holds every tower floor including band 2's; the Hold) or a `settlement`
-(Threshold, the Holding Level), so `placeDarkness` returns 0 everywhere except
-`dark`-tagged places. Moonlight starts to matter when the first region is open
-to the night sky: the Hold's yard (TODO in locations.data.ts), an outdoor
-band-3 direction, or an off-ladder site.
+**Where it applies.** Sky darkness only exists outdoors, away from lamplight.
+The user's ruling (2026-10-29): floors 4 and 5 are open sky, floor 6 is in
+part, and each band-3 direction (floors 7–10) has open-sky areas. Built:
+
+| place | sky | how |
+|---|---|---|
+| floors 1–3 | roofed | the Ascent region is `sheltered` |
+| floor 4, the Greenwood | open | `ascent_f4_area` sets `sheltered: false` |
+| floor 5, the Mire | open, except the Hollows | `ascent_f5_area` sets `sheltered: false`; the Hollows carry `dark` and `indoor` |
+| floor 6, the Warren | the Mouth only | `ascent_f6_area` sets `sheltered: false`; every other spot carries `indoor`, the Drop `dark` and `indoor` |
+| floors 7–10 | open areas per direction | unbuilt; mark them when built (plans/bands-2-3.md) |
+| Threshold, the Holding Level | lamplight | `settlement` |
+| the Hold | roofed | `sheltered`; the yard is a TODO in locations.data.ts |
+
+`AreaDef.sheltered` overrides the region's for one area. Every reader of the
+sky goes through `skyRegionOf(spotId)` (registry.ts), which returns the region
+with the area's override applied, so the open floors share one sky over the
+Ascent's pin and 'plains' terrain. Open sky is the whole package, not
+moonlight alone: weather in the header chip and the Weathersense forecast,
+resist exposure from the weather, Weathersense watching XP, night darkness
+(combat penalties and Darkvision training), and moonlight. Floor 6's split
+is a first pass (Mouth open, the rest roofed) pending the user's answer on
+the Pens, Kitchens and Shrine.
 
 **The rule.** Moonlight lowers the darkness of the open night sky:
 
@@ -162,23 +178,29 @@ same nights. Darkness is applied at roll time in combat, not through
 `getDerivedStats`, so the derived-stats fingerprint is untouched.
 
 **Cost.** `darknessFactor` runs per attack roll; under the open night sky it
-now samples the weather each time. No such place exists yet. If a future
-open-sky region makes it show up in profiling, memoize the weather kind per
-region per game minute.
+now samples the weather each time, which floors 4–5 and the Warren Mouth pay
+at night. If it shows up in profiling, memoize the weather kind per region per
+game minute.
 
 **Tests** (tests/exposure.test.ts, tests/keeper.test.ts): all moons new gives
 the old darkness exactly; three full moons on a clear night give 0.4 at
 midnight; overcast gives 1; `dark` gives 1; roofs and lamplight give 0 and
 never sample the sky; a real clear night in the shelved woods is lighter and an
 overcast one is not; a moonlit night teaches Darkvision less; a
-`daypart: 'night'` encounter still rolls under a full moon.
+`daypart: 'night'` encounter still rolls under a full moon. The tower's open
+floors: band 1 keeps the roof and the open floors share the Ascent's pin;
+floor 4 has weather and floor 1 is always 'still'; a night on floor 4 is dark
+and moonlit while floor 1 is not; on floor 6 only the Mouth sees the night;
+rain on floor 5 trains the Bog but not the Hollows, the Tunnels or floor 1.
 
 **Decisions (user, 2026-10-29, defaults taken):** build now, inert until an
 open-sky region exists; no rise and set; `MOONLIGHT_MAX` 0.6 with weights
 0.5 / 0.3 / 0.2; moonlight slows Darkvision training too. The rejected
 options: build with the first open-sky region; moons that rise and set by
 phase (a moon up for the 12 hours centred on 12:00 + phase × 24 h, so a first
-quarter sets at midnight); Darkvision XP that ignores moonlight.
+quarter sets at midnight); Darkvision XP that ignores moonlight. Later the
+same day the user ruled which floors are open sky (the table above); that is
+what made moonlight live.
 
 ## The weather
 
@@ -201,6 +223,9 @@ precipitation 0–1, wind 0–1):
 `RegionDef.terrain` picks the profile ('plains' when absent);
 `RegionDef.sheltered` is for interiors — wind and precipitation zero out and
 only a damped temperature leaks in (the cave system, the home base).
+`AreaDef.sheltered` overrides it for one area (band 2's floors open the roofed
+Ascent to the sky); read the sky through `skyRegionOf`, never
+`REGIONS[area.regionId]`.
 A region with no atlas pin has **no weather at all** — `weatherAt` returns
 null; place it in the forge first.
 

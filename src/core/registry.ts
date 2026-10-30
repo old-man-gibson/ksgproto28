@@ -1,4 +1,4 @@
-import type { BandDef, Connection, FloorDef, SpotDef } from './types';
+import type { BandDef, Connection, FloorDef, RegionDef, SpotDef } from './types';
 export { KEY_ITEMS } from './data/keyitems.data';
 import { SKILLS } from './data/skills.data';
 import { STYLES } from './data/styles.data';
@@ -150,6 +150,19 @@ export function getSpot(id: string): SpotDef {
   const spot = SPOTS[id];
   if (!spot) throw new Error(`Unknown spot: ${id}`);
   return spot;
+}
+
+/**
+ * The region a spot stands under, with its area's `sheltered` applied: a
+ * floor of the roofed Ascent can open onto the sky over the tower's pin.
+ * Weather, darkness and the sky readouts read this rather than
+ * `REGIONS[area.regionId]`, so an area's override reaches all of them.
+ */
+export function skyRegionOf(spotId: string): RegionDef | undefined {
+  const area = AREAS[SPOTS[spotId]?.areaId];
+  const region = area && REGIONS[area.regionId];
+  if (!region || area.sheltered === undefined || area.sheltered === !!region.sheltered) return region;
+  return { ...region, sheltered: area.sheltered };
 }
 
 /** Edges leaving a spot, including hidden ones (callers filter by explored state). */

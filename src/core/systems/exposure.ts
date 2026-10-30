@@ -1,6 +1,6 @@
 import type { GameState, RegionDef } from '../types';
 import type { EventBus } from '../engine/events';
-import { AREAS, REGIONS, SPOTS } from '../registry';
+import { AREAS, SPOTS, skyRegionOf } from '../registry';
 import { checkDiscovery, grantSkillXp } from './skills';
 import { clockOf, moonlight, type MoonState } from './clock';
 import { hasStatus } from './statuses';
@@ -181,7 +181,7 @@ function groundMoonlight(state: GameState, region: RegionDef | undefined): numbe
 function placeOf(state: GameState) {
   const spot = SPOTS[state.spot];
   const area = spot ? AREAS[spot.areaId] : undefined;
-  const region = area ? REGIONS[area.regionId] : undefined;
+  const region = skyRegionOf(state.spot);
   const tags = new Set([...(region?.tags ?? []), ...(area?.tags ?? []), ...(spot?.tags ?? [])]);
   return { spot, region, tags };
 }

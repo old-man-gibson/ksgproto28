@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 import type { EventBus } from '../engine/events';
-import { AREAS, REGIONS, SPOTS } from '../registry';
+import { REGIONS, skyRegionOf } from '../registry';
 import { checkDiscovery, grantSkillXp } from './skills';
 import { clockOf, formatDate } from './clock';
 import {
@@ -161,8 +161,7 @@ export function forecastFor(
 export function prognosisTitle(state: GameState, current: WeatherSample): string {
   const lines = [`${current.kind} · feels ${current.band}`];
   const level = state.skills[WEATHERSENSE_ID]?.level ?? 0;
-  const spot = SPOTS[state.spot];
-  const region = spot ? REGIONS[AREAS[spot.areaId]?.regionId] : undefined;
+  const region = skyRegionOf(state.spot);
   if (level >= 1 && region?.world) {
     const entries = forecastFor(level, region, worldSeedOf(state.createdAt), state.totalTicks);
     if (entries.length > 0) {

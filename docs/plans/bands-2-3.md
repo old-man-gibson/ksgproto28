@@ -91,6 +91,7 @@ and ore from the hills and caves (smithing). Exact drops at build.
 | The castle | The band's hub: a set of spots off the ladder (no `bandId`), with four doors. Each door is a direction floor's landing edge. It holds residents and a haven |
 | Directions | South 7, West 8, North 9, East 10. All four open together once band 3 is open. Each direction floor is a city district that leads out into a thematic map beyond the walls (user, Q2): district first, the outside map past it, the floor's clear at the far end. Themes per direction: open |
 | Scaling | Monster level on direction floors = rolled level + `DIRECTION_LEVEL_STEP[k]`, k = directions cleared. Default table `[0, 2, 5, 9]` (steps 2, 3, 4: slightly faster than linear). A data table, so it is one dial |
+| Open sky | Every direction has open-sky areas (user, 2026-10-29). The Ascent region is roofed, so each direction floor's area sets `sheltered: false` and tags its roofed spots `indoor`; a cave carries `dark` and `indoor`. Which spots are open is asked at build. Open sky brings weather, night darkness and moonlight (WEATHER.md, "Moonlight") |
 | Castle safe | A counter or flag set when all four floors are cleared; it reads as the band's clear. Nothing else hangs on it yet (R8) |
 
 ### The spine, floors 1-10 (user, 2026-10-25)
@@ -240,6 +241,10 @@ three boss rooms have a `fightLimit` (1). Gates read `kills:tag:goblin`.
   weakening a different part of the fight is open. Variant bosses, rolled
   raid parties as their own encounter, and knowledge carrying across prestige
   are open. There is no forest scene: floor 4's banner falls back to the town.
+- **Open sky (user, 2026-10-29, branch `moon-phase`):** floors 4 and 5 are
+  under the sky (the Hollows excepted), floor 6 only at the Mouth as a first
+  pass. Weather, night darkness and moonlight now reach them. Table in
+  WEATHER.md, "Moonlight".
 - **Tuning note (user, 2026-10-25):** smithing XP is too fast (one iron
   nodachi is about seven Smithing levels), and the Growth panel can show skill
   XP ×2.5 on a modest save. Tuning later, not part of this card.

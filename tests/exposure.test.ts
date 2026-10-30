@@ -27,7 +27,7 @@ import {
 } from '../src/core/systems/weather';
 import { clockOf, moonlight } from '../src/core/systems/clock';
 import { MOONLIGHT_WEIGHT } from '../src/core/data/climate.data';
-import { AREAS, REGIONS, SPOTS } from '../src/core/registry';
+import { AREAS, REGIONS, SPOTS, skyRegionOf } from '../src/core/registry';
 
 const at = (d: number, h = 0) => (d * 1440 + h * 60) * 10;
 
@@ -212,6 +212,74 @@ describe('moonlight', () => {
     const clouded = xpAfterOneMinute(woodsNightWith('overcast'));
     expect(moonlit).toBeGreaterThan(0);
     expect(moonlit).toBeLessThan(clouded);
+  });
+});
+
+describe('open sky in the tower (user ruling, 2026-10-29)', () => {
+  const seed = worldSeedOf(20260804);
+  const ROOFED_F6 = ['f6_tunnels', 'f6_pens', 'f6_kitchens', 'f6_shrine', 'f6_great_hall'];
+
+  it('band 1 keeps the roof; floors 4 and 5 and the Warren Mouth open onto the sky over the same pin', () => {
+    expect(skyRegionOf('f1_landing')).toBe(REGIONS.the_ascent);
+    expect(skyRegionOf('f1_landing')?.sheltered).toBe(true);
+    for (const spot of ['f4_treeline', 'f4_ravine_floor', 'f5_bog', 'f5_back_door', 'f6_warren_mouth']) {
+      const sky = skyRegionOf(spot)!;
+      expect(sky.sheltered, spot).toBe(false);
+      expect(sky.world, spot).toEqual(REGIONS.the_ascent.world);
+    }
+  });
+
+  it('weather reaches floor 4 and never floor 1', () => {
+    const kinds = new Set<WeatherKind>();
+    for (let d = 1; d < 90; d++) {
+      expect(weatherAt(seed, skyRegionOf('f1_landing')!, at(d, 12))?.kind).toBe('still');
+      kinds.add(weatherAt(seed, skyRegionOf('f4_treeline')!, at(d, 12))!.kind);
+    }
+    expect(kinds.has('still')).toBe(false);
+    expect(kinds.size).toBeGreaterThan(1);
+  });
+
+  it('a night on floor 4 is dark and moonlit; the same night on floor 1 is not dark', () => {
+    const f4 = world('f4_deep_woods', at(3, 23));
+    f4.state.createdAt = 20260804;
+    const moon = moonlightOn(f4.state);
+    expect(moon).not.toBeNull();
+    expect(darknessFactor(f4.state)).toBeCloseTo(skyDarkness(23, moon!.lit), 12);
+    expect(darknessFactor(f4.state)).toBeGreaterThan(0);
+
+    const f1 = world('f1_landing', at(3, 23));
+    expect(darknessFactor(f1.state)).toBe(0);
+    expect(moonlightOn(f1.state)).toBeNull();
+  });
+
+  it('floor 6: the Mouth sees the night, the roofed warren does not, the caves stay dark', () => {
+    expect(moonlightOn(world('f6_warren_mouth', at(3, 23)).state)).not.toBeNull();
+    for (const spot of ROOFED_F6) {
+      const { state } = world(spot, at(3, 23));
+      expect(darknessFactor(state), spot).toBe(0);
+      expect(moonlightOn(state), spot).toBeNull();
+    }
+    for (const spot of ['f5_hollows', 'f6_drop']) {
+      expect(darknessFactor(world(spot, at(3, 12)).state), spot).toBe(1);
+    }
+  });
+
+  it('rain on floor 5 trains the bog, never the caves or the roofed warren', () => {
+    let rain = -1;
+    for (let d = 1; d < 368 && rain < 0; d++) {
+      if (weatherAt(seed, skyRegionOf('f5_bog')!, at(d, 12))?.kind === 'rain') rain = at(d, 12);
+    }
+    expect(rain).toBeGreaterThan(0);
+    const wet = (spot: string) => {
+      const w = world(spot, rain);
+      w.state.createdAt = 20260804;
+      tickExposure(w.state, w.bus);
+      return w.state.skills.water_resistance !== undefined;
+    };
+    expect(wet('f5_bog')).toBe(true);
+    expect(wet('f5_hollows')).toBe(false);
+    expect(wet('f6_tunnels')).toBe(false);
+    expect(wet('f1_landing')).toBe(false);
   });
 });
 
