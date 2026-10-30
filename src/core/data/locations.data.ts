@@ -1980,8 +1980,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   },
 
   // --- Floor 8, west: the forest gate and the old forest past it, facing the
-  // Greenwood of band 2 (the Five Moons' way in, FLOOR_IDEAS idea 1). Stand-in
-  // threat: bleeding (wolves) and the goblin remnant.
+  // Greenwood of band 2 (the Five Moons' way in, FLOOR_IDEAS idea 1). The
+  // threat (the four wards, Q9): a rogue beast changing form. The hunts are
+  // beasts and their prey; the lodge's keeper is the beast, young or final by
+  // the ward's position (`band:pos:ascent_f8`, the other wards cleared).
   f8_forest_gate: {
     id: 'f8_forest_gate',
     name: 'The Forest Gate',
@@ -1994,8 +1996,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     ],
     groupWeights: { 1: 70, 2: 30 },
     encounters: [
-      { monsterId: 'goblin', weight: 60, level: [12, 13] },
-      { monsterId: 'young_wolf', weight: 40, level: [12, 13] },
+      { monsterId: 'young_wolf', weight: 60, level: [12, 13] },
+      { monsterId: 'forest_rat', weight: 40, level: [12, 13] },
     ],
     connections: [{ to: 'f8_old_forest', ticks: 30, label: 'Out the West Gate', returnLabel: 'Back Through the West Gate' }],
   },
@@ -2013,7 +2015,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     encounters: [
       { monsterId: 'wolf', weight: 40, level: [13, 14] },
       { monsterId: 'boar', weight: 30, level: [13, 14] },
-      { monsterId: 'hobgoblin', weight: 30, level: [13, 14] },
+      { monsterId: 'cliff_hawk', weight: 30, level: [13, 14] },
     ],
     exploreTicks: 300,
     finds: [
@@ -2031,12 +2033,19 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     fightLimit: 1,
     modifierWeights: { normal: 100 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Take the Lodge', icon: '⚔️' }],
-    encounters: [{ monsterId: 'hobgoblin_champion', weight: 1, once: true, level: [14, 14] }],
+    // One row per form. Read live: the form is whichever fits the other wards
+    // cleared when the fight starts. After the band's step: 14 or 16 young,
+    // 19 or 23 final.
+    encounters: [
+      { monsterId: 'ph_rogue_beast_young', weight: 1, once: true, level: [14, 14], requires: [{ type: 'statMax', key: 'band:pos:ascent_f8', value: 1 }] },
+      { monsterId: 'ph_rogue_beast_final', weight: 1, once: true, level: [14, 14], requires: [{ type: 'stat', key: 'band:pos:ascent_f8', value: 2 }] },
+    ],
     connections: [],
   },
 
   // --- Floor 9, north: the cathedral close and the barrow fields past it.
-  // Stand-in threat: the dead (zombie slimes, a death knight).
+  // The threat: the dead. The ossuary's keeper is a death squire, or the death
+  // knight once two of the other wards are cleared (`band:pos:ascent_f9`).
   f9_cathedral_close: {
     id: 'f9_cathedral_close',
     name: 'The Cathedral Close',
@@ -2068,7 +2077,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     encounters: [
       { monsterId: 'slime_zombie', weight: 45, level: [13, 14] },
       { monsterId: 'living_doll', weight: 30, level: [13, 14] },
-      { monsterId: 'death_knight', weight: 25, level: [13, 14] },
+      // The squire, not the knight: the knight is the keeper's later form.
+      { monsterId: 'ph_death_squire', weight: 25, level: [13, 14] },
     ],
     exploreTicks: 300,
     finds: [
@@ -2085,13 +2095,28 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 50, y: 70 },
     fightLimit: 1,
     modifierWeights: { normal: 100 },
+    // Neither form is solitary, so the default group roll would bring a second
+    // one in as a filler.
+    groupWeights: { 1: 100 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Enter the Ossuary', icon: '⚔️' }],
-    encounters: [{ monsterId: 'death_knight', weight: 1, once: true, level: [15, 15] }],
+    // After the band's step: the squire at 14 or 16, the knight at 18 or 22.
+    // The knight's base is a level under the other keepers' because its growth
+    // is steeper (3 STR a level): at 22 it stands level with the final beast
+    // at 23.
+    encounters: [
+      { monsterId: 'ph_death_squire', weight: 1, once: true, level: [14, 14], requires: [{ type: 'statMax', key: 'band:pos:ascent_f9', value: 1 }] },
+      { monsterId: 'death_knight', weight: 1, once: true, level: [13, 13], requires: [{ type: 'stat', key: 'band:pos:ascent_f9', value: 2 }] },
+    ],
     connections: [],
   },
 
-  // --- Floor 10, east: the artificers' row and the quarry past it. Stand-in
-  // threat: armour (automata, stone golems) that blunt weapons answer.
+  // --- Floor 10, east: the artificers' row and the mine past it. The threat:
+  // an ore eater in the deep seam, shelled, so blunt weapons answer it, as they
+  // answer the automata and golems on the way. One stage per position
+  // (`band:pos:ascent_f10`): the later the ward, the bigger the eater. Its
+  // damage to the mine is text only for now (Q21). The ids are the
+  // skeleton's (f10_quarry is the Mine, f10_foundry the Deep Seam): saves and
+  // the clear's migration name them.
   f10_artificers_row: {
     id: 'f10_artificers_row',
     name: "The Artificers' Row",
@@ -2111,12 +2136,12 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   },
   f10_quarry: {
     id: 'f10_quarry',
-    name: 'The Quarry',
+    name: 'The Mine',
     icon: '⛏️',
     areaId: 'ascent_f10_area',
     map: { x: 50, y: 40 },
     activities: [
-      { id: 'hunt', kind: 'hunt', name: 'Work the Quarry', icon: '⚔️' },
+      { id: 'hunt', kind: 'hunt', name: 'Work the Mine', icon: '⚔️' },
       { id: 'explore', kind: 'explore', name: 'Search the Spoil Heaps', icon: '🔍' },
     ],
     groupWeights: { 1: 70, 2: 30 },
@@ -2130,18 +2155,25 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'f10_quarry_ore', at: 0.3, material: { id: 'copper_ore', qty: 5 } },
       { id: 'f10_quarry_scrap', at: 0.6, material: { id: 'iron_scrap', qty: 5 } },
     ],
-    connections: [{ to: 'f10_foundry', ticks: 30, label: 'Into the Foundry' }],
+    connections: [{ to: 'f10_foundry', ticks: 30, label: 'Down to the Deep Seam', returnLabel: 'Up to the Mine' }],
   },
   f10_foundry: {
     id: 'f10_foundry',
-    name: 'The Foundry',
-    icon: '🔥',
+    name: 'The Deep Seam',
+    icon: '🪨',
     areaId: 'ascent_f10_area',
     map: { x: 50, y: 70 },
     fightLimit: 1,
     modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Enter the Foundry', icon: '⚔️' }],
-    encounters: [{ monsterId: 'stone_golem', weight: 1, once: true, level: [14, 14] }],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Go Down the Seam', icon: '⚔️' }],
+    // One row per stage, one stage per position. After the band's step:
+    // stage 1 at 14, stage 2 at 16, stage 3 at 19, stage 4 at 23.
+    encounters: [
+      { monsterId: 'ph_ore_eater_1', weight: 1, once: true, level: [14, 14], requires: [{ type: 'statMax', key: 'band:pos:ascent_f10', value: 0 }] },
+      { monsterId: 'ph_ore_eater_2', weight: 1, once: true, level: [14, 14], requires: [{ type: 'stat', key: 'band:pos:ascent_f10', value: 1 }, { type: 'statMax', key: 'band:pos:ascent_f10', value: 1 }] },
+      { monsterId: 'ph_ore_eater_3', weight: 1, once: true, level: [14, 14], requires: [{ type: 'stat', key: 'band:pos:ascent_f10', value: 2 }, { type: 'statMax', key: 'band:pos:ascent_f10', value: 2 }] },
+      { monsterId: 'ph_ore_eater_4', weight: 1, once: true, level: [14, 14], requires: [{ type: 'stat', key: 'band:pos:ascent_f10', value: 3 }] },
+    ],
     connections: [],
   },
 

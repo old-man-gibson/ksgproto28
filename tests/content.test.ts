@@ -145,6 +145,13 @@ function statCounterValid(key: string): boolean {
     const [, spotId, monsterId] = key.split(':');
     return !!SPOTS[spotId]?.encounters?.some((e) => e.once && e.monsterId === monsterId);
   }
+  // `band:pos:<floor>` is a ward's position: the other floors of its any-order
+  // band cleared this run, kept live while the floor is uncleared (the ward
+  // engine; docs/plans/bands-2-3.md, "The four wards").
+  if (key.startsWith('band:pos:')) {
+    const floor = FLOORS[key.slice(9)];
+    return !!floor?.bandId && BANDS[floor.bandId]?.order === 'any';
+  }
   if (key.startsWith('kills:')) return key.slice(6) in MONSTERS;
   if (key.startsWith('gather:')) return key.slice(7) in MATERIALS;
   // `forged:<class>` is bumped when the anvil makes a piece of that class, and

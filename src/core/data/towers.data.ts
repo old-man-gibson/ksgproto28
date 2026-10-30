@@ -261,7 +261,8 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     index: 8,
     areaId: 'ascent_f8_area',
     landing: 'f8_forest_gate',
-    clear: [{ type: 'stat', key: 'slain:f8_lodge:hobgoblin_champion', value: 1 }],
+    // The lodge's one fight, whichever form of the beast held it.
+    clear: [{ type: 'stat', key: 'fights:f8_lodge', value: 1 }],
     clearXp: 500,
   },
   ascent_f9: {
@@ -272,7 +273,8 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     index: 9,
     areaId: 'ascent_f9_area',
     landing: 'f9_cathedral_close',
-    clear: [{ type: 'stat', key: 'slain:f9_ossuary:death_knight', value: 1 }],
+    // The ossuary's one fight: the squire or the knight.
+    clear: [{ type: 'stat', key: 'fights:f9_ossuary', value: 1 }],
     clearXp: 500,
   },
   ascent_f10: {
@@ -283,7 +285,8 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     index: 10,
     areaId: 'ascent_f10_area',
     landing: 'f10_artificers_row',
-    clear: [{ type: 'stat', key: 'slain:f10_foundry:stone_golem', value: 1 }],
+    // The deep seam's one fight, at whichever stage the ore eater had reached.
+    clear: [{ type: 'stat', key: 'fights:f10_foundry', value: 1 }],
     clearXp: 500,
   },
   // ---- Floor 11 (docs/FLOOR_IDEAS.md §1.5, §5.3). One floor, two lives.

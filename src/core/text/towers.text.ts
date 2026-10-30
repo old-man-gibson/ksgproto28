@@ -42,11 +42,11 @@ export const FLOORS_TEXT: ProseTable = {
 
   'ascent_f7.desc': 'Floor 7, the city’s south ward: the docks, the salt marsh past the south gate, and the Giant Spider Queen in the wreck, whose kill is the clear. Stand-in monsters. Placeholder text.',
 
-  'ascent_f8.desc': 'Floor 8, the city’s west ward, facing the forest: the forest gate, the old forest past it, and the Hobgoblin Champion in the hunting lodge, whose kill is the clear. Stand-in monsters. Placeholder text.',
+  'ascent_f8.desc': 'Floor 8, the city’s west ward, facing the forest: the forest gate, the old forest past it, and a rogue beast in the hunting lodge. The fighting in the city crowds the beasts into the forest, and the beast changes under it: with one or none of the other wards cleared it is the young form, with two or three the final form. Clear: win the lodge’s one fight. Placeholder text.',
 
-  'ascent_f9.desc': 'Floor 9, the city’s north ward: the cathedral close, the barrow fields past the north gate, and a Death Knight in the ossuary, whose kill is the clear. Stand-in monsters. Placeholder text.',
+  'ascent_f9.desc': 'Floor 9, the city’s north ward: the cathedral close, the barrow fields past the north gate, and the ossuary’s keeper. With one or none of the other wards cleared it is a Death Squire, with two or three a Death Knight. Clear: win the ossuary’s one fight. Placeholder text.',
 
-  'ascent_f10.desc': 'Floor 10, the city’s east ward: the artificers’ row, the quarry past the east gate, and a Stone Golem in the foundry, whose kill is the clear. Stand-in monsters. Placeholder text.',
+  'ascent_f10.desc': 'Floor 10, the city’s east ward: the artificers’ row, the mine past the east gate, and an ore eater in the deep seam below it. The eater is at stage 1 with none of the other wards cleared and one stage larger for each one cleared, up to stage 4 with all three. Clear: win the deep seam’s one fight. Placeholder text.',
 
   'ascent_f11.desc': 'Floor 11. On your first climb here: the stronghold. Repair it through the steward’s two quests, then hold the wall through eight fights; the eighth ends the run in an automatic prestige, and the stronghold stays yours on every later run. On later runs: the door to your hold is in the gatehouse, and the road leads on to the harbor, where a join quest picks your side for the run. Clear: 8 crates won on the roadstead’s convoy and one fight won there. Placeholder monsters. Placeholder text.',
 
