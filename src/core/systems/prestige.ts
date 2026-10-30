@@ -4,7 +4,7 @@ import { PRESTIGE_BOONS, PRESTIGE_SOURCES, PRESTIGE_UNLOCK, TOWERS } from '../re
 import { createInitialState } from '../state';
 import { TUTORIAL_DONE_KEY, TUTORIAL_EXIT } from '../data/tutorial.data';
 import { conditionsMet } from './conditions';
-import { floorCleared, ladderFloors } from './towers';
+import { clearMet, ladderFloors } from './ladder';
 import { boonRank } from './legacy';
 import { revealMapped } from './mapped';
 import { applyStartingLevel } from './levels';
@@ -45,8 +45,9 @@ export function sourceAmount(state: GameState, src: PrestigeSourceDef): number {
     case 'stat':
       return Math.floor(state.stats[src.key ?? ''] ?? 0);
     case 'floors':
+      // The floor's own clear, not a pass: a passed band pays nothing.
       return Object.keys(TOWERS).reduce(
-        (n, towerId) => n + ladderFloors(towerId).filter((f) => floorCleared(state, f)).length,
+        (n, towerId) => n + ladderFloors(towerId).filter((f) => clearMet(state, f)).length,
         0,
       );
     case 'skillLevels':

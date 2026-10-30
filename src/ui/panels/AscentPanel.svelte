@@ -2,33 +2,59 @@
   import { gs, game } from '../state.svelte';
   import {
     CLIMB_TICKS_PER_FLOOR,
+    bandBaseIndex,
+    bandLevelStep,
+    climbVerb,
     currentFloor,
     floorCleared,
+    hubStatus,
     ladderFloors,
+    rungIndex,
     rungStatus,
+    standingIndex,
     towerAt,
   } from '../../core/systems/towers';
-  import { BANDS, getSpot } from '../../core/registry';
-  import type { FloorDef, UnlockCondition } from '../../core/types';
+  import { BANDS, bandsOf, floorsInBand, getSpot } from '../../core/registry';
+  import type { BandDef, FloorDef, UnlockCondition } from '../../core/types';
   import { termText, ticksToTime } from '../lib/format';
 
   const tower = $derived(towerAt(gs));
   const here = $derived(currentFloor(gs));
   const rungs = $derived(tower ? ladderFloors(tower.id) : []);
+
+  /**
+   * One line of the ladder: a floor, or a band's hub (band 3's castle), which
+   * sits at the foot of its band.
+   */
+  type Row = { kind: 'floor'; floor: FloorDef; sibling: boolean } | { kind: 'hub'; band: BandDef };
+
   /**
    * The ladder reads the way the stack runs: an 'up' tower lists its highest
    * rung first, so climbing is reading upward. A dungeon would come out
    * inverted for free. `foreknown` is the tower/dungeon split for what lies
    * ahead: a goalpost shows its sealed rungs and their terms; a discovery
-   * shows nothing past the first sealed door.
+   * shows nothing past the first sealed door. An `any` band's floors are
+   * siblings, none above another, so they keep their own order (south, west,
+   * north, east) with the hub beneath them.
    */
-  const shown = $derived.by(() => {
-    const list = tower?.foreknown ? rungs : rungs.filter((f) => rungStatus(gs, f) !== 'sealed');
-    return tower?.direction === 'down' ? list : [...list].reverse();
+  const rows = $derived.by((): Row[] => {
+    if (!tower) return [];
+    const up = tower.direction !== 'down';
+    const shows = (status: string) => tower.foreknown || status !== 'sealed';
+    const blocks = bandsOf(tower.id).map((band): Row[] => {
+      const any = band.order === 'any';
+      const floors: Row[] = rungs
+        .filter((f) => f.bandId === band.id && shows(rungStatus(gs, f)))
+        .map((floor) => ({ kind: 'floor', floor, sibling: any }));
+      const hub: Row[] = band.hub && shows(hubStatus(gs, band)) ? [{ kind: 'hub', band }] : [];
+      const ordered = any || !up ? floors : [...floors].reverse();
+      return up ? [...ordered, ...hub] : [...hub, ...ordered];
+    });
+    return (up ? blocks.reverse() : blocks).flat();
   });
 
   const atHub = $derived(!!tower && gs.spot === tower.hubSpot);
-  const fromIndex = $derived(here?.index ?? 0);
+  const fromIndex = $derived(standingIndex(gs));
   const hub = $derived(tower ? getSpot(tower.hubSpot) : null);
 
   /** A clear or gate term in words a player can act on (lib/format.ts `termText`). */
@@ -41,8 +67,24 @@
     return Math.max(1, Math.abs(toIndex - fromIndex)) * CLIMB_TICKS_PER_FLOOR;
   }
 
+  /** The button's verb: up or down the stack, or across between rungs at one height. */
+  function moveLabel(toIndex: number): string {
+    if (!tower) return '';
+    const verb = climbVerb(tower, fromIndex, toIndex);
+    return verb === 'Crossing' ? 'Go' : verb === 'Climbing' ? 'Climb' : 'Descend';
+  }
+
   function bandName(floor: FloorDef): string {
     return floor.bandId ? (BANDS[floor.bandId]?.name ?? '') : '';
+  }
+
+  /** "2 of 4 cleared · monsters +5 levels": what the next direction will face. */
+  function stepLine(band: BandDef): string | null {
+    if (!band.levelSteps?.length) return null;
+    const floors = floorsInBand(band.id);
+    const cleared = floors.filter((f) => floorCleared(gs, f)).length;
+    const step = bandLevelStep(gs, { areaId: floors[0]?.areaId ?? '' });
+    return `${cleared} of ${floors.length} cleared · monsters +${step} levels`;
   }
 </script>
 
@@ -51,41 +93,80 @@
     <h3>{tower.icon} {tower.name}</h3>
     {#if tower.desc}<p class="dim small">{tower.desc}</p>{/if}
     <div class="ladder">
-      {#each shown as floor (floor.id)}
-        {@const status = rungStatus(gs, floor)}
-        {@const current = here?.id === floor.id}
-        <div class="rung" class:current class:sealed={status === 'sealed'}>
-          <div class="rung-main">
-            <span class="rung-name">
-              {#if status === 'cleared'}✅{:else if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}
-              <b>{floor.name}</b>
-              <span class="dim small">Floor {floor.index} · {bandName(floor)}</span>
-              {#if current}<span class="here">you are here</span>{/if}
-            </span>
-            {#if (status === 'open' || status === 'cleared') && !current}
-              <button
-                class="small"
-                disabled={gs.recovering || !!gs.combat?.forced}
-                onclick={() => game.climbTo(floor.id)}
-              >
-                {(tower.direction === 'down') === (floor.index > fromIndex) ? 'Descend' : 'Climb'}
-                · {ticksToTime(climbTicks(floor.index))}
-              </button>
+      {#each rows as row (row.kind === 'floor' ? row.floor.id : `hub:${row.band.id}`)}
+        {#if row.kind === 'floor'}
+          {@const floor = row.floor}
+          {@const status = rungStatus(gs, floor)}
+          {@const current = here?.id === floor.id}
+          <div class="rung" class:current class:sealed={status === 'sealed'} class:sibling={row.sibling}>
+            <div class="rung-main">
+              <span class="rung-name">
+                {#if status === 'cleared'}✅{:else if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}
+                <b>{floor.name}</b>
+                <span class="dim small">Floor {floor.index} · {bandName(floor)}{row.sibling ? ' · any order' : ''}</span>
+                {#if current}<span class="here">you are here</span>{/if}
+              </span>
+              {#if (status === 'open' || status === 'cleared') && !current}
+                <button
+                  class="small"
+                  disabled={gs.recovering || !!gs.combat?.forced}
+                  onclick={() => game.climbTo(floor.id)}
+                >
+                  {moveLabel(rungIndex(floor))} · {ticksToTime(climbTicks(rungIndex(floor)))}
+                </button>
+              {/if}
+            </div>
+            <!-- The terms are the teaching: a shut door always says what opens it. -->
+            {#if status === 'gated'}
+              {#each termList(floor.gate) as term}
+                <div class="term small">🔒 {term}</div>
+              {/each}
+              {#if row.sibling && !floor.gate?.length}
+                <div class="term small dim">Opens with the band: see its hub below.</div>
+              {/if}
+            {:else if status === 'sealed'}
+              <div class="term small dim">The way up is not cleared.</div>
+            {:else if status === 'open' && !floorCleared(gs, floor)}
+              {#each termList(floor.clear) as term}
+                <div class="term small">🎯 {term}</div>
+              {/each}
             {/if}
           </div>
-          <!-- The terms are the teaching: a shut door always says what opens it. -->
-          {#if status === 'gated'}
-            {#each termList(floor.gate) as term}
-              <div class="term small">🔒 {term}</div>
-            {/each}
-          {:else if status === 'sealed'}
-            <div class="term small dim">The way up is not cleared.</div>
-          {:else if status === 'open' && !floorCleared(gs, floor)}
-            {#each termList(floor.clear) as term}
-              <div class="term small">🎯 {term}</div>
-            {/each}
-          {/if}
-        </div>
+        {:else}
+          {@const band = row.band}
+          {@const spot = getSpot(band.hub!)}
+          {@const status = hubStatus(gs, band)}
+          {@const current = gs.spot === band.hub}
+          {@const step = stepLine(band)}
+          <div class="rung band-hub" class:current class:sealed={status === 'sealed'}>
+            <div class="rung-main">
+              <span class="rung-name">
+                {#if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}
+                {spot.icon} <b>{spot.name}</b>
+                <span class="dim small">Hub · {band.name}</span>
+                {#if current}<span class="here">you are here</span>{/if}
+              </span>
+              {#if status === 'open' && !current}
+                <button
+                  class="small"
+                  disabled={gs.recovering || !!gs.combat?.forced}
+                  onclick={() => game.climbToHub(band.id)}
+                >
+                  {moveLabel(bandBaseIndex(band))} · {ticksToTime(climbTicks(bandBaseIndex(band)))}
+                </button>
+              {/if}
+            </div>
+            {#if status === 'gated'}
+              {#each termList(band.gate) as term}
+                <div class="term small">🔒 {term}</div>
+              {/each}
+            {:else if status === 'sealed'}
+              <div class="term small dim">The way up is not cleared.</div>
+            {:else if step}
+              <div class="term small">⚖️ {step}</div>
+            {/if}
+          </div>
+        {/if}
       {/each}
 
       <!-- The hub is rung 0: the way back to the city, always open. -->
@@ -136,6 +217,16 @@
 
   .rung.hub {
     border-style: dashed;
+  }
+
+  /* An any-order band: its floors are siblings, indented over their hub. */
+  .rung.sibling {
+    margin-left: 14px;
+  }
+
+  .rung.band-hub {
+    border-style: double;
+    border-width: 3px;
   }
 
   .rung-main {

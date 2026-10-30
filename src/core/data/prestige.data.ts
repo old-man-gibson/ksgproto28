@@ -142,6 +142,36 @@ export const PRESTIGE_BOONS = prose<PrestigeBoonDef>('PRESTIGE_BOONS', PRESTIGE_
     cost: [1, 2, 3, 4, 5],
     effect: { kind: 'startLevel', levels: 1 },
   },
+  // ---- Keys and passes (docs/plans/bands-2-3.md M3, R2 and R4). ----
+  // One key opens band 3, the city (BANDS.ascent_upper.gate). Its price is
+  // at most the floors source of a first harvest (six floors cleared, six
+  // points), so the first prestige can always buy it; tests/band3.test.ts
+  // holds that.
+  city_key: {
+    id: 'city_key',
+    name: 'Key to the City',
+    icon: '🗝️',
+    cost: [3],
+    effect: { kind: 'key' },
+  },
+  // Passes skip a whole band on every later run. "Expensive enough" (user,
+  // Q5): the band 1 pass above every current boon, the band 2 pass well
+  // above that. A passed floor also pays no harvest point, so a pass costs
+  // three floor points on every run after it too.
+  pass_lower: {
+    id: 'pass_lower',
+    name: 'Pass: the Lower Reaches',
+    icon: '🎫',
+    cost: [10],
+    effect: { kind: 'bandPass', bandId: 'ascent_lower' },
+  },
+  pass_wilds: {
+    id: 'pass_wilds',
+    name: 'Pass: the Wilds',
+    icon: '🎟️',
+    cost: [20],
+    effect: { kind: 'bandPass', bandId: 'ascent_middle' },
+  },
 });
 
 /** A save that has never prestiged. */

@@ -6,7 +6,7 @@ status: draft
 system: world
 parent: ''
 save: ''
-updated: 2026-10-24
+updated: 2026-10-29
 invariants:
   - completability
   - save-migration
@@ -208,8 +208,8 @@ One builder at a time; each step merges before the next starts.
 6. Band 3: the castle and four direction floors, sketch fidelity.
 7. John through floor 10.
 
-Done so far: 0 (PRs #15–#21; trial-merge still held), 2 (#22), and 1 + 3
-below.
+Done so far: 0 (PRs #15–#21; trial-merge still held), 2 (#22), 1 + 3
+(#26), and 4, 5 and a skeleton of 6 below (branch `band3-machinery`).
 
 ### Floors 4–6 as built (2026-10-25, branch `band2-floors`)
 
@@ -244,6 +244,57 @@ three boss rooms have a `fightLimit` (1). Gates read `kills:tag:goblin`.
   nodachi is about seven Smithing levels), and the Growth panel can show skill
   XP ×2.5 on a modest save. Tuning later, not part of this card.
 
+### M3, M4, M5 and the band 3 skeleton as built (2026-10-29, branch `band3-machinery`)
+
+**Machinery.**
+
+| Piece | As built |
+|---|---|
+| Ladder reads | Moved from towers.ts to a new `systems/ladder.ts` (towers.ts re-exports), so combat and levels can read them with no import cycle |
+| M3 condition | `UnlockCondition { type: 'boon', id }`, read live from `prestige.purchases`. Forge templates and the finds editor offer it |
+| M3 boons | `city_key` (Key to the City, effect `key`, cost 3), `pass_lower` (band 1, `bandPass`, 10), `pass_wilds` (band 2, `bandPass`, 20) |
+| Passes | A passed band's floors read cleared (`floorCleared`) and their gates are waived (`floorUnlocked`). No counter is written: `clearMet` (the floor's own clear) is what clear XP, the harvest's floors source and the floor's `slain:` latch read, so a pass pays nothing and does not open prestige |
+| M4 | `BandDef.order: 'sequence' \| 'any'`, `BandDef.gate` (AND-ed onto every floor of the band and its hub). An `any` band's floor waits on every floor of the lower bands only. `floorsBelow`, `rungStatus`, `hubStatus` |
+| Castle hub | `BandDef.hub`: a spot in an area no floor claims. `towerAt` answers there; `climbToHub` climbs to it once the band is open. An `any` band and its hub sit at the band's lowest index for pricing: Foot to castle or any ward is 7 rungs, castle to ward and ward to ward is 1 |
+| M5 | `BandDef.levelSteps: [0, 2, 5, 9]`, indexed by the band's floors cleared (the last entry holds after). `bandLevelStep` is added to every rolled spawn on the band's floors, in `spawnMonster` and the group filler. Pinned levels (escorts at the leader's level, a staged dare) are not stepped again |
+| Castle safe | `checkFloorClears` stamps `cleared:band:<id>` once a run when every floor of a band is cleared; an `any` band also logs "🏰 The City: every floor cleared this run." |
+| Ladder UI | The castle is a hub rung under its four wards (indented siblings, "any order"). Its line shows the band gate when shut, and "N of 4 cleared · monsters +S levels" when open. Moving between rungs at one height reads "Go" |
+| Lints | content.test.ts and forge validate: a hub is a real spot no floor claims; level steps belong to `any` bands, one per floor, from 0, never falling. content.test.ts also: a band's floors sit above every lower band's. Reachability rides the hub as a ladder pseudo-edge |
+| Tests | `tests/band3.test.ts` (19): the gate, any order, the hub and its prices, scaling, passes, the stamp |
+
+**Skeleton content.** Every name, theme, monster and number is a stand-in
+until Q9 is answered. Each ward: the district (landing, camp, a patrol hunt
+at base level 12-13), the land past its gate (hunt and search, 13-14), and
+the keeper's room (one fight, `once`, the clear). Base levels before the
+step.
+
+| Ward | District → outside | Stand-in threat | Keeper (base level) |
+|---|---|---|---|
+| 7 south | the Docks → the Salt Marsh | poison: nature slimes, cave spiders | Giant Spider Queen (14) in the Wreck |
+| 8 west | the Forest Gate → the Old Forest | bleeding: wolves; goblins, hobgoblins | Hobgoblin Champion (14) in the Hunting Lodge |
+| 9 north | the Cathedral Close → the Barrow Fields | the dead: zombie slimes, death knights | Death Knight (15) in the Ossuary |
+| 10 east | the Artificers' Row → the Quarry | armour: automata, stone golems | Stone Golem (14) in the Foundry |
+
+West faces the forest so the Five Moons (FLOOR_IDEAS idea 1, default Q5)
+can hang off it. The castle is one spot, the Castle Court, with a rest
+activity (a haven). No residents yet.
+
+**Calls taken without the user (defaults, reversible).**
+
+1. The wards can be climbed to from anywhere on the ladder, not only from
+   the castle (Q11).
+2. A cleared ward's monsters keep rising with later clears: the step is one
+   number from the cleared count, nothing records the order (Q12).
+3. A band pass waives its floors' gates (else floor 6 would read cleared and
+   refuse the climb). Prestige still needs the warchief's kill on a passed
+   run (Q13).
+4. `cleared:band:<id>` is stamped for every band; only `any` bands log it.
+
+**Not built yet.** Step 6 beyond the skeleton (the themes, the reward cycle,
+the outside maps as second maps, residents in the castle), step 7 (John
+through floor 10: he must prestige at floor 6, buy the key and use two
+systems). `npm run pacing` does not cover floors 7-10.
+
 ## 7. Questions
 
 ### Answered (user, 2026-10-24)
@@ -263,5 +314,9 @@ three boss rooms have a `fightLimit` (1). Gates read `kills:tag:goblin`.
 
 | # | Question | Default |
 |---|---|---|
-| Q9 | Theme of each direction's district and the map beyond it | Placeholders at sketch fidelity; the user captions them |
+| Q9 | Theme of each direction's district and the map beyond it | The skeleton's: south docks and salt marsh (poison), west forest gate and old forest (bleeding, the goblin remnant), north cathedral and barrow fields (the dead), east artificers and quarry (armour). The spine's reward cycle to go with it: west's reward answers south's poison (herbs, an antidote), south's answers east's armour (a blunt weapon pattern), east's answers north's dead (a ward or light source), north's answers west's bleeding (a healing blessing) |
 | Q10 | What threatens the city once the goblins are gone | Each district has its own problem; no band-wide villain |
+| Q11 | Wards climbable from anywhere, or only from the castle | From anywhere (built). The castle is the haven and the place the band's terms are read |
+| Q12 | Does a cleared ward keep rising as later wards fall | Yes (built): one step for all four from the cleared count. The alternative records each ward's step at its clear |
+| Q13 | On a run with the band 2 pass, what opens prestige | The warchief's kill (built): floor 6 stays open to walk into. The alternative also opens prestige on the castle safe |
+| Q14 | Prices | Key 3, band 1 pass 10, band 2 pass 20 (built) |

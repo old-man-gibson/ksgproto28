@@ -69,6 +69,13 @@ export const AREAS: Record<string, AreaDef> = {
   ascent_f4_area: { id: 'ascent_f4_area', name: 'The Greenwood', regionId: 'the_ascent' },
   ascent_f5_area: { id: 'ascent_f5_area', name: 'The Mire', regionId: 'the_ascent', scene: 'cistern' },
   ascent_f6_area: { id: 'ascent_f6_area', name: 'The Warren', regionId: 'the_ascent', scene: 'crypt' },
+  // Band 3, the City (bands-2-3.md), a skeleton. The castle is the band's hub:
+  // no floor claims its area, and the ladder answers there (BandDef.hub).
+  ascent_castle_area: { id: 'ascent_castle_area', name: 'The Castle', regionId: 'the_ascent', scene: 'hall' },
+  ascent_f7_area: { id: 'ascent_f7_area', name: 'The South Ward', regionId: 'the_ascent' },
+  ascent_f8_area: { id: 'ascent_f8_area', name: 'The West Ward', regionId: 'the_ascent' },
+  ascent_f9_area: { id: 'ascent_f9_area', name: 'The North Ward', regionId: 'the_ascent', scene: 'crypt' },
+  ascent_f10_area: { id: 'ascent_f10_area', name: 'The East Ward', regionId: 'the_ascent', scene: 'hall' },
 };
 
 /**
@@ -1871,6 +1878,246 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { monsterId: 'goblin_warchief', weight: 1, once: true, level: [9, 9], requires: [{ type: 'stat', key: 'flag:f6_sabotage', value: 2 }, { type: 'statMax', key: 'flag:f6_sabotage', value: 2 }] },
       { monsterId: 'goblin_warchief', weight: 1, once: true, level: [8, 8], requires: [{ type: 'stat', key: 'flag:f6_sabotage', value: 3 }] },
     ],
+    connections: [],
+  },
+
+  // ---------- The Ascent, band 3: the City (bands-2-3.md), a SKELETON ----------
+  //
+  // The castle hub and four direction floors, three spots each: the district
+  // (landing, camp, a patrol hunt), the land past the wall (hunt and search),
+  // and the keeper's room at the far end (one fight, the clear). Every level
+  // below is the BASE: the band's levelSteps add +2, +5, +9 as directions
+  // fall (systems/ladder.ts bandLevelStep). Monsters, names and finds are
+  // stand-ins from the existing roster until the user captions the band (Q9).
+  castle_court: {
+    id: 'castle_court',
+    name: 'The Castle Court',
+    icon: '🏰',
+    areaId: 'ascent_castle_area',
+    map: { x: 50, y: 50 },
+    // A haven: a knockout anywhere on the four floors can fall back here.
+    activities: [{ id: 'rest_castle', kind: 'rest', name: 'Rest in the Castle', icon: '🛏️' }],
+    connections: [],
+  },
+
+  // --- Floor 7, south: the docks and the salt marsh past them. Stand-in
+  // threat: poison (marsh slimes, cave spiders).
+  f7_docks: {
+    id: 'f7_docks',
+    name: 'The Docks',
+    icon: '⚓',
+    areaId: 'ascent_f7_area',
+    map: { x: 50, y: 10 },
+    activities: [
+      { id: 'camp_f7', kind: 'rest', name: 'Camp on the Docks', icon: '🏕️' },
+      { id: 'hunt', kind: 'hunt', name: 'Patrol the Docks', icon: '⚔️' },
+    ],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'forest_rat', weight: 50, level: [12, 13] },
+      { monsterId: 'slime_water', weight: 50, level: [12, 13] },
+    ],
+    connections: [{ to: 'f7_salt_marsh', ticks: 30, label: 'Out the South Gate', returnLabel: 'Back Through the South Gate' }],
+  },
+  f7_salt_marsh: {
+    id: 'f7_salt_marsh',
+    name: 'The Salt Marsh',
+    icon: '🌾',
+    areaId: 'ascent_f7_area',
+    map: { x: 50, y: 40 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Marsh', icon: '🏹' },
+      { id: 'explore', kind: 'explore', name: 'Wade the Marsh', icon: '🌿' },
+    ],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
+    encounters: [
+      { monsterId: 'slime_nature', weight: 40, level: [13, 14] },
+      { monsterId: 'cave_spider', weight: 35, level: [13, 14] },
+      { monsterId: 'slime_water', weight: 25, level: [13, 14] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f7_marsh_herbs', at: 0.3, material: { id: 'common_herb', qty: 5 } },
+      { id: 'f7_marsh_purse', at: 1, gold: [100, 180] },
+    ],
+    connections: [{ to: 'f7_wreck', ticks: 30, label: 'To the Wreck' }],
+  },
+  f7_wreck: {
+    id: 'f7_wreck',
+    name: 'The Wreck',
+    icon: '🕸️',
+    areaId: 'ascent_f7_area',
+    map: { x: 50, y: 70 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Board the Wreck', icon: '⚔️' }],
+    encounters: [{ monsterId: 'giant_spider_queen', weight: 1, once: true, level: [14, 14] }],
+    connections: [],
+  },
+
+  // --- Floor 8, west: the forest gate and the old forest past it, facing the
+  // Greenwood of band 2 (the Five Moons' way in, FLOOR_IDEAS idea 1). Stand-in
+  // threat: bleeding (wolves) and the goblin remnant.
+  f8_forest_gate: {
+    id: 'f8_forest_gate',
+    name: 'The Forest Gate',
+    icon: '🚪',
+    areaId: 'ascent_f8_area',
+    map: { x: 50, y: 10 },
+    activities: [
+      { id: 'camp_f8', kind: 'rest', name: 'Camp at the Gate', icon: '🏕️' },
+      { id: 'hunt', kind: 'hunt', name: 'Hold the Gate', icon: '⚔️' },
+    ],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'goblin', weight: 60, level: [12, 13] },
+      { monsterId: 'young_wolf', weight: 40, level: [12, 13] },
+    ],
+    connections: [{ to: 'f8_old_forest', ticks: 30, label: 'Out the West Gate', returnLabel: 'Back Through the West Gate' }],
+  },
+  f8_old_forest: {
+    id: 'f8_old_forest',
+    name: 'The Old Forest',
+    icon: '🌲',
+    areaId: 'ascent_f8_area',
+    map: { x: 50, y: 40 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Old Forest', icon: '🏹' },
+      { id: 'explore', kind: 'explore', name: 'Forage', icon: '🌿' },
+    ],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
+    encounters: [
+      { monsterId: 'wolf', weight: 40, level: [13, 14] },
+      { monsterId: 'boar', weight: 30, level: [13, 14] },
+      { monsterId: 'hobgoblin', weight: 30, level: [13, 14] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f8_forest_berries', at: 0.3, material: { id: 'forest_berries', qty: 5 } },
+      { id: 'f8_forest_meat', at: 0.6, material: { id: 'raw_meat', qty: 4 } },
+    ],
+    connections: [{ to: 'f8_lodge', ticks: 30, label: 'To the Hunting Lodge' }],
+  },
+  f8_lodge: {
+    id: 'f8_lodge',
+    name: 'The Hunting Lodge',
+    icon: '🛖',
+    areaId: 'ascent_f8_area',
+    map: { x: 50, y: 70 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Take the Lodge', icon: '⚔️' }],
+    encounters: [{ monsterId: 'hobgoblin_champion', weight: 1, once: true, level: [14, 14] }],
+    connections: [],
+  },
+
+  // --- Floor 9, north: the cathedral close and the barrow fields past it.
+  // Stand-in threat: the dead (zombie slimes, a death knight).
+  f9_cathedral_close: {
+    id: 'f9_cathedral_close',
+    name: 'The Cathedral Close',
+    icon: '⛪',
+    areaId: 'ascent_f9_area',
+    map: { x: 50, y: 10 },
+    activities: [
+      { id: 'camp_f9', kind: 'rest', name: 'Shelter in the Close', icon: '🏕️' },
+      { id: 'hunt', kind: 'hunt', name: 'Clear the Close', icon: '⚔️' },
+    ],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'living_doll', weight: 50, level: [12, 13] },
+      { monsterId: 'slime_zombie', weight: 50, level: [12, 13] },
+    ],
+    connections: [{ to: 'f9_barrow_fields', ticks: 30, label: 'Out the North Gate', returnLabel: 'Back Through the North Gate' }],
+  },
+  f9_barrow_fields: {
+    id: 'f9_barrow_fields',
+    name: 'The Barrow Fields',
+    icon: '🪦',
+    areaId: 'ascent_f9_area',
+    map: { x: 50, y: 40 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Walk the Barrows', icon: '⚔️' },
+      { id: 'explore', kind: 'explore', name: 'Search the Barrows', icon: '🔍' },
+    ],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
+    encounters: [
+      { monsterId: 'slime_zombie', weight: 45, level: [13, 14] },
+      { monsterId: 'living_doll', weight: 30, level: [13, 14] },
+      { monsterId: 'death_knight', weight: 25, level: [13, 14] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f9_barrow_salves', at: 0.3, material: { id: 'healing_salve', qty: 2 } },
+      { id: 'f9_barrow_grave_gold', at: 1, gold: [100, 180] },
+    ],
+    connections: [{ to: 'f9_ossuary', ticks: 30, label: 'Into the Ossuary' }],
+  },
+  f9_ossuary: {
+    id: 'f9_ossuary',
+    name: 'The Ossuary',
+    icon: '💀',
+    areaId: 'ascent_f9_area',
+    map: { x: 50, y: 70 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Enter the Ossuary', icon: '⚔️' }],
+    encounters: [{ monsterId: 'death_knight', weight: 1, once: true, level: [15, 15] }],
+    connections: [],
+  },
+
+  // --- Floor 10, east: the artificers' row and the quarry past it. Stand-in
+  // threat: armour (automata, stone golems) that blunt weapons answer.
+  f10_artificers_row: {
+    id: 'f10_artificers_row',
+    name: "The Artificers' Row",
+    icon: '⚙️',
+    areaId: 'ascent_f10_area',
+    map: { x: 50, y: 10 },
+    activities: [
+      { id: 'camp_f10', kind: 'rest', name: 'Camp in a Workshop', icon: '🏕️' },
+      { id: 'hunt', kind: 'hunt', name: 'Patrol the Row', icon: '⚔️' },
+    ],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'sorting_automaton', weight: 50, level: [12, 13] },
+      { monsterId: 'filing_automaton', weight: 50, level: [12, 13] },
+    ],
+    connections: [{ to: 'f10_quarry', ticks: 30, label: 'Out the East Gate', returnLabel: 'Back Through the East Gate' }],
+  },
+  f10_quarry: {
+    id: 'f10_quarry',
+    name: 'The Quarry',
+    icon: '⛏️',
+    areaId: 'ascent_f10_area',
+    map: { x: 50, y: 40 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Work the Quarry', icon: '⚔️' },
+      { id: 'explore', kind: 'explore', name: 'Search the Spoil Heaps', icon: '🔍' },
+    ],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'filing_automaton', weight: 45, level: [13, 14] },
+      { monsterId: 'sorting_automaton', weight: 35, level: [13, 14] },
+      { monsterId: 'stone_golem', weight: 20, level: [13, 14] },
+    ],
+    exploreTicks: 300,
+    finds: [
+      { id: 'f10_quarry_ore', at: 0.3, material: { id: 'copper_ore', qty: 5 } },
+      { id: 'f10_quarry_scrap', at: 0.6, material: { id: 'iron_scrap', qty: 5 } },
+    ],
+    connections: [{ to: 'f10_foundry', ticks: 30, label: 'Into the Foundry' }],
+  },
+  f10_foundry: {
+    id: 'f10_foundry',
+    name: 'The Foundry',
+    icon: '🔥',
+    areaId: 'ascent_f10_area',
+    map: { x: 50, y: 70 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Enter the Foundry', icon: '⚔️' }],
+    encounters: [{ monsterId: 'stone_golem', weight: 1, once: true, level: [14, 14] }],
     connections: [],
   },
 

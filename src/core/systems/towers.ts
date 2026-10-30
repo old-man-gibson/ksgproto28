@@ -1,10 +1,28 @@
 import type { EventBus } from '../engine/events';
 import type { FloorDef, GameState, TowerDef } from '../types';
-import { FLOORS, FLOOR_BY_AREA, TOWERS, getSpot } from '../registry';
-import { conditionsMet } from './conditions';
+import { BANDS, FLOORS, FLOOR_BY_AREA, TOWERS, getSpot } from '../registry';
 import { getDerivedStats } from './derived';
 import { abandonCombat, inForcedFight } from './combat';
+import { bandBaseIndex, bandHubAt, bandOpen, floorUnlocked, rungIndex } from './ladder';
 import { text } from '../text/log';
+
+export {
+  bandCleared,
+  bandHubAt,
+  bandLevelStep,
+  bandOpen,
+  bandPassed,
+  bandBaseIndex,
+  clearMet,
+  floorCleared,
+  floorUnlocked,
+  floorsBelow,
+  hubStatus,
+  ladderFloors,
+  rungIndex,
+  rungStatus,
+} from './ladder';
+export type { RungStatus } from './ladder';
 
 /**
  * The tower runtime: what `FloorDef.gate` / `FloorDef.clear` actually mean.
@@ -16,12 +34,16 @@ import { text } from '../text/log';
  *   already persist, so cleared-ness is derived and needs no save field.
  * - **The ascent is sequential.** A floor opens only once every rung below it
  *   is cleared (and its own `gate` holds). Descending is free by the same
- *   rule: anything below an open floor is open.
+ *   rule: anything below an open floor is open. Since 2026-10-29 a band may
+ *   be `any`-order instead (band 3, the city's four directions); the reads
+ *   live in systems/ladder.ts.
  * - **No fixed stairs.** Movement between the hub and any unlocked floor is
  *   `climbTo` — ordinary travel priced by rungs crossed, landing on the
  *   floor's `landing` spot. Authored edges into a BANDED floor's area are
  *   forbidden (linted, both layers); fixed transition spots are reserved for
- *   future hidden/special floors, which are bandless and exempt.
+ *   future hidden/special floors, which are bandless and exempt. A band's
+ *   own hub (band 3's castle) is a second place the ladder answers, reached
+ *   by `climbToHub`, so it needs no edge either.
  */
 
 /** Base ticks to climb (or descend) past one rung of a stack. */
@@ -33,9 +55,9 @@ export function currentFloor(state: GameState): FloorDef | null {
 }
 
 /**
- * The tower whose ladder is reachable from here: standing at its hub spot, or
- * anywhere on one of its floors. Null anywhere else — the ladder is a thing
- * you walk to, not a menu.
+ * The tower whose ladder is reachable from here: standing at its hub spot,
+ * at a band's hub, or anywhere on one of its floors. Null anywhere else —
+ * the ladder is a thing you walk to, not a menu.
  */
 export function towerAt(state: GameState): TowerDef | null {
   const here = currentFloor(state);
@@ -44,49 +66,38 @@ export function towerAt(state: GameState): TowerDef | null {
   // is reached by roads and left by its gate; without this the cell would
   // offer a climb straight past the gate to floor 1.
   if (here) return here.bandId === undefined ? null : (TOWERS[here.towerId] ?? null);
+  const band = bandHubAt(state.spot);
+  if (band) return TOWERS[band.towerId] ?? null;
   return Object.values(TOWERS).find((t) => t.hubSpot === state.spot) ?? null;
 }
 
-/** The banded floors of one tower in ladder order — the rungs, nothing personal. */
-export function ladderFloors(towerId: string): FloorDef[] {
-  return Object.values(FLOORS)
-    .filter((f) => f.towerId === towerId && f.bandId !== undefined)
-    .sort((a, b) => a.index - b.index);
+/**
+ * Where the player stands on the stack, for pricing a climb: the current
+ * floor's rung, a band hub's base, or the tower's hub (0).
+ */
+export function standingIndex(state: GameState): number {
+  const here = currentFloor(state);
+  if (here) return rungIndex(here);
+  const band = bandHubAt(state.spot);
+  return band ? bandBaseIndex(band) : 0;
 }
 
-/**
- * A floor with no `clear` can never be finished, only visited. The lint keeps
- * that shape off the ladder, and this reads false rather than trivially true
- * so a missing clear can never silently open everything above it.
- */
-export function floorCleared(state: GameState, floor: FloorDef): boolean {
-  return !!floor.clear?.length && conditionsMet(state, floor.clear);
+/** The word for a move along the stack. Between rungs at one height it is a walk across. */
+export function climbVerb(tower: TowerDef, fromIndex: number, toIndex: number): 'Climbing' | 'Descending' | 'Crossing' {
+  if (toIndex === fromIndex) return 'Crossing';
+  // `direction` is only the word for it: in a stack that runs down, a rising
+  // index is a descent.
+  return (tower.direction === 'down') === toIndex > fromIndex ? 'Descending' : 'Climbing';
 }
 
-/**
- * Sequential ascent: every rung below must be CLEARED and the floor's own
- * gate met. Off-ladder floors are never "unlocked" — they are reached by
- * authored edges (the hold's door) and advance nothing.
- */
-export function floorUnlocked(state: GameState, floor: FloorDef): boolean {
-  if (floor.bandId === undefined) return false;
-  const below = ladderFloors(floor.towerId).filter((f) => f.index < floor.index);
-  if (!below.every((f) => floorCleared(state, f))) return false;
-  return !floor.gate || conditionsMet(state, floor.gate);
-}
-
-/**
- * How a rung reads on the ladder. `sealed` outranks `gated` on purpose: a
- * floor whose gate happens to be met while the rung below is unfinished is
- * still shut, and saying "locked by gold" about it would be a lie.
- */
-export type RungStatus = 'cleared' | 'open' | 'gated' | 'sealed';
-
-export function rungStatus(state: GameState, floor: FloorDef): RungStatus {
-  if (floorCleared(state, floor)) return 'cleared';
-  if (floorUnlocked(state, floor)) return 'open';
-  const below = ladderFloors(floor.towerId).filter((f) => f.index < floor.index);
-  return below.every((f) => floorCleared(state, f)) ? 'gated' : 'sealed';
+/** The tower to ride from here, or null with the reason logged when it matters. */
+function rideFrom(state: GameState, bus: EventBus): TowerDef | null {
+  if (state.travel || state.recovering) return null;
+  if (inForcedFight(state)) {
+    bus.emit({ type: 'log', msg: text('common.no_leaving_fight'), kind: 'danger' });
+    return null;
+  }
+  return towerAt(state);
 }
 
 /**
@@ -96,28 +107,27 @@ export function rungStatus(state: GameState, floor: FloorDef): RungStatus {
  * road; a climb is ordinary travel that happens to have no edge.
  */
 export function climbTo(state: GameState, bus: EventBus, floorId: string | null): boolean {
-  if (state.travel || state.recovering) return false;
-  if (inForcedFight(state)) {
-    bus.emit({ type: 'log', msg: text('common.no_leaving_fight'), kind: 'danger' });
-    return false;
-  }
-  const tower = towerAt(state);
+  const tower = rideFrom(state, bus);
   if (!tower) return false;
-  const fromIndex = currentFloor(state)?.index ?? 0;
+  if (floorId === null) return ride(state, bus, tower, tower.hubSpot, 0);
+  const floor = FLOORS[floorId];
+  if (!floor || floor.towerId !== tower.id || !floor.landing) return false;
+  if (!floorUnlocked(state, floor)) return false;
+  return ride(state, bus, tower, floor.landing, rungIndex(floor));
+}
 
-  let to: string;
-  let toIndex: number;
-  if (floorId === null) {
-    to = tower.hubSpot;
-    toIndex = 0;
-  } else {
-    const floor = FLOORS[floorId];
-    if (!floor || floor.towerId !== tower.id || !floor.landing) return false;
-    if (!floorUnlocked(state, floor)) return false;
-    to = floor.landing;
-    toIndex = floor.index;
-  }
+/** Ride the stack to a band's hub (band 3's castle) once the band is open. */
+export function climbToHub(state: GameState, bus: EventBus, bandId: string): boolean {
+  const tower = rideFrom(state, bus);
+  if (!tower) return false;
+  const band = BANDS[bandId];
+  if (!band?.hub || band.towerId !== tower.id || !bandOpen(state, band)) return false;
+  return ride(state, bus, tower, band.hub, bandBaseIndex(band));
+}
+
+function ride(state: GameState, bus: EventBus, tower: TowerDef, to: string, toIndex: number): boolean {
   if (to === state.spot) return false;
+  const fromIndex = standingIndex(state);
 
   if (state.combat) {
     abandonCombat(state);
@@ -133,10 +143,7 @@ export function climbTo(state: GameState, bus: EventBus, floorId: string | null)
   state.travel = { from: state.spot, to, ticksLeft: ticks, total: ticks };
 
   const dest = getSpot(to);
-  // `direction` is only the word for it: in a stack that runs down, a rising
-  // index is a descent.
-  const rising = toIndex > fromIndex;
-  const verb = (tower.direction === 'down') === rising ? 'Descending' : 'Climbing';
+  const verb = climbVerb(tower, fromIndex, toIndex);
   bus.emit({ type: 'log', msg: text('towers.moving', { verb, icon: dest.icon, name: dest.name }), kind: 'travel' });
   return true;
 }

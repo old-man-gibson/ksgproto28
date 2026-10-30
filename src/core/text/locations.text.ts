@@ -223,4 +223,28 @@ export const SPOTS_TEXT: ProseTable = {
   'f6_drop.desc': 'The deep encampment, second map of the warren. Dark. Camp in the Drop is a rest activity and a haven. Endless hunt: hobgoblins, witch doctors, firetongues and goblins, level 11 to 13, up to three at once.',
   'f6_great_hall.desc': 'Arriving starts a fight that cannot be fled: the Goblin Warchief and two escorts (witch doctors, firetongues or hobgoblins). The warchief is level 11 with no sabotage, one level less for each of the three (8 with all three). Killing it clears floor 6 and opens prestige.',
 
+  // Band 3, the City: a skeleton. Every level below is the base; each
+  // direction cleared adds levels to all four floors. Placeholder text.
+  'castle_court.desc': 'The castle at the heart of the city, the hub of band 3. The ladder answers here: the four wards, south, west, north and east, are each one climb away. Rest in the Castle is a rest activity, and the court is a haven. Placeholder text.',
+  'f7_docks.desc': 'Landing of floor 7, the south ward. Camp on the Docks is a rest activity, and the landing is a haven. Endless hunt: rats and water slimes, level 12 to 13 before the band\'s step. Placeholder text.',
+  'f7_salt_marsh.desc': 'Past the south gate. Endless hunt: nature slimes and cave spiders, both poisonous, and water slimes, level 13 to 14 before the band\'s step. Wade the Marsh explores (30 s) for herbs and a purse. Placeholder text.',
+  'f7_salt_marsh.finds.f7_marsh_herbs.desc': '🌿 Five common herbs on a tussock above the tide.',
+  'f7_salt_marsh.finds.f7_marsh_purse.desc': '💰 A smuggler\'s purse in the reeds: 100 to 180 gold.',
+  'f7_wreck.desc': 'One fight, started when you choose: the Giant Spider Queen, level 14 before the band\'s step. Killing it clears floor 7. Placeholder text.',
+  'f8_forest_gate.desc': 'Landing of floor 8, the west ward, facing the forest. Camp at the Gate is a rest activity, and the landing is a haven. Endless hunt: goblins and young wolves, level 12 to 13 before the band\'s step. Placeholder text.',
+  'f8_old_forest.desc': 'Past the west gate. Endless hunt: wolves, which cause bleeding, boars and hobgoblins, level 13 to 14 before the band\'s step. Forage explores (30 s) for berries and meat. Placeholder text.',
+  'f8_old_forest.finds.f8_forest_berries.desc': '🫐 Five handfuls of forest berries.',
+  'f8_old_forest.finds.f8_forest_meat.desc': '🥩 Four cuts of meat from a goblin snare.',
+  'f8_lodge.desc': 'One fight, started when you choose: the Hobgoblin Champion and its escort, level 14 before the band\'s step. Killing the champion clears floor 8. Placeholder text.',
+  'f9_cathedral_close.desc': 'Landing of floor 9, the north ward. Shelter in the Close is a rest activity, and the landing is a haven. Endless hunt: living dolls and zombie slimes, level 12 to 13 before the band\'s step. Placeholder text.',
+  'f9_barrow_fields.desc': 'Past the north gate. Endless hunt: zombie slimes, living dolls and death knights, level 13 to 14 before the band\'s step. Search the Barrows explores (30 s) for salves and grave gold. Placeholder text.',
+  'f9_barrow_fields.finds.f9_barrow_salves.desc': '🧴 Two healing salves left as a grave offering.',
+  'f9_barrow_fields.finds.f9_barrow_grave_gold.desc': '💰 Grave goods: 100 to 180 gold.',
+  'f9_ossuary.desc': 'One fight, started when you choose: a Death Knight, level 15 before the band\'s step. Killing it clears floor 9. Placeholder text.',
+  'f10_artificers_row.desc': 'Landing of floor 10, the east ward. Camp in a Workshop is a rest activity, and the landing is a haven. Endless hunt: sorting and filing automata, level 12 to 13 before the band\'s step. Placeholder text.',
+  'f10_quarry.desc': 'Past the east gate. Endless hunt: automata and stone golems, which shrug off blades, level 13 to 14 before the band\'s step. Search the Spoil Heaps explores (30 s) for copper ore and iron scrap. Placeholder text.',
+  'f10_quarry.finds.f10_quarry_ore.desc': '⛏️ Five chunks of copper ore.',
+  'f10_quarry.finds.f10_quarry_scrap.desc': '🔩 Five iron scrap from a broken winch.',
+  'f10_foundry.desc': 'One fight, started when you choose: a Stone Golem, level 14 before the band\'s step. Killing it clears floor 10. Placeholder text.',
+
 };

@@ -354,6 +354,7 @@ export const LOG_TEXT = {
   // ---------- tutorial ----------
   'levels.up': '⬆️ Level {level}: +{bonus} to every attribute.',
   'levels.floor': '🗼 {name} cleared for the first time this run: +{xp} level XP.',
+  'levels.band': '🏰 {name}: every floor cleared this run.',
   'tutorial.armed': '🎒 Taken from the rack and equipped: {list}.',
   'tutorial.unarmed': '👊 Nothing taken from the rack. Fighting unarmed.',
   'tutorial.stance': '🥋 Stance set: {icon} {name}. Change it on the Combat tab at any time.',

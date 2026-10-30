@@ -45,6 +45,7 @@ const UNLOCK: ListTemplate = {
     { id: 'statMax', label: 'counter at most', make: () => ({ type: 'statMax', key: '', value: 1 }) },
     { id: 'equippedTag', label: 'equipped tag', make: () => ({ type: 'equippedTag', tag: '' }) },
     { id: 'quest', label: 'quest completed', make: () => ({ type: 'quest', id: '' }) },
+    { id: 'boon', label: 'prestige boon owned', make: () => ({ type: 'boon', id: '' }) },
   ],
 };
 

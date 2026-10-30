@@ -76,6 +76,14 @@ which is in `modFingerprint` (LEVELS.md §2.3).
 | `foresight` | — | `skillRevealed` (skills.ts) and the Skills panel's milestone line: locked skills and the next milestone show at any progress instead of only at 90% of the threshold (`REVEAL_FRACTION`) |
 | `wayfinding` | — | `hasWayfinding` (legacy.ts), read by the Quests and Skills panels: go links to quest givers and objectives outside town (town places have them without the boon), and to every known spot that trains a skill or attribute (`trainingSpots`, actions.ts). See NAVIGATION.md §5 |
 | `startLevel` | `applyRunStart` on every new run; and at purchase, for the run in progress (`applyStartingLevel`, levels.ts: raises the level to 1 + levels × rank, never lowers) | `startingLevel` (legacy.ts). See LEVELS.md §2.4 |
+| `key` | — | any gate holding `{ type: 'boon', id }` (conditions.ts, read live from `purchases`). The Key to the City (`city_key`, cost 3) is band 3's gate (`BANDS.ascent_upper.gate`) |
+| `bandPass` | — | `floorCleared` and `floorUnlocked` (systems/ladder.ts): every floor of the band reads cleared and its gates are waived. No counter is written, so clear XP (`clearMet`), the harvest's floors source and PRESTIGE_UNLOCK (the warchief's own `slain:` latch) are not met by a pass. `pass_lower` (band 1, 10) and `pass_wilds` (band 2, 20) |
+
+**Keys and passes** (2026-10-29, plans/bands-2-3.md M3). The key's price is
+held at or below the floors source of a first harvest (six floors, six
+points), so the first prestige can always buy it (`tests/band3.test.ts`).
+Passes are priced above every other boon rank. A pass costs again on every
+run it is used: its floors pay no harvest point.
 
 **Endowment** (user, 2026-09-12) is talent's twin for attributes, the
 second `auto` boon: same product, the peak being the TRAINED level recorded

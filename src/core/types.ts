@@ -666,7 +666,13 @@ export type UnlockCondition =
   | { type: 'statMax'; key: string; value: number }
   | { type: 'equippedTag'; tag: string }
   /** Met once the named quest has been turned in. */
-  | { type: 'quest'; id: string };
+  | { type: 'quest'; id: string }
+  /**
+   * Met while a prestige boon is owned (rank ≥ 1). Read live from
+   * `prestige.purchases`, so it holds from the moment of purchase and on
+   * every later run.
+   */
+  | { type: 'boon'; id: string };
 
 // ---------- Skills ----------
 
@@ -4478,6 +4484,31 @@ export interface BandDef {
    * in each floor's `clear` being reachable by the floor build instead.
    */
   clearsToAdvance: number;
+  /**
+   * `sequence` (the default): each floor waits on every rung below it.
+   * `any`: the band's floors open together once every floor of the lower
+   * bands is cleared and `gate` holds, and are cleared in any order. A band
+   * above an `any` band still waits on all of it (systems/ladder.ts).
+   */
+  order?: 'sequence' | 'any';
+  /**
+   * Terms for entering the band at all, AND-ed onto every floor's own gate
+   * and onto the hub. Band 3's is the city key boon.
+   */
+  gate?: UnlockCondition[];
+  /**
+   * A spot off the ladder where the ladder also answers: the band's own
+   * landing, climbed to like a rung once the band is open (`climbToHub`).
+   * Band 3's castle. It must sit in an area no floor claims.
+   */
+  hub?: string;
+  /**
+   * Monster levels added on every spot of the band's floors, indexed by how
+   * many of the band's floors are cleared (the last entry holds past the
+   * end). Only on `any` bands: each floor cleared makes the rest harder, so
+   * the order is a decision (bands-2-3.md M5).
+   */
+  levelSteps?: number[];
   desc?: string;
 }
 
@@ -4632,7 +4663,21 @@ export type PrestigeBoonEffect =
    * level's attribute bonus. Applied at run start and at purchase; never
    * lowers a level already reached (systems/levels.ts applyStartingLevel).
    */
-  | { kind: 'startLevel'; levels: number };
+  | { kind: 'startLevel'; levels: number }
+  /**
+   * A key: does nothing by itself. Gates that name the boon
+   * (`{ type: 'boon', id }`) open while it is owned. The band 3 gate is the
+   * first (docs/plans/bands-2-3.md M3).
+   */
+  | { kind: 'key' }
+  /**
+   * A band pass: every floor of `bandId` reads cleared on every run while it
+   * is owned, without its fights (systems/ladder.ts `floorCleared`). It pays
+   * no clear XP and no harvest points for those floors, and writes no
+   * counter, so nothing a floor's own clear reads (a `slain:` latch,
+   * PRESTIGE_UNLOCK) is met by it.
+   */
+  | { kind: 'bandPass'; bandId: string };
 
 /** Something prestige points buy. Rank r (1-based) costs `cost[r-1]`; `cost.length` is the max rank. */
 export interface PrestigeBoonDef {

@@ -1,5 +1,6 @@
 import type { GameState, UnlockCondition } from '../types';
 import { attrValue, equippedTags } from './attributes';
+import { boonRank } from './legacy';
 
 // Re-exported for existing consumers; the implementation lives in attributes.ts.
 export { equippedTags };
@@ -23,6 +24,8 @@ export function conditionMet(state: GameState, cond: UnlockCondition): boolean {
       return equippedTags(state).has(cond.tag);
     case 'quest':
       return state.quests[cond.id]?.status === 'done';
+    case 'boon':
+      return boonRank(state, cond.id) > 0;
   }
 }
 
@@ -43,6 +46,7 @@ export function conditionProgress(state: GameState, cond: UnlockCondition): numb
     case 'statMax':
     case 'equippedTag':
     case 'quest':
+    case 'boon':
       return 1;
   }
 }

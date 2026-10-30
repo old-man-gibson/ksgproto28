@@ -69,12 +69,21 @@ export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
     index: 2,
     clearsToAdvance: 2,
   },
+  // Band 3, the city (docs/plans/bands-2-3.md R6-R8, M3-M5). The castle is
+  // the band's hub, a place the ladder also answers; the four directions open
+  // together behind the city key and are cleared in any order. Each one
+  // cleared adds levels to every monster on the four floors: +2, +5, then +9
+  // for the last (Q8).
   ascent_upper: {
     id: 'ascent_upper',
-    name: 'The Upper Reaches',
+    name: 'The City',
     towerId: 'the_ascent',
     index: 3,
-    clearsToAdvance: 2,
+    clearsToAdvance: 4,
+    order: 'any',
+    gate: [{ type: 'boon', id: 'city_key' }],
+    hub: 'castle_court',
+    levelSteps: [0, 2, 5, 9],
   },
 });
 
@@ -192,5 +201,54 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     // The warchief's kill: also PRESTIGE_UNLOCK (prestige.data.ts).
     clear: [{ type: 'stat', key: 'slain:f6_great_hall:goblin_warchief', value: 1 }],
     clearXp: 400,
+  },
+  // ---- Band 3: the City, a SKELETON. South, West, North, East = floors 7 to
+  // 10 (R6). Each is a district, the land past its wall, and a keeper at the
+  // far end whose kill is the clear. Themes and monsters are stand-ins from
+  // the existing roster until the user captions them (Q9); the band gate is
+  // the city key, so the floors carry no gate of their own.
+  ascent_f7: {
+    id: 'ascent_f7',
+    name: 'The South Ward',
+    towerId: 'the_ascent',
+    bandId: 'ascent_upper',
+    index: 7,
+    areaId: 'ascent_f7_area',
+    landing: 'f7_docks',
+    clear: [{ type: 'stat', key: 'slain:f7_wreck:giant_spider_queen', value: 1 }],
+    clearXp: 500,
+  },
+  ascent_f8: {
+    id: 'ascent_f8',
+    name: 'The West Ward',
+    towerId: 'the_ascent',
+    bandId: 'ascent_upper',
+    index: 8,
+    areaId: 'ascent_f8_area',
+    landing: 'f8_forest_gate',
+    clear: [{ type: 'stat', key: 'slain:f8_lodge:hobgoblin_champion', value: 1 }],
+    clearXp: 500,
+  },
+  ascent_f9: {
+    id: 'ascent_f9',
+    name: 'The North Ward',
+    towerId: 'the_ascent',
+    bandId: 'ascent_upper',
+    index: 9,
+    areaId: 'ascent_f9_area',
+    landing: 'f9_cathedral_close',
+    clear: [{ type: 'stat', key: 'slain:f9_ossuary:death_knight', value: 1 }],
+    clearXp: 500,
+  },
+  ascent_f10: {
+    id: 'ascent_f10',
+    name: 'The East Ward',
+    towerId: 'the_ascent',
+    bandId: 'ascent_upper',
+    index: 10,
+    areaId: 'ascent_f10_area',
+    landing: 'f10_artificers_row',
+    clear: [{ type: 'stat', key: 'slain:f10_foundry:stone_golem', value: 1 }],
+    clearXp: 500,
   },
 });

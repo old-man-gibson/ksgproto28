@@ -36,7 +36,7 @@ import {
   attrValue,
   type BreakdownLine,
 } from '../../core/systems/attributes';
-import { MONSTERS, MONSTER_TAGS, NPCS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
+import { MONSTERS, MONSTER_TAGS, NPCS, PRESTIGE_BOONS, QUESTS, SKILLS, SPOTS, STATUSES, STYLES } from '../../core/registry';
 import { itemDefOf } from '../../core/systems/assembly';
 import { resolveModValue } from '../../core/systems/derived';
 import { resolveRune } from '../../core/systems/runes';
@@ -179,6 +179,8 @@ export function condText(cond: UnlockCondition): string {
       return `${cond.key} ≤ ${cond.value}`;
     case 'quest':
       return `quest "${QUESTS[cond.id]?.name ?? cond.id}" completed`;
+    case 'boon':
+      return `own the ${PRESTIGE_BOONS[cond.id]?.name ?? cond.id} boon`;
   }
 }
 
@@ -195,6 +197,10 @@ export function condsText(conds: UnlockCondition[] | undefined): string {
  */
 export function termText(cond: UnlockCondition, state: GameState): string {
   if (cond.type === 'quest') return `Complete “${QUESTS[cond.id]?.name ?? cond.id}”`;
+  if (cond.type === 'boon') {
+    const owned = (state.prestige.purchases[cond.id] ?? 0) > 0 ? ' ✓' : '';
+    return `Own the ${PRESTIGE_BOONS[cond.id]?.name ?? cond.id} prestige boon${owned}`;
+  }
   if (cond.type === 'stat') {
     const have = state.stats[cond.key] ?? 0;
     const done = have >= cond.value ? ' ✓' : '';

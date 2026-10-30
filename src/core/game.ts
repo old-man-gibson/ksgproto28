@@ -74,7 +74,7 @@ import {
   goAndDo,
   setJourneyIntent,
 } from './systems/locations';
-import { climbTo } from './systems/towers';
+import { climbTo, climbToHub } from './systems/towers';
 import { accrueBonusTime, bankTick, setBonusSpending, spendsBonusTick } from './systems/bonustime';
 import {
   canEquip,
@@ -347,6 +347,11 @@ export class Game {
   /** Ride a tower's ladder to a floor — or, with null, back down to its hub. */
   climbTo(floorId: string | null): boolean {
     return climbTo(this.state, this.bus, floorId);
+  }
+
+  /** Ride the ladder to a band's hub (band 3's castle). */
+  climbToHub(bandId: string): boolean {
+    return climbToHub(this.state, this.bus, bandId);
   }
 
   /** Equip an item; `slot` forces a hand (off-hand sword, main-hand buckler). */

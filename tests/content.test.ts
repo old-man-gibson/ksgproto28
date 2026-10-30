@@ -381,6 +381,12 @@ describe('world graph', () => {
         add(tower.hubSpot, floor.landing);
         add(floor.landing, tower.hubSpot);
       }
+      // A band's hub (band 3's castle) is a second place the ladder answers.
+      for (const band of Object.values(BANDS)) {
+        if (band.towerId !== tower.id || !band.hub) continue;
+        add(tower.hubSpot, band.hub);
+        add(band.hub, tower.hubSpot);
+      }
     }
     return extra;
   };
@@ -1998,6 +2004,46 @@ describe('towers, bands & floors', () => {
         band.clearsToAdvance,
         `${band.id} wants ${band.clearsToAdvance} clears but holds ${floors.length} floor(s)`,
       ).toBeLessThanOrEqual(floors.length);
+    }
+  });
+
+  /**
+   * Band 3's shape (docs/plans/bands-2-3.md M4, M5). A hub is a place the
+   * ladder answers, so it must be a real spot that no floor claims (else it
+   * would be a rung and a hub at once). Bands climb in floor order: an `any`
+   * band's floors are one contiguous run of indexes above every lower band's,
+   * or "everything below the band" would not be the rungs below it. Level
+   * steps belong to `any` bands, start at 0 and never fall, one per floor.
+   */
+  it('band hubs, any-order bands and level steps are well formed', () => {
+    const floorAreas = new Set(Object.values(FLOORS).map((f) => f.areaId));
+    for (const band of Object.values(BANDS)) {
+      const floors = Object.values(FLOORS)
+        .filter((f) => f.bandId === band.id)
+        .sort((a, b) => a.index - b.index);
+      if (band.hub) {
+        const spot = SPOTS[band.hub];
+        expect(spot, `${band.id}: hub '${band.hub}' does not exist`).toBeTruthy();
+        expect(floorAreas.has(spot?.areaId ?? ''), `${band.id}: hub '${band.hub}' sits on a floor`).toBe(false);
+        expect(floors.length, `${band.id}: a hub with no floors leads nowhere`).toBeGreaterThan(0);
+      }
+      for (const f of floors) {
+        for (const other of Object.values(FLOORS)) {
+          if (other.towerId !== f.towerId || other.bandId === undefined) continue;
+          const otherBand = BANDS[other.bandId];
+          if (otherBand.index < band.index) {
+            expect(other.index, `${other.id} (band ${otherBand.index}) sits above ${f.id} (band ${band.index})`).toBeLessThan(f.index);
+          }
+        }
+      }
+      if (band.levelSteps) {
+        expect(band.order, `${band.id}: level steps belong to any-order bands`).toBe('any');
+        expect(band.levelSteps.length, `${band.id}: one step per floor`).toBe(floors.length);
+        expect(band.levelSteps[0], `${band.id}: the first direction starts at the base level`).toBe(0);
+        for (let i = 1; i < band.levelSteps.length; i++) {
+          expect(band.levelSteps[i], `${band.id}: steps never fall`).toBeGreaterThanOrEqual(band.levelSteps[i - 1]);
+        }
+      }
     }
   });
 

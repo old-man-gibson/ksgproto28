@@ -24,4 +24,10 @@ export const PRESTIGE_BOONS_TEXT: ProseTable = {
   'wayfinding.desc': 'Go buttons outside town: quest givers and objectives anywhere on the map, and skills link to a spot that trains them (that activity starts on arrival). Town places have Go buttons on the Quests tab without it.',
 
   'head_start.desc': 'Every run starts 1 character level higher, per rank: +1 to every attribute per level. Never lowers a level already reached.',
+
+  'city_key.desc': 'Opens band 3, the city (floors 7 to 10), on this run and every later one. Floors 1 to 6 must still be cleared first, or passed.',
+
+  'pass_lower.desc': 'Floors 1 to 3 count as cleared on this run and every later one, so the climb starts at floor 4. Passed floors pay no clear XP and no harvest points.',
+
+  'pass_wilds.desc': 'Floors 4 to 6 count as cleared on this run and every later one. Passed floors pay no clear XP and no harvest points. The warchief still waits on floor 6, and prestige opens only when it is killed.',
 };

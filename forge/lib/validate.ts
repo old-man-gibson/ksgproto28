@@ -85,7 +85,15 @@ export function validate(store: S): Issue[] {
   const disciplines = store.all('discipline');
   const statuses = store.all<StatusDef>('status');
   const towers = store.all<{ id: string; hubSpot: string }>('tower');
-  const bands = store.all<{ id: string; towerId: string; index: number; clearsToAdvance: number }>('band');
+  const bands = store.all<{
+    id: string;
+    towerId: string;
+    index: number;
+    clearsToAdvance: number;
+    order?: string;
+    hub?: string;
+    levelSteps?: number[];
+  }>('band');
   const floors = store.all<{
     id: string;
     towerId: string;
@@ -219,6 +227,24 @@ export function validate(store: S): Issue[] {
         band.id,
         `wants ${band.clearsToAdvance} clears but holds ${inBand.length} floor(s)`,
       );
+    }
+  }
+  // Band 3's shape (bands-2-3.md M4, M5): a hub is a spot no floor claims;
+  // level steps belong to any-order bands, one per floor, from 0, never falling.
+  for (const band of Object.values(bands)) {
+    if (band.hub) {
+      const hub = spots[band.hub];
+      if (!hub) err('band', band.id, `hub '${band.hub}' does not exist`, ['hub']);
+      else if (floorByArea.has(hub.areaId)) err('band', band.id, `hub '${band.hub}' sits on a floor`, ['hub']);
+    }
+    const steps = band.levelSteps;
+    if (steps?.length) {
+      const count = Object.values(floors).filter((f) => f.bandId === band.id).length;
+      if (band.order !== 'any') err('band', band.id, 'level steps belong to any-order bands', ['levelSteps']);
+      if (steps.length !== count) err('band', band.id, `${steps.length} level steps for ${count} floor(s)`, ['levelSteps']);
+      if (steps[0] !== 0 || steps.some((v, i) => i > 0 && v < steps[i - 1])) {
+        err('band', band.id, 'level steps start at 0 and never fall', ['levelSteps']);
+      }
     }
   }
   // The sequential ascent's per-rung rules. Every rung is mandatory, so a

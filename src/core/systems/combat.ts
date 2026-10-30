@@ -49,6 +49,7 @@ import {
   TIERS,
 } from '../registry';
 import { conditionsMet } from './conditions';
+import { bandLevelStep } from './ladder';
 import { PARRY_CAP, actionTicks, attackFillRate, getDerivedStats, scopedMult } from './derived';
 import { TPS } from '../engine/loop';
 import { attrValue, grantAttrXp } from './attributes';
@@ -823,7 +824,11 @@ export function spawnMonster(
     ? { monsterId: override.monsterId, level: [override.level, override.level] as [number, number] }
     : mercyPick(state, table, (e, rate) => (mercyTracked(rate) ? `spawn:${spot.id}:${e.monsterId}` : null));
   const def = MONSTERS[pick.monsterId];
-  const level = randInt(state, pick.level[0], pick.level[1]);
+  // A pinned level (escorts at their leader's, a staged dare) is final. A
+  // rolled one takes the band's step: on band 3 every direction cleared
+  // raises the rest (bands-2-3.md M5).
+  const rolled = randInt(state, pick.level[0], pick.level[1]);
+  const level = override ? rolled : rolled + bandLevelStep(state, spot);
 
   // Three classification axes: intrinsic tier (rolled multiplier within the
   // def's tier range), rolled modifier (demiboss/boss/aberrant), rolled rarity.
@@ -987,7 +992,7 @@ export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | 
       members.push(
         spawnMonster(state, spot, {
           monsterId: pick.monsterId,
-          level: randInt(state, pick.level[0], pick.level[1]),
+          level: randInt(state, pick.level[0], pick.level[1]) + bandLevelStep(state, spot),
         }),
       );
     } else {

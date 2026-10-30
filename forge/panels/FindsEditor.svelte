@@ -65,6 +65,7 @@
     { type: 'statMax', label: 'counter at most' },
     { type: 'equippedTag', label: 'equipped tag' },
     { type: 'quest', label: 'quest completed' },
+    { type: 'boon', label: 'prestige boon owned' },
   ];
 
   /** A correctly shaped condition for the chosen variant — never a half one. */
@@ -80,6 +81,8 @@
         return { type: 'equippedTag', tag: '' };
       case 'quest':
         return { type: 'quest', id: '' };
+      case 'boon':
+        return { type: 'boon', id: '' };
       default:
         return { type: 'skill', id: '', level: 5 };
     }
@@ -523,6 +526,13 @@
                     placeholder="equipped tag…"
                     onchange={(ev) => put(f.id, ['requires', i, 'tag'], ev.currentTarget.value)}
                   />
+                {:else if cond.type === 'boon'}
+                  <input
+                    class="grow"
+                    value={cond.id}
+                    placeholder="prestige boon id…"
+                    onchange={(ev) => put(f.id, ['requires', i, 'id'], ev.currentTarget.value)}
+                  />
                 {:else}
                   <input
                     class="grow"
@@ -531,7 +541,7 @@
                     onchange={(ev) => put(f.id, ['requires', i, 'key'], ev.currentTarget.value)}
                   />
                 {/if}
-                {#if cond.type !== 'equippedTag' && cond.type !== 'quest'}
+                {#if cond.type !== 'equippedTag' && cond.type !== 'quest' && cond.type !== 'boon'}
                   <input
                     class="num"
                     type="number"

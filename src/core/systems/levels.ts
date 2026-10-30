@@ -1,8 +1,8 @@
 import type { GameState, MonsterInstance, QuestDef } from '../types';
 import type { EventBus } from '../engine/events';
-import { FLOORS } from '../registry';
+import { BANDS, FLOORS } from '../registry';
 import { setStat } from './achievements';
-import { conditionsMet } from './conditions';
+import { bandCleared, bandClearedKey, clearMet } from './ladder';
 import { startingLevel } from './legacy';
 import { text } from '../text/log';
 import {
@@ -107,11 +107,20 @@ export function checkFloorClears(state: GameState, bus: EventBus): void {
   for (const floor of Object.values(FLOORS)) {
     if (!floor.clearXp) continue;
     const key = floorXpKey(floor.id);
-    // towers.ts floorCleared, inlined: towers imports combat, which reaches back here.
-    if ((state.stats[key] ?? 0) >= 1 || !floor.clear?.length || !conditionsMet(state, floor.clear)) continue;
+    // The floor's own clear: a band pass opens the way but pays no XP.
+    if ((state.stats[key] ?? 0) >= 1 || !clearMet(state, floor)) continue;
     setStat(state, bus, key, 1);
     bus.emit({ type: 'log', msg: text('levels.floor', { name: floor.name, xp: floor.clearXp }), kind: 'info' });
     grantLevelXp(state, bus, floor.clearXp);
+  }
+  // A band whose every floor is cleared stamps it once a run, for content to
+  // read (band 3: the castle is safe, bands-2-3.md R8). Only an `any` band
+  // says so in the log; a sequence band's last floor clear already did.
+  for (const band of Object.values(BANDS)) {
+    const key = bandClearedKey(band.id);
+    if ((state.stats[key] ?? 0) >= 1 || !bandCleared(state, band)) continue;
+    setStat(state, bus, key, 1);
+    if (band.order === 'any') bus.emit({ type: 'log', msg: text('levels.band', { name: band.name }), kind: 'info' });
   }
 }
 
