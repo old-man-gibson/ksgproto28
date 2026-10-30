@@ -131,5 +131,13 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'paladin_x.desc': '',
 
+  'ph_siege_raider.desc': 'Placeholder veteran humanoid on floor 11. Slashing attacks with a 15% chance to inflict Bleeding. Fights with Hamstring, Lunge and Gather. Drops iron scrap and leather.',
+
+  'ph_siege_brute.desc': 'Placeholder large veteran humanoid on floor 11. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops iron scrap and hardwood.',
+
+  'ph_siege_captain.desc': 'Placeholder elite humanoid, the last fight of the stronghold’s wave. Spawns with a raider and a brute. Slashing attacks with a 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops a Boss Token, iron ingots and gold.',
+
+  'ph_corsair.desc': 'Placeholder elite humanoid in floor 11’s roadstead. Spawns with a raider. Piercing attacks. Fights with Lunge, Dirty Stab and Gather. Drops a Boss Token, gold and leather.',
+
   'giant_spider_queen.desc': 'Huge elite vermin, toxic element. Always fights alone. Poison bite with a 60% chance to inflict heavy Poison. Takes 40% less slashing, 50% less poison, 35% less earth and 20% less bludgeoning; takes 50% more piercing, 40% more heat and 20% more cold damage. Appears in the Brood Den. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
 };

@@ -26,4 +26,11 @@ export const QUESTS_TEXT: ProseTable = {
 
   "the_first_ascent.desc": "Find the toll stamp that is still being used in the flooded offices. Follow the vermin’s retreat, search the records, and locate the collector. Reward: 350 gold, 100 level XP, 1 favor.",
   "the_first_ascent.objectives.0.desc": "Recover the toll stamp from the collector",
+
+  'f11_shore_up_the_gate.desc': 'Bring the steward on floor 11 twenty hardwood and fifteen iron scrap. The yard has timber; the road’s raiders drop scrap. Reward: 200 gold, 150 level XP. Placeholder text.',
+  'f11_shore_up_the_gate.objectives.0.desc': 'Bring 20 hardwood',
+  'f11_shore_up_the_gate.objectives.1.desc': 'Bring 15 iron scrap',
+  'f11_arm_the_wall.desc': 'Clear ten raiders out of the yard and bring four iron ingots. Turning it in opens the wave on the wall. Reward: 250 gold, 200 level XP. Placeholder text.',
+  'f11_arm_the_wall.objectives.0.desc': 'Kill 10 raiders',
+  'f11_arm_the_wall.objectives.1.desc': 'Bring 4 iron ingots',
 };

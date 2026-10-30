@@ -12,6 +12,8 @@ export const TOWERS_TEXT: ProseTable = {
 export const BANDS_TEXT: ProseTable = {
   'ascent_lower.desc': 'Floors 1 to 3: the Old Toll Level, the Flooded Stair and the Silk Gallery. Each floor must be cleared before the next opens.',
 
+  'ascent_harbor.desc': 'Floors 11 to 14, the harbor band. Only floor 11 exists so far. Placeholder text.',
+
   'ascent_middle.desc': 'Floors 4 to 6: the Greenwood, the Mire and the Warren. A goblin war band holds the wilds above the Lower Reaches; its warchief waits at the bottom of the Warren. Placeholder text.',
 
   'ascent_upper.desc': 'Floors 7 to 10: a city whose castle is the band’s hub, and its four wards, south, west, north and east. Gate: the Key to the City prestige boon. The wards open together and may be cleared in any order; each one cleared raises the level of every monster in the wards by +2, then +5, then +9. Placeholder text.',
@@ -39,4 +41,6 @@ export const FLOORS_TEXT: ProseTable = {
   'ascent_f9.desc': 'Floor 9, the city’s north ward: the cathedral close, the barrow fields past the north gate, and a Death Knight in the ossuary, whose kill is the clear. Stand-in monsters. Placeholder text.',
 
   'ascent_f10.desc': 'Floor 10, the city’s east ward: the artificers’ row, the quarry past the east gate, and a Stone Golem in the foundry, whose kill is the clear. Stand-in monsters. Placeholder text.',
+
+  'ascent_f11.desc': 'Floor 11. On your first climb here: the stronghold. Repair it through the steward’s two quests, then hold the wall through eight fights; the eighth ends the run in an automatic prestige, and the stronghold stays yours on every later run. On later runs: the door to your hold is in the gatehouse, and the road leads on to the quay; the roadstead fight there clears the floor. Placeholder monsters. Placeholder text.',
 };

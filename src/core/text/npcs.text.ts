@@ -104,4 +104,10 @@ export const NPCS_TEXT: ProseTable = {
     'Salve, broth, rations, bread. Tower prices.',
     'The hall runs four stretches. The break room is behind the third, with chairs.',
   ],
+  'f11_steward.desc': 'In the stronghold’s gatehouse on floor 11. Gives Shore Up the Gate, then Arm the Wall, which opens the wave on the wall. Only before the stronghold is held. Placeholder.',
+  'f11_steward.dialogue': [
+    'The gate first: twenty hardwood from the yard, fifteen iron scrap. The road’s raiders carry scrap.',
+    'Then the wall: ten raiders cleared out of the yard, four iron ingots for the braces. The forge in town makes them, or the smith sells them.',
+    'When the wall is armed, they come. Eight fights. Hold the last one and the place is yours.',
+  ],
 };

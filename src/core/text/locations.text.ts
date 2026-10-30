@@ -21,7 +21,7 @@ export const SPOTS_TEXT: ProseTable = {
   "f1_supplies.desc": "Boxes of spare nibs stand on a stool above the water.",
   "f1_toll_hall.desc": "A golem stands submerged behind a desk, stamping sodden documents. The water around it can become steam, ice, or a conductor. The toll stamp remains in its hand.",
 
-  'base_entrance.desc': 'The door into your hold. It opens from the Foot of the Ascent after your first prestige and leads to the Main Hall.',
+  'base_entrance.desc': 'The door into your hold, from the gatehouse on floor 11. It opens once the stronghold is held, and stays open on every later run. Leads to the Main Hall; a one-way door also lets you out to the Foot of the Ascent.',
 
   'base_equipment_depot.desc': 'Storage room for gear. No activities. Connects to the Main Hall, the Dining Hall, the Infirmary and the Training Area.',
 
@@ -71,7 +71,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'base_material_storage.desc': 'Storage room off the Workshop. No activities.',
 
-  'ascent_foot.desc': 'Hub of Threshold and the door to the Ascent. Rest at the Doorstep Inn makes this the city haven: a lost fight returns you here. All eight district roads end here, 1 s each. The Warden of the Foot stands here and gives the starting quests. The door to your hold opens after your first prestige.',
+  'ascent_foot.desc': 'Hub of Threshold and the door to the Ascent. Rest at the Doorstep Inn makes this the city haven: a lost fight returns you here. All eight district roads end here, 1 s each. The Warden of the Foot stands here and gives the starting quests.',
 
   'lectory_steps.desc': 'Gate of the Scholars’ Quarter. Argue on the Steps trains Intelligence. Connects to the Foot, the Reading Hall, the Chalk Yard, the Granary Gate and the Pilgrims’ Stair.',
 
@@ -246,5 +246,13 @@ export const SPOTS_TEXT: ProseTable = {
   'f10_quarry.finds.f10_quarry_ore.desc': '⛏️ Five chunks of copper ore.',
   'f10_quarry.finds.f10_quarry_scrap.desc': '🔩 Five iron scrap from a broken winch.',
   'f10_foundry.desc': 'One fight, started when you choose: a Stone Golem, level 14 before the band\'s step. Killing it clears floor 10. Placeholder text.',
+
+  // Floor 11, the stronghold (FLOOR_IDEAS.md §1.5). Placeholder text.
+  'f11_road.desc': 'Landing of floor 11. Camp by the Road is a rest activity, and the landing is a haven. Endless hunt: raiders and brutes, level 22 to 23; they drop iron scrap. After the stronghold is yours, the road also leads on to the harbor. Placeholder text.',
+  'f11_gatehouse.desc': 'The stronghold’s gatehouse. The steward gives the two repair quests here. After the stronghold is held, the door to your hold is here. Placeholder text.',
+  'f11_yard.desc': 'Inside the walls. Salvage Timber gathers hardwood (12 s each). Until the stronghold is held: an endless hunt of raiders, level 23 to 24. Placeholder text.',
+  'f11_wall.desc': 'The wave, opened by the steward’s second quest: eight fights in groups of two or three, level 24 to 25; the eighth is the Siege Captain and its escort, level 27. Winning the eighth ends the run in an automatic prestige. Shut on every run after the stronghold. The postern leads back to the road. Placeholder text.',
+  'f11_quay.desc': 'Placeholder for the harbor. Rest at the Quay is a rest activity, and the quay is a haven. Placeholder text.',
+  'f11_roadstead.desc': 'Placeholder for the harbor. One fight, started when you choose: a Corsair and a raider escort, level 26. Winning it clears floor 11. Placeholder text.',
 
 };

@@ -96,7 +96,7 @@ import { STYLES } from './registry';
 import { appendLog } from './systems/log';
 import { RESOURCE_LIST } from './data/resources.data';
 import { resourceLock } from './systems/resources';
-import { buyBoon, leaveReview, prestigeNow } from './systems/prestige';
+import { autoPrestigeDue, buyBoon, leaveReview, prestigeNow } from './systems/prestige';
 import type { PsionicShape, QualityTier, ResourceId, ResourceLock, SlotId } from './types';
 import { text } from './text/log';
 
@@ -172,6 +172,12 @@ export class Game {
    */
   tick(): void {
     if (this.state.paused) return;
+    // The stronghold's wave was held: the run ends here, unasked
+    // (systems/prestige.ts autoPrestigeDue).
+    if (autoPrestigeDue(this.state)) {
+      this.prestige();
+      return;
+    }
     // A question the game is waiting on (the keeper's dare) holds the world.
     // The wall time spent deciding is banked as bonus time, not lost — which
     // is also what happens when the question lands while the player is away.

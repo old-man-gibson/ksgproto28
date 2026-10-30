@@ -162,10 +162,11 @@ describe('the reset', () => {
     expect(next.prestige.spentThisReview).toBe(0);
   });
 
-  it('stamps prestige:count, which is what opens the hold door', () => {
+  it('stamps prestige:count; the hold door is not at the Foot any more', () => {
     const next = prestigeNow(bandOneCleared(), 1)!;
     expect(next.stats['prestige:count']).toBe(1);
-    expect(startTravel(next, new EventBus(), 'base_entrance')).toBe(true);
+    expect(next.stats['legacy:stronghold']).toBeUndefined();
+    expect(startTravel(next, new EventBus(), 'base_entrance')).toBe(false);
   });
 
   it('counts up across runs and keeps unspent points', () => {

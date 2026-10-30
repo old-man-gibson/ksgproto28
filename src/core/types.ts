@@ -4862,6 +4862,13 @@ export interface PrestigeState {
    * shortened. The Cook's Notes boon decides how much of it the Book reads.
    */
   cookbook: { timed: string[]; signed: string[] };
+  /**
+   * The stronghold on floor 11 was held in some run that ended in a prestige
+   * (FLOOR_IDEAS.md §5.3 items 1–3). Mirrored to `stats['legacy:stronghold']`
+   * by `prestigeNow`, which content gates read: the hold's door, and the
+   * siege, which runs once. Absent on saves from before it existed.
+   */
+  stronghold?: boolean;
   /** The most recent harvest, shown on the post-prestige overlay. */
   lastHarvest: HarvestReport | null;
   /** The post-prestige overlay is owed: it survives a reload and closes only through `leaveReview`. */

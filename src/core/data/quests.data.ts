@@ -75,6 +75,37 @@ export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
     rewards: { gold: 350, favor: 1, levelXp: 100 },
   },
 
+  // ---- Floor 11, the stronghold (FLOOR_IDEAS.md §1.5, §5.3 item 2). The
+  // repairs, in two quests; the second opens the wave on the wall. Offered
+  // only before the stronghold is held (STRONGHOLD_KEY). Workers belong here
+  // and are not built: worker creation is a later part of base building
+  // (§5.3 item 8).
+  f11_shore_up_the_gate: {
+    id: 'f11_shore_up_the_gate',
+    name: 'Shore Up the Gate',
+    giver: 'f11_steward',
+    requirements: [{ type: 'statMax', key: 'legacy:stronghold', value: 0 }],
+    objectives: [
+      { type: 'collect', materialId: 'hardwood', qty: 20, at: 'f11_yard' },
+      { type: 'collect', materialId: 'iron_scrap', qty: 15, at: 'f11_road' },
+    ],
+    rewards: { gold: 200, levelXp: 150 },
+  },
+  f11_arm_the_wall: {
+    id: 'f11_arm_the_wall',
+    name: 'Arm the Wall',
+    giver: 'f11_steward',
+    requirements: [
+      { type: 'quest', id: 'f11_shore_up_the_gate' },
+      { type: 'statMax', key: 'legacy:stronghold', value: 0 },
+    ],
+    objectives: [
+      { type: 'kill', monsterId: 'ph_siege_raider', count: 10, at: 'f11_yard' },
+      { type: 'collect', materialId: 'iron_ingot', qty: 4, at: 'the_forges' },
+    ],
+    rewards: { gold: 250, levelXp: 200 },
+  },
+
   // ---- Vermin Festival quest chain -----
   /* DESC:
   whispers of a mysterious

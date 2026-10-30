@@ -10,6 +10,7 @@ import type { store as Store } from './store.svelte';
 import { searchContentIssues } from '../../src/core/systems/searchValidation';
 import { smithingContentIssues } from '../../src/core/systems/assemblyValidation';
 import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
+import { offLadderDoor } from '../../src/core/data/towers.data';
 import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../../src/core/systems/monsterStats';
@@ -319,7 +320,7 @@ export function validate(store: S): Issue[] {
       }
       const toArea = spots[c.to]?.areaId;
       if (!toArea) continue; // unknown targets are caught by the spot lints
-      if ((bandedAreas.has(spot.areaId) || bandedAreas.has(toArea)) && spot.areaId !== toArea) {
+      if ((bandedAreas.has(spot.areaId) || bandedAreas.has(toArea)) && spot.areaId !== toArea && !offLadderDoor(spot.id, c.to)) {
         err('spot', spot.id, `edge to '${c.to}' crosses a banded floor boundary — the ladder is the only door`, ['connections']);
       }
     }

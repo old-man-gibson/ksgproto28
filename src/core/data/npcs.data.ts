@@ -244,4 +244,13 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
       ],
     },
   },
+  // Floor 11's steward (FLOOR_IDEAS.md §1.5): gives the stronghold's repairs.
+  // A placeholder name.
+  f11_steward: {
+    id: 'f11_steward',
+    name: 'The Steward (placeholder)',
+    icon: '📜',
+    spotId: 'f11_gatehouse',
+    quests: ['f11_shore_up_the_gate', 'f11_arm_the_wall'],
+  },
 });

@@ -60,12 +60,14 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
     }))
     .filter((x) => x.gained > 0);
 
+  // A prestige during catch-up (the stronghold's, Game.tick) resets the run
+  // under these counts, so a difference can go negative: report nothing for it.
   return {
     ticks,
     ms: simMs,
     capped,
-    kills: (s.stats['kills'] ?? 0) - before.kills,
-    goldGained: s.gold - before.gold,
+    kills: Math.max(0, (s.stats['kills'] ?? 0) - before.kills),
+    goldGained: Math.max(0, s.gold - before.gold),
     itemsGained: Math.max(0, s.inventory.length - before.items),
     attrLevels,
     skillLevels,

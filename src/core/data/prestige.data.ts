@@ -27,6 +27,20 @@ export const PRESTIGE_UNLOCK: UnlockCondition[] = [
 ];
 
 /**
+ * The stronghold on floor 11 (docs/FLOOR_IDEAS.md §1.5 and §5.3 items 1–3,
+ * 9). The wave is held when every fight on the wall is won. That ends the
+ * run on the next tick, an automatic prestige (`autoPrestigeDue`, Game.tick),
+ * and the legacy block records the stronghold for good: every later run
+ * reads `STRONGHOLD_KEY` ≥ 1, which opens the hold's door on floor 11 and
+ * shuts the siege.
+ */
+export const STRONGHOLD_WAVE = 8;
+export const STRONGHOLD_HELD: UnlockCondition[] = [
+  { type: 'stat', key: 'fights:f11_wall', value: STRONGHOLD_WAVE },
+];
+export const STRONGHOLD_KEY = 'legacy:stronghold';
+
+/**
  * What the harvest measures. Every source accrues from acting at all — the
  * same rule the tower's gates follow — so a player who engaged with no
  * subsystem on its own terms still harvests something. Order is display

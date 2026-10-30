@@ -3,6 +3,7 @@ import type { AttributeId, GameState, HarvestLine, HarvestReport, PrestigeSource
 import { PRESTIGE_BOONS, PRESTIGE_SOURCES, PRESTIGE_UNLOCK, TOWERS } from '../registry';
 import { createInitialState } from '../state';
 import { TUTORIAL_DONE_KEY, TUTORIAL_EXIT } from '../data/tutorial.data';
+import { STRONGHOLD_HELD, STRONGHOLD_KEY } from '../data/prestige.data';
 import { conditionsMet } from './conditions';
 import { clearMet, ladderFloors } from './ladder';
 import { boonRank } from './legacy';
@@ -32,7 +33,25 @@ import { text } from '../text/log';
  */
 
 export function canPrestige(state: GameState): boolean {
-  return conditionsMet(state, PRESTIGE_UNLOCK);
+  return conditionsMet(state, PRESTIGE_UNLOCK) || strongholdHeld(state);
+}
+
+/**
+ * The stronghold's wave was held on this run, and no earlier run did it
+ * (`STRONGHOLD_HELD`, prestige.data.ts). It opens prestige on its own, so a
+ * run that passed band 2 and never killed the warchief still ends here.
+ */
+export function strongholdHeld(state: GameState): boolean {
+  return !state.prestige.stronghold && conditionsMet(state, STRONGHOLD_HELD);
+}
+
+/**
+ * The run ends without asking (FLOOR_IDEAS.md §5.3): Game.tick prestiges on
+ * the tick after the wave is held. During offline catch-up the remaining
+ * ticks run in the new run, idle at the Foot, where they bank as bonus time.
+ */
+export function autoPrestigeDue(state: GameState): boolean {
+  return strongholdHeld(state);
 }
 
 /** The tab shows once the run could prestige, or once any run has. */
@@ -213,13 +232,16 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
     // Which dishes reached 25 and 100 cooks, kept whatever Cook's Notes rank is
     // held now: points are spent after the harvest, and the rank gates the read.
     cookbook: carriedCookbook(state),
+    // One base, unlocked for good (FLOOR_IDEAS.md §5.3 item 3).
+    stronghold: !!legacy.stronghold || strongholdHeld(state),
     lastHarvest: report,
     review: true,
     spentThisReview: 0,
   };
   next.stats['prestige:count'] = next.prestige.count;
+  if (next.prestige.stronghold) next.stats[STRONGHOLD_KEY] = 1;
   // A second life skips the cell: the tutorial is stamped done and the run
-  // opens at the Foot, where the door to the hold has just come open.
+  // opens at the Foot. The hold's door is on floor 11 (STRONGHOLD_KEY).
   next.stats[TUTORIAL_DONE_KEY] = 1;
   next.spot = TUTORIAL_EXIT;
   next.discovered = [TUTORIAL_EXIT];

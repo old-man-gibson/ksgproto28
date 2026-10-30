@@ -52,7 +52,7 @@ describe('Threshold has no fog (RegionDef.mapped)', () => {
         if (TOWN.includes(e.to)) expect(e.ticks, `${id} -> ${e.to}`).toBeLessThanOrEqual(18);
       }
     }
-    expect(edgesFrom('ascent_foot').find((e) => e.to === 'base_entrance')?.ticks).toBe(90);
+    expect(edgesFrom('base_entrance').find((e) => e.to === 'ascent_foot')?.ticks).toBe(90);
     expect(edgesFrom('f0_gate').find((e) => e.to === 'ascent_foot')?.ticks).toBe(30);
   });
 

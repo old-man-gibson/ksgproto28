@@ -97,21 +97,33 @@ describe('the hold (shut roads: Connection.requires)', () => {
     expect(AREAS.player_base_v1_area.regionId).not.toBe(AREAS[SPOTS[STARTING_SPOT].areaId].regionId);
   });
 
-  it('the door at the Foot refuses travel until the first prestige, and only outbound', () => {
+  it("the hold's door is on floor 11: shut until the stronghold, never from the Foot", () => {
     const state = fresh();
     const b = bus();
-    expect(state.spot).toBe(FOOT);
+    // No road from the Foot, prestiged or not (FLOOR_IDEAS.md §5.3 item 9).
+    state.stats['prestige:count'] = 3;
     expect(startTravel(state, b, 'base_entrance')).toBe(false);
     expect(state.travel).toBeNull();
 
-    state.stats['prestige:count'] = 1;
+    state.spot = 'f11_gatehouse';
+    expect(startTravel(state, b, 'base_entrance')).toBe(false);
+    state.stats['legacy:stronghold'] = 1;
     expect(startTravel(state, b, 'base_entrance')).toBe(true);
     arrive(state, b);
     expect(state.spot).toBe('base_entrance');
+  });
 
-    // The mirror never carries `requires`: a save already inside can always
-    // walk back out, counter or no counter — nobody is ever stranded.
-    state.stats['prestige:count'] = 0;
+  it('a save inside the hold always walks out to the Foot, and back to floor 11 only with the stronghold', () => {
+    const state = fresh();
+    const b = bus();
+    state.spot = 'base_entrance';
+    expect(startTravel(state, b, 'f11_gatehouse')).toBe(false);
     expect(startTravel(state, b, FOOT)).toBe(true);
+    arrive(state, b);
+    expect(state.spot).toBe(FOOT);
+
+    state.spot = 'base_entrance';
+    state.stats['legacy:stronghold'] = 1;
+    expect(startTravel(state, b, 'f11_gatehouse')).toBe(true);
   });
 });

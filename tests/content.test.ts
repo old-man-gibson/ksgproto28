@@ -58,6 +58,7 @@ import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCES } from '../src/core/data/resources.data';
 import { XP_BASE, XP_RATE } from '../src/core/data/progression.data';
 import { TERRAIN_PROFILES } from '../src/core/data/climate.data';
+import { offLadderDoor } from '../src/core/data/towers.data';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../src/core/systems/monsterStats';
 import { resistanceProblems } from '../src/core/systems/conditionHarm';
@@ -97,6 +98,8 @@ function statCounterValid(key: string): boolean {
     'bestiary:entries', // bestiary.ts recordKill, first of a species
     'gold:spent', // shops.ts buy
     'shop:buys', // shops.ts buy
+    'prestige:count', // prestige.ts prestigeNow, from the legacy block
+    'legacy:stronghold', // prestige.ts prestigeNow, once the stronghold is held
   ]);
   if (staticKeys.has(key)) return true;
   // What the fight itself counts, for conditions that learn from doing
@@ -2226,6 +2229,11 @@ describe('towers, bands & floors', () => {
         if (!toArea) continue; // unknown targets fail the referential lint instead
         const fromBanded = bandedAreas.has(spot.areaId);
         const toBanded = bandedAreas.has(toArea);
+        // The listed doors are decisions (towers.data.ts OFF_LADDER_DOORS).
+        if (offLadderDoor(spot.id, c.to)) {
+          expect(c.oneWay, `${spot.id} -> ${c.to}: an off-ladder door is oneWay, so it brings no free mirror`).toBe(true);
+          continue;
+        }
         if (fromBanded || toBanded) {
           expect(
             spot.areaId,

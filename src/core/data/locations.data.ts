@@ -76,6 +76,8 @@ export const AREAS: Record<string, AreaDef> = {
   ascent_f8_area: { id: 'ascent_f8_area', name: 'The West Ward', regionId: 'the_ascent' },
   ascent_f9_area: { id: 'ascent_f9_area', name: 'The North Ward', regionId: 'the_ascent', scene: 'crypt' },
   ascent_f10_area: { id: 'ascent_f10_area', name: 'The East Ward', regionId: 'the_ascent', scene: 'hall' },
+  // Floor 11 (FLOOR_IDEAS.md §1.5): the stronghold road, a placeholder name.
+  ascent_f11_area: { id: 'ascent_f11_area', name: 'The Stronghold Road', regionId: 'the_ascent', scene: 'hall' },
 };
 
 /**
@@ -99,6 +101,18 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     activities: [],
     connections: [
       { to: 'base_main_hall', ticks: 60 },
+      // The door is on floor 11 (FLOOR_IDEAS.md §5.3 item 9). The way back
+      // there needs the stronghold; the way out to the Foot is free and
+      // one-way, so a save already inside is never stranded and nobody
+      // walks in from the Foot.
+      {
+        to: 'f11_gatehouse',
+        ticks: 60,
+        oneWay: true,
+        label: 'out to the gatehouse',
+        requires: [{ type: 'stat', key: 'legacy:stronghold', value: 1 }],
+      },
+      { to: 'ascent_foot', ticks: 90, oneWay: true, label: 'out to the Foot' },
     ],
   },
   base_equipment_depot: {
@@ -479,19 +493,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     activities: [
       { id: 'rest_foot', kind: 'rest', name: 'Rest at the Doorstep Inn', icon: '🛏️' },
     ],
-    connections: [
-      // The door to your hold. Shut until the first prestige: `requires` is
-      // directional (the registry mirror never carries it), so a save already
-      // inside can always walk back out. Prestige is unbuilt; when it lands,
-      // stamping `prestige:count` is what opens this — nothing else to wire.
-      {
-        to: 'base_entrance',
-        ticks: 90,
-        requires: [{ type: 'stat', key: 'prestige:count', value: 1 }],
-        label: 'the door',
-        returnLabel: 'back out to the Foot',
-      },
-    ],
+    // The hold's door moved to floor 11 (FLOOR_IDEAS.md §5.3 item 9); the
+    // hold keeps a one-way way out to here.
+    connections: [],
   },
 
   // --- Scholars' Quarter (signature: arcane) ---
@@ -2118,6 +2122,159 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     modifierWeights: { normal: 100 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Enter the Foundry', icon: '⚔️' }],
     encounters: [{ monsterId: 'stone_golem', weight: 1, once: true, level: [14, 14] }],
+    connections: [],
+  },
+
+  // ---------- The Ascent, floor 11: the stronghold (FLOOR_IDEAS.md §1.5) ----------
+  //
+  // A first climb: take the derelict stronghold, repair it through the
+  // steward's two quests, then hold the wave on the wall. The eighth fight won
+  // there ends the run (STRONGHOLD_HELD, an automatic prestige). Every later
+  // run reads STRONGHOLD_KEY: the repairs and the wave are shut, the gatehouse
+  // holds the door to the hold, and the road leads on to the quay, a
+  // placeholder for idea 3's harbor whose roadstead fight is the floor's
+  // clear. Monsters are placeholders at floor 11's levels; no band step.
+  f11_road: {
+    id: 'f11_road',
+    name: 'The Stronghold Road',
+    icon: '🛤️',
+    areaId: 'ascent_f11_area',
+    map: { x: 50, y: 70 },
+    activities: [
+      { id: 'camp_f11', kind: 'rest', name: 'Camp by the Road', icon: '🏕️' },
+      { id: 'hunt', kind: 'hunt', name: 'Clear the Road', icon: '⚔️' },
+    ],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'ph_siege_raider', weight: 70, level: [22, 23] },
+      { monsterId: 'ph_siege_brute', weight: 30, level: [22, 23] },
+    ],
+    connections: [
+      { to: 'f11_gatehouse', ticks: 30, label: 'Up to the Gatehouse', returnLabel: 'Down to the Road' },
+      // The harbor side opens once the stronghold is yours (a later run).
+      {
+        to: 'f11_quay',
+        ticks: 40,
+        label: 'On to the Harbor',
+        returnLabel: 'Back to the Road',
+        revealWhen: [{ type: 'stat', key: 'legacy:stronghold', value: 1 }],
+        requires: [{ type: 'stat', key: 'legacy:stronghold', value: 1 }],
+      },
+    ],
+  },
+  f11_gatehouse: {
+    id: 'f11_gatehouse',
+    name: 'The Gatehouse',
+    icon: '🏯',
+    areaId: 'ascent_f11_area',
+    map: { x: 50, y: 60 },
+    activities: [],
+    connections: [
+      { to: 'f11_yard', ticks: 20, label: 'Into the Yard', returnLabel: 'Back to the Gatehouse' },
+      // The hold's door (FLOOR_IDEAS.md §5.3 item 9, towers.data.ts
+      // OFF_LADDER_DOORS). OneWay both ways, so neither direction brings a
+      // free mirror; the hold's own way back is authored on base_entrance.
+      {
+        to: 'base_entrance',
+        ticks: 60,
+        oneWay: true,
+        label: 'the door to your hold',
+        revealWhen: [{ type: 'stat', key: 'legacy:stronghold', value: 1 }],
+        requires: [{ type: 'stat', key: 'legacy:stronghold', value: 1 }],
+      },
+    ],
+  },
+  f11_yard: {
+    id: 'f11_yard',
+    name: 'The Yard',
+    icon: '🪵',
+    areaId: 'ascent_f11_area',
+    map: { x: 30, y: 40 },
+    activities: [
+      { id: 'gather_f11_timber', kind: 'gather', material: 'hardwood', ticksPer: 120, name: 'Salvage Timber', icon: '🪵' },
+      { id: 'hunt', kind: 'hunt', name: 'Clear the Yard', icon: '⚔️' },
+    ],
+    groupWeights: { 1: 60, 2: 40 },
+    encounters: [
+      {
+        monsterId: 'ph_siege_raider',
+        weight: 1,
+        level: [23, 24],
+        requires: [{ type: 'statMax', key: 'legacy:stronghold', value: 0 }],
+      },
+    ],
+    connections: [
+      { to: 'f11_wall', ticks: 20, label: 'Up onto the Wall', returnLabel: 'Down to the Yard' },
+    ],
+  },
+  // The wave: eight fights, the last always the captain. Shut until both of
+  // the steward's quests are done, and on every run after the stronghold.
+  f11_wall: {
+    id: 'f11_wall',
+    name: 'The Wall',
+    icon: '🧱',
+    areaId: 'ascent_f11_area',
+    map: { x: 70, y: 40 },
+    fightLimit: 8,
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Hold the Wall', icon: '🛡️' }],
+    groupWeights: { 2: 50, 3: 50 },
+    encounters: [
+      {
+        monsterId: 'ph_siege_raider',
+        weight: 60,
+        level: [24, 25],
+        requires: [
+          { type: 'quest', id: 'f11_arm_the_wall' },
+          { type: 'statMax', key: 'legacy:stronghold', value: 0 },
+          { type: 'statMax', key: 'fights:f11_wall', value: 6 },
+        ],
+      },
+      {
+        monsterId: 'ph_siege_brute',
+        weight: 40,
+        level: [24, 25],
+        requires: [
+          { type: 'quest', id: 'f11_arm_the_wall' },
+          { type: 'statMax', key: 'legacy:stronghold', value: 0 },
+          { type: 'statMax', key: 'fights:f11_wall', value: 6 },
+        ],
+      },
+      {
+        monsterId: 'ph_siege_captain',
+        weight: 1,
+        level: [27, 27],
+        requires: [
+          { type: 'quest', id: 'f11_arm_the_wall' },
+          { type: 'statMax', key: 'legacy:stronghold', value: 0 },
+          { type: 'stat', key: 'fights:f11_wall', value: 7 },
+        ],
+      },
+    ],
+    // The postern: a one-way stair down to the road, so the yard wing has a
+    // way back that is not the gate (the wing-loop rule).
+    connections: [{ to: 'f11_road', ticks: 30, oneWay: true, label: 'Down the Postern Stair' }],
+  },
+  // Placeholders for idea 3's floor 11 (the harbor): a quay and the roadstead
+  // fight that clears the floor on runs after the stronghold.
+  f11_quay: {
+    id: 'f11_quay',
+    name: 'The Quay (placeholder)',
+    icon: '⚓',
+    areaId: 'ascent_f11_area',
+    map: { x: 80, y: 68 },
+    activities: [{ id: 'camp_f11_quay', kind: 'rest', name: 'Rest at the Quay', icon: '🛏️' }],
+    connections: [{ to: 'f11_roadstead', ticks: 30, label: 'Row Out to the Roadstead', returnLabel: 'Back to the Quay' }],
+  },
+  f11_roadstead: {
+    id: 'f11_roadstead',
+    name: 'The Roadstead (placeholder)',
+    icon: '⛵',
+    areaId: 'ascent_f11_area',
+    map: { x: 92, y: 60 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Board the Corsair', icon: '⚔️' }],
+    encounters: [{ monsterId: 'ph_corsair', weight: 1, level: [26, 26] }],
     connections: [],
   },
 

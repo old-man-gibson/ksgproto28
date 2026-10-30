@@ -85,6 +85,16 @@ export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
     hub: 'castle_court',
     levelSteps: [0, 2, 5, 9],
   },
+  // Band 4, the harbor band (docs/FLOOR_IDEAS.md idea 3), floors 11 to 14.
+  // Only floor 11 exists so far: the stronghold siege on a first climb, and
+  // a placeholder quay after it (§1.5).
+  ascent_harbor: {
+    id: 'ascent_harbor',
+    name: 'The Harbor',
+    towerId: 'the_ascent',
+    index: 4,
+    clearsToAdvance: 1,
+  },
 });
 
 /**
@@ -251,4 +261,43 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     clear: [{ type: 'stat', key: 'slain:f10_foundry:stone_golem', value: 1 }],
     clearXp: 500,
   },
+  // ---- Floor 11 (docs/FLOOR_IDEAS.md §1.5, §5.3). One floor, two lives.
+  // On a first climb the stronghold wing is the floor: repairs, then the wave
+  // on the wall, whose hold ends the run (STRONGHOLD_HELD, an automatic
+  // prestige). From the next run on (STRONGHOLD_KEY) the siege is shut, the
+  // gatehouse holds the door to the hold, and the way to the quay is open.
+  // The clear is the quay side's, so a first climb never clears floor 11;
+  // it does not need to, because the wave ends the run. The quay and the
+  // roadstead are placeholders for idea 3's floor 11.
+  ascent_f11: {
+    id: 'ascent_f11',
+    name: 'The Stronghold Road',
+    towerId: 'the_ascent',
+    bandId: 'ascent_harbor',
+    index: 11,
+    areaId: 'ascent_f11_area',
+    landing: 'f11_road',
+    clear: [{ type: 'stat', key: 'fights:f11_roadstead', value: 1 }],
+    clearXp: 600,
+  },
 });
+
+/**
+ * Authored edges allowed across a banded floor's boundary. The ladder is the
+ * only door into a floor (content.test.ts, forge validate); each pair here is
+ * a decision, both directions listed.
+ *
+ * - The hold's door on floor 11 (FLOOR_IDEAS.md §5.3 item 9). Both edges are
+ *   oneWay and gated on STRONGHOLD_KEY, and the hold's only other exit is
+ *   one-way out to the Foot, so nothing reaches floor 11 through the hold
+ *   without having climbed there first.
+ */
+export const OFF_LADDER_DOORS: [from: string, to: string][] = [
+  ['f11_gatehouse', 'base_entrance'],
+  ['base_entrance', 'f11_gatehouse'],
+];
+
+/** True for an authored edge listed in OFF_LADDER_DOORS. */
+export function offLadderDoor(from: string, to: string): boolean {
+  return OFF_LADDER_DOORS.some(([f, t]) => f === from && t === to);
+}
