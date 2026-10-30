@@ -20,7 +20,8 @@ started; they are copied here so this file stands alone.
 
 "Floor group" here means a **band**: floors linked by a theme, usually one
 site, cleared in order (`BandDef` in `towers.data.ts`). A band holds one
-floor, three (the default), or about ten as a megastructure (§5.1). The tower
+floor, three (the default), or about ten as a megastructure (§5.1); the
+2026-10-29 ladder adds a four-floor and a two-floor piece (§1.5). The tower
 is open-ended. Three bands are defined today: band 1, the Lower Reaches,
 holds floors 1–3; band 2 (the Middle Galleries) and band 3 (the Upper
 Reaches) are empty scaffolding.
@@ -110,8 +111,80 @@ John's critical-path number is set at build time and checked with
 | Shelved, not re-pitched: the countryside, tile autotile / generator / fake doors, arcane compound words | LONGTERM.md |
 | Monsters never get unique abilities | plans/unique-abilities.md |
 | Art is not the limit: 2,169 enemy sheets on disk, 79 monster definitions, 51 unplaced. The Ækashics art is never redistributed | README.md (art), PITFALLS.md |
+| Progress on floors 11+ coarsens for offline: kills, searches, resource thresholds, room rates. No continuous fronts or multi-faction routing that only a full tick sim can resolve | §1.5 (2026-10-29) |
 
----
+### 1.5 The ladder, floors 11–30 (user, 2026-10-29)
+
+**As posted.** *"Floor band restructure summary."* Context, decisions and
+constraints, condensed from the post:
+
+- **Context.** *"Offline catch-up is the real bottleneck."* Prefer themes
+  whose progress can be coarsened (kills, searches, resource thresholds, room
+  rates) over continuous fronts or multi-faction routing. The completability
+  law still binds: no terminal states, the critical path is usable by a narrow
+  build (John), knowledge transfers (consume output, never invent a grammar).
+  Do not repeat bands 2–3's "clear the map, kill the boss" shape a third time.
+- **Floor 11** is a one-time aberrant player stronghold. After the required
+  prestige it is replaced by a normal floor, and the base becomes its own
+  optional para-floor (room rates and building that feed existing systems,
+  off the critical path).
+- **The Great Island at War** (idea 2) moves to floors 21–30.
+- **Between them:** 11–14 a band of its own; 15–16 the Vermin Festival, a
+  horror double floor built on the Gu ritual; 17 a special, aberrant floor;
+  18–20 a band of its own.
+- **Why.** The large continuous-state band goes later; smaller self-contained
+  pieces in front of it are easier to finish, to measure (extend John) and to
+  coarsen; the stronghold is a one-time event plus an optional para-floor, not
+  another repeating dungeon band; the earlier bands ship and test before the
+  island's content volume arrives.
+- **Constraints kept.** The replacement floor 11 and every later
+  critical-path floor are clearable by a narrow build. Base output stays
+  optional. The offline path is coarsened (memoize derived stats, chunk, rate
+  and phase approximation) before 11–30's content makes the hang the default.
+
+**The ladder.**
+
+| Floors | Piece | Shape | Status |
+|---|---|---|---|
+| 1–3 | band 1, the Lower Reaches | sequential | shipped |
+| 4–6 | band 2, the Wilds | sequential, goblin camp; prestige at 6 | PR #26 merged |
+| 7–10 | band 3, the castle | hub, four wards any order | skeleton on `band3-machinery` |
+| 11 | the stronghold | one-time aberrant floor; normal floor after the required prestige | unwritten |
+| 11–14 | band 4 | own band, four floors | unwritten |
+| 15–16 | the Vermin Festival | horror double floor, the Gu ritual | unwritten |
+| 17 | special floor | aberrant, one floor | unwritten |
+| 18–20 | band 5 | own band, three floors | unwritten |
+| 21–30 | the Great Island at War | idea 2 | banked |
+| — | the base | optional para-floor, room rates feeding shipped systems | unwritten |
+
+**What it changes in this doc.**
+- §5.1 Q1 (band size 1, 3 or ~10) no longer limits: 11–14 holds four floors,
+  15–16 two.
+- Idea 2 moves to floors 21–30 and is no longer how the player first gains a
+  base; its floor-12 hold ruling (Q9) is re-read in §5.2 Q7.
+- The offline row in §1.4 applies to every idea from here on. Idea 2's
+  presence clock already fits it (absent floors do not advance); its fronts
+  must resolve as per-turn counters, which they already are.
+
+**Checks against the code and the laws.**
+- **Offline, the state of the three fixes** (ENGINEERING.md §1.4).
+  Memoizing `getDerivedStats` is **done**: `modFingerprint` in
+  `systems/derived.ts`, with a cache-consistency test. ENGINEERING.md §1.2–1.4
+  still says "nothing is memoized", and its ~30 s figure was measured before
+  the memo, so the real cost on a developed save today is unmeasured.
+  Chunking is **not done**: `save/offline.ts:47` is still one synchronous
+  loop of up to 288,000 ticks. Coarsening is a design call about what offline
+  progress means (ENGINEERING.md says so) and has no card.
+- **Floor 11 swap.** Floors are found by index (`systems/ladder.ts`); a floor
+  whose content depends on a legacy flag is new machinery: two `FloorDef`s
+  for one rung, picked by a `state.prestige` key. The run that clears the
+  stronghold has to keep a clearable floor 11 until it prestiges.
+- **The base today** is the hold: region `the_hold`, 25 `base_*` rooms, a
+  door at the Foot that opens at `prestige:count` 1, which band 2 now reaches
+  at floor 6. A para-floor base reached from floor 11 overlaps it (§5.2 Q6).
+- **Narrow build.** COMPLETABILITY §6a requires basic use of about half the
+  eight core systems; "narrow" is read as the narrowest legal pick, which is
+  what John measures. A narrower John would contradict §6a.
 
 ## 2. Calibration: band 1 through the review
 
@@ -230,7 +303,7 @@ that stays.
 | # | Posted | Name | Band | Verdict |
 |---|---|---|---|---|
 | 1 | 2026-10-28 | The Five Moons | off-ladder, band 2's goblins, entered from band 3 | Bank |
-| 2 | 2026-10-29 | The warring states band | band 4, floors 11–20 | Bank |
+| 2 | 2026-10-29 | The warring states band | floors 21–30 (moved from 11–20, §1.5) | Bank |
 
 ### Entry template
 
@@ -559,7 +632,9 @@ quoted.
   style, how the player wins combats."*
 - **Hidden triggers.** *"Very difficult, needs to be tuned."*
 - **Routes.** Three per floor, one per side.
-- **Placement.** Band 4, floors 11–20, after band 3.
+- **Placement.** Band 4, floors 11–20, after band 3. **Superseded
+  2026-10-29:** floors 21–30, after band 5 (§1.5). Floor numbers below are
+  the original 11–20; add 10.
 - **The hold** (Q9): *"No matter how the player clears floor 12, the player
   gains a base."*
 - **Finales** (Q10): a visible side fights the other two sides' leaders on
@@ -938,4 +1013,31 @@ Clean:
 
 ### 5.2 Open
 
-None.
+From the ladder restructure (§1.5, 2026-10-29). Each has a default.
+
+1. **"The required prestige."** Prestige unlocks at floor 6 today
+   (`PRESTIGE_UNLOCK` = the goblin warchief). *Default:* clearing the
+   stronghold writes a legacy flag; the next prestige after that flag swaps
+   floor 11 to the normal floor for every later run. No second prestige gate.
+2. **What the stronghold is.** A base the player takes, holds or builds on
+   floor 11. *Default:* the player takes it (a siege floor), then holds it
+   against one counter-attack; that clear is the swap flag.
+3. **One base or two.** The hold already exists behind the prestige-1 door.
+   *Default:* one base. The stronghold becomes the hold's fiction; the
+   para-floor is the hold's map, its door moves from the Foot to a spot
+   reached after the swap, and the prestige-1 door is removed. Cost: no
+   base on floors 6–11, where the hold opens today.
+4. **What the para-floor feeds.** *Default:* room rates into shipped
+   systems only (ore for smithing, herbs for alchemy, ingredients for
+   cooking), with no stat modifiers, so `modFingerprint` is untouched and
+   the critical path never needs it.
+5. **Floor 17 and the 18–20 band.** Themes unset. *Default:* left blank
+   until posted as ideas.
+6. **Vermin Festival placement in the Gu shape.** The ritual seals vermin
+   together until one remains. *Default:* floor 15 is the jar (the field
+   that thins), floor 16 the survivor; both resolve on kill counters, so they
+   coarsen.
+7. **Idea 2's base ruling.** Q9 gave a base on floor 12 "no matter how the
+   player clears" it. With the base from floor 11, *default:* drop it; at
+   21–30 the visible sides fight from faction bases and the hidden paths use
+   the hold the player already owns.

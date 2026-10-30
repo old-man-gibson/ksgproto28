@@ -116,6 +116,11 @@ allocating a fresh object per modifier — on every call. Nothing is memoized. (
 tables do exist elsewhere: bestiary tag sets, carved runes, resolved spells. Just not
 here.)
 
+> **Since measured:** fix 2 below has shipped — `getDerivedStats` is memoized
+> behind `modFingerprint` (`systems/derived.ts`, consistency test in
+> `tests/derivedcache`). The 104 µs and ~30 s figures in this section predate it
+> and have not been re-measured. Fix 3 (chunking) has not shipped.
+
 ### 1.3 Where it actually hurts: offline catch-up
 
 `offline.ts:47` is a synchronous loop of up to **288,000 ticks** (8 h cap ÷ 100 ms):
