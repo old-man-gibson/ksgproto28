@@ -121,6 +121,10 @@ export function climbTo(state: GameState, bus: EventBus, floorId: string | null)
     bus.emit({ type: 'log', msg: text('festival.door_shut'), kind: 'danger' });
     return false;
   }
+  if (festival === 'closed') {
+    bus.emit({ type: 'log', msg: text('festival.royale_closed'), kind: 'danger' });
+    return false;
+  }
   if (festival === 'forfeit') return forfeitFestival(state, bus);
   if (!floor?.landing) return ride(state, bus, tower, tower.hubSpot, 0);
   // The climb from the hub into the royale: the clock jumps to the end of the

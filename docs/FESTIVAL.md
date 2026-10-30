@@ -35,7 +35,7 @@ time in a run; losing shuts both floors for three days.
 - **Issued**: the family whose weapon skill level is highest, ties broken by
   `kills:weapon:<family>` (counted on every kill from now on), then by
   `ISSUED_WEAPONS` order. The family's starter item with no affix and no rune
-  slots; `unarmed` issues nothing.
+  slots; `unarmed` issues nothing. It is lent, so `sellItems` refuses it.
 - **Returned** when the attempt ends, won or lost: the issued weapon is taken
   back wherever it is, anything else the attempt put in the player's hands
   goes to the pack, and the held set goes back on whole.
@@ -45,9 +45,14 @@ time in a run; losing shuts both floors for three days.
 - Starts at 0 when the dark room's door opens. Moves one tick per `advance`
   while an attempt holds the player (`festivalHolds`: a live attempt and the
   player on floors 15–16), travel between its floors included.
-- **Offline**: `runOfflineProgress` simulates nothing while the festival holds
-  the player. The time away goes to `state.bonusTime.banked` 1:1, up to its
-  cap. Short gaps bank too (`runCatchup`'s small-gap path skips its ticks).
+- **Offline**: every catch-up tick goes through `catchUpTicks`
+  (save/offline.ts), which stops the moment the festival holds the player,
+  from the first tick or from the tick a climb lands them in the dark room,
+  and puts the rest of the absence in `state.bonusTime.banked`, 1:1 up to its
+  cap. The summary reports the ticks skipped (`festivalSkipped`) and what the
+  bank took of them (`festivalBanked`). Both catch-up paths, the summarised
+  one and the UI's quiet short-gap one, go through it. A gap under a minute
+  at boot runs through neither and is not banked, inside the festival or out.
 - **Day ten** (`PREP_TICKS`): the player is walked up to floor 16 by the
   ladder. **Entering early** is the same climb: `beginRoyale` sets the clock
   to `PREP_TICKS` and keeps the old value in `run.enteredAt`. Nothing else
@@ -63,6 +68,10 @@ time in a run; losing shuts both floors for three days.
   climb except floor 15 → floor 16 after the door opens is a forfeit, the same
   ejection. Floor 15 → 16 before the door opens is refused. A climb during a
   forced fight is refused as everywhere.
+- **Floor 16 has no door of its own.** Outside an attempt's hall the ladder
+  refuses it (`festivalLadder` → `closed`), even when floor 15 reads cleared
+  from an earlier, lost attempt; the Ascent panel shows the rung with no
+  button and says it is entered from floor 15's hall.
 - **Any exit** ends the attempt as a loss (`settleExit`, on `arrive` and on
   every tick): gear returned, `state.festival.lockedUntil` set three days of
   the world clock ahead. `floorUnlocked` refuses floors 15–16 until then. A

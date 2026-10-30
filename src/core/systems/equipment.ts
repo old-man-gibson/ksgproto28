@@ -8,6 +8,7 @@ import { HAND_SLOTS, armCost, armsFrom, armsUsed, wieldNote, wieldScale } from '
 import { bearerGrants } from './mutagens';
 import { bumpStat } from './achievements';
 import { stockOf, takeGraded } from './disciplines';
+import { isIssuedWeapon } from './festivalRules';
 import { QUALITY_TIERS, qualityMult } from '../data/quality.data';
 import { text } from '../text/log';
 
@@ -177,6 +178,11 @@ export function sellItems(state: GameState, bus: EventBus, uids: number[]): numb
   const sold: ItemInstance[] = [];
   let total = 0;
   for (const uid of uids) {
+    // The Vermin Festival lends its weapon for the attempt and takes it back.
+    if (isIssuedWeapon(state, uid)) {
+      bus.emit({ type: 'log', msg: text('festival.issued_unsold'), kind: 'danger' });
+      continue;
+    }
     const idx = state.inventory.findIndex((i) => i.uid === uid);
     if (idx < 0) continue;
     const item = state.inventory[idx];

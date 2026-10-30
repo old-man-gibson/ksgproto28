@@ -11,7 +11,6 @@ import {
   serialize,
 } from '../core/save/save';
 import { OFFLINE_CAP_MS, catchUpTicks, runOfflineProgress, type OfflineSummary } from '../core/save/offline';
-import { festivalHolds } from '../core/systems/festivalRules';
 import { dropFight, isKept, keepFight, NOTEBOOK_MAX } from '../core/systems/ledger';
 import { setSkipSettling } from '../core/systems/mutagens';
 import type { SortMode } from '../core/systems/inventory';
@@ -127,12 +126,10 @@ function runCatchup(elapsedMs: number, quietSmallGaps: boolean): OfflineSummary 
   const worker = new Game(plain);
   const before = plain.totalTicks;
   const bankedBefore = plain.bonusTime.banked;
-  // Inside the Vermin Festival a gap of any length is banked, never ticked
-  // (runOfflineProgress already banked it).
-  const banking = festivalHolds(plain);
   const summary = runOfflineProgress(worker, elapsedMs);
-  if (!summary && quietSmallGaps && !banking) {
-    // Still time away, so still catch-up for the convoys (catchUpTicks).
+  if (!summary && quietSmallGaps) {
+    // Still time away, so still catch-up for the convoys and the festival's
+    // bank (catchUpTicks stops and banks once the festival holds the player).
     catchUpTicks(worker, Math.floor(Math.min(elapsedMs, OFFLINE_CAP_MS) / MS_PER_TICK));
   }
   // Nothing ran and nothing was banked — leave gs untouched.

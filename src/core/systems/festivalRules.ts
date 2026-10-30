@@ -35,6 +35,12 @@ export function festivalRun(state: GameState): FestivalRun | undefined {
   return state.festival?.run;
 }
 
+/** The festival's issued weapon: lent for the attempt and taken back at its end, so never sold. */
+export function isIssuedWeapon(state: GameState, uid: number): boolean {
+  const issued = state.festival?.run?.issued;
+  return issued !== undefined && issued === uid;
+}
+
 /**
  * The attempt holds the player: an attempt is live and they stand on its
  * floors. While this holds the festival keeps its own clock, so offline
@@ -78,22 +84,30 @@ export function ejectionSpot(state: GameState): string | null {
 }
 
 /**
- * What the ladder means from inside an attempt (§5.3 item 25), for
- * `climbTo`: `royale` is the climb from floor 15 into floor 16 once the
- * dark room's door is open; `shut` is that climb while the room still
- * fights; `forfeit` is any other rung, the tower's hub or a band's hub, and
- * counts as a loss. Null when no attempt holds the player, or for a move
- * within the floor they stand on. `toFloorId` null is the tower's hub, and
- * `climbToHub` asks with null too: every hub is outside the festival.
+ * What the ladder means for the festival (§5.3 item 25), for `climbTo`:
+ * - `royale`: the climb from floor 15 into floor 16 once the dark room's
+ *   door is open;
+ * - `shut`: that climb while the room still fights;
+ * - `closed`: floor 16 from anywhere else. The royale is entered only from
+ *   an attempt's hall, so with no attempt the ladder does not go there, even
+ *   when floor 15 reads cleared from an earlier attempt;
+ * - `forfeit`: from inside an attempt, any other rung, the tower's hub or a
+ *   band's hub; it counts as a loss.
+ * Null for every other climb, and for a move within the floor the player
+ * stands on. `toFloorId` null is the tower's hub, and `climbToHub` asks with
+ * null too: every hub is outside the festival.
  */
-export type FestivalLadder = 'royale' | 'shut' | 'forfeit';
+export type FestivalLadder = 'royale' | 'shut' | 'closed' | 'forfeit';
 
 export function festivalLadder(state: GameState, toFloorId: string | null): FestivalLadder | null {
   const run = festivalRun(state);
   const here = festivalFloorOf(state.spot);
+  if (toFloorId === ROYALE_FLOOR && here?.id !== ROYALE_FLOOR) {
+    if (!run || here?.id !== DARK_FLOOR) return 'closed';
+    return run.phase === 'dark' ? 'shut' : 'royale';
+  }
   if (!run || !here) return null;
   if (toFloorId === here.id) return null;
-  if (here.id === DARK_FLOOR && toFloorId === ROYALE_FLOOR) return run.phase === 'dark' ? 'shut' : 'royale';
   return 'forfeit';
 }
 

@@ -224,6 +224,8 @@ export const LOG_TEXT = {
   // ---------- festival (systems/festival.ts, systems/royale.ts) ----------
   'festival.door_held': '🚪 The door holds {pieces} piece{plural} of gear until the festival ends, won or lost. Issued: {issued}.',
   'festival.door_shut': '🚪 The dark room’s door is shut until the room is empty.',
+  'festival.issued_unsold': '🚪 The festival’s issued weapon is lent for the attempt and taken back at its end; it cannot be sold.',
+  'festival.royale_closed': '🏟️ Floor 16 is the festival’s royale, entered only from floor 15’s hall during an attempt. Attempts start in the dark room on floor 15.',
   'festival.door_open': '🚪 The dark room is empty and its door opens onto the hub. Ten festival days until the royale on floor 16; the other ninety-nine prepare too.',
   'festival.forfeit': 'Leaving floors 15–16 by the ladder before the royale ends forfeits the festival.',
   'festival.field_left': '🏟️ {alive} left on the field.',

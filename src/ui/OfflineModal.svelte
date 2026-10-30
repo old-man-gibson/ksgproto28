@@ -31,9 +31,12 @@
       {#each summary.skillLevels as s}
         <li>📜 {s.name} +{s.gained} levels</li>
       {/each}
-      {#if summary.festivalBanked}
-        <!-- The festival's clock runs only while the game does: nothing moved. -->
-        <li>🎪 Inside the Vermin Festival: nothing was simulated. {msToTime(summary.festivalBanked * MS_PER_TICK)} went to banked bonus time (⏩).</li>
+      {#if summary.festivalSkipped}
+        <!-- The festival's clock runs only while the game does: that part of the absence did not happen. -->
+        <li>
+          🎪 The Vermin Festival held you for {msToTime(summary.festivalSkipped * MS_PER_TICK)}: not simulated.
+          {#if summary.festivalBanked}{msToTime(summary.festivalBanked * MS_PER_TICK)} of it went to banked bonus time (⏩){summary.festivalBanked < summary.festivalSkipped ? '; the bank is full' : ''}.{:else}The bonus-time bank is full, so none of it was banked.{/if}
+        </li>
       {:else if summary.kills === 0 && summary.goldGained <= 0 && summary.itemsGained === 0 && summary.attrLevels.length === 0 && summary.skillLevels.length === 0}
         <li class="dim">Not much happened — pick an activity before you leave next time!</li>
       {/if}

@@ -130,12 +130,12 @@
           <div class="rung" class:current class:sealed={status === 'sealed'} class:sibling={row.sibling}>
             <div class="rung-main">
               <span class="rung-name">
-                {#if locked}🔒{:else if status === 'cleared'}✅{:else if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}
+                {#if locked}🔒{:else if status === 'cleared'}✅{:else if status === 'open' && (verdict === 'closed' || verdict === 'shut')}🚪{:else if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}
                 <b>{floor.name}</b>
                 <span class="dim small">Floor {floor.index} · {bandName(floor)}{row.sibling ? ' · any order' : ''}</span>
                 {#if current}<span class="here">you are here</span>{/if}
               </span>
-              {#if (status === 'open' || status === 'cleared') && !current && !locked && verdict !== 'shut'}
+              {#if (status === 'open' || status === 'cleared') && !current && !locked && verdict !== 'shut' && verdict !== 'closed'}
                 <button
                   class="small"
                   class:forfeit={verdict === 'forfeit'}
@@ -155,6 +155,11 @@
             <!-- The terms are the teaching: a shut door always says what opens it. -->
             {#if locked}
               <div class="term small">🔒 Shut after a lost festival attempt: {msToTime(lockoutLeft(gs) * MS_PER_TICK)} of play, or the next prestige.</div>
+            {:else if (status === 'open' || status === 'cleared') && verdict === 'closed'}
+              <!-- The royale has no door of its own: an attempt reaches it from floor 15's hall. -->
+              <div class="term small dim">🏟️ Entered from floor 15’s hall, during a festival attempt.</div>
+            {:else if (status === 'open' || status === 'cleared') && verdict === 'shut'}
+              <div class="term small dim">🚪 Opens from the hall once the dark room is empty.</div>
             {:else if status === 'gated'}
               {#each termList(floor.gate) as term}
                 <div class="term small">🔒 {term}</div>

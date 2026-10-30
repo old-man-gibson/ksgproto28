@@ -37,13 +37,20 @@ import {
 } from '../src/core/systems/royaleField';
 import { royalePlan } from '../src/core/systems/royale';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
-import { festivalHolds, festivalLocked, festivalRun, lockoutLeft, survivorLevel } from '../src/core/systems/festivalRules';
+import {
+  festivalHolds,
+  festivalLadder,
+  festivalLocked,
+  festivalRun,
+  lockoutLeft,
+  survivorLevel,
+} from '../src/core/systems/festivalRules';
 import { issuedWeapon } from '../src/core/systems/festival';
 import { floorCleared, floorUnlocked } from '../src/core/systems/ladder';
 import { prestigeNow } from '../src/core/systems/prestige';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { createItem } from '../src/core/systems/runes';
-import { runOfflineProgress } from '../src/core/save/offline';
+import { OFFLINE_CAP_MS, catchUpTicks, runOfflineProgress } from '../src/core/save/offline';
 import { deserialize, serialize } from '../src/core/save/save';
 import { BONUS_CAP_TICKS } from '../src/core/systems/bonustime';
 import { MS_PER_TICK } from '../src/core/engine/loop';
@@ -185,6 +192,27 @@ describe('the issued weapon', () => {
     expect(issuedWeapon(s).item).toBeNull();
   });
 
+  it('cannot be sold: it is lent for the attempt', () => {
+    const game = new Game(strong(atFourteen()));
+    const s = game.state;
+    climb(game, DARK_FLOOR);
+    const issued = festivalRun(s)!.issued!;
+    game.unequip('weapon');
+    expect(s.inventory.some((i) => i.uid === issued)).toBe(true);
+    const gold = s.gold;
+    game.sell(issued);
+    game.sellMany([issued]);
+    expect(s.gold).toBe(gold);
+    expect(s.inventory.some((i) => i.uid === issued)).toBe(true);
+    // Anything else still sells.
+    const other = createItem(s, 'iron_sword');
+    s.inventory.push(other);
+    game.sellMany([issued, other.uid]);
+    expect(s.inventory.some((i) => i.uid === other.uid)).toBe(false);
+    expect(s.inventory.some((i) => i.uid === issued)).toBe(true);
+    expect(s.gold).toBeGreaterThan(gold);
+  });
+
   it('kills are counted by the family in hand', () => {
     const game = inHall();
     // The dark room's nine fell to the issued rusty sword.
@@ -205,6 +233,27 @@ describe('the dark room', () => {
     expect(s.stats['boss:f15_dark_room']).toBe(1);
     expect(floorCleared(s, FLOORS[DARK_FLOOR])).toBe(true);
     expect(s.stats['kills']).toBe(DARK_ROOM_WAVES.flat().length);
+  });
+
+  it('floor 16 has no door of its own: with no attempt the ladder refuses it, though floor 15 reads cleared', () => {
+    // A room emptied, then the attempt lost from the hall: the dark room's
+    // latch stays, so the ladder reads floor 15 cleared and floor 16 open.
+    const game = new Game(strong(atFourteen()));
+    const s = game.state;
+    climb(game, DARK_FLOOR);
+    tickUntil(game, () => festivalRun(s)?.phase === 'prep');
+    climb(game, null); // the forfeit
+    s.totalTicks += LOCKOUT_TICKS;
+    expect(floorCleared(s, FLOORS[DARK_FLOOR])).toBe(true);
+    expect(floorUnlocked(s, FLOORS[ROYALE_FLOOR])).toBe(true);
+    expect(festivalLadder(s, ROYALE_FLOOR)).toBe('closed');
+    expect(game.climbTo(ROYALE_FLOOR)).toBe(false);
+    expect(s.travel).toBeNull();
+    expect(s.spot).toBe(FOOT);
+    // The log is capped, so the refusal is read off its newest line.
+    expect(s.log[s.log.length - 1].msg).toContain('Floor 16');
+    // The way in is still the dark room.
+    expect(game.climbTo(DARK_FLOOR)).toBe(true);
   });
 
   it('the climb to floor 16 is shut until the room is empty', () => {
@@ -243,14 +292,69 @@ describe('the festival clock', () => {
     expect(summary.ticks).toBe(0);
   });
 
-  it('banks at most the cap, and a short gap banks too', () => {
+  it('banks at most the cap, and a short gap banks too (the quiet path, catchUpTicks)', () => {
     const game = inHall();
     const s = game.state;
     s.bonusTime.banked = 0;
+    // Under a minute the summary path declines and the UI's quiet path ticks
+    // the gap through catchUpTicks, which banks it instead.
     expect(runOfflineProgress(game, 30 * 1000)).toBeNull();
-    expect(s.bonusTime.banked).toBe((30 * 1000) / MS_PER_TICK);
+    const quiet = catchUpTicks(game, 300);
+    expect(quiet).toEqual({ simulated: 0, skipped: 300, banked: 300 });
+    expect(s.bonusTime.banked).toBe(300);
     runOfflineProgress(game, 24 * 60 * 60 * 1000);
     expect(s.bonusTime.banked).toBe(BONUS_CAP_TICKS);
+  });
+
+  it('the summary reports what the bank took, not the time skipped', () => {
+    const game = inHall();
+    const s = game.state;
+    s.bonusTime.banked = BONUS_CAP_TICKS - 100;
+    const summary = runOfflineProgress(game, 2 * 60 * 60 * 1000)!;
+    expect(summary.festivalSkipped).toBe((2 * 60 * 60 * 1000) / MS_PER_TICK);
+    expect(summary.festivalBanked).toBe(100);
+    expect(s.bonusTime.banked).toBe(BONUS_CAP_TICKS);
+    // A full bank takes nothing, and the summary says so.
+    expect(runOfflineProgress(game, 2 * 60 * 60 * 1000)!.festivalBanked).toBe(0);
+  });
+
+  it('a catch-up whose climb lands in the dark room stops at the door and banks the rest', () => {
+    const s = strong(geared(atFourteen()));
+    const game = new Game(s);
+    expect(game.climbTo(DARK_FLOOR)).toBe(true); // the tab closes mid-ride
+    s.bonusTime.banked = 0;
+    const kills = s.stats['kills'] ?? 0;
+    const summary = runOfflineProgress(game, OFFLINE_CAP_MS)!;
+    // The ride landed and the attempt began, and nothing after it was simulated.
+    expect(s.spot).toBe(DARK_ROOM);
+    expect(festivalRun(s)?.phase).toBe('dark');
+    expect(festivalRun(s)?.wave).toBe(0);
+    expect(s.combat).toBeNull();
+    expect(s.stats['kills'] ?? 0).toBe(kills);
+    expect(s.stats[FESTIVAL_WINS_KEY] ?? 0).toBe(0);
+    expect(lockoutLeft(s)).toBe(0);
+    const all = OFFLINE_CAP_MS / MS_PER_TICK;
+    expect(summary.ticks).toBeGreaterThan(0);
+    expect(summary.ticks).toBeLessThan(200);
+    expect(summary.festivalSkipped).toBe(all - summary.ticks);
+    expect(summary.festivalBanked).toBe(all - summary.ticks);
+    expect(s.bonusTime.banked).toBe(all - summary.ticks);
+  });
+
+  it('the quiet short-gap path stops at the door too', () => {
+    const s = strong(atFourteen());
+    const game = new Game(s);
+    expect(game.climbTo(DARK_FLOOR)).toBe(true);
+    s.bonusTime.banked = 0;
+    const run = catchUpTicks(game, 550); // a 55-second gap, longer than the ride
+    expect(run.simulated).toBeGreaterThan(0);
+    expect(run.simulated).toBeLessThan(550);
+    expect(run.skipped).toBe(550 - run.simulated);
+    expect(run.banked).toBe(run.skipped);
+    expect(s.spot).toBe(DARK_ROOM);
+    expect(festivalRun(s)?.wave).toBe(0);
+    expect(s.combat).toBeNull();
+    expect(s.stats[FESTIVAL_WINS_KEY] ?? 0).toBe(0);
   });
 
   it('runs no catch-up for the world outside either', () => {
