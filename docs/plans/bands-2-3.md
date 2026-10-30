@@ -358,6 +358,45 @@ ward 8's beast in two forms; ward 9's death squire (the death knight exists);
 ward 10's ore eater in four stages. Placeholders with level-appropriate stats
 and basic techniques, as for floors 11–20.
 
+### The four wards as built (2026-10-30, branch `band3-wards`)
+
+Built by a team: an engine builder and two content builders in parallel from
+one base commit, merged and integrated by the manager, reviewed before and
+after. Save version 60.
+
+| Piece | Where |
+|---|---|
+| Positions | `bandPosKey` (ladder.ts), `syncBandPositions` (levels.ts): run at the end of every `checkFloorClears` and from `Game.resyncAnnouncers` (load, import, catch-up, prestige). A floor cleared before positions existed reads 0 |
+| Stamp | combat.ts onKill, when `spotCleared` first holds; set only while under 1 (several spots share one stamp) |
+| Kept wounds | combat.ts `spawnHp`, `pendingWounds`, `woundsForSave` (a save taken mid-fight carries the pending wound). Every fight exit runs through `closeCombat`, which now takes the bus, and emits a new `fight:closed { spot, standing }` event. Two of one monster in a fight keep the larger share. Wounds stay on the stat after a window lapses |
+| Window | systems/wards.ts: `registerWardListeners`, `tickWards(state, bus, catchingUp)` after the festival's tick; the clock is the run stat `<atKey>:clock`. A window can open during catch-up; only its clock stops. The lapse runs `checkFloorClears` so the clear pays at once |
+| Save 60 | migrations.ts: `slain:f7_wreck:giant_spider_queen` → `ward:f7:done`; the old keeper kills of 8–10 → `fights:<keeper>` |
+| Lints | systems/wardValidation.ts (content.test.ts and the forge): stamps need `fightLimit`, shares in (0, 1], windows resolve and stamp their `doneKey`, the floor's clear reads it, keys distinct; `wardStatKeys` registers the engine keys with the stat-key lint. floorRules: `clearSpotIds` reads stamps, `stampClearTableIssues` checks a stamp's spots as one table |
+| Words | src/ui/lib/format.ts: the ladder names the finishing spot live at the ward's position; doors say fight counts and positions in words |
+
+**Floor 7, south** (`pos` = `band:pos:ascent_f7`, `done` = `ward:f7:done`):
+the docks (landing, haven, rats and water slimes 12–13) lead to one road per
+form, revealed and required by position, so the map shows only the live form.
+Position 0: the merchant road, 12 fights of 2–4 bandits (12–13). Positions
+1–2: the stockade (4 fights) and the watchtowers (3, mostly archers), base
+11–12, then the chief's tent (the bandit chief and two escorts, base 12 →
+14 / 17), its doors behind both budgets; a one-way gate from the tent back to
+the docks keeps the camp a loop. Position 3: the burnt camp, the camp demon
+alone (ancient tier, dark damage, base 12 → 21), not forced, modifier pinned.
+The marsh's explore and finds and the Giant Spider Queen are gone from floor
+7 (the queen stays in the roster).
+
+**Floors 8–10** (keeper levels base → positions 0 / 1 / 2 / 3, steps included):
+
+| Floor | Hunts | Keeper |
+|---|---|---|
+| 8, west | young wolves and rats at the gate; wolves, boars and cliff hawks in the old forest (no goblins) | rogue beast, young form at 0–1 (14 / 16), final form at 2–3 (19 / 23), elite, bleeding |
+| 9, north | dolls and zombie slimes; the barrow fields hunt death squires (not knights) | death squire at 0–1 (14 / 16), death knight at 2–3 (base 13: 18 / 22); the knight now pays XP, gold and drops |
+| 10, east | automata and golems; the quarry is now "The Mine" (id kept) | ore eater stages 1–4, one per position (14 / 16 / 19 / 23), armour 6 → 12, weak to bludgeoning |
+
+Not measured: John does not climb past floor 6, so none of these levels has
+been played against a real build.
+
 ## 7. Questions
 
 ### Answered (user, 2026-10-24)

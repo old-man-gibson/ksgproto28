@@ -664,6 +664,44 @@ ceiling: with only a few levels between them, the first pieces reach the cap
 and the rest are free (floor 19's base sits 12 under it). Floor 19's base
 of 33 is kept for now and may be low (FLOOR_IDEAS §4, ruling 5).
 
+**A floor whose content depends on the order — ward positions.** On a band
+with `order: 'any'` (band 3), every floor has a run stat
+`band:pos:<floorId>` (`bandPosKey`, ladder.ts): how many of the band's other
+floors are cleared, kept live while the floor is uncleared and frozen at its
+clear (systems/levels.ts `syncBandPositions`). Gate encounter rows and edges
+with the ordinary conditions: `{ type: 'stat', key: 'band:pos:ascent_f8',
+value: 2 }` is "at least 2", `statMax` is "at most". Floors 8–10 put one row
+per form on their keeper spot and clear on `fights:<keeper>`, so any form's
+kill clears the floor. Keep hunt rows ungated so a cleared floor never goes
+empty. The band's `levelSteps` still add to every rolled spawn.
+
+**One clear, several finishing spots — `stampOnClear`.** A floor clear is an
+AND list, so a floor whose forms finish in different places (floor 7: the
+road, the chief's tent or the demon's camp) clears on a stamp: each finishing
+spot carries `fightLimit` and `stampOnClear: 'ward:f7:done'`, the run stat
+set to 1 when that spot's budget is spent, and the floor's clear reads it.
+The floor rules then treat every spot carrying the stamp as a clear spot and
+check them as ONE encounter table: at every sample some spot must have an
+eligible line, except where the stamp is already set. Give each form's rows
+`statMax <stamp> 0` too, so nothing reopens in a cleared floor.
+
+**A monster that keeps its wounds — `keepsWounds`.** `keepsWounds: { key,
+share }` on a MonsterDef: when a fight ends without its death (the player
+walks away, is knocked out, climbs away), `share × (1 − hp / maxHp)` is
+written to the run stat `key` (written, not added; capped at 0.95), and its
+next spawn starts at `max(1, maxHp × (1 − stored))`. Its death deletes the
+stat. Do not make its spot `forced`: walking away is the retreat.
+
+**A timed threat — `WARD_WINDOWS`.** data/wards.data.ts: a window opens when
+a floor's position reaches `position` with the floor uncleared, and runs
+`ticks` live advances (never offline catch-up; 600 make an in-game hour).
+Killing `monsterId` at `spotId` in time clears the floor through the spot's
+`stampOnClear` (which must be `doneKey`). At the lapse the engine sets
+`goneKey` and `doneKey` together and exactly one of `flags`, silently:
+`fought` if the player ever dealt it damage, else `unmet`. The threat's
+row reads `statMax doneKey 0`. The forge and content.test.ts check every
+entry (systems/wardValidation.ts).
+
 **How a place is drawn — `scene`.** The Location header and the Combat tab's
 battle stage paint the same backdrop behind a place. `scene` on an AREA sets
 it for every spot in the area; `scene` on a SPOT overrides its area's:
