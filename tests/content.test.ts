@@ -54,7 +54,9 @@ import {
   TIERS,
   SEA_SIDES,
   CONVOYS,
+  ROYALE_STRATEGIES,
 } from '../src/core/registry';
+import { festivalContentIssues } from '../src/core/systems/festivalValidation';
 import { RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/types';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCES } from '../src/core/data/resources.data';
@@ -107,6 +109,8 @@ function statCounterValid(key: string): boolean {
     SEA_CRATES_WON, // sea.ts, crates won on a water while present
     SEA_CRATES_OFFLINE, // sea.ts, crates credited during offline catch-up
     SEA_MISSION_DONE, // sea.ts, the run's side killed its floor-14 mission boss
+    'festival:door', // festival.ts: 1 while this attempt's dark room door is open
+    'festival:swift_wins', // festival.ts: royales won after entering early, the hidden title's
   ]);
   if (staticKeys.has(key)) return true;
   // What the fight itself counts, for conditions that learn from doing
@@ -2324,6 +2328,18 @@ describe('towers, bands & floors', () => {
 
   it("a clear spot's encounter table never empties", () => {
     expect(issuesOf('clear-table')).toEqual([]);
+  });
+
+  /**
+   * The Vermin Festival (systems/festivalValidation.ts, mirrored live in
+   * forge/lib/validate.ts): strategies name real moves and sane conditions,
+   * every plan names real strategies, every staged fighter is a monster, and
+   * the two fighters always fought alone at the end are the boss lines the
+   * floors' clears read.
+   */
+  it('the festival’s strategies, plans and staged fighters resolve', () => {
+    const issues = festivalContentIssues({ strategies: ROYALE_STRATEGIES, monsters: MONSTERS, spots: SPOTS });
+    expect(issues.map((i) => `${i.kind} ${i.id}: ${i.message}`)).toEqual([]);
   });
 });
 

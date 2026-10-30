@@ -4,6 +4,8 @@ import { BANDS, FLOORS, FLOOR_BY_AREA, TOWERS, getSpot } from '../registry';
 import { getDerivedStats } from './derived';
 import { abandonCombat, inForcedFight } from './combat';
 import { bandBaseIndex, bandHubAt, bandOpen, floorUnlocked, rungIndex } from './ladder';
+import { beginRoyale, festivalLadder, festivalRun } from './festivalRules';
+import { retreatToSafety } from './safety';
 import { text } from '../text/log';
 
 export {
@@ -109,10 +111,22 @@ function rideFrom(state: GameState, bus: EventBus): TowerDef | null {
 export function climbTo(state: GameState, bus: EventBus, floorId: string | null): boolean {
   const tower = rideFrom(state, bus);
   if (!tower) return false;
-  if (floorId === null) return ride(state, bus, tower, tower.hubSpot, 0);
-  const floor = FLOORS[floorId];
-  if (!floor || floor.towerId !== tower.id || !floor.landing) return false;
-  if (!floorUnlocked(state, floor)) return false;
+  // Where the ride goes, checked before the festival's rules so a refused
+  // climb is never mistaken for a forfeit.
+  const floor: FloorDef | null | undefined = floorId === null ? null : FLOORS[floorId];
+  if (floor === undefined) return false;
+  if (floor && (floor.towerId !== tower.id || !floor.landing || !floorUnlocked(state, floor))) return false;
+  const festival = festivalLadder(state, floorId);
+  if (festival === 'shut') {
+    bus.emit({ type: 'log', msg: text('festival.door_shut'), kind: 'danger' });
+    return false;
+  }
+  if (festival === 'forfeit') return forfeitFestival(state, bus);
+  if (!floor?.landing) return ride(state, bus, tower, tower.hubSpot, 0);
+  // The climb from the hub into the royale: the clock jumps to the end of the
+  // ten days before the ride starts (systems/festivalRules.ts).
+  const run = festivalRun(state);
+  if (festival === 'royale' && run) beginRoyale(run);
   const toIndex = rungIndex(floor);
   return ride(state, bus, tower, floor.landing, toIndex, seamVerb(state, toIndex));
 }
@@ -129,12 +143,27 @@ function seamVerb(state: GameState, toIndex: number): string | undefined {
   return here.seam?.verb;
 }
 
+/**
+ * Leaving floors 15–16 by the ladder before the royale ends is the loss a
+ * knockout would be, with the same ejection (docs/FLOOR_IDEAS.md §5.3 item
+ * 25): the player lands outside the tower, wherever the climb was going.
+ * The attempt's bookkeeping (gear back, the lockout) is systems/festival.ts's,
+ * on the arrival this raises.
+ */
+function forfeitFestival(state: GameState, bus: EventBus): boolean {
+  if (state.combat) abandonCombat(state);
+  retreatToSafety(state, bus, text('festival.forfeit'));
+  return true;
+}
+
 /** Ride the stack to a band's hub (band 3's castle) once the band is open. */
 export function climbToHub(state: GameState, bus: EventBus, bandId: string): boolean {
   const tower = rideFrom(state, bus);
   if (!tower) return false;
   const band = BANDS[bandId];
   if (!band?.hub || band.towerId !== tower.id || !bandOpen(state, band)) return false;
+  // Every band hub is outside the festival: from inside an attempt, a forfeit.
+  if (festivalLadder(state, null) === 'forfeit') return forfeitFestival(state, bus);
   return ride(state, bus, tower, band.hub, bandBaseIndex(band));
 }
 

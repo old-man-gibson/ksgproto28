@@ -52,6 +52,7 @@
   import SpellcraftPanel from './SpellcraftPanel.svelte';
   import AscentPanel from './AscentPanel.svelte';
   import SeaPanel from './SeaPanel.svelte';
+  import FestivalPanel from './FestivalPanel.svelte';
   import Modal from '../lib/Modal.svelte';
   import CookBook from '../lib/CookBook.svelte';
   import { DISCIPLINES } from '../../core/data/disciplines.data';
@@ -248,6 +249,9 @@
 {/snippet}
 
 <MapCard />
+
+<!-- The festival attempt on floors 15–16, while one holds the player. -->
+<FestivalPanel />
 
 {#if gs.travel}
   {@const dest = getSpot(gs.travel.to)}

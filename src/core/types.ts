@@ -635,7 +635,9 @@ export type ModOriginKind =
   | 'status'
   | 'style'
   /** Character level (systems/levels.ts): a flat add to every attribute. */
-  | 'level';
+  | 'level'
+  /** Kept through prestige: the festival's permanent bonus (systems/stash.ts). */
+  | 'legacy';
 
 export interface ModOrigin {
   kind: ModOriginKind;
@@ -3173,6 +3175,12 @@ export interface ItemDef {
    * roll small (fewer slots), chests/legs/greatswords large, the rest medium.
    */
   runeClass?: RuneSizeClass;
+  /**
+   * Kept through prestige in the stronghold stash (PrestigeState.stash): at
+   * every prestige it returns there from wherever it is, and the next run
+   * takes it out again. Only keep-marked items enter the stash.
+   */
+  keep?: boolean;
 }
 
 export interface Affix {
@@ -4905,6 +4913,16 @@ export interface PrestigeState {
    * siege, which runs once. Absent on saves from before it existed.
    */
   stronghold?: boolean;
+  /**
+   * The stronghold stash (FLOOR_IDEAS.md §5.3 item 24): festival tokens and
+   * keep-marked items, the one store a prestige keeps. Copied by
+   * `prestigeNow`; absent on saves from before it existed.
+   */
+  stash?: StrongholdStash;
+  /** Stacks of the festival's permanent bonus taken from tokens (systems/stash.ts). In modFingerprint. */
+  festivalBonus?: number;
+  /** Festival techniques taken from tokens, learned in canonical form at the start of every run. */
+  festivalTechniques?: string[];
   /** The most recent harvest, shown on the post-prestige overlay. */
   lastHarvest: HarvestReport | null;
   /** The post-prestige overlay is owed: it survives a reload and closes only through `leaveReview`. */
@@ -5109,6 +5127,137 @@ export interface TitleDef {
    * deities' miracles may be prepared together. The iconoclast's privilege.
    */
   defiesDogma?: boolean;
+}
+
+// ---------- The Vermin Festival (systems/festival.ts, docs/FLOOR_IDEAS.md §5.3) ----------
+
+/**
+ * What the festival's door holds for the length of an attempt: everything
+ * worn and carried, plus the oil on the held blade. Returned whole when the
+ * attempt ends, won or lost.
+ */
+export interface HeldGear {
+  equipment: Partial<Record<SlotId, ItemInstance>>;
+  inventory: ItemInstance[];
+  sheathed: ItemInstance | null;
+  coating: WeaponCoating | null;
+}
+
+/** An attempt's phases: the dark room's waves, the hub's ten days, the royale. */
+export type FestivalPhase = 'dark' | 'prep' | 'royale';
+
+/**
+ * Where a royale strategy walks its fighter (systems/royaleField.ts): toward
+ * the nearest fighter, toward the weakest one within sight, to the field's
+ * centre, away from the nearest, to the nearest edge, or nowhere.
+ */
+export type RoyaleMove = 'nearest' | 'weakest' | 'centre' | 'away' | 'edge' | 'hold';
+
+/**
+ * A way to move on the royale's field. The player ranks up to three; every
+ * survivor species fights with a list from the same registry
+ * (data/festival.data.ts SURVIVOR_SPECIES). The first strategy in a list
+ * whose `when` holds decides the move.
+ */
+export interface RoyaleStrategyDef {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  move: RoyaleMove;
+  /**
+   * Applies only while these hold: the bearer's health share is below
+   * `hpBelow`, and more than `fieldAbove` (or fewer than `fieldBelow`)
+   * survivors are left on the field, the player not counted.
+   */
+  when?: { hpBelow?: number; fieldAbove?: number; fieldBelow?: number };
+}
+
+/** One survivor on the royale's field. Coordinates are field units, 0 to the field's size. */
+export interface FieldFighter {
+  id: number;
+  /** Its species, a MONSTERS id from SURVIVOR_SPECIES. */
+  monsterId: string;
+  x: number;
+  y: number;
+  /** Coarse health share, 0–1: duels between survivors wound the winner. */
+  hp: number;
+  /** Duels won on the field. Each adds to its level when it meets the player. */
+  wins: number;
+  /** In a duel with another survivor: the foe's id and the world tick it ends. */
+  duel?: { foe: number; until: number };
+  /** In the player's fight. */
+  engaged?: boolean;
+  /** Where it is walking, chosen every few ticks. */
+  goal?: { x: number; y: number };
+}
+
+/**
+ * The royale's field (systems/royaleField.ts runs it, systems/royale.ts
+ * hands its engagements to the battle stage): the survivors still standing
+ * and the player's place among them.
+ */
+export interface RoyaleField {
+  size: number;
+  fighters: FieldFighter[];
+  player: {
+    x: number;
+    y: number;
+    /** Where the player was sent by hand; the strategies resume on arrival. */
+    target?: { x: number; y: number };
+    goal?: { x: number; y: number };
+  };
+  /** Survivors who have fallen to other survivors. */
+  fallen: number;
+}
+
+/** One attempt at the festival, from the dark room to the royale's end. */
+export interface FestivalRun {
+  phase: FestivalPhase;
+  /** Dark room waves won this attempt. */
+  wave: number;
+  /** World tick at which the next dark room wave or royale engagement may start. */
+  nextAt: number;
+  /**
+   * The festival's own clock: ticks since the dark room's door opened. It
+   * moves only while the game runs with the player on floors 15–16, and the
+   * climb into the royale sets it forward to the end of the ten days.
+   */
+  clock: number;
+  /** The clock when the climb into the royale began, before the jump. */
+  enteredAt?: number;
+  held: HeldGear;
+  /** uid of the issued weapon, taken back when the attempt ends. Absent when the pick was bare hands. */
+  issued?: number;
+  /** The royale's field, once the climb into it has begun. */
+  field?: RoyaleField;
+}
+
+/**
+ * A festival token in the stronghold stash, one per hundred festival wins in
+ * a run (§5.3 items 23–24). Spent on one of three: a permanent bonus, a
+ * technique from three offered, or the regalia. `seed` fixes the technique
+ * offer when the token is awarded.
+ */
+export interface FestivalToken {
+  seed: number;
+}
+
+/** The stronghold stash: legacy, copied by every prestige. */
+export interface StrongholdStash {
+  tokens: FestivalToken[];
+  /** Keep-marked items only (ItemDef.keep). */
+  items: ItemInstance[];
+}
+
+/** Run state: absent on saves from before the festival, and reset by a prestige. */
+export interface FestivalState {
+  /** The attempt in progress, if any. */
+  run?: FestivalRun;
+  /** World tick until which floors 15–16 are shut after a lost attempt. */
+  lockedUntil?: number;
+  /** The player's royale strategies, ROYALE_STRATEGIES ids in priority order. Kept between attempts. */
+  plan?: string[];
 }
 
 // ---------- Game state ----------
@@ -5689,6 +5838,12 @@ export interface GameState {
   achievements: Record<string, number>;
   /** Legacy-scoped: the only field a prestige carries forward (systems/prestige.ts). */
   prestige: PrestigeState;
+  /**
+   * The Vermin Festival on floors 15–16 (systems/festival.ts): the attempt in
+   * progress and the lockout after a lost one. Optional: read with defaults,
+   * absent on saves from before it existed.
+   */
+  festival?: FestivalState;
   /** Earned title ids (permanent). */
   titles: string[];
   /** Worn title id (at most one at a time). */

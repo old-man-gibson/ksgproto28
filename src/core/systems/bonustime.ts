@@ -33,7 +33,15 @@ export function isIdle(state: GameState): boolean {
  * the player was made to wait, so it is banked whatever they were doing.
  */
 export function bankTick(state: GameState): void {
-  state.bonusTime.banked = Math.min(BONUS_CAP_TICKS, state.bonusTime.banked + 1);
+  bankTicks(state, 1);
+}
+
+/**
+ * Bank a stretch at once, up to the cap — time away inside the Vermin
+ * Festival, which catch-up does not simulate (save/offline.ts).
+ */
+export function bankTicks(state: GameState, ticks: number): void {
+  state.bonusTime.banked = Math.min(BONUS_CAP_TICKS, state.bonusTime.banked + Math.max(0, ticks));
 }
 
 /** Bank one tick if the player is idle right now. Called at the top of every advance. */

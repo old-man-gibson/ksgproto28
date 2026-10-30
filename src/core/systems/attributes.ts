@@ -27,7 +27,7 @@ import { bandedXpNeeded, settleLevels } from './progression';
 import type { EventBus } from '../engine/events';
 import { ACHIEVEMENTS, SKILLS, SUPERATTRS, TITLES } from '../registry';
 import { itemDefOf } from './assembly';
-import { endowmentBonus, talentBonus } from './legacy';
+import { endowmentBonus, festivalBonusMods, festivalBonusStacks, talentBonus } from './legacy';
 
 // ---------- Training (the skill-like base layer) ----------
 
@@ -132,6 +132,7 @@ const TRAINING: ModOrigin = { kind: 'training' };
 const TITLE: ModOrigin = { kind: 'title' };
 const BUFF: ModOrigin = { kind: 'buff' };
 const LEVEL: ModOrigin = { kind: 'level' };
+const LEGACY: ModOrigin = { kind: 'legacy' };
 
 const ATTR_IDS: ReadonlySet<string> = new Set(ATTRIBUTE_LIST.map((a) => a.id));
 
@@ -286,6 +287,11 @@ export function collectBaseMods(
       push(m, `Title: ${TITLES[state.title]!.name} (worn)`, TITLE);
     }
   }
+
+  // The Vermin Festival's permanent bonus (systems/stash.ts): stacks taken
+  // from festival tokens, kept through prestige. Its count is in modFingerprint.
+  const festivalStacks = festivalBonusStacks(state);
+  for (const m of festivalBonusMods(state)) push(m, `Festival bonus ×${festivalStacks}`, LEGACY);
 
   if (state.combat) {
     for (const buff of state.combat.buffs) {

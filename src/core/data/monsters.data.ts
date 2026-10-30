@@ -2134,6 +2134,98 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
 
   // ==== FESTIVAL: monsters (skeleton 2026-10-30; the festival builder's section) ====
+  // The Vermin Festival's placeholders (systems/festival.ts). Stats beside the
+  // floor 11 placeholders and the hobgoblin, levels pinned by
+  // data/festival.data.ts. Every fight is staged, so none of them roll a
+  // modifier or a rarity. They drop nothing and carry no gold: the festival
+  // pays at its end, and reruns pay nothing (§5.3 item 17). No art.
+  ph_room_brawler: {
+    id: 'ph_room_brawler',
+    name: 'Room Brawler (placeholder)',
+    icon: '🔪',
+    tags: ['humanoid', 'living'],
+    tier: 'veteran',
+    damageType: 'slashing',
+    inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.15 }],
+    rotation: [{ technique: 'hamstring' }, { technique: 'lunge' }, { technique: 'gather' }],
+    attrs: { str: 10, dex: 9, con: 9, int: 4, wis: 4, cha: 4 },
+    growth: { str: 1.1, dex: 1.0, con: 1.0, int: 0.5, wis: 0.5, cha: 0.5 },
+    xp: 30,
+    loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 100 }] },
+  },
+  ph_room_bruiser: {
+    id: 'ph_room_bruiser',
+    name: 'Room Bruiser (placeholder)',
+    icon: '🪓',
+    tags: ['humanoid', 'living', 'large'],
+    tier: 'veteran',
+    damageType: 'bludgeoning',
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'gather' }],
+    attrs: { str: 13, dex: 6, con: 12, int: 3, wis: 4, cha: 3 },
+    growth: { str: 1.3, dex: 0.7, con: 1.3, int: 0.4, wis: 0.5, cha: 0.4 },
+    xp: 36,
+    loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 100 }] },
+  },
+  // The last of the dark room's nine: fought alone, and floor 15's boss line.
+  ph_room_last: {
+    id: 'ph_room_last',
+    name: 'Last of the Room (placeholder)',
+    icon: '☠️',
+    tags: ['humanoid', 'living'],
+    tier: 'elite',
+    damageType: 'slashing',
+    group: { min: 1, max: 1 },
+    inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.2 }],
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'dirty_stab' }, { technique: 'gather' }],
+    attrs: { str: 15, dex: 11, con: 14, int: 6, wis: 6, cha: 7 },
+    growth: { str: 1.4, dex: 1.1, con: 1.4, int: 0.6, wis: 0.7, cha: 0.8 },
+    xp: 150,
+    loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 100 }] },
+  },
+  // The other rooms' survivors, on the royale's field.
+  ph_survivor_blade: {
+    id: 'ph_survivor_blade',
+    name: 'Survivor Blade (placeholder)',
+    icon: '🗡️',
+    tags: ['humanoid', 'living'],
+    tier: 'veteran',
+    damageType: 'piercing',
+    inflicts: [{ id: 'bleeding', intensity: 1, chance: 0.2 }],
+    rotation: [{ technique: 'lunge' }, { technique: 'dirty_stab' }, { technique: 'pocket_sand' }, { technique: 'gather' }],
+    attrs: { str: 11, dex: 12, con: 10, int: 5, wis: 5, cha: 5 },
+    growth: { str: 1.1, dex: 1.3, con: 1.1, int: 0.5, wis: 0.6, cha: 0.5 },
+    xp: 40,
+    loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 100 }] },
+  },
+  ph_survivor_brute: {
+    id: 'ph_survivor_brute',
+    name: 'Survivor Brute (placeholder)',
+    icon: '🔨',
+    tags: ['humanoid', 'living', 'large'],
+    tier: 'veteran',
+    damageType: 'bludgeoning',
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'crosscut' }, { technique: 'gather' }],
+    attrs: { str: 14, dex: 7, con: 13, int: 3, wis: 4, cha: 3 },
+    growth: { str: 1.4, dex: 0.7, con: 1.4, int: 0.4, wis: 0.5, cha: 0.4 },
+    xp: 44,
+    loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 100 }] },
+  },
+  // The last survivor on the field, fought alone: beating it wins the royale.
+  ph_survivor_champion: {
+    id: 'ph_survivor_champion',
+    name: 'Champion of the Field (placeholder)',
+    icon: '👑',
+    tags: ['humanoid', 'living'],
+    tier: 'elite',
+    damageType: 'slashing',
+    group: { min: 1, max: 1 },
+    inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.25 }],
+    rotation: [{ technique: 'crosscut' }, { technique: 'finishing_cut' }, { technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'gather' }],
+    attrs: { str: 17, dex: 13, con: 16, int: 6, wis: 7, cha: 8 },
+    growth: { str: 1.6, dex: 1.2, con: 1.6, int: 0.6, wis: 0.8, cha: 0.9 },
+    xp: 220,
+    loot: { rolls: 1, entries: [{ kind: 'nothing', weight: 100 }] },
+  },
 
   // ==== ABERRANT: monsters (skeleton 2026-10-30; the aberrant builder's section) ====
 

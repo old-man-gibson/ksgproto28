@@ -37,6 +37,7 @@ import { BANDS, FLOORS, TOWERS } from './data/towers.data';
 import { PRESTIGE_BOONS, PRESTIGE_SOURCES, PRESTIGE_UNLOCK } from './data/prestige.data';
 import { TUTORIAL_STEPS, TUTORIAL_STEP_LIST } from './data/tutorial.data';
 import { CONVOYS, SEA_SIDES } from './data/sea.data';
+import { ROYALE_STRATEGIES } from './data/festival.data';
 
 export {
   SKILLS,
@@ -101,6 +102,7 @@ export {
   TUTORIAL_STEP_LIST,
   SEA_SIDES,
   CONVOYS,
+  ROYALE_STRATEGIES,
 };
 
 export interface Edge extends Connection {

@@ -109,6 +109,10 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     quests: {},
     achievements: {},
     prestige: freshPrestigeState(),
+    // Present though empty: a prestige, a hard reset and an import assign a
+    // fresh state INTO the live one, and a key missing here would survive
+    // them. JSON drops it, so the save's shape does not change.
+    festival: undefined,
     titles: [],
     title: null,
     stats: {},

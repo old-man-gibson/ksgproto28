@@ -16,7 +16,9 @@
   } from '../../core/systems/towers';
   import { BANDS, bandsOf, floorsInBand, getSpot } from '../../core/registry';
   import type { BandDef, FloorDef, UnlockCondition } from '../../core/types';
-  import { termText, ticksToTime } from '../lib/format';
+  import { festivalLadder, festivalLocked, lockoutLeft } from '../../core/systems/festivalRules';
+  import { msToTime, termText, ticksToTime } from '../lib/format';
+  import { MS_PER_TICK } from '../../core/engine/loop';
 
   const tower = $derived(towerAt(gs));
   const here = $derived(currentFloor(gs));
@@ -86,38 +88,74 @@
     const step = bandLevelStep(gs, { areaId: floors[0]?.areaId ?? '' });
     return `${cleared} of ${floors.length} cleared · monsters +${step} levels`;
   }
+
+  /**
+   * Inside a festival attempt every climb but the one into the royale is a
+   * forfeit (systems/festivalRules.ts), so those buttons ask twice. `armed`
+   * is the destination the first click picked: a floor id, `hub` or
+   * `band:<id>`.
+   */
+  let armed = $state<string | null>(null);
+  const inFestival = $derived(festivalLadder(gs, null) === 'forfeit');
+
+  /** Run a climb, or arm it first when it would forfeit the festival. */
+  function climbOrArm(key: string, forfeits: boolean, go: () => void) {
+    if (forfeits && armed !== key) {
+      armed = key;
+      return;
+    }
+    armed = null;
+    go();
+  }
 </script>
 
 {#if tower && rungs.length > 0}
   <div class="panel" style="margin-top: 12px">
     <h3>{tower.icon} {tower.name}</h3>
     {#if tower.desc}<p class="dim small">{tower.desc}</p>{/if}
+    {#if inFestival}
+      <p class="forfeit-note small">
+        🎪 Inside the festival, every climb but the one into the royale is a forfeit: you land outside the tower and
+        floors 15–16 shut for three days or until the next prestige.
+      </p>
+    {/if}
     <div class="ladder">
       {#each rows as row (row.kind === 'floor' ? row.floor.id : `hub:${row.band.id}`)}
         {#if row.kind === 'floor'}
           {@const floor = row.floor}
           {@const status = rungStatus(gs, floor)}
           {@const current = here?.id === floor.id}
+          {@const locked = festivalLocked(gs, floor)}
+          {@const verdict = festivalLadder(gs, floor.id)}
           <div class="rung" class:current class:sealed={status === 'sealed'} class:sibling={row.sibling}>
             <div class="rung-main">
               <span class="rung-name">
-                {#if status === 'cleared'}✅{:else if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}
+                {#if locked}🔒{:else if status === 'cleared'}✅{:else if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}
                 <b>{floor.name}</b>
                 <span class="dim small">Floor {floor.index} · {bandName(floor)}{row.sibling ? ' · any order' : ''}</span>
                 {#if current}<span class="here">you are here</span>{/if}
               </span>
-              {#if (status === 'open' || status === 'cleared') && !current}
+              {#if (status === 'open' || status === 'cleared') && !current && !locked && verdict !== 'shut'}
                 <button
                   class="small"
+                  class:forfeit={verdict === 'forfeit'}
                   disabled={gs.recovering || !!gs.combat?.forced}
-                  onclick={() => game.climbTo(floor.id)}
+                  onclick={() => climbOrArm(floor.id, verdict === 'forfeit', () => game.climbTo(floor.id))}
                 >
-                  {moveLabel(rungIndex(floor))} · {ticksToTime(climbTicks(rungIndex(floor)))}
+                  {#if verdict === 'forfeit'}
+                    {armed === floor.id ? 'Confirm: forfeit the festival' : `Forfeit · ${moveLabel(rungIndex(floor))}`}
+                  {:else if verdict === 'royale'}
+                    Enter the royale · {ticksToTime(climbTicks(rungIndex(floor)))}
+                  {:else}
+                    {moveLabel(rungIndex(floor))} · {ticksToTime(climbTicks(rungIndex(floor)))}
+                  {/if}
                 </button>
               {/if}
             </div>
             <!-- The terms are the teaching: a shut door always says what opens it. -->
-            {#if status === 'gated'}
+            {#if locked}
+              <div class="term small">🔒 Shut after a lost festival attempt: {msToTime(lockoutLeft(gs) * MS_PER_TICK)} of play, or the next prestige.</div>
+            {:else if status === 'gated'}
               {#each termList(floor.gate) as term}
                 <div class="term small">🔒 {term}</div>
               {/each}
@@ -149,10 +187,15 @@
               {#if status === 'open' && !current}
                 <button
                   class="small"
+                  class:forfeit={inFestival}
                   disabled={gs.recovering || !!gs.combat?.forced}
-                  onclick={() => game.climbToHub(band.id)}
+                  onclick={() => climbOrArm(`band:${band.id}`, inFestival, () => game.climbToHub(band.id))}
                 >
-                  {moveLabel(bandBaseIndex(band))} · {ticksToTime(climbTicks(bandBaseIndex(band)))}
+                  {#if inFestival}
+                    {armed === `band:${band.id}` ? 'Confirm: forfeit the festival' : `Forfeit · ${moveLabel(bandBaseIndex(band))}`}
+                  {:else}
+                    {moveLabel(bandBaseIndex(band))} · {ticksToTime(climbTicks(bandBaseIndex(band)))}
+                  {/if}
                 </button>
               {/if}
             </div>
@@ -180,10 +223,15 @@
             {#if !atHub}
               <button
                 class="small"
+                class:forfeit={inFestival}
                 disabled={gs.recovering || !!gs.combat?.forced}
-                onclick={() => game.climbTo(null)}
+                onclick={() => climbOrArm('hub', inFestival, () => game.climbTo(null))}
               >
-                {tower.direction === 'down' ? 'Climb out' : 'Descend'} · {ticksToTime(climbTicks(0))}
+                {#if inFestival}
+                  {armed === 'hub' ? 'Confirm: forfeit the festival' : 'Forfeit · Leave the tower'}
+                {:else}
+                  {tower.direction === 'down' ? 'Climb out' : 'Descend'} · {ticksToTime(climbTicks(0))}
+                {/if}
               </button>
             {/if}
           </div>
@@ -252,5 +300,16 @@
 
   .term {
     margin-top: 4px;
+  }
+
+  /* A climb that forfeits the festival: the warm danger hue, never the blue arc. */
+  .forfeit-note {
+    color: var(--danger);
+    margin: 4px 0 8px;
+  }
+
+  button.forfeit {
+    border-color: var(--danger);
+    color: var(--danger);
   }
 </style>

@@ -282,10 +282,10 @@ export const SPOTS_TEXT: ProseTable = {
   'f14_beast_lair.desc': 'The navy’s mission: the Sea Beast and four Brood Matrons, level 33. One fight, started when you choose. Winning it clears floor 14. Placeholder text.',
 
   // ==== FESTIVAL: spot text (skeleton 2026-10-30; the festival builder's section) ====
-  'f15_landing.desc': 'Skeleton landing of floor 15. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 32 to 33. Placeholder text.',
-  'f15_keeper.desc': 'Skeleton keeper of floor 15. One fight, started when you choose, level 35. Winning it clears floor 15. Placeholder text.',
-  'f16_landing.desc': 'Skeleton landing of floor 16. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 34 to 35. Placeholder text.',
-  'f16_keeper.desc': 'Skeleton keeper of floor 16. One fight, started when you choose, level 37. Winning it clears floor 16. Placeholder text.',
+  'f15_dark_room.desc': 'A sealed room on floor 15 with nine other people in it. Arriving here starts a festival attempt: the door holds all your gear until it ends and issues one plain weapon of your family. The nine come at you in waves, the last alone, and none of it can be fled. The door to the hall opens when you are the only one standing. A knockout, or the ladder out, loses the attempt. Placeholder text.',
+  'f15_hall.desc': 'The hall behind the dark room’s door, where the survivors of ten rooms wait out ten festival days. No one fights here. The benches are a rest, the floor is a training yard, and a cooking fire burns at one end. The festival’s clock runs only while the game does. Placeholder text.',
+  'f15_stores.desc': 'The festival’s stores: a few rations, some meat and two salves per attempt, found by searching. They restock when the next attempt starts. Placeholder text.',
+  'f16_arena.desc': 'The royale’s field on floor 16. In an attempt, the survivors fight each other and come at you one or two at a time, stronger as the field empties; the last one standing is fought alone, and beating it wins the festival. Outside an attempt the field is empty: attempts start in the dark room on floor 15. Placeholder text.',
 
   // ==== ABERRANT: spot text (skeleton 2026-10-30; the aberrant builder's section) ====
   'f17_landing.desc': 'Skeleton landing of floor 17. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 36 to 37. Placeholder text.',

@@ -12,8 +12,9 @@ import { smithingContentIssues } from '../../src/core/systems/assemblyValidation
 import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
 import { SPINE_EXEMPT, offLadderDoor } from '../../src/core/data/towers.data';
 import { seaContentIssues } from '../../src/core/systems/seaValidation';
+import { festivalContentIssues } from '../../src/core/systems/festivalValidation';
 import type { ConvoyDef, SeaSideDef } from '../../src/core/data/sea.data';
-import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
+import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, RoyaleStrategyDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
 import { DAMAGE_TYPE_NAMES } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../../src/core/systems/monsterStats';
@@ -362,6 +363,16 @@ export function validate(store: S): Issue[] {
       }
     }
     for (const issue of exploreIssues(Object.values(spots))) err('spot', issue.spot, issue.message, ['activities']);
+  }
+  // The Vermin Festival (tests/content.test.ts runs the same function):
+  // strategies, the plans that name them, the staged fighters and the two
+  // boss lines the festival floors' clears read.
+  for (const issue of festivalContentIssues({
+    strategies: store.all<RoyaleStrategyDef>('royaleStrategy'),
+    monsters,
+    spots,
+  })) {
+    err(issue.kind, issue.id, issue.message);
   }
 
   // ---------- Spots ----------

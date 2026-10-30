@@ -2,6 +2,7 @@ import type { BandDef, FloorDef, GameState, SpotDef } from '../types';
 import { BANDS, FLOORS, FLOOR_BY_AREA, PRESTIGE_BOONS, floorsInBand } from '../registry';
 import { conditionsMet } from './conditions';
 import { boonRank } from './legacy';
+import { festivalLocked } from './festivalRules';
 
 /**
  * The ladder's reads: which rungs are cleared, open, gated or sealed, where
@@ -80,9 +81,14 @@ export function floorsBelow(floor: FloorDef): FloorDef[] {
  * read counters that only grow), and a pass must not leave a floor that
  * reads cleared but cannot be entered — floor 6's warchief, who still opens
  * prestige, is behind a 40-goblin gate.
+ *
+ * A lost festival attempt shuts floors 15–16 for three days or until the
+ * next prestige (systems/festivalRules.ts), whatever else holds. The floors
+ * above stay as they were: they read cleared, not unlocked.
  */
 export function floorUnlocked(state: GameState, floor: FloorDef): boolean {
   if (floor.bandId === undefined) return false;
+  if (festivalLocked(state, floor)) return false;
   if (!floorsBelow(floor).every((f) => floorCleared(state, f))) return false;
   if (bandPassed(state, floor.bandId)) return true;
   const band = BANDS[floor.bandId];

@@ -221,6 +221,23 @@ export const LOG_TEXT = {
   'equipment.discarded_stack': 'Discarded {icon} {grade}{name} ×{qty}.',
   'equipment.sold_material': 'Sold {icon} {name} ×{qty} for {price} gold.',
 
+  // ---------- festival (systems/festival.ts, systems/royale.ts) ----------
+  'festival.door_held': '🚪 The door holds {pieces} piece{plural} of gear until the festival ends, won or lost. Issued: {issued}.',
+  'festival.door_shut': '🚪 The dark room’s door is shut until the room is empty.',
+  'festival.door_open': '🚪 The dark room is empty and its door opens onto the hub. Ten festival days until the royale on floor 16; the other ninety-nine prepare too.',
+  'festival.forfeit': 'Leaving floors 15–16 by the ladder before the royale ends forfeits the festival.',
+  'festival.field_left': '🏟️ {alive} left on the field.',
+  'festival.lost': '🎪 Festival lost. Your gear is returned; floors 15 and 16 are shut for three days or until the next prestige.',
+  'festival.won': '🏆 The royale is won. Your gear is returned.',
+  'festival.reward': '🎁 The festival pays its winner: {icon} {name}, in your pack. A rerun pays nothing more this run.',
+  'festival.token': '{icon} {name}: {wins} festival wins this run. It goes to your stronghold stash (Prestige tab), which every prestige keeps.',
+
+  // ---------- the stronghold stash (systems/stash.ts) ----------
+  'stash.taken': '🏰 Taken from the stronghold stash: {icon} {name}. The next prestige returns it there.',
+  'stash.bonus': '🎟️ Festival bonus: {stacks} of {cap} stacks, kept through every prestige.',
+  'stash.technique': '🎟️ Festival technique: {icon} {name}, learned in full. Every run from now on starts knowing it.',
+  'stash.regalia': '🎟️ {icon} {name} is in your stronghold stash. Take it out on the Prestige tab; every prestige returns it there.',
+
   // ---------- game ----------
   'game.prestiged': '♻️ Prestige {count}: {points} points harvested.',
   'game.exerting_on': '🔥 Exerting: {style} spends stamina on every bonus it offers.',

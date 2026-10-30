@@ -6,6 +6,7 @@
   import { termsText } from '../lib/format';
   import { forgetLayouts } from '../lib/benchLayouts';
   import PrestigeBoons from '../lib/PrestigeBoons.svelte';
+  import StashPanel from './StashPanel.svelte';
 
   // The PRE-prestige view: what a prestige pays right now (the same function
   // that will pay it), how far each source is from its next point, the
@@ -77,6 +78,9 @@
     <PrestigeBoons />
   </div>
 {/if}
+
+<!-- The stronghold stash: the festival's tokens and kept items (systems/stash.ts). -->
+<StashPanel />
 
 <style>
   table {

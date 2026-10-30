@@ -3,6 +3,7 @@ import type { EventBus } from '../engine/events';
 import { getSpot, SPOTS, STARTING_SPOT } from '../registry';
 import { conditionsMet } from './conditions';
 import { revealMapped } from './mapped';
+import { ejectionSpot, festivalFloorOf } from './festivalRules';
 import { text } from '../text/log';
 
 /**
@@ -38,10 +39,13 @@ export function isUnconditionalHaven(spot: SpotDef): boolean {
  * Record the spot as a haven if it is one. Called on arrival, so "most recent"
  * means most recently STOOD IN rather than most recently seen on the map — you
  * cannot fall back to a camp you only ever heard about.
+ *
+ * Never a festival floor: a knockout there ejects instead, and a knockout
+ * anywhere else must not land the player back inside it.
  */
 export function noteSafeSpot(state: GameState, spotId: string): void {
   const spot = SPOTS[spotId];
-  if (!spot) return;
+  if (!spot || festivalFloorOf(spotId)) return;
   if (canRestAt(state, spot)) state.safeSpots.nearest = spotId;
   if (isUnconditionalHaven(spot)) state.safeSpots.unconditional = spotId;
 }
@@ -50,8 +54,13 @@ export function noteSafeSpot(state: GameState, spotId: string): void {
  * The spot to retreat to, re-validating the nearest haven against the state
  * you are in NOW — the point of the second slot is that the first is allowed
  * to have closed behind you.
+ *
+ * Floors 15–16 are the exception (docs/FLOOR_IDEAS.md §5.3 item 6): a
+ * knockout there lands outside the tower, at its hub (systems/festivalRules.ts).
  */
 export function retreatSpot(state: GameState): string {
+  const ejected = ejectionSpot(state);
+  if (ejected && SPOTS[ejected]) return ejected;
   const nearest = state.safeSpots.nearest;
   if (nearest && SPOTS[nearest] && canRestAt(state, SPOTS[nearest])) return nearest;
 

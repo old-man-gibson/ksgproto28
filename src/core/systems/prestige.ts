@@ -10,6 +10,7 @@ import { boonRank } from './legacy';
 import { carriedCookbook } from './cookbook';
 import { revealMapped } from './mapped';
 import { applyStartingLevel } from './levels';
+import { applyFestivalLegacy, carriedStash } from './stash';
 import { text } from '../text/log';
 
 /**
@@ -190,6 +191,8 @@ export function applyRunStart(state: GameState): void {
     if (rank > 0 && def.effect.kind === 'startGold') state.gold += def.effect.amount * rank;
   }
   applyStartingLevel(state);
+  // Techniques taken from festival tokens are known from the first tick.
+  applyFestivalLegacy(state);
 }
 
 /**
@@ -218,6 +221,7 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
   for (const [id, a] of Object.entries(state.attrs) as [AttributeId, { level: number }][]) {
     peakAttrs[id] = Math.max(peakAttrs[id] ?? 0, a.level);
   }
+  const stash = carriedStash(state);
   // Auto boons: rank 1 arrives with the first prestige, unasked and free.
   const purchases = { ...legacy.purchases };
   for (const def of Object.values(PRESTIGE_BOONS)) {
@@ -234,6 +238,11 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
     cookbook: carriedCookbook(state),
     // One base, unlocked for good (FLOOR_IDEAS.md §5.3 item 3).
     stronghold: !!legacy.stronghold || strongholdHeld(state),
+    // The stronghold stash and what festival tokens bought (§5.3 item 24):
+    // keep-marked items come back to the stash from wherever they are.
+    ...(stash.tokens.length || stash.items.length ? { stash } : {}),
+    ...(legacy.festivalBonus ? { festivalBonus: legacy.festivalBonus } : {}),
+    ...(legacy.festivalTechniques?.length ? { festivalTechniques: [...legacy.festivalTechniques] } : {}),
     lastHarvest: report,
     review: true,
     spentThisReview: 0,

@@ -25,6 +25,9 @@ import { registerBestiaryListeners } from './systems/bestiary';
 import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
 import { registerLevelListeners } from './systems/levels';
 import { registerSeaListeners, tickSea } from './systems/sea';
+import { registerFestivalListeners, tickFestival } from './systems/festival';
+import { clearFieldTarget, moveOnField, setRoyalePlan } from './systems/royale';
+import { spendToken, takeFromStash, type TokenChoice } from './systems/stash';
 import { setHuntRest } from './systems/huntrest';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
@@ -163,6 +166,9 @@ export class Game {
     // flag that the floor-clear check after it reads (systems/sea.ts).
     registerSeaListeners(state, this.bus);
     registerLevelListeners(state, this.bus);
+    // The Vermin Festival: attempts start on arrival in its dark room, and its
+    // staged fights report back through fight:won (systems/festival.ts).
+    registerFestivalListeners(state, this.bus);
     this.bus.on('log', (ev) => {
       if (this.suppressLog) return;
       appendLog(this.state, {
@@ -252,6 +258,10 @@ export class Game {
     // After the activity: kills made on this tick count toward the leg in
     // progress, and a leg that ends now resolves (systems/sea.ts).
     tickSea(this.state, this.bus, this.catchingUp);
+    // The Vermin Festival's own clock and its staged fights, after whatever
+    // the tick resolved (systems/festival.ts). Travel included: the clock
+    // runs during a climb between its floors.
+    tickFestival(this.state, this.bus);
     // Time passes whatever you are doing — travel included — and the sense of
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);
@@ -387,6 +397,35 @@ export class Game {
   /** Ride the ladder to a band's hub (band 3's castle). */
   climbToHub(bandId: string): boolean {
     return climbToHub(this.state, this.bus, bandId);
+  }
+
+  // ---- The Vermin Festival's royale (systems/royale.ts) ----
+
+  /** Walk to a point on the royale's field by hand; the plan resumes on arrival. */
+  moveOnField(x: number, y: number): boolean {
+    return moveOnField(this.state, x, y);
+  }
+
+  /** Drop a hand-set destination on the field: the plan decides again. */
+  clearFieldTarget(): void {
+    clearFieldTarget(this.state);
+  }
+
+  /** Rank the strategies the player moves by on the field. */
+  setRoyalePlan(ids: string[]): void {
+    setRoyalePlan(this.state, ids);
+  }
+
+  // ---- The stronghold stash (systems/stash.ts) ----
+
+  /** Spend a festival token on one of its three choices. */
+  spendFestivalToken(index: number, choice: TokenChoice): boolean {
+    return spendToken(this.state, this.bus, index, choice);
+  }
+
+  /** Take a kept item out of the stash into the pack. */
+  takeFromStash(index: number): boolean {
+    return takeFromStash(this.state, this.bus, index);
   }
 
   /** Equip an item; `slot` forces a hand (off-hand sword, main-hand buckler). */

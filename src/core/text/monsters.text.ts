@@ -155,6 +155,12 @@ export const MONSTERS_TEXT: ProseTable = {
   'ph_port_warden.desc': 'Placeholder elite, the merchants’ mission boss on floor 14: the raider who holds the closed port. Spawns with four Pirate Captains. Bludgeoning attacks. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, gold and iron ingots.',
 
   // ==== FESTIVAL: monster text (skeleton 2026-10-30; the festival builder's section) ====
+  'ph_room_brawler.desc': 'Placeholder humanoid in the Vermin Festival’s dark room. Slashing attacks with a chance to bleed. Fights with Hamstring, Lunge and Gather. Drops nothing.',
+  'ph_room_bruiser.desc': 'Placeholder large humanoid in the Vermin Festival’s dark room. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops nothing.',
+  'ph_room_last.desc': 'Placeholder elite humanoid: the last of the dark room’s nine, always fought alone. Beating it clears floor 15. Slashing attacks with a chance to bleed. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops nothing.',
+  'ph_survivor_blade.desc': 'Placeholder humanoid on the Vermin Festival’s royale field, a survivor of another room. Piercing attacks with a chance to bleed. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops nothing.',
+  'ph_survivor_brute.desc': 'Placeholder large humanoid on the Vermin Festival’s royale field, a survivor of another room. Bludgeoning attacks. Fights with Heavy Blow, Crosscut and Gather. Drops nothing.',
+  'ph_survivor_champion.desc': 'Placeholder elite humanoid: the last survivor on the royale field, always fought alone. Beating it wins the festival. Slashing attacks with a chance to bleed. Fights with Crosscut, Finishing Cut, Heavy Blow, Hamstring and Gather. Drops nothing.',
 
   // ==== ABERRANT: monster text (skeleton 2026-10-30; the aberrant builder's section) ====
 

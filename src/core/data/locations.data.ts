@@ -86,8 +86,8 @@ export const AREAS: Record<string, AreaDef> = {
   ascent_f13_area: { id: 'ascent_f13_area', name: 'The Blockade', regionId: 'the_ascent' },
   ascent_f14_area: { id: 'ascent_f14_area', name: 'The Final Mission', regionId: 'the_ascent' },
   // ==== FESTIVAL: areas (skeleton 2026-10-30; the festival builder's section) ====
-  ascent_f15_area: { id: 'ascent_f15_area', name: 'The Dark Room (placeholder)', regionId: 'the_ascent' },
-  ascent_f16_area: { id: 'ascent_f16_area', name: 'The Royale (placeholder)', regionId: 'the_ascent' },
+  ascent_f15_area: { id: 'ascent_f15_area', name: 'The Dark Room and the Hall', regionId: 'the_ascent', scene: 'hall' },
+  ascent_f16_area: { id: 'ascent_f16_area', name: 'The Royale Field', regionId: 'the_ascent', scene: 'hall' },
   // ==== ABERRANT: areas (skeleton 2026-10-30; the aberrant builder's section) ====
   ascent_f17_area: { id: 'ascent_f17_area', name: 'Floor 17 (placeholder)', regionId: 'the_ascent' },
   // ==== DESERT: areas (skeleton 2026-10-30; the desert builder's section) ====
@@ -2897,63 +2897,92 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   },
 
   // ==== FESTIVAL: spots (skeleton 2026-10-30; the festival builder's section) ====
-  // The Vermin Festival: floors 15–16 (§5.3 items 6, 10–20, 23–25). Two spots a floor, placeholder monsters.
-  f15_landing: {
-    id: 'f15_landing',
+  // The Vermin Festival: floors 15–16 (§5.3 items 6, 10–20, 23–25). Nothing
+  // here rolls its encounter table: systems/festival.ts stages every fight
+  // (data/festival.data.ts holds the waves and the field's dials). The tables
+  // are what the bestiary and the lints read. Placeholder monsters.
+  f15_dark_room: {
+    id: 'f15_dark_room',
     name: 'The Dark Room',
-    icon: '🏕️',
+    icon: '🌑',
     areaId: 'ascent_f15_area',
-    map: { x: 50, y: 65 },
-    activities: [
-      { id: 'camp_f15', kind: 'rest', name: 'Camp', icon: '🏕️' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' },
-    ],
-    groupWeights: { 1: 70, 2: 30 },
+    map: { x: 25, y: 45 },
+    tags: ['indoor'],
+    activities: [],
     encounters: [
-      { monsterId: 'ph_siege_raider', weight: 70, level: [32, 33] },
-      { monsterId: 'ph_siege_brute', weight: 30, level: [32, 33] },
+      { monsterId: 'ph_room_brawler', weight: 50, level: [32, 33] },
+      { monsterId: 'ph_room_bruiser', weight: 50, level: [32, 33] },
+      // The last of the nine, fought alone: floor 15's clear.
+      { monsterId: 'ph_room_last', weight: 1, level: [35, 35], boss: true },
     ],
-    connections: [{ to: 'f15_keeper', ticks: 30, label: 'To the Keeper' }],
+    // The door opens when the room is empty, and shuts again at the start of
+    // the next attempt (festival:door, systems/festival.ts).
+    connections: [
+      {
+        to: 'f15_hall',
+        ticks: 20,
+        label: 'Through the Door',
+        returnLabel: 'Back to the Dark Room',
+        revealWhen: [{ type: 'stat', key: 'festival:door', value: 1 }],
+        requires: [{ type: 'stat', key: 'festival:door', value: 1 }],
+      },
+    ],
   },
-  f15_keeper: {
-    id: 'f15_keeper',
-    name: 'The Keeper of Floor 15',
-    icon: '💀',
+  // The hub: ten festival days with what the hall and the stores hold.
+  f15_hall: {
+    id: 'f15_hall',
+    name: 'The Survivors’ Hall',
+    icon: '🏮',
     areaId: 'ascent_f15_area',
-    map: { x: 50, y: 25 },
-    fightLimit: 1,
-    modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Keeper', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_siege_captain', weight: 1, level: [35, 35] }],
+    map: { x: 55, y: 45 },
+    tags: ['indoor'],
+    activities: [
+      { id: 'rest_f15_hall', kind: 'rest', name: 'Sleep on the Benches', icon: '🛏️' },
+      { id: 'train_f15_drill', kind: 'train', attr: 'str', name: 'Drill With the Others', icon: '🤺' },
+      { id: 'train_f15_spar', kind: 'train', attr: 'dex', name: 'Spar Between the Benches', icon: '🥊' },
+    ],
+    benches: ['cooking'],
+    connections: [{ to: 'f15_stores', ticks: 15, label: 'To the Stores', returnLabel: 'Back to the Hall' }],
+  },
+  // Limited by its search: the limits restart with every attempt.
+  f15_stores: {
+    id: 'f15_stores',
+    name: 'The Ration Stores',
+    icon: '📦',
+    areaId: 'ascent_f15_area',
+    map: { x: 78, y: 35 },
+    tags: ['indoor'],
+    activities: [
+      {
+        id: 'search_f15_stores',
+        kind: 'search',
+        name: 'Search the Stores',
+        icon: '🔍',
+        ticksPer: 120,
+        rewards: [
+          { id: 'rations', weight: 3, limit: 3, material: { id: 'travelers_ration', qty: 2 } },
+          { id: 'meat', weight: 2, limit: 2, material: { id: 'raw_meat', qty: 3 } },
+          { id: 'salve', weight: 2, limit: 2, material: { id: 'healing_salve', qty: 1 } },
+        ],
+      },
+    ],
     connections: [],
   },
-  f16_landing: {
-    id: 'f16_landing',
-    name: 'The Royale',
-    icon: '🏕️',
+  // Floor 16: the royale's field (systems/royale.ts). Empty outside an attempt.
+  f16_arena: {
+    id: 'f16_arena',
+    name: 'The Royale Field',
+    icon: '🏟️',
     areaId: 'ascent_f16_area',
-    map: { x: 50, y: 65 },
-    activities: [
-      { id: 'camp_f16', kind: 'rest', name: 'Camp', icon: '🏕️' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' },
-    ],
-    groupWeights: { 1: 70, 2: 30 },
+    map: { x: 50, y: 40 },
+    activities: [],
     encounters: [
-      { monsterId: 'ph_siege_raider', weight: 70, level: [34, 35] },
-      { monsterId: 'ph_siege_brute', weight: 30, level: [34, 35] },
+      { monsterId: 'ph_survivor_blade', weight: 50, level: [34, 38] },
+      { monsterId: 'ph_survivor_brute', weight: 50, level: [34, 38] },
+      // The field's last survivor, fought alone once every other has fallen:
+      // floor 16's clear.
+      { monsterId: 'ph_survivor_champion', weight: 1, level: [38, 39], boss: true },
     ],
-    connections: [{ to: 'f16_keeper', ticks: 30, label: 'To the Keeper' }],
-  },
-  f16_keeper: {
-    id: 'f16_keeper',
-    name: 'The Keeper of Floor 16',
-    icon: '💀',
-    areaId: 'ascent_f16_area',
-    map: { x: 50, y: 25 },
-    fightLimit: 1,
-    modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Keeper', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_corsair', weight: 1, level: [37, 37] }],
     connections: [],
   },
 
