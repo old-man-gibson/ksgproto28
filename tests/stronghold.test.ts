@@ -68,6 +68,16 @@ describe('the stronghold opens prestige and ends the run', () => {
     expect(next.stats[STRONGHOLD_KEY]).toBeUndefined();
   });
 
+  it('the unasked prestige keeps the bank; a chosen one does not', () => {
+    const auto = held(fresh());
+    auto.bonusTime.banked = 20_000;
+    expect(prestigeNow(auto, 1)!.bonusTime.banked).toBe(20_000);
+    const chosen = fresh();
+    clearFloors(chosen.stats);
+    chosen.bonusTime.banked = 20_000;
+    expect(prestigeNow(chosen, 1)!.bonusTime.banked).toBe(0);
+  });
+
   it('Game.tick prestiges on the tick after the wave is held', () => {
     const game = new Game(held(fresh()));
     game.tick();
@@ -114,6 +124,21 @@ describe('the wave on the wall', () => {
     const s = armed(fresh());
     s.stats[STRONGHOLD_KEY] = 1;
     expect(wallMonsters(s)).toEqual([]);
+  });
+});
+
+describe('the hold door and the wall stair', () => {
+  it('the hold is not a caravan stop, so a save that rode there before cannot ride back in', () => {
+    expect(SPOTS.base_entrance.waypoint).toBeFalsy();
+  });
+
+  it('the wall is reachable only while armed and before the stronghold', () => {
+    const stair = SPOTS.f11_yard.connections.find((c) => c.to === 'f11_wall')!;
+    expect(stair.requires).toEqual([
+      { type: 'quest', id: 'f11_arm_the_wall' },
+      { type: 'statMax', key: STRONGHOLD_KEY, value: 0 },
+    ]);
+    expect(SPOTS.f11_yard.activities.some((a) => a.kind === 'hunt')).toBe(false);
   });
 });
 

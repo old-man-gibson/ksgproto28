@@ -320,6 +320,9 @@ export function validate(store: S): Issue[] {
       }
       const toArea = spots[c.to]?.areaId;
       if (!toArea) continue; // unknown targets are caught by the spot lints
+      if (offLadderDoor(spot.id, c.to) && !c.oneWay) {
+        err('spot', spot.id, `the door to '${c.to}' crosses the ladder and must be oneWay, or its mirror is a free road onto the floor`, ['connections']);
+      }
       if ((bandedAreas.has(spot.areaId) || bandedAreas.has(toArea)) && spot.areaId !== toArea && !offLadderDoor(spot.id, c.to)) {
         err('spot', spot.id, `edge to '${c.to}' crosses a banded floor boundary — the ladder is the only door`, ['connections']);
       }

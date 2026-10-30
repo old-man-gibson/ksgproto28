@@ -100,7 +100,7 @@ export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
       { type: 'statMax', key: 'legacy:stronghold', value: 0 },
     ],
     objectives: [
-      { type: 'kill', monsterId: 'ph_siege_raider', count: 10, at: 'f11_yard' },
+      { type: 'kill', monsterId: 'ph_siege_raider', count: 10, at: 'f11_road' },
       { type: 'collect', materialId: 'iron_ingot', qty: 4, at: 'the_forges' },
     ],
     rewards: { gold: 250, levelXp: 200 },

@@ -240,6 +240,9 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
   };
   next.stats['prestige:count'] = next.prestige.count;
   if (next.prestige.stronghold) next.stats[STRONGHOLD_KEY] = 1;
+  // The stronghold ends the run without asking, so the bank the player had
+  // not spent yet stays theirs; a prestige by choice spends it as before.
+  if (strongholdHeld(state)) next.bonusTime.banked = state.bonusTime.banked;
   // A second life skips the cell: the tutorial is stamped done and the run
   // opens at the Foot. The hold's door is on floor 11 (STRONGHOLD_KEY).
   next.stats[TUTORIAL_DONE_KEY] = 1;

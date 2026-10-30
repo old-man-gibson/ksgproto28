@@ -129,7 +129,8 @@ export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
  * gates nothing. That is what makes hidden/special floors optional content by
  * construction rather than by an author remembering to say so. (The player's
  * hold was the first such floor; on 2026-09-12 it left the tower for a map of
- * its own, behind the first prestige — see the `the_hold` region.)
+ * its own; since 2026-10-30 its door is on floor 11, behind the stronghold —
+ * see the `the_hold` region and OFF_LADDER_DOORS.)
  */
 export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
   // ---- Floor 0: the Holding Level, the tutorial. OFF the ladder (no bandId)

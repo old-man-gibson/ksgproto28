@@ -10,8 +10,10 @@ export const REGIONS: Record<string, RegionDef> = {
   // walls — no darkness training anywhere in Threshold, and no night-fighting
   // penalty either. Districts that want a dark room say so on the spot.
   threshold: { id: 'threshold', name: 'Threshold', terrain: 'plains', mapped: true, tags: ['settlement'], world: { x: 14, y: 22 } },
-  // Your hold — its own map, reached through the door at the Foot, and shut
-  // until the first prestige (`prestige:count`, see the Foot's connection).
+  // Your hold — its own map. Since 2026-10-30 its door is in floor 11's
+  // gatehouse, open once the stronghold is held (`legacy:stronghold`,
+  // FLOOR_IDEAS.md §5.3 item 9); before that it opened from the Foot at the
+  // first prestige.
   // It stopped being a floor of the tower on 2026-09-12; the user's call was
   // "a new map, accessible only once the player has prestiged". NAME AND PIN
   // ARE PLACEHOLDERS (forge-renameable). The atlas pin sits beside the
@@ -110,7 +112,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🚪',
     areaId: 'player_base_v1_area',
     map: { x: 48, y: 68 },
-    waypoint: true,
+    // Not a caravan stop: the door is on floor 11 now, and a save that rode
+    // here before the move would ride in without the stronghold.
     activities: [],
     connections: [
       { to: 'base_main_hall', ticks: 60 },
@@ -2205,19 +2208,22 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     map: { x: 30, y: 40 },
     activities: [
       { id: 'gather_f11_timber', kind: 'gather', material: 'hardwood', ticksPer: 120, name: 'Salvage Timber', icon: '🪵' },
-      { id: 'hunt', kind: 'hunt', name: 'Clear the Yard', icon: '⚔️' },
-    ],
-    groupWeights: { 1: 60, 2: 40 },
-    encounters: [
-      {
-        monsterId: 'ph_siege_raider',
-        weight: 1,
-        level: [23, 24],
-        requires: [{ type: 'statMax', key: 'legacy:stronghold', value: 0 }],
-      },
     ],
     connections: [
-      { to: 'f11_wall', ticks: 20, label: 'Up onto the Wall', returnLabel: 'Down to the Yard' },
+      // The wall is reachable only while the wave is armed and not yet held,
+      // so nobody stands on it hunting an empty table (which spends banked
+      // time on nothing). Hidden on every run after the stronghold.
+      {
+        to: 'f11_wall',
+        ticks: 20,
+        label: 'Up onto the Wall',
+        returnLabel: 'Down to the Yard',
+        revealWhen: [{ type: 'statMax', key: 'legacy:stronghold', value: 0 }],
+        requires: [
+          { type: 'quest', id: 'f11_arm_the_wall' },
+          { type: 'statMax', key: 'legacy:stronghold', value: 0 },
+        ],
+      },
     ],
   },
   // The wave: eight fights, the last always the captain. Shut until both of

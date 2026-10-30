@@ -30,7 +30,7 @@ export const QUESTS_TEXT: ProseTable = {
   'f11_shore_up_the_gate.desc': 'Bring the steward on floor 11 twenty hardwood and fifteen iron scrap. The yard has timber; the road’s raiders drop scrap. Reward: 200 gold, 150 level XP. Placeholder text.',
   'f11_shore_up_the_gate.objectives.0.desc': 'Bring 20 hardwood',
   'f11_shore_up_the_gate.objectives.1.desc': 'Bring 15 iron scrap',
-  'f11_arm_the_wall.desc': 'Clear ten raiders out of the yard and bring four iron ingots. Turning it in opens the wave on the wall. Reward: 250 gold, 200 level XP. Placeholder text.',
+  'f11_arm_the_wall.desc': 'Kill ten raiders on the road and bring four iron ingots. Turning it in opens the way up onto the wall, where the wave comes. Reward: 250 gold, 200 level XP. Placeholder text.',
   'f11_arm_the_wall.objectives.0.desc': 'Kill 10 raiders',
   'f11_arm_the_wall.objectives.1.desc': 'Bring 4 iron ingots',
 };

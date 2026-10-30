@@ -250,7 +250,7 @@ export const SPOTS_TEXT: ProseTable = {
   // Floor 11, the stronghold (FLOOR_IDEAS.md §1.5). Placeholder text.
   'f11_road.desc': 'Landing of floor 11. Camp by the Road is a rest activity, and the landing is a haven. Endless hunt: raiders and brutes, level 22 to 23; they drop iron scrap. After the stronghold is yours, the road also leads on to the harbor. Placeholder text.',
   'f11_gatehouse.desc': 'The stronghold’s gatehouse. The steward gives the two repair quests here. After the stronghold is held, the door to your hold is here. Placeholder text.',
-  'f11_yard.desc': 'Inside the walls. Salvage Timber gathers hardwood (12 s each). Until the stronghold is held: an endless hunt of raiders, level 23 to 24. Placeholder text.',
+  'f11_yard.desc': 'Inside the walls. Salvage Timber gathers hardwood (12 s each). The stair up to the wall opens once Arm the Wall is turned in, and only until the stronghold is held. Placeholder text.',
   'f11_wall.desc': 'The wave, opened by the steward’s second quest: eight fights in groups of two or three, level 24 to 25; the eighth is the Siege Captain and its escort, level 27. Winning the eighth ends the run in an automatic prestige. Shut on every run after the stronghold. The postern leads back to the road. Placeholder text.',
   'f11_quay.desc': 'Placeholder for the harbor. Rest at the Quay is a rest activity, and the quay is a haven. Placeholder text.',
   'f11_roadstead.desc': 'Placeholder for the harbor. One fight, started when you choose: a Corsair and a raider escort, level 26. Winning it clears floor 11. Placeholder text.',

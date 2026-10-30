@@ -89,7 +89,8 @@ where scouting happens.
   tutorial's `leave` step (stood at the Foot = discovered) before the cell.
 - Town roads are ×0.2 of their old length: Foot ↔ district gate 12 ticks
   (1 s), gate ↔ gate 18, gate ↔ room 8. The doors out of town keep theirs
-  (floor 0 → Foot 30, Foot → the hold 90). Walking in town pays
+  (floor 0 → Foot 30, the hold → Foot 90, one-way since the hold's door
+  moved to floor 11 on 2026-10-30). Walking in town pays
   proportionally less Scouting XP (`t.total × 0.08`).
 - NPC lines and spot texts that quote town road seconds say 1 s (2 s for two
   hops); retune them with the ticks.

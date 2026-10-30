@@ -6,7 +6,8 @@ post-prestige overlay.*
 
 ## 1. What it is
 
-A run ends by choice once bands 1 and 2 of the Ascent are cleared (floor 6, since 2026-10-25). The **harvest**
+A run ends by choice once bands 1 and 2 of the Ascent are cleared (floor 6, since 2026-10-25), or
+without asking when floor 11's stronghold is held (2026-10-30, below). The **harvest**
 measures how far the run went along several axes and pays whole **points**;
 the next run starts fresh with only the **legacy block** (`state.prestige`)
 carried over. Points buy **boons**, which hold across every later run.
@@ -53,13 +54,30 @@ All declarative, so the preview can be computed from them.
   UI shows it whenever the flag is up, with no backdrop click and no Escape.
   Leaving requires either `spentThisReview ≥ 1` or a two-step confirmation.
 - **What carries.** `prestige` (count, points, purchases, peaks, the Cook's
-  Book lists, the last harvest, the review flag) and `createdAt` (the world seed
+  Book lists, the stronghold, the last harvest, the review flag) and `createdAt` (the world seed
   — same world, same weather). Everything else is the run's and resets. The reset
   is `createInitialState`, so a new run is exactly a new save plus legacy —
   there is no second "fresh state" to drift.
 - **`stats['prestige:count']`** mirrors `prestige.count`, so content gates
-  read it like any counter. The hold's door at the Foot is the first
-  (`requires: prestige:count ≥ 1`).
+  read it like any counter. The hold's door at the Foot was the first
+  (`requires: prestige:count ≥ 1`); it moved to floor 11 on 2026-10-30 and
+  reads `legacy:stronghold` instead (below).
+
+### The stronghold (2026-10-30, FLOOR_IDEAS.md §1.5, §5.3 items 1–3, 9)
+
+Floor 11's wave is held when every fight on its wall is won
+(`STRONGHOLD_HELD`, data/prestige.data.ts). That opens prestige on its own
+(`canPrestige`), and `Game.tick` prestiges on the next tick without asking
+(`autoPrestigeDue`).
+
+- `prestigeNow` sets `prestige.stronghold` and stamps
+  `stats['legacy:stronghold']` on every later run, which opens the hold's door
+  on floor 11 and shuts the siege for good.
+- The run's banked bonus time carries over on this prestige only: the player
+  did not pick the moment, so the bank they had not spent stays theirs.
+- During offline catch-up the remaining ticks run in the new run, idle at the
+  Foot, and bank as bonus time. The post-prestige overlay is owed when the
+  player returns.
 
 ## 4. Boon effects (`PrestigeBoonEffect`)
 
