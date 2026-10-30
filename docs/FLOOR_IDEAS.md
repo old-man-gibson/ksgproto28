@@ -150,7 +150,7 @@ constraints, condensed from the post:
 | 4–6 | band 2, the Wilds | sequential, goblin camp; prestige at 6 | PR #26 merged |
 | 7–10 | band 3, the castle | hub, four wards any order | skeleton on `band3-machinery` |
 | 11 | the stronghold | take it, fix it up, make workers, hold a monster wave; normal floor from the next prestige on (§5.3) | unwritten |
-| 11–14 | band 4 | own band, four floors; themes come later | unwritten |
+| 11–14 | band 4, the harbor band | harbor side pick, two sea floors, four final missions (idea 3) | banked |
 | 15–16 | the Vermin Festival | dark room of 10, a 10-day prep hub on its own clock, an isometric free-movement battle royale of 100 (§5.3) | unwritten |
 | 17 | special floor | aberrant, one floor | unwritten |
 | 18–20 | band 5 | own band, three floors | unwritten |
@@ -307,6 +307,7 @@ that stays.
 |---|---|---|---|---|
 | 1 | 2026-10-28 | The Five Moons | off-ladder, band 2's goblins, entered from band 3 | Bank |
 | 2 | 2026-10-29 | The warring states band | floors 21–30 (moved from 11–20, §1.5) | Bank |
+| 3 | 2026-10-29 | The harbor band | band 4, floors 11–14 | Bank |
 
 ### Entry template
 
@@ -982,6 +983,221 @@ Clean:
 - secrecy: unmet `revealWhen` edges are invisible; `TitleDef.secret` exists
 
 **Open questions.** None. Q1–Q11 are answered (Rulings, above).
+
+### 3. The harbor band (posted 2026-10-29)
+
+Band: band 4, floors 11–14 · Floors: 4 · Verdict: **Bank** (antagonist fixes
+taken).
+
+It waits on:
+- the floor 11 swap (§1.5), with the stronghold flag carried through
+  `prestigeNow` (objection 3)
+- `SpotDef.preparation` (`escortsLost`, leader statuses), which is on branch
+  `band2-floors` at a22c94a and **not on main**: it landed after PR #26
+  merged, and `band3-machinery` lacks it too
+- band 3 (floors 7–10) shipping, since floor 11 opens on floor 10's clear
+- condition defence getting a system fill (ROLES.md), for the fire ships
+  (objection 5)
+
+**As posted (2026-10-29).** *"alright, floors 11-14 are an adventure floor,
+but of the pirate variety. once floor 10 is cleared, and the player has done
+the personal base siege previously (otherwise doing the siege prestiges
+automatically), the player enters floor 11 and begins it at a harbor, where
+they can talk to people and choose who to go with. for the time being, the
+player can pick between merchants, pirates, privateers or the navy. then
+floors 12 and 13 are sea battles and floor 14 is each group's "final
+mission""*
+
+Later the same day: *"privateers actively attack pirates, while the navy
+escorts the convoy and protects it against monsters"*, and on the merchants:
+*"meet the convoy and do social rolls/dialogue?"* (a question; Q6).
+
+**What the post changes.** §5.3 item 1 said the floor 11 swap happens at the
+next prestige after the stronghold clear. Per this post, clearing the siege
+**is** a prestige: the run that holds the wave ends there, and the next run's
+floor 11 is the harbor. Not a one-liner: objections 2, 3 and 6.
+
+**The place in one line.** The port takes 5% duty per landing and a fifth of
+each prize: merchants pay the duty, the navy lives on it, pirates fence below
+it, privateers pay the fifth to keep their letter. Merchants fund the navy,
+the navy keeps the monsters off the convoys, pirates raid the convoys,
+privateers hunt the pirates.
+
+| Floor | One idea (mechanism) | Boss / preparation | Spots |
+|---|---|---|---|
+| 11 | The harbor. A quay (haven), four berths with a recruiter each, and a roadstead (open water with its own convoy). Accepting a berth's join quest picks the side for the run. Clear: `sea:crates:won` 8 | none; the join quests are the deals | ~6 |
+| 12 | Crossings. Ports are spots, the sea is edges: sailing into open water is a `forced` edge (a boarding), the way back is free. The side decides which lanes exist (`revealWhen` on the accept stamp): trade lanes, hidden coves, patrol lanes, hunting grounds. Route choice: long and weak, short and strong, hidden and cheap. Clear: `sea:crates:won` 40 | named ships sighted and sunk here are escorts missing on floor 14 | ~8 |
+| 13 | The blockade. What was done in port (a pilot hired, a signal book bought) sets the approach (`ApproachSpec`: enemies surprised, or the player flat-footed). Clear: `sea:crates:won` 160 | more named ships; the approach | ~8 |
+| 14 | The final mission. One `FloorDef`, four wings, one per side; each wing stamps `flag:sea:14:done`, which the floor `clear` reads | the side's boss with four escort slots, one per named ship | ~5 a wing |
+
+**Sides.** One row each: `SeaSideDef { id; giver; joinQuest; prey: string[];
+mission }`. A fifth side is a row. Pick = the join quest's accept stamp
+(`flag:quest:<id>:accepted`); each side's content also reads `statMax 0` on
+the other three sides' stamps; per run, as idea 2. Relations are a table read
+by encounter `requires`: pirates prey on convoys; privateers prey on pirates;
+the navy fights sea monsters; merchants fight whatever boards their convoy.
+A taboo is absence from your table, never a penalty counter (counters cannot
+be reset, L3).
+
+| Side | Floor 14 mission | Weakened by 12–13 |
+|---|---|---|
+| Merchants | land the charter cargo past a closed port | harbor master bribed (a gold sink), escort hired, raiders sunk |
+| Pirates | board the treasure galleon | named escorts sunk, a forged signal |
+| Privateers | take the pirate king's flagship as a prize | his captains sunk or taken, the letter renewed |
+| Navy | kill the sea beast that closes the lanes | its brood culled, a lure baited |
+
+The privateer and navy missions changed with the user's later message: the
+pirate king is now the privateers' quarry, and the navy's enemy is monsters.
+
+**The loop that stays: the convoy table.** Each sea floor's open water runs a
+schedule derived from the clock, not stored: convoy index =
+`floor(totalTicks / 3600)`; 8 crates; 4 legs of 300 ticks. Each leg rolls its
+threat: pirate raiders and sea monsters. Each side is one end of the flow,
+with one formula per end:
+
+| Side | Per leg | A kill subtracts | Credit |
+|---|---|---|---|
+| Merchants | crates lost = `clamp(threat − escort, 0, crates)`; the rest are sold at port | one boarder of either kind | crates sold |
+| Navy | crates lost = `clamp(monsters − escort, 0, crates)` | one sea monster | crates kept |
+| Pirates | crates seized = `clamp(raid − guard, 0, crates)` | one guard | crates seized |
+| Privateers | crates recovered = `clamp(raid − pirate crew, 0, carried)` from the pirate ships on the lane, which carry what they seized | one pirate | crates recovered |
+
+`escort` and `raid` come only from the hold burned that leg; no hold burned
+means 0, so an idle player on any side earns nothing. A crate credited
+**while present** (`!isIdle` at the water spot, idea 2's definition, so a
+tick either banks bonus time or counts, never both) adds to
+`sea:crates:won`.
+- Escort and raid ratings are spent, not owned: each leg burns one packed
+  Ration and the Shot it fires (the "hold" a player fills before sailing:
+  shot from smithing, rations from cooking). Salves are drunk in the
+  boardings. That makes the band a consumer for the crafting systems.
+- Example (merchants): threat [3, 3, 4, 4], escort 2. The formula alone
+  loses 1 + 1 + 2 + 2 = 6 crates (2 sold). Killing 2 boarders each on legs 3
+  and 4 loses 1 + 1 (6 sold).
+
+**Hours.**
+- H1: the convoy table never empties; cleared water still runs every 3,600
+  ticks.
+- H2: one endless key, read by the clears (gates stay empty): floor 11
+  `sea:crates:won` 8 (one convoy), 12: 40, 13: 160 (about 20 convoys, ~2 h of
+  play). `sea:*` and the accept stamp are engine-written: two `realStat` lint
+  branches.
+- H3: named ships (`once`, optional) and the four missions' prep.
+- H4: the cargo row sets the drop: rock salt, rough flour, wild honey
+  (cooking); iron, copper, tin, bronze ingots (smithing); grain spirit,
+  brimstone, pressed oil (alchemy). Sea monsters add their own parts.
+- H5: four rosters × three tiers = 12 `MonsterDef`s, a sea-monster line, and
+  4 bosses. No ship sheets on disk, so a ship is its crew on a deck: one new
+  `SceneId`.
+- H6: a re-climb picks another side: other lanes, another end of the flow,
+  another enemy, another mission.
+- H7: offline, legs resolve by formula (hold burned, no kills) at 25%
+  credit, paid as cargo and never to `sea:crates:won`, so a night away cannot
+  pass a gate. The convoy is integers derived from `totalTicks`; it never
+  enters `modFingerprint`.
+- H8: hurdles ask damage (boarders, monsters) and sustain (fire ships and
+  bilge rot as damage over time to outlast, until condition defence has a
+  system fill, ROLES.md). Cooking and smithing feed the hold. Access fills
+  nothing. Mutagens and psionics stay shut.
+
+**Laws.**
+- L1: a haven at every port; every `forced` edge has a free return.
+- L2: the waters are endless; named ships are `once` and only ever remove
+  escorts, so no clear reads them.
+- L3: a knockout goes to the last port.
+- L5: the unprepared mission boss is winnable; preparation only removes
+  escorts or adds statuses (band 2's rule).
+- L7: no hurdle names a system. Fire ships ask sustain until condition
+  defence has a fill.
+
+**Cost.** No save change for the harbor, crossings or convoys (`sea:*`
+stats, accept stamps). Registries: `SEA_SIDES`, `CONVOYS`. Engine: the
+convoy resolver, two `realStat` branches, the pending auto-prestige (and
+`canPrestige` reading the stronghold clear), the floor 11 swap. Content:
+about one floor's work per side (a wing of ~5 spots, 3 quests, 1 boss) plus
+floors 11–13 shared.
+
+**Parked from the brainstorms.** A player ship with classes and broadside
+duels (needs a save bump and a ship stat block outside the fingerprint), and
+banners as disguise items (`colors:*` tags read by `equippedTag`). Both
+compose with this shape later.
+
+**Objections and rulings.** From antagonist-design, 2026-10-29, verdict *fix
+first*; no redesign needed. All taken.
+
+1. **Floors 11–13 had no `clear`, and floor 11 had no water,** so the first
+   counter had no source and the band sealed (`floorCleared` is false with no
+   clear, `towers.ts:62`; the non-empty-clear lint, `content.test.ts:2091`).
+   *Taken:* the roadstead on floor 11; clears 8 / 40 / 160 and
+   `flag:sea:14:done`; gates empty. A crate clear names no spot, so floors
+   11–14 need the spine lint's exemption (Q2).
+2. **Auto-prestige is a silent no-op after a band pass** (confirmed by
+   probe). `PRESTIGE_UNLOCK` reads the floor 6 warchief kill, and
+   `pass_wilds` (on `band3-machinery`) skips floor 6 without writing it, so
+   `prestigeNow` returns null and nothing is logged. *Taken:* `canPrestige`
+   is also true when the stronghold clear holds.
+3. **The stronghold flag would not survive prestige,** and two banded
+   `FloorDef`s at index 11 fail the unique-index lint
+   (`content.test.ts:2105`). `prestigeNow` copies `state.prestige` field by
+   field (`prestige.ts:206-218`). *Taken, as waits on the swap card:*
+   `prestigeNow` carries `legacy.stronghold`; the swap is one `FloorDef`
+   whose area, landing and clear read the flag.
+4. **The convoy formula covered one end of the flow; "present" was
+   undefined.** An idle pirate would have seized crates for nothing, and a
+   tick spent from the bonus bank would count twice. *Taken:* the per-side
+   table (no hold burned, no crates, on every side) and present = `!isIdle`
+   at the water spot.
+5. **Condition defence has no system fill** (ROLES.md: 0 systems; the
+   burning ward drops only from mutagens, shut in alpha). *Taken:* fire
+   ships and bilge rot are sustain hurdles until the ROLES row fills, and the
+   band waits on it like idea 2.
+6. **An auto-prestige inside offline catch-up fires unseen** (confirmed: the
+   clear at tick 5,487 of 18,000 reset the run, the other 17,913 ticks ran on
+   the new run idle, the summary read nothing). *Taken:* the clear stamps the
+   legacy flag and a pending marker; the prestige runs at the top of the next
+   tick; catch-up stops on a pending prestige so the player sees the harvest
+   (Q1).
+7. **Wording and lints.** The other three sides' stamps read `statMax 0`, not
+   each side's own; the accept stamp needs its own `realStat` branch beside
+   `sea:*`. *Taken.*
+8. **Identity (taste).** Salves are drunk in the boardings, so alchemy keeps
+   its in-combat row. Shot makes smithing a consumable producer against its
+   passive-gear row (Q3). Idea 2's fed soldiers and this fed escort share a
+   shape; if both ship, bands 4 and 6 share a loop.
+
+Clean: every `forced` boarding has a free return by construction (edges are
+directional, never mirrored); hidden lanes cannot be routed through
+(`findPath` walks visible edges); kills alone win crates with zero gold and
+an empty hold, so the narrow build clears; crates conserve, integers only,
+at most 80 convoys per 8 h catch-up; the festival's time jump pays nothing
+(no "last seen"); an accept stamp cannot be doubled (`quests.ts:76`); cargo
+is sold, never bought, so no harbor shop mints; every H4 material exists
+except shot.
+
+**Open questions.** Each has a default.
+
+1. **The rest of the night after an offline siege clear.** *Default:*
+   catch-up stops at the clear, the harvest and review overlay show on
+   return, and the remaining offline time goes to the banked-time pool.
+2. **Spine lint exemption for floors 11–14.** The lint asks every floor's
+   clear to name a spot; crate counts name none. *Default:* exempt, with the
+   reason written beside the exemption.
+3. **Shot.** *Default:* smithing makes shot, the one consumable smithing
+   produces; the alternative is alchemy powder (brimstone) as the only
+   ammunition.
+4. **Switching sides.** *Default:* one side per run, no switching, as idea 2.
+5. **Condition defence.** *Default:* sustain hurdles until a system fills the
+   role, then fire ships ask burning defence.
+6. **The merchants' role** (the user's question). The other three each have
+   an enemy; merchants own the convoy. *Default:* merchants run the convoy
+   end to end: pack the hold, pick the route, defend their own cargo when it
+   is boarded (pirates and monsters both), and sell at each port of call.
+   The port sale is the dialogue: a speechcraft-driven negotiation (duty,
+   buyer, price) that sets the **payout per crate**, never the crate count,
+   so `sea:crates:won` still comes from delivery and no gate rests on one
+   skill (L7). A failed negotiation costs price, not progress (L3). The
+   checks are thresholds on speechcraft level against the deal, not dice,
+   so a player can see why a deal went the way it did.
 
 ---
 
