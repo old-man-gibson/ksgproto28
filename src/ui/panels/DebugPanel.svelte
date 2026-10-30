@@ -3,6 +3,7 @@
   import { AFFIXES, FLOORS, ITEMS, MATERIALS, RUNES, SKILLS } from '../../core/registry';
   import { raiseStat } from '../../core/systems/achievements';
   import { stashToken } from '../../core/systems/stash';
+  import { STRONGHOLD_KEY } from '../../core/data/prestige.data';
   import { QUALITY_ORDER, QUALITY_TIERS } from '../../core/data/quality.data';
   import { createItem, grantRune } from '../../core/systems/runes';
   import { grantGraded, isGraded } from '../../core/systems/disciplines';
@@ -148,13 +149,23 @@
 
   // ---- The ladder and the Vermin Festival ----
 
-  /** Stamp the counters every floor below the festival clears on, as if climbed. */
-  function clearBelowFestival() {
+  /**
+   * Stamp the counters every floor below `clearTo` clears on, as if climbed.
+   * Past floor 11 the stronghold is marked held too, as a real climb past it
+   * has been: its wave ends the run, and only later runs reach the harbor.
+   */
+  let clearTo = $state(15);
+  function clearBelow() {
+    const top = Math.max(1, Math.floor(clearTo));
     for (const floor of Object.values(FLOORS)) {
-      if (floor.bandId === undefined || floor.index >= 15) continue;
+      if (floor.bandId === undefined || floor.index >= top) continue;
       for (const c of floor.clear ?? []) if (c.type === 'stat') raiseStat(gs, game.bus, c.key, c.value);
     }
-    say('Floors 1–14 cleared: the ladder reaches the festival.');
+    if (top > 11) {
+      gs.prestige.stronghold = true;
+      raiseStat(gs, game.bus, STRONGHOLD_KEY, 1);
+    }
+    say(`Floors 1–${top - 1} cleared${top > 11 ? ', stronghold held' : ''}: the ladder reaches floor ${top}.`);
   }
 
   let attrLevel = $state(60);
@@ -515,15 +526,16 @@
   <div class="section">
     <div class="label">Ladder &amp; Vermin Festival</div>
     <div class="row">
-      <button onclick={clearBelowFestival}>Clear floors 1–14</button>
+      <input type="number" min="1" max="99" bind:value={clearTo} title="First floor left uncleared" />
+      <button onclick={clearBelow}>Clear every floor below</button>
       <input type="number" min="1" max="999" bind:value={attrLevel} title="Attribute level" />
       <button onclick={setAttrs}>Set every attribute</button>
       <button onclick={festivalDay}>Festival clock +1 day</button>
       <button onclick={giveToken}>Festival token</button>
     </div>
     <div class="dim small">
-      Clearing stamps the counters each floor's clear reads; climb with the ladder as usual. The
-      festival starts in floor 15's dark room.
+      Clearing stamps the counters each floor's clear reads; climb with the ladder as usual. 11 tests
+      the stronghold, 12 the harbor, 15 the festival (it starts in the dark room), 18 the desert.
     </div>
   </div>
 
