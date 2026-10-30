@@ -1258,23 +1258,7 @@ except the battery's new items (cannons, cannonballs, powder charges).
 
 ### 5.2 Open
 
-On the hundred-festival reward (§5.3 item 23). Each has a default.
-
-1. **The consumable across prestige.** Items reset with the run, and the
-   run that earns it may be about to end. *Default:* it carries through
-   prestige in the legacy block until used, as the cookbook does.
-2. **Does the special technique persist?** Techniques reset at prestige
-   today, so a run-only technique is worth less than the permanent bonus.
-   *Default:* the chosen technique is kept through prestige (a legacy list
-   of festival techniques), so all three options are permanent.
-3. **Repeats.** *Default:* one consumable per 100 festival wins in a run
-   (200 earns two); the count restarts each run. Permanent bonuses stack,
-   with a cap held as a dial so the stacking stays steerable.
-4. **The three techniques offered.** *Default:* drawn from a small pool of
-   festival techniques, seeded per award; the pool's contents are content
-   for later.
-
-Parked by the user, to be decided later:
+None with a default. Parked by the user, to be decided later:
 - worker creation (§5.3 item 8), a later part of base building
 - themes for floors 11–14, 17 and 18–20 (§5.3 item 5)
 
@@ -1372,6 +1356,21 @@ Round 4 (with idea 3's rulings):
     is shut in alpha outside the floor 2 tutor, so the technique option
     assumes martial is open by floor 16. Secret-content rules hold: no
     counter or hint until the hundredth win.
+24. **The reward's details** (answers to the four questions asked on item
+    23):
+    - **Across prestige.** *"Normally consumables don't carry over."* This
+      one is stored in the player's stronghold and is not lost. Since the
+      stronghold stays unlocked across prestiges (item 3), its store is a
+      legacy field: a stronghold stash in `state.prestige`, copied by
+      `prestigeNow`, holding only items marked to keep. Every other
+      consumable still resets with the run.
+    - **The technique persists** through prestige: a legacy list of
+      festival techniques, so all three options are permanent.
+    - **Repeats.** One consumable per 100 festival wins in a run (200 earns
+      two); the count restarts each run. Permanent bonuses stack, with a
+      cap held as a dial.
+    - **The three techniques** are drawn from a small pool of festival
+      techniques, seeded per award; the pool's contents come later.
 
 ### 5.4 Asked in round 2 (kept for the record)
 
