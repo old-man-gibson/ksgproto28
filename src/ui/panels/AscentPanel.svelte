@@ -17,7 +17,8 @@
   import { BANDS, bandsOf, floorsInBand, getSpot } from '../../core/registry';
   import type { BandDef, FloorDef, UnlockCondition } from '../../core/types';
   import { festivalLadder, festivalLocked, lockoutLeft } from '../../core/systems/festivalRules';
-  import { termText, ticksToTime } from '../lib/format';
+  import { msToTime, termText, ticksToTime } from '../lib/format';
+  import { MS_PER_TICK } from '../../core/engine/loop';
 
   const tower = $derived(towerAt(gs));
   const here = $derived(currentFloor(gs));
@@ -153,7 +154,7 @@
             </div>
             <!-- The terms are the teaching: a shut door always says what opens it. -->
             {#if locked}
-              <div class="term small">🔒 Shut after a lost festival attempt: {ticksToTime(lockoutLeft(gs))} of play, or the next prestige.</div>
+              <div class="term small">🔒 Shut after a lost festival attempt: {msToTime(lockoutLeft(gs) * MS_PER_TICK)} of play, or the next prestige.</div>
             {:else if status === 'gated'}
               {#each termList(floor.gate) as term}
                 <div class="term small">🔒 {term}</div>

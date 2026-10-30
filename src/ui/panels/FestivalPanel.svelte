@@ -1,9 +1,11 @@
 <script lang="ts">
   import { gs, game } from '../state.svelte';
   import { festivalHolds, festivalRun, prepLeft } from '../../core/systems/festivalRules';
-  import { DARK_ROOM_WAVES, PREP_TICKS, ROYALE_FLOOR, SURVIVORS } from '../../core/data/festival.data';
+  import { ARENA, DARK_ROOM_WAVES, PREP_TICKS, ROYALE_FLOOR, SURVIVORS } from '../../core/data/festival.data';
   import { HOURS_PER_DAY, MINUTES_PER_HOUR, TICKS_PER_GAME_MINUTE } from '../../core/data/climate.data';
-  import { ticksToTime } from '../lib/format';
+  import { msToTime } from '../lib/format';
+  import { MS_PER_TICK } from '../../core/engine/loop';
+  import RoyaleField from '../lib/RoyaleField.svelte';
 
   /**
    * The festival attempt in progress, on floors 15–16 (systems/festival.ts):
@@ -27,7 +29,6 @@
   );
   const wavesLeft = $derived(run ? Math.max(0, DARK_ROOM_WAVES.length - run.wave) : 0);
   const standing = $derived(run ? DARK_ROOM_WAVES.slice(run.wave).flat().length : 0);
-  const field = $derived(run?.field);
 </script>
 
 {#if run}
@@ -41,7 +42,7 @@
     {:else if run.phase === 'prep'}
       <p>
         <b>Festival day {day} of {PREP_DAYS}</b>, {String(hour).padStart(2, '0')}:00. The royale on floor 16 opens on its
-        own in {ticksToTime(prepLeft(run))} of play; the other {SURVIVORS} prepare until then.
+        own in {msToTime(prepLeft(run) * MS_PER_TICK)} of play; the other {SURVIVORS} prepare until then.
       </p>
       <div class="enter">
         <button onclick={() => game.climbTo(ROYALE_FLOOR)} disabled={gs.recovering || !!gs.travel || !!gs.combat}>
@@ -51,14 +52,14 @@
       </div>
     {:else}
       <p>
-        <b>The royale.</b>
-        {#if field}
-          {field.alive} survivor{field.alive === 1 ? '' : 's'} on the field{field.engaged > 0 ? `, ${field.engaged} fighting you` : ''}.
-          The last one is fought alone.
-        {:else}
-          {SURVIVORS} survivors on the field.
-        {/if}
+        <b>The royale.</b> The survivors fight each other and come at you one to three at a time; the last one
+        standing is fought alone, and beating it wins the festival.
       </p>
+      {#if gs.spot === ARENA}
+        <RoyaleField />
+      {:else}
+        <p class="dim small">On the way up to the field: {SURVIVORS} survivors wait there.</p>
+      {/if}
     {/if}
     <p class="dim small">
       🚪 The door holds {heldPieces} piece{heldPieces === 1 ? '' : 's'} of your gear until the attempt ends, won or lost.

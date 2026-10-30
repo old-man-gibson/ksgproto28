@@ -7,14 +7,28 @@ import {
   DARK_FLOOR,
   DARK_ROOM,
   DARK_ROOM_WAVES,
+  DEFAULT_ROYALE_PLAN,
   FESTIVAL_DOOR_KEY,
   FESTIVAL_WINS_KEY,
   LOCKOUT_TICKS,
   PREP_TICKS,
+  ROYALE_FIELD,
   ROYALE_FLOOR,
+  ROYALE_STRATEGIES,
+  SURVIVORS,
   SURVIVOR_LEVELS,
+  SURVIVOR_SPECIES,
   weaponKillsKey,
 } from '../src/core/data/festival.data';
+import {
+  activeStrategy,
+  clearEngaged,
+  createField,
+  goalFor,
+  stepField,
+  type FieldStep,
+} from '../src/core/systems/royaleField';
+import { royalePlan } from '../src/core/systems/royale';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { festivalHolds, festivalLocked, festivalRun, lockoutLeft, survivorLevel } from '../src/core/systems/festivalRules';
 import { issuedWeapon } from '../src/core/systems/festival';
@@ -25,7 +39,7 @@ import { createItem } from '../src/core/systems/runes';
 import { runOfflineProgress } from '../src/core/save/offline';
 import { BONUS_CAP_TICKS } from '../src/core/systems/bonustime';
 import { MS_PER_TICK } from '../src/core/engine/loop';
-import type { GameState } from '../src/core/types';
+import type { FieldFighter, GameState, RoyaleField } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
 /**
@@ -255,8 +269,8 @@ describe('the time jump', () => {
 
   it('the survivors get the rest of their preparation either way', () => {
     const full = SURVIVOR_LEVELS.base + SURVIVOR_LEVELS.growth;
-    expect(survivorLevel(PREP_TICKS, 99)).toBe(full);
-    expect(survivorLevel(0, 99)).toBe(SURVIVOR_LEVELS.base);
+    expect(survivorLevel(PREP_TICKS, 0)).toBe(full);
+    expect(survivorLevel(0, 0)).toBe(SURVIVOR_LEVELS.base);
     // The jump: whatever the clock read, the field opens at the full curve.
     const game = inHall();
     climb(game, ROYALE_FLOOR);
@@ -385,7 +399,190 @@ describe('the ladder out is a forfeit', () => {
   });
 });
 
+describe('the royale field (the pure simulation)', () => {
+  /** A seeded stand-in for the save's rng. */
+  function seeded(seed = 7): () => number {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const plans = new Map(SURVIVOR_SPECIES.map((s) => [s.monsterId, s.plan.map((id) => ROYALE_STRATEGIES[id])]));
+  const step = (now: number, rng: () => number, plan = DEFAULT_ROYALE_PLAN, playerFree = true): FieldStep => ({
+    now,
+    rng,
+    playerFree,
+    playerHp: 1,
+    playerPower: 40,
+    playerSpeed: 1,
+    plan: plan.map((id) => ROYALE_STRATEGIES[id]),
+    planOf: (id) => plans.get(id) ?? [],
+  });
+  const fighter = (id: number, x: number, y: number, extra: Partial<FieldFighter> = {}): FieldFighter => ({
+    id,
+    monsterId: 'ph_survivor_blade',
+    x,
+    y,
+    hp: 1,
+    wins: 0,
+    ...extra,
+  });
+  const fieldOf = (fighters: FieldFighter[], px = 30, py = 58): RoyaleField => ({
+    size: ROYALE_FIELD.size,
+    fighters,
+    player: { x: px, y: py },
+    fallen: 0,
+  });
+
+  it('opens with ninety-nine survivors on the field and the player on its near edge', () => {
+    const field = createField(seeded());
+    expect(field.fighters).toHaveLength(SURVIVORS);
+    for (const f of field.fighters) {
+      expect(f.x).toBeGreaterThanOrEqual(0);
+      expect(f.x).toBeLessThanOrEqual(field.size);
+      expect(f.y).toBeGreaterThanOrEqual(0);
+      expect(f.y).toBeLessThanOrEqual(field.size);
+    }
+    expect(field.player.y).toBeGreaterThan(field.size - 5);
+  });
+
+  it('the first strategy whose condition holds decides', () => {
+    const plan = ['fall_back_hurt', 'lie_low', 'press_nearest'].map((id) => ROYALE_STRATEGIES[id]);
+    expect(activeStrategy(plan, 0.3, 80)?.id).toBe('fall_back_hurt');
+    expect(activeStrategy(plan, 0.9, 80)?.id).toBe('lie_low');
+    expect(activeStrategy(plan, 0.9, 10)?.id).toBe('press_nearest');
+    expect(activeStrategy([ROYALE_STRATEGIES.fall_back_hurt], 0.9, 10)).toBeNull();
+  });
+
+  it('every move sends its fighter somewhere sensible', () => {
+    const others = [{ id: 1, x: 10, y: 10, power: 30 }, { id: 2, x: 40, y: 40, power: 5 }];
+    const at = { x: 12, y: 12 };
+    expect(goalFor('nearest', at, others, 60)).toEqual({ x: 10, y: 10 });
+    expect(goalFor('weakest', at, others, 60)).toEqual({ x: 10, y: 10 }); // the weak one is out of sight
+    expect(goalFor('weakest', { x: 35, y: 35 }, others, 60)).toEqual({ x: 40, y: 40 });
+    expect(goalFor('centre', at, others, 60)).toEqual({ x: 30, y: 30 });
+    expect(goalFor('hold', at, others, 60)).toEqual(at);
+    const away = goalFor('away', at, others, 60);
+    expect(away.x).toBeGreaterThan(at.x);
+    expect(away.y).toBeGreaterThan(at.y);
+    const edge = goalFor('edge', { x: 3, y: 30 }, others, 60);
+    expect(edge).toEqual({ x: 1, y: 30 });
+  });
+
+  it('two survivors who meet duel; when it ends the loser falls and the winner is wounded', () => {
+    const rng = seeded(3);
+    const field = fieldOf([fighter(1, 10, 10), fighter(2, 11, 10), fighter(3, 50, 10)]);
+    stepField(field, step(0, rng), 34);
+    const a = field.fighters.find((f) => f.id === 1)!;
+    expect(a.duel?.foe).toBe(2);
+    let fallen = 0;
+    for (let t = 1; t <= ROYALE_FIELD.duelTicks; t++) fallen += stepField(field, step(t, rng), 34).fallen;
+    expect(fallen).toBe(1);
+    expect(field.fallen).toBe(1);
+    const winner = field.fighters.find((f) => f.id === 1 || f.id === 2)!;
+    expect(winner.wins).toBe(1);
+    expect(winner.hp).toBeLessThan(1);
+    expect(winner.duel).toBeUndefined();
+  });
+
+  it('survivors who reach a free player are the player\'s next fight; a busy player is left alone', () => {
+    const rng = seeded(5);
+    const busy = fieldOf([fighter(1, 30, 57), fighter(2, 5, 5), fighter(3, 55, 5)]);
+    expect(stepField(busy, step(0, rng, DEFAULT_ROYALE_PLAN, false), 34).engaged).toEqual([]);
+    const free = fieldOf([fighter(1, 30, 57), fighter(2, 5, 5), fighter(3, 55, 5)]);
+    const engaged = stepField(free, step(0, rng), 34).engaged;
+    expect(engaged.map((f) => f.id)).toEqual([1]);
+    expect(free.fighters.find((f) => f.id === 1)!.engaged).toBe(true);
+    expect(clearEngaged(free)).toBe(1);
+    expect(free.fighters.map((f) => f.id)).toEqual([2, 3]);
+  });
+
+  it('never puts every survivor left into one fight: the last is fought alone', () => {
+    const rng = seeded(9);
+    const field = fieldOf([fighter(1, 30, 57), fighter(2, 31, 57)], 30, 58);
+    const engaged = stepField(field, step(0, rng), 34).engaged;
+    expect(engaged).toHaveLength(1);
+    clearEngaged(field);
+    for (let t = 1; t < 2000 && !field.fighters.some((f) => f.engaged); t++) stepField(field, step(t, rng), 34);
+    expect(field.fighters).toHaveLength(1);
+    expect(field.fighters[0].engaged).toBe(true);
+  });
+
+  it('two survivors left never duel each other: both walk at the player', () => {
+    const rng = seeded(11);
+    const field = fieldOf([fighter(1, 10, 10), fighter(2, 10.5, 10)], 50, 50);
+    for (let t = 0; t < 600 && !field.fighters.some((f) => f.engaged); t++) stepField(field, step(t, rng), 34);
+    expect(field.fighters).toHaveLength(2);
+    expect(field.fighters.some((f) => f.duel)).toBe(false);
+    expect(field.fighters.some((f) => f.engaged)).toBe(true);
+  });
+
+  it('a plan alone empties the field: every engagement won, the last one alone', () => {
+    for (const plan of [DEFAULT_ROYALE_PLAN, ['keep_away'], ['wait_at_edge'], ['hold_centre'], ['lie_low', 'hunt_weakest']]) {
+      const rng = seeded(21);
+      const field = createField(rng);
+      let lastFight = 0;
+      let t = 0;
+      for (; t < 30_000 && field.fighters.length > 0; t++) {
+        const result = stepField(field, step(t, rng, plan), 37);
+        if (result.engaged.length) {
+          lastFight = result.engaged.length;
+          // The player wins every fight at once.
+          clearEngaged(field);
+        }
+      }
+      expect(field.fighters, `plan ${plan.join(', ')}`).toHaveLength(0);
+      expect(lastFight, `plan ${plan.join(', ')}: the champion is fought alone`).toBe(1);
+    }
+  });
+});
+
 describe('the royale', () => {
+  it('a plan alone wins the royale in the game, with no hand on the field', () => {
+    const game = inHall();
+    const s = game.state;
+    game.setRoyalePlan(['lie_low', 'hunt_weakest']);
+    climb(game, ROYALE_FLOOR);
+    let hand = 0;
+    tickUntil(game, () => {
+      if (festivalRun(s)?.field?.player.target) hand += 1;
+      return !festivalRun(s);
+    });
+    expect(hand).toBe(0);
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBe(1);
+    expect(s.stats['boss:f16_arena']).toBe(1);
+  });
+
+  it('a click on the field walks the player there, and the plan takes over on arrival', () => {
+    const game = inHall();
+    const s = game.state;
+    climb(game, ROYALE_FLOOR);
+    game.tick();
+    const field = festivalRun(s)!.field!;
+    // Clear the way so no fight interrupts the walk.
+    field.fighters = field.fighters.slice(0, 3).map((f, i) => ({ ...f, x: 1 + i, y: 1 }));
+    expect(game.moveOnField(55, 55)).toBe(true);
+    expect(field.player.target).toEqual({ x: 55, y: 55 });
+    tickUntil(game, () => !festivalRun(s)!.field!.player.target, 2000);
+    const p = festivalRun(s)!.field!.player;
+    expect(Math.hypot(p.x - 55, p.y - 55)).toBeLessThan(0.5);
+    expect(game.moveOnField(500, -3)).toBe(true);
+    expect(festivalRun(s)!.field!.player.target).toEqual({ x: 60, y: 0 });
+  });
+
+  it('the plan is ranked, kept between attempts, and cleans up what it is given', () => {
+    const game = inHall();
+    game.setRoyalePlan(['keep_away', 'nonsense', 'keep_away', 'press_nearest', 'hold_centre', 'lie_low']);
+    expect(royalePlan(game.state).map((s) => s.id)).toEqual(['keep_away', 'press_nearest', 'hold_centre']);
+    climb(game, null); // a forfeit
+    expect(game.state.festival?.plan).toEqual(['keep_away', 'press_nearest', 'hold_centre']);
+    expect(royalePlan(createInitialState(0)).map((s) => s.id)).toEqual(DEFAULT_ROYALE_PLAN);
+  });
+
   it('a win clears floor 16 and counts the run\'s win; the field is empty after', () => {
     const game = inHall();
     const s = game.state;

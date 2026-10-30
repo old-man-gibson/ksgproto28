@@ -1,6 +1,7 @@
 <script lang="ts">
   import { DEBUG_SETTLE_KEY, gs, game } from '../state.svelte';
-  import { AFFIXES, ITEMS, MATERIALS, RUNES, SKILLS } from '../../core/registry';
+  import { AFFIXES, FLOORS, ITEMS, MATERIALS, RUNES, SKILLS } from '../../core/registry';
+  import { raiseStat } from '../../core/systems/achievements';
   import { QUALITY_ORDER, QUALITY_TIERS } from '../../core/data/quality.data';
   import { createItem, grantRune } from '../../core/systems/runes';
   import { grantGraded, isGraded } from '../../core/systems/disciplines';
@@ -142,6 +143,31 @@
   function giveLevelXp(amount: number) {
     grantLevelXp(gs, game.bus, amount);
     say(`+${fmt(amount)} level XP`);
+  }
+
+  // ---- The ladder and the Vermin Festival ----
+
+  /** Stamp the counters every floor below the festival clears on, as if climbed. */
+  function clearBelowFestival() {
+    for (const floor of Object.values(FLOORS)) {
+      if (floor.bandId === undefined || floor.index >= 15) continue;
+      for (const c of floor.clear ?? []) if (c.type === 'stat') raiseStat(gs, game.bus, c.key, c.value);
+    }
+    say('Floors 1–14 cleared: the ladder reaches the festival.');
+  }
+
+  let attrLevel = $state(60);
+  function setAttrs() {
+    for (const a of Object.keys(gs.attrs) as (keyof typeof gs.attrs)[]) gs.attrs[a].level = attrLevel;
+    say(`Every attribute → ${attrLevel}`);
+  }
+
+  /** Move the festival clock on by a day (it runs only while the game does). */
+  function festivalDay() {
+    const run = gs.festival?.run;
+    if (!run || run.phase !== 'prep') return say('No festival hub phase in progress.');
+    run.clock += 14_400;
+    say('Festival clock +1 day.');
   }
 
   // ---- Spellcraft ----
@@ -476,6 +502,20 @@
     <div class="dim small">
       Word mastery writes the arcana novelty ledger; psi gates write state.psi — both exactly
       what teachers and practice will write.
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Ladder &amp; Vermin Festival</div>
+    <div class="row">
+      <button onclick={clearBelowFestival}>Clear floors 1–14</button>
+      <input type="number" min="1" max="999" bind:value={attrLevel} title="Attribute level" />
+      <button onclick={setAttrs}>Set every attribute</button>
+      <button onclick={festivalDay}>Festival clock +1 day</button>
+    </div>
+    <div class="dim small">
+      Clearing stamps the counters each floor's clear reads; climb with the ladder as usual. The
+      festival starts in floor 15's dark room.
     </div>
   </div>
 

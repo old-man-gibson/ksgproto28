@@ -6,7 +6,6 @@ import {
   LOCKOUT_TICKS,
   PREP_TICKS,
   ROYALE_FLOOR,
-  SURVIVORS,
   SURVIVOR_LEVELS,
 } from '../data/festival.data';
 
@@ -125,17 +124,16 @@ export function prepLeft(run: FestivalRun): number {
 }
 
 /**
- * A survivor's level on the field: their preparation (the clock, capped at
- * the ten days), plus what outlasting the field adds as it empties. The
- * champion stands `champion` levels above.
+ * A survivor's level when it meets the player: their preparation (the clock,
+ * capped at the ten days), plus the duels it has won on the field, capped.
+ * The champion stands `champion` levels above.
  */
-export function survivorLevel(clock: number, alive: number, champion = false): number {
+export function survivorLevel(clock: number, wins: number, champion = false): number {
   const s = SURVIVOR_LEVELS;
-  const outlasted = 1 - Math.min(SURVIVORS, Math.max(0, alive)) / SURVIVORS;
   return (
     s.base +
     Math.round(s.growth * prepShare(clock)) +
-    Math.round(s.shrink * outlasted) +
+    Math.min(s.winCap, Math.max(0, wins) * s.perWin) +
     (champion ? s.champion : 0)
   );
 }

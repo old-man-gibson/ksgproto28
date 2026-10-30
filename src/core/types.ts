@@ -5093,14 +5093,68 @@ export interface HeldGear {
 export type FestivalPhase = 'dark' | 'prep' | 'royale';
 
 /**
- * The royale's field: the survivors still standing, the player not counted
- * (systems/royale.ts). `engaged` of them are in the fight with the player.
+ * Where a royale strategy walks its fighter (systems/royaleField.ts): toward
+ * the nearest fighter, toward the weakest one within sight, to the field's
+ * centre, away from the nearest, to the nearest edge, or nowhere.
+ */
+export type RoyaleMove = 'nearest' | 'weakest' | 'centre' | 'away' | 'edge' | 'hold';
+
+/**
+ * A way to move on the royale's field. The player ranks up to three; every
+ * survivor species fights with a list from the same registry
+ * (data/festival.data.ts SURVIVOR_SPECIES). The first strategy in a list
+ * whose `when` holds decides the move.
+ */
+export interface RoyaleStrategyDef {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  move: RoyaleMove;
+  /**
+   * Applies only while these hold: the bearer's health share is below
+   * `hpBelow`, and more than `fieldAbove` (or fewer than `fieldBelow`)
+   * survivors are left on the field, the player not counted.
+   */
+  when?: { hpBelow?: number; fieldAbove?: number; fieldBelow?: number };
+}
+
+/** One survivor on the royale's field. Coordinates are field units, 0 to the field's size. */
+export interface FieldFighter {
+  id: number;
+  /** Its species, a MONSTERS id from SURVIVOR_SPECIES. */
+  monsterId: string;
+  x: number;
+  y: number;
+  /** Coarse health share, 0–1: duels between survivors wound the winner. */
+  hp: number;
+  /** Duels won on the field. Each adds to its level when it meets the player. */
+  wins: number;
+  /** In a duel with another survivor: the foe's id and the world tick it ends. */
+  duel?: { foe: number; until: number };
+  /** In the player's fight. */
+  engaged?: boolean;
+  /** Where it is walking, chosen every few ticks. */
+  goal?: { x: number; y: number };
+}
+
+/**
+ * The royale's field (systems/royaleField.ts runs it, systems/royale.ts
+ * hands its engagements to the battle stage): the survivors still standing
+ * and the player's place among them.
  */
 export interface RoyaleField {
-  alive: number;
-  engaged: number;
-  /** World tick of the field's next thinning: one survivor falls to another. */
-  nextThin: number;
+  size: number;
+  fighters: FieldFighter[];
+  player: {
+    x: number;
+    y: number;
+    /** Where the player was sent by hand; the strategies resume on arrival. */
+    target?: { x: number; y: number };
+    goal?: { x: number; y: number };
+  };
+  /** Survivors who have fallen to other survivors. */
+  fallen: number;
 }
 
 /** One attempt at the festival, from the dark room to the royale's end. */
@@ -5131,6 +5185,8 @@ export interface FestivalState {
   run?: FestivalRun;
   /** World tick until which floors 15–16 are shut after a lost attempt. */
   lockedUntil?: number;
+  /** The player's royale strategies, ROYALE_STRATEGIES ids in priority order. Kept between attempts. */
+  plan?: string[];
 }
 
 // ---------- Game state ----------

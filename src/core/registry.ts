@@ -36,6 +36,7 @@ import { MUSIC_ARCHETYPES, MUSIC_METERS, MUSIC_SCALES } from './data/music.data'
 import { BANDS, FLOORS, TOWERS } from './data/towers.data';
 import { PRESTIGE_BOONS, PRESTIGE_SOURCES, PRESTIGE_UNLOCK } from './data/prestige.data';
 import { TUTORIAL_STEPS, TUTORIAL_STEP_LIST } from './data/tutorial.data';
+import { ROYALE_STRATEGIES } from './data/festival.data';
 
 export {
   SKILLS,
@@ -98,6 +99,7 @@ export {
   PRESTIGE_BOONS,
   TUTORIAL_STEPS,
   TUTORIAL_STEP_LIST,
+  ROYALE_STRATEGIES,
 };
 
 export interface Edge extends Connection {

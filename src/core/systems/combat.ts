@@ -1132,18 +1132,22 @@ export function startStagedFight(
  * A staged formation, unfleeable: each member pinned and plain like the
  * dare's foe, a melee up front where the group has one. The Vermin
  * Festival's fights (systems/festival.ts): the dark room's waves and the
- * royale's engagements.
+ * royale's engagements. `hpShare` brings a member in already wounded.
  */
 export function startStagedGroup(
   state: GameState,
   bus: EventBus,
   spot: SpotDef,
-  members: { monsterId: string; level: number }[],
+  members: { monsterId: string; level: number; hpShare?: number }[],
 ): void {
   if (state.combat) abandonCombat(state);
-  const minted = members
-    .slice(0, ENCOUNTER_SLOTS)
-    .map((m) => spawnMonster(state, spot, { monsterId: m.monsterId, level: m.level, plain: true }));
+  const minted = members.slice(0, ENCOUNTER_SLOTS).map((m) => {
+    const monster = spawnMonster(state, spot, { monsterId: m.monsterId, level: m.level, plain: true });
+    if (m.hpShare !== undefined && m.hpShare < 1) {
+      monster.hp = Math.max(1, Math.round(monster.hp * Math.max(0, m.hpShare)));
+    }
+    return monster;
+  });
   const front = minted.findIndex((m) => m.range === 'melee');
   if (front > 0) [minted[0], minted[front]] = [minted[front], minted[0]];
   const slots: (MonsterInstance | null)[] = Array(ENCOUNTER_SLOTS).fill(null);

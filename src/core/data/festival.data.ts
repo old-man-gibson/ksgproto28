@@ -1,3 +1,6 @@
+import type { RoyaleStrategyDef } from '../types';
+import { prose } from '../text/prose';
+import { ROYALE_STRATEGIES_TEXT } from '../text/festival.text';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, TICKS_PER_GAME_MINUTE } from './climate.data';
 
 /**
@@ -100,20 +103,65 @@ export const SURVIVORS = 99;
 /**
  * Survivor levels. The ninety-nine prepare too (§5.3 item 14): over the ten
  * days they gain `growth` levels on a straight line, and the royale always
- * opens at the end of that line, waited out or jumped (§5.4 Q7). Survivors
- * who outlast the field gain up to `shrink` more as it empties. The last one
- * standing is the champion, `champion` levels above the rest.
+ * opens at the end of that line, waited out or jumped (§5.4 Q7). On the field
+ * each duel a survivor wins adds `perWin` levels, up to `winCap`, so the
+ * field gets stronger as it empties. The last one standing is the champion,
+ * `champion` levels above that.
  */
-export const SURVIVOR_LEVELS = { base: 34, growth: 3, shrink: 1, champion: 1 };
+export const SURVIVOR_LEVELS = { base: 34, growth: 3, perWin: 1, winCap: 2, champion: 1 };
 
-/** The royale's survivor species, drawn in turn; the last survivor is the champion. */
-export const SURVIVOR_SPECIES = ['ph_survivor_blade', 'ph_survivor_brute'];
+/**
+ * The royale's survivor species, in equal shares, each with the strategies it
+ * fights with: the same registry the player ranks from, so a survivor moves
+ * by the rules the player can pick. `weight` scales its strength in duels
+ * between survivors. The last survivor is the champion, fought alone.
+ */
+export const SURVIVOR_SPECIES: { monsterId: string; weight: number; plan: string[] }[] = [
+  { monsterId: 'ph_survivor_blade', weight: 1, plan: ['fall_back_hurt', 'hunt_weakest'] },
+  { monsterId: 'ph_survivor_brute', weight: 1.1, plan: ['press_nearest'] },
+];
 export const SURVIVOR_CHAMPION = 'ph_survivor_champion';
 
 /**
- * The counter field (§5.4 Q6's default, stage 1 of the build): every
- * `thinTicks` one survivor falls to another, and between the player's fights
- * the field sends one or two at the player after `engageGap` ticks. The last
- * survivor is never thinned: the champion waits for the player.
+ * The field (§5.3 items 13 and 18; systems/royaleField.ts). Units are field
+ * units on a square `size` across, drawn isometrically. A fighter walks
+ * `speed` a tick (the player's pace is scaled by their travel speed) and
+ * picks where to walk every `thinkTicks`. Two fighters closer than
+ * `engageRadius` fight: two survivors duel for `duelTicks` and the loser
+ * falls; survivors who reach the player, up to `maxGroup` of them, are the
+ * player's next fight. A duel's winner is wounded by `duelWound` of its
+ * health and recovers `healPerTick`. `sight` is how far `weakest` looks.
  */
-export const ROYALE_COUNTER = { thinTicks: 25, engageGap: 60, firstEngage: 30 };
+export const ROYALE_FIELD = {
+  size: 60,
+  speed: 0.2,
+  thinkTicks: 5,
+  engageRadius: 2.5,
+  maxGroup: 3,
+  duelTicks: 100,
+  duelWound: 0.35,
+  healPerTick: 0.002,
+  sight: 20,
+};
+
+/** The player's strategies until they rank their own. */
+export const DEFAULT_ROYALE_PLAN = ['fall_back_hurt', 'press_nearest'];
+
+/** Strategies a player may rank at once. */
+export const ROYALE_PLAN_SLOTS = 3;
+
+/**
+ * Ways to move on the field (§5.3 item 18): the player ranks up to three, and
+ * the first whose condition holds decides where the player walks. A plan
+ * alone can win, and a click on the field overrides it until the player gets
+ * there. Every survivor species moves by a list from this registry too.
+ */
+export const ROYALE_STRATEGIES = prose<RoyaleStrategyDef>('ROYALE_STRATEGIES', ROYALE_STRATEGIES_TEXT, {
+  press_nearest: { id: 'press_nearest', name: 'Press the Nearest', icon: '⚔️', move: 'nearest' },
+  hunt_weakest: { id: 'hunt_weakest', name: 'Hunt the Weakest', icon: '🎯', move: 'weakest' },
+  hold_centre: { id: 'hold_centre', name: 'Hold the Centre', icon: '⭕', move: 'centre' },
+  keep_away: { id: 'keep_away', name: 'Keep Away', icon: '🏃', move: 'away' },
+  wait_at_edge: { id: 'wait_at_edge', name: 'Wait at the Edge', icon: '🧱', move: 'edge' },
+  fall_back_hurt: { id: 'fall_back_hurt', name: 'Fall Back When Hurt', icon: '🩹', move: 'away', when: { hpBelow: 0.5 } },
+  lie_low: { id: 'lie_low', name: 'Lie Low While Crowded', icon: '🫥', move: 'away', when: { fieldAbove: 30 } },
+});

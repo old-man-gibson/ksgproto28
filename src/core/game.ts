@@ -25,6 +25,7 @@ import { registerBestiaryListeners } from './systems/bestiary';
 import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
 import { registerLevelListeners } from './systems/levels';
 import { registerFestivalListeners, tickFestival } from './systems/festival';
+import { clearFieldTarget, moveOnField, setRoyalePlan } from './systems/royale';
 import { setHuntRest } from './systems/huntrest';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
@@ -382,6 +383,23 @@ export class Game {
   /** Ride the ladder to a band's hub (band 3's castle). */
   climbToHub(bandId: string): boolean {
     return climbToHub(this.state, this.bus, bandId);
+  }
+
+  // ---- The Vermin Festival's royale (systems/royale.ts) ----
+
+  /** Walk to a point on the royale's field by hand; the plan resumes on arrival. */
+  moveOnField(x: number, y: number): boolean {
+    return moveOnField(this.state, x, y);
+  }
+
+  /** Drop a hand-set destination on the field: the plan decides again. */
+  clearFieldTarget(): void {
+    clearFieldTarget(this.state);
+  }
+
+  /** Rank the strategies the player moves by on the field. */
+  setRoyalePlan(ids: string[]): void {
+    setRoyalePlan(this.state, ids);
   }
 
   /** Equip an item; `slot` forces a hand (off-hand sword, main-hand buckler). */

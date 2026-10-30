@@ -1,65 +1,107 @@
 import type { EventBus } from '../engine/events';
-import type { FestivalRun, GameState, RoyaleField } from '../types';
-import { SPOTS } from '../registry';
+import type { FestivalRun, GameState, RoyaleStrategyDef } from '../types';
+import { ROYALE_STRATEGIES, SPOTS } from '../registry';
 import {
   ARENA,
-  ROYALE_COUNTER,
-  SURVIVORS,
+  DEFAULT_ROYALE_PLAN,
+  ROYALE_PLAN_SLOTS,
   SURVIVOR_CHAMPION,
+  SURVIVOR_LEVELS,
   SURVIVOR_SPECIES,
-  type FestivalFoe,
 } from '../data/festival.data';
-import { randInt } from '../engine/rng';
+import { rand } from '../engine/rng';
 import { startStagedGroup } from './combat';
-import { survivorLevel } from './festivalRules';
+import { getDerivedStats } from './derived';
+import { hpFraction } from './health';
+import { prepShare, survivorLevel } from './festivalRules';
+import { clearEngaged, createField, stepField } from './royaleField';
 import { text } from '../text/log';
 
 /**
- * The royale on floor 16, as a counter (docs/FLOOR_IDEAS.md §5.4 Q6's
- * default; stage 1 of the festival build). The ninety-nine thin out on their
- * own, and between the player's fights the field sends one or two at the
- * player, stronger as it empties. The last survivor is never thinned: the
- * champion waits for the player, and beating it wins the royale.
+ * The royale on floor 16 (docs/FLOOR_IDEAS.md §5.3 items 13 and 18): the
+ * isometric field (systems/royaleField.ts, drawn by ui/lib/RoyaleField.svelte)
+ * with its engagements fought in the battle stage. The player moves by a
+ * ranked plan of strategies, or by hand at any time; a plan alone can win.
  *
- * Coarse on purpose: a count and two tick stamps, so nothing here needs a
- * full simulation of the other fights.
+ * The survivors who reach the player become an ordinary staged fight at the
+ * arena, at their own levels and with the wounds they carry. Won, they leave
+ * the field. The last survivor is the champion, fought alone: floor 16's
+ * boss line, so its fall is the win (systems/festival.ts counts it).
  */
 
-/** The field as the climb into the royale finds it. */
-export function freshField(state: GameState): RoyaleField {
-  return { alive: SURVIVORS, engaged: 0, nextThin: state.totalTicks + ROYALE_COUNTER.thinTicks };
+/** The player's ranked strategies: their own, or the default plan. Unknown ids are skipped. */
+export function royalePlan(state: GameState): RoyaleStrategyDef[] {
+  const ids = state.festival?.plan?.length ? state.festival.plan : DEFAULT_ROYALE_PLAN;
+  return ids.map((id) => ROYALE_STRATEGIES[id]).filter((s): s is RoyaleStrategyDef => !!s);
 }
+
+/** Rank the player's strategies (at most ROYALE_PLAN_SLOTS, known ids only, no repeats). */
+export function setRoyalePlan(state: GameState, ids: string[]): void {
+  const plan = [...new Set(ids)].filter((id) => !!ROYALE_STRATEGIES[id]).slice(0, ROYALE_PLAN_SLOTS);
+  if (!state.festival) state.festival = {};
+  state.festival.plan = plan;
+}
+
+/**
+ * Send the player to a point on the field by hand (§5.3 item 18). The plan
+ * takes over again on arrival. Ignored off the field.
+ */
+export function moveOnField(state: GameState, x: number, y: number): boolean {
+  const field = state.festival?.run?.field;
+  if (!field || state.spot !== ARENA || !Number.isFinite(x) || !Number.isFinite(y)) return false;
+  const size = field.size;
+  field.player.target = { x: Math.max(0, Math.min(size, x)), y: Math.max(0, Math.min(size, y)) };
+  return true;
+}
+
+/** Clear a hand-set destination: the plan decides again. */
+export function clearFieldTarget(state: GameState): void {
+  const field = state.festival?.run?.field;
+  if (field?.player.target) delete field.player.target;
+}
+
+/** Every species' plan, resolved once. */
+const SPECIES_PLANS = new Map(
+  SURVIVOR_SPECIES.map((s) => [
+    s.monsterId,
+    s.plan.map((id) => ROYALE_STRATEGIES[id]).filter((d): d is RoyaleStrategyDef => !!d),
+  ]),
+);
 
 /** One tick of the field while the player stands on it. */
 export function tickRoyale(state: GameState, bus: EventBus, run: FestivalRun): void {
-  if (!run.field) {
-    run.field = freshField(state);
-    run.nextAt = state.totalTicks + ROYALE_COUNTER.firstEngage;
-  }
+  // A field from before the isometric layer (a counter) is replaced whole.
+  if (!run.field?.fighters) run.field = createField(() => rand(state));
   const field = run.field;
-  // The others fight each other whatever the player is doing.
-  if (state.totalTicks >= field.nextThin) {
-    if (field.alive - field.engaged > 1) field.alive -= 1;
-    field.nextThin = state.totalTicks + ROYALE_COUNTER.thinTicks;
-  }
-  if (state.combat || field.alive <= 0 || state.totalTicks < run.nextAt) return;
-  const foes = engagement(state, run, field);
-  field.engaged = foes.length;
-  startStagedGroup(state, bus, SPOTS[ARENA], foes);
-}
-
-/** Who the field sends next: one or two survivors, or the champion alone at the end. */
-function engagement(state: GameState, run: FestivalRun, field: RoyaleField): FestivalFoe[] {
-  if (field.alive === 1) {
-    return [{ monsterId: SURVIVOR_CHAMPION, level: survivorLevel(run.clock, 1, true) }];
-  }
-  // Never the last one with company: the champion is fought alone.
-  const size = Math.min(field.alive - 1, randInt(state, 1, 2));
-  const level = survivorLevel(run.clock, field.alive);
-  return Array.from({ length: size }, () => ({
-    monsterId: SURVIVOR_SPECIES[randInt(state, 0, SURVIVOR_SPECIES.length - 1)],
-    level,
-  }));
+  const stats = getDerivedStats(state);
+  const baseLevel = SURVIVOR_LEVELS.base + Math.round(SURVIVOR_LEVELS.growth * prepShare(run.clock));
+  const result = stepField(
+    field,
+    {
+      now: state.totalTicks,
+      rng: () => rand(state),
+      playerFree: !state.combat,
+      playerHp: hpFraction(state, stats),
+      playerPower: state.level,
+      playerSpeed: stats.travelSpeed,
+      plan: royalePlan(state),
+      planOf: (id) => SPECIES_PLANS.get(id) ?? [],
+    },
+    baseLevel,
+  );
+  if (result.engaged.length === 0) return;
+  // The last survivor is the champion, whatever it walked the field as.
+  const last = field.fighters.length === 1;
+  startStagedGroup(
+    state,
+    bus,
+    SPOTS[ARENA],
+    result.engaged.map((f) => ({
+      monsterId: last ? SURVIVOR_CHAMPION : f.monsterId,
+      level: survivorLevel(run.clock, f.wins, last),
+      hpShare: f.hp,
+    })),
+  );
 }
 
 /**
@@ -68,12 +110,9 @@ function engagement(state: GameState, run: FestivalRun, field: RoyaleField): Fes
  */
 export function royaleFightWon(state: GameState, bus: EventBus, run: FestivalRun): boolean {
   const field = run.field;
-  if (!field) return false;
-  field.alive = Math.max(0, field.alive - field.engaged);
-  field.engaged = 0;
-  run.nextAt = state.totalTicks + ROYALE_COUNTER.engageGap;
-  if (field.alive > 0) {
-    bus.emit({ type: 'log', msg: text('festival.field_left', { alive: field.alive }), kind: 'combat' });
-  }
-  return field.alive === 0;
+  if (!field?.fighters) return false;
+  clearEngaged(field);
+  const left = field.fighters.length;
+  if (left > 0) bus.emit({ type: 'log', msg: text('festival.field_left', { alive: left }), kind: 'combat' });
+  return left === 0;
 }
