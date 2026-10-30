@@ -152,12 +152,12 @@ describe('the castle hub', () => {
 describe('direction scaling', () => {
   it('each ward cleared raises every ward: +0, +2, +5, +9, and +9 after the last', () => {
     const s = cityOpen();
-    const marsh = SPOTS.f7_salt_marsh;
-    expect(bandLevelStep(s, marsh)).toBe(0);
+    const docks = SPOTS.f7_docks;
+    expect(bandLevelStep(s, docks)).toBe(0);
     const seen: number[] = [];
     for (const id of WARDS) {
       clearFloors(s.stats, [id]);
-      seen.push(bandLevelStep(s, marsh));
+      seen.push(bandLevelStep(s, docks));
     }
     expect(seen).toEqual([2, 5, 9, 9]);
   });
@@ -172,13 +172,13 @@ describe('direction scaling', () => {
   it('spawns at the rolled level plus the step; escorts keep their leader’s level', () => {
     const s = cityOpen();
     clearFloors(s.stats, ['ascent_f7', 'ascent_f8']); // +5
-    const marsh = SPOTS.f7_salt_marsh;
+    const docks = SPOTS.f7_docks;
     for (let i = 0; i < 40; i++) {
-      const m = spawnMonster(s, marsh);
-      expect(m.level).toBeGreaterThanOrEqual(13 + 5);
-      expect(m.level).toBeLessThanOrEqual(14 + 5);
+      const m = spawnMonster(s, docks);
+      expect(m.level).toBeGreaterThanOrEqual(12 + 5);
+      expect(m.level).toBeLessThanOrEqual(13 + 5);
     }
-    const pinned = spawnMonster(s, marsh, { monsterId: 'cave_spider', level: 20 });
+    const pinned = spawnMonster(s, docks, { monsterId: 'cave_spider', level: 20 });
     expect(pinned.level).toBe(20);
   });
 });

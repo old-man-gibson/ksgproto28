@@ -250,7 +250,12 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     index: 7,
     areaId: 'ascent_f7_area',
     landing: 'f7_docks',
-    clear: [{ type: 'stat', key: 'slain:f7_wreck:giant_spider_queen', value: 1 }],
+    // The ward finishes in one of three places, by its position (the merchant
+    // road, the chief's tent or the burnt camp; locations.data.ts). Each one
+    // stamps ward:f7:done when its budget is spent (SpotDef.stampOnClear), and
+    // so does the demon's window when it lapses (WARD_WINDOWS). A clear is an
+    // AND list, so it reads the stamp, not three spots.
+    clear: [{ type: 'stat', key: 'ward:f7:done', value: 1 }],
     clearXp: 500,
   },
   ascent_f8: {
@@ -475,6 +480,9 @@ export function offLadderDoor(from: string, to: string): boolean {
  * - Floor 14, the harbor's final mission (FLOOR_IDEAS.md idea 3, ruling Q2).
  */
 export const SPINE_EXEMPT: Record<string, string> = {
+  // until floorRules reads stampOnClear (integration removes this)
+  ascent_f7:
+    'cleared by ward:f7:done, stamped by whichever form its position picks (the merchant road, the chief’s tent, the burnt camp); tests/band3-ward7.test.ts checks each form',
   ascent_f14:
     'cleared by any one of four side wings, stamped as flag:sea:14:done by the side’s boss kill (systems/sea.ts); an AND-only clear cannot name four spots of which one is enough',
 };

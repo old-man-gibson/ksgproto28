@@ -1833,6 +1833,131 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
 
   // ==== WARD7: monsters (base 2026-10-30; the ward 7 builder's section) ====
+  // Floor 7, the south ward (bands-2-3.md "The four wards"), at placeholder
+  // fidelity: stats beside the hobgoblin and the floor-11 siege placeholders,
+  // the shared basic techniques, no art. The bandits raid the roads (position
+  // 0) and hold the salt-flats camp (positions 1 and 2); the demon is what is
+  // left of them at position 3. Levels are set by the spots, and the band's
+  // step is added on top.
+  ph_bandit_thug: {
+    id: 'ph_bandit_thug',
+    name: 'Bandit Thug (placeholder)',
+    icon: '🪓',
+    tags: ['humanoid', 'living', 'medium'],
+    tier: 'basic',
+    damageType: 'bludgeoning',
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'gather' }],
+    attrs: { str: 10, dex: 7, con: 10, int: 3, wis: 4, cha: 3 },
+    growth: { str: 1.1, dex: 0.8, con: 1.1, int: 0.4, wis: 0.5, cha: 0.4 },
+    xp: 18,
+    gold: [4, 9],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'iron_scrap', weight: 25, qty: [1, 2] },
+        { kind: 'material', id: 'leather', weight: 10 },
+        { kind: 'nothing', weight: 65 },
+      ],
+    },
+  },
+  ph_bandit_archer: {
+    id: 'ph_bandit_archer',
+    name: 'Bandit Archer (placeholder)',
+    icon: '🏹',
+    tags: ['humanoid', 'living', 'medium'],
+    tier: 'basic',
+    damageType: 'piercing',
+    range: 'ranged',
+    rotation: [{ technique: 'lunge' }, { technique: 'gather' }],
+    attrs: { str: 6, dex: 11, con: 7, int: 4, wis: 5, cha: 3 },
+    growth: { str: 0.7, dex: 1.3, con: 0.8, int: 0.5, wis: 0.6, cha: 0.4 },
+    xp: 20,
+    gold: [4, 9],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'leather', weight: 20 },
+        { kind: 'material', id: 'iron_scrap', weight: 15 },
+        { kind: 'nothing', weight: 65 },
+      ],
+    },
+  },
+  ph_bandit_cutthroat: {
+    id: 'ph_bandit_cutthroat',
+    name: 'Bandit Cutthroat (placeholder)',
+    icon: '🗡️',
+    tags: ['humanoid', 'living', 'medium'],
+    tier: 'veteran',
+    damageType: 'slashing',
+    rotation: [{ technique: 'pocket_sand' }, { technique: 'dirty_stab' }, { technique: 'gather' }],
+    attrs: { str: 9, dex: 11, con: 8, int: 4, wis: 4, cha: 4 },
+    growth: { str: 1.0, dex: 1.2, con: 0.9, int: 0.5, wis: 0.5, cha: 0.5 },
+    xp: 24,
+    gold: [6, 14],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'leather', weight: 15 },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [1, 2] },
+        { kind: 'nothing', weight: 65 },
+      ],
+    },
+  },
+  // The camp's chief: the siege's last fight, in the tent, with two escorts.
+  ph_bandit_chief: {
+    id: 'ph_bandit_chief',
+    name: 'Bandit Chief (placeholder)',
+    icon: '⚔️',
+    tags: ['humanoid', 'living', 'large'],
+    tier: 'elite',
+    damageType: 'slashing',
+    group: { min: 3, max: 3 },
+    escorts: ['ph_bandit_thug', 'ph_bandit_archer', 'ph_bandit_cutthroat'],
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'dirty_stab' }, { technique: 'gather' }],
+    attrs: { str: 16, dex: 11, con: 15, int: 6, wis: 6, cha: 8 },
+    growth: { str: 1.5, dex: 1.1, con: 1.5, int: 0.6, wis: 0.7, cha: 0.8 },
+    xp: 180,
+    gold: [60, 120],
+    loot: {
+      rolls: 2,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 20 },
+        { kind: 'material', id: 'iron_ingot', weight: 20, qty: [2, 4] },
+        { kind: 'gold', weight: 25, qty: [60, 120] },
+        { kind: 'nothing', weight: 35 },
+      ],
+    },
+  },
+  // Position 3: the burnt camp's demon, the band's hardest single fight. One
+  // tier above every other keeper in the band (ancient), alone, and it keeps
+  // half the HP it loses in a fight it survives (keepsWounds, M11), so a
+  // retreat is progress. Its row and the 24-hour window are the burnt camp's
+  // and WARD_WINDOWS'.
+  ph_camp_demon: {
+    id: 'ph_camp_demon',
+    name: 'Camp Demon (placeholder)',
+    icon: '👿',
+    tags: ['living', 'eldritch', 'dark', 'huge'],
+    tier: 'ancient',
+    keepsWounds: { key: 'ward:f7:demon:wounds', share: 0.5 },
+    damageType: 'dark',
+    group: { max: 1 },
+    resistances: { dark: 0.5, heat: 0.2, light: -0.4 },
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'dirty_stab' }, { technique: 'gather' }],
+    attrs: { str: 18, dex: 10, con: 18, int: 10, wis: 8, cha: 6 },
+    growth: { str: 2.0, dex: 1.0, con: 2.2, int: 1.0, wis: 0.8, cha: 0.6 },
+    xp: 300,
+    gold: [100, 200],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 25 },
+        { kind: 'gold', weight: 30, qty: [100, 200] },
+        { kind: 'material', id: 'iron_ingot', weight: 15, qty: [3, 6] },
+        { kind: 'nothing', weight: 30 },
+      ],
+    },
+  },
 
   // ==== WARDS8-10: monsters (base 2026-10-30; the wards 8-10 builder's section) ====
   // The keepers of wards 8 to 10 (docs/plans/bands-2-3.md, "The four wards").

@@ -1924,8 +1924,28 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     connections: [],
   },
 
-  // --- Floor 7, south: the docks and the salt marsh past them. Stand-in
-  // threat: poison (marsh slimes, cave spiders).
+  // --- Floor 7, south: the docks, and bandits starving the city by raiding
+  // its merchants (bands-2-3.md "The four wards"). The ward takes one of three
+  // forms by its POSITION, `band:pos:ascent_f7`: how many of the other three
+  // wards are cleared this run (the ward engine keeps it live while floor 7 is
+  // uncleared, so it is read live, Q15).
+  //   0     the merchant road: 12 fights of 2-4 bandits.
+  //   1-2   the salt-flats camp: the stockade (4 fights) and the watchtowers
+  //         (3), then the chief's tent (1), whose door needs both spent.
+  //   3     the burnt camp: the demon, for 24 in-game hours (WARD_WINDOWS).
+  // Each form's last spot stamps `ward:f7:done` when its budget is spent, and
+  // that stamp is the floor's clear (towers.data.ts).
+  //
+  // Forms are gated twice. The docks' road into each form is revealed only at
+  // that form's positions, so the map shows the one form the ward has now and
+  // nothing else. Every encounter row carries the same gate, so a form left
+  // half done when another ward falls stops spawning: its fights stay counted
+  // and finish nothing. Every row and every camp road also needs
+  // `ward:f7:done` at 0, so no form reopens in a cleared ward if the position
+  // keeps moving. The way back to the docks is a mirror and carries no gate,
+  // so nobody is stranded on a form that ended. Base levels below take the
+  // band's step on top, which for an uncleared ward is its position: +0, +2
+  // or +5, +9.
   f7_docks: {
     id: 'f7_docks',
     name: 'The Docks',
@@ -1941,41 +1961,263 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { monsterId: 'forest_rat', weight: 50, level: [12, 13] },
       { monsterId: 'slime_water', weight: 50, level: [12, 13] },
     ],
-    connections: [{ to: 'f7_salt_marsh', ticks: 30, label: 'Out the South Gate', returnLabel: 'Back Through the South Gate' }],
-  },
-  f7_salt_marsh: {
-    id: 'f7_salt_marsh',
-    name: 'The Salt Marsh',
-    icon: '🌾',
-    areaId: 'ascent_f7_area',
-    map: { x: 50, y: 40 },
-    activities: [
-      { id: 'hunt', kind: 'hunt', name: 'Hunt the Marsh', icon: '🏹' },
-      { id: 'explore', kind: 'explore', name: 'Wade the Marsh', icon: '🌿' },
+    connections: [
+      {
+        to: 'f7_merchant_road',
+        ticks: 30,
+        label: 'Out the South Gate',
+        returnLabel: 'Back Through the South Gate',
+        revealWhen: [{ type: 'statMax', key: 'band:pos:ascent_f7', value: 0 }],
+        requires: [{ type: 'statMax', key: 'band:pos:ascent_f7', value: 0 }],
+      },
+      {
+        to: 'f7_stockade',
+        ticks: 45,
+        label: 'Out to the Salt Flats',
+        returnLabel: 'Back to the Docks',
+        revealWhen: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+      {
+        to: 'f7_burnt_camp',
+        ticks: 45,
+        label: 'Out to the Burnt Camp',
+        returnLabel: 'Back to the Docks',
+        revealWhen: [{ type: 'stat', key: 'band:pos:ascent_f7', value: 3 }],
+        requires: [{ type: 'stat', key: 'band:pos:ascent_f7', value: 3 }],
+      },
     ],
-    groupWeights: { 1: 60, 2: 30, 3: 10 },
+  },
+  // Position 0: the raids, fought on the road. Not forced; every fight is
+  // started by the hunt.
+  f7_merchant_road: {
+    id: 'f7_merchant_road',
+    name: 'The Merchant Road',
+    icon: '🛤️',
+    areaId: 'ascent_f7_area',
+    map: { x: 25, y: 40 },
+    fightLimit: 12,
+    stampOnClear: 'ward:f7:done',
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Patrol the Road', icon: '⚔️' }],
+    groupWeights: { 2: 45, 3: 40, 4: 15 },
     encounters: [
-      { monsterId: 'slime_nature', weight: 40, level: [13, 14] },
-      { monsterId: 'cave_spider', weight: 35, level: [13, 14] },
-      { monsterId: 'slime_water', weight: 25, level: [13, 14] },
+      {
+        monsterId: 'ph_bandit_thug',
+        weight: 45,
+        level: [12, 13],
+        requires: [
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 0 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+      {
+        monsterId: 'ph_bandit_archer',
+        weight: 30,
+        level: [12, 13],
+        requires: [
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 0 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+      {
+        monsterId: 'ph_bandit_cutthroat',
+        weight: 25,
+        level: [12, 13],
+        requires: [
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 0 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
     ],
-    exploreTicks: 300,
-    finds: [
-      { id: 'f7_marsh_herbs', at: 0.3, material: { id: 'common_herb', qty: 5 } },
-      { id: 'f7_marsh_purse', at: 1, gold: [100, 180] },
-    ],
-    connections: [{ to: 'f7_wreck', ticks: 30, label: 'To the Wreck' }],
+    connections: [],
   },
-  f7_wreck: {
-    id: 'f7_wreck',
-    name: 'The Wreck',
-    icon: '🕸️',
+  // Positions 1 and 2: the camp. One set of rows serves both positions, so
+  // the step (+2 or +5) is the only difference between them.
+  f7_stockade: {
+    id: 'f7_stockade',
+    name: 'The Stockade',
+    icon: '🪵',
     areaId: 'ascent_f7_area',
-    map: { x: 50, y: 70 },
+    map: { x: 62, y: 40 },
+    fightLimit: 4,
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Storm the Stockade', icon: '⚔️' }],
+    groupWeights: { 2: 40, 3: 45, 4: 15 },
+    encounters: [
+      {
+        monsterId: 'ph_bandit_thug',
+        weight: 50,
+        level: [11, 12],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+      {
+        monsterId: 'ph_bandit_cutthroat',
+        weight: 35,
+        level: [11, 12],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+      {
+        monsterId: 'ph_bandit_archer',
+        weight: 15,
+        level: [11, 12],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+    ],
+    // Inside the camp the cleared-ward gate is always in revealWhen, so a
+    // visible road meets it and it never prints on the tent's locked door.
+    connections: [
+      {
+        to: 'f7_watchtowers',
+        ticks: 20,
+        label: 'Along the Palisade',
+        revealWhen: [{ type: 'statMax', key: 'ward:f7:done', value: 0 }],
+        requires: [{ type: 'statMax', key: 'ward:f7:done', value: 0 }],
+      },
+      {
+        to: 'f7_chiefs_tent',
+        ticks: 20,
+        label: 'Into the Chief’s Tent',
+        returnLabel: 'Out to the Stockade',
+        revealWhen: [{ type: 'statMax', key: 'ward:f7:done', value: 0 }],
+        requires: [
+          { type: 'stat', key: 'fights:f7_stockade', value: 4 },
+          { type: 'stat', key: 'fights:f7_watchtowers', value: 3 },
+        ],
+      },
+    ],
+  },
+  f7_watchtowers: {
+    id: 'f7_watchtowers',
+    name: 'The Watchtowers',
+    icon: '🗼',
+    areaId: 'ascent_f7_area',
+    map: { x: 85, y: 40 },
+    fightLimit: 3,
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Take the Watchtowers', icon: '⚔️' }],
+    groupWeights: { 2: 50, 3: 50 },
+    encounters: [
+      {
+        monsterId: 'ph_bandit_archer',
+        weight: 60,
+        level: [11, 12],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+      {
+        monsterId: 'ph_bandit_thug',
+        weight: 25,
+        level: [11, 12],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+      {
+        monsterId: 'ph_bandit_cutthroat',
+        weight: 15,
+        level: [11, 12],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+    ],
+    connections: [
+      {
+        to: 'f7_chiefs_tent',
+        ticks: 20,
+        label: 'Into the Chief’s Tent',
+        returnLabel: 'Out to the Watchtowers',
+        revealWhen: [{ type: 'statMax', key: 'ward:f7:done', value: 0 }],
+        requires: [
+          { type: 'stat', key: 'fights:f7_stockade', value: 4 },
+          { type: 'stat', key: 'fights:f7_watchtowers', value: 3 },
+        ],
+      },
+    ],
+  },
+  // The siege's last fight: the chief and two escorts. Its door is drawn
+  // locked with both budgets on it until both are spent. The camp's back gate
+  // is a one-way road home, so the camp's three spots cost one trip (the
+  // wing-loop rule, read with the road or the burnt camp as the clear).
+  f7_chiefs_tent: {
+    id: 'f7_chiefs_tent',
+    name: 'The Chief’s Tent',
+    icon: '⛺',
+    areaId: 'ascent_f7_area',
+    map: { x: 74, y: 65 },
     fightLimit: 1,
+    stampOnClear: 'ward:f7:done',
     modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Board the Wreck', icon: '⚔️' }],
-    encounters: [{ monsterId: 'giant_spider_queen', weight: 1, once: true, level: [14, 14] }],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Face the Chief', icon: '⚔️' }],
+    encounters: [
+      {
+        monsterId: 'ph_bandit_chief',
+        weight: 1,
+        boss: true,
+        level: [12, 12],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 1 },
+          { type: 'statMax', key: 'band:pos:ascent_f7', value: 2 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+    ],
+    // No gate: it only leads home to the landing, and the chief's kill (the
+    // clear) is the moment it is wanted.
+    connections: [{ to: 'f7_docks', ticks: 45, oneWay: true, label: 'Out the Back Gate' }],
+  },
+  // Position 3: the demon. Not forced: walking away mid-fight is the
+  // retreat, and the demon keeps half of what it lost (keepsWounds). Its row
+  // shuts when the window lapses (`ward:f7:demon:gone`, WARD_WINDOWS); the
+  // ward is cleared by the lapse then, so the empty table finishes nothing.
+  f7_burnt_camp: {
+    id: 'f7_burnt_camp',
+    name: 'The Burnt Camp',
+    icon: '🔥',
+    areaId: 'ascent_f7_area',
+    map: { x: 45, y: 65 },
+    fightLimit: 1,
+    stampOnClear: 'ward:f7:done',
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Face the Demon', icon: '⚔️' }],
+    encounters: [
+      {
+        monsterId: 'ph_camp_demon',
+        weight: 1,
+        boss: true,
+        level: [12, 12],
+        requires: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 3 },
+          { type: 'statMax', key: 'ward:f7:demon:gone', value: 0 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
+      },
+    ],
     connections: [],
   },
 
