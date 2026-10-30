@@ -1835,6 +1835,205 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // ==== WARD7: monsters (base 2026-10-30; the ward 7 builder's section) ====
 
   // ==== WARDS8-10: monsters (base 2026-10-30; the wards 8-10 builder's section) ====
+  // The keepers of wards 8 to 10 (docs/plans/bands-2-3.md, "The four wards").
+  // A ward's keeper takes a form by the ward's position: how many of the other
+  // three wards are cleared this run. Placeholders: stats beside the band 2
+  // bosses and the death knight at the same levels, the shared basic
+  // techniques, emoji, no art. Base levels are on the keeper rows (f8_lodge,
+  // f9_ossuary, f10_foundry); the band's step is added on top.
+  //
+  // Ward 8, the rogue beast: the young form at positions 0 and 1, the final
+  // form at 2 and 3. Both solitary; bleeding is the threat.
+  ph_rogue_beast_young: {
+    id: 'ph_rogue_beast_young',
+    name: 'Rogue Beast (placeholder)',
+    icon: '🐻',
+    tags: ['living', 'beast', 'large'],
+    tier: 'elite',
+    damageType: 'slashing',
+    group: { max: 1 },
+    inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.2 }],
+    rotation: [{ technique: 'hamstring' }, { technique: 'lunge' }, { technique: 'gather' }],
+    attrs: { str: 15, dex: 10, con: 15, int: 2, wis: 5, cha: 2 },
+    growth: { str: 1.6, dex: 1.0, con: 1.6, int: 0.3, wis: 0.6, cha: 0.3 },
+    xp: 140,
+    gold: [30, 60],
+    loot: {
+      rolls: 2,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 10 },
+        { kind: 'material', id: 'pristine_fur', weight: 20, qty: [1, 2] },
+        { kind: 'material', id: 'raw_meat', weight: 25, qty: [2, 4] },
+        { kind: 'nothing', weight: 45 },
+      ],
+    },
+  },
+  // At the same level: about a third more health and a quarter more strength
+  // than the young form, and a Heavy Blow.
+  ph_rogue_beast_final: {
+    id: 'ph_rogue_beast_final',
+    name: 'Rogue Beast, Final Form (placeholder)',
+    icon: '🐻',
+    tags: ['living', 'beast', 'huge'],
+    tier: 'elite',
+    damageType: 'slashing',
+    group: { max: 1 },
+    inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.3 }],
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'lunge' }, { technique: 'gather' }],
+    attrs: { str: 19, dex: 11, con: 20, int: 2, wis: 6, cha: 2 },
+    growth: { str: 2.0, dex: 1.1, con: 2.1, int: 0.3, wis: 0.7, cha: 0.3 },
+    xp: 220,
+    gold: [50, 100],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 20 },
+        { kind: 'material', id: 'pristine_fur', weight: 25, qty: [2, 3] },
+        { kind: 'material', id: 'raw_meat', weight: 20, qty: [3, 6] },
+        { kind: 'nothing', weight: 35 },
+      ],
+    },
+  },
+  // Ward 9, the dead: the squire at positions 0 and 1, the death knight (above)
+  // at 2 and 3. The death knight's sword-first rotation with one dark sentence
+  // and no counterspell; its resistances, smaller.
+  ph_death_squire: {
+    id: 'ph_death_squire',
+    name: 'Death Squire (placeholder)',
+    icon: '💀',
+    tags: ['humanoid', 'inorganic', 'dark', 'medium'],
+    tier: 'veteran',
+    damageType: 'slashing',
+    resistances: { poison: 0.75, dark: 0.5, cold: 0.5, heat: -0.3, light: -0.75 },
+    rotation: [
+      { technique: 'gather' },
+      { technique: 'heavy_blow' },
+      { cast: { school: 'arcane', words: ['gloom', 'cut'] } },
+    ],
+    attrs: { str: 14, dex: 9, con: 14, int: 10, wis: 5, cha: 6 },
+    growth: { str: 2.0, dex: 1.0, con: 2.0, int: 1.6, wis: 0.6, cha: 0.9 },
+    xp: 120,
+    gold: [30, 60],
+    loot: {
+      rolls: 2,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 10 },
+        { kind: 'material', id: 'bone_dust', weight: 30, qty: [2, 4] },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [2, 4] },
+        { kind: 'nothing', weight: 40 },
+      ],
+    },
+  },
+  // Ward 10, the ore eater: one stage per position, 1 at position 0 to 4 at
+  // position 3. Each stage is bigger, with more health and a harder shell:
+  // armour 6, 8, 10, 12 before levels, edges and points resisted, blunt
+  // blows taken harder. Elemental damage passes armour; acid corrodes it.
+  ph_ore_eater_1: {
+    id: 'ph_ore_eater_1',
+    name: 'Ore Eater, Stage 1 (placeholder)',
+    icon: '🪲',
+    tags: ['living', 'vermin', 'earth', 'medium'],
+    tier: 'elite',
+    damageType: 'bludgeoning',
+    group: { max: 1 },
+    armor: 6,
+    resistances: { slashing: 0.3, piercing: 0.3, bludgeoning: -0.35 },
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'gather' }],
+    attrs: { str: 12, dex: 5, con: 15, int: 1, wis: 4, cha: 1 },
+    growth: { str: 1.3, dex: 0.5, con: 1.8, int: 0.2, wis: 0.5, cha: 0.2 },
+    xp: 130,
+    gold: [25, 50],
+    loot: {
+      rolls: 2,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 10 },
+        { kind: 'material', id: 'copper_ore', weight: 30, qty: [2, 4] },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [2, 4] },
+        { kind: 'nothing', weight: 40 },
+      ],
+    },
+  },
+  ph_ore_eater_2: {
+    id: 'ph_ore_eater_2',
+    name: 'Ore Eater, Stage 2 (placeholder)',
+    icon: '🪲',
+    tags: ['living', 'vermin', 'earth', 'large'],
+    tier: 'elite',
+    damageType: 'bludgeoning',
+    group: { max: 1 },
+    armor: 8,
+    resistances: { slashing: 0.35, piercing: 0.35, bludgeoning: -0.4 },
+    inflicts: [{ id: 'concussed', intensity: 1, chance: 0.15 }],
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'gather' }],
+    attrs: { str: 13, dex: 5, con: 17, int: 1, wis: 4, cha: 1 },
+    growth: { str: 1.4, dex: 0.5, con: 2.0, int: 0.2, wis: 0.5, cha: 0.2 },
+    xp: 160,
+    gold: [30, 60],
+    loot: {
+      rolls: 2,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 10 },
+        { kind: 'material', id: 'copper_ore', weight: 30, qty: [3, 5] },
+        { kind: 'material', id: 'tin_ore', weight: 15, qty: [1, 3] },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [2, 4] },
+        { kind: 'nothing', weight: 25 },
+      ],
+    },
+  },
+  ph_ore_eater_3: {
+    id: 'ph_ore_eater_3',
+    name: 'Ore Eater, Stage 3 (placeholder)',
+    icon: '🪲',
+    tags: ['living', 'vermin', 'earth', 'huge'],
+    tier: 'elite',
+    damageType: 'bludgeoning',
+    group: { max: 1 },
+    armor: 10,
+    resistances: { slashing: 0.4, piercing: 0.4, bludgeoning: -0.45 },
+    inflicts: [{ id: 'concussed', intensity: 1, chance: 0.2 }],
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'gather' }],
+    attrs: { str: 15, dex: 5, con: 19, int: 1, wis: 4, cha: 1 },
+    growth: { str: 1.5, dex: 0.5, con: 2.2, int: 0.2, wis: 0.5, cha: 0.2 },
+    xp: 200,
+    gold: [40, 80],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 15 },
+        { kind: 'material', id: 'copper_ore', weight: 25, qty: [4, 6] },
+        { kind: 'material', id: 'tin_ore', weight: 15, qty: [2, 4] },
+        { kind: 'material', id: 'iron_scrap', weight: 20, qty: [3, 5] },
+        { kind: 'nothing', weight: 25 },
+      ],
+    },
+  },
+  ph_ore_eater_4: {
+    id: 'ph_ore_eater_4',
+    name: 'Ore Eater, Stage 4 (placeholder)',
+    icon: '🪲',
+    tags: ['living', 'vermin', 'earth', 'gargantuan'],
+    tier: 'elite',
+    damageType: 'bludgeoning',
+    group: { max: 1 },
+    armor: 12,
+    resistances: { slashing: 0.5, piercing: 0.5, bludgeoning: -0.5 },
+    inflicts: [{ id: 'concussed', intensity: 1, chance: 0.25 }],
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'gather' }],
+    attrs: { str: 17, dex: 6, con: 22, int: 1, wis: 4, cha: 1 },
+    growth: { str: 1.7, dex: 0.6, con: 2.5, int: 0.2, wis: 0.5, cha: 0.2 },
+    xp: 260,
+    gold: [50, 100],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 20 },
+        { kind: 'material', id: 'copper_ore', weight: 25, qty: [5, 8] },
+        { kind: 'material', id: 'tin_ore', weight: 15, qty: [3, 5] },
+        { kind: 'material', id: 'iron_scrap', weight: 15, qty: [4, 6] },
+        { kind: 'nothing', weight: 25 },
+      ],
+    },
+  },
 
   // ==== HARBOR: monsters (skeleton 2026-10-30; the harbor builder's section) ====
   // Band 4, the harbor (docs/FLOOR_IDEAS.md idea 3), at placeholder fidelity:
