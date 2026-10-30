@@ -5143,6 +5143,35 @@ export interface TitleDef {
   defiesDogma?: boolean;
 }
 
+// ---------- Band 3's ward windows (systems/wards.ts, bands-2-3.md "The four wards", M12) ----------
+
+/**
+ * A timed threat on a ward: it opens when the ward's position
+ * (`band:pos:<floorId>`) reaches `position` with the floor uncleared, and
+ * stays `ticks` world-clock ticks. Killing `monsterId` in that time clears
+ * the ward (the spot's `stampOnClear` writes `doneKey`). When the time runs
+ * out the ward is cleared anyway, the threat is gone (`goneKey`), and exactly
+ * one of `flags` is set, silently: `fought` if any fight with it happened
+ * (`foughtKey`), else `unmet`.
+ */
+export interface WardWindowDef {
+  id: string;
+  floorId: string;
+  position: number;
+  ticks: number;
+  spotId: string;
+  monsterId: string;
+  /** The run stat the ward's floor clear reads. */
+  doneKey: string;
+  /** The tick the window opened. */
+  atKey: string;
+  /** Set to 1 when the window closes unkilled; the threat's row reads it (`statMax` 0). */
+  goneKey: string;
+  /** Set to 1 once any fight with the threat has happened. */
+  foughtKey: string;
+  flags: { fought: string; unmet: string };
+}
+
 // ---------- The Vermin Festival (systems/festival.ts, docs/FLOOR_IDEAS.md §5.3) ----------
 
 /**
