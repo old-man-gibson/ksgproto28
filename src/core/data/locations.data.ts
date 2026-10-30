@@ -81,9 +81,10 @@ export const AREAS: Record<string, AreaDef> = {
   // Floor 11 (FLOOR_IDEAS.md §1.5): the stronghold road, a placeholder name.
   ascent_f11_area: { id: 'ascent_f11_area', name: 'The Stronghold Road', regionId: 'the_ascent', scene: 'hall' },
   // ==== HARBOR: areas (skeleton 2026-10-30; the harbor builder's section) ====
-  ascent_f12_area: { id: 'ascent_f12_area', name: 'The Outer Waters (placeholder)', regionId: 'the_ascent' },
-  ascent_f13_area: { id: 'ascent_f13_area', name: 'The Blockade (placeholder)', regionId: 'the_ascent' },
-  ascent_f14_area: { id: 'ascent_f14_area', name: 'The Final Mission (placeholder)', regionId: 'the_ascent' },
+  // Band 4's sea floors (FLOOR_IDEAS.md idea 3). No ship scene exists yet.
+  ascent_f12_area: { id: 'ascent_f12_area', name: 'The Crossings', regionId: 'the_ascent' },
+  ascent_f13_area: { id: 'ascent_f13_area', name: 'The Blockade', regionId: 'the_ascent' },
+  ascent_f14_area: { id: 'ascent_f14_area', name: 'The Final Mission', regionId: 'the_ascent' },
   // ==== FESTIVAL: areas (skeleton 2026-10-30; the festival builder's section) ====
   ascent_f15_area: { id: 'ascent_f15_area', name: 'The Dark Room (placeholder)', regionId: 'the_ascent' },
   ascent_f16_area: { id: 'ascent_f16_area', name: 'The Royale (placeholder)', regionId: 'the_ascent' },
@@ -2147,8 +2148,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   // steward's two quests, then hold the wave on the wall. The eighth fight won
   // there ends the run (STRONGHOLD_HELD, an automatic prestige). Every later
   // run reads STRONGHOLD_KEY: the repairs and the wave are shut, the gatehouse
-  // holds the door to the hold, and the road leads on to the quay, a
-  // placeholder for idea 3's harbor whose roadstead fight is the floor's
+  // holds the door to the hold, and the road leads on to the harbor (the
+  // HARBOR spots section below), whose roadstead convoy is the floor's
   // clear. Monsters are placeholders at floor 11's levels; no band step.
   f11_road: {
     id: 'f11_road',
@@ -2273,117 +2274,622 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     // way back that is not the gate (the wing-loop rule).
     connections: [{ to: 'f11_road', ticks: 30, oneWay: true, label: 'Down the Postern Stair' }],
   },
-  // Placeholders for idea 3's floor 11 (the harbor): a quay and the roadstead
-  // fight that clears the floor on runs after the stronghold.
+  // ==== HARBOR: spots (skeleton 2026-10-30; the harbor builder's section) ====
+  // Band 4, the harbor (docs/FLOOR_IDEAS.md §4 idea 3), at placeholder
+  // fidelity. Ports are havens; the sea is the water spots between them, each
+  // with a convoy (sea.data.ts CONVOYS, systems/sea.ts). A side is picked by
+  // accepting a join quest on floor 11, and its stamp,
+  // flag:quest:f11_join_<side>:accepted, decides which lanes, crews and wing
+  // exist. Every water carries a line per side; a clear spot also carries one
+  // for no side (the four stamps at 0), so its table never empties.
+  // Named ships are `once` lines on floors 12 and 13.
+
+  // ---------- Floor 11, the harbor (runs after the stronghold) ----------
+  // The road's gated edge (f11_road, legacy:stronghold) leads here. The quay
+  // is the haven and makes the battery's hold; four berths each hold a
+  // recruiter; the roadstead is the floor's water and its clear.
   f11_quay: {
     id: 'f11_quay',
-    name: 'The Quay (placeholder)',
+    name: 'The Quay',
     icon: '⚓',
     areaId: 'ascent_f11_area',
-    map: { x: 80, y: 68 },
+    map: { x: 70, y: 58 },
     activities: [{ id: 'camp_f11_quay', kind: 'rest', name: 'Rest at the Quay', icon: '🛏️' }],
-    connections: [{ to: 'f11_roadstead', ticks: 30, label: 'Row Out to the Roadstead', returnLabel: 'Back to the Quay' }],
+    recipes: ['ship_cannon', 'cannonball', 'powder_charge'],
+    connections: [
+      { to: 'f11_merchant_berth', ticks: 20, label: 'To the Merchant Berth', returnLabel: 'Back to the Quay' },
+      { to: 'f11_smugglers_berth', ticks: 20, label: 'To the Smugglers’ Berth', returnLabel: 'Back to the Quay' },
+      { to: 'f11_privateer_berth', ticks: 20, label: 'To the Privateer Berth', returnLabel: 'Back to the Quay' },
+      { to: 'f11_navy_berth', ticks: 20, label: 'To the Navy Berth', returnLabel: 'Back to the Quay' },
+      { to: 'f11_roadstead', ticks: 30, label: 'Row Out to the Roadstead', returnLabel: 'Back to the Quay' },
+    ],
+  },
+  f11_merchant_berth: {
+    id: 'f11_merchant_berth',
+    name: 'The Merchant Berth',
+    icon: '⚖️',
+    areaId: 'ascent_f11_area',
+    map: { x: 92, y: 36 },
+    activities: [],
+    connections: [],
+  },
+  f11_smugglers_berth: {
+    id: 'f11_smugglers_berth',
+    name: 'The Smugglers’ Berth',
+    icon: '🏴‍☠️',
+    areaId: 'ascent_f11_area',
+    map: { x: 92, y: 48 },
+    activities: [],
+    connections: [],
+  },
+  f11_privateer_berth: {
+    id: 'f11_privateer_berth',
+    name: 'The Privateer Berth',
+    icon: '📜',
+    areaId: 'ascent_f11_area',
+    map: { x: 92, y: 60 },
+    activities: [],
+    connections: [],
+  },
+  f11_navy_berth: {
+    id: 'f11_navy_berth',
+    name: 'The Navy Berth',
+    icon: '🎖️',
+    areaId: 'ascent_f11_area',
+    map: { x: 92, y: 72 },
+    activities: [],
+    connections: [],
   },
   f11_roadstead: {
     id: 'f11_roadstead',
-    name: 'The Roadstead (placeholder)',
+    name: 'The Roadstead',
     icon: '⛵',
     areaId: 'ascent_f11_area',
-    map: { x: 92, y: 60 },
-    fightLimit: 1,
-    modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Board the Corsair', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_corsair', weight: 1, level: [26, 26] }],
+    map: { x: 82, y: 20 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Sail With the Convoy', icon: '⚔️' }],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 35, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 15, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 35, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 15, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_convoy_guard', weight: 60, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_marine', weight: 40, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_cutthroat', weight: 60, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 40, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 60, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 40, level: [24, 26], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      // No side yet: sea monsters, and no convoy work until a side is picked.
+      {
+        monsterId: 'ph_reef_eel',
+        weight: 1,
+        level: [24, 25],
+        requires: [
+          { type: 'statMax', key: 'flag:quest:f11_join_merchants:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_pirates:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_privateers:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_navy:accepted', value: 0 },
+        ],
+      },
+    ],
     connections: [],
   },
 
-  // ==== HARBOR: spots (skeleton 2026-10-30; the harbor builder's section) ====
-  // Band 4, the harbor: floors 12–14 (idea 3). Two spots a floor, placeholder monsters.
+  // ---------- Floor 12, the crossings ----------
+  // Two ports and the water between them. Sailing out of a port onto open
+  // water is a boarding (`forced`); the way back is free. Each side has its own
+  // long, weak lane (revealed by its stamp; the lane's way back from the isle
+  // is authored oneWay with the same reveal, so no mirror shows another
+  // side's lane); the strait is short and strong for every side; the pirates'
+  // cove is hidden and cheap. The far water is the clear.
   f12_landing: {
     id: 'f12_landing',
-    name: 'The Outer Waters',
-    icon: '🏕️',
+    name: 'The Outer Port',
+    icon: '⚓',
     areaId: 'ascent_f12_area',
-    map: { x: 50, y: 65 },
+    map: { x: 20, y: 60 },
     activities: [
-      { id: 'camp_f12', kind: 'rest', name: 'Camp', icon: '🏕️' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' },
+      { id: 'camp_f12', kind: 'rest', name: 'Rest at the Outer Port', icon: '🛏️' },
+      { id: 'explore', kind: 'explore', name: 'Search the Port', icon: '🔍' },
     ],
-    groupWeights: { 1: 70, 2: 30 },
-    encounters: [
-      { monsterId: 'ph_siege_raider', weight: 70, level: [26, 27] },
-      { monsterId: 'ph_siege_brute', weight: 30, level: [26, 27] },
+    exploreTicks: 300,
+    finds: [{ id: 'f12_port_purse', at: 0.5, gold: [40, 80] }],
+    connections: [
+      { to: 'f12_strait', ticks: 30, forced: true, label: 'Through the Strait', returnLabel: 'Back to the Outer Port' },
+      {
+        to: 'f12_trade_lane',
+        ticks: 90,
+        forced: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }],
+        label: 'Out the Trade Lane',
+        returnLabel: 'Back to the Outer Port',
+      },
+      {
+        to: 'f12_hidden_cove',
+        ticks: 45,
+        forced: true,
+        hidden: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }],
+        label: 'Into the Hidden Cove',
+        returnLabel: 'Back to the Outer Port',
+      },
+      {
+        to: 'f12_hunting_ground',
+        ticks: 90,
+        forced: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }],
+        label: 'Out to the Hunting Ground',
+        returnLabel: 'Back to the Outer Port',
+      },
+      {
+        to: 'f12_patrol_lane',
+        ticks: 90,
+        forced: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }],
+        label: 'Out the Patrol Lane',
+        returnLabel: 'Back to the Outer Port',
+      },
     ],
-    connections: [{ to: 'f12_keeper', ticks: 30, label: 'To the Keeper' }],
   },
-  f12_keeper: {
-    id: 'f12_keeper',
-    name: 'The Keeper of Floor 12',
-    icon: '💀',
+  f12_strait: {
+    id: 'f12_strait',
+    name: 'The Strait',
+    icon: '🌊',
     areaId: 'ascent_f12_area',
-    map: { x: 50, y: 25 },
-    fightLimit: 1,
-    modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Keeper', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_corsair', weight: 1, level: [29, 29] }],
+    map: { x: 45, y: 50 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Sail With the Convoy', icon: '⚔️' }],
+    groupWeights: { 1: 50, 2: 50 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 35, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 15, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 35, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 15, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_captain', weight: 8, once: true, level: [30, 30], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_convoy_guard', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_marine', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_frigate', weight: 8, once: true, level: [30, 30], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_cutthroat', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_captain', weight: 8, once: true, level: [30, 30], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_brood_matron', weight: 8, once: true, level: [30, 30], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+    ],
+    connections: [{ to: 'f12_isle', ticks: 30, label: 'On to the Isle Anchorage', returnLabel: 'Back Through the Strait' }],
+  },
+  f12_trade_lane: {
+    id: 'f12_trade_lane',
+    name: 'The Trade Lane',
+    icon: '🌊',
+    areaId: 'ascent_f12_area',
+    map: { x: 40, y: 72 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Sail With the Convoy', icon: '⚔️' }],
+    groupWeights: { 1: 80, 2: 20 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 35, level: [25, 27] },
+      { monsterId: 'ph_pirate_gunner', weight: 15, level: [25, 27] },
+      { monsterId: 'ph_reef_eel', weight: 35, level: [25, 27] },
+      { monsterId: 'ph_deep_serpent', weight: 15, level: [25, 27] },
+    ],
+    connections: [{ to: 'f12_isle', ticks: 90, oneWay: true, label: 'On to the Isle Anchorage' }],
+  },
+  f12_hidden_cove: {
+    id: 'f12_hidden_cove',
+    name: 'The Hidden Cove',
+    icon: '🌊',
+    areaId: 'ascent_f12_area',
+    map: { x: 25, y: 35 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Lie in Wait for the Convoy', icon: '⚔️' }],
+    groupWeights: { 1: 90, 2: 10 },
+    encounters: [
+      { monsterId: 'ph_convoy_guard', weight: 80, level: [24, 26] },
+      { monsterId: 'ph_navy_marine', weight: 20, level: [24, 26] },
+    ],
+    connections: [{ to: 'f12_isle', ticks: 60, oneWay: true, label: 'On to the Isle Anchorage' }],
+  },
+  f12_hunting_ground: {
+    id: 'f12_hunting_ground',
+    name: 'The Hunting Ground',
+    icon: '🌊',
+    areaId: 'ascent_f12_area',
+    map: { x: 55, y: 72 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt the Pirates', icon: '⚔️' }],
+    groupWeights: { 1: 80, 2: 20 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 60, level: [25, 27] },
+      { monsterId: 'ph_pirate_gunner', weight: 40, level: [25, 27] },
+    ],
+    connections: [{ to: 'f12_isle', ticks: 90, oneWay: true, label: 'On to the Isle Anchorage' }],
+  },
+  f12_patrol_lane: {
+    id: 'f12_patrol_lane',
+    name: 'The Patrol Lane',
+    icon: '🌊',
+    areaId: 'ascent_f12_area',
+    map: { x: 40, y: 28 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Escort the Convoy', icon: '⚔️' }],
+    groupWeights: { 1: 80, 2: 20 },
+    encounters: [
+      { monsterId: 'ph_reef_eel', weight: 60, level: [25, 27] },
+      { monsterId: 'ph_deep_serpent', weight: 40, level: [25, 27] },
+    ],
+    connections: [{ to: 'f12_isle', ticks: 90, oneWay: true, label: 'On to the Isle Anchorage' }],
+  },
+  f12_isle: {
+    id: 'f12_isle',
+    name: 'The Isle Anchorage',
+    icon: '⚓',
+    areaId: 'ascent_f12_area',
+    map: { x: 70, y: 50 },
+    activities: [{ id: 'camp_f12_isle', kind: 'rest', name: 'Rest at the Anchorage', icon: '🛏️' }],
+    connections: [
+      { to: 'f12_far_water', ticks: 60, forced: true, label: 'Out to the Far Water', returnLabel: 'Back to the Isle Anchorage' },
+      {
+        to: 'f12_trade_lane',
+        ticks: 90,
+        oneWay: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }],
+        label: 'Back Out the Trade Lane',
+      },
+      {
+        to: 'f12_hidden_cove',
+        ticks: 60,
+        oneWay: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }],
+        label: 'Back to the Hidden Cove',
+      },
+      {
+        to: 'f12_hunting_ground',
+        ticks: 90,
+        oneWay: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }],
+        label: 'Back Out to the Hunting Ground',
+      },
+      {
+        to: 'f12_patrol_lane',
+        ticks: 90,
+        oneWay: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }],
+        label: 'Back Out the Patrol Lane',
+      },
+    ],
+  },
+  f12_far_water: {
+    id: 'f12_far_water',
+    name: 'The Far Water',
+    icon: '🌊',
+    areaId: 'ascent_f12_area',
+    map: { x: 90, y: 40 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Sail With the Convoy', icon: '⚔️' }],
+    groupWeights: { 1: 60, 2: 40 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 35, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 15, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 35, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 15, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_captain', weight: 8, once: true, level: [29, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_convoy_guard', weight: 50, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_marine', weight: 50, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_frigate', weight: 8, once: true, level: [29, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_cutthroat', weight: 50, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 50, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_captain', weight: 8, once: true, level: [29, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 50, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 50, level: [27, 28], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_brood_matron', weight: 8, once: true, level: [29, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      {
+        monsterId: 'ph_reef_eel',
+        weight: 1,
+        level: [27, 28],
+        requires: [
+          { type: 'statMax', key: 'flag:quest:f11_join_merchants:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_pirates:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_privateers:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_navy:accepted', value: 0 },
+        ],
+      },
+    ],
     connections: [],
   },
+
+  // ---------- Floor 13, the blockade ----------
+  // The Last Port, the picket line and the blockade (the clear). The way in
+  // sets the approach: through the picket line the player arrives
+  // Flat-Footed; through the Pilot's Channel, open once the pilot's passage
+  // is bought (shop:buys:f13_pilot), the blockaders start Surprised.
   f13_landing: {
     id: 'f13_landing',
-    name: 'The Blockade',
-    icon: '🏕️',
+    name: 'The Last Port',
+    icon: '⚓',
     areaId: 'ascent_f13_area',
-    map: { x: 50, y: 65 },
-    activities: [
-      { id: 'camp_f13', kind: 'rest', name: 'Camp', icon: '🏕️' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' },
+    map: { x: 20, y: 55 },
+    activities: [{ id: 'camp_f13', kind: 'rest', name: 'Rest at the Last Port', icon: '🛏️' }],
+    connections: [
+      { to: 'f13_picket', ticks: 40, forced: true, label: 'Out to the Picket Line', returnLabel: 'Back to the Last Port' },
+      {
+        to: 'f13_blockade',
+        ticks: 60,
+        forced: true,
+        requires: [{ type: 'stat', key: 'shop:buys:f13_pilot', value: 1 }],
+        approach: { enemies: [{ id: 'surprised' }] },
+        label: 'The Pilot’s Channel',
+        returnLabel: 'Back to the Last Port',
+      },
     ],
-    groupWeights: { 1: 70, 2: 30 },
-    encounters: [
-      { monsterId: 'ph_siege_raider', weight: 70, level: [28, 29] },
-      { monsterId: 'ph_siege_brute', weight: 30, level: [28, 29] },
-    ],
-    connections: [{ to: 'f13_keeper', ticks: 30, label: 'To the Keeper' }],
   },
-  f13_keeper: {
-    id: 'f13_keeper',
-    name: 'The Keeper of Floor 13',
-    icon: '💀',
+  f13_picket: {
+    id: 'f13_picket',
+    name: 'The Picket Line',
+    icon: '🌊',
     areaId: 'ascent_f13_area',
-    map: { x: 50, y: 25 },
-    fightLimit: 1,
-    modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Keeper', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_siege_captain', weight: 1, level: [31, 31] }],
+    map: { x: 50, y: 38 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Sail With the Convoy', icon: '⚔️' }],
+    groupWeights: { 1: 60, 2: 40 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 35, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 15, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 35, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 15, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_captain', weight: 8, once: true, level: [30, 30], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_convoy_guard', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_marine', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_frigate', weight: 8, once: true, level: [30, 30], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_cutthroat', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_captain', weight: 8, once: true, level: [30, 30], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 50, level: [28, 29], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_brood_matron', weight: 8, once: true, level: [30, 30], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+    ],
+    connections: [
+      {
+        to: 'f13_blockade',
+        ticks: 40,
+        forced: true,
+        approach: { self: [{ id: 'flat_footed' }] },
+        label: 'Run the Blockade',
+        returnLabel: 'Back to the Picket Line',
+      },
+    ],
+  },
+  f13_blockade: {
+    id: 'f13_blockade',
+    name: 'The Blockade',
+    icon: '🌊',
+    areaId: 'ascent_f13_area',
+    map: { x: 80, y: 50 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Sail With the Convoy', icon: '⚔️' }],
+    groupWeights: { 1: 40, 2: 60 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 35, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 15, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 35, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 15, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_captain', weight: 8, once: true, level: [32, 32], requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }] },
+      { monsterId: 'ph_convoy_guard', weight: 50, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_marine', weight: 50, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_navy_frigate', weight: 8, once: true, level: [32, 32], requires: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_cutthroat', weight: 50, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_gunner', weight: 50, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_pirate_captain', weight: 8, once: true, level: [32, 32], requires: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }] },
+      { monsterId: 'ph_reef_eel', weight: 50, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_deep_serpent', weight: 50, level: [30, 31], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      { monsterId: 'ph_brood_matron', weight: 8, once: true, level: [32, 32], requires: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }] },
+      {
+        monsterId: 'ph_reef_eel',
+        weight: 1,
+        level: [30, 31],
+        requires: [
+          { type: 'statMax', key: 'flag:quest:f11_join_merchants:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_pirates:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_privateers:accepted', value: 0 },
+          { type: 'statMax', key: 'flag:quest:f11_join_navy:accepted', value: 0 },
+        ],
+      },
+    ],
     connections: [],
   },
+
+  // ---------- Floor 14, the final mission ----------
+  // One floor, four wings, one per side; a wing exists only for its side's
+  // stamp. Each wing is a water with an endless hunt and the mission boss's
+  // spot. The boss's kill stamps flag:sea:14:done (systems/sea.ts), which is
+  // the floor's clear. The way into the boss spot carries the side's
+  // preparation: turned in, the boss and its escorts start the fight with a
+  // condition. Spine-lint exempt: the clear names no spot.
   f14_landing: {
     id: 'f14_landing',
-    name: 'The Final Mission',
-    icon: '🏕️',
+    name: 'The Staging Anchorage',
+    icon: '⚓',
     areaId: 'ascent_f14_area',
-    map: { x: 50, y: 65 },
-    activities: [
-      { id: 'camp_f14', kind: 'rest', name: 'Camp', icon: '🏕️' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' },
+    map: { x: 50, y: 62 },
+    activities: [{ id: 'camp_f14', kind: 'rest', name: 'Rest at the Anchorage', icon: '🛏️' }],
+    connections: [
+      {
+        to: 'f14_closed_port_roads',
+        ticks: 60,
+        forced: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }],
+        label: 'Make for the Closed Port',
+        returnLabel: 'Back to the Anchorage',
+      },
+      {
+        to: 'f14_galleon_track',
+        ticks: 60,
+        forced: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_pirates:accepted', value: 1 }],
+        label: 'Shadow the Treasure Galleon',
+        returnLabel: 'Back to the Anchorage',
+      },
+      {
+        to: 'f14_kings_reef',
+        ticks: 60,
+        forced: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_privateers:accepted', value: 1 }],
+        label: 'Make for the King’s Reef',
+        returnLabel: 'Back to the Anchorage',
+      },
+      {
+        to: 'f14_beast_grounds',
+        ticks: 60,
+        forced: true,
+        revealWhen: [{ type: 'stat', key: 'flag:quest:f11_join_navy:accepted', value: 1 }],
+        label: 'Out to the Beast’s Grounds',
+        returnLabel: 'Back to the Anchorage',
+      },
     ],
-    groupWeights: { 1: 70, 2: 30 },
-    encounters: [
-      { monsterId: 'ph_siege_raider', weight: 70, level: [30, 31] },
-      { monsterId: 'ph_siege_brute', weight: 30, level: [30, 31] },
-    ],
-    connections: [{ to: 'f14_keeper', ticks: 30, label: 'To the Keeper' }],
   },
-  f14_keeper: {
-    id: 'f14_keeper',
-    name: 'The Keeper of Floor 14',
-    icon: '💀',
+  // The merchants' wing: land the charter cargo past the closed port.
+  f14_closed_port_roads: {
+    id: 'f14_closed_port_roads',
+    name: 'The Closed Port’s Roads',
+    icon: '🌊',
     areaId: 'ascent_f14_area',
-    map: { x: 50, y: 25 },
+    map: { x: 20, y: 40 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight Off the Raiders', icon: '⚔️' }],
+    groupWeights: { 1: 50, 2: 50 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 40, level: [30, 32] },
+      { monsterId: 'ph_pirate_gunner', weight: 30, level: [30, 32] },
+      { monsterId: 'ph_deep_serpent', weight: 30, level: [30, 32] },
+    ],
+    connections: [
+      {
+        to: 'f14_closed_port',
+        ticks: 30,
+        approach: {
+          requires: [{ type: 'quest', id: 'f11_merchants_clearance' }],
+          enemies: [{ id: 'flat_footed' }],
+        },
+        label: 'Run In to the Closed Port',
+        returnLabel: 'Back to the Roads',
+      },
+    ],
+  },
+  f14_closed_port: {
+    id: 'f14_closed_port',
+    name: 'The Closed Port',
+    icon: '🚧',
+    areaId: 'ascent_f14_area',
+    map: { x: 10, y: 20 },
     fightLimit: 1,
     modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Keeper', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_corsair', weight: 1, level: [33, 33] }],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Land the Charter Cargo', icon: '⚔️' }],
+    encounters: [{ monsterId: 'ph_port_warden', weight: 1, once: true, level: [33, 33] }],
+    connections: [],
+  },
+  // The pirates' wing: board the treasure galleon.
+  f14_galleon_track: {
+    id: 'f14_galleon_track',
+    name: 'The Galleon’s Track',
+    icon: '🌊',
+    areaId: 'ascent_f14_area',
+    map: { x: 40, y: 30 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Pick Off the Escort', icon: '⚔️' }],
+    groupWeights: { 1: 50, 2: 50 },
+    encounters: [
+      { monsterId: 'ph_convoy_guard', weight: 40, level: [30, 32] },
+      { monsterId: 'ph_navy_marine', weight: 60, level: [30, 32] },
+    ],
+    connections: [
+      {
+        to: 'f14_treasure_galleon',
+        ticks: 30,
+        approach: {
+          requires: [{ type: 'quest', id: 'f11_pirates_signal' }],
+          enemies: [{ id: 'surprised' }],
+        },
+        label: 'Board the Treasure Galleon',
+        returnLabel: 'Back to the Galleon’s Track',
+      },
+    ],
+  },
+  f14_treasure_galleon: {
+    id: 'f14_treasure_galleon',
+    name: 'The Treasure Galleon',
+    icon: '💰',
+    areaId: 'ascent_f14_area',
+    map: { x: 35, y: 10 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Take the Galleon', icon: '⚔️' }],
+    encounters: [{ monsterId: 'ph_galleon_master', weight: 1, once: true, level: [33, 33] }],
+    connections: [],
+  },
+  // The privateers' wing: take the pirate king's flagship as a prize.
+  f14_kings_reef: {
+    id: 'f14_kings_reef',
+    name: 'The King’s Reef',
+    icon: '🌊',
+    areaId: 'ascent_f14_area',
+    map: { x: 65, y: 30 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt the King’s Crews', icon: '⚔️' }],
+    groupWeights: { 1: 50, 2: 50 },
+    encounters: [
+      { monsterId: 'ph_pirate_cutthroat', weight: 40, level: [30, 32] },
+      { monsterId: 'ph_pirate_gunner', weight: 60, level: [30, 32] },
+    ],
+    connections: [
+      {
+        to: 'f14_flagship',
+        ticks: 30,
+        approach: {
+          requires: [{ type: 'quest', id: 'f11_privateers_letter' }],
+          enemies: [{ id: 'flat_footed' }],
+        },
+        label: 'Board the Flagship',
+        returnLabel: 'Back to the King’s Reef',
+      },
+    ],
+  },
+  f14_flagship: {
+    id: 'f14_flagship',
+    name: 'The Pirate King’s Flagship',
+    icon: '👑',
+    areaId: 'ascent_f14_area',
+    map: { x: 70, y: 10 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Take the Flagship', icon: '⚔️' }],
+    encounters: [{ monsterId: 'ph_pirate_king', weight: 1, once: true, level: [33, 33] }],
+    connections: [],
+  },
+  // The navy's wing: kill the sea beast that closes the lanes.
+  f14_beast_grounds: {
+    id: 'f14_beast_grounds',
+    name: 'The Beast’s Grounds',
+    icon: '🌊',
+    areaId: 'ascent_f14_area',
+    map: { x: 85, y: 45 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Cull the Brood', icon: '⚔️' }],
+    groupWeights: { 1: 50, 2: 50 },
+    encounters: [
+      { monsterId: 'ph_reef_eel', weight: 40, level: [30, 32] },
+      { monsterId: 'ph_deep_serpent', weight: 60, level: [30, 32] },
+    ],
+    connections: [
+      {
+        to: 'f14_beast_lair',
+        ticks: 30,
+        approach: {
+          requires: [{ type: 'quest', id: 'f11_navy_lure' }],
+          enemies: [{ id: 'surprised' }],
+        },
+        label: 'Down to the Beast’s Lair',
+        returnLabel: 'Back to the Grounds',
+      },
+    ],
+  },
+  f14_beast_lair: {
+    id: 'f14_beast_lair',
+    name: 'The Beast’s Lair',
+    icon: '🐋',
+    areaId: 'ascent_f14_area',
+    map: { x: 92, y: 22 },
+    fightLimit: 1,
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Sea Beast', icon: '⚔️' }],
+    encounters: [{ monsterId: 'ph_sea_beast', weight: 1, once: true, level: [33, 33] }],
     connections: [],
   },
 

@@ -154,4 +154,11 @@ export const MATERIALS_TEXT: ProseTable = {
   'bronze_ingot.desc': 'Smithing stock. Made from 4 Copper Ingots and 1 Tin Ingot. One plus one Leather makes a Bronze Dagger.',
 
   'leather.desc': 'Leatherworking stock, tanned from fur (4 ruined furs per piece; better fur yields more). Spent with Bronze Ingots at the forge.',
+
+  // ==== HARBOR: material text (2026-10-30; the harbor builder's section) ====
+  'ship_cannon.desc': 'Fitted in the hold while carried: on the harbor band’s waters each one adds a volley to your battery on every leg a cannonball loads them. Up to 4 count. Never spent. Made at the quay on floor 11 from 6 iron ingots.',
+  'cannonball.desc': 'Battery shot. One is spent each convoy leg you are present for, if a cannon is carried, and loads every cannon. Made at the quay on floor 11, 3 from 1 iron ingot.',
+  'powder_charge.desc': 'Battery powder. One is spent each convoy leg you are present for: +1 hit, which multiplies the volleys. Made at the quay on floor 11, 2 from 3 biomatter and 1 iron scrap.',
+  'pilot_passage.desc': 'The receipt for a pilot on floor 13. Buying it opens the Pilot’s Channel into the blockade, where the blockaders are caught Surprised. Sold by the pilot at the Last Port.',
+  'port_clearance.desc': 'Papers for the closed port on floor 14, bought from the harbor master on floor 13. The merchants’ factor takes it for Clear the Closed Port. Merchants only.',
 };

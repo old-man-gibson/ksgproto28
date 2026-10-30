@@ -21,6 +21,22 @@ export interface OfflineSummary {
 }
 
 /**
+ * Run `ticks` ticks of time the player was away. `Game.catchingUp` is true
+ * for exactly these ticks, so the harbor's convoys pay them at the offline
+ * rate and never toward a clear (systems/sea.ts). Every catch-up loop goes
+ * through here, the summarised one below and the UI's quiet short-gap one
+ * (ui/state.svelte.ts runCatchup), so neither can forget the flag.
+ */
+export function catchUpTicks(game: Game, ticks: number): void {
+  game.catchingUp = true;
+  try {
+    for (let i = 0; i < ticks; i++) game.tick();
+  } finally {
+    game.catchingUp = false;
+  }
+}
+
+/**
  * Run capped catch-up ticks with logging suppressed and report what happened.
  * Returns null when the absence was too short to matter.
  */
@@ -44,7 +60,7 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
   };
 
   game.suppressLog = true;
-  for (let i = 0; i < ticks; i++) game.tick();
+  catchUpTicks(game, ticks);
   game.suppressLog = false;
 
   const attrLevels = ATTRIBUTE_LIST.map((a) => ({

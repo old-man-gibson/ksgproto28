@@ -86,8 +86,9 @@ export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
     levelSteps: [0, 2, 5, 9],
   },
   // Band 4, the harbor band (docs/FLOOR_IDEAS.md idea 3), floors 11 to 14.
-  // Only floor 11 exists so far: the stronghold siege on a first climb, and
-  // a placeholder quay after it (§1.5).
+  // Floor 11 is the stronghold siege on a first climb and the harbor after
+  // it (§1.5); 12 and 13 are sea floors; 14 is the side's final mission.
+  // The sides and convoys are data/sea.data.ts.
   ascent_harbor: {
     id: 'ascent_harbor',
     name: 'The Harbor',
@@ -289,10 +290,11 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
   // On a first climb the stronghold wing is the floor: repairs, then the wave
   // on the wall, whose hold ends the run (STRONGHOLD_HELD, an automatic
   // prestige). From the next run on (STRONGHOLD_KEY) the siege is shut, the
-  // gatehouse holds the door to the hold, and the way to the quay is open.
-  // The clear is the quay side's, so a first climb never clears floor 11;
-  // it does not need to, because the wave ends the run. The quay and the
-  // roadstead are placeholders for idea 3's floor 11.
+  // gatehouse holds the door to the hold, and the way to the harbor is open.
+  // The clear is the harbor's (idea 3): one convoy's worth of crates won
+  // (sea:crates:won, systems/sea.ts) and a fight won on the roadstead, so a
+  // first climb never clears floor 11; it does not need to, because the wave
+  // ends the run.
   ascent_f11: {
     id: 'ascent_f11',
     name: 'The Stronghold Road',
@@ -301,41 +303,56 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
     index: 11,
     areaId: 'ascent_f11_area',
     landing: 'f11_road',
-    clear: [{ type: 'stat', key: 'fights:f11_roadstead', value: 1 }],
+    clear: [
+      { type: 'stat', key: 'sea:crates:won', value: 8 },
+      { type: 'stat', key: 'fights:f11_roadstead', value: 1 },
+    ],
     clearXp: 600,
   },
   // ==== HARBOR: floors (skeleton 2026-10-30; the harbor builder's section) ====
+  // Floors 12 and 13 clear on the band's one endless counter, crates won on
+  // any water (sea:crates:won, cumulative over the run), plus a fight won on
+  // the floor's last water, which gives the spine rules a spot to measure.
   ascent_f12: {
     id: 'ascent_f12',
-    name: 'The Outer Waters (placeholder)',
+    name: 'The Crossings',
     towerId: 'the_ascent',
     bandId: 'ascent_harbor',
     index: 12,
     areaId: 'ascent_f12_area',
     landing: 'f12_landing',
-    clear: [{ type: 'stat', key: 'fights:f12_keeper', value: 1 }],
+    clear: [
+      { type: 'stat', key: 'sea:crates:won', value: 40 },
+      { type: 'stat', key: 'fights:f12_far_water', value: 1 },
+    ],
     clearXp: 650,
   },
   ascent_f13: {
     id: 'ascent_f13',
-    name: 'The Blockade (placeholder)',
+    name: 'The Blockade',
     towerId: 'the_ascent',
     bandId: 'ascent_harbor',
     index: 13,
     areaId: 'ascent_f13_area',
     landing: 'f13_landing',
-    clear: [{ type: 'stat', key: 'fights:f13_keeper', value: 1 }],
+    clear: [
+      { type: 'stat', key: 'sea:crates:won', value: 160 },
+      { type: 'stat', key: 'fights:f13_blockade', value: 1 },
+    ],
     clearXp: 700,
   },
+  // Floor 14: one floor, four wings, one per side. Whichever wing's boss
+  // falls stamps flag:sea:14:done (systems/sea.ts), so the clear names no
+  // spot and the spine rules skip it (content.test.ts lists it as decided).
   ascent_f14: {
     id: 'ascent_f14',
-    name: 'The Final Mission (placeholder)',
+    name: 'The Final Mission',
     towerId: 'the_ascent',
     bandId: 'ascent_harbor',
     index: 14,
     areaId: 'ascent_f14_area',
     landing: 'f14_landing',
-    clear: [{ type: 'stat', key: 'fights:f14_keeper', value: 1 }],
+    clear: [{ type: 'stat', key: 'flag:sea:14:done', value: 1 }],
     clearXp: 750,
   },
   // ==== FESTIVAL: floors (skeleton 2026-10-30; the festival builder's section) ====
@@ -428,3 +445,16 @@ export const OFF_LADDER_DOORS: [from: string, to: string][] = [
 export function offLadderDoor(from: string, to: string): boolean {
   return OFF_LADDER_DOORS.some(([f, t]) => f === from && t === to);
 }
+
+/**
+ * Banded floors whose clear names no spot, so the floor standard's spine rules
+ * (systems/floorRules.ts) cannot run on them. Each entry is a decision with its
+ * reason. The forge validator stays quiet for these; content.test.ts pins the
+ * list.
+ *
+ * - Floor 14, the harbor's final mission (FLOOR_IDEAS.md idea 3, ruling Q2).
+ */
+export const SPINE_EXEMPT: Record<string, string> = {
+  ascent_f14:
+    'cleared by any one of four side wings, stamped as flag:sea:14:done by the side’s boss kill (systems/sea.ts); an AND-only clear cannot name four spots of which one is enough',
+};

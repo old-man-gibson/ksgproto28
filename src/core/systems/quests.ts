@@ -4,7 +4,7 @@ import { ITEMS, MATERIALS, NPCS, QUESTS, SPOTS } from '../registry';
 import { conditionsMet } from './conditions';
 import { checkDiscovery, grantDiscoveryXp, grantSkillXp, grantSkillXpDirect } from './skills';
 import { createItem } from './runes';
-import { bumpStat } from './achievements';
+import { bumpStat, setStat } from './achievements';
 import { grantFavorAll } from './divine';
 import { grantMaterial } from './disciplines';
 import { grantLevelXp, questLevelXp } from './levels';
@@ -34,6 +34,14 @@ export const metKey = (npcId: string): string => `met:${npcId}`;
 export function hasMet(state: GameState, npcId: string): boolean {
   return (state.stats[metKey(npcId)] ?? 0) >= 1;
 }
+
+/**
+ * Where the game remembers that a quest was taken on, stamped at accept and
+ * never cleared within the run. Engine-written. The harbor's side pick is a
+ * join quest's stamp (systems/sea.ts `seaSide`), so taking that work is a
+ * choice that holds for the run.
+ */
+export const acceptedKey = (questId: string): string => `flag:quest:${questId}:accepted`;
 
 /**
  * A first greeting: stamps `met:<npcId>` for talk objectives (and anything
@@ -78,6 +86,7 @@ export function acceptQuest(state: GameState, bus: EventBus, questId: string): b
   if (quest.requirements && !conditionsMet(state, quest.requirements)) return false;
 
   state.quests[questId] = { status: 'active', progress: quest.objectives.map(() => 0) };
+  setStat(state, bus, acceptedKey(questId), 1);
 
   // Taking work from someone is a conversation, and the person is what wears
   // out — not the job. Novelty is keyed to the giver, so a fifth errand for

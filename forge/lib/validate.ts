@@ -10,7 +10,9 @@ import type { store as Store } from './store.svelte';
 import { searchContentIssues } from '../../src/core/systems/searchValidation';
 import { smithingContentIssues } from '../../src/core/systems/assemblyValidation';
 import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
-import { offLadderDoor } from '../../src/core/data/towers.data';
+import { SPINE_EXEMPT, offLadderDoor } from '../../src/core/data/towers.data';
+import { seaContentIssues } from '../../src/core/systems/seaValidation';
+import type { ConvoyDef, SeaSideDef } from '../../src/core/data/sea.data';
 import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../../src/core/systems/monsterStats';
@@ -88,6 +90,7 @@ export function validate(store: S): Issue[] {
   const disciplines = store.all('discipline');
   const statuses = store.all<StatusDef>('status');
   const towers = store.all<{ id: string; hubSpot: string }>('tower');
+  const convoys = store.all<ConvoyDef>('convoy');
   const bands = store.all<{
     id: string;
     towerId: string;
@@ -124,6 +127,18 @@ export function validate(store: S): Issue[] {
 
   const claimedTags = new Set<string>();
   for (const s of Object.values(skills)) for (const t of s.tags ?? []) claimedTags.add(t);
+
+  // ---------- The harbor's sides and convoys (data/sea.data.ts) ----------
+  // The same function tests/content.test.ts runs (systems/seaValidation.ts).
+  for (const issue of seaContentIssues(store.all<SeaSideDef>('seaSide'), convoys, {
+    spots,
+    npcs,
+    quests: quests as Record<string, QuestDef>,
+    monsters,
+    materials,
+  })) {
+    err(issue.kind, issue.id, issue.message);
+  }
 
   // ---------- Areas & regions ----------
   for (const area of Object.values(areas)) {
@@ -284,7 +299,8 @@ export function validate(store: S): Issue[] {
       if (fights) {
         const spot = spots[fights[1]];
         if (!spot) err('floor', floor.id, `clear names unknown spot '${fights[1]}'`, ['clear']);
-        else if ((spot.fightLimit ?? 0) < (cond.value ?? 0)) {
+        // A water counts every won fight and never clears (systems/sea.ts).
+        else if (!convoys[fights[1]] && (spot.fightLimit ?? 0) < (cond.value ?? 0)) {
           err('floor', floor.id, `clear wants ${cond.value} fights at ${fights[1]} but its fightLimit stops short`, ['clear']);
         }
       }
@@ -314,7 +330,7 @@ export function validate(store: S): Issue[] {
   for (const spot of Object.values(spots)) {
     for (const c of spot.connections ?? []) {
       for (const condition of c.revealWhen ?? []) {
-        if (condition.type === 'stat' && condition.key.startsWith('fights:') && !(spots[condition.key.slice(7)]?.fightLimit)) {
+        if (condition.type === 'stat' && condition.key.startsWith('fights:') && !(spots[condition.key.slice(7)]?.fightLimit) && !convoys[condition.key.slice(7)]) {
           err('spot', spot.id, `reveal condition '${condition.key}' needs a spot with a fight limit`);
         }
       }
@@ -339,7 +355,8 @@ export function validate(store: S): Issue[] {
       if (floor.bandId === undefined) continue;
       const report = floorStructureIssues(floor, spots, adjacency);
       for (const issue of report.issues) err('floor', floor.id, `${issue.rule}: ${issue.message}`);
-      if (report.skipped === 'no-clear-spot') {
+      // A listed exemption is a decision (towers.data.ts SPINE_EXEMPT), not news.
+      if (report.skipped === 'no-clear-spot' && !SPINE_EXEMPT[floor.id]) {
         warn('floor', floor.id, 'the clear names no spot, so the spine rules (no skip, wing depth, wing loops, clear table) did not run', ['clear']);
       }
     }

@@ -24,6 +24,7 @@ import {
 import { registerBestiaryListeners } from './systems/bestiary';
 import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
 import { registerLevelListeners } from './systems/levels';
+import { registerSeaListeners, tickSea } from './systems/sea';
 import { setHuntRest } from './systems/huntrest';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
@@ -129,6 +130,12 @@ export class Game {
   readonly bus = new EventBus();
   /** When true (offline catch-up), log events are counted but not stored. */
   suppressLog = false;
+  /**
+   * True while offline catch-up runs these ticks (save/offline.ts). The
+   * harbor's convoys read it: an offline leg fires the battery without kills
+   * and pays cargo at 25%, never crates toward a clear (systems/sea.ts).
+   */
+  catchingUp = false;
   /** Last style actually fought with, to announce loadout-driven swaps. */
   private lastEffectiveStyle: string;
   /** Last lockout seen per pool, to announce each transition exactly once. */
@@ -152,6 +159,9 @@ export class Game {
     registerTutorialListeners(state, this.bus);
     // Training spots heal and dare off a won fight (systems/training.ts).
     registerTrainingListeners(state, this.bus);
+    // Before the level listeners: a mission boss's kill stamps the floor 14
+    // flag that the floor-clear check after it reads (systems/sea.ts).
+    registerSeaListeners(state, this.bus);
     registerLevelListeners(state, this.bus);
     this.bus.on('log', (ev) => {
       if (this.suppressLog) return;
@@ -239,6 +249,9 @@ export class Game {
       tickBenchWork(this.state, this.bus);
       tickPerformance(this.state, this.bus);
     }
+    // After the activity: kills made on this tick count toward the leg in
+    // progress, and a leg that ends now resolves (systems/sea.ts).
+    tickSea(this.state, this.bus, this.catchingUp);
     // Time passes whatever you are doing — travel included — and the sense of
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);

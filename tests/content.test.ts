@@ -52,13 +52,17 @@ import {
   FLOORS,
   STARTING_SPOT,
   TIERS,
+  SEA_SIDES,
+  CONVOYS,
 } from '../src/core/registry';
 import { RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/types';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCES } from '../src/core/data/resources.data';
 import { XP_BASE, XP_RATE } from '../src/core/data/progression.data';
 import { TERRAIN_PROFILES } from '../src/core/data/climate.data';
-import { offLadderDoor } from '../src/core/data/towers.data';
+import { SPINE_EXEMPT, offLadderDoor } from '../src/core/data/towers.data';
+import { SEA_CRATES_OFFLINE, SEA_CRATES_WON, SEA_MISSION_DONE } from '../src/core/data/sea.data';
+import { seaContentIssues } from '../src/core/systems/seaValidation';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../src/core/systems/monsterStats';
 import { resistanceProblems } from '../src/core/systems/conditionHarm';
@@ -100,6 +104,9 @@ function statCounterValid(key: string): boolean {
     'shop:buys', // shops.ts buy
     'prestige:count', // prestige.ts prestigeNow, from the legacy block
     'legacy:stronghold', // prestige.ts prestigeNow, once the stronghold is held
+    SEA_CRATES_WON, // sea.ts, crates won on a water while present
+    SEA_CRATES_OFFLINE, // sea.ts, crates credited during offline catch-up
+    SEA_MISSION_DONE, // sea.ts, the run's side killed its floor-14 mission boss
   ]);
   if (staticKeys.has(key)) return true;
   // What the fight itself counts, for conditions that learn from doing
@@ -127,7 +134,8 @@ function statCounterValid(key: string): boolean {
   if (key.startsWith('boss:')) {
     return !!SPOTS[key.slice(5)]?.encounters?.some((e) => e.boss);
   }
-  if (key.startsWith('fights:')) return (SPOTS[key.slice(7)]?.fightLimit ?? 0) > 0;
+  // A water (sea.data.ts CONVOYS) counts its won fights with no limit (sea.ts).
+  if (key.startsWith('fights:')) return (SPOTS[key.slice(7)]?.fightLimit ?? 0) > 0 || key.slice(7) in CONVOYS;
   // `slain:<spot>:<monster>` is bumped when a `once` entry dies there (combat.ts).
   if (key.startsWith('slain:')) {
     const [, spotId, monsterId] = key.split(':');
@@ -139,6 +147,9 @@ function statCounterValid(key: string): boolean {
   // by a recipe line whose parts resolve to it (systems/forging.ts, actions.ts).
   if (key.startsWith('forged:')) return key.slice(7) in ITEM_CLASSES;
   if (key.startsWith('attr:')) return VALID_ATTRS.has(key.slice(5) as never);
+  // A quest's accept stamp (quests.ts acceptQuest): real for every quest.
+  const accepted = /^flag:quest:(.+):accepted$/.exec(key);
+  if (accepted) return accepted[1] in QUESTS;
   // `flag:*` is content's own namespace (SpotFind.stat): real only when some
   // find or search reward writes it, by bump or by set.
   if (key.startsWith('flag:')) return contentFlags().has(key);
@@ -2190,10 +2201,14 @@ describe('towers, bands & floors', () => {
         if (fights) {
           const spot = SPOTS[fights[1]];
           expect(spot, `${floor.id}: clear names unknown spot '${fights[1]}'`).toBeTruthy();
-          expect(
-            spot?.fightLimit ?? 0,
-            `${floor.id}: clear wants ${cond.value} fights at ${fights[1]} but its fightLimit stops short`,
-          ).toBeGreaterThanOrEqual(cond.value);
+          // A water counts every won fight and never clears (sea.ts), so it
+          // has no budget to stop short.
+          if (!(fights[1] in CONVOYS)) {
+            expect(
+              spot?.fightLimit ?? 0,
+              `${floor.id}: clear wants ${cond.value} fights at ${fights[1]} but its fightLimit stops short`,
+            ).toBeGreaterThanOrEqual(cond.value);
+          }
         }
         const boss = cond.key.match(/^boss:(.+)$/);
         if (boss) {
@@ -2262,13 +2277,18 @@ describe('towers, bands & floors', () => {
     );
 
   it('every banded floor has a spine: its clear names a spot to measure from', () => {
-    // A floor whose clear is a quest turn-in names no spot and skips the spine
-    // rules below. None does today; list it here when one is added, so the
-    // exemption is a decision and not an accident.
+    // A floor whose clear names no spot (a quest turn-in, a stamped flag) skips
+    // the spine rules below. Each one is listed here and in towers.data.ts
+    // SPINE_EXEMPT, with its reason, so the exemption is a decision and not an
+    // accident:
+    // - ascent_f14: the harbor's final mission (FLOOR_IDEAS.md idea 3, ruling
+    //   Q2). Its clear is any one of four side wings, stamped as
+    //   flag:sea:14:done by the side's boss kill (systems/sea.ts).
     const skipped = reports()
       .filter(({ report }) => report.skipped !== undefined)
       .map(({ floor, report }) => `${floor.id} (${report.skipped})`);
-    expect(skipped, 'floors whose spine rules did not run').toEqual([]);
+    expect(skipped, 'floors whose spine rules did not run').toEqual(['ascent_f14 (no-clear-spot)']);
+    expect(Object.keys(SPINE_EXEMPT), 'the forge stays quiet for exactly these').toEqual(['ascent_f14']);
     expect(issuesOf('spine')).toEqual([]);
   });
 
@@ -2286,5 +2306,17 @@ describe('towers, bands & floors', () => {
 
   it("a clear spot's encounter table never empties", () => {
     expect(issuesOf('clear-table')).toEqual([]);
+  });
+});
+
+/**
+ * The harbor band's sides and convoys (data/sea.data.ts). The checks are one
+ * pure function in systems/seaValidation.ts, run here on the live registry and
+ * by forge/lib/validate.ts on the staged copy.
+ */
+describe('the harbor band: sides and convoys', () => {
+  it('every side and convoy resolves, and join quests lock one side per run', () => {
+    const issues = seaContentIssues(SEA_SIDES, CONVOYS, { spots: SPOTS, npcs: NPCS, quests: QUESTS, monsters: MONSTERS, materials: MATERIALS });
+    expect(issues.map((i) => `${i.kind} ${i.id}: ${i.message}`)).toEqual([]);
   });
 });

@@ -107,6 +107,95 @@ export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
   },
 
   // ==== HARBOR: quests (skeleton 2026-10-30; the harbor builder's section) ====
+  // The join quests (sea.data.ts SEA_SIDES `joinQuest`). ACCEPTING one is the
+  // side pick: its stamp, flag:quest:<id>:accepted, is what every side-gated
+  // lane, encounter and wing reads. Each requires the other three stamps at
+  // 0, so one side per run. The deal is the floor-11 convoy: 8 crates won.
+  f11_join_merchants: {
+    id: 'f11_join_merchants',
+    name: 'Sign With the Merchants',
+    giver: 'f11_factor',
+    requirements: [
+      { type: 'statMax', key: 'flag:quest:f11_join_pirates:accepted', value: 0 },
+      { type: 'statMax', key: 'flag:quest:f11_join_privateers:accepted', value: 0 },
+      { type: 'statMax', key: 'flag:quest:f11_join_navy:accepted', value: 0 },
+    ],
+    objectives: [{ type: 'stat', key: 'sea:crates:won', value: 8, at: 'f11_roadstead' }],
+    rewards: { gold: 300, levelXp: 250 },
+  },
+  f11_join_pirates: {
+    id: 'f11_join_pirates',
+    name: 'Sign On With the Pirates',
+    giver: 'f11_bosun',
+    requirements: [
+      { type: 'statMax', key: 'flag:quest:f11_join_merchants:accepted', value: 0 },
+      { type: 'statMax', key: 'flag:quest:f11_join_privateers:accepted', value: 0 },
+      { type: 'statMax', key: 'flag:quest:f11_join_navy:accepted', value: 0 },
+    ],
+    objectives: [{ type: 'stat', key: 'sea:crates:won', value: 8, at: 'f11_roadstead' }],
+    rewards: { gold: 300, levelXp: 250 },
+  },
+  f11_join_privateers: {
+    id: 'f11_join_privateers',
+    name: 'Take Out a Letter of Marque',
+    giver: 'f11_letter_agent',
+    requirements: [
+      { type: 'statMax', key: 'flag:quest:f11_join_merchants:accepted', value: 0 },
+      { type: 'statMax', key: 'flag:quest:f11_join_pirates:accepted', value: 0 },
+      { type: 'statMax', key: 'flag:quest:f11_join_navy:accepted', value: 0 },
+    ],
+    objectives: [{ type: 'stat', key: 'sea:crates:won', value: 8, at: 'f11_roadstead' }],
+    rewards: { gold: 300, levelXp: 250 },
+  },
+  f11_join_navy: {
+    id: 'f11_join_navy',
+    name: 'Enlist With the Navy',
+    giver: 'f11_lieutenant',
+    requirements: [
+      { type: 'statMax', key: 'flag:quest:f11_join_merchants:accepted', value: 0 },
+      { type: 'statMax', key: 'flag:quest:f11_join_pirates:accepted', value: 0 },
+      { type: 'statMax', key: 'flag:quest:f11_join_privateers:accepted', value: 0 },
+    ],
+    objectives: [{ type: 'stat', key: 'sea:crates:won', value: 8, at: 'f11_roadstead' }],
+    rewards: { gold: 300, levelXp: 250 },
+  },
+  // Each side's preparation for its floor-14 mission. Turned in, the wing's
+  // way into the boss spot lays a condition on the boss and its escorts (an
+  // ApproachSpec on that edge). Unprepared, the boss is the same fight
+  // without the opening. Removing escorts for named ships sunk waits on
+  // SpotDef.preparation (FLOOR_IDEAS.md idea 3, "It waits on").
+  f11_merchants_clearance: {
+    id: 'f11_merchants_clearance',
+    name: 'Clear the Closed Port',
+    giver: 'f11_factor',
+    requirements: [{ type: 'quest', id: 'f11_join_merchants' }],
+    objectives: [{ type: 'stat', key: 'shop:buys:f13_harbor_master', value: 1, at: 'f13_landing' }],
+    rewards: { gold: 200, levelXp: 300 },
+  },
+  f11_pirates_signal: {
+    id: 'f11_pirates_signal',
+    name: 'Forge a Signal',
+    giver: 'f11_bosun',
+    requirements: [{ type: 'quest', id: 'f11_join_pirates' }],
+    objectives: [{ type: 'kill', monsterId: 'ph_navy_marine', count: 12, at: 'f12_strait' }],
+    rewards: { gold: 200, levelXp: 300 },
+  },
+  f11_privateers_letter: {
+    id: 'f11_privateers_letter',
+    name: 'Renew the Letter',
+    giver: 'f11_letter_agent',
+    requirements: [{ type: 'quest', id: 'f11_join_privateers' }],
+    objectives: [{ type: 'kill', monsterId: 'ph_pirate_gunner', count: 12, at: 'f12_strait' }],
+    rewards: { gold: 200, levelXp: 300 },
+  },
+  f11_navy_lure: {
+    id: 'f11_navy_lure',
+    name: 'Bait a Lure',
+    giver: 'f11_lieutenant',
+    requirements: [{ type: 'quest', id: 'f11_join_navy' }],
+    objectives: [{ type: 'kill', monsterId: 'ph_deep_serpent', count: 12, at: 'f12_strait' }],
+    rewards: { gold: 200, levelXp: 300 },
+  },
 
   // ==== FESTIVAL: quests (skeleton 2026-10-30; the festival builder's section) ====
 

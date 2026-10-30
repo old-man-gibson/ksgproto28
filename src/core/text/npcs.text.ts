@@ -110,4 +110,40 @@ export const NPCS_TEXT: ProseTable = {
     'Then the wall: ten raiders off the road, four iron ingots for the braces. The forge in town makes them, or the smith sells them.',
     'When the wall is armed, they come. Eight fights. Hold the last one and the place is yours, and this life ends there: the next one starts at the Foot.',
   ],
+
+  // ==== HARBOR: NPC text (2026-10-30; the harbor builder's section) ====
+  'f11_factor.desc': 'The merchants’ recruiter at the merchant berth on floor 11. Gives Sign With the Merchants, which picks the merchants for the run, then Clear the Closed Port. Placeholder.',
+  'f11_factor.dialogue': [
+    'Sign with us and the convoy is yours: you defend it from anything that boards, and you sell what survives at port.',
+    'The other berths stop dealing with you once you sign. One side a run.',
+    'Speechcraft sets the price per crate: 5 waives the duty, 15 gets a broker instead of the dock buyer, 30 haggles the price.',
+  ],
+  'f11_bosun.desc': 'The pirates’ recruiter at the smugglers’ berth on floor 11. Gives Sign On With the Pirates, which picks the pirates for the run, then Forge a Signal. Placeholder.',
+  'f11_bosun.dialogue': [
+    'Sign on and you take crates off the convoy. Every guard you put down is one less between you and the hold.',
+    'The other berths stop dealing with you once you sign. One side a run.',
+    'Floor 12 has a cove off the outer port. Search the port to find the way in.',
+  ],
+  'f11_letter_agent.desc': 'The privateers’ recruiter at the privateer berth on floor 11. Gives Take Out a Letter of Marque, which picks the privateers for the run, then Renew the Letter. Placeholder.',
+  'f11_letter_agent.dialogue': [
+    'The pirates take the convoy; a letter of marque lets you take it back from them.',
+    'The other berths stop dealing with you once you sign. One side a run.',
+    'Every pirate you put down on a leg is one less crew between you and their prize.',
+  ],
+  'f11_lieutenant.desc': 'The navy’s recruiter at the navy berth on floor 11. Gives Enlist With the Navy, which picks the navy for the run, then Bait a Lure. Placeholder.',
+  'f11_lieutenant.dialogue': [
+    'The navy escorts the convoy against the sea monsters. Pirates are not our business on these lanes.',
+    'The other berths stop dealing with you once you sign. One side a run.',
+    'The beast on floor 14 closes the lanes. Bait a lure first and it comes up Surprised.',
+  ],
+  'f13_pilot.desc': 'At the Last Port on floor 13. Sells a Pilot’s Passage; once bought, the Pilot’s Channel into the blockade is open and the blockaders start that fight Surprised. Placeholder.',
+  'f13_pilot.dialogue': [
+    'Through the picket line you arrive flat-footed. Through my channel, they do.',
+    'One passage, and the channel is yours for the run.',
+  ],
+  'f13_harbor_master.desc': 'At the Last Port on floor 13. Sells Port Clearance to merchants only: the factor’s Clear the Closed Port asks for one bought. Placeholder.',
+  'f13_harbor_master.dialogue': [
+    'The closed port does not open for anyone. It opens for papers.',
+    'Merchants only. The price is the price.',
+  ],
 };

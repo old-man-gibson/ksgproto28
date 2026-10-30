@@ -151,8 +151,11 @@ describe('floor 11 on the ladder', () => {
     expect(floorUnlocked(s, FLOORS.ascent_f11)).toBe(true);
   });
 
-  it('its clear is the roadstead, which a first climb never reaches', () => {
-    expect(FLOORS.ascent_f11.clear).toEqual([{ type: 'stat', key: 'fights:f11_roadstead', value: 1 }]);
+  it('its clear is the harbor’s roadstead, which a first climb never reaches', () => {
+    expect(FLOORS.ascent_f11.clear).toEqual([
+      { type: 'stat', key: 'sea:crates:won', value: 8 },
+      { type: 'stat', key: 'fights:f11_roadstead', value: 1 },
+    ]);
     expect(SPOTS.f11_road.connections.find((c) => c.to === 'f11_quay')?.requires).toEqual([
       { type: 'stat', key: STRONGHOLD_KEY, value: 1 },
     ]);
