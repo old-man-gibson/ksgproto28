@@ -1279,7 +1279,7 @@ strength.
 | Floor | One idea (mechanism) | Boss / preparation | Spots |
 |---|---|---|---|
 | 18 | The Necropolis Road. Open desert between obelisks. Obelisks are havens on open sky; reading one is a find that adds to `flag:chart` (five obelisks, three reads matter). Dens of desert monsters along the road. Clear: `boss:<forecourt>` 1 | the forecourt guardian, repeatable; no preparation | ~8 |
-| 19 | The Pyramid: the Weighing. Grave goods are optional finds in a treasury off the burial chamber, each adding to `flag:tomb:taken`. The judge waits at the door; each piece taken raises its level by a share of the player's character level, up to a ceiling. The chamber-to-door edge is `forced`. Clear: `boss:<door>` 1 | restraint is the preparation: take nothing, fight the base judge; take everything, fight it near your own level (or at the ceiling) and leave rich | ~8 |
+| 19 | The Pyramid: the Weighing. Grave goods are optional finds in a treasury off the burial chamber, each adding to `flag:tomb:taken`. The judge, Sabaket, the Weigher at the Door, waits at the door; each piece taken raises its level by a share of the player's character level, up to a ceiling. The chamber-to-door edge is `forced`. Clear: `boss:<door>` 1 | restraint is the preparation: take nothing, fight the base judge; take everything, fight it near your own level (or at the ceiling) and leave rich | ~8 |
 | 20 | The Delta Port, the seam to the island. Idea 3's quay and roadstead pair, no convoy table: a quay (haven), a broker who buys dig goods, warehouses (`job`, `gather`), a notice wall naming floor 21's camps, and a roadstead (`fightLimit` 1) behind a `forced` edge. The roadstead fight is the crossing. Clear: `fights:<roadstead>` 1 | three obelisk reads (`flag:chart` ≥ 3) leave the roadstead's crew surprised (`ApproachSpec`) | ~5 |
 
 Gates: floor 19 `kills:tag:desert` 60, floor 20 `kills:tag:desert` 150
@@ -1464,21 +1464,17 @@ scumming.
 2. **The judge.** The Boss Anubis, God of Death sheet, *"except a
    different name for this game, as all other gods have their own names"*.
    The Goddess Anubis and the Crocopharaoh stay kept for the parked Omen.
-   The name is open (Q4 below).
+   Named in item 4.
 3. **The step per grave good.** Scales with the player's character level,
    up to a ceiling: the formula under the Weighing, above.
+4. **The judge's name: Sabaket, the Weigher at the Door** (user,
+   2026-10-30). The other gods have invented names with a language flavour
+   per pantheon (Xima and Cuixtli for the Yolixoch, Kenese Paea and
+   Tuigamala for the Foai) and an epithet; *sab* is Egyptian for jackal.
+   The name lives in the monster's text. A `DeityDef` (a desert pantheon a
+   player can pray to) is a later divine step, not part of this band.
 
-**Open questions.** Each has a default.
-
-4. **The judge's name.** The other gods have invented names with a
-   language flavour per pantheon (Xima and Cuixtli for the Yolixoch, Kenese
-   Paea and Tuigamala for the Foai) and an epithet (*the Cold Sun*,
-   *the Treebreaker*). *Default:* **Sabaket, the Weigher at the Door**
-   (*sab* is Egyptian for jackal), a placeholder for the user like the
-   goblin gods' names. Alternatives: *Imenhar, the Western Judge*;
-   *Tjesuat, Keeper of the Scale*. The name lives in the monster's text. A
-   `DeityDef` (a desert pantheon a player can pray to) is a later divine
-   step, not part of this band.
+**Open questions.** None.
 
 ---
 
