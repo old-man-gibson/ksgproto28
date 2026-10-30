@@ -9,6 +9,11 @@ A bank, not a plan. Nothing here is a card. The generator attempt is in
 convinced by it (2026-10-27: "I see the logic you go for and I'm just not
 feeling it"), so it stays a draft until these entries give it a target.
 
+**Shared by both games** (user, 2026-10-29): every entry here is meant to run
+in ksgproto28 and InfiniteGacha, on the FACET engine. The bank moves to the
+FACET repo when that repo exists
+([plans/universal-abilities.md](plans/universal-abilities.md)).
+
 Settled for any ability in this file (user, 2026-10-27):
 
 - One ability per run, discovered early. The player keeps it for the whole
