@@ -65,41 +65,47 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'wild_honey.desc': 'Raw sweet seasoning. Sits outside the stove timeline, so simmer time does not change what it adds.',
 
-  'hearty_stew.desc': 'Eat: Well Fed ×1 for 10 minutes (+8 max HP, +10% stamina regen, slow HP restore).',
+  'hearty_stew.desc': 'Eat: Well Fed ×1 for 10 minutes (+8 max HP, +10% stamina regen, slow HP restore). Signature, after 100 cooks: also Stoked ×0.5.',
 
-  'skewered_fish.desc': 'Eat: Steady Hand ×1 for 8 minutes (+3% crit, +2% parry). Cooked filling; can go onto the Cold Counter as an ingredient.',
+  'skewered_fish.desc': 'Eat: Steady Hand ×1 for 8 minutes (+3% crit, +2% parry). Cooked filling; can go onto the Cold Counter as an ingredient. Signature, after 100 cooks: also Well Fed ×0.5.',
 
-  'seared_steak.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.5. Cooked filling; can go onto the Cold Counter as an ingredient.',
+  'seared_steak.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.5. Cooked filling; can go onto the Cold Counter as an ingredient. Signature, after 100 cooks: also Stoked ×0.5.',
 
-  'charred_roots.desc': 'Eat: Well Fed ×0.75. Cooked; can go onto the Cold Counter as an ingredient.',
+  'charred_roots.desc': 'Eat: Well Fed ×0.75. Cooked; can go onto the Cold Counter as an ingredient. Signature, after 100 cooks: also Steady Hand ×0.5.',
 
-  'rustic_loaf.desc': 'Eat: Well Fed ×0.6. Cooked bread; the base ingredient for Cold Counter dishes.',
+  'rustic_loaf.desc': 'Eat: Well Fed ×0.6. Cooked bread; the base ingredient for Cold Counter dishes. Signature, after 100 cooks: also Clear-Headed ×0.5.',
 
-  'berry_pie.desc': 'Eat: Well Fed ×1 for 10 minutes (+8 max HP, +10% stamina regen, slow HP restore).',
+  'berry_pie.desc': 'Eat: Well Fed ×1 for 10 minutes (+8 max HP, +10% stamina regen, slow HP restore). Signature, after 100 cooks: also Clear-Headed ×0.5.',
 
-  'honey_cake.desc': 'Eat: Clear-Headed ×1 (+8% spell power, +5% skill XP, slow mana restore) and Well Fed ×0.5.',
+  'honey_cake.desc': 'Eat: Clear-Headed ×1 (+8% spell power, +5% skill XP, slow mana restore) and Well Fed ×0.5. Signature, after 100 cooks: also Steady Hand ×0.5.',
 
-  'hearty_sandwich.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.75 (+3% crit, +2% parry at full strength).',
+  'hearty_sandwich.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.75 (+3% crit, +2% parry at full strength). Signature, after 100 cooks: also Stoked ×0.5.',
 
-  'forest_salad.desc': 'Eat: Clear-Headed ×0.5 and Well Fed ×0.5.',
+  'forest_salad.desc': 'Eat: Clear-Headed ×0.5 and Well Fed ×0.5. Signature, after 100 cooks: also Steeped ×0.5.',
 
-  'mushroom_broth.desc': 'Drink: Clear-Headed ×1 for 8 minutes (+8% spell power, +5% skill XP, slow mana restore).',
+  'mushroom_broth.desc': 'Drink: Clear-Headed ×1 for 8 minutes (+8% spell power, +5% skill XP, slow mana restore). Signature, after 100 cooks: also Steeped ×0.5.',
 
-  'herb_rubbed_meat.desc': 'Eat: restores 15% of max HP at once, then Well Fed ×1. Learned dish: any meat + any herb on the Cooking Stove.',
-  'fish_onion_pot.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.75. Learned dish: any fish + any vegetable on the Cooking Stove.',
-  'lectory_porridge.desc': 'Eat: Clear Headed ×1.5 (spell power, skill XP, slow mana restore) and Well Fed ×0.5. Learned dish: any grain + any sweet ingredient on the Cooking Stove.',
+  'herb_rubbed_meat.desc': 'Eat: restores 15% of max HP at once, then Well Fed ×1. Learned dish: any meat + any herb on the Cooking Stove. Signature, after 100 cooks: also Clear-Headed ×0.5.',
+  'fish_onion_pot.desc': 'Eat: Well Fed ×1 and Steady Hand ×0.75. Learned dish: any fish + any vegetable on the Cooking Stove. Signature, after 100 cooks: also Clear-Headed ×0.5.',
+  'lectory_porridge.desc': 'Eat: Clear Headed ×1.5 (spell power, skill XP, slow mana restore) and Well Fed ×0.5. Learned dish: any grain + any sweet ingredient on the Cooking Stove. Signature, after 100 cooks: also Steady Hand ×0.5.',
+  'seared_stew.desc': 'Eat: Stoked ×1 for 5 minutes (+5% damage, +0.05 critical damage multiplier). Learned dish: any meat + any vegetable on the Cooking Stove, with the meat cooking for under 6 units. Signature, after 100 cooks: also Well Fed ×0.5.',
+  'braised_meat.desc': 'Eat: Well Fed ×1.5 for 15 minutes (+12 max HP, +15% stamina regen, slow HP restore). Learned dish: any meat + any vegetable on the Cooking Stove, with the meat cooking for 14 units or more. Signature, after 100 cooks: also Steady Hand ×0.5.',
+  'steeped_broth.desc': 'Drink: Steeped ×1 for 10 minutes (+25% poison resistance, +10% acid resistance). Learned dish: any mushroom + any herb on the Cooking Stove, with the herb cooking for 8 units or more. Signature, after 100 cooks: also Clear-Headed ×0.5.',
   'recipe_herb_rubbed_meat.desc': 'Read to learn Herb-Rubbed Meat: any meat + any herb on the Cooking Stove. Consumed when read. Sold at the Larder Door.',
   'recipe_fish_onion_pot.desc': 'Read to learn Fish and Onion Pot: any fish + any vegetable on the Cooking Stove. Consumed when read. Sold at the Larder Door.',
   'recipe_lectory_porridge.desc': 'Read to learn Lectory Porridge: any grain + any sweet ingredient (flour and honey) on the Cooking Stove. Consumed when read. Found only while reading in the Reading Hall.',
+  'recipe_seared_stew.desc': 'Read to learn Seared Stew: any meat + any vegetable on the Cooking Stove. The meat must cook under 6 units: put it in midway on a Quick simmer. Outside that window the same ingredients make Hearty Stew. Consumed when read. Sold at the Larder Door.',
+  'recipe_braised_meat.desc': 'Read to learn Braised Meat: any meat + any vegetable on the Cooking Stove. The meat must cook 14 units or more: put it in first on a Long braise. Outside that window the same ingredients make Hearty Stew. Consumed when read. Sold at the Larder Door.',
+  'recipe_steeped_broth.desc': 'Read to learn Steeped Broth: any mushroom + any herb on the Cooking Stove. The herb must cook 8 units or more: put it in first, on any simmer. Outside that window the same ingredients make Mushroom Broth. Consumed when read. Sold at the Larder Door.',
   'word_slip_stone.desc': 'Read to learn the arcane word stone, outside the starting lexicon. Castable once Arcana reaches its level. Consumed when read.',
   'votive_token.desc': 'Offer for favor. The first token offered gives +2 favor with every god you know and +2 starting favor with any god you meet later. Each later token gives 1 unassigned favor, placed on a god of your choice on the Divine tab.',
   'drill_manual_riposte.desc': 'Study to learn Riposte in canonical form, or to perfect a rough one. Consumed when studied.',
   'chancery_price_seal.desc': 'Register for a standing 10% discount at every counter in Threshold, never below what an item resells for. Consumed when registered.',
   'unclaimed_case_file.desc': 'An Assize case file nobody collected. Read it. Consumed when read.',
   "smiths_pattern_bronze.desc": "Study to add the copper, tin and bronze ingots and the bronze dagger to the Forges' recipes. Consumed when studied.",
-  'travelers_ration.desc': 'Eat: Well Fed ×0.5.',
+  'travelers_ration.desc': 'Eat: Well Fed ×0.5. Signature, after 100 cooks: also Steady Hand ×0.5.',
 
-  'feast_platter.desc': 'Eat: restores 25% of max HP at once, plus Well Fed ×2 and Steady Hand ×1.5.',
+  'feast_platter.desc': 'Eat: restores 25% of max HP at once, plus Well Fed ×2 and Steady Hand ×1.5. Signature, after 100 cooks: also Stoked ×0.5.',
 
   'scorched_mess.desc': 'A failed cook. Eat: Queasy for 90 seconds (poison damage over time, -25% stamina regen). Clears on rest.',
 

@@ -30,4 +30,6 @@ export const PRESTIGE_BOONS_TEXT: ProseTable = {
   'pass_lower.desc': 'Floors 1 to 3 count as cleared on this run and every later one, so the climb starts at floor 4. Passed floors pay no clear XP and no harvest points.',
 
   'pass_wilds.desc': 'Floors 4 to 6 count as cleared on this run and every later one. Passed floors pay no clear XP and no harvest points. The warchief still waits on floor 6, and prestige opens only when it is killed.',
+
+  'cooks_notes.desc': 'The Cook’s Book resets with each run; the notes keep part of it. Rank 1: dishes you cooked 25 times keep their cook time shown. Rank 2: dishes you cooked 100 times also keep their Signature. The cook counts themselves still reset.',
 };

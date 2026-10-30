@@ -337,6 +337,9 @@ frost_wraith: {
   desc: 'Field-notes flavour, revealed by the bestiary’s Field Notes fact.',
   tier: 'elite',            // basic|veteran|elite|ancient|legendary|mythic|divine
                             // → stat multiplier ROLLED in the tier's range + reward mult
+                            // → and the penetration its conditions apply with (TIERS)
+  penetration: 0,           // optional: overrides the tier's. Floors 1-3 must be 0
+                            // (linted); it only moves the 100% immunity line
   damageType: 'cold',       // what its attacks count as (player resistances apply)
   passive: true,            // optional: harmless — it swings, you can dodge and
                             // brace, but nothing it does lands (training dummy)
@@ -756,7 +759,8 @@ window lists known recipes with the tags each one takes. The lints require
 every learned dish to have a card, every card to teach a real dish, and every
 card to be sold at a counter or dropped by an activity. Learned dishes take a
 priority above the generic outcome their tags would otherwise hit (fish + onion
-is a stew without the card).
+is a stew without the card). A learned dish with `heat` windows is the same
+thing plus a timing requirement; the card says which.
 
 A `train` activity is `attr: 'str'` for the simple case, or `attrXp` alone when
 several attributes are the point — `attr` is optional, and the split then *is*
@@ -1153,6 +1157,10 @@ first_blade: {
   passive: [{ stat: 'damage', op: 'mult', value: 0.03 }],      // forever, once earned
   equipped: [{ stat: 'damage', op: 'mult', value: 0.08 }],     // only while worn
   // secret: true,  → hidden from the Titles list until earned
+  // immune: { ids: ['queasy'] },   → once earned, these conditions never land
+  //   on you (same shape as StatusDef.immune; passive, not only while worn;
+  //   may not name an `unresistable` condition). Say it in `desc`: the title
+  //   list prints only passive and worn modifiers.
 },
 ```
 
@@ -1236,6 +1244,129 @@ the full simmer, whole food is forgiving and never bonused. Slots without `at`
 (seasoning, cookware) stand outside time. The stove is the reference
 implementation.
 
+**Heat windows: the clock picks the dish.** A timed bench's outcome may carry
+`heat: [{ tag, from?, to? }]`, half-open exposure ranges [from, to) in timeline
+units. It matches only when, for every entry, the MEAN exposure
+(duration × (1 − `slot.at`)) of the placed parts carrying that tag lies inside;
+only timed slots count, and no tagged part means no match. A bench with no
+`timeline` never matches a windowed outcome. `matchOutcome`, `checkCraft` and
+`previewCook` take the duration; `meanExposure` and `describeHeatWindow`
+(`systems/disciplines.ts`) are the read functions. `matchOutcome`'s last
+argument, `{ tag, mean }`, replaces one tag's measured mean with a stated one:
+it answers "what would this basket make if its meat averaged 9 units?" without
+moving anything, and the stove screen's cook-time row is built on it.
+
+Every windowed outcome needs a **window-less fallback on the same bench**: lower
+priority, no `recipe`, `minLevel`, `minQuality` or `maxQuality`, and `requires`
+its own `requires` already cover. A cook without the card, or outside every
+window, then makes what the same basket always made. Windowed dishes are
+gated by a recipe card whose name and description state the window in plain
+numbers. `heatWindowProblems` (`systems/disciplines.ts`) lints this in both
+layers (`tests/content.test.ts`, `forge/lib/validate.ts`): a timed bench, a
+fallback, a non-empty window, and a window some timeline option can reach at the
+outcome's level. Reachable means the MEAN over the tagged parts: a tag required
+`count` times is tried over every `count` open slots that can hold it. The stove's first set: Seared Stew (meat under 6,
+`stoked`), Hearty Stew (fallback), Braised Meat (meat 14 or more, `well_fed`
+×1.5 for 15 minutes), Steeped Broth (herb 8 or more, `steeped`), Mushroom Broth
+(fallback).
+
+**The cook's judgement is capped** (`cookJudgement`, `systems/cooking.ts`):
++1.00 grade at Cooking 15, +2.00 at 60, flat after. Fair ingredients top out at
+Superb at the cap, and two whole Superb ingredients reach Divine from Cooking
+38. `cookLedger` returns every number behind a grade (rows, mean, judgement, bench
+fit, score, gap to the next tier), and `dishQualityRange` is `tierFor` over its
+score.
+
+**The stove screen** draws a timed bench as a heat track instead of stations
+around a slab (`ui/lib/HeatTrack.svelte`; the rows, bars, cook-time row and hint
+line are worked out in `ui/lib/heatTrack.ts`, from the read functions above and
+`exposureInfo`). One row per timed slot in the order it enters, each with its
+bar split into not cooked enough, cooked right and overcooked; seasoning and
+cookware sit in an outside-time row; while a run is going at the bench the
+playhead reads the job's own progress. The cook-time row lists only the windows of
+dishes the player can make (card read, or none needed), and the default dish for
+the rest of the axis. **A window whose card is unread is never drawn**, edges
+included: the card is what teaches its numbers. The hint line's fixes (a slot, a
+swap, a cook length) are each asked of `exposureInfo` for the part in that place,
+never guessed from which side of its range it is on, because a slot's exposure is
+`duration × (1 − at)` and a different cook length moves every slot by a different
+amount; when nothing fixes it the line says so. Every cooking bench's dish
+preview has a collapsible grade ledger (`ui/lib/GradeLedger.svelte`, words in
+`ui/lib/gradeLedger.ts`) built on `cookLedger`.
+
+**Cook counts and the Cook's Book** (`systems/cookbook.ts`). Every dish cooked
+bumps `cooked:<dish material id>` and `cooked:<dish>:<tier>` in `state.stats`
+(once per cook, whatever the bench; the cutting board's cuts are not dishes), and
+`cook()` emits `cooked` (`discipline`, `outcome`, `dish`, `quality`, `low`, `high`,
+`qty`; the plate card's payload) beside `craft`. There is no Book in the save:
+`cookbook(state)` reads the counters into one row per cooking-bench outcome with
+a material result, in bench then outcome order, each with `made`, `byGrade`,
+`best`, `cookTimeKnown`, `signature` and (once the cook time is known) the
+outcome's `heat` windows. A dish made by several benches (the Traveler's Ration)
+is one count shared by its rows. Two thresholds, both in cooks of the dish:
+`COOK_TIME_COOKS` (25) shows the cook time, `SIGNATURE_COOKS` (100) earns the
+Signature. The counters reset with the run; the Cook's Notes prestige boon
+(docs/PRESTIGE.md) carries which dishes reached each threshold. The skill's
+novelty domain `cookery` is keyed by the same dish id (docs/NOVELTY_DOMAINS.md).
+The cook that crosses a threshold says so, as extra tally entries on its own
+"Cooked:" log line (so a bench run still folds into one line): at 25, for a dish
+with a heat window, "Cook's Book: <Dish> cook time noted (25 cooks)"; at 100,
+for a dish with a Signature, "<Dish> is now a Signature dish: eating it also
+gives <condition> (100 cooks)". The entries carry no final period because the
+tally joins them with ", ". A threshold the Cook's Notes boon already carried
+over is not announced again.
+
+**The Cook's Book on screen** (`ui/lib/CookBook.svelte`; rows and words in
+`ui/lib/cookBook.ts`). A "Cook's Book" button in the window header of every
+cooking-skill bench (`LocationPanel.svelte`) opens it: one section per bench that
+makes dishes, labelled with the bench's name whether or not the player has reached
+it, rows in `cookbook()` order. A row is the dish's icon and name, seven grade
+squares F to S (filled: made at that grade; dashed: the grade above the best;
+empty otherwise), the count, the cook time and the Signature. The cook time is
+the window in words (`meat under 6 units`, from `describeHeatWindow`) once
+`cookTimeKnown`, "shown after 25 cooks" for a dish with a window not yet known, and
+"—" for a dish with no window. The Signature column is the condition names once
+earned, "after 100 cooks" before, "—" for the failure dish. **A dish never made whose
+recipe card is unread is a blank row** (a hatched bar, no name, icon or window):
+the Book prints no gate, so the card keeps teaching its own recipe. A dish never
+made that needs no card shows its name with zero counts. The header line counts
+dishes, not rows ("6 of 19 dishes made"; the Traveler's Ration is one).
+
+**The plate card** (`ui/lib/PlateCard.svelte`, built by `plateFor` in
+`ui/lib/cookBook.ts`). `BenchPanel` shows the latest dish cooked at its bench: the
+grade stamp in the tier colour, dish name, "made N · best <grade>" from the Book,
+and notes: "new best" (the best grade rose with this cook; not said for a dish's
+first cook), "cook time shown in the Cook's Book" (this cook made it known, for a
+dish that has one), "Signature dish" (earned), "could have been Fine to Superb"
+(only when the preview promised a spread) and "N cooked with this layout". What a
+cook changed is found by comparing the dish's Book row (`dishMarks`) before and
+after the event, so a threshold the Cook's Notes boon already carried does not read
+as news. `plateTracker` hears the `cooked` events of EVERY bench and refreshes the
+dish's row on each: a dish two benches make (the Traveler's Ration, the Scorched
+Mess) cooked at the grill while the stove window is open must not make the next
+stove cook compare itself with a row from before the grill's. Only a cook at the
+window's own bench makes a card. The card clears when the layout or the cook length
+changes and is gone when the bench closes.
+
+**Bench window height** (a dish bench's window is tight: heat track, dish, ledger,
+Cook, card). The card sits under the Cook row, not above it, because its height
+depends on what it has to say and nothing above Cook may move when it appears,
+changes or clears; its usual height (`.plate-fill` in `BenchPanel.svelte`) is
+reserved from the moment the bench opens. On a dish bench the picker well is shut
+to nothing (timed bench) or one line (the others) until a slot's picker opens, and
+the picker then takes its full height. Checked at 1280×768 and 1280×900 in both
+themes on the Granary Kitchens stove with two slots filled: no scrollbar, Cook and
+the card both in view, Cook's position the same before the first cook, with the
+card showing and with the card cleared. Stove runs from the bench window are single
+cooks (`startBenchWork` with `count: 1`); the run buttons exist only on benches
+whose outcomes are cuts or brews.
+
+**Eating a Signature dish** logs `consumables.used_signature`: "Ate Fine Hearty
+Stew. Signature: also Stoked ×0.84." The dose is the Signature's own intensity
+times the grade and the cook's `foodPotency`. `foodDuration` and `foodPotency`
+read as percents everywhere (`PERCENT_STATS` in `ui/lib/format.ts`: "+6% Food
+Duration"; the Fortune & pace group of the sidebar lists them once they leave 100%).
+
 **Bench runs** (`systems/benchwork.ts`) repeat one layout on the clock —
 `craftSpeed` compresses the interval to a floor, and speed past the floor
 resolves several crafts per completion. Exclusive with activities, bound to
@@ -1294,6 +1425,124 @@ lifetimes for free — a **set duration**, one that runs **until a trigger**
 > something spoiled grants `queasy` instead of whatever it meant to do, rather
 > than quietly doing nothing. That substitution lives in `consumables.ts`.
 
+**Food** (`consumable.food: true`) is what a cooking bench makes, and the cook's
+skill scales it as it is eaten. Cooking's milestones add to two player stats,
+`foodDuration` (+0.06 every 10 levels, through level 90) and `foodPotency`
+(+0.05 every 20, through level 200), base 1 and read at most ×1.5
+(`FOOD_MULT_CAP`, `derived.ts`; cooking has no level cap, so the clamp is what
+bounds them). Eating food multiplies each granted condition's duration by
+`foodDuration` and its intensity by `foodPotency`, and each `restore` amount by
+`foodPotency` (`foodScale`, `consumables.ts`). A grant's own `duration` is
+scaled too; a never-ending condition (null duration) keeps its terms. Only the
+benefit side scales: a refuse-grade dish, any harmful condition a dish carries
+(the spoilage condition `queasy`, or anything else) and anything that is not food
+are untouched. "Harmful" is read from the condition's data, not an id list
+(`harmOf`, `systems/conditionHarm.ts`): a `dot`, `drains`, `detonate`,
+`expireDamage` or `fatalOnEmpty`; a `bar` jolt, `surplus`, `magnetism`,
+`incomingBite`, `tends`, `grafts` or `displaces`; a sealed pool (`ceilings`,
+`ceilingFromSpend`, `ceilingPerTick`, `blocksRegen`) or a `missChance`,
+`disadvantage`, `costMult`, `healCap`, `damp`, `resFloor`, `blocks` or
+`forceStyle`; an `element` (the established affliction flag), `escalatesTo` or
+`expiresTo`; or any modifier that makes the bearer worse (a negative value, or a
+positive one on a lower-is-better stat such as `damageTaken`). `restores`,
+`immune`, `retaliate` and the like help the bearer and do not count. The flag and
+what food grants are linted in both validation layers (`foodProblems`,
+`systems/disciplines.ts`; `tests/content.test.ts` and `forge/lib/validate.ts`):
+every material a bench with `skill: 'cooking'` makes is food and nothing else is,
+so an alchemy flask or a salve marked food fails; food grants and signatures
+carry no `duration: 'permanent'`, no duration, intensity or chance of zero or
+less, and no harmful condition (the failure dish's own grants aside). A missing
+intensity is 1 and a missing chance is certain. Monsters do not eat, so neither
+stat is on `MonsterStats`.
+
+**Signature** (`consumable.signature`, a `StatusApplication[]`): once the player
+has cooked a dish 100 times, eating it also grants these conditions, graded and
+food-scaled like `grants`. Author one small signature per dish: a condition at
+intensity 0.5 that differs from the dish's own grants. The lint requires it on
+every dish a cooking bench makes except the failure dish (the material only
+`maxQuality` outcomes make, the Scorched Mess), requires real condition ids, and
+refuses a signature that repeats one of the dish's own grants (a second dose of
+a `highest` condition adds nothing), lists a condition twice, or is the spoilage
+condition (whatever the failure dish grants).
+
+**Eating rules** (user, 2026-10-24: cooking makes long-term dishes eaten only out
+of combat; alchemy makes short consumables usable any time. Save v59.)
+
+- *Out of combat only.* `canUse` refuses a food (`consumable.food`) while
+  `state.combat` is set: "Not during a fight." The respawn gap between chained hunt
+  fights and a hunt's rest before the next fight (`huntrest.ts`) have no
+  `state.combat`, so they allow it. Flasks, salves and cards are not food and are
+  unaffected. `canUseOutOfFight` is the same check without the fight rule.
+- *Eat after this fight* (`systems/eating.ts`). The Provisions window's Eat button
+  calls `Game.eat`, which eats a dish at once, or during a fight queues it in
+  `state.queuedMeal` (one dish; another replaces it; `Game.cancelQueuedMeal`
+  clears it). `tickMeals` runs at the start of every tick and eats it on the first
+  tick with no fight and no knockout recovery (`state.recovering`: recovery runs
+  conditions several times faster, so a dish eaten there would burn down). It
+  re-runs `canUse` first; if stock or cooldown fail, the queue is dropped and the
+  log says why. The queue is run state, so offline catch-up fires it too. The eat
+  line then ends "(queued during the fight)". Eat pressed while knocked out with no
+  fight on queues too (the dish would burn at the recovery clock): it waits for the
+  recovery, the button reads "Eat after recovering", and the eat line ends "(queued
+  while knocked out)". `canUse` itself still refuses food only in a fight.
+- *At most 3 dishes active* (`systems/meals.ts`; `MAX_ACTIVE_DISHES` behind
+  `dishLimit(state)`, the one place a skill or mutagen would raise it). A dish is
+  one slot holding everything it gave, Signature included. A held condition is one
+  instance whatever gave it, and its stacking rule keeps only the strongest dose and
+  the last clock, so the slots keep their own books: **a claim** (`MealClaim`) is one
+  dose with its own strength and its own clock. `state.meals` holds each dish's claims
+  (one per condition it gave); `state.foreignClaims` holds the claims of anything that
+  is not a dish (a flask, a condition already running in an old save).
+  - *Clocks.* A claim's clock runs at the pace the conditions' clocks run: 5 a tick
+    while knocked out, none while travelling (`Game.advance` reads the rate
+    (`conditionClockRate`) before anything moves and `tickMealClaims` applies it
+    after). A slot's time left is the longest of its own claims, never the instance's,
+    so a flask that overwrote the instance changes nothing about a dish's time. A claim
+    that has run out counts for nothing, and a slot with no live claim is free.
+  - *The instance follows its leading claim* (`reconcile`, for `highest` conditions,
+    which every food condition is): the strongest live dose with that claim's own
+    remaining time (the longest among equals). A strong flask leads for its own clock
+    only, and a dish's longer clock cannot lend the flask more time. When the leader
+    is about to run out, `handOffMeals` (before the conditions tick) hands the
+    condition to the next claim, so it never expires in between. `Game.advance` fires
+    a queued dish BEFORE the hand-off: a dish that lands reconciles the instance onto
+    the leader, which can be the claim lapsing that very tick, and only a hand-off run
+    after it moves the condition on instead of letting it expire (a queued dish eaten
+    on that tick once took the condition and every slot that claimed it with it).
+  - *Eating a dish already in a slot* (user, 2026-10-26: "weaker buffs never replace
+    stronger ones"). A helping at least as strong as a live claim of the slot replaces
+    and renews it. A weaker helping never lowers or extends the stronger claim: it is
+    a second claim of the slot on the condition and takes over only when the stronger
+    one lapses. A claim another claim of the slot outlasts at an equal or higher dose
+    is dropped. The slot's time left is its longest claim, and its label (the grade in
+    the sidebar row and the log) is the best grade among its live claims, so it reads
+    the grade still in effect and drops when that claim does.
+  - *Eviction.* Eating a different dish with every slot full drops the dish with the
+    least time left (oldest on a tie). `useConsumable` chooses it before any dose
+    lands, the same dish the Eat button's tooltip named (`mealToReplace`). The dish's
+    claims go. A condition with another live claim (another dish's, or an unexpired
+    flask's) drops to that claim's dose and its remaining time; with none it ends. The
+    log names the dish that took the slot.
+  - *Other sources.* `Game.useFlask` passes the brew's grants, with the doses and
+    durations they carry, to `noteForeignDoses`, so even a dose the stacking rule
+    ignored as weaker is remembered with a clock. A dish eaten onto a condition no claim
+    accounts for (an old save) records it as it stood, with the time it had left. A
+    change nobody recorded (a flask used through alchemy's own `useFlask`) is noticed by
+    the tick when the instance is stronger or longer than its leading claim explains, and
+    recorded from what it shows; a weaker dose that was ignored leaves nothing to notice.
+  - A dish that gave nothing nourishing (spoiled grades, the Scorched Mess, or every
+    dose resisted) holds no slot and drops nobody: the Queasy immunity title asks for
+    bad food to be eaten on purpose.
+- *Old saves.* Migration 58 adds `meals: []`, `foreignClaims: []` and `queuedMeal: null`.
+  A food condition already running belongs to no slot (nothing recorded which dish
+  gave it): it counts toward no limit and runs out on its own.
+- *Screen.* The sidebar lists "Dishes 2/3" under the condition pills, one row per
+  dish with its time left (`ui/lib/DishSlots.svelte`, words in `ui/lib/meals.ts`)
+  and, while a dish waits, "After this fight:" (or "After recovering:") with a Cancel
+  button. In a fight the Eat button reads "Eat after this fight", and "Eat after
+  recovering" while knocked out; its tooltip says what the press does and, with every
+  slot full, which dish a new one replaces and how long it has left.
+
 ### Status condition (`statuses.data.ts`)
 
 A condition is one entry with an **intensity**; everything it does scales off
@@ -1328,22 +1577,95 @@ unresistable by construction.
 The landed share is `max(APPLICATION_FLOOR, 1 − resistance)`, and the floor
 (`systems/statuses.ts`) is load-bearing: without it a 0.9-resistant target needs
 fifty doses to escalate a bleed that costs five, which is immunity wearing a
-number. **Resistance buys the consequences, never the immunity.** Negative
-resistance runs the same arithmetic the other way, so a vulnerability deepens
-the dose.
+number. **Below 1, resistance buys the consequences, never the immunity.**
+Negative resistance runs the same arithmetic the other way, so a vulnerability
+deepens the dose.
 
-Where escalation is measured in **depth** (`sum`, `highest`, `absorb` — 14 of
-the 16 element-bearing conditions) resistance raises applications-to-escalation
+**At 1 it is immunity.** The bearer's resistance to the condition's element,
+read before any cap, minus the applier's `penetration`, at or above
+`IMMUNITY_RESISTANCE` (1) and the condition does not land at all
+(`applyStatus` returns null). Penetration enters only that test; the share that
+lands below it reads the same resistance, unchanged. It is the figure the
+damage pipeline stacks for that element, before the cap: the type's own
+resistance plus `resElemental` for the elemental types (`ELEMENTAL_TYPES`).
+For a monster that is `monsterResistanceUnclamped` (`monsterStats.ts`): innate
+value (declared, else from its tags), its conditions' mods, derived mods,
+overrides and floors, so a lightning-tagged ancient species resists `jolted`
+for the reason it resists a bolt, and a `soaked` death knight is no longer
+immune to poison. `statuses.ts` cannot import that module, so `monsterStats.ts`
+registers it at load (`setMonsterResistanceReader`). For the player it is the
+pre-cap record `computeDerivedStats` leaves on the stat block, because
+`resistCap` (0.75) holds the stat itself under 1.
+
+**A condition's damage ticks read the damage path's own figure instead**, since
+a tick is damage and the cap holds damage under 1: a player's
+`resistBlock(stats)` (the type's resistance plus `resElemental`, held at their
+`resistCap`, what `incomingSlice` stacks) and a monster's
+`monsterDamageResistance` (what `monsterSlice` stacks: tag-derived innate value,
+conditions' mods, overrides, floors and `resElemental`, held at its cap), handed
+over by a second reader (`setMonsterDamageResistanceReader`). A tick therefore
+sheds what a blow of the same type would. The narrower declared-plus-mods
+reading survives only as the fallback for a tool that never loads
+`monsterStats.ts`.
+
+`applyStatus` takes the applier's penetration as its last argument: the player's
+stat where the player inflicts, the flask's own where a flask does, a monster's
+where a monster inflicts on the player (below), 0 everywhere else.
+
+**Monster penetration.** `TierDef.penetration` (`TIERS`, monsters.data.ts) is
+what a monster of that tier applies conditions with, and `MonsterDef.penetration`
+overrides it for one species (0 is the explicit "none"). `monsterPenetration`
+(monsterStats.ts) resolves it and every monster-to-player application passes it:
+a monster's attack riders, a working's strike riders and `afflicts`, a
+counterspell's manaburn. Floors 1 to 3 (and the tutorial floor under them) apply
+conditions with none: `penetrationProblems` fails, in both validation layers, any
+species that can appear there (encounter, escort or dare) and resolves above 0.
+The table today is basic, veteran and elite 0 (the floor 3 boss is an elite),
+ancient 0.15, legendary 0.25, mythic 0.35, divine 0.5. Band 2 has no content, so
+only 0.15 is anchored; a band 2 species authored below ancient needs its own
+`penetration: 0.15`.
+
+`immune: { elements?, ids? }` is the explicit form: while the bearer holds a
+status that has it, matching applications are refused (checked beside
+`blockedBy`, the other direction: `blockedBy` is written on the condition that
+would land, `immune` on the one that protects). Monsters can wear it
+(`MonsterDef.wears`). It refuses applications only; a condition already held
+stays, and an escalation into a refused condition drops the old one with
+nothing in its place. A title can confer it too (`TitleDef.immune`, same shape):
+Iron Stomach, earned by eating 25 spoiled dishes, refuses `queasy` for good.
+
+**`unresistable: 'reason'` is the other answer.** Every harmful condition
+(`isHarmful`, conditionHarm.ts: it damages, drains, seals off, forbids or
+worsens something) says what resists it: an `element`, or `unresistable`, never
+both (`resistanceProblems`, both validation layers). Ten are exempt by design:
+`fasting` (a unique rule), `flat_footed` and `surprised` (states), the three
+`toll_*` phases of the Toll Collector fight, and `doused`, `psionic_compression`,
+`psionic_read` and `unfolded` (ruled no resistance, 2026-10-24). `applyStatus`
+lands such a condition in full whatever the bearer's stats, and no `immune.ids`
+(on a condition or a title) may name one, so a phase cannot be switched off.
+The reason is for the next author; the tooltip says "Cannot be resisted".
+
+The tooltip of a held condition carries one line: "Resisted by: Poison
+resistance 12%" with the real total, before any cap (so it may read above 100%);
+"Immune (Poison resistance 112%)" when that figure reaches 100%, or just
+"Immune" when an `immune` rule refuses it; "Cannot be resisted" for an
+unresistable one. Buffs say nothing (`conditionResistance`, statuses.ts).
+
+Where escalation is measured in **depth** (`sum`, `highest`, `absorb` — most of
+the element-bearing conditions) resistance raises applications-to-escalation
 directly. Where it is measured in **count** (`bleeding`) or **duration**
 (`dazzled`) it deliberately does not: the number of applications IS the mechanic
 in those two, so scaling depth must not move it.
 
-⚠️ **Omit `element` for anything a body does to itself.** All 37 conditions
-carrying one today are afflictions, and every self-granted buff is elementless —
+⚠️ **Omit `element` for anything a body does to itself.** Every condition
+carrying one is an affliction, and every self-granted buff is elementless —
 that absence is the authoring, not an oversight. You do not resist your own
 steadying hand. The day a *beneficial* condition wants an `element`, the fix is
 to stop passing the player's stat block at `spec.grants` sites, not to weaken
-the rule; see the note on `applyStatus`.
+the rule; see the note on `applyStatus`. The one grant that IS an affliction is
+spoiled food: `queasy` carries poison, and `useConsumable` passes the stat block
+for a refuse-grade dish and for any harmful grant (only the failure dish may
+carry one), so poison resistance thins it.
 
 **A `duration` is wall-clock time, not screen time.** While the bearer is out
 cold the clock runs at `UNCONSCIOUS_CLOCK_RATE` (5×, in `systems/actions.ts`),
@@ -1400,15 +1722,27 @@ remembered between fights).
 > **Watch the heal kinds.** A bare `{ on: 'heal' }` fires on the passive trickle
 > the player gets from working quietly, so a wound would close itself one tick
 > after a fight. If it should need real treatment, say
-> `healKinds: ['rest', 'salve', 'spell']`.
+> `healKinds: ['rest', 'salve', 'spell']`. A brewed Draught heals as kind
+> `draught`, which no rule names: only the Salve form (and a `healing_salve`)
+> closes a wound.
+
+**Cure tags.** A `cure` event carries a tag, and a rule answers only its own:
+`poison` and `bleed` are what alchemy's Mendroot Salve emits, so `poison`
+(remove), `rotting` (back to poison) and `bleeding` (remove) listen for theirs;
+`corrupted` waits on `cleansing`. `lacerated` listens for treatment only. A
+Mendroot Salve is both (its heal is kind `salve`), and the flask is one rung:
+`swallow` fires the cure BEFORE the heal, so the heal eases a laceration to a
+bleed and the cure never meets that bleed. Do not reorder them, and do not give
+`lacerated` a cure rule: either makes one flask close a laceration outright.
 
 **Other fields:** `ceilings` seal off part of a pool; `ceilingFromSpend` eats a
 share of what you spend from one; `ceilingPerTick` widens a wound for as long as
 it is held; `damp` dulls modifiers by where they came from (`{ slot: 'weapon' }`
 = your weapon's bonuses); `healCap` rations how much of the condition's own
 damage healing may undo; `expiresTo` is what it becomes when the timer runs out,
-inheriting its bookkeeping; `blockedBy` prevents it applying at all; `hidden`
-keeps it off the status bar.
+inheriting its bookkeeping; `blockedBy` prevents it applying at all; `immune`
+makes its bearer immune to the elements and ids it lists; `hidden` keeps it off
+the status bar.
 
 **Behavioural gates** — what a condition stops you *doing*, all declarative:
 

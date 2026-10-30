@@ -46,6 +46,11 @@ export type HealKind =
   | 'idle'
   /** A consumable applied to the wound. */
   | 'salve'
+  /**
+   * A brewed Draught, drunk: restores health and treats nothing. No condition's
+   * removal rules name it, so it closes no wound (only the Salve does).
+   */
+  | 'draught'
   /** Restorative magic. */
   | 'spell'
   /** Damage turned back into health mid-fight. */

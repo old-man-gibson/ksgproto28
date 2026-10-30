@@ -295,8 +295,9 @@ export const DISCIPLINES = prose<CraftDisciplineDef>('DISCIPLINES', DISCIPLINES_
         result: { kind: 'material', id: 'mushroom_broth' },
       },
       // Learned dishes (CraftOutcomeDef.recipe): matched only once their
-      // recipe card has been read. Two are sold at the Larder Door; Lectory
-      // Porridge only turns up while reading in the Reading Hall.
+      // recipe card has been read. All but Lectory Porridge are sold at the
+      // Larder Door; the porridge only turns up while reading in the Reading
+      // Hall.
       {
         id: 'herb_rubbed_meat',
         name: 'Herb-Rubbed Meat',
@@ -323,6 +324,49 @@ export const DISCIPLINES = prose<CraftDisciplineDef>('DISCIPLINES', DISCIPLINES_
         requires: [{ tag: 'grain' }, { tag: 'sweet' }],
         priority: 30,
         result: { kind: 'material', id: 'lectory_porridge' },
+      },
+      /*
+       * Windowed dishes (CraftOutcomeDef.heat): the clock picks the dish. Each
+       * needs the same tags as the window-less dish below it (Hearty Stew,
+       * Mushroom Broth), sits just above it in priority, and needs its
+       * recipe card, so a cook without the card, or outside the window, makes
+       * exactly what the same basket always made. Exposure is duration ×
+       * (1 − slot.at): at level 1 the first slot sees the whole 8/12/16 and the
+       * midway slot (0.33) sees 5.4/8.0/10.7. Linted in both layers
+       * (heatWindowProblems).
+       */
+      {
+        // Meat in midway on a Quick simmer: 5.4 units.
+        id: 'seared_stew',
+        name: 'Seared Stew',
+        icon: '🍛',
+        recipe: 'seared_stew',
+        requires: [{ tag: 'meat' }, { tag: 'vegetable' }],
+        heat: [{ tag: 'meat', to: 6 }],
+        priority: 22,
+        result: { kind: 'material', id: 'seared_stew' },
+      },
+      {
+        // Meat in first on a Long braise: 16 units.
+        id: 'braised_meat',
+        name: 'Braised Meat',
+        icon: '🍗',
+        recipe: 'braised_meat',
+        requires: [{ tag: 'meat' }, { tag: 'vegetable' }],
+        heat: [{ tag: 'meat', from: 14 }],
+        priority: 22,
+        result: { kind: 'material', id: 'braised_meat' },
+      },
+      {
+        // Herb in first on any simmer: 8, 12 or 16 units.
+        id: 'steeped_broth',
+        name: 'Steeped Broth',
+        icon: '🫖',
+        recipe: 'steeped_broth',
+        requires: [{ tag: 'mushroom' }, { tag: 'herb' }],
+        heat: [{ tag: 'herb', from: 8 }],
+        priority: 27,
+        result: { kind: 'material', id: 'steeped_broth' },
       },
       {
         id: 'ration',

@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { gs, game } from '../state.svelte';
   import { MATERIALS, QUALITY_TIERS, SKILLS, STATUSES } from '../../core/registry';
   import { RUNE_PATTERNS } from '../../core/data/runes.data';
   import { PREPS, UNIFORMITY } from '../../core/data/preps.data';
   import { previewCarve, countPatterns } from '../../core/systems/runecarving';
-  import { exposureInfo, previewCook } from '../../core/systems/cooking';
+  import { cookLedger, exposureInfo, previewCook } from '../../core/systems/cooking';
   import { REAGENTS, BREW_FORMS } from '../../core/data/alchemy.data';
   import { brewGrade, composeBrew, previewBrew, resolveBrew, sequenceOf } from '../../core/systems/alchemy';
   import { RESOURCES } from '../../core/data/resources.data';
@@ -24,8 +25,14 @@
   } from '../../core/systems/disciplines';
   import { adornmentEffectAt, namedRuneFor, patternEffectAt, resolveRune } from '../../core/systems/runes';
   import { describeRuneEffect, fmt, pct } from '../lib/format';
+  import { recallLayout, rememberLayout } from '../lib/benchLayouts';
+  import { plateTracker, type Plate } from '../lib/cookBook';
   import type { CraftSlotDef, GradedStack, QualityTier, RuneContext } from '../../core/types';
   import Tip from '../lib/Tip.svelte';
+  import GradeBadge from '../lib/GradeBadge.svelte';
+  import GradeLedger from '../lib/GradeLedger.svelte';
+  import HeatTrack from '../lib/HeatTrack.svelte';
+  import PlateCard from '../lib/PlateCard.svelte';
 
   /**
    * The carving bench: a slab in the middle with its cuts around it, and four
@@ -77,16 +84,81 @@
   const level = $derived(gs.skills[disc.skill]?.level ?? 0);
   const coming = $derived(nextSlot(gs, disc));
 
+  /**
+   * What the bench opens with: the run underway here, if there is one (so the
+   * pot beside a running bar is not an empty slab), else the layout last left
+   * at this bench this session (lib/benchLayouts.ts). Only slots that are open
+   * now carry over, and a duration only if the bench still offers it.
+   */
+  function startingLayout(id: string): { placement: Placement; units: number | null } {
+    const def = DISCIPLINES[id];
+    const running = gs.benchWork?.disciplineId === id ? gs.benchWork : null;
+    const from = running ? { placement: running.placement, units: running.duration ?? null } : recallLayout(id);
+    const placement: Placement = {};
+    if (!from || !def) return { placement, units: null };
+    const openIds = new Set(openSlots(gs, def).map((s) => s.id));
+    for (const [slotId, stack] of Object.entries(from.placement)) {
+      if (stack && openIds.has(slotId)) placement[slotId] = { id: stack.id, quality: stack.quality };
+    }
+    const offered = from.units !== null && !!def.timeline?.options.some((o) => o.units === from.units);
+    return { placement, units: offered ? from.units : null };
+  }
+  // Read once on purpose: LocationPanel keys this component on the bench, so a
+  // different bench is a new panel, never a changed prop.
+  // svelte-ignore state_referenced_locally
+  const start = startingLayout(disciplineId);
+
   /** What is currently laid out. Slot id → what is in it. */
-  let bench = $state<Placement>({});
+  let bench = $state<Placement>(start.placement);
   /** Which slot's picker is open, if any. */
   let picking = $state<string | null>(null);
   /** Which context the tooltips describe. Most runes end up in a weapon. */
   let ctx = $state<RuneContext>('weapon');
   /** Chosen duration on a timed bench; the discipline's default until touched. */
-  let chosenUnits = $state<number | null>(null);
+  let chosenUnits = $state<number | null>(start.units);
+  /** Whether the grade ledger under the dish preview is open. */
+  let ledgerOpen = $state(false);
+
+  // Keep the layout for the next time this bench opens.
+  $effect(() => rememberLayout(disciplineId, bench, chosenUnits));
 
   const duration = $derived(disc.timeline ? (chosenUnits ?? disc.timeline.default) : undefined);
+
+  /** A bench that makes dishes shows a plate card; the cutting board's cuts are not dishes. */
+  const dishBench = $derived(disc.skill === 'cooking' && disc.outcomes.some((o) => o.result.kind === 'material'));
+  /**
+   * A timed dish bench with no picker open has nothing in the picker well at all:
+   * its heat track's hint line already says "Click a row's square to put an
+   * ingredient in it", and the window has no height to spare for the same words twice.
+   */
+  const bare = $derived(dishBench && !!disc.timeline && !picking);
+  /** The latest dish cooked here. Cleared when the layout changes; gone when the bench closes. */
+  let plate = $state<Plate | null>(null);
+
+  onMount(() => {
+    if (!dishBench) return;
+    // Hears every bench's cooks, not only this one's (see plateTracker).
+    const tracker = plateTracker(gs, disc.id);
+    return game.bus.on('cooked', (ev) => {
+      const made = tracker.cooked(ev, (plate?.cooks ?? 0) + 1);
+      if (made) plate = made;
+    });
+  });
+
+  /** What is laid out, as one string: the card describes a cook of THIS layout, so a change to it clears the card. */
+  const layoutKey = $derived(
+    JSON.stringify([
+      Object.entries(bench)
+        .filter(([, stack]) => stack)
+        .map(([slot, stack]) => [slot, stack!.id, stack!.quality])
+        .sort(),
+      duration ?? null,
+    ]),
+  );
+  $effect(() => {
+    void layoutKey;
+    plate = null;
+  });
   const carve = $derived(carving ? previewCarve(gs, bench) : null);
   const dish = $derived(carving || ordered || refining ? null : previewCook(gs, bench, disc, duration));
   const potion = $derived(ordered ? previewBrew(gs, bench, disc) : null);
@@ -109,6 +181,20 @@
 
   /** The bench run underway at THIS bench, if any. */
   const job = $derived(gs.benchWork?.disciplineId === disc.id ? gs.benchWork : null);
+  /**
+   * How far into its cook that run has got, in the bench's timeline units: the
+   * heat track's playhead. It reads the job's own progress, the same one the
+   * bar below fills from, so the two cannot disagree.
+   */
+  const elapsed = $derived(
+    job && disc.timeline
+      ? (1 - Math.max(0, job.ticksLeft) / job.ticksPer) * (job.duration ?? disc.timeline.default)
+      : null,
+  );
+  /** The numbers behind the dish's grade, for the ledger under its preview. */
+  const ledger = $derived(
+    dish?.ok && dish.outcome?.result.kind === 'material' ? cookLedger(gs, bench, disc, duration) : null,
+  );
   /** How many of the laid-out base ingredient are held, for "Prepare all". */
   const baseStack = $derived(bench[openSlots(gs, disc).find((s) => s.role === 'base')?.id ?? '']);
   const baseHeld = $derived(baseStack ? stockOf(gs, baseStack.id, baseStack.quality) : 0);
@@ -277,6 +363,10 @@
             : `${heat.exposure.toFixed(1)} units on the heat — ${heat.verdict} (×${heat.fit.toFixed(2)})`,
         );
       }
+      if (slotPicks(slot) === 'tool') {
+        // Averaged into the dish like any part (cookLedger marks it `tool`).
+        lines.push('Cookware counts in the dish’s grade like an ingredient, and is not used up');
+      }
       if (tags.includes('prepped')) {
         // For a cut, the grade is uniformity: how much of its worth arrives.
         const [lo, hi] = UNIFORMITY[held.quality];
@@ -325,15 +415,29 @@
     if (slotPicks(slot) === 'design') return 'var(--accent)';
     return QUALITY_TIERS[held.quality].color;
   }
+
+  /**
+   * What a placed cell says about stock: how many of that grade you hold, and
+   * whether that covers the layout. Slots that spend the same ingredient at the
+   * same grade draw on one stack, so two onions placed need two held.
+   */
+  function stockNote(slot: CraftSlotDef, held: GradedStack | undefined): { held: number; short: boolean } | null {
+    if (!held || slotPicks(slot) === 'design') return null;
+    const have = stockOf(gs, held.id, held.quality);
+    const need = open.filter((s) => slotConsumes(s) && bench[s.id]?.id === held.id && bench[s.id]?.quality === held.quality).length;
+    return { held: have, short: have < Math.max(1, need) };
+  }
 </script>
 
-{#snippet cell(slot: CraftSlotDef | undefined, big = false)}
+{#snippet cell(slot: CraftSlotDef | undefined, big = false, track = false)}
   {#if slot}
     {@const held = bench[slot.id]}
+    {@const note = stockNote(slot, held)}
     <Tip>
       <button
         class="cell"
         class:big
+        class:track
         class:filled={!!held}
         class:open={picking === slot.id}
         style="--tint: {tintOf(slot, held)}"
@@ -341,6 +445,8 @@
         aria-label={slot.name}
       >
         {#if held}{iconOf(slot, held)}{:else}<span class="plus">+</span>{/if}
+        {#if held && note}<GradeBadge tier={held.quality} corner />{/if}
+        {#if note}<span class="qty" class:short={note.short}>{note.held}</span>{/if}
       </button>
       {#snippet tip()}
         {#if held}
@@ -355,13 +461,17 @@
           </div>
           {#if disc.timeline && slot.at != null && duration}
             <div class="tip-line">
-              Enters at unit {Math.round(slot.at * duration)} · {Math.round((1 - slot.at) * duration)} units on the heat
+              Enters at unit {Math.round(slot.at * duration * 10) / 10} · {Math.round((1 - slot.at) * duration * 10) / 10} units on the heat
             </div>
           {/if}
         {/if}
       {/snippet}
     </Tip>
   {/if}
+{/snippet}
+
+{#snippet trackCell(slot: CraftSlotDef)}
+  {@render cell(slot, false, true)}
 {/snippet}
 
 {#snippet tray(station: string, count = 1)}
@@ -419,8 +529,8 @@
     <div class="ctx-row small">
       <span class="dim">Cook for</span>
       {#each disc.timeline.options as opt (opt.units)}
-        <button class="ctx-btn" class:on={duration === opt.units} onclick={() => (chosenUnits = opt.units)}>
-          {opt.name} · {opt.units}
+        <button class="dur-btn" class:selected={duration === opt.units} onclick={() => (chosenUnits = opt.units)}>
+          {opt.name} <b>{opt.units}</b>
         </button>
       {/each}
     </div>
@@ -445,6 +555,17 @@
         </div>
       {/each}
     </div>
+  {:else if disc.timeline && dish}
+    <!-- A timed bench is drawn on its time axis: one row per slot, in the order
+         they enter the pot, instead of stations around a slab. -->
+    <HeatTrack
+      {disc}
+      {bench}
+      duration={duration ?? disc.timeline.default}
+      check={dish}
+      {elapsed}
+      cell={trackCell}
+    />
   {:else}
     <div class="bench">
       {@render tray('topLeft')}
@@ -466,7 +587,7 @@
     </div>
   {/if}
 
-  {#if coming}
+  {#if coming && !disc.timeline}
     <div class="locked small dim">🔒 {coming.slot.name} at {SKILLS[disc.skill]?.name ?? disc.skill} {coming.level}</div>
   {/if}
 
@@ -476,8 +597,12 @@
     when you click a slot re-centres the window under the cursor, which makes
     laying out a sequence — where you click slot after slot — genuinely hard to
     aim at. Nothing here changes the bench's height; the options scroll inside.
+
+    The exception is a dish bench (`idle`, `bare`): its window is already full,
+    so with no picker open the well is a line or nothing, and a click on a slot
+    opens it. Slots are aimed at with the well shut, which is the same every time.
   -->
-  <div class="picker-well">
+  <div class="picker-well" class:timed={!!disc.timeline} class:idle={dishBench && !picking} class:bare>
     {#if picking}
       {@const slot = open.find((s) => s.id === picking)!}
       {@const options = optionsFor(slot)}
@@ -498,6 +623,7 @@
                 aria-label={opt.name}
               >
                 {opt.icon}
+                {#if slotPicks(slot) !== 'design'}<GradeBadge tier={opt.stack.quality} corner />{/if}
                 {#if opt.qty > 1}<span class="qty">{opt.qty}</span>{/if}
               </button>
               {#snippet tip()}
@@ -534,7 +660,7 @@
         {#each reading.notes as note, i (i)}<li>{note}</li>{/each}
         {#each { length: emptySteps } as _, i (i)}<li class="ghost">—</li>{/each}
       </ol>
-    {:else}
+        {:else if !bare}
       <div class="picker-idle small dim">
         {ordered ? 'Click a step to add a reagent. Steps are read left to right.' : 'Click a slot to fill it.'}
       </div>
@@ -638,6 +764,9 @@
       <div class="preview" style="--tint: {QUALITY_TIERS[dish.quality!].color}">
         <span class="pv-name"><b>{dish.outcome?.icon} {dish.label}</b></span>
       </div>
+      {#if ledger}
+        <GradeLedger bind:open={ledgerOpen} {disc} {ledger} {dish} {duration} />
+      {/if}
     {:else if carving && preview && carve?.ok}
       <Tip block>
         <div class="preview" class:named={!!named}>
@@ -702,6 +831,16 @@
       <button class="small" onclick={clear}>Clear</button>
     {/if}
   </div>
+
+  {#if dishBench}
+    <!-- Under the Cook button, not above it: how tall the card is depends on what
+         it has to say, and nothing above Cook may move when a card appears,
+         changes or clears. Its usual height is reserved from the moment the bench
+         opens, so the window does not re-centre either. -->
+    <div class="plate-slot">
+      <div class="plate-fill">{#if plate}<PlateCard {plate} />{/if}</div>
+    </div>
+  {/if}
 
   {#if ordered && gs.flasks?.length}
     <div class="carved">
@@ -836,6 +975,30 @@
     height: 216px;
   }
 
+  /* The heat track takes more height than the stations it replaces; the picker
+     gives some back. Still a fixed height, so clicking a row never moves the bench. */
+  .large .picker-well.timed {
+    height: 126px;
+  }
+
+  /* A dish bench with no picker open is one line: its window has to fit the heat
+     track, the dish, the plate card and the Cook button. Opening a picker gives
+     the well its full height (the options scroll inside) and closing it gives the
+     height back; aiming at a slot always happens with the well closed. */
+  .picker-well.idle,
+  .large .picker-well.idle,
+  .large .picker-well.timed.idle {
+    height: auto;
+  }
+
+  .picker-well.idle .picker-idle {
+    padding: 4px 8px;
+  }
+
+  .picker-well.bare {
+    margin-top: 0;
+  }
+
   .large .picker {
     padding: 10px 12px;
   }
@@ -878,6 +1041,18 @@
   .ctx-btn.on {
     opacity: 1;
     border-color: var(--accent);
+  }
+
+  /* The cook-length buttons. Full strength: they are the stove's main dial,
+     and the picked one wears the same accent as any selected button. */
+  .dur-btn {
+    padding: 3px 10px;
+    font-size: 13px;
+  }
+
+  .dur-btn b {
+    margin-left: 3px;
+    font-weight: 600;
   }
 
   /* Two rows of stations with the slab spanning both, down the middle. */
@@ -993,6 +1168,15 @@
     font-size: 17px;
   }
 
+  /* A square on the heat track: sized to sit in a row, in the embedded bench
+     and the large one alike. */
+  .cell.track,
+  .large .cell.track {
+    width: 34px;
+    height: 34px;
+    font-size: 17px;
+  }
+
   .cell.filled {
     background: color-mix(in srgb, var(--tint) 22%, var(--bg));
   }
@@ -1014,8 +1198,16 @@
     position: absolute;
     right: 1px;
     bottom: 0;
-    font-size: 8px;
-    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1.1;
+    color: var(--text);
+    text-shadow: 0 0 2px var(--bg), 0 0 2px var(--bg);
+  }
+
+  /* More placed than held: the cook will refuse until stock is bought or the layout changes. */
+  .qty.short {
+    color: var(--danger);
+    font-weight: 700;
   }
 
   .locked {
@@ -1088,14 +1280,17 @@
     margin: 7px 0 6px;
   }
 
+  /* Reads --tint like a placed cell does: the dish, brew or culture wears the
+     colour of the grade it would come out at. A carving has no grade tint and
+     keeps the plain frame. */
   .preview {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 3px 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--tint, var(--border));
     border-radius: 6px;
-    background: var(--bg-raised);
+    background: color-mix(in srgb, var(--tint, var(--bg-raised)) 16%, var(--bg-raised));
   }
 
   .preview.named {
@@ -1159,6 +1354,24 @@
   }
 
   .odds .risky { color: var(--danger); }
+
+  /* The card's usual height: one row (icon, name, notes, count), and on a narrow
+     bench the count and the notes each drop to a line of their own. A taller card
+     (several notes) grows the window below the Cook button, never above it. */
+  .plate-slot {
+    container-type: inline-size;
+    margin-top: 4px;
+  }
+
+  .plate-fill {
+    min-height: 42px;
+  }
+
+  @container (max-width: 460px) {
+    .plate-fill {
+      min-height: 84px;
+    }
+  }
 
   .bench-actions {
     display: flex;

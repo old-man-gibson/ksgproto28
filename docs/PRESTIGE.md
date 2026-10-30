@@ -52,8 +52,9 @@ All declarative, so the preview can be computed from them.
   `prestigeNow` and cleared only by `leaveReview`. It survives a reload; the
   UI shows it whenever the flag is up, with no backdrop click and no Escape.
   Leaving requires either `spentThisReview ≥ 1` or a two-step confirmation.
-- **What carries.** `prestige` and `createdAt` (the world seed — same
-  world, same weather). Everything else is the run's and resets. The reset
+- **What carries.** `prestige` (count, points, purchases, peaks, the Cook's
+  Book lists, the last harvest, the review flag) and `createdAt` (the world seed
+  — same world, same weather). Everything else is the run's and resets. The reset
   is `createInitialState`, so a new run is exactly a new save plus legacy —
   there is no second "fresh state" to drift.
 - **`stats['prestige:count']`** mirrors `prestige.count`, so content gates
@@ -78,12 +79,29 @@ which is in `modFingerprint` (LEVELS.md §2.3).
 | `startLevel` | `applyRunStart` on every new run; and at purchase, for the run in progress (`applyStartingLevel`, levels.ts: raises the level to 1 + levels × rank, never lowers) | `startingLevel` (legacy.ts). See LEVELS.md §2.4 |
 | `key` | — | any gate holding `{ type: 'boon', id }` (conditions.ts, read live from `purchases`). The Key to the City (`city_key`, cost 3) is band 3's gate (`BANDS.ascent_upper.gate`) |
 | `bandPass` | — | `floorCleared` and `floorUnlocked` (systems/ladder.ts): every floor of the band reads cleared and its gates are waived. No counter is written, so clear XP (`clearMet`), the harvest's floors source and PRESTIGE_UNLOCK (the warchief's own `slain:` latch) are not met by a pass. `pass_lower` (band 1, 10) and `pass_wilds` (band 2, 20) |
+| `cookbook` | `prestigeNow` stores which dishes reached the thresholds (`prestige.cookbook`, below), whatever rank is held | `cookTimeKnown` and `signatureEarned` (cookbook.ts), through `cookbookRank` (legacy.ts) |
 
 **Keys and passes** (2026-10-29, plans/bands-2-3.md M3). The key's price is
 held at or below the floors source of a first harvest (six floors, six
 points), so the first prestige can always buy it (`tests/band3.test.ts`).
 Passes are priced above every other boon rank. A pass costs again on every
 run it is used: its floors pay no harvest point.
+
+**Cook's Notes** (user, 2026-10-23: "it resets but prestige boons can carry some
+parts over") is the Cook's Book's carry. The Book itself is the `cooked:<dish>`
+counters in `state.stats`, so it resets with the run like every counter. At
+each prestige `carriedCookbook` (cookbook.ts) adds to two lists on the legacy
+block, `prestige.cookbook.timed` (dishes cooked 25 times this run) and
+`.signed` (100 times, and the dish has a Signature). The lists only grow.
+Rank 1 lets the Book read `timed`: those dishes show their cook time from the
+first cook of the new run. Rank 2 also reads `signed`: eating those dishes
+grants their Signature straight away. The counts are not carried, and a dish
+that has not reached a threshold in some finished run carries nothing.
+
+The lists are written regardless of rank because points are spent after the
+harvest, in the overlay: the rank gates the reading, so buying it later applies
+to every earlier run too. Added in save v58 (migration step 57 gives an old
+legacy block empty lists).
 
 **Endowment** (user, 2026-09-12) is talent's twin for attributes, the
 second `auto` boon: same product, the peak being the TRAINED level recorded

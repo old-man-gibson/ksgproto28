@@ -41,12 +41,13 @@ export const NPCS_TEXT: ProseTable = {
     'A lost fight returns you to the last haven you stood in: the Doorstep Inn at the Foot, or a tower landing.',
   ],
 
-  'head_chef.desc': 'Cook in the Granary Kitchens. Sells raw ingredients at the Larder Door: meat, fish, onion, mushroom, salt, flour, egg, berries and honey, plus two recipe cards. The kitchen holds a Cooking Stove.',
+  'head_chef.desc': 'Cook in the Granary Kitchens. Sells raw ingredients at the Larder Door: meat, fish, onion, mushroom, salt, flour, egg, berries and honey, plus recipe cards for the stove. The kitchen holds a Cooking Stove.',
   'head_chef.dialogue': [
     'Raw ingredients only at my door. Cooked dishes are on Orrin Tallow’s cart at the Granary Gate.',
     'The stove is behind me. One dish cooked here counts for A Taste of Everything.',
     'Scrub the Pans pays 10 gold per 20 s if you need coin.',
-    'Two recipe cards at my door: Herb-Rubbed Meat and Fish and Onion Pot. Read one and the stove knows the dish.',
+    'Recipe cards at my door: Herb-Rubbed Meat, Fish and Onion Pot, Seared Stew, Braised Meat and Steeped Broth. Read one and the stove knows the dish.',
+    'Seared Stew, Braised Meat and Steeped Broth also need the meat or herb on the heat for a set time. The card says how long.',
   ],
 
   'row_alchemist.desc': 'Alchemist at the Alembics. Sells reagents at the Reagent Shelf: spring water, pressed oil, grain spirit, common herb, mendroot, bloodwort, fixing salt, bone ash and brimstone. The alchemy bench here brews by ordered sequence.',

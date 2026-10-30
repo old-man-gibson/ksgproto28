@@ -124,6 +124,8 @@ export const LOG_TEXT = {
   'consumables.reason.recipe_known': 'Recipe already known',
   'consumables.reason.card_spent': 'Already done',
   'consumables.reason.technique_unreachable': 'No technique you know leads into {name}’s position yet',
+  // Dishes are for between fights (systems/consumables.ts canUse); a flask is not.
+  'consumables.reason.in_combat': 'Not during a fight.',
   'consumables.word_learned': '📝 Word learned: {word}. It is on the Spellcrafting Table (castable once Arcana reaches its level).',
   'consumables.technique_learned': '📘 Technique learned: {name} (canonical form).',
   'consumables.card_used': '{icon} {verb}: {name}.',
@@ -132,6 +134,24 @@ export const LOG_TEXT = {
   'divine.favor_assigned': '🕊️ 1 unassigned favor placed with {deity}.',
   'consumables.recipe_learned': '📜 Recipe learned: {name}. It is listed on the bench that cooks it.',
   'consumables.used': '{icon} {verb} {grade} {name}.',
+  // A dish cooked SIGNATURE_COOKS times also grants its Signature (systems/cookbook.ts).
+  'consumables.used_signature': '{icon} {verb} {grade} {name}. Signature: also {status}.',
+  // The same two lines for a dish that was queued during a fight (systems/eating.ts).
+  'consumables.used_queued': '{icon} {verb} {grade} {name} ({note}).',
+  'consumables.used_signature_queued': '{icon} {verb} {grade} {name} ({note}). Signature: also {status}.',
+
+  // ---------- meals: dish slots and the queued dish ----------
+  'meals.note_fight': 'queued during the fight',
+  'meals.note_recovery': 'queued while knocked out',
+  'meals.when_fight': 'when the fight ends',
+  'meals.when_recovery': 'when you are back on your feet',
+  'meals.queued': '🍽️ {grade} {name} queued: it is eaten {when}.',
+  'meals.queue_replaced': '🍽️ {grade} {name} queued in place of {old}: it is eaten {when}.',
+  'meals.queue_cancelled': '🍽️ Queued {grade} {name} cancelled.',
+  'meals.queue_dropped': '🍽️ Queued {grade} {name} not eaten: {reason}',
+  'meals.replaced': '🍽️ {grade} {name} dropped for {by}: at most {limit} dishes can be active. {detail}',
+  'meals.ended': 'Ended: {list}.',
+  'meals.kept': 'Still given by another dish or source: {list}.',
 
   // ---------- cooking ----------
   'cooking.reason.no_outcome': 'No recipe matches',
@@ -139,6 +159,11 @@ export const LOG_TEXT = {
   'cooking.reason.no_such_technique': 'No such technique',
   'cooking.reason.technique_level': 'Technique needs Cooking {level}',
   'cooking.reason.not_preppable': 'Not a preppable ingredient',
+  // The Cook's Book crossing a threshold while cooking (systems/cooking.ts). Each
+  // is a tally entry on the "Cooked:" line of the cook that crossed it, and the
+  // tally joins its entries with ", ": so neither ends with a period.
+  'cooking.book.time': "Cook's Book: {name} cook time noted ({cooks} cooks)",
+  'cooking.book.signature': '{name} is now a Signature dish: eating it also gives {status} ({cooks} cooks)',
 
   // ---------- forging (systems/assembly.ts, systems/forging.ts) ----------
   'forging.reason.empty': 'Nothing is on the anvil',

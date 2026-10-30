@@ -10,12 +10,14 @@ import type { store as Store } from './store.svelte';
 import { searchContentIssues } from '../../src/core/systems/searchValidation';
 import { smithingContentIssues } from '../../src/core/systems/assemblyValidation';
 import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
-import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SkillDef, SpotDef, SpotFind, StatusDef } from '../../src/core/types';
+import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
-import { TAG_RESISTANCES } from '../../src/core/systems/monsterStats';
+import { TAG_RESISTANCES, penetrationProblems } from '../../src/core/systems/monsterStats';
+import { resistanceProblems } from '../../src/core/systems/conditionHarm';
 import { MUSIC_AXES } from '../../src/core/data/music.data';
 import { ARCANE_WORDS } from '../../src/core/data/spellcraft.data';
 import { askingPrice, lineValue } from '../../src/core/systems/shops';
+import { foodProblems, heatWindowProblems } from '../../src/core/systems/disciplines';
 
 /**
  * Benches that are furniture rather than disciplines. The spellcrafting table
@@ -1164,6 +1166,64 @@ export function validate(store: S): Issue[] {
     for (const id of recipeIds) {
       if (!taught.has(id)) err('discipline', id, `learned dish '${id}' has no recipe card to teach it`);
     }
+  }
+
+  // Heat windows (CraftOutcomeDef.heat). Mirrors 'heat windows' in
+  // tests/content.test.ts, and is the same function: a windowed outcome needs a
+  // timed bench, a window-less fallback on the same tags, and a layout that
+  // lands inside its window.
+  for (const disc of Object.values(store.all<CraftDisciplineDef>('discipline'))) {
+    for (const p of heatWindowProblems(disc, store.all<MaterialDef>('material'))) {
+      err('discipline', disc.id, p.message, ['outcomes', `#id=${p.outcome}`, 'heat']);
+    }
+  }
+
+  // Food and Signatures (ConsumableSpec.food, .signature). Mirrors 'food and
+  // signatures' in tests/content.test.ts, and is the same function: exactly the
+  // materials a cooking bench makes are food, a dish carries a signature that
+  // names a real condition and repeats none of its own, the bench's failure dish
+  // carries none, food grants nothing permanent, null or harmful (the failure
+  // dish's own grants aside).
+  for (const p of foodProblems(
+    Object.values(store.all<CraftDisciplineDef>('discipline')),
+    store.all<MaterialDef>('material'),
+    statuses,
+  )) {
+    err('material', p.material, p.message, ['consumable']);
+  }
+
+  // Explicit condition immunity (StatusDef.immune). Mirrors tests/content.test.ts:
+  // every id it names must be a real condition, and it must name something.
+  for (const st of Object.values(statuses)) {
+    if (!st.immune) continue;
+    if (!st.immune.ids?.length && !st.immune.elements?.length) {
+      err('status', st.id, 'immune names no condition and no element — it protects against nothing', ['immune']);
+    }
+    for (const id of st.immune.ids ?? []) {
+      if (!statuses[id]) err('status', st.id, `immune names unknown condition '${id}'`, ['immune', 'ids']);
+    }
+  }
+
+  // Who can resist what (StatusDef.element / unresistable, immune on a condition
+  // or a title). Mirrors 'every harmful condition says what resists it' in
+  // tests/content.test.ts, and is the same function: a harmful condition has an
+  // element or is unresistable (never both), and nothing may switch an
+  // unresistable one off.
+  for (const p of resistanceProblems(statuses, store.all<TitleDef>('title'))) {
+    err(p.kind, p.id, p.message, p.path);
+  }
+
+  // Monster penetration (MonsterDef.penetration, TierDef.penetration). Mirrors
+  // 'monster penetration' in tests/content.test.ts, and is the same function:
+  // an own value is a share, and nothing that can appear on floors 1 to 3
+  // applies conditions with any.
+  for (const p of penetrationProblems(
+    store.all<MonsterDef>('monster'),
+    (store.meta.tiers ?? {}) as Record<string, TierDef>,
+    spots,
+    floors,
+  )) {
+    err('monster', p.monster, p.message, ['penetration']);
   }
   return issues;
 }
