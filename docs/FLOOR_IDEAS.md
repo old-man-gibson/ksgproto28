@@ -996,8 +996,6 @@ It waits on:
   `band2-floors` at a22c94a and **not on main**: it landed after PR #26
   merged, and `band3-machinery` lacks it too
 - band 3 (floors 7–10) shipping, since floor 11 opens on floor 10's clear
-- condition defence getting a system fill (ROLES.md), for the fire ships
-  (objection 5)
 
 **As posted (2026-10-29).** *"alright, floors 11-14 are an adventure floor,
 but of the pirate variety. once floor 10 is cleared, and the player has done
@@ -1025,9 +1023,9 @@ privateers hunt the pirates.
 
 | Floor | One idea (mechanism) | Boss / preparation | Spots |
 |---|---|---|---|
-| 11 | The harbor. A quay (haven), four berths with a recruiter each, and a roadstead (open water with its own convoy). Accepting a berth's join quest picks the side for the run. Clear: `sea:crates:won` 8 | none; the join quests are the deals | ~6 |
-| 12 | Crossings. Ports are spots, the sea is edges: sailing into open water is a `forced` edge (a boarding), the way back is free. The side decides which lanes exist (`revealWhen` on the accept stamp): trade lanes, hidden coves, patrol lanes, hunting grounds. Route choice: long and weak, short and strong, hidden and cheap. Clear: `sea:crates:won` 40 | named ships sighted and sunk here are escorts missing on floor 14 | ~8 |
-| 13 | The blockade. What was done in port (a pilot hired, a signal book bought) sets the approach (`ApproachSpec`: enemies surprised, or the player flat-footed). Clear: `sea:crates:won` 160 | more named ships; the approach | ~8 |
+| 11 | The harbor. A quay (haven), four berths with a recruiter each, and a roadstead (open water with its own convoy). Accepting a berth's join quest picks the side for the run. Clear: `sea:crates:won` 8 and `fights:<roadstead>` 1 | none; the join quests are the deals | ~6 |
+| 12 | Crossings. Ports are spots, the sea is edges: sailing into open water is a `forced` edge (a boarding), the way back is free. The side decides which lanes exist (`revealWhen` on the accept stamp): trade lanes, hidden coves, patrol lanes, hunting grounds. Route choice: long and weak, short and strong, hidden and cheap. Clear: `sea:crates:won` 40 and `fights:<the farthest water>` 1 | named ships sighted and sunk here are escorts missing on floor 14 | ~8 |
+| 13 | The blockade. What was done in port (a pilot hired, a signal book bought) sets the approach (`ApproachSpec`: enemies surprised, or the player flat-footed). Clear: `sea:crates:won` 160 and `fights:<the blockade water>` 1 | more named ships; the approach | ~8 |
 | 14 | The final mission. One `FloorDef`, four wings, one per side; each wing stamps `flag:sea:14:done`, which the floor `clear` reads | the side's boss with four escort slots, one per named ship | ~5 a wing |
 
 **Sides.** One row each: `SeaSideDef { id; giver; joinQuest; prey: string[];
@@ -1062,18 +1060,30 @@ with one formula per end:
 | Pirates | crates seized = `clamp(raid − guard, 0, crates)` | one guard | crates seized |
 | Privateers | crates recovered = `clamp(raid − pirate crew, 0, carried)` from the pirate ships on the lane, which carry what they seized | one pirate | crates recovered |
 
-`escort` and `raid` come only from the hold burned that leg; no hold burned
-means 0, so an idle player on any side earns nothing. A crate credited
-**while present** (`!isIdle` at the water spot, idea 2's definition, so a
-tick either banks bonus time or counts, never both) adds to
-`sea:crates:won`.
-- Escort and raid ratings are spent, not owned: each leg burns one packed
-  Ration and the Shot it fires (the "hold" a player fills before sailing:
-  shot from smithing, rations from cooking). Salves are drunk in the
-  boardings. That makes the band a consumer for the crafting systems.
-- Example (merchants): threat [3, 3, 4, 4], escort 2. The formula alone
-  loses 1 + 1 + 2 + 2 = 6 crates (2 sold). Killing 2 boarders each on legs 3
-  and 4 loses 1 + 1 (6 sold).
+`escort` and `raid` are the same number, the battery rating, named for which
+end of the flow the player is on. A crate credited **while present**
+(`!isIdle` at the water spot, idea 2's definition, so a tick either banks
+bonus time or counts, never both) adds to `sea:crates:won`.
+
+**The battery** (user, 2026-10-29: any of three skills contributes):
+`rating = volleys × hit + morale`, per leg, integers.
+- The side's ship supplies the base: volleys 1, hit 1, morale 0. A player
+  with no crafts still fires, so no system is required.
+- **Smithing: how quickly and often the guns fire.** Cannons fitted in the
+  hold (kept, never spent) and cannonballs (spent per leg) raise `volleys`.
+- **Alchemy: how efficiently and hard the shots hit.** Powder charges (spent
+  per leg) raise `hit`.
+- **Cooking: morale.** Rations (spent per leg) raise `morale`, which adds to
+  the rating; further indirect effects of morale are left for a later round.
+- Salves are drunk in the boardings, as usual.
+- Example (merchants): threat [3, 3, 4, 4]. Base battery (rating 1) alone
+  loses 2 + 2 + 3 + 3, clamped to all 8 crates. Two cannons and a cannonball
+  per leg (volleys 3) with base powder (hit 1) and one ration (morale 1):
+  rating 4, loses 0 + 0 + 0 + 0. Kills subtract threat on top.
+- Offline legs fire the base battery plus whatever the hold still holds, at
+  25% credit paid as cargo, never to `sea:crates:won`. This replaces the
+  earlier rule "no hold burned means 0": the base battery now pays a small
+  idle income, like an idle hunt, and the clears stay presence-only.
 
 **Hours.**
 - H1: the convoy table never empties; cleared water still runs every 3,600
@@ -1091,14 +1101,14 @@ tick either banks bonus time or counts, never both) adds to
   `SceneId`.
 - H6: a re-climb picks another side: other lanes, another end of the flow,
   another enemy, another mission.
-- H7: offline, legs resolve by formula (hold burned, no kills) at 25%
+- H7: offline, legs resolve by formula (the battery, no kills) at 25%
   credit, paid as cargo and never to `sea:crates:won`, so a night away cannot
   pass a gate. The convoy is integers derived from `totalTicks`; it never
   enters `modFingerprint`.
-- H8: hurdles ask damage (boarders, monsters) and sustain (fire ships and
-  bilge rot as damage over time to outlast, until condition defence has a
-  system fill, ROLES.md). Cooking and smithing feed the hold. Access fills
-  nothing. Mutagens and psionics stay shut.
+- H8: hurdles ask damage (boarders, monsters) and sustain. Burning is damage
+  over time for now (user, 2026-10-29), so it asks sustain only. Smithing,
+  alchemy and cooking each raise the battery. Access fills nothing.
+  Mutagens and psionics stay shut.
 
 **Laws.**
 - L1: a haven at every port; every `forced` edge has a free return.
@@ -1107,8 +1117,7 @@ tick either banks bonus time or counts, never both) adds to
 - L3: a knockout goes to the last port.
 - L5: the unprepared mission boss is winnable; preparation only removes
   escorts or adds statuses (band 2's rule).
-- L7: no hurdle names a system. Fire ships ask sustain until condition
-  defence has a fill.
+- L7: no hurdle names a system. Burning asks sustain (damage over time).
 
 **Cost.** No save change for the harbor, crossings or convoys (`sea:*`
 stats, accept stamps). Registries: `SEA_SIDES`, `CONVOYS`. Engine: the
@@ -1172,24 +1181,30 @@ an empty hold, so the narrow build clears; crates conserve, integers only,
 at most 80 convoys per 8 h catch-up; the festival's time jump pays nothing
 (no "last seen"); an accept stamp cannot be doubled (`quests.ts:76`); cargo
 is sold, never bought, so no harbor shop mints; every H4 material exists
-except shot.
+except the battery's new items (cannons, cannonballs, powder charges).
 
-**Open questions.** Each has a default.
-
-1. **The rest of the night after an offline siege clear.** *Default:*
-   catch-up stops at the clear, the harvest and review overlay show on
-   return, and the remaining offline time goes to the banked-time pool.
-2. **Spine lint exemption for floors 11–14.** The lint asks every floor's
-   clear to name a spot; crate counts name none. *Default:* exempt, with the
-   reason written beside the exemption.
-3. **Shot.** *Default:* smithing makes shot, the one consumable smithing
-   produces; the alternative is alchemy powder (brimstone) as the only
-   ammunition.
-4. **Switching sides.** *Default:* one side per run, no switching, as idea 2.
-5. **Condition defence.** *Default:* sustain hurdles until a system fills the
-   role, then fire ships ask burning defence.
+**Open questions.** None.
 
 **Rulings (user, 2026-10-29).**
+- **Offline time after a siege clear** (Q1): catch-up stops at the clear,
+  the harvest and review overlay show on return, and the rest of the
+  offline time goes to the banked-time pool. Later waves against the base
+  are §5.3 item 21.
+- **The spine lint** (Q2): floors 11–13 need no exemption; each clear adds
+  `fights:<a water spot>` 1, which the crates already require, so the spine
+  rules keep running. Floor 14 is exempt (its clear is any one of four
+  wings, stamped as a flag), with that reason written beside the exemption.
+  Supersedes objection 1's "floors 11–14 need the exemption".
+- **The battery** (Q3): *"the player can contribute with any of those three
+  skills."* Alchemy: how efficiently and hard the shots hit. Smithing: how
+  quickly and often the guns fire (better cannons and cannonballs). Rations:
+  sailor morale, with indirect bonuses. Written up under the convoy table.
+  Supersedes objection 4's "no hold burned, no crates" and objection 8's
+  shot question.
+- **Switching sides** (Q4): locked, one side per run, for now.
+- **Burning** (Q5): damage over time for the time being, asking sustain.
+  Keep it simple this round: no fire-ship special cases and no wait on
+  condition defence. Supersedes objection 5's wait.
 - **The merchants' role** (was Q6): approved as proposed. The other three
   each have an enemy; merchants own the convoy. They run it end to end:
   pack the hold, pick the route, defend their own cargo when it is boarded
@@ -1236,7 +1251,12 @@ except shot.
 
 ### 5.2 Open
 
-None with a default. Parked by the user, to be decided later:
+1. **A later wave left unstarted** (§5.3 item 21). *Default:* nothing is
+   lost while a threat waits; the base keeps producing and the warning
+   stays until the player starts the wave. A cost for ignoring it would
+   make the optional base a chore, and its output is materials only.
+
+Parked by the user, to be decided later:
 - the hundred-festival reward (§5.3 item 20)
 - worker creation (§5.3 item 8), a later part of base building
 - themes for floors 11–14, 17 and 18–20 (§5.3 item 5)
@@ -1312,6 +1332,13 @@ Round 3:
     of being simulated.
 20. **The hundred-festival reward.** Not yet decided; the user will set it
     later.
+
+Round 4 (with idea 3's rulings):
+
+21. **Later waves against the base.** After the stronghold, the player is
+    told when another wave threatens the base. A later wave never triggers
+    a prestige, and the player starts it when they choose. Because the
+    player starts it, a later wave never begins during offline catch-up.
 
 ### 5.4 Asked in round 2 (kept for the record)
 
