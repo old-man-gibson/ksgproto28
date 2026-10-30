@@ -151,7 +151,7 @@ constraints, condensed from the post:
 | 7–10 | band 3, the castle | hub, four wards any order | skeleton on `band3-machinery` |
 | 11 | the stronghold | take it, fix it up, make workers, hold a monster wave; normal floor from the next prestige on (§5.3) | unwritten |
 | 11–14 | band 4 | own band, four floors; themes come later | unwritten |
-| 15–16 | the Vermin Festival | dark room of 10, a 10-day prep hub, a 100-body battle royale (§5.3) | unwritten |
+| 15–16 | the Vermin Festival | dark room of 10, a 10-day prep hub on its own clock, an isometric free-movement battle royale of 100 (§5.3) | unwritten |
 | 17 | special floor | aberrant, one floor | unwritten |
 | 18–20 | band 5 | own band, three floors | unwritten |
 | 21–30 | the Great Island at War | idea 2 | banked |
@@ -1018,7 +1018,83 @@ Clean:
 
 ### 5.2 Open
 
-From the ladder rulings (§5.3). Each has a default.
+From the second round of ladder rulings (§5.3, items 8–17). Each has a
+default.
+
+1. **Who moves in the royale.** A free-movement field is a hands-on mode in
+   an idle game. *Default:* the player sets a stance (hide, hunt, hold a
+   spot) and their body moves on its own, so the field runs with nobody at
+   the keys; direct control is an option, never a requirement.
+2. **Being away during the festival.** The festival has its own clock and
+   no simulation (§5.3 Q15). *Default:* its clock advances only while the
+   game is open, so offline catch-up skips floors 15–16 entirely and costs
+   nothing there; the world clock outside still catches up.
+3. **The hundred-festival reward.** *Default:* secret content (no counter,
+   no hint until met), wins counted per run and not reset by a loss; the
+   reward is a title plus one item of the festival's top grade. The lockout
+   (Q9) makes it a feat: a loss costs 72 real minutes.
+
+Worker creation (round 1, Q1) is parked for a later part of base building.
+
+### 5.3 Answered (user, 2026-10-29, the ladder)
+
+1. **The required prestige.** The next prestige after the stronghold clear.
+2. **The stronghold.** *"You take it, spruce it up a little, then the player
+   has to defend against a monster wave."* Before the wave triggers, the
+   player creates some workers as part of the tutorial.
+3. **One base.** *"Once the player stronghold is unlocked, it remains
+   unlocked on all subsequent prestiges."*
+4. **The para-floor's output.** Materials only, for now.
+5. **Themes.** Floors 11–14, 17 and 18–20 are undefined; they come later.
+6. **The Vermin Festival.**
+   - The player wakes in a dark room with no equipment but a simple weapon
+     of their preferred type (from skill level and usage).
+   - Nine other enemies, *"decently strong but manageable"*. When only the
+     player remains, the door opens.
+   - The next room holds 99 more survivors, much stronger. Nobody fights
+     yet: everyone gets 10 in-game days to prepare, in a small hub like the
+     Foot of the Ascent but with limited resources.
+   - When the player is ready, or the 10 days pass, they move to floor 16.
+     Entering early is a time jump. The battle royale begins.
+   - Defeat ejects the player out of the floors; floors 15 and 16 lock for
+     some time or until the prestige.
+   - A win rewards powerful equipment.
+   - The arithmetic is the Gu ritual's: ten rooms of ten, one survivor each,
+     then one of a hundred.
+   - Defeat here is an exception to the defeat rule (every knockout
+     retreats to the last haven): the player lands outside the tower.
+7. **Idea 2's base ruling** is dropped. It becomes access to the factions'
+   war room.
+
+Round 2, answering the questions kept in §5.4:
+
+8. **Worker creation** (§5.4 Q1): a later part of base building.
+9. **The hold door** (Q2): moves to floor 11. Saves that already opened the
+   hold lose access until they clear the stronghold.
+10. **Workers in the wave** (Q3): *"Workers help in various ways, depending
+    on their own skills."*
+11. **Gear held at the door, issued weapon** (Q4): approved.
+12. **Losing in the dark room** (Q5): approved, same as losing the royale.
+13. **The royale's shape** (Q6): *"This is the one place where I think a
+    free movement, isometric 2.5d system could be useful,"* so the player
+    and enemies move around the field and fight each other, with the fights
+    in the normal side view. Read as: an isometric movement layer for floor
+    16 only; an engagement on it drops into the existing battle stage.
+14. **The others prepare too** (Q7): yes. A hidden title: enter floor 16
+    within 12 in-game hours of leaving the dark room, then win. Secret
+    content rules apply (nothing shows until met).
+15. **The clock** (Q8): floors 15–16 run on their own clock, because the
+    band is cut off from the other floors and outside the tower. There is
+    no simulation of the skipped time.
+16. **The lockout** (Q9): approved, 3 in-game days or the next prestige.
+17. **Reruns** (Q10): approved, and the player can attempt the festival
+    again for no reward. The sole exception: *"if the player somehow
+    manages to do it over and over again, like 100 festivals in a single
+    run."*
+
+### 5.4 Asked in round 2 (kept for the record)
+
+The defaults that round 2 asked about; the rulings are §5.3 items 8–17.
 
 1. **Worker creation in the stronghold tutorial.** No worker code exists
    (no `worker` anywhere in `src/core`), and base building's settled recipe
@@ -1064,33 +1140,3 @@ From the ladder rulings (§5.3). Each has a default.
 10. **After a win.** *Default:* the reward is once per run; floor 16 reads
     cleared, the hub stays visitable, and a new run fights the festival
     again.
-
-### 5.3 Answered (user, 2026-10-29, the ladder)
-
-1. **The required prestige.** The next prestige after the stronghold clear.
-2. **The stronghold.** *"You take it, spruce it up a little, then the player
-   has to defend against a monster wave."* Before the wave triggers, the
-   player creates some workers as part of the tutorial.
-3. **One base.** *"Once the player stronghold is unlocked, it remains
-   unlocked on all subsequent prestiges."*
-4. **The para-floor's output.** Materials only, for now.
-5. **Themes.** Floors 11–14, 17 and 18–20 are undefined; they come later.
-6. **The Vermin Festival.**
-   - The player wakes in a dark room with no equipment but a simple weapon
-     of their preferred type (from skill level and usage).
-   - Nine other enemies, *"decently strong but manageable"*. When only the
-     player remains, the door opens.
-   - The next room holds 99 more survivors, much stronger. Nobody fights
-     yet: everyone gets 10 in-game days to prepare, in a small hub like the
-     Foot of the Ascent but with limited resources.
-   - When the player is ready, or the 10 days pass, they move to floor 16.
-     Entering early is a time jump. The battle royale begins.
-   - Defeat ejects the player out of the floors; floors 15 and 16 lock for
-     some time or until the prestige.
-   - A win rewards powerful equipment.
-   - The arithmetic is the Gu ritual's: ten rooms of ten, one survivor each,
-     then one of a hundred.
-   - Defeat here is an exception to the defeat rule (every knockout
-     retreats to the last haven): the player lands outside the tower.
-7. **Idea 2's base ruling** is dropped. It becomes access to the factions'
-   war room.
