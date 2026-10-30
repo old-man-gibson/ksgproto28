@@ -1018,23 +1018,10 @@ Clean:
 
 ### 5.2 Open
 
-From the second round of ladder rulings (§5.3, items 8–17). Each has a
-default.
-
-1. **Who moves in the royale.** A free-movement field is a hands-on mode in
-   an idle game. *Default:* the player sets a stance (hide, hunt, hold a
-   spot) and their body moves on its own, so the field runs with nobody at
-   the keys; direct control is an option, never a requirement.
-2. **Being away during the festival.** The festival has its own clock and
-   no simulation (§5.3 Q15). *Default:* its clock advances only while the
-   game is open, so offline catch-up skips floors 15–16 entirely and costs
-   nothing there; the world clock outside still catches up.
-3. **The hundred-festival reward.** *Default:* secret content (no counter,
-   no hint until met), wins counted per run and not reset by a loss; the
-   reward is a title plus one item of the festival's top grade. The lockout
-   (Q9) makes it a feat: a loss costs 72 real minutes.
-
-Worker creation (round 1, Q1) is parked for a later part of base building.
+None with a default. Parked by the user, to be decided later:
+- the hundred-festival reward (§5.3 item 20)
+- worker creation (§5.3 item 8), a later part of base building
+- themes for floors 11–14, 17 and 18–20 (§5.3 item 5)
 
 ### 5.3 Answered (user, 2026-10-29, the ladder)
 
@@ -1091,6 +1078,22 @@ Round 2, answering the questions kept in §5.4:
     again for no reward. The sole exception: *"if the player somehow
     manages to do it over and over again, like 100 festivals in a single
     run."*
+
+Round 3:
+
+18. **Who moves in the royale.** *"It's not entirely idle, as the player
+    has to move a good bit to gain resources before the stronghold."* The
+    player sets a strategy, or a set of strategies, and lets the whole
+    thing run on its own, and can also move the character directly at any
+    time. Both modes are first-class: a strategy set alone must be able to
+    win, so the critical path never needs hands on the keys.
+19. **Being away during the festival.** The festival clock advances only
+    while the game is open; offline catch-up skips floors 15–16. Time away
+    while inside the festival goes into the banked-time pool
+    ([NAVIGATION.md](NAVIGATION.md): banked 1:1, capped at 8 hours) instead
+    of being simulated.
+20. **The hundred-festival reward.** Not yet decided; the user will set it
+    later.
 
 ### 5.4 Asked in round 2 (kept for the record)
 
