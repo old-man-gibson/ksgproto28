@@ -112,6 +112,7 @@ John's critical-path number is set at build time and checked with
 | Monsters never get unique abilities | plans/unique-abilities.md |
 | Art is not the limit: 2,169 enemy sheets on disk, 79 monster definitions, 51 unplaced. The Ækashics art is never redistributed | README.md (art), PITFALLS.md |
 | Progress on floors 11+ coarsens for offline: kills, searches, resource thresholds, room rates. No continuous fronts or multi-faction routing that only a full tick sim can resolve | §1.5 (2026-10-29) |
+| Each band's last floor leads into the next band's first (a soft transition). Seams are prose and an optional climb verb, never an authored edge across floors | §1.5 (2026-10-29) |
 
 ### 1.5 The ladder, floors 11–30 (user, 2026-10-29)
 
@@ -153,7 +154,7 @@ constraints, condensed from the post:
 | 11–14 | band 4, the harbor band | harbor side pick, two sea floors, four final missions (idea 3) | banked |
 | 15–16 | the Vermin Festival | dark room of 10, a 10-day prep hub on its own clock, an isometric free-movement battle royale of 100 (§5.3) | unwritten |
 | 17 | special floor | aberrant, one floor | unwritten |
-| 18–20 | band 5 | own band, three floors | unwritten |
+| 18–20 | band 5, the desert band | necropolis road, the pyramid (the Weighing), the delta port to the island (idea 4) | banked |
 | 21–30 | the Great Island at War | idea 2 | banked |
 | — | the base | optional para-floor, room rates feeding shipped systems | unwritten |
 
@@ -166,6 +167,30 @@ constraints, condensed from the post:
 - The offline row in §1.4 applies to every idea from here on. Idea 2's
   presence clock already fits it (absent floors do not advance); its fronts
   must resolve as per-turn counters, which they already are.
+
+**Soft transitions (user, 2026-10-29).** *"All floor have this sort of soft
+transition"*: each band's last floor leads into the next band's first. The
+data model, after the antagonist's review of idea 4:
+- **Seams are prose.** No authored edge may cross a banded floor boundary
+  (lint, `content.test.ts:2171`), so a seam lives in the last floor's final
+  spots and the next floor's landing description.
+- **One optional field:** `FloorDef.seam = { verb?: string }`, the climb
+  log's word for the step into the next floor (default "Climbing"; 20 → 21
+  "Sailing"). `climbTo` reads it only when `toIndex === fromIndex + 1`, since
+  a climb can skip rungs. The verb is a literal in `towers.data.ts`: the text
+  split accepts only `desc`, `dialogue` and `hint`.
+- Nothing moves the player on a clear (clearing is derived), so a seam has
+  no exit field. A seam reads and writes no flag.
+
+| Seam | State |
+|---|---|
+| 3 → 4 | one side written: `f4_treeline` says the tower opens onto woodland; floor 3's end says nothing |
+| 6 → 7 | planned (the warren threatens band 3's city), unwritten |
+| 10 → 11 | proposed: the castle safe, a steward deeds the derelict stronghold; after the swap, floor 11's landing describes the road to the harbor |
+| 14 → 15 | proposed: the final mission's feast ends in a drugged cup; the dark room is the cut |
+| 16 → 17 | open: 15–16 must be banded rungs (the index lint), so the ladder works from them like any floor, which conflicts with the festival being cut off (§5.2) |
+| 17 → 18 | proposed: floor 17's clear opens a shaft; floor 18's landing is a well-head in full sun. Floor 17 owes floor 18 only "ends underground" |
+| 20 → 21 | idea 4: the ferry; the roadstead fight is the crossing; verb "Sailing" |
 
 **Checks against the code and the laws.**
 - **Offline, the state of the three fixes** (ENGINEERING.md §1.4).
@@ -308,6 +333,7 @@ that stays.
 | 1 | 2026-10-28 | The Five Moons | off-ladder, band 2's goblins, entered from band 3 | Bank |
 | 2 | 2026-10-29 | The warring states band | floors 21–30 (moved from 11–20, §1.5) | Bank |
 | 3 | 2026-10-29 | The harbor band | band 4, floors 11–14 | Bank |
+| 4 | 2026-10-29 | The desert band | band 5, floors 18–20 | Bank |
 
 ### Entry template
 
@@ -1223,6 +1249,190 @@ except the battery's new items (cannons, cannonballs, powder charges).
   thresholds on speechcraft level against the deal, not dice, so a player
   can see why a deal went the way it did.
 
+### 4. The desert band (posted 2026-10-29)
+
+Band: band 5, floors 18–20 · Floors: 3 · Verdict: **Bank** (antagonist fixes
+taken).
+
+It waits on:
+- open sky on tower floors: the Ascent region is `sheltered` on main; open
+  sky (`AreaDef.sheltered`, `skyRegionOf`) is on the unpushed branch
+  `moon-phase`
+- a per-area climate pin: at the tower's pin a desert floor peaks at
+  28.5 °C (0 hours a year at heat's 32 °C training line) and bottoms at
+  −13.5 °C (1,287 hours a year at or below −5, so it trains cold). Terrain
+  alone does not fix it; the area needs its own latitude
+- the killing blow's damage type on each monster (shared with idea 2's
+  kill-source field), for method drops
+
+**As posted (2026-10-29).** *"the 18-20 band could be a desert theme with
+the classic pyramids and obelisks. it should lead at floor 20 back towards a
+harbor to move to floor 21-30, as all floor have this sort of soft
+transition"*
+
+**The place in one line.** A dead dynasty bills every piece carried out of
+its tombs against the carrier; the port house at the delta licenses digs
+for a fifth and buys the rest; diggers pay at the tomb door, in the judge's
+strength.
+
+| Floor | One idea (mechanism) | Boss / preparation | Spots |
+|---|---|---|---|
+| 18 | The Necropolis Road. Open desert between obelisks. Obelisks are havens on open sky; reading one is a find that adds to `flag:chart` (five obelisks, three reads matter). Dens of desert monsters along the road. Clear: `boss:<forecourt>` 1 | the forecourt guardian, repeatable; no preparation | ~8 |
+| 19 | The Pyramid: the Weighing. Grave goods are optional finds in a treasury off the burial chamber, each adding to `flag:tomb:taken`. The judge waits at the door, at base level + taken (cap +6). The chamber-to-door edge is `forced`. Clear: `boss:<door>` 1 | restraint is the preparation: take nothing, fight the base judge; take everything, fight it at +6 and leave rich | ~8 |
+| 20 | The Delta Port, the seam to the island. Idea 3's quay and roadstead pair, no convoy table: a quay (haven), a broker who buys dig goods, warehouses (`job`, `gather`), a notice wall naming floor 21's camps, and a roadstead (`fightLimit` 1) behind a `forced` edge. The roadstead fight is the crossing. Clear: `fights:<roadstead>` 1 | three obelisk reads (`flag:chart` ≥ 3) leave the roadstead's crew surprised (`ApproachSpec`) | ~5 |
+
+Gates: floor 19 `kills:tag:desert` 60, floor 20 `kills:tag:desert` 150
+(band 2's `kills:tag:goblin` precedent). The tag needs a `MONSTER_TAGS`
+entry and its text. Every clear names a spot, so the spine lint runs on all
+three floors. Floor 20's harbor wing joins the spine twice or leaves by a
+one-way edge (wing-loop lint).
+
+**The Weighing.**
+- **The tomb seals when the judge falls.** Each grave-good find carries
+  `requires: [{ type: 'statMax', key: 'boss:<door>', value: 0 }]`, so
+  goods can only be taken before the clear, and `taken` always prices the
+  judge the clear is paid with. Leaving by the ladder does not dodge it:
+  `taken` stays for the run, and floor 19 still clears only at the door.
+- **Taking is going to the treasury.** There is no "take" verb: finds fire
+  as a spot is explored. The goods sit in their own spot off the chamber,
+  so exploring the chamber takes nothing; standing in the treasury and
+  exploring it, idle or offline included, takes them all (Q1).
+- **Rows.** Judge rows k = 0..5 `{ monsterId: judge; boss: true; level:
+  [B + k, B + k]; requires: [stat flag:tomb:taken ≥ k, statMax
+  flag:tomb:taken ≤ k] }`, and row 6 with `stat ≥ 6` alone, so the
+  clear-table lint finds a row at every sampled value. `boss: true` latches
+  `boss:<door>` on every kill and stays repeatable.
+- **Example, B = 30:** take nothing, level 30; take six, level 36 (about
+  +20% attributes; linear growth), plus roughly 6 × 80–140 gold and twelve
+  ingots, resin or linen. The step size is a dial (Q3).
+- It is band 1 floor 3's rule reversed: there, what you find makes the boss
+  weaker; here, what you take makes it stronger.
+
+**The broker** buys at the global sell price (`shop.lines: []`); "posted
+rates" is the list the sell UI already shows. A premium above the global
+price would mint against the no-arbitrage floor (`resaleCeiling` reads the
+global formula), since rock salt is sold elsewhere.
+
+**The loop that stays: method drops.** A drop row may require the killing
+blow's damage type (`DropEntry.killedBy?: DamageType[]`; damage over time
+counts, via `StatusDef.element`). Gates count every kill, so any method
+clears; the method only picks the loot.
+- Engine: `MonsterInstance.lastHit?: DamageType`, set beside each HP
+  decrement (about 21 sites; `monsterSlice` is pure and used for previews,
+  so not there). Rows whose `killedBy` does not match are filtered out
+  **before** the mercy pick, or the drought ledger banks misses on sword
+  kills and pays out on the next fire kill (PITFALLS §7). Budget 30–40
+  lines, shared with idea 2.
+- Example: mummy `{ rolls: 2, entries: [bone_ash w6 killedBy heat,
+  bone_dust w6 killedBy bludgeoning, nothing w18] }`. 100 kills by fire ≈ 40
+  bone ash, no dust. Mummies take −50% from heat, so the keyed method is
+  also the fast one, and the bestiary shows the plan.
+- The sand colossus resists heat (0.9), so its row wants bludgeoning.
+- `bone_ash` and `bone_dust` have consumers and no source today; this band
+  is their source.
+
+**Heat.** Trains, never taxes. Weather is not a modifier source (WEATHER.md),
+so a desert floor makes no stat worse. With the area's own pin, heat trains
+`heat_resistance` on open sky; spots tagged `heat` train it under roof too.
+Its only uses here: an optional skill door (`{type: 'skill', id:
+'heat_resistance', level: 15}`: 483 XP, about 80 real minutes of continuous
+exposure, 54 with a heat-tagged spot) to a side tomb, and mitigation
+against monsters that deal heat damage. No thirst, no heat meter (either
+would join `modFingerprint`).
+
+**Hours.**
+- H1: method drops, two or three methods per den, on every visit after the
+  clear.
+- H2: `kills:tag:desert`, endless and cumulative: 150 kills in all, about
+  15–20 minutes of fights by the pace model (median fight 27–69 ticks); the
+  rest comes from the dens and the tombs.
+- H3: the side tomb behind the heat door; the grave goods; the obelisks
+  past the three that matter.
+- H4: cooking (rock salt, rough flour, wild honey, wild onion, river fish,
+  bird egg feed shipped dishes), smithing (copper and tin ore to bronze;
+  bone dust), alchemy (bone ash, brimstone, green vitriol, fixing salt,
+  quicksilver, which has no live source today).
+- H5: about 46 desert and Egypt sheets on disk: mummies, scarabs, sphinxes,
+  cobras, scorpions, sand snakes, a sand colossus, two Anubis bosses, a
+  Crocopharaoh, an obelisk.
+- H6: run 2 brings the other half of the systems, so other methods and
+  other drops; prestige resets stats and finds, so the Weighing re-arms.
+- H7: an idle hunt uses the equipped method only; nothing new accrues
+  offline beyond an ordinary hunt. No timers, so no bank or offline loop.
+- H8: heat from arcane fire, divine Holy Fire, alchemy flasks; bludgeoning
+  from smithing's maces and martial; cooking and alchemy consume the drops.
+  Cobra and scorpion poison is damage over time and asks sustain
+  (condition defence has no system fill).
+
+**Laws.**
+- L1: havens at the obelisks and the quay; the ladder works from any spot,
+  so the forced chamber edge is pressure, not a trap; either way the clear
+  is paid at the door.
+- L2: grave goods and obelisk reads are `once` and optional; no clear or gate
+  reads them. The forecourt guardian and the judge are repeatable; the
+  roadstead's `fightLimit` 1 holds the 1 its clear needs.
+- L3: a knockout goes to the last obelisk or the quay, goods kept.
+- L4: an obelisk read is a find, not a puzzle.
+- L5: the judge at +0 is winnable without preparation.
+- L7: hurdles ask damage and sustain only. ROLES.md counts sustain filled
+  by 2 of the 4 systems open in run 1 today; the cover rule needs more by
+  band 5. Ladder-wide, as ideas 2–3.
+
+**Cost.** No save change. Content: areas with their own climate pin, ~21
+spots, a desert roster with tag `desert`, one judge with seven level rows,
+method-drop rows. Engine: `killedBy` and `lastHit` (30–40 lines, shared
+with idea 2). The first live use of `Connection.forced`: author only the
+chamber-to-door edge with `forced: true` and let the mirror be the free way
+in, because `buildAdjacency` dedupes by destination and drops a declared
+forced edge when the other spot is listed first.
+
+**Parked from the brainstorms.** The Omen (one of three judges per run,
+named by the lit obelisk; a variant-boss lever for re-climbs), the
+Offering (gifts of crafted goods remove the judge's escorts; needs
+`SpotDef.preparation`, which is not on main), a variety tithe (keepers
+take materials for points), and an obelisk clock (dens open by game hour).
+
+**Objections and rulings.** From antagonist-design, 2026-10-30, verdict *fix
+first*; no redesign. All taken; the entry above already reads fixed.
+
+1. **The Weighing was bankable** (confirmed by probe): take the goods after
+   the clear, or leave by the ladder, which works from any spot on a banded
+   floor (`towers.ts:37-47, 106-125`). *Taken:* the tomb seals when the judge
+   falls; L1 rewritten.
+2. **`slain:` cannot latch on a repeatable judge** (`slain:` bumps only on a
+   `once` entry). *Taken:* clear = `boss:<door>`.
+3. **Seven bounded rows leave `taken = 7` uncovered** (clear-table lint,
+   confirmed). *Taken:* row 6 is `stat ≥ 6` alone.
+4. **`Connection.forced` is order-dependent and has no live precedent**
+   (confirmed). *Taken:* author one edge; listed in Cost.
+5. **The broker's "posted rates" were a mint or flavour.** *Taken:* global
+   sell price, no shop lines.
+6. **The heat-door time was off by about two** and terrain alone gives a
+   desert that trains cold. *Taken:* 80 minutes; the area needs its own pin.
+7. **`killedBy` is more than 15 lines,** and unmatched rows must leave the
+   mercy pick. *Taken.*
+8. **The seam data model** (see §1.5, the soft transitions). *Taken there.*
+Minor, taken: the H2 count is cumulative; the `desert` tag needs a
+`MONSTER_TAGS` entry; the roadstead needs `fightLimit` 1; the +6 step is
+cheap for the loot (Q3).
+
+Clean: no terminal state; an empty encounter table at a forced edge is free
+passage, never a strand; prestige re-arms the floor; band passes read and
+write no band 5 counter, and nothing above band 5 reads one; `kills:tag:`
+counts damage-over-time kills; row picks are deterministic, so no reset
+scumming.
+
+**Open questions.** Each has a default.
+
+1. **Grave goods and idle play.** Exploring the treasury takes everything,
+   idle or offline included. *Default:* the treasury is its own spot, so
+   the choice is walking in; no confirm dialog.
+2. **The judge.** *Default:* Boss Anubis, God of Death; the Goddess Anubis
+   and the Crocopharaoh are kept for the parked Omen.
+3. **The step per grave good.** *Default:* +1 level per piece (cap +6), to
+   be tuned against the loot with John; a bigger step is the dial if the
+   loot makes taking everything the obvious play.
+
 ---
 
 ## 5. Questions
@@ -1258,7 +1468,16 @@ except the battery's new items (cannons, cannonballs, powder charges).
 
 ### 5.2 Open
 
-None with a default. Parked by the user, to be decided later:
+1. **The ladder inside the Vermin Festival** (found reviewing idea 4's
+   seams). Floors 15–16 have to be banded rungs (the index lint), and
+   `climbTo` works from any spot on a banded floor (it refuses only during
+   a forced fight), so a player could climb out of the dark room or the
+   prep hub between fights. That contradicts the festival being cut off. *Default:* climbing out of
+   floors 15–16 before the royale ends counts as a loss: ejected, both
+   floors locked (§5.3 items 6, 16). A refused ladder there is the
+   alternative.
+
+Parked by the user, to be decided later:
 - worker creation (§5.3 item 8), a later part of base building
 - themes for floors 11–14, 17 and 18–20 (§5.3 item 5)
 
