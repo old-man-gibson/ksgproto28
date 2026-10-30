@@ -230,7 +230,7 @@ that stays.
 | # | Posted | Name | Band | Verdict |
 |---|---|---|---|---|
 | 1 | 2026-10-28 | The Five Moons | off-ladder, band 2's goblins, entered from band 3 | Bank |
-| 2 | 2026-10-29 | The warring states band | band 4, floors 11–20 (proposal) | Bank |
+| 2 | 2026-10-29 | The warring states band | band 4, floors 11–20 | Bank |
 
 ### Entry template
 
@@ -510,7 +510,7 @@ Clean:
 
 ### 2. The warring states band (posted 2026-10-29)
 
-Band: band 4, floors 11–20 (proposal, Q8) · Floors: 10, a megastructure
+Band: band 4, floors 11–20 · Floors: 10, a megastructure
 (§1.2: 12–24 hands-on minutes a floor, the loop band-wide) · Verdict: **Bank**.
 
 It waits on:
@@ -520,6 +520,8 @@ It waits on:
 - condition defence and access getting system answers
   ([ROLES.md](ROLES.md): 0 systems fill either today), since the rosters
   below name those roles
+- for the hidden paths only: worker creation from base building, since there
+  the player creates soldiers (it needs mutagens, shut in alpha)
 
 The presence clock and the battle counter can be built and tested on a band 2
 floor before any of these.
@@ -540,18 +542,38 @@ quasi-realtime function where the player can gather resources and all from
 other floors, but "time" in those floors advances only if the player is
 present."*
 
+**Rulings (user, 2026-10-29).** Answers to Q1–Q8, in the user's words where
+quoted.
+
+- **Leaders.** The conquerors are led by the Shōgun. The usurpers are led by
+  their strategist; *"their warlord is a figurehead"*. The freedom fighters
+  are the free states, led by a triumvirate, *"three warriors of great
+  renown"*.
+- **Bases.** *"Each faction has their own base. The player base is only the
+  base in either of the hidden paths."*
+- **Soldiers.** *"Provided by the factions, separate from the player's
+  workers. In the hidden paths, the player will have to create soldiers
+  using their own resources."*
+- **Presence.** Resting at a haven on the floor counts.
+- **Titles.** *"Probably a good amount, depending on loadout, fighting
+  style, how the player wins combats."*
+- **Hidden triggers.** *"Very difficult, needs to be tuned."*
+- **Routes.** Three per floor, one per side.
+- **Placement.** Band 4, floors 11–20, after band 3.
+
 **The place in one line.** Each side takes soldiers and supplies from the
 floors it holds; the towns and farms on contested floors pay. The player's
-side pays the player in titles and the right to build a base.
+side pays the player in titles and a base to run.
 
 **Two facts from the code that shape it.**
-- The base already exists as the hold: the `the_hold` region, 25 rooms
-  (`base_*`), behind a door at the Foot that opens at `prestige:count` 1
-  (`locations.data.ts:483`). Prestige now comes at floor 6, before this band.
-  So "gains their own base" is read as: this band opens **building** in the
-  hold (plots and structures). The door stays where it is (Q2).
+- The player's base already exists as the hold: the `the_hold` region, 25
+  rooms (`base_*`), behind a door at the Foot that opens at `prestige:count`
+  1 (`locations.data.ts:483`). Prestige now comes at floor 6, before this
+  band. The door stays where it is. Per the ruling, the hold is the war base
+  only on the hidden paths; a visible side runs its own base (Q9 asks whether
+  visible runs also open building in the hold).
 - `GameState.prestige` is already the legacy block (types.ts:5602) and v58
-  grew it with the cookbook lists, so the base's legacy ledger is the same
+  grew it with the cookbook lists, so the hold's legacy ledger is the same
   move, not a new split.
 
 **Sides.** All war counters are `state.stats` keys, per run, no save change.
@@ -560,10 +582,16 @@ only write `flag:` keys (`tests/content.test.ts:553-557`). Keys the engine
 writes (`presence`, `turn`, `front`, `broken`, `win`, `ko`) are `war:*` and
 get one branch in the lint's `realStat` (`content.test.ts:105-142`).
 
-- **Sides:** conquer the island, overthrow the shōgun, the free states,
-  warlord, destroyer.
+- **Sides:**
+  - the conquerors (conquer the island), led by the Shōgun
+  - the usurpers (overthrow the Shōgun), led by their strategist; their
+    warlord is a figurehead
+  - the freedom fighters (the free states break free), led by a triumvirate
+    of three warriors
+  - hidden: warlord, destroyer
 - **Picking.** Floor 11 has one camp spot per visible side. The pick is
-  accepting that side's join quest, so the quest text is the confirm and
+  accepting that side's join quest, given by its leader (the strategist, not
+  the figurehead, for the usurpers), so the quest text is the confirm and
   nothing is picked by exploring a camp. The record is idea 1's accept stamp
   (`acceptQuest` writes `flag:quest:<id>:accepted`, about 3 lines, shared).
   Each visible join quest requires `statMax 0` on the other two stamps.
@@ -573,11 +601,10 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
   (a hidden stamp beats a visible one). No computer-run side ever wins a
   floor, so a floor can swing back and forth but nothing is lost (L3).
 - **One map set.** Ten maps for all sides. Per floor, each spot type (keep,
-  depot, town) ends one side's route: side 1 kills the keep's commander, side
-  2 sabotages the depot (explore gates), side 3 turns in the town's terms
-  quest. Each route stamps `flag:war:<floor>:done`; each floor's `clear` reads
-  it. The cheaper alternative is one route for all sides, which differ only
-  in rosters (Q7).
+  depot, town) ends one side's route (ruling: three routes): the conquerors
+  kill the keep's commander, the usurpers sabotage the depot (explore gates),
+  the freedom fighters turn in the town's terms quest. Each route stamps
+  `flag:war:<floor>:done`; each floor's `clear` reads it.
 - **Rosters.** 3 rosters × 3 tiers = 9 ordinary `MonsterDef`s, plus bosses.
   No unique abilities.
 - **Test.** For every side, the closure of `done` stamps reaches the band's
@@ -607,10 +634,16 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
 
 **Soldiers and supply.**
 
-- **Soldiers** are the side's troops, not base workers, so base building's
-  "workers are created, not hired" stands (Q3). They are numbers per troop
-  type, never individuals: no familiarity, no gold upkeep, nothing but fed
-  turns. The barracks caps the pool and does nothing else to them.
+- **Soldiers on a visible side** are provided by the faction, separate from
+  the player's workers (ruling). They are numbers per troop type, never
+  individuals: no familiarity, no gold upkeep, nothing but fed turns. The
+  faction base's barracks caps the pool and does nothing else to them.
+- **Soldiers on a hidden path** are created by the player from their own
+  resources (ruling), in the hold. Default: base building's worker creation
+  (a body from the culture cellars, alchemy, a blessing), with the result
+  assigned to war. That needs mutagens, which are shut in alpha, so the
+  hidden paths wait on worker creation. Kills alone still clear (L5), so a
+  player with no soldiers is slower, not stuck.
 - **Data.** `TroopDef { id; power; counters?: tag[]; food: materials }`;
   `state.war { pool; wounded; focus }` (save v60), or all of it in `stats`.
 - **Supply** is existing materials: food, arms, salves. No new currency.
@@ -629,11 +662,11 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
 - **Data.** `stats['war:<floor>:presence']` and `war:<floor>:turn`, written
   in `advance()`'s non-travel branch (`game.ts:231`, beside `tickAction`).
   Written raw, not through `bumpStat`, which scans achievements on every call.
-- **What counts** (default, Q4): a tick on a floor with a `FrontDef` while
-  the player is not idle (`isIdle`, `bonustime.ts:20`) and not recovering.
-- **`rest` counts.** Resting is an activity (`actions.ts:349`), so a player
-  resting at a haven on the floor is not idle: the soldiers fight, supply
-  pays, the player risks nothing (Q4).
+- **What counts:** a tick on a floor with a `FrontDef` while the player is
+  not idle (`isIdle`, `bonustime.ts:20`) and not recovering.
+- **`rest` counts** (ruling). Resting is an activity (`actions.ts:349`), so
+  a player resting at a haven on the floor is not idle: the soldiers fight,
+  supply pays, the player risks nothing.
 - **Offline on the floor.** Catch-up replays the ticks (8 hours at most,
   `offline.ts:8`). Turns stop when supply hits 0, when `front` reaches
   `need`, or when a turn would add 0 (soldiers too weak for the pressure), so
@@ -643,57 +676,75 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
 - **Gathering elsewhere.** `climbTo` costs 45 ticks a rung, both ways
   (`towers.ts:28`, `:130-132`). Gathers pay into the shared materials. The
   cost of gathering on another floor is that the front is frozen.
-- **Two clocks.** The base runs on the world clock: build jobs, upkeep,
-  wounded recovery. The floors run on presence. Staying at the front draws on
-  home stock; going home freezes the front.
+- **Two clocks.** Bases run on the world clock: build jobs, upkeep, wounded
+  recovery. The floors run on presence. Staying at the front draws on the
+  base's stock; going back to the base freezes the front.
 - **Tests.** The sum of all `presence` keys never exceeds `totalTicks`. A
   288,000-tick replay stays finite, conserves troops, and stops at 0 supply.
 
-**The base.**
+**The bases.**
 
-- **Where** (default, Q2): the hold. Floor 12's `done`, stamped on every
-  route including both hidden options, opens building in the hold. The
-  opening is written to the legacy block, so later runs build from the start.
-- **First structures, no workers.**
+- **Faction bases** (ruling). Each visible side has its own base on the
+  island: its floor 11 camp area, with plots. On a visible side the player
+  runs that base. It is run-scoped: the side changes each run, so it resets
+  at prestige and needs no legacy ledger. Floor 12's `done` opens its plots.
+- **The player's base** (ruling): the hold, and only on the hidden paths.
+  There the player builds the same structures in the hold and creates
+  soldiers. The hold persists across prestige by base building's settled
+  rules (below).
+- **First structures, no workers.** The same set in both kinds of base.
   - Storehouse: caps the stock a front can draw.
   - Barracks: soldier pool cap and wounded recovery.
   - Kitchen: a cooked dish sets fed turns.
 - Each structure is a lens on an existing system, with no math of its own.
-  Home refines; the floors supply.
+  Bases refine; the floors supply.
 - **Data.** `StructureDef { id; tiers: { cost; upkeepGoldPerDay; effect }[];
-  essential }`. Run: `state.base.built[spotId] = { id; tier; paidThrough;
-  dormant }`. Legacy: `state.prestige.base = { tier; plots }`. Save v60 and
-  one migration.
-- **Across prestige** (base building's settled rules): essential structures
-  fall to tier 1 unless a higher tier was bought permanent with prestige
-  points; non-essential structures fall to tier 1 and their plots re-lock;
-  unpaid upkeep makes a structure dormant, never removed.
+  essential }`, one registry for both kinds. Run: `state.base.built[spotId]
+  = { id; tier; paidThrough; dormant }`. Legacy, for the hold only:
+  `state.prestige.base = { tier; plots }`. Save v60 and one migration.
+- **The hold across prestige** (base building's settled rules): essential
+  structures fall to tier 1 unless a higher tier was bought permanent with
+  prestige points; non-essential structures fall to tier 1 and their plots
+  re-lock; unpaid upkeep makes a structure dormant, never removed.
 - Builds are world-clock jobs that train a construction skill.
 - No structure grants a `Modifier`, so `modFingerprint` is untouched. A later
   structure that does must join it.
+- Because faction bases are run-scoped, the visible sides can ship before the
+  run/legacy split. The hold's ledger comes with the hidden paths.
 
 **Titles after floors 15 and 19** (the band's 5th and 9th).
 
-- At each break the battle records exactly one **mode**: the largest share
-  of `front` among kills (the player's), soldiers, and finds (scouting,
-  sabotage, terms). Ties go kills, then finds, then soldiers. Counters
-  `war:win:r1:<mode>` for floors 11–15 and `war:win:r2:<mode>` for 16–19.
-- **Anchor.** Every rank 1 title requires `war:15:broken`; every rank 2 title
-  requires `war:19:broken`. Titles latch for good once their conditions
-  hold (types.ts:4996), so without the anchor a title would latch before the
-  half is fought.
-- **How they win** picks the title: rank 1 needs 3 of 5 battles in one mode,
-  rank 2 needs 3 of 4. One mode per battle and a strict majority, so at most
-  one mode qualifies. A baseline title catches no majority. A test enumerates
-  every split.
-- **How they perform** sets the grade (default, Q5): a high variant when no
-  battle in that half ended in a knockout (`war:ko:r1`, `war:ko:r2`). Each KO
-  counter stops counting at its anchor, so a later knockout cannot latch the
-  low twin as well.
-- Titles are `TitleDef.unlock` data; the only code is the break event.
-- **Count.** (3 modes + baseline) × 2 grades × 3 sides × 2 ranks = 48 titles.
-  Mods are shared per mode and grade; only the names differ per side. The
-  user names them.
+The ruling asks for "a good amount" of titles, picked by loadout, fighting
+style and how the player wins. A grid of `TitleDef` conditions multiplies
+past what anyone can name, so the pick is a table with fallbacks.
+
+- **What each half records** (floors 11–15 for rank 1, 16–19 for rank 2):
+  - **Loadout:** the main-hand weapon family on each kill at the band's
+    spots (`war:r1:weapon:<family>`).
+  - **Fighting style:** the source of each killing blow: weapon, technique,
+    spell, miracle, thrown flask (`war:r1:src:<kind>`). The kill event
+    carries only the monster and XP today (`types.ts:6248`, emitted at
+    `combat.ts:1564`), so the killing blow's source has to be added.
+  - **How battles are won:** each battle's mode, the largest share of `front`
+    among kills, soldiers and finds; ties go kills, then finds, then
+    soldiers (`war:win:r1:<mode>`).
+  - **Performance:** knockouts in the half (`war:ko:r1`).
+- **The pick.** At the anchor (`war:15:broken`, `war:19:broken`) a function
+  takes the largest count on each axis and matches it against a table:
+  `WarTitleRow { side?; rank; weapon?; src?; mode?; clean?; title }`. The
+  row matching the most fields wins; ties go by table order. Every side has
+  a baseline row with no fields, so the pick always returns exactly one. It
+  stamps `flag:war:title:r1:<id>`, and each `TitleDef.unlock` reads its
+  stamp.
+- **Why a pick and not conditions.** Titles latch for good once their
+  conditions hold (`types.ts:4996`). Conditions alone latched the baseline
+  before any battle and two titles on a tie (antagonist objections 1–2). The
+  pick runs once per rank, at the anchor.
+- **Count.** As many rows as the user names. The table can start with the
+  six baselines and grow a row at a time; mods can be shared across rows.
+- **Code.** The pick (about 40 lines), the kill-source field, and the break
+  event. A test: random counter states give exactly one stamp per rank, and
+  only at the anchor.
 - The hidden options have no allies, so no rank titles. Each gets one
   `secret` title from its finale.
 
@@ -709,26 +760,30 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
   ones. The hidden join quests do not require `statMax 0` on the visible
   stamps, since they are taken from a side. They can be taken at any point
   after floor 11. Floors already `done` stay done.
-- **Warlord trigger** (default, Q6): 5 floors done, and N turns present on
-  floors already done (`war:held_turns`). Turns there keep ticking after the
-  break, so the source is endless, and it is time, not power.
-- **Destroyer trigger** (default, Q6): N kills of each of the three rosters
-  at the road spots. Each floor has one endless road spot where all three
+- **Difficulty** (ruling): very difficult, tuned at build time. Difficult
+  here means a large N on an endless source, never a bar a strong or weak
+  player cannot reach.
+- **Warlord trigger:** 5 floors done, and N turns present on floors already
+  done (`war:held_turns`). Turns there keep ticking after the break, so the
+  source is endless, and it is time, not power.
+- **Destroyer trigger:** N kills of each of the three rosters at the road
+  spots. Each floor has one endless road spot where all three
   rosters spawn. The road spot also feeds the H2 gates, so N must sit well
   above a third of the gate kills, or routine grinding trips the secret.
 - **What they change.**
-  - Warlord: all three rosters are hostile on floors not yet done. Soldiers
-    come only from the barracks. Route: the keep. Finale: one fight against
-    all three sides' escorts.
-  - Destroyer: mixed three-roster groups. No soldiers (pool 0), so `front`
-    comes from kills and finds only, and `need` × 0.6 so grinding still
-    clears (L5). Route: the depot. Finale: three commanders at once.
+  - Both: the base is the hold; soldiers are created there, and the faction
+    soldiers are gone.
+  - Warlord: all three rosters are hostile on floors not yet done. Route:
+    the keep. Finale: all three leaderships (Q10).
+  - Destroyer: mixed three-roster groups. Route: the depot. Finale: all
+    three leaderships at once (Q10).
+  - Kills alone still reach `need` on both (L5).
 - Both stamp the band's clear.
 
 | Floor | One idea (mechanism) | Boss / preparation |
 |---|---|---|
-| 11 | Pick a side: three join quests, two hidden edges. One small battle (low `need`) teaches the counter. | none |
-| 12 | Take a castle: a `fightLimit` stretch to its commander. `done` opens building in the hold. | commander; scouting finds lower its escorts |
+| 11 | Pick a side: three join quests from the leaders, two hidden edges. One small battle (low `need`) teaches the counter. | none |
+| 12 | Take a castle: a `fightLimit` stretch to its commander. `done` opens the faction base's plots. | commander; scouting finds lower its escorts |
 | 13 | Supply: `gather` and `job` sites fill the stock. Floor 14's gate reads a band material from an endless source (H2). | none |
 | 14 | Scouting: explore gates; finds add to the next battle's `front`. | none |
 | 15 | First full battle. Clear → rank 1 title. | commander, requires `broken` |
@@ -736,7 +791,7 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
 | 17 | Siege: three walls, each a `fightLimit` spot, each drawing stock. | gate commander |
 | 18 | Counterattack: a camp spot spawns waves; each wave won adds to `front`. | none |
 | 19 | A duel with a champion (alone, unfleeable, the `SpotDare` shape) plus sabotage finds. Clear → rank 2 title. | champion |
-| 20 | Finale, one per side. Preparation flags remove escorts. | per side |
+| 20 | Finale, one per side: the other sides' leaders (Q10). Preparation flags remove escorts. | the Shōgun; the strategist and the figurehead; the triumvirate |
 
 **Hours.**
 
@@ -749,7 +804,8 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
 - **H4 What it feeds.** Supply consumes food (cooking), arms (smithing) and
   salves (alchemy). Captured gear feeds smithing parts.
 - **H5 Novelty.** 9 roster species plus the commanders and the champion.
-- **H6 Re-climb.** A different side each run; the base persists.
+- **H6 Re-climb.** A different side each run, with that side's base and
+  leaders; the hold persists for the hidden paths.
 - **H7 Idle form.** Gathers and jobs at a done floor are safe to leave; base
   jobs run on the world clock. Hunts at the front are not safe. Offline gains
   are bounded by supply. `OfflineSummary` gains a line for turns advanced per
@@ -760,7 +816,8 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
     recovery.
   - Each supply type has at least three sources: a system, a drop, a shop.
     No gate names a system.
-  - Mutagens and psionics stay shut. Chapel pedestals are a later slice.
+  - Mutagens: soldier bodies on the hidden paths, once worker creation and
+    mutagens open. Psionics stays shut. Chapel pedestals are a later slice.
 
 **Laws.**
 
@@ -770,10 +827,10 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
 - **L3.** A loss never lowers `front`; soldiers are wounded, never deleted; a
   supply raid costs a share of supply, only on a presence turn, never a
   path.
-- **L5.** Zero soldiers still clears by kills. Destroyer `need` × 0.6.
-- **L7.** Rosters name roles: conquer-the-island asks for damage,
-  overthrow-the-shōgun for condition defence (bleeding, poison), the free
-  states for sustain; the depot strongroom asks for access. Condition defence
+- **L5.** Zero soldiers still clears by kills, on every side and path.
+- **L7.** Rosters name roles: the conquerors' asks for damage, the
+  usurpers' for condition defence (bleeding, poison), the freedom fighters'
+  for sustain; the depot strongroom asks for access. Condition defence
   and access have no system answer yet (ROLES.md), so this band waits on
   them.
 - **COMPLETABILITY §7.** No fork at new game. Leaving a side happens in play
@@ -784,16 +841,20 @@ It is off-ladder; this band is on the ladder, so every side must clear it.
 [plans/demon-lord-army.md](plans/demon-lord-army.md) has the same conquest
 substrate.
 
-**Build cost** (estimate, nothing measured): about 17 sessions for one side,
-then about 1 session of data per further side.
+**Build cost** (estimate, nothing measured): about 16 sessions for one
+visible side, then about 1 session of data per further side, then about 3
+more for the hidden paths.
 
 1. Presence clock, the resolver and a test front on a band 2 floor. Stats
    only, no save change, on a branch (1.5).
 2. `state.war`, troops, supply, the orders panel (v60) (1.5).
-3. Base slice and the legacy ledger (3).
+3. Faction base: structures, run-scoped, no legacy ledger (2).
 4. Floors 11–20 for one side, as the template (about 10, at band 1's rate of
    one session a floor).
-5. Titles, then John through floor 20 on default orders (1.5).
+5. Title pick and kill-source field, then John through floor 20 on default
+   orders (1.5).
+6. Hidden paths: the hold's legacy ledger, the triggers, soldier creation
+   (about 3, after worker creation exists).
 
 **Objections and rulings.** From antagonist-design, 2026-10-29, verdict *fix
 first, then bank*. No reachable terminal state found.
@@ -831,30 +892,25 @@ Clean:
 - troll: no buy-sell loop; garrison ×2 is a rate; titles reset with the run
 - secrecy: unmet `revealWhen` edges are invisible; `TitleDef.secret` exists
 
-**Open questions.**
+**Open questions.** Q1–Q8 are answered (Rulings, above).
 
-1. **Who leads which side.** *Default:* the shōgun leads "conquer the
-   island"; side 2 fights the shōgun; side 3 wants out.
-2. **Where the base is.** *Default:* the hold, with building opened by
-   floor 12. The door keeps opening at prestige 1. Alternative: a new castle
-   on the island, which a later run cannot reach until it climbs back to
-   floor 12.
-3. **Where soldiers come from.** *Default:* the side's troops, a different
-   noun from base workers. Alternatives: trained at the barracks from supply
-   (breaks "created, not hired" in letter); created like workers (needs
-   mutagens, which are shut).
-4. **What counts as present.** *Default:* standing on the floor and not idle;
-   resting at a haven there counts. Alternatives: rest does not count;
-   standing counts even when idle (the idle bonus bank then pays twice); live
-   play only (no offline progress at the front).
-5. **Titles.** *Default:* how they win picks the title, how they perform
-   picks a grade, 48 names. Alternative: no grades, 24 names.
-6. **Hidden triggers.** *Default:* warlord = 5 floors done plus N turns
-   present on done floors; destroyer = N kills of each roster at the road
-   spots. N is a dial.
-7. **Routes.** *Default:* three routes per floor (keep, depot, town).
-   Alternative: one route, sides differ only in rosters.
-8. **Placement.** *Default:* band 4, floors 11–20, after band 3.
+9. **Does a visible run open building in the hold?** The original post says
+   *"This band is how the player gains their own base"*; the ruling says the
+   player's base is the base only on the hidden paths.
+   - *Default:* yes. Clearing the band on any side opens building in the
+     hold for good (the legacy block). The hold is the war base only on the
+     hidden paths.
+   - Alternative: only the hidden paths open it. Base building is the hub of
+     the long game (base-building direction), so this would put a required
+     system behind very difficult secret content. That breaks COMPLETABILITY
+     §5 unless the hold also opens some other way.
+10. **Finales.** *Default:* a visible side's finale fights the other two
+    sides' leaders (two fights on floor 20); the hidden paths fight all
+    three: the Shōgun, the strategist with the figurehead, and the
+    triumvirate.
+11. **Titles' first rows.** *Default:* six baselines (3 sides × 2 ranks) plus
+    one row per win mode. Loadout and style rows are added as the user names
+    them.
 
 ---
 
