@@ -106,6 +106,14 @@ export const QUESTS = prose<QuestDef>('QUESTS', QUESTS_TEXT, {
     rewards: { gold: 250, levelXp: 200 },
   },
 
+  // ==== HARBOR: quests (skeleton 2026-10-30; the harbor builder's section) ====
+
+  // ==== FESTIVAL: quests (skeleton 2026-10-30; the festival builder's section) ====
+
+  // ==== ABERRANT: quests (skeleton 2026-10-30; the aberrant builder's section) ====
+
+  // ==== DESERT: quests (skeleton 2026-10-30; the desert builder's section) ====
+
   // ---- Vermin Festival quest chain -----
   /* DESC:
   whispers of a mysterious

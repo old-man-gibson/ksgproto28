@@ -1831,4 +1831,12 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
       ],
     },
   },
+
+  // ==== HARBOR: monsters (skeleton 2026-10-30; the harbor builder's section) ====
+
+  // ==== FESTIVAL: monsters (skeleton 2026-10-30; the festival builder's section) ====
+
+  // ==== ABERRANT: monsters (skeleton 2026-10-30; the aberrant builder's section) ====
+
+  // ==== DESERT: monsters (skeleton 2026-10-30; the desert builder's section) ====
 });

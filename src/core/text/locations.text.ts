@@ -255,4 +255,30 @@ export const SPOTS_TEXT: ProseTable = {
   'f11_quay.desc': 'Placeholder for the harbor. Rest at the Quay is a rest activity, and the quay is a haven. Placeholder text.',
   'f11_roadstead.desc': 'Placeholder for the harbor. One fight, started when you choose: a Corsair and a raider escort, level 26. Winning it clears floor 11. Placeholder text.',
 
+  // ==== HARBOR: spot text (skeleton 2026-10-30; the harbor builder's section) ====
+  'f12_landing.desc': 'Skeleton landing of floor 12. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 26 to 27. Placeholder text.',
+  'f12_keeper.desc': 'Skeleton keeper of floor 12. One fight, started when you choose, level 29. Winning it clears floor 12. Placeholder text.',
+  'f13_landing.desc': 'Skeleton landing of floor 13. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 28 to 29. Placeholder text.',
+  'f13_keeper.desc': 'Skeleton keeper of floor 13. One fight, started when you choose, level 31. Winning it clears floor 13. Placeholder text.',
+  'f14_landing.desc': 'Skeleton landing of floor 14. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 30 to 31. Placeholder text.',
+  'f14_keeper.desc': 'Skeleton keeper of floor 14. One fight, started when you choose, level 33. Winning it clears floor 14. Placeholder text.',
+
+  // ==== FESTIVAL: spot text (skeleton 2026-10-30; the festival builder's section) ====
+  'f15_landing.desc': 'Skeleton landing of floor 15. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 32 to 33. Placeholder text.',
+  'f15_keeper.desc': 'Skeleton keeper of floor 15. One fight, started when you choose, level 35. Winning it clears floor 15. Placeholder text.',
+  'f16_landing.desc': 'Skeleton landing of floor 16. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 34 to 35. Placeholder text.',
+  'f16_keeper.desc': 'Skeleton keeper of floor 16. One fight, started when you choose, level 37. Winning it clears floor 16. Placeholder text.',
+
+  // ==== ABERRANT: spot text (skeleton 2026-10-30; the aberrant builder's section) ====
+  'f17_landing.desc': 'Skeleton landing of floor 17. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 36 to 37. Placeholder text.',
+  'f17_keeper.desc': 'Skeleton keeper of floor 17. One fight, started when you choose, level 39. Winning it clears floor 17. Placeholder text.',
+
+  // ==== DESERT: spot text (skeleton 2026-10-30; the desert builder's section) ====
+  'f18_landing.desc': 'Skeleton landing of floor 18. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 38 to 39. Placeholder text.',
+  'f18_keeper.desc': 'Skeleton keeper of floor 18. One fight, started when you choose, level 41. Winning it clears floor 18. Placeholder text.',
+  'f19_landing.desc': 'Skeleton landing of floor 19. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 40 to 41. Placeholder text.',
+  'f19_keeper.desc': 'Skeleton keeper of floor 19. One fight, started when you choose, level 43. Winning it clears floor 19. Placeholder text.',
+  'f20_landing.desc': 'Skeleton landing of floor 20. Camp is a rest activity, and the landing is a haven. Endless hunt: placeholder raiders and brutes, level 42 to 43. Placeholder text.',
+  'f20_keeper.desc': 'Skeleton keeper of floor 20. One fight, started when you choose, level 45. Winning it clears floor 20. Placeholder text.',
+
 };

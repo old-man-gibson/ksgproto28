@@ -253,4 +253,12 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
     spotId: 'f11_gatehouse',
     quests: ['f11_shore_up_the_gate', 'f11_arm_the_wall'],
   },
+
+  // ==== HARBOR: NPCs (skeleton 2026-10-30; the harbor builder's section) ====
+
+  // ==== FESTIVAL: NPCs (skeleton 2026-10-30; the festival builder's section) ====
+
+  // ==== ABERRANT: NPCs (skeleton 2026-10-30; the aberrant builder's section) ====
+
+  // ==== DESERT: NPCs (skeleton 2026-10-30; the desert builder's section) ====
 });

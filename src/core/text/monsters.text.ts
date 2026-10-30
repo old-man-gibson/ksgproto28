@@ -139,5 +139,13 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'ph_corsair.desc': 'Placeholder elite humanoid in floor 11’s roadstead. Spawns with a raider. Piercing attacks. Fights with Lunge, Dirty Stab and Gather. Drops a Boss Token, gold and leather.',
 
+  // ==== HARBOR: monster text (skeleton 2026-10-30; the harbor builder's section) ====
+
+  // ==== FESTIVAL: monster text (skeleton 2026-10-30; the festival builder's section) ====
+
+  // ==== ABERRANT: monster text (skeleton 2026-10-30; the aberrant builder's section) ====
+
+  // ==== DESERT: monster text (skeleton 2026-10-30; the desert builder's section) ====
+
   'giant_spider_queen.desc': 'Huge elite vermin, toxic element. Always fights alone. Poison bite with a 60% chance to inflict heavy Poison. Takes 40% less slashing, 50% less poison, 35% less earth and 20% less bludgeoning; takes 50% more piercing, 40% more heat and 20% more cold damage. Appears in the Brood Den. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
 };

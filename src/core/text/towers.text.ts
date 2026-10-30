@@ -12,7 +12,13 @@ export const TOWERS_TEXT: ProseTable = {
 export const BANDS_TEXT: ProseTable = {
   'ascent_lower.desc': 'Floors 1 to 3: the Old Toll Level, the Flooded Stair and the Silk Gallery. Each floor must be cleared before the next opens.',
 
-  'ascent_harbor.desc': 'Floors 11 to 14, the harbor band. Only floor 11 exists so far. Placeholder text.',
+  'ascent_harbor.desc': 'Floors 11 to 14, the harbor band. Floors 12 to 14 are skeletons. Placeholder text.',
+
+  'ascent_festival.desc': 'Floors 15 and 16, the Vermin Festival. Skeletons. Placeholder text.',
+
+  'ascent_aberrant.desc': 'Floor 17, a special floor. Skeleton; theme not set. Placeholder text.',
+
+  'ascent_desert.desc': 'Floors 18 to 20, the desert. Skeletons. Placeholder text.',
 
   'ascent_middle.desc': 'Floors 4 to 6: the Greenwood, the Mire and the Warren. A goblin war band holds the wilds above the Lower Reaches; its warchief waits at the bottom of the Warren. Placeholder text.',
 
@@ -43,4 +49,21 @@ export const FLOORS_TEXT: ProseTable = {
   'ascent_f10.desc': 'Floor 10, the city’s east ward: the artificers’ row, the quarry past the east gate, and a Stone Golem in the foundry, whose kill is the clear. Stand-in monsters. Placeholder text.',
 
   'ascent_f11.desc': 'Floor 11. On your first climb here: the stronghold. Repair it through the steward’s two quests, then hold the wall through eight fights; the eighth ends the run in an automatic prestige, and the stronghold stays yours on every later run. On later runs: the door to your hold is in the gatehouse, and the road leads on to the quay; the roadstead fight there clears the floor. Placeholder monsters. Placeholder text.',
+
+  // ==== HARBOR: floor text (skeleton 2026-10-30; the harbor builder's section) ====
+  'ascent_f12.desc': 'Floor 12, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+  'ascent_f13.desc': 'Floor 13, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+  'ascent_f14.desc': 'Floor 14, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+
+  // ==== FESTIVAL: floor text (skeleton 2026-10-30; the festival builder's section) ====
+  'ascent_f15.desc': 'Floor 15, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+  'ascent_f16.desc': 'Floor 16, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+
+  // ==== ABERRANT: floor text (skeleton 2026-10-30; the aberrant builder's section) ====
+  'ascent_f17.desc': 'Floor 17, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+
+  // ==== DESERT: floor text (skeleton 2026-10-30; the desert builder's section) ====
+  'ascent_f18.desc': 'Floor 18, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+  'ascent_f19.desc': 'Floor 19, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+  'ascent_f20.desc': 'Floor 20, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
 };
