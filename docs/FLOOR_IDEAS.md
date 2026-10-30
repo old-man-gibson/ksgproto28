@@ -1473,6 +1473,9 @@ scumming.
    Tuigamala for the Foai) and an epithet; *sab* is Egyptian for jackal.
    The name lives in the monster's text. A `DeityDef` (a desert pantheon a
    player can pray to) is a later divine step, not part of this band.
+5. **The judge's base level** (user, 2026-10-30, after the build). Built
+   at base 33, ceiling 45, share 0.1. Kept *"for now"*; the user expects
+   it may be low. The first dial to read when John reaches floor 19.
 
 **Open questions.** None.
 
@@ -1637,6 +1640,16 @@ Round 4 (with idea 3's rulings):
     floors 15–16 before the royale ends counts as a loss, with the same
     ejection and lock as a defeat (items 6, 16). The ladder stays open
     there; leaving is the forfeit.
+26. **What the door holds, and how it comes back** (user, 2026-10-30,
+    after the build). The door also holds flasks and provisions: food and
+    potions, every consumable that is not a card (cards are read, not
+    carried into a fight). On the way back, *"the stash should be returned
+    to the player on exiting the floors in their inventory or reequipped
+    when slots are empty"*: each held piece goes back into its slot if the
+    slot is empty, otherwise into the pack, so a find worn at the end stays
+    on. Held flasks and provisions are added to whatever the attempt left
+    (the stores' rations are kept). Read as the door's hold; the stronghold
+    stash (item 24) is asked separately.
 
 ### 5.4 Asked in round 2 (kept for the record)
 
