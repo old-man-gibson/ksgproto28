@@ -1258,8 +1258,23 @@ except the battery's new items (cannons, cannonballs, powder charges).
 
 ### 5.2 Open
 
-None with a default. Parked by the user, to be decided later:
-- the hundred-festival reward (§5.3 item 20)
+On the hundred-festival reward (§5.3 item 23). Each has a default.
+
+1. **The consumable across prestige.** Items reset with the run, and the
+   run that earns it may be about to end. *Default:* it carries through
+   prestige in the legacy block until used, as the cookbook does.
+2. **Does the special technique persist?** Techniques reset at prestige
+   today, so a run-only technique is worth less than the permanent bonus.
+   *Default:* the chosen technique is kept through prestige (a legacy list
+   of festival techniques), so all three options are permanent.
+3. **Repeats.** *Default:* one consumable per 100 festival wins in a run
+   (200 earns two); the count restarts each run. Permanent bonuses stack,
+   with a cap held as a dial so the stacking stays steerable.
+4. **The three techniques offered.** *Default:* drawn from a small pool of
+   festival techniques, seeded per award; the pool's contents are content
+   for later.
+
+Parked by the user, to be decided later:
 - worker creation (§5.3 item 8), a later part of base building
 - themes for floors 11–14, 17 and 18–20 (§5.3 item 5)
 
@@ -1333,7 +1348,7 @@ Round 3:
     ([NAVIGATION.md](NAVIGATION.md): banked 1:1, capped at 8 hours) instead
     of being simulated.
 20. **The hundred-festival reward.** Not yet decided; the user will set it
-    later.
+    later. Set in item 23.
 
 Round 4 (with idea 3's rulings):
 
@@ -1344,6 +1359,19 @@ Round 4 (with idea 3's rulings):
 22. **A later wave left unstarted.** *"You gain nothing, and you lose
     nothing."* The warning stays and the base keeps producing; no decay,
     no reward for waiting.
+23. **The hundred-festival reward.** A consumable. Using it offers one of:
+    - a permanent bonus that persists through prestige
+    - a special technique of the player's choice, picked from three offered
+    - a piece of equipment that exceeds the normal festival reward
+
+    Code facts: `prestigeNow` keeps only an explicit field list (count,
+    points, purchases, peaks, cookbook, last harvest, review flag), so the
+    permanent bonus needs a new legacy field, and as a new modifier source
+    it must join `modFingerprint` or the stats cache serves stale numbers.
+    Learned techniques are run state today and reset at prestige. Martial
+    is shut in alpha outside the floor 2 tutor, so the technique option
+    assumes martial is open by floor 16. Secret-content rules hold: no
+    counter or hint until the hundredth win.
 
 ### 5.4 Asked in round 2 (kept for the record)
 
