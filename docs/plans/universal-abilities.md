@@ -14,8 +14,8 @@ invariants:
   - two-validation-layers
   - player-only-carve-out
 done:
-  - The FACET core lives in its own repo, and both games carry a byte-identical copy that their test drivers check against MANIFEST.json
-  - Every user entry in docs/ABILITY_IDEAS.md runs as a FACET document in both games, or the card names the game-side supply still missing
+  - The FACET core lives in its own repo (C:\Users\mersi\Documents\Facet), and node tools/sync.mjs --check there reports both games' copies identical
+  - Every user entry in the Facet repo's docs/ABILITY_IDEAS.md runs as a FACET document in both games, or the card names the game-side supply still missing
   - Generated abilities pass the mortality proof; a hand-written ability may carry a written exemption, and each exemption states its reason on the document
   - Every core change passes both games' test suites (KSG npm run verify, IG node test/facet.*.js)
   - Old KSG saves load at v58 with no ability attached
@@ -31,7 +31,8 @@ both games." The two games are ksgproto28 (this repo) and InfiniteGacha
 FACET is the engine written for that: one core, plain JS with no imports,
 copied byte for byte into each game, and one adapter per game that declares
 what the game exposes (quantities, damage stages, events, vocabulary). The
-spec is `InfiniteGacha\FACET-SPEC.md`. This card makes FACET the runtime for
+master copy, the spec (`docs/FACET-SPEC.md`) and the ability bank live in
+`C:\Users\mersi\Documents\Facet`; its README says how to change the core. This card makes FACET the runtime for
 unique abilities in KSG, in place of the chassis.
 
 How the decision was reached: the user ran the rolled-abilities design past
@@ -46,10 +47,15 @@ kernel was wrong: KSG has none of it yet (see below).
 mortal, forge, oracle, compile, data, cases, relations). Tests:
 `test/facet.node.js` 41/41, `test/facet.integration.js` 34/34,
 `test/facet.pipeline.js` compares 20,000 blows against the frozen old damage
-path and matches on every field. Wired into IG combat: status emission, the
-staged damage pipeline, events. Declared off in `facet.host.ig.js` `caps`:
-`laws` (the action gate), `summon`, `revive`, `calendar`, `simulate` (the
-pricing oracle).
+path and matches on every field. **Shelved since 2026-10-24**: the script
+tags were taken out of `game.html` and `field.html`, so the browser game loads
+no facet code. The hooks in `combat.js` (status emission, the staged damage
+pipeline, events) and the tests stay. Declared off in `facet.host.ig.js`
+`caps`: `laws` (the action gate), `summon`, `revive`, `calendar`, `simulate`
+(the pricing oracle). IG's own condition for bringing it back: a deep dive on
+making abilities interesting first, then three hook fixes its team found (the
+mission-tier reset after a sortie has no caller, `townTierEnd` does not attach
+the person record, combat never calls `FacetHostIG.detach`).
 
 **KSG.** Nothing. FACET-SPEC §13 "Commits K1–K4" is the port plan, written
 against `SAVE_VERSION` 48 and old `combat.ts` line numbers. KSG is at 57.
@@ -146,10 +152,19 @@ read, not an audit: the IG column is confirmed only where it says so.
 
 Each step ships alone and is verified before the next.
 
-0. **The FACET repo.** Move the core, FACET-SPEC.md, FACET-VOCABULARY.md and
-   the bank's user entries into it. IG's `facet/` becomes a copy. A copy
-   script writes both games' copies and `MANIFEST.json`; both test drivers
-   check the hashes and skip the cross-repo check when the sibling is absent.
+0. **The FACET repo. Done 2026-10-29.** `C:\Users\mersi\Documents\Facet`
+   (local, no remote), commit 233a2e8. `core/` is IG's `facet/` at b9c1178,
+   stored LF; `docs/` holds the spec files from IG's root and the ability
+   bank from this repo. `node test/run.js` runs the core corpus against its
+   fake host (41/41). `node tools/sync.mjs` writes the copies listed in
+   `tools/targets.json`; `--check` writes nothing and exits 1 on drift.
+   Hashes and comparisons fold CRLF to LF, because IG's working tree mixes
+   both under `core.autocrlf=true` and raw-byte hashes break on a fresh
+   clone. The drift check lives in the Facet repo; the games' test drivers do
+   not check hashes. IG's side is on its branch `facet-repo` (7411e41,
+   unmerged): the spec files move out, `FACET.md` points here, and
+   `facet/MANIFEST.json` takes the master's note and hashes. This repo's
+   `docs/ABILITY_IDEAS.md` is now a pointer.
 1. **K1, refreshed against v57.** `src/core/facet/` copy, `facet.d.ts`,
    `host.ts` (player bearer only), `quantities.ts`, `tests/facet.test.ts`
    over `facet.cases.js`. `GameState.facets` and `.facetState`;
@@ -178,7 +193,8 @@ Each step ships alone and is verified before the next.
 
 # Open
 
-- Where the FACET repo lives on disk.
+- Merging IG's branch `facet-repo`. Another session edits IG's checkout, so
+  the branch was built without touching it.
 - In IG: do monsters wear bank abilities? In KSG they never do.
 - In IG: what "one ability per run" becomes. IG has a roster, not runs.
 - In IG: what the run-long tier maps to.
