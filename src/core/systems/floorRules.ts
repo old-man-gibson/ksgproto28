@@ -102,13 +102,24 @@ function routeTo(w: Walk, to: string): string {
   return path.join(' -> ');
 }
 
-/** The spots a floor's clear counters name: `fights:<spot>`, `boss:<spot>`, `slain:<spot>:<monster>`. */
-export function clearSpotIds(floor: Pick<RuledFloor, 'clear'>): string[] {
+/**
+ * The spots a floor's clear counters name: `fights:<spot>`, `boss:<spot>`,
+ * `slain:<spot>:<monster>`, and, given the spot table, every spot whose
+ * `stampOnClear` writes a key the clear reads (band 3's ward 7 finishes in
+ * whichever of several spots its form put last, each writing one stamp).
+ */
+export function clearSpotIds(
+  floor: Pick<RuledFloor, 'clear'>,
+  spots?: Record<string, Pick<SpotDef, 'id' | 'stampOnClear'>>,
+): string[] {
   const out = new Set<string>();
   for (const c of floor.clear ?? []) {
     if (c.type !== 'stat' || !c.key) continue;
     const m = /^(?:fights|boss):([^:]+)$/.exec(c.key) ?? /^slain:([^:]+):/.exec(c.key);
     if (m) out.add(m[1]);
+    for (const spot of Object.values(spots ?? {})) {
+      if (spot.stampOnClear === c.key) out.add(spot.id);
+    }
   }
   return [...out];
 }
@@ -442,7 +453,7 @@ export function floorStructureIssues(
 ): FloorReport {
   const floorSpots = Object.values(spots).filter((s) => s.areaId === floor.areaId);
   const within = new Set(floorSpots.map((s) => s.id));
-  const targets = clearSpotIds(floor);
+  const targets = clearSpotIds(floor, spots);
   if (!floor.landing || !within.has(floor.landing)) return { issues: [], spine: null, skipped: 'no-landing' };
   if (!targets.length) return { issues: [], spine: null, skipped: 'no-clear-spot' };
 

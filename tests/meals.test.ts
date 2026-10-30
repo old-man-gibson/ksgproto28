@@ -79,7 +79,7 @@ describe('dishes are eaten out of combat', () => {
   it('the same dish is allowed the moment the fight is over', () => {
     const g = fighting();
     stock(g, 'hearty_stew');
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     expect(g.state.combat).toBeNull();
     expect(canUse(g.state, 'hearty_stew', 'c').ok).toBe(true);
   });
@@ -87,7 +87,7 @@ describe('dishes are eaten out of combat', () => {
   it('the respawn gap between chained hunt fights has no fight in it', () => {
     const g = fighting();
     stock(g, 'hearty_stew');
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     expect(g.state.respawnTimer).toBeGreaterThan(5);
     g.step(3);
     expect(g.state.combat).toBeNull();
@@ -136,7 +136,7 @@ describe('eat after this fight', () => {
   it('a dish pressed out of a fight is eaten at once', () => {
     const g = hunting();
     stock(g, 'hearty_stew');
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     expect(g.eat('hearty_stew', 'c')).toBe('ate');
     expect(g.state.queuedMeal).toBeNull();
     expect(hasStatus(g.state, 'well_fed')).toBe(true);
@@ -171,7 +171,7 @@ describe('eat after this fight', () => {
     expect(g.cancelQueuedMeal()).toBe(true);
     expect(g.state.queuedMeal).toBeNull();
     expect(g.cancelQueuedMeal()).toBe(false);
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     g.tick();
     expect(hasStatus(g.state, 'well_fed')).toBe(false);
     expect(g.state.stock.hearty_stew!.c).toBe(5);
@@ -197,7 +197,7 @@ describe('eat after this fight', () => {
     const g = fighting();
     stock(g, 'hearty_stew');
     g.eat('hearty_stew', 'c');
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     g.tick();
     expect(g.state.queuedMeal).toBeNull();
     expect(hasStatus(g.state, 'well_fed')).toBe(true);
@@ -213,7 +213,7 @@ describe('eat after this fight', () => {
     g.state.stats[cookedKey('hearty_stew')] = 100;
     stock(g, 'hearty_stew');
     g.eat('hearty_stew', 'c');
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     g.tick();
     expect(logLines(g).at(-1)).toMatch(/\(queued during the fight\)\. Signature: also Stoked/);
   });
@@ -223,7 +223,7 @@ describe('eat after this fight', () => {
     stock(g, 'hearty_stew');
     g.eat('hearty_stew', 'c');
     // The fight ends with the player on the floor.
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     g.state.recovering = true;
     g.state.resources.hp = 1;
     g.step(30);
@@ -268,7 +268,7 @@ describe('eat after this fight', () => {
     stock(g, 'hearty_stew');
     g.eat('hearty_stew', 'c');
     delete g.state.stock.hearty_stew;
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     g.tick();
     expect(g.state.queuedMeal).toBeNull();
     expect(hasStatus(g.state, 'well_fed')).toBe(false);
@@ -295,7 +295,7 @@ describe('eat after this fight', () => {
     g.eat('hearty_stew', 'c');
     expect(eatPlan(g.state, 'hearty_stew', 'c')).toMatchObject({ mode: 'queue', queued: true });
     expect(eatPlan(g.state, 'mushroom_broth', 'c')).toMatchObject({ mode: 'blocked', reason: 'None held' });
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     expect(eatPlan(g.state, 'hearty_stew', 'c').mode).toBe('eat');
   });
 });
@@ -303,7 +303,7 @@ describe('eat after this fight', () => {
 /** A Cages hunt with the fight over and nothing left to start one: time moves only when a test steps it. */
 function idle(seed = 3) {
   const g = hunting(seed);
-  abandonCombat(g.state);
+  abandonCombat(g.state, g.bus);
   g.state.activity = null;
   return g;
 }
@@ -381,7 +381,7 @@ describe('eat after recovering', () => {
     const g = fighting();
     stock(g, 'hearty_stew');
     g.eat('hearty_stew', 'c');
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     g.state.recovering = true;
     g.state.resources.hp = 1;
     g.step(5);
@@ -978,7 +978,7 @@ describe('save v59', () => {
   it('round-trips slots, claims and the queue through serialize and deserialize', () => {
     const g = fighting();
     g.state.activity = null;
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     stock(g, 'hearty_stew', 'mushroom_broth');
     useConsumable(g.state, g.bus, 'hearty_stew', 'c');
     g.state.queuedMeal = { dish: 'mushroom_broth', quality: 'c', why: 'fight' };

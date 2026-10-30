@@ -6543,6 +6543,11 @@ export type GameEvent =
   | { type: 'kill'; monster: MonsterInstance; xp: number }
   /** The last enemy of a fight fell. `forced`: it was a fight that could not be fled. */
   | { type: 'fight:won'; spot: string; forced: boolean }
+  /**
+   * A fight ended, however it ended (combat.ts closeCombat): won, walked away
+   * from, lost. `standing`: the enemies still alive at the end, none on a win.
+   */
+  | { type: 'fight:closed'; spot: string; standing: MonsterInstance[] }
   | { type: 'defeat'; monster: MonsterInstance }
   | { type: 'loot'; item: ItemInstance }
   | { type: 'achievement'; id: string; tier: number }

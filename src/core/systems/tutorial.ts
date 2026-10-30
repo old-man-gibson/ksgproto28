@@ -161,7 +161,7 @@ function finishTutorial(state: GameState, bus: EventBus): void {
  */
 export function skipTutorial(state: GameState, bus: EventBus): boolean {
   if (!tutorialActive(state)) return false;
-  if (state.combat) abandonCombat(state);
+  if (state.combat) abandonCombat(state, bus);
   if (!chosen(state, TUTORIAL_FLAGS.weapon)) {
     // The rusty sword is already in the pack (state.ts); a save that somehow
     // lost it is handed one so the old opening is exactly what it gets.

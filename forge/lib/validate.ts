@@ -13,6 +13,8 @@ import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floo
 import { SPINE_EXEMPT, offLadderDoor } from '../../src/core/data/towers.data';
 import { seaContentIssues } from '../../src/core/systems/seaValidation';
 import { festivalContentIssues } from '../../src/core/systems/festivalValidation';
+import { wardContentIssues } from '../../src/core/systems/wardValidation';
+import { WARD_WINDOWS } from '../../src/core/data/wards.data';
 import type { ConvoyDef, SeaSideDef } from '../../src/core/data/sea.data';
 import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, RoyaleStrategyDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
 import { DAMAGE_TYPE_NAMES } from '../../src/core/types';
@@ -371,6 +373,18 @@ export function validate(store: S): Issue[] {
     strategies: store.all<RoyaleStrategyDef>('royaleStrategy'),
     monsters,
     spots,
+  })) {
+    err(issue.kind, issue.id, issue.message);
+  }
+  // Band 3's wards (tests/content.test.ts runs the same function): a clear
+  // stamp needs a fight budget, a kept wound a share in (0, 1], and every
+  // ward window resolves on its floor. The window table is not staged here;
+  // it is checked against the staged spots, floors and monsters.
+  for (const issue of wardContentIssues(WARD_WINDOWS, {
+    bands,
+    floors,
+    spots,
+    monsters: store.all<MonsterDef>('monster'),
   })) {
     err(issue.kind, issue.id, issue.message);
   }

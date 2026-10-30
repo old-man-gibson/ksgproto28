@@ -23,7 +23,8 @@ import {
 } from './systems/tutorial';
 import { registerBestiaryListeners } from './systems/bestiary';
 import { answerDare, dareHolds, registerTrainingListeners } from './systems/training';
-import { registerLevelListeners } from './systems/levels';
+import { registerLevelListeners, syncBandPositions } from './systems/levels';
+import { registerWardListeners, tickWards } from './systems/wards';
 import { registerSeaListeners, tickSea } from './systems/sea';
 import { registerFestivalListeners, tickFestival } from './systems/festival';
 import { clearFieldTarget, moveOnField, setRoyalePlan } from './systems/royale';
@@ -146,7 +147,6 @@ export class Game {
 
   constructor(public state: GameState) {
     this.lastEffectiveStyle = effectiveStyleId(state);
-    this.resyncAnnouncers();
     // Order matters: achievements bump counters (e.g. kills) that fusion
     // conditions may read, so they register first.
     registerAchievementListeners(state, this.bus);
@@ -166,6 +166,9 @@ export class Game {
     // flag that the floor-clear check after it reads (systems/sea.ts).
     registerSeaListeners(state, this.bus);
     registerLevelListeners(state, this.bus);
+    // Band 3's ward windows: a fight with a window's threat that ends with it
+    // hurt marks it fought (systems/wards.ts).
+    registerWardListeners(state, this.bus);
     // The Vermin Festival: attempts start on arrival in its dark room, and its
     // staged fights report back through fight:won (systems/festival.ts).
     registerFestivalListeners(state, this.bus);
@@ -178,6 +181,8 @@ export class Game {
         ...(ev.group ? { group: ev.group, prefix: ev.prefix, tally: ev.tally } : {}),
       });
     });
+    // Last, so anything the resync writes reaches every listener above.
+    this.resyncAnnouncers();
   }
 
   /**
@@ -216,10 +221,16 @@ export class Game {
    * catch-up, save import, hard reset — where the style or a pool lock may
    * have moved without ticking through here. Skipping it would announce a
    * phantom style swap or lock transition on the next tick.
+   *
+   * The `any` bands' position stats are re-derived here too, from the
+   * constructor (load) and after every wholesale replacement and prestige: a
+   * save that cleared wards before those stats existed reads its uncleared
+   * wards' positions before the first spawn (levels.ts syncBandPositions).
    */
   resyncAnnouncers(): void {
     this.lastEffectiveStyle = effectiveStyleId(this.state);
     for (const def of RESOURCE_LIST) this.lastLocks[def.id] = resourceLock(this.state, def.id);
+    syncBandPositions(this.state, this.bus);
   }
 
   /**
@@ -262,6 +273,10 @@ export class Game {
     // the tick resolved (systems/festival.ts). Travel included: the clock
     // runs during a climb between its floors.
     tickFestival(this.state, this.bus);
+    // Band 3's ward windows, after the activity: a kill on this tick that
+    // ends a window beats its lapse. Travel included; the clock stops during
+    // offline catch-up (systems/wards.ts).
+    tickWards(this.state, this.bus, this.catchingUp);
     // Time passes whatever you are doing — travel included — and the sense of
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);

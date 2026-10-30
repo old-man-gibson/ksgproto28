@@ -675,6 +675,27 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     if (raw.queuedMeal === undefined) raw.queuedMeal = null;
     raw.version = 59;
   },
+  // v59 → v60: band 3's wards by position (docs/plans/bands-2-3.md "The four
+  // wards"). The skeleton cleared each ward on its keeper's `once` kill; the
+  // wards now clear on a spent keeper spot (`fights:<spot>`, 8 to 10) or on
+  // ward 7's stamp (`ward:f7:done`, SpotDef.stampOnClear), whichever form fell.
+  // A save that killed a skeleton keeper keeps the ward cleared. The keepers'
+  // spot ids are unchanged; the clear XP already paid stays latched
+  // (floorXpKey).
+  59: (raw) => {
+    const stats = (raw.stats as Record<string, number> | undefined) ?? {};
+    raw.stats = stats;
+    if ((stats['slain:f7_wreck:giant_spider_queen'] ?? 0) >= 1) stats['ward:f7:done'] = 1;
+    const keepers: [string, string][] = [
+      ['slain:f8_lodge:hobgoblin_champion', 'fights:f8_lodge'],
+      ['slain:f9_ossuary:death_knight', 'fights:f9_ossuary'],
+      ['slain:f10_foundry:stone_golem', 'fights:f10_foundry'],
+    ];
+    for (const [slain, fights] of keepers) {
+      if ((stats[slain] ?? 0) >= 1) stats[fights] = Math.max(stats[fights] ?? 0, 1);
+    }
+    raw.version = 60;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {

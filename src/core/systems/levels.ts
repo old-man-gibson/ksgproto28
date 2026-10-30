@@ -1,8 +1,8 @@
 import type { GameState, MonsterInstance, QuestDef, SpotEncounter } from '../types';
 import type { EventBus } from '../engine/events';
-import { BANDS, FLOORS } from '../registry';
+import { BANDS, FLOORS, floorsInBand } from '../registry';
 import { setStat } from './achievements';
-import { bandCleared, bandClearedKey, clearMet } from './ladder';
+import { bandCleared, bandClearedKey, bandPosKey, clearMet, floorCleared } from './ladder';
 import { startingLevel } from './legacy';
 import { text } from '../text/log';
 import {
@@ -127,8 +127,9 @@ export function floorXpKey(floorId: string): string {
 /**
  * Pay `clearXp` for every floor whose clear holds and is not stamped yet.
  * Runs after kills, won fights, quest turn-ins and arrivals: the events that
- * move a clear counter today. A clear met some other way pays on the next of
- * those.
+ * move a clear counter today, and after a ward window lapses (systems/wards.ts).
+ * A clear met some other way pays on the next of those. Also stamps cleared
+ * bands and keeps the `any` bands' position stats current.
  */
 export function checkFloorClears(state: GameState, bus: EventBus): void {
   for (const floor of Object.values(FLOORS)) {
@@ -148,6 +149,36 @@ export function checkFloorClears(state: GameState, bus: EventBus): void {
     if ((state.stats[key] ?? 0) >= 1 || !bandCleared(state, band)) continue;
     setStat(state, bus, key, 1);
     if (band.order === 'any') bus.emit({ type: 'log', msg: text('levels.band', { name: band.name }), kind: 'info' });
+  }
+  syncBandPositions(state, bus);
+}
+
+/**
+ * Keep every `any` band's position stats current (`bandPosKey`, bands-2-3.md
+ * "The four wards"). An uncleared floor's position is the number of its band's
+ * floors cleared right now, all of them siblings since it is not one. A
+ * cleared floor is skipped, so its stat holds the value from the last sync
+ * before its clear: the siblings cleared before it. Two floors cleared between
+ * one sync and the next both freeze at the same count.
+ *
+ * Runs at the end of every `checkFloorClears`, and from `Game.resyncAnnouncers`
+ * on load, import and prestige, so a save that cleared floors before these
+ * stats existed reads its uncleared floors' positions before the first spawn.
+ * A floor cleared before then has no recorded position and reads 0. Prestige
+ * wipes the run stats, and the new run's floors read 0 until a sibling falls.
+ * A band pass makes every floor of its band read cleared, so their positions
+ * freeze where they stand. Writes only on change.
+ */
+export function syncBandPositions(state: GameState, bus: EventBus): void {
+  for (const band of Object.values(BANDS)) {
+    if (band.order !== 'any') continue;
+    const floors = floorsInBand(band.id);
+    const uncleared = floors.filter((f) => !floorCleared(state, f));
+    const position = floors.length - uncleared.length;
+    for (const floor of uncleared) {
+      const key = bandPosKey(floor.id);
+      if ((state.stats[key] ?? 0) !== position) setStat(state, bus, key, position);
+    }
   }
 }
 

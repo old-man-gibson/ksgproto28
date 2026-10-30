@@ -20,7 +20,7 @@ function fighting() {
 }
 
 const idle = (g: Game) => {
-  abandonCombat(g.state);
+  abandonCombat(g.state, g.bus);
   g.state.activity = null;
 };
 
