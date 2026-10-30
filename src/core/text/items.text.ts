@@ -76,4 +76,8 @@ export const ITEMS_TEXT: ProseTable = {
   'bronze_dagger.desc': 'Light bronze dagger. +2 DEX, +1 Damage, +9% Attack Speed, +3% Crit. Raises the wielder\'s psionic quantities: +15% Acuity, +10% Coherence.',
 
   'tower_shield.desc': 'Offhand shield. +7 Armor, +6% Armor, -15% Speed.',
+
+  'festival_laurel.desc': 'Accessory, placeholder. The Vermin Festival pays it to the first royale won in a run. +8% Damage, +8% Max HP.',
+
+  'festival_regalia.desc': 'Accessory, placeholder, taken from a festival token. +15% Damage, +15% Max HP, +5% Attack Speed. Kept in the stronghold stash: every prestige returns it there, wherever it is.',
 };

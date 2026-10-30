@@ -26,6 +26,7 @@ import { answerDare, dareHolds, registerTrainingListeners } from './systems/trai
 import { registerLevelListeners } from './systems/levels';
 import { registerFestivalListeners, tickFestival } from './systems/festival';
 import { clearFieldTarget, moveOnField, setRoyalePlan } from './systems/royale';
+import { spendToken, takeFromStash, type TokenChoice } from './systems/stash';
 import { setHuntRest } from './systems/huntrest';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
@@ -400,6 +401,18 @@ export class Game {
   /** Rank the strategies the player moves by on the field. */
   setRoyalePlan(ids: string[]): void {
     setRoyalePlan(this.state, ids);
+  }
+
+  // ---- The stronghold stash (systems/stash.ts) ----
+
+  /** Spend a festival token on one of its three choices. */
+  spendFestivalToken(index: number, choice: TokenChoice): boolean {
+    return spendToken(this.state, this.bus, index, choice);
+  }
+
+  /** Take a kept item out of the stash into the pack. */
+  takeFromStash(index: number): boolean {
+    return takeFromStash(this.state, this.bus, index);
   }
 
   /** Equip an item; `slot` forces a hand (off-hand sword, main-hand buckler). */

@@ -1,4 +1,4 @@
-import type { RoyaleStrategyDef } from '../types';
+import type { Modifier, RoyaleStrategyDef } from '../types';
 import { prose } from '../text/prose';
 import { ROYALE_STRATEGIES_TEXT } from '../text/festival.text';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, TICKS_PER_GAME_MINUTE } from './climate.data';
@@ -94,6 +94,43 @@ export const ISSUED_WEAPONS: { family: string; skill: string; item: string | nul
 
 /** Where each weapon family's kills are counted (systems/festival.ts, on every kill). */
 export const weaponKillsKey = (family: string): string => `kills:weapon:${family}`;
+
+// ---------- Rewards (§5.3 items 6, 14, 17, 23, 24) ----------
+
+/** A win pays this piece, the first win of a run only: reruns pay nothing. */
+export const FESTIVAL_REWARD = 'festival_laurel';
+
+/**
+ * Every hundredth win in a run puts one festival token in the stronghold
+ * stash (200 earns two); the count is a run counter and restarts each run.
+ */
+export const TOKEN_EVERY_WINS = 100;
+export const FESTIVAL_TOKEN = { name: 'Festival Token', icon: '🎟️' };
+
+/**
+ * A token's three choices. The permanent bonus: `mods` per stack, stacking up
+ * to `cap` stacks (the dial, §5.3 item 24). The technique: one of
+ * `offer` drawn from `pool` with the token's seed; the pool is a placeholder
+ * of existing techniques until the festival's own are written. The
+ * equipment: `regalia`, above the normal reward and keep-marked.
+ */
+export const TOKEN_BONUS: { cap: number; mods: Modifier[] } = {
+  cap: 5,
+  mods: [
+    { stat: 'damage', op: 'mult', value: 0.03 },
+    { stat: 'maxHp', op: 'mult', value: 0.03 },
+  ],
+};
+export const TOKEN_TECHNIQUES = { offer: 3, pool: ['riposte', 'sidestep', 'thrust', 'whirl_kick', 'taunt', 'ginga'] };
+export const TOKEN_REGALIA = 'festival_regalia';
+
+/**
+ * The hidden title (§5.3 item 14): enter floor 16 within twelve festival
+ * hours of the dark room's door opening, then win. Written only by that win;
+ * nothing shows before it (secret-content rules).
+ */
+export const SWIFT_ENTRY_TICKS = 12 * TICKS_PER_HOUR;
+export const FESTIVAL_SWIFT_KEY = 'festival:swift_wins';
 
 // ---------- The royale ----------
 

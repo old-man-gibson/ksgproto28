@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
-import { FLOORS, SPOTS, TOWERS } from '../src/core/registry';
+import { FLOORS, SPOTS, TITLES, TOWERS } from '../src/core/registry';
 import {
   ARENA,
   DARK_FLOOR,
@@ -9,6 +9,8 @@ import {
   DARK_ROOM_WAVES,
   DEFAULT_ROYALE_PLAN,
   FESTIVAL_DOOR_KEY,
+  FESTIVAL_REWARD,
+  FESTIVAL_SWIFT_KEY,
   FESTIVAL_WINS_KEY,
   LOCKOUT_TICKS,
   PREP_TICKS,
@@ -18,8 +20,13 @@ import {
   SURVIVORS,
   SURVIVOR_LEVELS,
   SURVIVOR_SPECIES,
+  SWIFT_ENTRY_TICKS,
+  TOKEN_BONUS,
+  TOKEN_REGALIA,
+  TOKEN_TECHNIQUES,
   weaponKillsKey,
 } from '../src/core/data/festival.data';
+import { stashItem, stashToken, tokenTechniques } from '../src/core/systems/stash';
 import {
   activeStrategy,
   clearEngaged,
@@ -37,6 +44,7 @@ import { prestigeNow } from '../src/core/systems/prestige';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { createItem } from '../src/core/systems/runes';
 import { runOfflineProgress } from '../src/core/save/offline';
+import { deserialize, serialize } from '../src/core/save/save';
 import { BONUS_CAP_TICKS } from '../src/core/systems/bonustime';
 import { MS_PER_TICK } from '../src/core/engine/loop';
 import type { FieldFighter, GameState, RoyaleField } from '../src/core/types';
@@ -145,7 +153,9 @@ describe('the door: gear held and returned', () => {
     climb(game, ROYALE_FLOOR);
     tickUntil(game, () => !festivalRun(game.state));
     expect(s.stats[FESTIVAL_WINS_KEY]).toBe(1);
-    expect(uids([...(Object.values(s.equipment) as { uid: number }[]), ...s.inventory])).toEqual(before);
+    // The held set, plus the first win's reward in the pack.
+    const after = [...(Object.values(s.equipment) as { uid: number; defId: string }[]), ...s.inventory];
+    expect(uids(after.filter((i) => i.defId !== FESTIVAL_REWARD))).toEqual(before);
     expect(s.equipment.weapon?.defId).toBe('iron_sword');
   });
 });
@@ -583,6 +593,25 @@ describe('the royale', () => {
     expect(royalePlan(createInitialState(0)).map((s) => s.id)).toEqual(DEFAULT_ROYALE_PLAN);
   });
 
+  it('a knockout mid-royale loses the attempt even from a field fight against the champion', () => {
+    // Covered by 'a knockout in the royale ejects too'; here the field is
+    // down to its champion before the player is put down.
+    const game = inHall();
+    const s = game.state;
+    climb(game, ROYALE_FLOOR);
+    game.tick();
+    const field = festivalRun(s)!.field!;
+    field.fighters = field.fighters.slice(0, 1).map((f) => ({ ...f, x: field.player.x, y: field.player.y - 1 }));
+    tickUntil(game, () => !!s.combat, 200);
+    expect(s.combat!.enemies[0]!.defId).toBe('ph_survivor_champion');
+    for (const a of ATTRIBUTE_LIST) s.attrs[a.id].level = 1;
+    s.resources.hp = 1;
+    tickUntil(game, () => s.recovering, 5_000);
+    expect(s.spot).toBe(FOOT);
+    expect(s.stats['boss:f16_arena']).toBeUndefined();
+    expect(floorCleared(s, FLOORS[ROYALE_FLOOR])).toBe(false);
+  });
+
   it('a win clears floor 16 and counts the run\'s win; the field is empty after', () => {
     const game = inHall();
     const s = game.state;
@@ -596,5 +625,241 @@ describe('the royale', () => {
     for (let i = 0; i < 500; i++) game.tick();
     expect(s.combat).toBeNull();
     expect(s.spot).toBe(ARENA);
+  });
+});
+
+// ---------- Rewards, the stash, the techniques, the hidden title ----------
+
+/** Every copy of an item def the player owns: worn, carried, sheathed. */
+function owned(s: GameState, defId: string): number {
+  const all = [...s.inventory, ...(Object.values(s.equipment) as { defId: string }[]), ...(s.sheathed ? [s.sheathed] : [])];
+  return all.filter((i) => i?.defId === defId).length;
+}
+
+/** From the hall, into the royale and through it. */
+function winFromHall(game: Game): void {
+  climb(game, ROYALE_FLOOR);
+  tickUntil(game, () => !festivalRun(game.state));
+  expect(game.state.stats['boss:f16_arena']).toBeGreaterThanOrEqual(1);
+}
+
+describe('rewards: the first win pays, reruns pay nothing', () => {
+  it('the first win of a run pays the laurel; a rerun pays nothing at all', () => {
+    const game = inHall();
+    const s = game.state;
+    winFromHall(game);
+    expect(owned(s, FESTIVAL_REWARD)).toBe(1);
+    const gold = s.gold;
+    const items = s.inventory.length + Object.values(s.equipment).filter(Boolean).length;
+    // A rerun from floor 16: the dark room again, the hall, the royale.
+    climb(game, DARK_FLOOR);
+    expect(festivalRun(s)?.phase).toBe('dark');
+    tickUntil(game, () => festivalRun(s)?.phase === 'prep');
+    winFromHall(game);
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBe(2);
+    expect(owned(s, FESTIVAL_REWARD)).toBe(1);
+    expect(s.gold).toBe(gold);
+    expect(s.inventory.length + Object.values(s.equipment).filter(Boolean).length).toBe(items);
+    expect(s.prestige.stash).toBeUndefined();
+  });
+
+  it('the win count restarts with every run', () => {
+    const s = strong(atFourteen());
+    s.stats[FESTIVAL_WINS_KEY] = 3;
+    const next = prestigeNow(s, 1)!;
+    expect(next.stats[FESTIVAL_WINS_KEY]).toBeUndefined();
+  });
+});
+
+describe('the hundredth win and the stronghold stash', () => {
+  it('the hundredth win of a run puts a token in the stash, which survives prestige', () => {
+    const game = inHall();
+    const s = game.state;
+    s.stats[FESTIVAL_WINS_KEY] = 99;
+    expect(s.prestige.stash).toBeUndefined();
+    winFromHall(game);
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBe(100);
+    expect(s.prestige.stash?.tokens).toHaveLength(1);
+    const next = prestigeNow(s, 1)!;
+    expect(next.prestige.stash?.tokens).toEqual(s.prestige.stash!.tokens);
+    // The count restarts with the run; the token does not.
+    expect(next.stats[FESTIVAL_WINS_KEY]).toBeUndefined();
+    clearFloors(next.stats);
+    const third = prestigeNow(next, 2)!;
+    expect(third.prestige.stash?.tokens).toHaveLength(1);
+  });
+
+  it('two hundred earns two, one at each hundred, and nothing in between', () => {
+    const game = inHall();
+    const s = game.state;
+    s.stats[FESTIVAL_WINS_KEY] = 150;
+    winFromHall(game);
+    expect(s.prestige.stash).toBeUndefined();
+    s.stats[FESTIVAL_WINS_KEY] = 199;
+    stashToken(s, 5); // the hundredth's, already held
+    climb(game, DARK_FLOOR);
+    tickUntil(game, () => festivalRun(s)?.phase === 'prep');
+    winFromHall(game);
+    expect(s.prestige.stash?.tokens).toHaveLength(2);
+  });
+
+  it('only keep-marked items enter the stash', () => {
+    const s = createInitialState(0);
+    expect(stashItem(s, createItem(s, 'iron_sword'))).toBe(false);
+    expect(stashItem(s, createItem(s, TOKEN_REGALIA))).toBe(true);
+    expect(s.prestige.stash?.items.map((i) => i.defId)).toEqual([TOKEN_REGALIA]);
+  });
+});
+
+describe('a festival token', () => {
+  it('buys a stack of the permanent bonus, capped, kept through prestige', () => {
+    const game = new Game(createInitialState(0));
+    const s = game.state;
+    clearFloors(s.stats);
+    for (let i = 0; i < TOKEN_BONUS.cap + 1; i++) stashToken(s, i);
+    for (let i = 0; i < TOKEN_BONUS.cap; i++) expect(game.spendFestivalToken(0, { kind: 'bonus' })).toBe(true);
+    expect(s.prestige.festivalBonus).toBe(TOKEN_BONUS.cap);
+    // At the cap the bonus is shut; the token stays for another choice.
+    expect(game.spendFestivalToken(0, { kind: 'bonus' })).toBe(false);
+    expect(s.prestige.stash?.tokens).toHaveLength(1);
+    const next = prestigeNow(s, 1)!;
+    expect(next.prestige.festivalBonus).toBe(TOKEN_BONUS.cap);
+  });
+
+  it("offers three techniques from its seed; the one taken is known now and from every later run's start", () => {
+    const game = new Game(createInitialState(0));
+    const s = game.state;
+    clearFloors(s.stats);
+    stashToken(s, 12345);
+    const token = s.prestige.stash!.tokens[0];
+    const offers = tokenTechniques(s, token);
+    expect(offers).toHaveLength(TOKEN_TECHNIQUES.offer);
+    // The same token offers the same three every time it is opened.
+    expect(tokenTechniques(s, token)).toEqual(offers);
+    for (const id of offers) expect(TOKEN_TECHNIQUES.pool).toContain(id);
+    // Not on offer: refused, and the token is kept.
+    const other = TOKEN_TECHNIQUES.pool.find((id) => !offers.includes(id))!;
+    expect(game.spendFestivalToken(0, { kind: 'technique', id: other })).toBe(false);
+    expect(game.spendFestivalToken(0, { kind: 'technique', id: offers[1] })).toBe(true);
+    expect(s.techniques[offers[1]]?.form).toBe('canonical');
+    expect(s.prestige.festivalTechniques).toEqual([offers[1]]);
+    const next = prestigeNow(s, 1)!;
+    expect(next.techniques[offers[1]]?.form).toBe('canonical');
+    expect(next.prestige.festivalTechniques).toEqual([offers[1]]);
+    // A later token never offers what is already taken.
+    stashToken(next, 12345);
+    expect(tokenTechniques(next, next.prestige.stash!.tokens[0])).not.toContain(offers[1]);
+  });
+
+  it('buys the regalia, which every prestige returns to the stash from wherever it is', () => {
+    const game = new Game(createInitialState(0));
+    const s = game.state;
+    clearFloors(s.stats);
+    stashToken(s, 1);
+    expect(game.spendFestivalToken(0, { kind: 'regalia' })).toBe(true);
+    expect(s.prestige.stash?.items.map((i) => i.defId)).toEqual([TOKEN_REGALIA]);
+    // Taken out and worn: it comes back at prestige.
+    expect(game.takeFromStash(0)).toBe(true);
+    expect(s.prestige.stash?.items).toEqual([]);
+    const regalia = s.inventory.find((i) => i.defId === TOKEN_REGALIA)!;
+    game.equip(regalia.uid);
+    expect(s.equipment.accessory?.defId).toBe(TOKEN_REGALIA);
+    const next = prestigeNow(s, 1)!;
+    expect(next.prestige.stash?.items.map((i) => i.defId)).toEqual([TOKEN_REGALIA]);
+    expect(owned(next, TOKEN_REGALIA)).toBe(0);
+    // Taken out in the new run, it gets a uid of that run.
+    const g2 = new Game(next);
+    expect(g2.takeFromStash(0)).toBe(true);
+    const taken = next.inventory.find((i) => i.defId === TOKEN_REGALIA)!;
+    expect(next.inventory.filter((i) => i.uid === taken.uid)).toHaveLength(1);
+  });
+
+  it('hands out nothing inside a festival attempt: the door holds everything', () => {
+    const s = strong(atFourteen());
+    stashToken(s, 1);
+    const game = new Game(s);
+    game.spendFestivalToken(0, { kind: 'regalia' });
+    climb(game, DARK_FLOOR);
+    expect(game.takeFromStash(0)).toBe(false);
+    expect(s.prestige.stash?.items).toHaveLength(1);
+    climb(game, null); // out by the ladder: the attempt is over
+    expect(game.takeFromStash(0)).toBe(true);
+  });
+
+  it('a regalia held at the festival door still goes back to the stash at prestige', () => {
+    const s = strong(atFourteen());
+    stashToken(s, 1);
+    const game = new Game(s);
+    game.spendFestivalToken(0, { kind: 'regalia' });
+    game.takeFromStash(0);
+    climb(game, DARK_FLOOR);
+    expect(owned(s, TOKEN_REGALIA)).toBe(0);
+    expect(festivalRun(s)!.held.inventory.some((i) => i.defId === TOKEN_REGALIA)).toBe(true);
+    const next = prestigeNow(s, 1)!;
+    expect(next.prestige.stash?.items.map((i) => i.defId)).toEqual([TOKEN_REGALIA]);
+  });
+});
+
+describe('saving inside the festival', () => {
+  it('a save mid-wave reloads into the same attempt, and the wave is fought again', () => {
+    const game = new Game(strong(geared(atFourteen())));
+    climb(game, DARK_FLOOR);
+    tickUntil(game, () => !!game.state.combat);
+    const loaded = new Game(deserialize(serialize(game.state)));
+    const s = loaded.state;
+    expect(s.combat).toBeNull();
+    expect(festivalRun(s)?.phase).toBe('dark');
+    expect(festivalRun(s)!.held.inventory.length).toBeGreaterThan(0);
+    tickUntil(loaded, () => festivalRun(s)?.phase === 'prep');
+    expect(s.stats['boss:f15_dark_room']).toBe(1);
+  });
+
+  it('a save mid-royale fight reloads with its survivors walking again, and the royale can still be won', () => {
+    const game = inHall();
+    climb(game, ROYALE_FLOOR);
+    tickUntil(game, () => !!game.state.combat);
+    expect(festivalRun(game.state)!.field!.fighters.some((f) => f.engaged)).toBe(true);
+    const loaded = new Game(deserialize(serialize(game.state)));
+    const s = loaded.state;
+    loaded.tick();
+    expect(festivalRun(s)!.field!.fighters.some((f) => f.engaged && !s.combat)).toBe(false);
+    tickUntil(loaded, () => !festivalRun(s));
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBe(1);
+  });
+});
+
+describe('the hidden title', () => {
+  const TITLE = 'first_through_the_door';
+
+  it('fires for a win whose climb began within twelve festival hours of the door', () => {
+    const game = inHall();
+    const s = game.state;
+    festivalRun(s)!.clock = SWIFT_ENTRY_TICKS - 1;
+    expect(s.stats[FESTIVAL_SWIFT_KEY]).toBeUndefined();
+    winFromHall(game);
+    expect(s.stats[FESTIVAL_SWIFT_KEY]).toBe(1);
+    expect(s.titles).toContain(TITLE);
+  });
+
+  it('a later climb wins without it, and leaves no trace of it', () => {
+    const game = inHall();
+    const s = game.state;
+    festivalRun(s)!.clock = SWIFT_ENTRY_TICKS + 1;
+    winFromHall(game);
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBe(1);
+    expect(s.stats[FESTIVAL_SWIFT_KEY]).toBeUndefined();
+    expect(s.titles).not.toContain(TITLE);
+  });
+
+  it('an early climb that is lost writes nothing: no counter, no title', () => {
+    const game = inHall();
+    const s = game.state;
+    climb(game, ROYALE_FLOOR);
+    expect(festivalRun(s)!.enteredAt).toBeLessThanOrEqual(SWIFT_ENTRY_TICKS);
+    climb(game, null); // the forfeit
+    expect(s.stats[FESTIVAL_SWIFT_KEY]).toBeUndefined();
+    expect(s.titles).not.toContain(TITLE);
+    // Secret: hidden from the UI until earned.
+    expect(TITLES[TITLE].secret).toBe(true);
   });
 });

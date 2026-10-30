@@ -20,4 +20,6 @@ export const TITLES_TEXT: ProseTable = {
   'first_blade.desc': 'Defeat the Goblin Warchief having attacked with only one weapon family. Passive: +3% damage. Worn: +8% damage and +5% speed.',
 
   'untouchable.desc': 'Defeat the Goblin Warchief without ever having been knocked out. Passive: +2% dodge. Worn: +3% dodge and a 3% shorter action bar.',
+
+  'first_through_the_door.desc': 'Win the Vermin Festival having climbed into the royale within half a festival day of the dark room door opening. Passive: +2% damage. Worn: +6% damage.',
 };

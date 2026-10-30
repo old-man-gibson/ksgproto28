@@ -103,6 +103,7 @@ function statCounterValid(key: string): boolean {
     'prestige:count', // prestige.ts prestigeNow, from the legacy block
     'legacy:stronghold', // prestige.ts prestigeNow, once the stronghold is held
     'festival:door', // festival.ts: 1 while this attempt's dark room door is open
+    'festival:swift_wins', // festival.ts: royales won after entering early, the hidden title's
   ]);
   if (staticKeys.has(key)) return true;
   // What the fight itself counts, for conditions that learn from doing

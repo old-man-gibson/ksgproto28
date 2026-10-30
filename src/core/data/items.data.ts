@@ -586,6 +586,37 @@ export const ITEMS = prose<ItemDef>('ITEMS', ITEMS_TEXT, {
     ],
     wield: 'offhand',
   },
+
+  // ---------- The Vermin Festival (systems/festival.ts, systems/stash.ts) ----------
+  // Placeholders. The laurel is the royale's reward, paid by the first win
+  // of a run. The regalia is a festival token's equipment choice: above the
+  // laurel, and keep-marked, so every prestige returns it to the stash.
+  festival_laurel: {
+    id: 'festival_laurel',
+    name: 'Festival Laurel',
+    icon: '🏅',
+    slot: 'accessory',
+    tags: ['trinket'],
+    mods: [
+      { stat: 'damage', op: 'mult', value: 0.08 },
+      { stat: 'maxHp', op: 'mult', value: 0.08 },
+    ],
+    value: 400,
+  },
+  festival_regalia: {
+    id: 'festival_regalia',
+    name: 'Festival Regalia',
+    icon: '👑',
+    slot: 'accessory',
+    tags: ['trinket'],
+    mods: [
+      { stat: 'damage', op: 'mult', value: 0.15 },
+      { stat: 'maxHp', op: 'mult', value: 0.15 },
+      { stat: 'attackSpeed', op: 'mult', value: 0.05 },
+    ],
+    value: 1500,
+    keep: true,
+  },
 });
 
 /*

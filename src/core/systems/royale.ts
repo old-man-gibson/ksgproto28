@@ -73,6 +73,12 @@ export function tickRoyale(state: GameState, bus: EventBus, run: FestivalRun): v
   // A field from before the isometric layer (a counter) is replaced whole.
   if (!run.field?.fighters) run.field = createField(() => rand(state));
   const field = run.field;
+  // A fight is staged the tick its survivors are engaged, and a won one takes
+  // them off the field, so engaged survivors with no fight are left over from
+  // a fight dropped without an ending (a reload mid-fight): they walk again.
+  if (!state.combat) {
+    for (const f of field.fighters) if (f.engaged) delete f.engaged;
+  }
   const stats = getDerivedStats(state);
   const baseLevel = SURVIVOR_LEVELS.base + Math.round(SURVIVOR_LEVELS.growth * prepShare(run.clock));
   const result = stepField(

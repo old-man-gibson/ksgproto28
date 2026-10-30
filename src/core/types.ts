@@ -635,7 +635,9 @@ export type ModOriginKind =
   | 'status'
   | 'style'
   /** Character level (systems/levels.ts): a flat add to every attribute. */
-  | 'level';
+  | 'level'
+  /** Kept through prestige: the festival's permanent bonus (systems/stash.ts). */
+  | 'legacy';
 
 export interface ModOrigin {
   kind: ModOriginKind;
@@ -3157,6 +3159,12 @@ export interface ItemDef {
    * roll small (fewer slots), chests/legs/greatswords large, the rest medium.
    */
   runeClass?: RuneSizeClass;
+  /**
+   * Kept through prestige in the stronghold stash (PrestigeState.stash): at
+   * every prestige it returns there from wherever it is, and the next run
+   * takes it out again. Only keep-marked items enter the stash.
+   */
+  keep?: boolean;
 }
 
 export interface Affix {
@@ -4869,6 +4877,16 @@ export interface PrestigeState {
    * siege, which runs once. Absent on saves from before it existed.
    */
   stronghold?: boolean;
+  /**
+   * The stronghold stash (FLOOR_IDEAS.md §5.3 item 24): festival tokens and
+   * keep-marked items, the one store a prestige keeps. Copied by
+   * `prestigeNow`; absent on saves from before it existed.
+   */
+  stash?: StrongholdStash;
+  /** Stacks of the festival's permanent bonus taken from tokens (systems/stash.ts). In modFingerprint. */
+  festivalBonus?: number;
+  /** Festival techniques taken from tokens, learned in canonical form at the start of every run. */
+  festivalTechniques?: string[];
   /** The most recent harvest, shown on the post-prestige overlay. */
   lastHarvest: HarvestReport | null;
   /** The post-prestige overlay is owed: it survives a reload and closes only through `leaveReview`. */
@@ -5177,6 +5195,23 @@ export interface FestivalRun {
   issued?: number;
   /** The royale's field, once the climb into it has begun. */
   field?: RoyaleField;
+}
+
+/**
+ * A festival token in the stronghold stash, one per hundred festival wins in
+ * a run (§5.3 items 23–24). Spent on one of three: a permanent bonus, a
+ * technique from three offered, or the regalia. `seed` fixes the technique
+ * offer when the token is awarded.
+ */
+export interface FestivalToken {
+  seed: number;
+}
+
+/** The stronghold stash: legacy, copied by every prestige. */
+export interface StrongholdStash {
+  tokens: FestivalToken[];
+  /** Keep-marked items only (ItemDef.keep). */
+  items: ItemInstance[];
 }
 
 /** Run state: absent on saves from before the festival, and reset by a prestige. */

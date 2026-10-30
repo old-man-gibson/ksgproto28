@@ -6,14 +6,20 @@ import {
   DARK_ROOM,
   DARK_ROOM_WAVES,
   FESTIVAL_DOOR_KEY,
+  FESTIVAL_REWARD,
   FESTIVAL_STORES,
+  FESTIVAL_SWIFT_KEY,
+  FESTIVAL_TOKEN,
   FESTIVAL_WINS_KEY,
   ISSUED_WEAPONS,
   PREP_TICKS,
   ROYALE_FLOOR,
+  SWIFT_ENTRY_TICKS,
+  TOKEN_EVERY_WINS,
   WAVE_PAUSE_TICKS,
   weaponKillsKey,
 } from '../data/festival.data';
+import { rand } from '../engine/rng';
 import { bumpStat, setStat } from './achievements';
 import { itemDefOf } from './assembly';
 import { startStagedGroup } from './combat';
@@ -22,6 +28,8 @@ import { festivalRun, lockoutEnd, onFestivalFloor } from './festivalRules';
 import { royaleFightWon, tickRoyale } from './royale';
 import { createItem } from './runes';
 import { searchKey } from './search';
+import { stashToken } from './stash';
+import { checkTitleUnlocks } from './titles';
 import { climbTo } from './towers';
 import { text } from '../text/log';
 
@@ -238,15 +246,43 @@ function loseFestival(state: GameState, bus: EventBus): void {
   bus.emit({ type: 'log', msg: text('festival.lost'), kind: 'danger' });
 }
 
-/** The royale is won: the gear comes back and the run's win is counted. */
+/**
+ * The royale is won: the gear comes back and the run's win is counted. The
+ * first win of a run pays the festival's reward; every later one pays
+ * nothing (§5.3 item 17), except that each hundredth win of the run puts a
+ * token in the stronghold stash (items 23–24). A win whose climb began
+ * within twelve festival hours of the door opening also earns the hidden
+ * title; its counter is written here and nowhere else (item 14).
+ */
 function winFestival(state: GameState, bus: EventBus): void {
   const fest = festivalOf(state);
   const run = fest.run;
   if (!run) return;
+  const swift = run.enteredAt !== undefined && run.enteredAt <= SWIFT_ENTRY_TICKS;
   returnGear(state, run);
   delete fest.run;
+  const first = (state.stats[FESTIVAL_WINS_KEY] ?? 0) === 0;
   bumpStat(state, bus, FESTIVAL_WINS_KEY);
   bus.emit({ type: 'log', msg: text('festival.won'), kind: 'quest' });
+  if (first && ITEMS[FESTIVAL_REWARD]) {
+    const reward = createItem(state, FESTIVAL_REWARD);
+    state.inventory.push(reward);
+    bus.emit({ type: 'loot', item: reward });
+    const def = ITEMS[FESTIVAL_REWARD];
+    bus.emit({ type: 'log', msg: text('festival.reward', { icon: def.icon, name: def.name }), kind: 'loot' });
+  }
+  if ((state.stats[FESTIVAL_WINS_KEY] ?? 0) % TOKEN_EVERY_WINS === 0) {
+    stashToken(state, Math.floor(rand(state) * 0x100000000));
+    bus.emit({
+      type: 'log',
+      msg: text('festival.token', { icon: FESTIVAL_TOKEN.icon, name: FESTIVAL_TOKEN.name, wins: state.stats[FESTIVAL_WINS_KEY] }),
+      kind: 'achievement',
+    });
+  }
+  if (swift) {
+    bumpStat(state, bus, FESTIVAL_SWIFT_KEY);
+    checkTitleUnlocks(state, bus);
+  }
 }
 
 /** A won fight at a festival spot: the dark room's next wave, or the royale's field. */

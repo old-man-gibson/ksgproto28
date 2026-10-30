@@ -121,4 +121,17 @@ export const TITLES = prose<TitleDef>('TITLES', TITLES_TEXT, {
       { stat: 'actionBar', op: 'mult', value: -0.03 },
     ],
   },
+  // The Vermin Festival's hidden title (FLOOR_IDEAS.md §5.3 item 14): into
+  // the royale within twelve festival hours of the dark room's door opening,
+  // then the win. The counter is written by that win and nothing else
+  // (systems/festival.ts), so nothing shows until it is met.
+  first_through_the_door: {
+    id: 'first_through_the_door',
+    name: 'First Through the Door',
+    icon: '🚪',
+    secret: true,
+    unlock: [{ type: 'stat', key: 'festival:swift_wins', value: 1 }],
+    passive: [{ stat: 'damage', op: 'mult', value: 0.02 }],
+    equipped: [{ stat: 'damage', op: 'mult', value: 0.06 }],
+  },
 });

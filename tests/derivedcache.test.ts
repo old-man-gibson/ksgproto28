@@ -8,6 +8,7 @@ import { grantAttrXp, attrXpNeeded } from '../src/core/systems/attributes';
 import { applyStatus } from '../src/core/systems/statuses';
 import { monsterTagSet } from '../src/core/systems/bestiary';
 import { createItem } from '../src/core/systems/runes';
+import { stashToken } from '../src/core/systems/stash';
 import { STATUSES } from '../src/core/registry';
 
 /**
@@ -81,6 +82,20 @@ describe('derived-stats cache', () => {
     const exerting = getDerivedStats(g.state);
     expect(exerting).not.toBe(calm);
     expect(exerting).toEqual(computeDerivedStats(g.state));
+  });
+
+  it('invalidates when a festival token buys a stack of the permanent bonus', () => {
+    // The Vermin Festival's legacy bonus (systems/stash.ts, legacy.ts): a
+    // modifier source that moves mid-run, when a token is spent.
+    const g = huntingGame();
+    const before = getDerivedStats(g.state);
+    stashToken(g.state, 1);
+    expect(g.spendFestivalToken(0, { kind: 'bonus' })).toBe(true);
+    const after = getDerivedStats(g.state);
+    expect(after).not.toBe(before);
+    expect(after).toEqual(computeDerivedStats(g.state));
+    expect(after.damage).toBeGreaterThan(before.damage);
+    expect(after.maxHp).toBeGreaterThan(before.maxHp);
   });
 
   it('invalidates on an attribute level-up', () => {

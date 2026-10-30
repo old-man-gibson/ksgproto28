@@ -229,6 +229,14 @@ export const LOG_TEXT = {
   'festival.field_left': '🏟️ {alive} left on the field.',
   'festival.lost': '🎪 Festival lost. Your gear is returned; floors 15 and 16 are shut for three days or until the next prestige.',
   'festival.won': '🏆 The royale is won. Your gear is returned.',
+  'festival.reward': '🎁 The festival pays its winner: {icon} {name}, in your pack. A rerun pays nothing more this run.',
+  'festival.token': '{icon} {name}: {wins} festival wins this run. It goes to your stronghold stash (Prestige tab), which every prestige keeps.',
+
+  // ---------- the stronghold stash (systems/stash.ts) ----------
+  'stash.taken': '🏰 Taken from the stronghold stash: {icon} {name}. The next prestige returns it there.',
+  'stash.bonus': '🎟️ Festival bonus: {stacks} of {cap} stacks, kept through every prestige.',
+  'stash.technique': '🎟️ Festival technique: {icon} {name}, learned in full. Every run from now on starts knowing it.',
+  'stash.regalia': '🎟️ {icon} {name} is in your stronghold stash. Take it out on the Prestige tab; every prestige returns it there.',
 
   // ---------- game ----------
   'game.prestiged': '♻️ Prestige {count}: {points} points harvested.',

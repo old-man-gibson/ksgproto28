@@ -1,5 +1,6 @@
-import type { AttributeId, GameState, PrestigeBoonDef } from '../types';
+import type { AttributeId, GameState, Modifier, PrestigeBoonDef } from '../types';
 import { PRESTIGE_BOONS } from '../registry';
+import { TOKEN_BONUS } from '../data/festival.data';
 
 /**
  * Reads of the legacy block that other systems need at their use sites
@@ -100,4 +101,21 @@ export function legacyPreparedPages(state: GameState): number {
     if (def.effect.kind === 'preparedPages') pages += def.effect.pages * rank;
   }
   return pages;
+}
+
+/**
+ * Stacks of the Vermin Festival's permanent bonus, taken from festival
+ * tokens (systems/stash.ts), capped by TOKEN_BONUS.cap.
+ */
+export function festivalBonusStacks(state: GameState): number {
+  return Math.min(TOKEN_BONUS.cap, Math.max(0, state.prestige?.festivalBonus ?? 0));
+}
+
+/**
+ * The permanent bonus as modifiers, every stack summed: a modifier source
+ * (collectBaseMods), so the stack count sits in modFingerprint (derived.ts).
+ */
+export function festivalBonusMods(state: GameState): Modifier[] {
+  const stacks = festivalBonusStacks(state);
+  return stacks > 0 ? TOKEN_BONUS.mods.map((m) => ({ ...m, value: m.value * stacks })) : [];
 }

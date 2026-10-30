@@ -53,8 +53,11 @@ All declarative, so the preview can be computed from them.
   UI shows it whenever the flag is up, with no backdrop click and no Escape.
   Leaving requires either `spentThisReview ≥ 1` or a two-step confirmation.
 - **What carries.** `prestige` (count, points, purchases, peaks, the Cook's
-  Book lists, the last harvest, the review flag) and `createdAt` (the world seed
-  — same world, same weather). Everything else is the run's and resets. The reset
+  Book lists, the stronghold, the stronghold stash and what festival tokens
+  bought, the last harvest, the review flag) and `createdAt` (the world seed
+  — same world, same weather). Everything else is the run's and resets. The
+  stash is filled at the prestige: every keep-marked item (`ItemDef.keep`)
+  goes back into it from wherever it is (docs/FESTIVAL.md §5). The reset
   is `createInitialState`, so a new run is exactly a new save plus legacy —
   there is no second "fresh state" to drift.
 - **`stats['prestige:count']`** mirrors `prestige.count`, so content gates

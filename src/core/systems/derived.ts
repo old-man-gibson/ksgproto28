@@ -656,6 +656,9 @@ function modFingerprint(state: GameState): string {
   parts.push(
     `T${state.prestige?.purchases?.talent ?? 0}:${state.prestige?.purchases?.endowment ?? 0}:${state.prestige?.count ?? 0}`,
   );
+  // The festival's permanent bonus (legacy.ts festivalBonusMods): its stacks
+  // move mid-run, when a token is spent.
+  parts.push(`F${state.prestige?.festivalBonus ?? 0}`);
   for (const [id, tiers] of Object.entries(state.achievements ?? {})) parts.push(`a${id}:${tiers}`);
   for (const id of state.titles ?? []) parts.push(`t${id}`);
   for (const id of state.fused ?? []) parts.push(`f${id}`);

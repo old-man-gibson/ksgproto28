@@ -2,6 +2,7 @@
   import { DEBUG_SETTLE_KEY, gs, game } from '../state.svelte';
   import { AFFIXES, FLOORS, ITEMS, MATERIALS, RUNES, SKILLS } from '../../core/registry';
   import { raiseStat } from '../../core/systems/achievements';
+  import { stashToken } from '../../core/systems/stash';
   import { QUALITY_ORDER, QUALITY_TIERS } from '../../core/data/quality.data';
   import { createItem, grantRune } from '../../core/systems/runes';
   import { grantGraded, isGraded } from '../../core/systems/disciplines';
@@ -168,6 +169,12 @@
     if (!run || run.phase !== 'prep') return say('No festival hub phase in progress.');
     run.clock += 14_400;
     say('Festival clock +1 day.');
+  }
+
+  /** A festival token into the stronghold stash, as the hundredth win of a run puts one. */
+  function giveToken() {
+    stashToken(gs, Math.floor(Math.random() * 0x100000000));
+    say('A festival token is in the stronghold stash (Prestige tab).');
   }
 
   // ---- Spellcraft ----
@@ -512,6 +519,7 @@
       <input type="number" min="1" max="999" bind:value={attrLevel} title="Attribute level" />
       <button onclick={setAttrs}>Set every attribute</button>
       <button onclick={festivalDay}>Festival clock +1 day</button>
+      <button onclick={giveToken}>Festival token</button>
     </div>
     <div class="dim small">
       Clearing stamps the counters each floor's clear reads; climb with the ladder as usual. The
