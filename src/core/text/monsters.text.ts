@@ -140,6 +140,11 @@ export const MONSTERS_TEXT: ProseTable = {
   'ph_corsair.desc': 'Placeholder elite humanoid, a skeleton floor’s keeper. Spawns with a raider. Piercing attacks. Fights with Lunge, Dirty Stab and Gather. Drops a Boss Token, gold and leather.',
 
   // ==== WARD7: monster text (base 2026-10-30; the ward 7 builder's section) ====
+  'ph_bandit_thug.desc': 'Basic humanoid bandit on floor 7, on the merchant road and in the salt-flats camp. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops gold, iron scrap and leather. Placeholder text.',
+  'ph_bandit_archer.desc': 'Basic humanoid bandit on floor 7, on the merchant road and in the salt-flats camp, most of all on its watchtowers. Piercing attacks from range. Fights with Lunge and Gather. Drops gold, leather and iron scrap. Placeholder text.',
+  'ph_bandit_cutthroat.desc': 'Veteran humanoid bandit on floor 7, on the merchant road and in the salt-flats camp. Slashing attacks. Fights with Pocket Sand, Dirty Stab and Gather. Drops gold, leather and iron scrap. Placeholder text.',
+  'ph_bandit_chief.desc': 'Large elite humanoid, the bandits’ chief, in the camp’s tent on floor 7. Spawns with two escorts: thugs, archers or cutthroats. Slashing attacks. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Killing it clears floor 7. Drops a Boss Token, iron ingots and gold. Placeholder text.',
+  'ph_camp_demon.desc': 'Huge ancient eldritch, dark element, in the burnt camp on floor 7: summoned into the bandits’ camp, it absorbed them. Present only while floor 7 is the last ward of the city left, for 24 in-game hours from the third ward’s clear. Always fights alone. Dark attacks. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Keeps half of the HP it loses in a fight it survives. Takes 50% less dark and 20% less heat damage; takes 40% more light damage. Killing it clears floor 7. Drops a Boss Token, gold and iron ingots. Placeholder text.',
 
   // ==== WARDS8-10: monster text (base 2026-10-30; the wards 8-10 builder's section) ====
 

@@ -40,7 +40,7 @@ export const FLOORS_TEXT: ProseTable = {
 
   'ascent_f6.desc': 'Floor 6, the goblin warren, two maps. Gate: 40 goblins killed. Three sabotages in the outer warren each take a level off the Goblin Warchief. Clear: kill the warchief in the Great Hall, which also opens prestige. Placeholder text.',
 
-  'ascent_f7.desc': 'Floor 7, the city’s south ward: the docks, the salt marsh past the south gate, and the Giant Spider Queen in the wreck, whose kill is the clear. Stand-in monsters. Placeholder text.',
+  'ascent_f7.desc': 'Floor 7, the city’s south ward: bandits raiding the merchants and convoys that feed the city. The ward’s form depends on how many of the other three wards are cleared this run. None: 12 fights on the merchant road. One or two: siege the bandits’ camp in the salt flats, the stockade and the watchtowers, then the chief in his tent. All three: a demon in the burnt camp, for 24 in-game hours; floor 7 clears when it dies or when the time runs out. Placeholder text.',
 
   'ascent_f8.desc': 'Floor 8, the city’s west ward, facing the forest: the forest gate, the old forest past it, and the Hobgoblin Champion in the hunting lodge, whose kill is the clear. Stand-in monsters. Placeholder text.',
 
