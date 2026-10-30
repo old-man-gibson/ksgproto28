@@ -1364,6 +1364,10 @@ Round 4 (with idea 3's rulings):
       legacy field: a stronghold stash in `state.prestige`, copied by
       `prestigeNow`, holding only items marked to keep. Every other
       consumable still resets with the run.
+    - **The equipment piece persists too** (user, same day): it is kept in
+      the stronghold stash. Read as: at prestige it returns to the stash
+      from wherever it is (worn or carried), and the next run takes it out
+      again.
     - **The technique persists** through prestige: a legacy list of
       festival techniques, so all three options are permanent.
     - **Repeats.** One consumable per 100 festival wins in a run (200 earns
