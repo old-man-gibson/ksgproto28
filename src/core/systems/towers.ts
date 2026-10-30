@@ -14,6 +14,7 @@ export {
   bandLevelStep,
   bandOpen,
   bandPassed,
+  bandPosKey,
   bandBaseIndex,
   clearMet,
   floorCleared,
@@ -155,7 +156,7 @@ function seamVerb(state: GameState, toIndex: number): string | undefined {
  * on the arrival this raises.
  */
 function forfeitFestival(state: GameState, bus: EventBus): boolean {
-  if (state.combat) abandonCombat(state);
+  if (state.combat) abandonCombat(state, bus);
   retreatToSafety(state, bus, text('festival.forfeit'));
   return true;
 }
@@ -183,7 +184,7 @@ function ride(
   const fromIndex = standingIndex(state);
 
   if (state.combat) {
-    abandonCombat(state);
+    abandonCombat(state, bus);
     bus.emit({ type: 'log', msg: text('common.disengage'), kind: 'combat' });
   }
   state.activity = null;

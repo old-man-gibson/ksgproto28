@@ -165,3 +165,14 @@ export function bandCleared(state: GameState, band: BandDef): boolean {
 export function bandClearedKey(bandId: string): string {
   return `cleared:band:${bandId}`;
 }
+
+/**
+ * The run stat holding a floor's position in an `any` band (bands-2-3.md
+ * "The four wards"): how many of the band's other floors are cleared. Live
+ * while the floor is uncleared, frozen at its clear (levels.ts
+ * syncBandPositions). Content gates a ward's forms on it with `stat` (at
+ * least) and `statMax` (at most). Absent reads 0.
+ */
+export function bandPosKey(floorId: string): string {
+  return `band:pos:${floorId}`;
+}

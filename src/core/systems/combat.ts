@@ -58,7 +58,7 @@ import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from './exposure
 import { itemName, unequipSlot } from './equipment';
 import { itemDefOf } from './assembly';
 import { effectiveStyleDef, effectiveStyleId } from './styles';
-import { bumpStat } from './achievements';
+import { bumpStat, setStat } from './achievements';
 import { monsterTagSet } from './bestiary';
 import { createItem, grantRune, weaponRuneBonuses } from './runes';
 // Mutual with alchemy.ts, which needs this module's feed/monsterSlice/sweepDead
@@ -864,6 +864,7 @@ export function spawnMonster(
   // Everything the thing can do is derived from these; the only combat number
   // it stores is the HP it has left (see systems/monsterStats.ts).
   const attrs = rollMonsterAttrs(state, def, level, statMult);
+  const maxHp = statsFromAttrs(attrs).maxHp;
   const spawned: MonsterInstance = {
     defId: def.id,
     name: nameParts.join(' '),
@@ -874,7 +875,8 @@ export function spawnMonster(
     rarity: rarity.id as RarityId,
     mutation: null, // milestone 2
     attrs,
-    hp: statsFromAttrs(attrs).maxHp,
+    // A monster that keeps its wounds comes back carrying them (M11).
+    hp: spawnHp(state, def, maxHp),
     statuses: [],
     range: def.range ?? 'melee',
     bar: 0,
@@ -1146,7 +1148,7 @@ export function startStagedGroup(
   spot: SpotDef,
   members: { monsterId: string; level: number; hpShare?: number }[],
 ): void {
-  if (state.combat) abandonCombat(state);
+  if (state.combat) abandonCombat(state, bus);
   const minted = members.slice(0, ENCOUNTER_SLOTS).map((m) => {
     const monster = spawnMonster(state, spot, { monsterId: m.monsterId, level: m.level, plain: true });
     if (m.hpShare !== undefined && m.hpShare < 1) {
@@ -1608,6 +1610,9 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
       bus.emit({ type: 'log', msg: text('combat.keeper_slain', { spot: spot.name }), kind: 'combat' });
     }
   }
+  // Its death ends the wounds it was carrying between fights (M11).
+  const kept = MONSTERS[monster.defId]?.keepsWounds;
+  if (kept) delete state.stats[kept.key];
 
   const gold = Math.round(monster.gold * getDerivedStats(state).goldGain);
   state.gold += gold;
@@ -1645,10 +1650,14 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
       if (spotCleared(state, spot)) {
         if (spot.id === 'f1_storerooms') bus.emit({ type: 'log', kind: 'explore', msg: 'The remaining vermin scurry beneath a fallen shelf. Their retreat reveals a passage to the records rooms.' });
         bus.emit({ type: 'log', msg: text('combat.spot_cleared', { spot: spot.name }), kind: 'combat' });
+        // The spot's clear stamp (M10), once: several spots may share one, as
+        // ward 7's forms do, and the first to finish writes it.
+        const stamp = spot.stampOnClear;
+        if (stamp && (state.stats[stamp] ?? 0) < 1) setStat(state, bus, stamp, 1);
       }
     }
     const forcedWin = !!c.forced;
-    closeCombat(state);
+    closeCombat(state, bus);
     endFight(state, 'won');
     state.respawnTimer = RESPAWN_DELAY;
     if (spot) bus.emit({ type: 'fight:won', spot: spot.id, forced: forcedWin });
@@ -1682,7 +1691,7 @@ function onDefeat(state: GameState, bus: EventBus): void {
       : text('combat.knocked_out', { name: monster.name }),
     kind: 'danger',
   });
-  closeCombat(state);
+  closeCombat(state, bus);
   setHpAfterDefeat(state);
   state.recovering = true;
   state.respawnTimer = RESPAWN_DELAY * 2;
@@ -3701,7 +3710,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
   const front = frontEnemy(c);
   if (!front) {
     // Every slot emptied (shouldn't happen — onKill ends the encounter first).
-    closeCombat(state);
+    closeCombat(state, bus);
     state.respawnTimer = RESPAWN_DELAY;
     return;
   }
@@ -4775,8 +4784,21 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
  *
  * Callers fire this BEFORE `endFight`, so the ledger's "Still on you" list is
  * what you actually walk away carrying rather than what the fight was holding.
+ *
+ * That includes every ending that leaves an enemy alive: walking away, travel,
+ * climbing, an activity switch, a knockout, conditions finishing you, a staged
+ * fight replacing this one. So this is where a monster that keeps its wounds
+ * (M11) writes what it carries away, and where `fight:closed` names who was
+ * still standing (systems/wards.ts reads it); a win leaves no one standing.
+ * Saving mid-fight is the one ending that does not come here; `woundsForSave`
+ * covers it.
  */
-function closeCombat(state: GameState): void {
+function closeCombat(state: GameState, bus: EventBus): void {
+  const standing = state.combat ? liveEnemies(state.combat) : [];
+  for (const [key, value] of Object.entries(pendingWounds(state))) {
+    if ((state.stats[key] ?? 0) !== value) setStat(state, bus, key, value);
+  }
+  const wasFighting = state.combat !== null;
   delete state.stats[TOLL_SPELL_FLAG];
   recoverGroundedWeapon(state);
   // A working held at the edge of release does not survive the fight it was
@@ -4784,6 +4806,9 @@ function closeCombat(state: GameState): void {
   releaseReadiedSpell(state);
   fireStatusEvent(state, state, 'combatEnd');
   state.combat = null;
+  // After the books are closed, so a listener sees the fight over. Every
+  // caller runs this before moving the player, so the spot is the fight's.
+  if (wasFighting) bus.emit({ type: 'fight:closed', spot: state.spot, standing });
 }
 
 /**
@@ -4793,11 +4818,69 @@ function closeCombat(state: GameState): void {
  * while the loss paths (conditions finishing you mid-fight) go through
  * regardless, because losing is not walking away.
  */
-export function abandonCombat(state: GameState): void {
-  closeCombat(state);
+export function abandonCombat(state: GameState, bus: EventBus): void {
+  closeCombat(state, bus);
   // Walking away is not an outcome worth a window, so the tally is dropped
   // rather than committed. Anything that ends a fight for a reason the player
   // should read — a knockout, conditions finishing you — calls endFight FIRST.
   state.fight = null;
   state.respawnTimer = RESPAWN_DELAY;
+}
+
+// ---------- Kept wounds (MonsterDef.keepsWounds, bands-2-3.md M11) ----------
+
+/**
+ * The most of its max HP a monster that keeps its wounds can carry between
+ * fights. Stored as a share, not an HP number: two spawns of one monster at
+ * one level can differ in max HP by more than double (rarity rolls), so an
+ * HP figure from one could leave the next at or under zero.
+ */
+export const KEPT_WOUND_CAP = 0.95;
+
+/**
+ * The HP a spawn starts on: its max, or for a monster that keeps its wounds,
+ * the max less the stored share, at least 1. The same shape as a staged
+ * member's `hpShare` (`startStagedGroup`).
+ */
+function spawnHp(state: GameState, def: MonsterDef, maxHp: number): number {
+  const kept = def.keepsWounds;
+  if (!kept) return maxHp;
+  const share = Math.max(0, Math.min(KEPT_WOUND_CAP, state.stats[kept.key] ?? 0));
+  return Math.max(1, Math.round(maxHp * (1 - share)));
+}
+
+/**
+ * What each monster that keeps its wounds and is still standing would carry
+ * away if the fight ended now, keyed by its run stat: `share` × the part of
+ * its max HP it is missing (the max the spawn used: attributes before
+ * conditions), held to [0, KEPT_WOUND_CAP]. Written in place of
+ * the stored share, not added to it, so a fight in which it heals or is barely
+ * touched leaves it less hurt than it came in. Two of one monster in a fight
+ * keep the larger share. Pure: closeCombat writes it, `woundsForSave` saves it.
+ */
+export function pendingWounds(state: GameState): Record<string, number> {
+  const out: Record<string, number> = {};
+  const c = state.combat;
+  if (!c) return out;
+  for (const e of liveEnemies(c)) {
+    const kept = MONSTERS[e.defId]?.keepsWounds;
+    if (!kept) continue;
+    const missing = 1 - e.hp / statsFromAttrs(e.attrs).maxHp;
+    const share = Math.max(0, Math.min(KEPT_WOUND_CAP, kept.share * missing));
+    out[kept.key] = Math.max(out[kept.key] ?? 0, share);
+  }
+  return out;
+}
+
+/**
+ * The run stats as they would be with the live fight walked away from, for
+ * the save: reloading drops the fight (save.ts), and a monster that keeps its
+ * wounds must not shed them by the player closing the tab. Saving never alters
+ * the live state; the stats object is returned untouched when nothing is
+ * pending, so the ordinary autosave copies nothing.
+ */
+export function woundsForSave(state: GameState): Pick<GameState, 'stats'> {
+  const pending = pendingWounds(state);
+  if (!Object.keys(pending).length) return { stats: state.stats };
+  return { stats: { ...state.stats, ...pending } };
 }

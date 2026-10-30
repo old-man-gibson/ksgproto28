@@ -5,6 +5,7 @@ import { SPOTS, STARTING_SPOT } from '../registry';
 import { spotActivities } from '../systems/actions';
 import { normalizeComposition } from '../systems/music';
 import { reclaimedForSave } from '../systems/martial';
+import { woundsForSave } from '../systems/combat';
 import { transcriptForSave } from '../systems/log';
 import { revealMapped } from '../systems/mapped';
 
@@ -33,6 +34,9 @@ export function serialize(state: GameState, now = Date.now()): string {
     // permanently lost. Every path that ENDS a fight recovers them
     // (closeCombat); saving is not one of those paths and had to be taught.
     ...reclaimedForSave(state),
+    // Likewise a monster that keeps its wounds (MonsterDef.keepsWounds): the
+    // save records the fight as walked away from, which is what reloading does.
+    ...woundsForSave(state),
     combat: null,
     combatFeed: [],
     floatingFeed: [],

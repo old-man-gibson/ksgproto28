@@ -57,6 +57,8 @@ import {
   ROYALE_STRATEGIES,
 } from '../src/core/registry';
 import { festivalContentIssues } from '../src/core/systems/festivalValidation';
+import { wardContentIssues, wardStatKeys } from '../src/core/systems/wardValidation';
+import { WARD_WINDOWS } from '../src/core/data/wards.data';
 import { RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/types';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCES } from '../src/core/data/resources.data';
@@ -88,6 +90,9 @@ import type { ActivityFactor, MusicAxis, SpotDef, UnlockCondition } from '../src
 const VALID_DAMAGE_TYPES = new Set(Object.keys(RES_STAT_BY_TYPE));
 const VALID_ATTRS = new Set(ATTRIBUTE_LIST.map((a) => a.id));
 
+/** The ward machinery's run stats, read once the registries are mounted. */
+let wardKeys: Set<string> | undefined;
+
 /** Counters some system actually bumps (docs/CONTENT_GUIDE.md §5). */
 function statCounterValid(key: string): boolean {
   const staticKeys = new Set([
@@ -113,6 +118,10 @@ function statCounterValid(key: string): boolean {
     'festival:swift_wins', // festival.ts: royales won after entering early, the hidden title's
   ]);
   if (staticKeys.has(key)) return true;
+  // Band 3's ward machinery (systems/wardValidation.ts): an any-order floor's
+  // position, a spot's clear stamp, and a ward window's keys and flags.
+  wardKeys ??= wardStatKeys(WARD_WINDOWS, { bands: BANDS, floors: FLOORS, spots: SPOTS });
+  if (wardKeys.has(key)) return true;
   // What the fight itself counts, for conditions that learn from doing
   // (martial self-learn, and any unlock gated on having fought a certain way).
   const COMBAT_COUNTERS = new Set(['attacks', 'crits', 'dodges', 'parries', 'hitsTaken']);
@@ -2339,6 +2348,19 @@ describe('towers, bands & floors', () => {
    */
   it('the festival’s strategies, plans and staged fighters resolve', () => {
     const issues = festivalContentIssues({ strategies: ROYALE_STRATEGIES, monsters: MONSTERS, spots: SPOTS });
+    expect(issues.map((i) => `${i.kind} ${i.id}: ${i.message}`)).toEqual([]);
+  });
+});
+
+/**
+ * Band 3's wards (docs/plans/bands-2-3.md "The four wards", M10 to M12): clear
+ * stamps, kept wounds and ward windows. One pure function in
+ * systems/wardValidation.ts, run here on the live registry and by
+ * forge/lib/validate.ts on the staged copy.
+ */
+describe('band 3 wards: stamps, kept wounds and windows', () => {
+  it('every stamp has a fight budget, every kept wound a share, every window resolves', () => {
+    const issues = wardContentIssues(WARD_WINDOWS, { bands: BANDS, floors: FLOORS, spots: SPOTS, monsters: MONSTERS });
     expect(issues.map((i) => `${i.kind} ${i.id}: ${i.message}`)).toEqual([]);
   });
 });

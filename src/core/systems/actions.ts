@@ -92,7 +92,7 @@ export function selectActivity(state: GameState, bus: EventBus, activityId: stri
       return;
     }
   }
-  if (state.combat) abandonCombat(state);
+  if (state.combat) abandonCombat(state, bus);
   state.activity = activityId;
   state.activityProgress = 0;
   state.travelPlan = []; // picking work overrides any pending journey
@@ -644,7 +644,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       // is not an outcome, but being finished by a condition very much is.
       const wasForced = inForcedFight(state);
       endFight(state, 'knocked_out');
-      if (state.combat) abandonCombat(state);
+      if (state.combat) abandonCombat(state, bus);
       state.resources.hp = 1;
       state.recovering = true;
       // Going down DURING a forced fight is losing it, whatever did the deed.
@@ -684,7 +684,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       held.ticksLeft = null;
     }
     const wasForced = inForcedFight(state);
-    if (state.combat) abandonCombat(state);
+    if (state.combat) abandonCombat(state, bus);
     state.resources.hp = 1;
     state.recovering = true;
     // Going down DURING a forced fight is losing it, whatever did the deed.
@@ -725,7 +725,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       // is not an outcome, but being finished by a condition very much is.
       const wasForced = inForcedFight(state);
       endFight(state, 'knocked_out');
-      if (state.combat) abandonCombat(state);
+      if (state.combat) abandonCombat(state, bus);
       state.resources.hp = 1;
       state.recovering = true;
       // Going down DURING a forced fight is losing it, whatever did the deed.

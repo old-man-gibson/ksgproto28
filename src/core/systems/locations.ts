@@ -47,7 +47,7 @@ export function startTravel(state: GameState, bus: EventBus, to: string, opts: T
   }
 
   if (state.combat) {
-    abandonCombat(state);
+    abandonCombat(state, bus);
     bus.emit({ type: 'log', msg: text('common.disengage'), kind: 'combat' });
   }
   state.activity = null;
@@ -342,7 +342,7 @@ export function fastTravelTo(state: GameState, bus: EventBus, to: string): boole
   }
 
   state.gold -= cost;
-  if (state.combat) abandonCombat(state);
+  if (state.combat) abandonCombat(state, bus);
   state.activity = null;
   state.travelPlan = [];
   state.travelIntent = null;

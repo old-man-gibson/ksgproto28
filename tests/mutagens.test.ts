@@ -2055,7 +2055,7 @@ describe('Tarunavāk, of Sixteen Tongues', () => {
     g.selectActivity('hunt');
     for (let i = 0; i < 400 && !g.state.combat; i++) g.tick();
     g.state.combat!.spoken = { fire: 3 };
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     for (let i = 0; i < 400 && !g.state.combat; i++) g.tick();
     expect(g.state.combat?.spoken ?? {}).toEqual({});
   });
@@ -2110,7 +2110,7 @@ describe('Kritavya, Refuter of Creation', () => {
     const g = refuting();
     for (let i = 0; i < 40; i++) refuteCast(g.state, 'grimoire:7', 5);
     expect(isSealed(g.state, 'grimoire:7')).toBe(true);
-    abandonCombat(g.state);
+    abandonCombat(g.state, g.bus);
     expect(isSealed(g.state, 'grimoire:7')).toBe(false);
   });
 

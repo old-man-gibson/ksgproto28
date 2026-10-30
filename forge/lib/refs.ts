@@ -147,6 +147,9 @@ const COUNTER_SEGMENTS: Record<string, string[]> = {
   forged: ['itemClass'],
   fights: ['spot'],
   slain: ['spot', 'monster'],
+  // `band:pos:<floor>`, an any-order floor's position (systems/ladder.ts
+  // bandPosKey). 'pos' is a literal segment, not a registry kind.
+  band: ['pos', 'floor'],
 };
 
 function counterRewrite(
