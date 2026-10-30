@@ -31,6 +31,9 @@ export const MONSTER_TAGS = prose<MonsterTagDef>('MONSTER_TAGS', MONSTER_TAGS_TE
   dragon: { id: 'dragon', name: 'Dragon', category: 'taxon', icon: '🐉' },
   eldritch: { id: 'eldritch', name: 'Eldritch', category: 'taxon', icon: '🌀', plural: 'Eldritch', },
   plant: { id: 'plant', name: 'Plant', category: 'taxon', icon: '🌱' },
+  // A secondary kinship, never a shelf: every desert species files under its
+  // own family first. Counted by `kills:tag:desert`, the band 5 gates.
+  desert: { id: 'desert', name: 'Desert', category: 'taxon', icon: '🏜️' },
 
   // ---------- Element ----------
   non_elemental: { id: 'non_elemental', name: 'Non-elemental', category: 'element', icon: '⬜', },

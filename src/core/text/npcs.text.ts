@@ -110,4 +110,12 @@ export const NPCS_TEXT: ProseTable = {
     'Then the wall: ten raiders cleared out of the yard, four iron ingots for the braces. The forge in town makes them, or the smith sells them.',
     'When the wall is armed, they come. Eight fights. Hold the last one and the place is yours.',
   ],
+
+  // ==== DESERT: NPC text (the desert builder's section) ====
+  'f20_broker.desc': 'The port house broker on floor 20’s quay. Buys at the posted rates, which are the global sell prices: selling here pays what selling anywhere pays. Sells nothing. Placeholder.',
+  'f20_broker.dialogue': [
+    'Posted rates. The same coin you would get for it anywhere in the tower; the port house pays no premium.',
+    'The port house licenses the digs and buys what comes out of them. It sells nothing back.',
+    'The ferry to the island leaves from the roadstead. Its crew fights whoever rows out.',
+  ],
 };

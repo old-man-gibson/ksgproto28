@@ -1839,4 +1839,183 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // ==== ABERRANT: monsters (skeleton 2026-10-30; the aberrant builder's section) ====
 
   // ==== DESERT: monsters (skeleton 2026-10-30; the desert builder's section) ====
+  // Band 5, the desert (FLOOR_IDEAS.md §4), placeholders at floors 18 to 20
+  // (levels 38 to 45). Stats beside the hobgoblin, the warchief and the siege
+  // placeholders; the shared basic techniques; emoji, no art. Every one is
+  // tagged `desert`: floors 19 and 20 gate on `kills:tag:desert`.
+  //
+  // Method drops (DropEntry.killedBy): the killing blow's type picks the row.
+  // Two or three methods per den: heat (arcane fire, Holy Fire, flasks),
+  // bludgeoning (maces, martial), and a blade.
+  ph_scarab: {
+    id: 'ph_scarab',
+    name: 'Scarab (placeholder)',
+    icon: '🪲',
+    tags: ['living', 'vermin', 'desert', 'small'],
+    tier: 'basic',
+    damageType: 'piercing',
+    rotation: [{ technique: 'gather' }, { technique: 'lunge' }],
+    attrs: { str: 7, dex: 9, con: 7, int: 2, wis: 3, cha: 2 },
+    growth: { str: 0.8, dex: 1.0, con: 0.8, int: 0.3, wis: 0.4, cha: 0.3 },
+    xp: 20,
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'brimstone', weight: 8, killedBy: ['heat'] },
+        { kind: 'material', id: 'copper_ore', weight: 8, killedBy: ['bludgeoning'] },
+        { kind: 'material', id: 'gold_leaf', weight: 3 },
+        { kind: 'nothing', weight: 81 },
+      ],
+    },
+  },
+  ph_cobra: {
+    id: 'ph_cobra',
+    name: 'Cobra (placeholder)',
+    icon: '🐍',
+    tags: ['living', 'beast', 'desert'],
+    tier: 'veteran',
+    damageType: 'piercing',
+    inflicts: [{ id: 'poison', intensity: 2, chance: 0.3 }],
+    resistances: { poison: 0.3 },
+    rotation: [{ technique: 'lunge' }, { technique: 'dirty_stab' }, { technique: 'gather' }],
+    attrs: { str: 8, dex: 11, con: 8, int: 3, wis: 5, cha: 3 },
+    growth: { str: 0.9, dex: 1.2, con: 0.9, int: 0.3, wis: 0.6, cha: 0.3 },
+    xp: 28,
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'leather', weight: 14, killedBy: ['slashing', 'piercing'] },
+        { kind: 'material', id: 'green_vitriol', weight: 5, killedBy: ['heat'] },
+        { kind: 'material', id: 'raw_meat', weight: 12 },
+        { kind: 'nothing', weight: 69 },
+      ],
+    },
+  },
+  ph_scorpion: {
+    id: 'ph_scorpion',
+    name: 'Giant Scorpion (placeholder)',
+    icon: '🦂',
+    tags: ['living', 'vermin', 'desert'],
+    tier: 'veteran',
+    damageType: 'piercing',
+    inflicts: [{ id: 'poison', intensity: 3, chance: 0.25 }],
+    resistances: { poison: 0.4 },
+    rotation: [{ technique: 'hamstring' }, { technique: 'crosscut' }, { technique: 'gather' }],
+    attrs: { str: 10, dex: 8, con: 10, int: 2, wis: 4, cha: 2 },
+    growth: { str: 1.1, dex: 0.9, con: 1.1, int: 0.3, wis: 0.5, cha: 0.3 },
+    xp: 32,
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'material', id: 'tin_ore', weight: 10, killedBy: ['bludgeoning'] },
+        { kind: 'material', id: 'fixing_salt', weight: 6, killedBy: ['heat'] },
+        { kind: 'nothing', weight: 84 },
+      ],
+    },
+  },
+  // The entry's own example table: 100 heat kills pay about 40 bone ash and
+  // no dust. Takes 50% more from heat, so the keyed method is the fast one.
+  ph_mummy: {
+    id: 'ph_mummy',
+    name: 'Mummy (placeholder)',
+    icon: '🧟',
+    tags: ['living', 'undead', 'desert'],
+    tier: 'veteran',
+    damageType: 'bludgeoning',
+    resistances: { heat: -0.5, poison: 0.5 },
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'gather' }],
+    attrs: { str: 12, dex: 5, con: 12, int: 3, wis: 4, cha: 3 },
+    growth: { str: 1.2, dex: 0.6, con: 1.3, int: 0.3, wis: 0.5, cha: 0.3 },
+    xp: 34,
+    gold: [6, 14],
+    loot: {
+      rolls: 2,
+      entries: [
+        { kind: 'material', id: 'bone_ash', weight: 6, killedBy: ['heat'] },
+        { kind: 'material', id: 'bone_dust', weight: 6, killedBy: ['bludgeoning'] },
+        { kind: 'nothing', weight: 18 },
+      ],
+    },
+  },
+  // Floor 18's forecourt guardian (the clear, repeatable). Resists heat, so
+  // its keyed row wants bludgeoning; quicksilver has no other live source.
+  ph_sand_colossus: {
+    id: 'ph_sand_colossus',
+    name: 'Sand Colossus (placeholder)',
+    icon: '🗿',
+    tags: ['inorganic', 'construct', 'desert', 'earth', 'large'],
+    tier: 'elite',
+    damageType: 'bludgeoning',
+    group: { min: 1, max: 1 },
+    resistances: { heat: 0.9 },
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'gather' }],
+    attrs: { str: 17, dex: 6, con: 18, int: 2, wis: 5, cha: 3 },
+    growth: { str: 1.6, dex: 0.6, con: 1.7, int: 0.2, wis: 0.6, cha: 0.3 },
+    xp: 190,
+    gold: [60, 120],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 10 },
+        { kind: 'gold', weight: 20, qty: [60, 120] },
+        { kind: 'material', id: 'copper_ore', weight: 15, qty: [2, 4] },
+        { kind: 'material', id: 'tin_ore', weight: 10, qty: [2, 4] },
+        { kind: 'material', id: 'quicksilver', weight: 6, qty: [1, 2], killedBy: ['bludgeoning'] },
+        { kind: 'nothing', weight: 39 },
+      ],
+    },
+  },
+  // Floor 19's judge, Sabaket, the Weigher at the Door (FLOOR_IDEAS §4,
+  // rulings 2 and 4). Its level rises with the grave goods taken: the row's
+  // `levelRise` on f19_door, not anything here.
+  ph_sabaket: {
+    id: 'ph_sabaket',
+    name: 'Sabaket',
+    icon: '⚖️',
+    tags: ['living', 'humanoid', 'desert', 'dark', 'large'],
+    tier: 'elite',
+    damageType: 'slashing',
+    group: { min: 1, max: 1 },
+    inflicts: [{ id: 'bleeding', intensity: 2, chance: 0.25 }],
+    resistances: { dark: 0.5, poison: 0.3 },
+    rotation: [{ technique: 'heavy_blow' }, { technique: 'hamstring' }, { technique: 'finishing_cut' }, { technique: 'gather' }],
+    attrs: { str: 17, dex: 12, con: 16, int: 8, wis: 10, cha: 9 },
+    growth: { str: 1.6, dex: 1.2, con: 1.6, int: 0.7, wis: 0.9, cha: 0.9 },
+    xp: 220,
+    gold: [80, 160],
+    loot: {
+      rolls: 3,
+      entries: [
+        { kind: 'material', id: 'boss_token', weight: 20 },
+        { kind: 'gold', weight: 25, qty: [80, 140] },
+        { kind: 'material', id: 'bronze_ingot', weight: 15, qty: [2, 4] },
+        { kind: 'material', id: 'quicksilver', weight: 6, qty: [1, 2] },
+        { kind: 'nothing', weight: 34 },
+      ],
+    },
+  },
+  // Floor 20's roadstead: three of them, one fight, the floor's clear.
+  ph_roadstead_crew: {
+    id: 'ph_roadstead_crew',
+    name: 'Roadstead Crew (placeholder)',
+    icon: '🚣',
+    tags: ['living', 'humanoid', 'desert'],
+    tier: 'veteran',
+    damageType: 'piercing',
+    group: { min: 3, max: 3 },
+    rotation: [{ technique: 'lunge' }, { technique: 'dirty_stab' }, { technique: 'pocket_sand' }, { technique: 'gather' }],
+    attrs: { str: 11, dex: 11, con: 10, int: 4, wis: 4, cha: 5 },
+    growth: { str: 1.1, dex: 1.1, con: 1.0, int: 0.5, wis: 0.5, cha: 0.6 },
+    xp: 40,
+    gold: [10, 20],
+    loot: {
+      rolls: 1,
+      entries: [
+        { kind: 'gold', weight: 30, qty: [30, 60] },
+        { kind: 'material', id: 'leather', weight: 20, qty: [1, 2] },
+        { kind: 'material', id: 'boss_token', weight: 5 },
+        { kind: 'nothing', weight: 45 },
+      ],
+    },
+  },
 });

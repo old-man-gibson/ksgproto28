@@ -88,9 +88,12 @@ export const AREAS: Record<string, AreaDef> = {
   // ==== ABERRANT: areas (skeleton 2026-10-30; the aberrant builder's section) ====
   ascent_f17_area: { id: 'ascent_f17_area', name: 'Floor 17 (placeholder)', regionId: 'the_ascent' },
   // ==== DESERT: areas (skeleton 2026-10-30; the desert builder's section) ====
-  ascent_f18_area: { id: 'ascent_f18_area', name: 'The Necropolis Road (placeholder)', regionId: 'the_ascent' },
-  ascent_f19_area: { id: 'ascent_f19_area', name: 'The Pyramid (placeholder)', regionId: 'the_ascent' },
-  ascent_f20_area: { id: 'ascent_f20_area', name: 'The Delta Port (placeholder)', regionId: 'the_ascent' },
+  // Heat trains heat_resistance through place tags only: the Ascent region is
+  // sheltered, and open sky with a per-area climate pin is not built here
+  // (FLOOR_IDEAS §4, "It waits on"). Floor 18 is all open road.
+  ascent_f18_area: { id: 'ascent_f18_area', name: 'The Necropolis Road', regionId: 'the_ascent', tags: ['heat'] },
+  ascent_f19_area: { id: 'ascent_f19_area', name: 'The Pyramid', regionId: 'the_ascent', scene: 'crypt' },
+  ascent_f20_area: { id: 'ascent_f20_area', name: 'The Delta Port', regionId: 'the_ascent' },
 };
 
 /**
@@ -2475,92 +2478,383 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   },
 
   // ==== DESERT: spots (skeleton 2026-10-30; the desert builder's section) ====
-  // Band 5, the desert: floors 18–20 (idea 4). Two spots a floor, placeholder monsters.
-  f18_landing: {
-    id: 'f18_landing',
-    name: 'The Necropolis Road',
-    icon: '🏕️',
+  // Band 5, the desert: floors 18–20 (FLOOR_IDEAS.md §4), placeholder
+  // fidelity. Every hunt is endless except the roadstead's one fight, and
+  // every species is tagged `desert`, so any den pays the next floor's gate.
+  // Havens: the well-head, the five obelisks, the causeway, the river road
+  // and the quay (L3: a knockout lands at the last one visited).
+
+  // --- Floor 18: the Necropolis Road. Obelisk to obelisk up the road to the
+  // forecourt. Each obelisk read is a find that bumps flag:chart; three or
+  // more leave floor 20's roadstead crew surprised. The forecourt guardian
+  // is a boss row with no fightLimit: the clear, and repeatable.
+  f18_well_head: {
+    id: 'f18_well_head',
+    name: 'The Well-Head',
+    icon: '🪣',
     areaId: 'ascent_f18_area',
-    map: { x: 50, y: 65 },
-    activities: [
-      { id: 'camp_f18', kind: 'rest', name: 'Camp', icon: '🏕️' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' },
-    ],
-    groupWeights: { 1: 70, 2: 30 },
-    encounters: [
-      { monsterId: 'ph_siege_raider', weight: 70, level: [38, 39] },
-      { monsterId: 'ph_siege_brute', weight: 30, level: [38, 39] },
-    ],
-    connections: [{ to: 'f18_keeper', ticks: 30, label: 'To the Keeper' }],
+    map: { x: 50, y: 70 },
+    activities: [{ id: 'camp_f18', kind: 'rest', name: 'Rest at the Well-Head', icon: '🏕️' }],
+    connections: [{ to: 'f18_first_obelisk', ticks: 25 }],
   },
-  f18_keeper: {
-    id: 'f18_keeper',
-    name: 'The Keeper of Floor 18',
-    icon: '💀',
+  f18_first_obelisk: {
+    id: 'f18_first_obelisk',
+    name: 'The First Obelisk',
+    icon: '🗿',
     areaId: 'ascent_f18_area',
-    map: { x: 50, y: 25 },
-    fightLimit: 1,
-    modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Keeper', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_corsair', weight: 1, level: [41, 41] }],
+    map: { x: 50, y: 60 },
+    activities: [
+      { id: 'rest_f18_obelisk_1', kind: 'rest', name: 'Rest in the Shade', icon: '🛏️' },
+      { id: 'explore', kind: 'explore', name: 'Read the Obelisk', icon: '📜' },
+    ],
+    exploreTicks: 180,
+    finds: [{ id: 'f18_read_first', at: 1, stat: { key: 'flag:chart' } }],
+    connections: [{ to: 'f18_dune_den', ticks: 30 }],
+  },
+  f18_dune_den: {
+    id: 'f18_dune_den',
+    name: 'The Dunes',
+    icon: '🏜️',
+    areaId: 'ascent_f18_area',
+    map: { x: 32, y: 50 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt the Dunes', icon: '🏹' }],
+    groupWeights: { 1: 55, 2: 30, 3: 15 },
+    encounters: [
+      { monsterId: 'ph_scarab', weight: 45, level: [38, 39] },
+      { monsterId: 'ph_cobra', weight: 35, level: [38, 39] },
+      { monsterId: 'ph_scorpion', weight: 20, level: [38, 39] },
+    ],
+    connections: [{ to: 'f18_second_obelisk', ticks: 30 }],
+  },
+  f18_second_obelisk: {
+    id: 'f18_second_obelisk',
+    name: 'The Second Obelisk',
+    icon: '🗿',
+    areaId: 'ascent_f18_area',
+    map: { x: 50, y: 40 },
+    activities: [
+      { id: 'rest_f18_obelisk_2', kind: 'rest', name: 'Rest in the Shade', icon: '🛏️' },
+      { id: 'explore', kind: 'explore', name: 'Read the Obelisk', icon: '📜' },
+    ],
+    exploreTicks: 180,
+    finds: [{ id: 'f18_read_second', at: 1, stat: { key: 'flag:chart' } }],
+    connections: [
+      { to: 'f18_tomb_row', ticks: 30 },
+      { to: 'f18_salt_flat', ticks: 35 },
+    ],
+  },
+  // A wing of two off the second obelisk: rock salt and a fourth obelisk.
+  f18_salt_flat: {
+    id: 'f18_salt_flat',
+    name: 'The Salt Flat',
+    icon: '🧂',
+    areaId: 'ascent_f18_area',
+    map: { x: 78, y: 46 },
+    activities: [
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Flat', icon: '🏹' },
+      { id: 'gather_f18_salt', kind: 'gather', material: 'rock_salt', ticksPer: 120, name: 'Cut Rock Salt', icon: '🧂' },
+    ],
+    groupWeights: { 1: 65, 2: 35 },
+    encounters: [
+      { monsterId: 'ph_scorpion', weight: 60, level: [38, 40] },
+      { monsterId: 'ph_cobra', weight: 40, level: [38, 40] },
+    ],
+    connections: [{ to: 'f18_fourth_obelisk', ticks: 30 }],
+  },
+  f18_fourth_obelisk: {
+    id: 'f18_fourth_obelisk',
+    name: 'The Fourth Obelisk',
+    icon: '🗿',
+    areaId: 'ascent_f18_area',
+    map: { x: 90, y: 30 },
+    activities: [
+      { id: 'rest_f18_obelisk_4', kind: 'rest', name: 'Rest in the Shade', icon: '🛏️' },
+      { id: 'explore', kind: 'explore', name: 'Read the Obelisk', icon: '📜' },
+    ],
+    exploreTicks: 180,
+    finds: [{ id: 'f18_read_fourth', at: 1, stat: { key: 'flag:chart' } }],
     connections: [],
   },
-  f19_landing: {
-    id: 'f19_landing',
-    name: 'The Pyramid',
-    icon: '🏕️',
-    areaId: 'ascent_f19_area',
-    map: { x: 50, y: 65 },
-    activities: [
-      { id: 'camp_f19', kind: 'rest', name: 'Camp', icon: '🏕️' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' },
-    ],
-    groupWeights: { 1: 70, 2: 30 },
+  f18_tomb_row: {
+    id: 'f18_tomb_row',
+    name: 'The Tomb Row',
+    icon: '⚰️',
+    areaId: 'ascent_f18_area',
+    map: { x: 32, y: 28 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Tomb Row', icon: '⚔️' }],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
     encounters: [
-      { monsterId: 'ph_siege_raider', weight: 70, level: [40, 41] },
-      { monsterId: 'ph_siege_brute', weight: 30, level: [40, 41] },
+      { monsterId: 'ph_mummy', weight: 60, level: [39, 40] },
+      { monsterId: 'ph_scarab', weight: 40, level: [39, 40] },
     ],
-    connections: [{ to: 'f19_keeper', ticks: 30, label: 'To the Keeper' }],
+    connections: [
+      { to: 'f18_third_obelisk', ticks: 30 },
+      { to: 'f18_fifth_obelisk', ticks: 30 },
+    ],
   },
-  f19_keeper: {
-    id: 'f19_keeper',
-    name: 'The Keeper of Floor 19',
-    icon: '💀',
-    areaId: 'ascent_f19_area',
-    map: { x: 50, y: 25 },
-    fightLimit: 1,
-    modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Keeper', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_siege_captain', weight: 1, level: [43, 43] }],
+  f18_fifth_obelisk: {
+    id: 'f18_fifth_obelisk',
+    name: 'The Fifth Obelisk',
+    icon: '🗿',
+    areaId: 'ascent_f18_area',
+    map: { x: 10, y: 20 },
+    activities: [
+      { id: 'rest_f18_obelisk_5', kind: 'rest', name: 'Rest in the Shade', icon: '🛏️' },
+      { id: 'explore', kind: 'explore', name: 'Read the Obelisk', icon: '📜' },
+    ],
+    exploreTicks: 180,
+    finds: [{ id: 'f18_read_fifth', at: 1, stat: { key: 'flag:chart' } }],
     connections: [],
   },
-  f20_landing: {
-    id: 'f20_landing',
-    name: 'The Delta Port',
-    icon: '🏕️',
-    areaId: 'ascent_f20_area',
-    map: { x: 50, y: 65 },
+  f18_third_obelisk: {
+    id: 'f18_third_obelisk',
+    name: 'The Third Obelisk',
+    icon: '🗿',
+    areaId: 'ascent_f18_area',
+    map: { x: 50, y: 18 },
     activities: [
-      { id: 'camp_f20', kind: 'rest', name: 'Camp', icon: '🏕️' },
-      { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' },
+      { id: 'rest_f18_obelisk_3', kind: 'rest', name: 'Rest in the Shade', icon: '🛏️' },
+      { id: 'explore', kind: 'explore', name: 'Read the Obelisk', icon: '📜' },
     ],
-    groupWeights: { 1: 70, 2: 30 },
-    encounters: [
-      { monsterId: 'ph_siege_raider', weight: 70, level: [42, 43] },
-      { monsterId: 'ph_siege_brute', weight: 30, level: [42, 43] },
-    ],
-    connections: [{ to: 'f20_keeper', ticks: 30, label: 'To the Keeper' }],
+    exploreTicks: 180,
+    finds: [{ id: 'f18_read_third', at: 1, stat: { key: 'flag:chart' } }],
+    connections: [{ to: 'f18_forecourt', ticks: 30, label: 'Into the Forecourt', returnLabel: 'Back to the Obelisk' }],
   },
-  f20_keeper: {
-    id: 'f20_keeper',
-    name: 'The Keeper of Floor 20',
-    icon: '💀',
+  f18_forecourt: {
+    id: 'f18_forecourt',
+    name: 'The Forecourt',
+    icon: '🏛️',
+    areaId: 'ascent_f18_area',
+    map: { x: 50, y: 6 },
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Guardian', icon: '⚔️' }],
+    encounters: [{ monsterId: 'ph_sand_colossus', weight: 1, boss: true, level: [41, 41] }],
+    connections: [],
+  },
+
+  // --- Floor 19: the Pyramid, the Weighing. The treasury's six grave goods
+  // each bump flag:tomb:taken and each requires boss:f19_door at 0, so the
+  // tomb seals when the judge first falls and `taken` always prices the
+  // judge the clear is paid with. The goods sit in their own room: exploring
+  // the chamber takes nothing. The judge is one boss row with levelRise
+  // (levels.ts encounterLevel): base 40, share 0.1 (6 × 0.1 < 1), ceiling 45,
+  // the band's top monster level, so the door is never the band's best XP.
+  //
+  // The chamber -> door edge is the first live Connection.forced. It is
+  // authored on the chamber ONLY: buildAdjacency keeps the first edge it sees
+  // per destination, so a door -> chamber edge declared too could drop the
+  // forced flag. The registry's mirror is the plain way back.
+  f19_causeway: {
+    id: 'f19_causeway',
+    name: 'The Causeway',
+    icon: '🛤️',
+    areaId: 'ascent_f19_area',
+    map: { x: 50, y: 70 },
+    tags: ['heat'],
+    activities: [{ id: 'camp_f19', kind: 'rest', name: 'Camp on the Causeway', icon: '🏕️' }],
+    connections: [
+      { to: 'f19_entrance', ticks: 30, label: 'Into the Pyramid', returnLabel: 'Out to the Causeway' },
+      { to: 'f19_valley', ticks: 30 },
+    ],
+  },
+  f19_valley: {
+    id: 'f19_valley',
+    name: 'The Valley Temples',
+    icon: '🏜️',
+    areaId: 'ascent_f19_area',
+    map: { x: 80, y: 62 },
+    tags: ['heat'],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt the Temples', icon: '🏹' }],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
+    encounters: [
+      { monsterId: 'ph_cobra', weight: 50, level: [40, 41] },
+      { monsterId: 'ph_scorpion', weight: 50, level: [40, 41] },
+    ],
+    // The skill door (FLOOR_STANDARD §2.2): optional, and the only use heat
+    // resistance has on this floor besides heat damage.
+    connections: [
+      {
+        to: 'f19_side_tomb',
+        ticks: 40,
+        label: 'Into the Side Tomb',
+        returnLabel: 'Out to the Temples',
+        requires: [{ type: 'skill', id: 'heat_resistance', level: 15 }],
+      },
+    ],
+  },
+  f19_side_tomb: {
+    id: 'f19_side_tomb',
+    name: 'The Side Tomb',
+    icon: '🔥',
+    areaId: 'ascent_f19_area',
+    map: { x: 92, y: 44 },
+    tags: ['heat'],
+    activities: [{ id: 'explore', kind: 'explore', name: 'Search the Side Tomb', icon: '🔍' }],
+    exploreTicks: 360,
+    finds: [
+      { id: 'f19_side_quicksilver', at: 0.3, material: { id: 'quicksilver', qty: 3 } },
+      { id: 'f19_side_ash', at: 0.6, material: { id: 'bone_ash', qty: 4 } },
+      { id: 'f19_side_coffer', at: 1, gold: [150, 250], material: { id: 'brimstone', qty: 2 } },
+    ],
+    connections: [],
+  },
+  f19_entrance: {
+    id: 'f19_entrance',
+    name: 'The Entrance Passage',
+    icon: '🔺',
+    areaId: 'ascent_f19_area',
+    map: { x: 50, y: 56 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Passage', icon: '⚔️' }],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
+    encounters: [
+      { monsterId: 'ph_mummy', weight: 50, level: [40, 42] },
+      { monsterId: 'ph_scarab', weight: 50, level: [40, 42] },
+    ],
+    connections: [{ to: 'f19_gallery', ticks: 30 }],
+  },
+  f19_gallery: {
+    id: 'f19_gallery',
+    name: 'The Grand Gallery',
+    icon: '🔺',
+    areaId: 'ascent_f19_area',
+    map: { x: 50, y: 42 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Gallery', icon: '⚔️' }],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
+    encounters: [
+      { monsterId: 'ph_mummy', weight: 60, level: [41, 42] },
+      { monsterId: 'ph_scorpion', weight: 40, level: [41, 42] },
+    ],
+    connections: [{ to: 'f19_chamber', ticks: 30 }],
+  },
+  f19_chamber: {
+    id: 'f19_chamber',
+    name: 'The Burial Chamber',
+    icon: '⚱️',
+    areaId: 'ascent_f19_area',
+    map: { x: 50, y: 26 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Chamber', icon: '⚔️' }],
+    groupWeights: { 1: 70, 2: 30 },
+    encounters: [{ monsterId: 'ph_mummy', weight: 1, level: [42, 43] }],
+    connections: [
+      { to: 'f19_treasury', ticks: 20, label: 'Into the Treasury', returnLabel: 'Back to the Chamber' },
+      { to: 'f19_door', ticks: 20, forced: true, label: 'To the Door', returnLabel: 'Back to the Chamber' },
+    ],
+  },
+  f19_treasury: {
+    id: 'f19_treasury',
+    name: 'The Treasury',
+    icon: '🏺',
+    areaId: 'ascent_f19_area',
+    map: { x: 80, y: 22 },
+    activities: [{ id: 'explore', kind: 'explore', name: 'Search the Treasury', icon: '🔍' }],
+    exploreTicks: 360,
+    finds: [
+      { id: 'f19_good_ewer', at: 0.16, gold: [80, 140], material: { id: 'bronze_ingot', qty: 2 }, stat: { key: 'flag:tomb:taken' }, requires: [{ type: 'statMax', key: 'boss:f19_door', value: 0 }] },
+      { id: 'f19_good_mask', at: 0.33, gold: [80, 140], material: { id: 'gold_leaf', qty: 2 }, stat: { key: 'flag:tomb:taken' }, requires: [{ type: 'statMax', key: 'boss:f19_door', value: 0 }] },
+      { id: 'f19_good_bowls', at: 0.5, gold: [80, 140], material: { id: 'copper_ingot', qty: 2 }, stat: { key: 'flag:tomb:taken' }, requires: [{ type: 'statMax', key: 'boss:f19_door', value: 0 }] },
+      { id: 'f19_good_chest', at: 0.66, gold: [80, 140], material: { id: 'bronze_ingot', qty: 2 }, stat: { key: 'flag:tomb:taken' }, requires: [{ type: 'statMax', key: 'boss:f19_door', value: 0 }] },
+      { id: 'f19_good_figures', at: 0.83, gold: [80, 140], material: { id: 'tin_ingot', qty: 2 }, stat: { key: 'flag:tomb:taken' }, requires: [{ type: 'statMax', key: 'boss:f19_door', value: 0 }] },
+      { id: 'f19_good_collar', at: 1, gold: [80, 140], material: { id: 'gold_leaf', qty: 2 }, stat: { key: 'flag:tomb:taken' }, requires: [{ type: 'statMax', key: 'boss:f19_door', value: 0 }] },
+    ],
+    connections: [],
+  },
+  f19_door: {
+    id: 'f19_door',
+    name: 'The Door',
+    icon: '⚖️',
+    areaId: 'ascent_f19_area',
+    map: { x: 50, y: 8 },
+    modifierWeights: { normal: 100 },
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Face the Weigher', icon: '⚔️' }],
+    encounters: [
+      {
+        monsterId: 'ph_sabaket',
+        weight: 1,
+        boss: true,
+        level: [40, 40],
+        levelRise: { stat: 'flag:tomb:taken', share: 0.1, ceiling: 45 },
+      },
+    ],
+    connections: [],
+  },
+
+  // --- Floor 20: the Delta Port, the seam to the island (floors 21 to 30).
+  // Idea 3's quay and roadstead pair, no convoy table. The roadstead is one
+  // fight behind a forced edge, and the crossing: the clear. Three obelisk
+  // reads on floor 18 (flag:chart >= 3) leave its crew surprised.
+  f20_river_road: {
+    id: 'f20_river_road',
+    name: 'The River Road',
+    icon: '🛤️',
     areaId: 'ascent_f20_area',
-    map: { x: 50, y: 25 },
+    map: { x: 50, y: 70 },
+    tags: ['heat'],
+    activities: [
+      { id: 'camp_f20', kind: 'rest', name: 'Camp on the River Road', icon: '🏕️' },
+      { id: 'hunt', kind: 'hunt', name: 'Hunt the Road', icon: '🏹' },
+    ],
+    groupWeights: { 1: 60, 2: 30, 3: 10 },
+    encounters: [
+      { monsterId: 'ph_cobra', weight: 40, level: [42, 44] },
+      { monsterId: 'ph_scorpion', weight: 35, level: [42, 44] },
+      { monsterId: 'ph_scarab', weight: 25, level: [42, 44] },
+    ],
+    connections: [{ to: 'f20_quay', ticks: 30, label: 'Down to the Quay', returnLabel: 'Up the River Road' }],
+  },
+  f20_quay: {
+    id: 'f20_quay',
+    name: 'The Quay',
+    icon: '⚓',
+    areaId: 'ascent_f20_area',
+    map: { x: 50, y: 44 },
+    activities: [{ id: 'rest_f20_quay', kind: 'rest', name: 'Rest at the Quay', icon: '🛏️' }],
+    connections: [
+      { to: 'f20_warehouses', ticks: 20 },
+      { to: 'f20_notice_wall', ticks: 15 },
+      {
+        to: 'f20_roadstead',
+        ticks: 30,
+        forced: true,
+        label: 'Row Out to the Roadstead',
+        returnLabel: 'Back to the Quay',
+        approach: {
+          requires: [{ type: 'stat', key: 'flag:chart', value: 3 }],
+          enemies: [{ id: 'surprised' }],
+        },
+      },
+    ],
+  },
+  f20_warehouses: {
+    id: 'f20_warehouses',
+    name: 'The Warehouses',
+    icon: '📦',
+    areaId: 'ascent_f20_area',
+    map: { x: 80, y: 50 },
+    activities: [
+      { id: 'job_f20_cargo', kind: 'job', gold: 30, ticksPer: 240, name: 'Haul Cargo', icon: '📦' },
+      { id: 'gather_f20_flour', kind: 'gather', material: 'rough_flour', ticksPer: 120, name: 'Sweep the Grain Floor', icon: '🌾' },
+    ],
+    connections: [],
+  },
+  f20_notice_wall: {
+    id: 'f20_notice_wall',
+    name: 'The Notice Wall',
+    icon: '📜',
+    areaId: 'ascent_f20_area',
+    map: { x: 20, y: 40 },
+    activities: [],
+    connections: [],
+  },
+  f20_roadstead: {
+    id: 'f20_roadstead',
+    name: 'The Roadstead',
+    icon: '⛵',
+    areaId: 'ascent_f20_area',
+    map: { x: 50, y: 14 },
     fightLimit: 1,
     modifierWeights: { normal: 100 },
-    activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight the Keeper', icon: '⚔️' }],
-    encounters: [{ monsterId: 'ph_corsair', weight: 1, level: [45, 45] }],
+    activities: [{ id: 'hunt', kind: 'hunt', name: 'Take the Ferry', icon: '⚔️' }],
+    encounters: [{ monsterId: 'ph_roadstead_crew', weight: 1, level: [45, 45] }],
     connections: [],
   },
 

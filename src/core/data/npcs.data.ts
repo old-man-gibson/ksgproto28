@@ -261,4 +261,17 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   // ==== ABERRANT: NPCs (skeleton 2026-10-30; the aberrant builder's section) ====
 
   // ==== DESERT: NPCs (skeleton 2026-10-30; the desert builder's section) ====
+  // Floor 20's broker (FLOOR_IDEAS §4). Buys at the global sell price and
+  // sells nothing. A premium over the global price would mint against the
+  // no-arbitrage floor, since the same goods sell everywhere. The entry's
+  // `shop.lines: []` is written as no `shop` at all: selling is not tied to a
+  // counter, an empty shelf draws nothing, and the content lint holds every
+  // `shop` to at least one line.
+  f20_broker: {
+    id: 'f20_broker',
+    name: 'The Broker (placeholder)',
+    icon: '💰',
+    spotId: 'f20_quay',
+    quests: [],
+  },
 });
