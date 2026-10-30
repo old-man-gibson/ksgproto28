@@ -188,7 +188,7 @@ data model, after the antagonist's review of idea 4:
 | 6 → 7 | planned (the warren threatens band 3's city), unwritten |
 | 10 → 11 | proposed: the castle safe, a steward deeds the derelict stronghold; after the swap, floor 11's landing describes the road to the harbor |
 | 14 → 15 | proposed: the final mission's feast ends in a drugged cup; the dark room is the cut |
-| 16 → 17 | open: 15–16 must be banded rungs (the index lint), so the ladder works from them like any floor, which conflicts with the festival being cut off (§5.2) |
+| 16 → 17 | unwritten. The ladder works on 15–16 like any floor; climbing out before the royale ends is a loss (§5.3 item 25) |
 | 17 → 18 | proposed: floor 17's clear opens a shaft; floor 18's landing is a well-head in full sun. Floor 17 owes floor 18 only "ends underground" |
 | 20 → 21 | idea 4: the ferry; the roadstead fight is the crossing; verb "Sailing" |
 
@@ -209,7 +209,8 @@ data model, after the antagonist's review of idea 4:
   stronghold has to keep a clearable floor 11 until it prestiges.
 - **The base today** is the hold: region `the_hold`, 25 `base_*` rooms, a
   door at the Foot that opens at `prestige:count` 1, which band 2 now reaches
-  at floor 6. A para-floor base reached from floor 11 overlaps it (§5.3 Q3, §5.2 Q2).
+  at floor 6. A para-floor base reached from floor 11 overlaps it; ruled
+  in §5.3 items 3 and 9 (one base; the hold door moves to floor 11).
 - **Narrow build.** COMPLETABILITY §6a requires basic use of about half the
   eight core systems; "narrow" is read as the narrowest legal pick, which is
   what John measures. A narrower John would contradict §6a.
@@ -1278,7 +1279,7 @@ strength.
 | Floor | One idea (mechanism) | Boss / preparation | Spots |
 |---|---|---|---|
 | 18 | The Necropolis Road. Open desert between obelisks. Obelisks are havens on open sky; reading one is a find that adds to `flag:chart` (five obelisks, three reads matter). Dens of desert monsters along the road. Clear: `boss:<forecourt>` 1 | the forecourt guardian, repeatable; no preparation | ~8 |
-| 19 | The Pyramid: the Weighing. Grave goods are optional finds in a treasury off the burial chamber, each adding to `flag:tomb:taken`. The judge waits at the door, at base level + taken (cap +6). The chamber-to-door edge is `forced`. Clear: `boss:<door>` 1 | restraint is the preparation: take nothing, fight the base judge; take everything, fight it at +6 and leave rich | ~8 |
+| 19 | The Pyramid: the Weighing. Grave goods are optional finds in a treasury off the burial chamber, each adding to `flag:tomb:taken`. The judge waits at the door; each piece taken raises its level by a share of the player's character level, up to a ceiling. The chamber-to-door edge is `forced`. Clear: `boss:<door>` 1 | restraint is the preparation: take nothing, fight the base judge; take everything, fight it near your own level (or at the ceiling) and leave rich | ~8 |
 | 20 | The Delta Port, the seam to the island. Idea 3's quay and roadstead pair, no convoy table: a quay (haven), a broker who buys dig goods, warehouses (`job`, `gather`), a notice wall naming floor 21's camps, and a roadstead (`fightLimit` 1) behind a `forced` edge. The roadstead fight is the crossing. Clear: `fights:<roadstead>` 1 | three obelisk reads (`flag:chart` ≥ 3) leave the roadstead's crew surprised (`ApproachSpec`) | ~5 |
 
 Gates: floor 19 `kills:tag:desert` 60, floor 20 `kills:tag:desert` 150
@@ -1296,15 +1297,44 @@ one-way edge (wing-loop lint).
 - **Taking is going to the treasury.** There is no "take" verb: finds fire
   as a spot is explored. The goods sit in their own spot off the chamber,
   so exploring the chamber takes nothing; standing in the treasury and
-  exploring it, idle or offline included, takes them all (Q1).
-- **Rows.** Judge rows k = 0..5 `{ monsterId: judge; boss: true; level:
-  [B + k, B + k]; requires: [stat flag:tomb:taken ≥ k, statMax
-  flag:tomb:taken ≤ k] }`, and row 6 with `stat ≥ 6` alone, so the
-  clear-table lint finds a row at every sampled value. `boss: true` latches
-  `boss:<door>` on every kill and stays repeatable.
-- **Example, B = 30:** take nothing, level 30; take six, level 36 (about
-  +20% attributes; linear growth), plus roughly 6 × 80–140 gold and twelve
-  ingots, resin or linen. The step size is a dial (Q3).
+  exploring it, idle or offline included, takes them all (ruled, Q1).
+- **The judge's level (user, 2026-10-30).** *"It should increase the level
+  bonus to the judge in relation to the player character's level/attribute
+  total, up to a certain ceiling. If the player is too strong, the judge
+  cannot match the player, if the player is too weak, being greedy should
+  punish them on the first attempt."*
+  - Read at spawn, with k = `flag:tomb:taken`, P = character level
+    (`state.level`), B = the judge's base level:
+    **level = min(C, B + max(k, round(k × r × P)))**.
+  - Dials: r, the share of the character level each piece adds; C, the
+    ceiling. The `max(k, …)` floor makes every piece cost at least one
+    level, so a weak player's greed always shows. The total is rounded once
+    rather than per piece, so a level gained never jumps the judge by k.
+  - **Keep 6r < 1.** Then each level the player gains raises a full-greed
+    judge by 6r < 1, so levelling always closes the gap: greed bites
+    hardest on the first attempt, and every rematch is easier than the last.
+  - P is the character level, not an attribute total: equipment can be
+    swapped mid-fight (`equipItem` has no fight guard, `equipment.ts:90`),
+    so a total that counts gear could be stripped before the door and worn
+    again inside the fight. The character level only rises within a run.
+  - **Example, B = 30, r = 0.1, C = 45**, six pieces taken: P = 20 fights
+    level 42 (22 above); P = 30 fights 45 (15 above, at the ceiling);
+    P = 40 fights 45 (5 above); P = 50 out-levels the ceiling and greed is
+    free. Three pieces at P = 30: level 39. The loot is roughly 6 × 80–140
+    gold and twelve ingots, resin or linen.
+  - Scale check: floor 1's boss is level 4 and band 1 ends near character
+    level 5 (`levels.data.ts`), and `levelGapXpMult` compares the two
+    levels directly, so P and monster levels share one scale.
+  - **C stays at or under the top of band 5's monster levels.** A greedy
+    judge pays full kill XP (`levelGapXpMult` gives 1 at or above the
+    player's level) and is repeatable, so a ceiling above the band would
+    make the door the best XP farm on the floor.
+  - The treasury's description states the rule in one plain line (each
+    piece taken raises the judge); the number shows only in the fight.
+- **One row.** `{ monsterId: judge; boss: true; level: [B, B]; levelRise:
+  { stat: 'flag:tomb:taken', share: r, ceiling: C } }`. `boss: true`
+  latches `boss:<door>` on every kill and stays repeatable. With no
+  `requires`, the clear-table lint finds the row at every sampled value.
 - It is band 1 floor 3's rule reversed: there, what you find makes the boss
   weaker; here, what you take makes it stronger.
 
@@ -1379,9 +1409,13 @@ would join `modFingerprint`).
   band 5. Ladder-wide, as ideas 2–3.
 
 **Cost.** No save change. Content: areas with their own climate pin, ~21
-spots, a desert roster with tag `desert`, one judge with seven level rows,
+spots, a desert roster with tag `desert`, one judge row with `levelRise`,
 method-drop rows. Engine: `killedBy` and `lastHit` (30–40 lines, shared
-with idea 2). The first live use of `Connection.forced`: author only the
+with idea 2); `SpotEncounter.levelRise?: { stat: string; share: number;
+ceiling: number }`, applied in `spawnMonster` after the level roll (not to
+`override` spawns) through one helper `encounterLevel(state, e)` that the
+bestiary's level range also reads, plus a validation rule (share > 0,
+ceiling ≥ `level[1]`); about 20 lines. The first live use of `Connection.forced`: author only the
 chamber-to-door edge with `forced: true` and let the mirror be the free way
 in, because `buildAdjacency` dedupes by destination and drops a declared
 forced edge when the other spot is listed first.
@@ -1402,7 +1436,8 @@ first*; no redesign. All taken; the entry above already reads fixed.
 2. **`slain:` cannot latch on a repeatable judge** (`slain:` bumps only on a
    `once` entry). *Taken:* clear = `boss:<door>`.
 3. **Seven bounded rows leave `taken = 7` uncovered** (clear-table lint,
-   confirmed). *Taken:* row 6 is `stat ≥ 6` alone.
+   confirmed). *Taken:* row 6 is `stat ≥ 6` alone. Superseded 2026-10-30
+   by the Q3 ruling: one row with `levelRise`, no `requires`.
 4. **`Connection.forced` is order-dependent and has no live precedent**
    (confirmed). *Taken:* author one edge; listed in Cost.
 5. **The broker's "posted rates" were a mint or flavour.** *Taken:* global
@@ -1414,7 +1449,7 @@ first*; no redesign. All taken; the entry above already reads fixed.
 8. **The seam data model** (see §1.5, the soft transitions). *Taken there.*
 Minor, taken: the H2 count is cumulative; the `desert` tag needs a
 `MONSTER_TAGS` entry; the roadstead needs `fightLimit` 1; the +6 step is
-cheap for the loot (Q3).
+cheap for the loot (Q3; superseded, the rise now scales with the player).
 
 Clean: no terminal state; an empty encounter table at a forced edge is free
 passage, never a strand; prestige re-arms the floor; band passes read and
@@ -1422,16 +1457,28 @@ write no band 5 counter, and nothing above band 5 reads one; `kills:tag:`
 counts damage-over-time kills; row picks are deterministic, so no reset
 scumming.
 
+**Rulings (user, 2026-10-30).**
+
+1. **Grave goods and idle play.** Approved: the treasury is its own spot,
+   so the choice is walking in; no confirm dialog.
+2. **The judge.** The Boss Anubis, God of Death sheet, *"except a
+   different name for this game, as all other gods have their own names"*.
+   The Goddess Anubis and the Crocopharaoh stay kept for the parked Omen.
+   The name is open (Q4 below).
+3. **The step per grave good.** Scales with the player's character level,
+   up to a ceiling: the formula under the Weighing, above.
+
 **Open questions.** Each has a default.
 
-1. **Grave goods and idle play.** Exploring the treasury takes everything,
-   idle or offline included. *Default:* the treasury is its own spot, so
-   the choice is walking in; no confirm dialog.
-2. **The judge.** *Default:* Boss Anubis, God of Death; the Goddess Anubis
-   and the Crocopharaoh are kept for the parked Omen.
-3. **The step per grave good.** *Default:* +1 level per piece (cap +6), to
-   be tuned against the loot with John; a bigger step is the dial if the
-   loot makes taking everything the obvious play.
+4. **The judge's name.** The other gods have invented names with a
+   language flavour per pantheon (Xima and Cuixtli for the Yolixoch, Kenese
+   Paea and Tuigamala for the Foai) and an epithet (*the Cold Sun*,
+   *the Treebreaker*). *Default:* **Sabaket, the Weigher at the Door**
+   (*sab* is Egyptian for jackal), a placeholder for the user like the
+   goblin gods' names. Alternatives: *Imenhar, the Western Judge*;
+   *Tjesuat, Keeper of the Scale*. The name lives in the monster's text. A
+   `DeityDef` (a desert pantheon a player can pray to) is a later divine
+   step, not part of this band.
 
 ---
 
@@ -1468,18 +1515,10 @@ scumming.
 
 ### 5.2 Open
 
-1. **The ladder inside the Vermin Festival** (found reviewing idea 4's
-   seams). Floors 15–16 have to be banded rungs (the index lint), and
-   `climbTo` works from any spot on a banded floor (it refuses only during
-   a forced fight), so a player could climb out of the dark room or the
-   prep hub between fights. That contradicts the festival being cut off. *Default:* climbing out of
-   floors 15–16 before the royale ends counts as a loss: ejected, both
-   floors locked (§5.3 items 6, 16). A refused ladder there is the
-   alternative.
-
-Parked by the user, to be decided later:
+None. Parked by the user, to be decided later:
 - worker creation (§5.3 item 8), a later part of base building
-- themes for floors 11–14, 17 and 18–20 (§5.3 item 5)
+- the theme of floor 17 (§5.3 item 5; 11–14 became idea 3 and 18–20
+  idea 4)
 
 ### 5.3 Answered (user, 2026-10-29, the ladder)
 
@@ -1594,6 +1633,14 @@ Round 4 (with idea 3's rulings):
       cap held as a dial.
     - **The three techniques** are drawn from a small pool of festival
       techniques, seeded per award; the pool's contents come later.
+25. **The ladder inside the Vermin Festival** (user, 2026-10-30; found
+    reviewing idea 4's seams). Floors 15–16 have to be banded rungs (the
+    index lint), and `climbTo` works from any spot on a banded floor (it
+    refuses only during a forced fight), so a player could climb out of
+    the dark room or the prep hub between fights. Ruled: climbing out of
+    floors 15–16 before the royale ends counts as a loss, with the same
+    ejection and lock as a defeat (items 6, 16). The ladder stays open
+    there; leaving is the forfeit.
 
 ### 5.4 Asked in round 2 (kept for the record)
 
