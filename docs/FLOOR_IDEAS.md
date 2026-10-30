@@ -1010,7 +1010,7 @@ mission""*
 
 Later the same day: *"privateers actively attack pirates, while the navy
 escorts the convoy and protects it against monsters"*, and on the merchants:
-*"meet the convoy and do social rolls/dialogue?"* (a question; Q6).
+*"meet the convoy and do social rolls/dialogue?"* (a question; answered in Rulings below).
 
 **What the post changes.** §5.3 item 1 said the floor 11 swap happens at the
 next prestige after the stronghold clear. Per this post, clearing the siege
@@ -1188,16 +1188,18 @@ except shot.
 4. **Switching sides.** *Default:* one side per run, no switching, as idea 2.
 5. **Condition defence.** *Default:* sustain hurdles until a system fills the
    role, then fire ships ask burning defence.
-6. **The merchants' role** (the user's question). The other three each have
-   an enemy; merchants own the convoy. *Default:* merchants run the convoy
-   end to end: pack the hold, pick the route, defend their own cargo when it
-   is boarded (pirates and monsters both), and sell at each port of call.
-   The port sale is the dialogue: a speechcraft-driven negotiation (duty,
-   buyer, price) that sets the **payout per crate**, never the crate count,
-   so `sea:crates:won` still comes from delivery and no gate rests on one
-   skill (L7). A failed negotiation costs price, not progress (L3). The
-   checks are thresholds on speechcraft level against the deal, not dice,
-   so a player can see why a deal went the way it did.
+
+**Rulings (user, 2026-10-29).**
+- **The merchants' role** (was Q6): approved as proposed. The other three
+  each have an enemy; merchants own the convoy. They run it end to end:
+  pack the hold, pick the route, defend their own cargo when it is boarded
+  (pirates and monsters both), and sell at each port of call. The port sale
+  is the dialogue: a speechcraft-driven negotiation (duty, buyer, price)
+  that sets the **payout per crate**, never the crate count, so
+  `sea:crates:won` still comes from delivery and no clear rests on one skill
+  (L7). A failed negotiation costs price, not progress (L3). The checks are
+  thresholds on speechcraft level against the deal, not dice, so a player
+  can see why a deal went the way it did.
 
 ---
 
