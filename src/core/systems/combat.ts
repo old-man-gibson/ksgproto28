@@ -174,6 +174,7 @@ export function landGraze(
   const slice = monsterSlice(monster, type, 'Graze', raw, vs.penetration);
   const dealt = Math.max(1, Math.round(slice.dealt));
   monster.hp -= dealt;
+  monster.lastHit = type;
   noteOutgoing(state, dealt);
   // A graft harvest is damage the blow EARNED; `enemyTookDamage` reports it and
   // hands it back for the caller to apply. Discarding the return emptied the
@@ -445,6 +446,7 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
   const bite = statusIncomingDamageMult(monster);
   const dmg = Math.max(1, Math.round(total * bite));
   monster.hp -= dmg;
+  monster.lastHit = heaviestType(slices.values()) ?? dmgType;
   noteOutgoing(state, dmg);
   // By TYPE, not by the blade's own type: this blow carried its enchant, its
   // runes and its oil, and the on-damage hooks are owed what actually landed.
@@ -674,7 +676,7 @@ import {
   noteOutgoing,
   noteParry,
 } from './ledger';
-import { killXp } from './levels';
+import { encounterLevel, killXp } from './levels';
 import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
@@ -823,15 +825,16 @@ export function spawnMonster(
   // ravine for an hour and never seen the hawk" is the same complaint as a fang
   // blade that will not fall. Keyed per spot: the ravine's hawk is not the
   // moor's. Escorts (`override`) roll nothing, so they pay nothing.
-  const pick = override
-    ? { monsterId: override.monsterId, level: [override.level, override.level] as [number, number] }
+  const pick: Pick<SpotEncounter, 'monsterId' | 'level' | 'levelRise'> = override
+    ? { monsterId: override.monsterId, level: [override.level, override.level] }
     : mercyPick(state, table, (e, rate) => (mercyTracked(rate) ? `spawn:${spot.id}:${e.monsterId}` : null));
   const def = MONSTERS[pick.monsterId];
   // A pinned level (escorts at their leader's, a staged dare) is final. A
-  // rolled one takes the band's step: on band 3 every direction cleared
+  // rolled one takes the line's own rise (floor 19's judge, levels.ts
+  // encounterLevel), then the band's step: on band 3 every direction cleared
   // raises the rest (bands-2-3.md M5).
   const rolled = randInt(state, pick.level[0], pick.level[1]);
-  const level = override ? rolled : rolled + bandLevelStep(state, spot);
+  const level = override ? rolled : encounterLevel(state, pick, rolled) + bandLevelStep(state, spot);
 
   // Three classification axes: intrinsic tier (rolled multiplier within the
   // def's tier range), rolled modifier (demiboss/boss/aberrant), rolled rarity.
@@ -1444,6 +1447,27 @@ function dropKey(defId: string, entry: DropEntry): string {
 }
 
 /**
+ * The rows one kill rolls (DropEntry.killedBy). A method row whose type the
+ * killing blow did not carry leaves the table BEFORE the mercy pick, and its
+ * weight rolls as `nothing` in its place. Out of the pick, it is neither
+ * written to nor read from the drought ledger, so a sword kill banks no miss
+ * that the next fire kill would pay out (PITFALLS §7). Its weight kept as
+ * `nothing`, every other row keeps its authored share, which is the share the
+ * bestiary prints: a mummy's bone ash (6 of 30, two rolls) pays about 40 per
+ * 100 heat kills and none on any other kill.
+ */
+export function dropRowsFor(table: DropTable, lastHit: DamageType | undefined): DropEntry[] {
+  let unmatched = 0;
+  const rows = table.entries.filter((e) => {
+    if (!e.killedBy || (lastHit !== undefined && e.killedBy.includes(lastHit))) return true;
+    unmatched += e.weight;
+    return false;
+  });
+  if (unmatched > 0) rows.push({ kind: 'nothing', weight: unmatched });
+  return rows;
+}
+
+/**
  * Roll a weighted drop table. Loot luck (player stat × monster rarity/modifier)
  * shrinks the weight of 'nothing' entries rather than inflating everything else.
  *
@@ -1468,9 +1492,11 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
   // never the luck-adjusted one — a change of hat must not move an entry on or
   // off its counter. The rate it escalates around is still the adjusted one.
   const authored = table.entries.reduce((s, e) => s + e.weight, 0);
+  // Method rows the killing blow did not match are out before the pick.
+  const rows = dropRowsFor(table, monster.lastHit);
 
   for (let roll = 0; roll < table.rolls; roll++) {
-    const entries = table.entries.map((e) =>
+    const entries = rows.map((e) =>
       e.kind === 'nothing' ? { ...e, weight: e.weight / Math.max(1, luck) } : e,
     );
     const pick = mercyPick(state, entries, (e) =>
@@ -1885,6 +1911,7 @@ function fireCounter(
   }
   const total = Math.max(1, Math.round(slices.reduce((sum, s) => sum + s.dealt, 0)));
   e.hp -= total;
+  e.lastHit = heaviestType(slices) ?? playerDamageType(state);
   noteOutgoing(state, total);
   feed(state, `${def.icon} ${def.name} answers the ${e.name} for ${total}`, {
     label: def.name,
@@ -2085,6 +2112,8 @@ export function castMonsterWorking(
   if (refusal.negated) {
     if (refusal.backlash > 0) {
       e.hp -= Math.max(1, Math.round(refusal.backlash));
+      // Arcane, as the same backlash is when it lands on the player.
+      e.lastHit = 'arcane';
       noteOutgoing(state, Math.max(1, Math.round(refusal.backlash)));
     }
     feed(
@@ -2430,6 +2459,7 @@ function springEnemyCounter(
   if (refusal.negated) {
     if (refusal.backlash > 0) {
       e.hp -= Math.max(1, Math.round(refusal.backlash));
+      e.lastHit = 'arcane';
       noteOutgoing(state, Math.max(1, Math.round(refusal.backlash)));
     }
     feed(state, `🚫 The ${e.name} reaches to undo your ${working.name} and the world declines.`);
@@ -2562,6 +2592,7 @@ function landIncantation(state: GameState, bus: EventBus): void {
   const slice = monsterSlice(monster, type, ability!.name, raw, vs.penetration);
   const dealt = Math.max(1, Math.round(slice.dealt));
   monster.hp -= dealt;
+  monster.lastHit = type;
   noteOutgoing(state, dealt);
   feed(state, `${ability!.icon} The incantation finishes, and ${ability!.name} arrives — ${dealt}.`, {
     label: ability!.name,
@@ -2856,16 +2887,18 @@ export function healEnemy(
   if (cfg?.detonateAt !== undefined && surplus >= maxHp * cfg.detonateAt) {
     // The body cannot hold it: the bearer takes the whole ledger...
     removeStatus(target, held.id);
+    const type = cfg.detonateType ?? 'poison';
     target.hp -= surplus;
+    target.lastHit = type;
     feed(state, `💥 The ${target.name} bursts under its own abundance!`);
     // ...and everything fighting beside it is showered.
-    const type = cfg.detonateType ?? 'poison';
     for (let i = 0; i < c.enemies.length; i++) {
       const other = c.enemies[i];
       if (!other || i === index) continue;
       const slice = monsterSlice(other, type, source, surplus * (cfg.detonateShare ?? 0.5));
       const dealt = Math.max(1, Math.round(slice.dealt));
       other.hp -= dealt;
+      other.lastHit = type;
       feed(state, `💥 The burst showers the ${other.name} for ${dealt} ${type}.`);
     }
     return;
@@ -3097,6 +3130,7 @@ export function castCraftedAttack(
       if (bite !== 1) steps.push({ label: 'Caught off guard', mult: bite });
       const dmg = Math.max(1, Math.round(total * bite));
       target.hp -= dmg;
+      target.lastHit = heaviestType(slices.values());
       // A working can land several types at once; each one gets its own say.
       const harvested = enemyTookDamage(state, target, dealtByType(slices));
       if (harvested > 0) {
@@ -3133,6 +3167,7 @@ export function castCraftedAttack(
       const slice = monsterSlice(other, spec.strikes[0]?.type ?? 'arcane', spec.name, mainRaw * (spec.splash ?? 0));
       const spill = Math.max(1, Math.round(slice.dealt));
       other.hp -= spill;
+      other.lastHit = slice.type;
       feed(state, `↯ ${spec.name} spills into the ${other.name} for ${spill}`);
     }
   }
@@ -3260,6 +3295,7 @@ function applyMonsterBarDamage(
   for (const hit of statusBarDamage(e, when)) {
     const slice = monsterSlice(e, hit.type, hit.name, hit.amount, 0);
     e.hp -= slice.dealt;
+    e.lastHit = hit.type;
     feed(state, `${hit.icon} ${hit.name} discharges through the ${e.name} for ${slice.dealt} ${hit.type}.`);
     if (e.hp <= 0) return true;
   }
@@ -3328,9 +3364,16 @@ function enemyTookDamage(
     return 0;
   }
   let harvested = 0;
+  let heaviest = 0;
   for (const [type, amount] of dealt) {
     for (const h of graftHarvest(monster, type)) {
       harvested += h.amount;
+      // Every caller takes the harvest off HP straight after this returns, and
+      // only this loop sees its type, so the stamp for that decrement is here.
+      if (h.amount > heaviest) {
+        heaviest = h.amount;
+        monster.lastHit = h.type;
+      }
       feed(
         state,
         `${h.icon} What took root in the ${monster.name} goes up with it — ${Math.round(h.amount)} ${h.type}.`,
@@ -3359,6 +3402,25 @@ function dealtByType(slices: Map<string, DamageSlice>): Map<DamageType, number> 
     out.set(slice.type, (out.get(slice.type) ?? 0) + slice.dealt);
   }
   return out;
+}
+
+/**
+ * The type a blow of several types is remembered by (`MonsterInstance.lastHit`):
+ * the one that dealt the most, summed across sources. A sword with a fire rune
+ * kills by slashing unless the rune outhit the edge. Undefined for no parts.
+ */
+export function heaviestType(parts: Iterable<{ type: DamageType; dealt: number }>): DamageType | undefined {
+  const byType = new Map<DamageType, number>();
+  for (const p of parts) byType.set(p.type, (byType.get(p.type) ?? 0) + p.dealt);
+  let best: DamageType | undefined;
+  let most = -Infinity;
+  for (const [type, dealt] of byType) {
+    if (dealt > most) {
+      best = type;
+      most = dealt;
+    }
+  }
+  return best;
 }
 
 /**
@@ -3453,6 +3515,9 @@ function tickEnemyStatuses(state: GameState, bus: EventBus, c: CombatState): voi
     }
     const dealt = Math.max(1, Math.round(result.damage));
     e.hp -= dealt;
+    // Damage over time kills by its condition's type (the dot's type, which
+    // is the condition's element): a burn's kill is a heat kill.
+    e.lastHit = heaviestType(result.hits.map((h) => ({ type: h.type, dealt: h.amount })));
     // A bleed you put on it is damage you dealt — it just arrives on its own
     // schedule. Counting it keeps "what you did" honest for condition builds.
     noteOutgoing(state, dealt);
@@ -3505,6 +3570,7 @@ function burnMind(
     const res = monsterDamageResistance(e, boom.type) * (1 - boom.bypassRes);
     const dealt = Math.max(1, Math.round(boom.amount * (1 - res)));
     e.hp -= dealt;
+    e.lastHit = boom.type;
     noteOutgoing(state, dealt);
     feed(state, `${boom.icon} The ${boom.name.toLowerCase()} in the ${e.name} goes off for ${dealt} ${boom.type}.`);
   }
@@ -4110,6 +4176,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       if (bite !== 1) steps.push({ label: 'Caught off guard', mult: bite });
       dmg = Math.max(1, Math.round(total * bite));
       monster.hp -= dmg;
+      monster.lastHit = heaviestType(slices.values()) ?? dmgType;
       noteOutgoing(state, dmg);
       const harvested = enemyTookDamage(state, monster, new Map([[dmgType, dmg]]));
       if (harvested > 0) {
@@ -4217,6 +4284,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
           const slice = monsterSlice(other, dmgType, hitSource, raw * splash, penetration);
           const spill = Math.max(1, Math.round(slice.dealt));
           other.hp -= spill;
+          other.lastHit = dmgType;
           feed(state, `↯ The blow carries into the ${other.name} for ${spill}`, {
             label: 'Spill from your blow',
             target: other.name,
@@ -4423,6 +4491,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       );
       const riposte = Math.max(1, Math.round(slice.dealt));
       e.hp -= riposte;
+      e.lastHit = slice.type;
       // Remember how hard that blow was coming in, for a deflection technique
       // to answer with (see TechniqueMove.preventedMult). No variance roll:
       // the blow never landed, so there is nothing to roll — this is the

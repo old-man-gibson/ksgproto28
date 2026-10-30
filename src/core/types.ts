@@ -2099,6 +2099,14 @@ export interface DropEntry {
   weight: number;
   /** Quantity range, default [1,1]. Gold amount for kind 'gold'. */
   qty?: [number, number];
+  /**
+   * A method drop: the row is in the roll only when the killing blow was one
+   * of these types (`MonsterInstance.lastHit`; damage over time counts as its
+   * condition's type). On any other kill its weight rolls as `nothing`, so the
+   * row keeps its authored share and the drought ledger never sees it: a sword
+   * kill banks no miss toward the next fire kill (PITFALLS §7).
+   */
+  killedBy?: DamageType[];
 }
 
 export interface DropTable {
@@ -2308,6 +2316,14 @@ export interface MonsterInstance {
    * one. Transient like the encounter.
    */
   mana?: number;
+  /**
+   * The type of the last damage that took HP off this specimen: the killing
+   * blow's type once it is down, read by `DropEntry.killedBy`. A blow of
+   * several types is remembered by the one that dealt the most. Stamped beside
+   * every HP decrement in combat, never in `monsterSlice` (pure, used for
+   * previews). Transient like the encounter.
+   */
+  lastHit?: DamageType;
   xp: Big;
   gold: Big;
 }
@@ -4432,6 +4448,16 @@ export interface SpotEncounter {
    * Content resurrects it by resetting the counter (see `SpotFind.stat`).
    */
   once?: boolean;
+  /**
+   * The line's level follows a counter and the character level (floor 19's
+   * judge: each grave good taken raises it). With k = `stats[stat]` and P =
+   * `state.level`, a rolled level L spawns at
+   * `min(ceiling, L + max(k, round(k × share × P)))` (levels.ts
+   * `encounterLevel`, which the bestiary's level range reads too). Pinned
+   * `override` spawns ignore it. Both validation layers demand share > 0 and
+   * ceiling ≥ `level[1]`.
+   */
+  levelRise?: { stat: string; share: number; ceiling: number };
 }
 
 export interface SpotDef {
@@ -4690,6 +4716,15 @@ export interface FloorDef {
    * (systems/levels.ts). The run's record is the `level:floor:<id>` counter.
    */
   clearXp?: number;
+  /**
+   * The soft transition into the next rung (FLOOR_IDEAS §1.5). `verb` is the
+   * climb log's word for the step from this floor to the one directly above
+   * it (default 'Climbing'): floor 20 → 21 is 'Sailing'. `climbTo` reads it
+   * only on a climb of exactly one rung up from this floor. A literal, not
+   * prose: the text split takes only desc, dialogue and hint. A seam reads and
+   * writes no flag and moves no one.
+   */
+  seam?: { verb?: string };
   /**
    * Only the owner may enter. Flavour today, since the game is single-player,
    * but it is the field content should read rather than hardcoding the base's

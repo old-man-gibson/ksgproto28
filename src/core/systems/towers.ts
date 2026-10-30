@@ -113,7 +113,20 @@ export function climbTo(state: GameState, bus: EventBus, floorId: string | null)
   const floor = FLOORS[floorId];
   if (!floor || floor.towerId !== tower.id || !floor.landing) return false;
   if (!floorUnlocked(state, floor)) return false;
-  return ride(state, bus, tower, floor.landing, rungIndex(floor));
+  const toIndex = rungIndex(floor);
+  return ride(state, bus, tower, floor.landing, toIndex, seamVerb(state, toIndex));
+}
+
+/**
+ * The climb log's word for the step out of the floor underfoot into the rung
+ * directly above it (`FloorDef.seam`), or undefined. Only a climb of exactly
+ * one rung reads it: a climb can skip rungs, and the seam is the step between
+ * two neighbours.
+ */
+function seamVerb(state: GameState, toIndex: number): string | undefined {
+  const here = currentFloor(state);
+  if (!here || toIndex !== standingIndex(state) + 1) return undefined;
+  return here.seam?.verb;
 }
 
 /** Ride the stack to a band's hub (band 3's castle) once the band is open. */
@@ -125,7 +138,14 @@ export function climbToHub(state: GameState, bus: EventBus, bandId: string): boo
   return ride(state, bus, tower, band.hub, bandBaseIndex(band));
 }
 
-function ride(state: GameState, bus: EventBus, tower: TowerDef, to: string, toIndex: number): boolean {
+function ride(
+  state: GameState,
+  bus: EventBus,
+  tower: TowerDef,
+  to: string,
+  toIndex: number,
+  seam?: string,
+): boolean {
   if (to === state.spot) return false;
   const fromIndex = standingIndex(state);
 
@@ -143,7 +163,7 @@ function ride(state: GameState, bus: EventBus, tower: TowerDef, to: string, toIn
   state.travel = { from: state.spot, to, ticksLeft: ticks, total: ticks };
 
   const dest = getSpot(to);
-  const verb = climbVerb(tower, fromIndex, toIndex);
+  const verb = seam ?? climbVerb(tower, fromIndex, toIndex);
   bus.emit({ type: 'log', msg: text('towers.moving', { verb, icon: dest.icon, name: dest.name }), kind: 'travel' });
   return true;
 }

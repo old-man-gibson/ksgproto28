@@ -687,6 +687,17 @@ describe('world graph', () => {
           `${spot.id}/${e.monsterId}: window needs min < max`,
         ).toBeGreaterThan(e.window.min);
       }
+      // A rising line (SpotEncounter.levelRise): a share of 0 or less never
+      // rises, and a ceiling under the authored range would pull the line
+      // DOWN with nothing taken. Mirrored in forge/lib/validate.ts.
+      for (const e of spot.encounters ?? []) {
+        if (!e.levelRise) continue;
+        expect(e.levelRise.share, `${spot.id}/${e.monsterId}: levelRise.share must be > 0`).toBeGreaterThan(0);
+        expect(
+          e.levelRise.ceiling,
+          `${spot.id}/${e.monsterId}: levelRise.ceiling must be at least level[1]`,
+        ).toBeGreaterThanOrEqual(e.level[1]);
+      }
       const bosses = (spot.encounters ?? []).filter((e) => e.boss);
       if (bosses.length) {
         // COMPLETABILITY: the clock is not a wall (time passes on its own),

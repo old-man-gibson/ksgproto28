@@ -274,7 +274,7 @@
       {:else}
         {@const def = selected}
         {@const art = enemyArt(def)}
-        {@const profile = monsterProfile(def.id)}
+        {@const profile = monsterProfile(def.id, gs)}
         {@const offAbilities = offensiveAbilities(def)}
         {@const defAbilities = defensiveAbilities(def)}
 

@@ -426,6 +426,16 @@ export function validate(store: S): Issue[] {
         err('spot', spot.id, `${e.monsterId}: ambush window needs 0 < min < max`, ['encounters']);
       }
     }
+    // A rising line (SpotEncounter.levelRise). Mirrors tests/content.test.ts.
+    for (const e of spot.encounters ?? []) {
+      if (!e.levelRise) continue;
+      if (!(e.levelRise.share > 0)) {
+        err('spot', spot.id, `${e.monsterId}: levelRise.share must be > 0`, ['encounters']);
+      }
+      if (!(e.levelRise.ceiling >= e.level?.[1])) {
+        err('spot', spot.id, `${e.monsterId}: levelRise.ceiling must be at least level[1]`, ['encounters']);
+      }
+    }
     const bossEntries = (spot.encounters ?? []).filter((e) => e.boss);
     if (bossEntries.length && !bossEntries.some((e) => !e.window)) {
       err('spot', spot.id, 'every boss hides behind a power window — keep one windowless keeper', ['encounters']);
