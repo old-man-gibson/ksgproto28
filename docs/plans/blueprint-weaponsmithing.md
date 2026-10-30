@@ -534,7 +534,7 @@ Per piece: **one ledger rite and one lens rite**, each id once, stored as
 
 | id | sky | fits | cost | effect |
 |---|---|---|---|---|
-| night_anneal | clear, 22:00–04:00, not indoors | any | — | ledger: temper budget +2 (renamed from moon-anneal: the world has no moon) |
+| night_anneal | clear, 22:00–04:00, not indoors | any | — | ledger: temper budget +2 (was moon-anneal; the sky has no moon in code yet, and the user ruled 2026-10-29 that the world has one, FLOOR_IDEAS.md idea 1 Q2) |
 | cold_set | freezing band, or spot tag `cold` | any | — | ledger: binds the axis with the largest net; its tier cannot fall, anneal skips it, and its attribute marks drop to 2 / 5 / 8 |
 | rain_hard | rain | weapon | 2 temper | lens: penetration +1 pp per Edge+ point, max 4 |
 | frost_knit | freezing | armour, shield | 2 temper | lens: elemental resist +1 pp per Body+ point, max 5, × slot share |

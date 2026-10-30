@@ -116,6 +116,41 @@ allocating a fresh object per modifier — on every call. Nothing is memoized. (
 tables do exist elsewhere: bestiary tag sets, carved runes, resolved spells. Just not
 here.)
 
+> **Re-measured 2026-10-29, after fix 2 shipped** (`getDerivedStats` memoized
+> behind `modFingerprint`, `systems/derived.ts`, test `tests/derivedcache.test.ts`).
+> Same probe, plus a real `runOfflineProgress(game, 8h)` call:
+>
+> | | |
+> | --- | ---: |
+> | `getDerivedStats` — developed, cache hit | 21.2 µs |
+> | `computeDerivedStats` — developed, uncached | 107.5 µs |
+> | one tick — hunting `the_cages`, developed | 114.4 µs |
+> | one tick — hunting `f4_woods_edge`, developed | 99.4 µs |
+> | one tick — no activity, developed | 29.2 µs |
+> | **8 h catch-up, wall clock, `the_cages`** | **28.6 s** |
+> | **8 h catch-up, wall clock, `f4_woods_edge`** | **17.6 s** |
+>
+> **The memo did not move the tick.** Cache hit rate is 95% (9,479 misses in
+> 186,819 calls over 100k hunting ticks), but a *hit* still costs ~21 µs because
+> `modFingerprint` rebuilds a string of every skill, achievement, attribute and
+> title on every call (~1.9 calls a tick). CPU profile of 100k hunting ticks,
+> shares of tick time:
+>
+> | | share |
+> | --- | ---: |
+> | `getDerivedStats`, all of it | ~58% |
+> | — of which `modFingerprint` building the key | ~24% |
+> | — of which cache misses (fight start/end, statuses) | ~25% |
+> | — of which the uncached `vsTags` path from `tickCombat` | ~9% |
+> | `conditionMet` → `attrValue` → `collectBaseMods`, uncached | ~16% |
+> | `onKill` (loot, XP, events) | ~25% |
+>
+> So the next cheap wins are step-1 class, before chunking: `attrValue` in
+> condition checks should read the cached entry's effective attributes, and the
+> fingerprint should stop re-spelling slow-moving sources each call (a version
+> counter bumped where skills, achievements, titles and attributes change).
+> Fix 3 (chunking) has not shipped.
+
 ### 1.3 Where it actually hurts: offline catch-up
 
 `offline.ts:47` is a synchronous loop of up to **288,000 ticks** (8 h cap ÷ 100 ms):
