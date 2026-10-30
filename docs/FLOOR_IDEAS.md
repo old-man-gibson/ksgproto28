@@ -184,7 +184,7 @@ constraints, condensed from the post:
   stronghold has to keep a clearable floor 11 until it prestiges.
 - **The base today** is the hold: region `the_hold`, 25 `base_*` rooms, a
   door at the Foot that opens at `prestige:count` 1, which band 2 now reaches
-  at floor 6. A para-floor base reached from floor 11 overlaps it (§5.2 Q6).
+  at floor 6. A para-floor base reached from floor 11 overlaps it (§5.3 Q3, §5.2 Q2).
 - **Narrow build.** COMPLETABILITY §6a requires basic use of about half the
   eight core systems; "narrow" is read as the narrowest legal pick, which is
   what John measures. A narrower John would contradict §6a.
