@@ -1756,7 +1756,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   // pens, kitchens, shrine) and, down the drop, the deep encampment. Each of
   // the three sabotages takes a level off the warchief (11 with none, 8 with
   // all three), the floor 3 pattern. Arriving in the great hall is the fight.
-  // Only the Mouth is under the sky; every other spot is roofed ('indoor').
+  // Under the sky (user, 2026-10-29): the Mouth, the Pens and the Shrine. The
+  // Tunnels, Kitchens and Great Hall are roofed ('indoor'); the Drop is dark.
   f6_warren_mouth: {
     id: 'f6_warren_mouth',
     name: 'The Warren Mouth',
@@ -1793,7 +1794,6 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🐗',
     areaId: 'ascent_f6_area',
     map: { x: 18, y: 20 },
-    tags: ['indoor'],
     activities: [{ id: 'explore', kind: 'explore', name: 'Break Open the Pens', icon: '🔓' }],
     exploreTicks: 300,
     finds: [
@@ -1823,7 +1823,6 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🗿',
     areaId: 'ascent_f6_area',
     map: { x: 50, y: 34 },
-    tags: ['indoor'],
     activities: [
       { id: 'hunt', kind: 'hunt', name: 'Clear the Shrine', icon: '⚔️' },
       { id: 'explore', kind: 'explore', name: 'Desecrate the Shrine', icon: '🔥' },

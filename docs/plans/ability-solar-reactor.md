@@ -54,8 +54,8 @@ to the chassis unions.
 
 Where the sun is, in the live world: every banded floor (f1-f3) is in
 `the_ascent`, which is sheltered (locations.data.ts:7), so the ladder is
-sunless. (Superseded 2026-10-29: floors 4–5 and the Warren Mouth on floor 6
-are open sky through `AreaDef.sheltered: false`, the per-area override this
+sunless. (Superseded 2026-10-29: floors 4–5 and floor 6's Mouth, Pens and
+Shrine are open sky through `AreaDef.sheltered: false`, the per-area override this
 paragraph's `open_sky` idea asked for; table in WEATHER.md, "Moonlight".) Threshold's outdoor spots — the Foot among them — are open sky; many
 Threshold spots are tagged `indoor` and are not. Floor 0's field is open sky
 too, but it sits behind a one-way gate (locations.data.ts:62) and is

@@ -217,12 +217,13 @@ describe('moonlight', () => {
 
 describe('open sky in the tower (user ruling, 2026-10-29)', () => {
   const seed = worldSeedOf(20260804);
-  const ROOFED_F6 = ['f6_tunnels', 'f6_pens', 'f6_kitchens', 'f6_shrine', 'f6_great_hall'];
+  const OPEN_F6 = ['f6_warren_mouth', 'f6_pens', 'f6_shrine'];
+  const ROOFED_F6 = ['f6_tunnels', 'f6_kitchens', 'f6_great_hall'];
 
-  it('band 1 keeps the roof; floors 4 and 5 and the Warren Mouth open onto the sky over the same pin', () => {
+  it("band 1 keeps the roof; floors 4 and 5 and floor 6's open spots share the sky over the same pin", () => {
     expect(skyRegionOf('f1_landing')).toBe(REGIONS.the_ascent);
     expect(skyRegionOf('f1_landing')?.sheltered).toBe(true);
-    for (const spot of ['f4_treeline', 'f4_ravine_floor', 'f5_bog', 'f5_back_door', 'f6_warren_mouth']) {
+    for (const spot of ['f4_treeline', 'f4_ravine_floor', 'f5_bog', 'f5_back_door', ...OPEN_F6]) {
       const sky = skyRegionOf(spot)!;
       expect(sky.sheltered, spot).toBe(false);
       expect(sky.world, spot).toEqual(REGIONS.the_ascent.world);
@@ -252,8 +253,12 @@ describe('open sky in the tower (user ruling, 2026-10-29)', () => {
     expect(moonlightOn(f1.state)).toBeNull();
   });
 
-  it('floor 6: the Mouth sees the night, the roofed warren does not, the caves stay dark', () => {
-    expect(moonlightOn(world('f6_warren_mouth', at(3, 23)).state)).not.toBeNull();
+  it('floor 6: the Mouth, the Pens and the Shrine see the night, the roofed warren does not, the caves stay dark', () => {
+    for (const spot of OPEN_F6) {
+      const { state } = world(spot, at(3, 23));
+      expect(moonlightOn(state), spot).not.toBeNull();
+      expect(darknessFactor(state), spot).toBeGreaterThan(0);
+    }
     for (const spot of ROOFED_F6) {
       const { state } = world(spot, at(3, 23));
       expect(darknessFactor(state), spot).toBe(0);

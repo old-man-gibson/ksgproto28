@@ -242,9 +242,9 @@ three boss rooms have a `fightLimit` (1). Gates read `kills:tag:goblin`.
   raid parties as their own encounter, and knowledge carrying across prestige
   are open. There is no forest scene: floor 4's banner falls back to the town.
 - **Open sky (user, 2026-10-29, branch `moon-phase`):** floors 4 and 5 are
-  under the sky (the Hollows excepted), floor 6 only at the Mouth as a first
-  pass. Weather, night darkness and moonlight now reach them. Table in
-  WEATHER.md, "Moonlight".
+  under the sky (the Hollows excepted); on floor 6 the Mouth, the Pens and
+  the Shrine are, the Tunnels, Kitchens and Great Hall are not. Weather, night
+  darkness and moonlight now reach them. Table in WEATHER.md, "Moonlight".
 - **Tuning note (user, 2026-10-25):** smithing XP is too fast (one iron
   nodachi is about seven Smithing levels), and the Growth panel can show skill
   XP ×2.5 on a modest save. Tuning later, not part of this card.

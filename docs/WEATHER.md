@@ -99,7 +99,7 @@ part, and each band-3 direction (floors 7–10) has open-sky areas. Built:
 | floors 1–3 | roofed | the Ascent region is `sheltered` |
 | floor 4, the Greenwood | open | `ascent_f4_area` sets `sheltered: false` |
 | floor 5, the Mire | open, except the Hollows | `ascent_f5_area` sets `sheltered: false`; the Hollows carry `dark` and `indoor` |
-| floor 6, the Warren | the Mouth only | `ascent_f6_area` sets `sheltered: false`; every other spot carries `indoor`, the Drop `dark` and `indoor` |
+| floor 6, the Warren | the Mouth, the Pens, the Shrine | `ascent_f6_area` sets `sheltered: false`; the Tunnels, Kitchens and Great Hall carry `indoor`, the Drop `dark` and `indoor` |
 | floors 7–10 | open areas per direction | unbuilt; mark them when built (plans/bands-2-3.md) |
 | Threshold, the Holding Level | lamplight | `settlement` |
 | the Hold | roofed | `sheltered`; the yard is a TODO in locations.data.ts |
@@ -111,8 +111,8 @@ Ascent's pin and 'plains' terrain. Open sky is the whole package, not
 moonlight alone: weather in the header chip and the Weathersense forecast,
 resist exposure from the weather, Weathersense watching XP, night darkness
 (combat penalties and Darkvision training), and moonlight. Floor 6's split
-is a first pass (Mouth open, the rest roofed) pending the user's answer on
-the Pens, Kitchens and Shrine.
+is the user's (2026-10-29): the Pens and the Shrine are open, the Kitchens
+are not.
 
 **The rule.** Moonlight lowers the darkness of the open night sky:
 
@@ -178,8 +178,8 @@ same nights. Darkness is applied at roll time in combat, not through
 `getDerivedStats`, so the derived-stats fingerprint is untouched.
 
 **Cost.** `darknessFactor` runs per attack roll; under the open night sky it
-now samples the weather each time, which floors 4–5 and the Warren Mouth pay
-at night. If it shows up in profiling, memoize the weather kind per region per
+now samples the weather each time, which floors 4–5 and floor 6's open spots
+pay at night. If it shows up in profiling, memoize the weather kind per region per
 game minute.
 
 **Tests** (tests/exposure.test.ts, tests/keeper.test.ts): all moons new gives
@@ -190,7 +190,8 @@ overcast one is not; a moonlit night teaches Darkvision less; a
 `daypart: 'night'` encounter still rolls under a full moon. The tower's open
 floors: band 1 keeps the roof and the open floors share the Ascent's pin;
 floor 4 has weather and floor 1 is always 'still'; a night on floor 4 is dark
-and moonlit while floor 1 is not; on floor 6 only the Mouth sees the night;
+and moonlit while floor 1 is not; on floor 6 the Mouth, Pens and Shrine see
+the night and the Tunnels, Kitchens and Great Hall do not;
 rain on floor 5 trains the Bog but not the Hollows, the Tunnels or floor 1.
 
 **Decisions (user, 2026-10-29, defaults taken):** build now, inert until an
