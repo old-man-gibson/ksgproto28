@@ -52,11 +52,18 @@ time instead; nothing resolves.
    when a cannonball is spent; a powder charge adds 1 hit; a traveler's
    ration (lowest grade first) adds 1 morale. One of each is spent per leg.
 3. The side's prey killed at this water during the leg subtract (online
-   only).
+   only). A kill on the tick a leg ends is that leg's (`killLeg`): leg k
+   takes offsets (300k, 300k + 300], leg 0 from offset 0.
 4. Crates credited online: `sea:crates:won`, then gold (merchants, at
    `dealPrice`) or one cargo material per crate from the water's row.
-   Offline (catch-up, `Game.catchingUp`): `sea:crates:offline`, one cargo per
-   4, never `sea:crates:won`, so a night away passes no clear.
+   Offline: `sea:crates:offline`, one cargo per 4, never `sea:crates:won`, so
+   a night away passes no clear. Offline is every tick run through
+   `catchUpTicks` (save/offline.ts), which sets `Game.catchingUp`: the
+   summarised catch-up and the UI's quiet short-gap one alike.
+
+The battery's three items are worth no more than their recipe's inputs
+(cannon 40, cannonball 2, powder charge 10), so buying the inputs to craft
+and sell never pays.
 
 The merchants' price per crate is 9 gold plus each Speechcraft threshold met:
 5 (duty waived, +1), 15 (a broker, +2), 30 (haggled, +3).

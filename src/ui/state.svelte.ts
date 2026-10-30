@@ -10,7 +10,7 @@ import {
   saveToStorage,
   serialize,
 } from '../core/save/save';
-import { OFFLINE_CAP_MS, runOfflineProgress, type OfflineSummary } from '../core/save/offline';
+import { OFFLINE_CAP_MS, catchUpTicks, runOfflineProgress, type OfflineSummary } from '../core/save/offline';
 import { dropFight, isKept, keepFight, NOTEBOOK_MAX } from '../core/systems/ledger';
 import { setSkipSettling } from '../core/systems/mutagens';
 import type { SortMode } from '../core/systems/inventory';
@@ -127,8 +127,8 @@ function runCatchup(elapsedMs: number, quietSmallGaps: boolean): OfflineSummary 
   const before = plain.totalTicks;
   const summary = runOfflineProgress(worker, elapsedMs);
   if (!summary && quietSmallGaps) {
-    const ticks = Math.floor(Math.min(elapsedMs, OFFLINE_CAP_MS) / MS_PER_TICK);
-    for (let i = 0; i < ticks; i++) worker.tick();
+    // Still time away, so still catch-up for the convoys (catchUpTicks).
+    catchUpTicks(worker, Math.floor(Math.min(elapsedMs, OFFLINE_CAP_MS) / MS_PER_TICK));
   }
   if (plain.totalTicks === before) return summary; // nothing ran — leave gs untouched
   Object.assign(gs, plain);

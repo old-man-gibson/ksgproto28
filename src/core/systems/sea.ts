@@ -114,6 +114,20 @@ export function legEnding(totalTicks: number): { convoy: number; leg: number } |
   return { convoy, leg: offset / SEA.legTicks - 1 };
 }
 
+/**
+ * The leg a kill made on this tick counts toward: the leg that resolves on
+ * this tick if one does (kills land before `tickSea` in Game.advance, so a
+ * killing blow on the last tick of a leg is that leg's), else the leg in
+ * progress; null in port. Leg k so takes kills at offsets (300k, 300k + 300],
+ * leg 0 from offset 0.
+ */
+export function killLeg(totalTicks: number): { convoy: number; leg: number } | null {
+  const ending = legEnding(totalTicks);
+  if (ending) return ending;
+  const { convoy, leg } = seaClock(totalTicks);
+  return leg === null ? null : { convoy, leg };
+}
+
 /** FNV-1a with a murmur finaliser: a stable, well-mixed 32-bit hash of a string. */
 function hash(s: string): number {
   let h = 0x811c9dc5;
@@ -398,9 +412,9 @@ export function registerSeaListeners(state: GameState, bus: EventBus): void {
     const id = ev.monster.defId;
     if (id === side.mission.monsterId && state.spot === side.mission.spot) setStat(state, bus, SEA_MISSION_DONE, 1);
     if (!isWater(state.spot) || !side.prey.includes(id)) return;
-    const clock = seaClock(state.totalTicks);
-    if (clock.leg === null) return;
-    const legId = clock.convoy * SEA.legs + clock.leg + 1;
+    const at = killLeg(state.totalTicks);
+    if (!at) return;
+    const legId = at.convoy * SEA.legs + at.leg + 1;
     const legKey = killKey(state.spot, 'leg');
     const killsKey = killKey(state.spot, 'kills');
     if (state.stats[legKey] !== legId) {

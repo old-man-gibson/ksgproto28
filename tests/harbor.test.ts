@@ -1,7 +1,10 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { EventBus } from '../src/core/engine/events';
-import { CONVOYS, FLOORS, NPCS, SEA_SIDES, SPOTS } from '../src/core/registry';
+import { MS_PER_TICK } from '../src/core/engine/loop';
+import { CONVOYS, FLOORS, NPCS, RECIPES, SEA_SIDES, SPOTS } from '../src/core/registry';
 import {
   SEA,
   SEA_CRATES_OFFLINE,
@@ -18,7 +21,9 @@ import {
   dealPrice,
   fireBattery,
   heldCount,
+  killLeg,
   legEnding,
+  legKills,
   legRoll,
   registerSeaListeners,
   resolveLeg,
@@ -33,8 +38,12 @@ import { eligibleEncounters, fightsKey } from '../src/core/systems/combat';
 import { visibleEdges } from '../src/core/systems/locations';
 import { conditionsMet } from '../src/core/systems/conditions';
 import { floorCleared, floorUnlocked } from '../src/core/systems/ladder';
-import { runOfflineProgress } from '../src/core/save/offline';
-import type { Game } from '../src/core/game';
+import { catchUpTicks, runOfflineProgress } from '../src/core/save/offline';
+import { Game } from '../src/core/game';
+import { buyPrice, resaleCeiling } from '../src/core/systems/shops';
+import { materialSellPrice } from '../src/core/systems/equipment';
+import { getDerivedStats } from '../src/core/systems/derived';
+import { clearSpotIds } from '../src/core/systems/floorRules';
 import type { GameState, MonsterInstance } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
@@ -282,10 +291,19 @@ describe('the side pick', () => {
     expect(seaSide(createInitialState(0))).toBeNull();
   });
 
-  it('each water rolls only the side’s own crews; before a pick, sea monsters only', () => {
+  it('each water rolls only the side’s own crews; before a pick, sea monsters at a clear water and nothing elsewhere', () => {
+    // A clear water carries a no-side line so its table never empties (the
+    // clear-table rule); the others are reached only after floor 11's clear,
+    // which needs a side, so they carry none.
+    const clearWaters = new Set(Object.values(FLOORS).flatMap((f) => clearSpotIds(f)));
     for (const water of ['f11_roadstead', 'f12_strait', 'f12_far_water', 'f13_picket', 'f13_blockade']) {
-      const none = harborRun();
-      expect(eligibleEncounters(none, SPOTS[water]).every((e) => e.monsterId === 'ph_reef_eel'), water).toBe(true);
+      const noSide = eligibleEncounters(harborRun(), SPOTS[water]).map((e) => e.monsterId);
+      if (clearWaters.has(water)) {
+        expect(noSide.length, `${water}: no side`).toBeGreaterThan(0);
+        for (const id of noSide) expect(id, `${water}: no side`).toBe('ph_reef_eel');
+      } else {
+        expect(noSide, `${water}: no side`).toEqual([]);
+      }
       for (const side of SIDES) {
         const s = harborRun();
         join(s, side);
@@ -367,6 +385,33 @@ describe('the convoy at a water', () => {
     atLegEnd(s, 'f11_roadstead', 5, 0);
     tickSea(s, bus, false);
     expect(cargoBefore(s, SEA_SIDES.merchants, CONVOYS.f11_roadstead, 5, 1)).toEqual(expected);
+  });
+
+  it('a killing blow on the tick a leg ends counts for that leg, the fourth included', () => {
+    const s = harborRun();
+    const bus = new EventBus();
+    registerSeaListeners(s, bus);
+    join(s, SEA_SIDES.merchants, bus);
+    const row = CONVOYS.f11_roadstead;
+    const prey = { defId: 'ph_reef_eel' } as MonsterInstance;
+    let cargo = startingCargo('convoy');
+    for (let leg = 0; leg < SEA.legs; leg++) {
+      // The tick that ends `leg`: kills land before tickSea (Game.advance).
+      atLegEnd(s, row.id, 4, leg);
+      expect(killLeg(s.totalTicks)).toEqual({ convoy: 4, leg });
+      bus.emit({ type: 'kill', monster: prey, xp: 0 });
+      expect(legKills(s, row.id, 4, leg), `leg ${leg}`).toBe(1);
+      tickSea(s, bus, false);
+      cargo = resolveLeg('convoy', legRoll(row, 4, leg), cargo, 1, 1).cargo;
+      expect(cargoBefore(s, SEA_SIDES.merchants, row, 4, leg + 1), `after leg ${leg}`).toEqual(cargo);
+    }
+    // The fourth leg ends as the convoy reaches port; that kill was still the leg's.
+    expect(seaClock(s.totalTicks).leg).toBeNull();
+    expect(s.stats[SEA_CRATES_WON] ?? 0).toBe(cargo.crates);
+    // One tick later the convoy is in port: a kill counts for no leg.
+    expect(killLeg(s.totalTicks + 1)).toBeNull();
+    // Leg 0 opens the convoy at offset 0.
+    expect(killLeg(5 * SEA.convoyTicks)).toEqual({ convoy: 5, leg: 0 });
   });
 
   it('a won fight on a water counts under fights:<water>, and the water never clears', () => {
@@ -458,6 +503,70 @@ describe('offline: the convoy coarsens', () => {
     expect(seen.every(Boolean)).toBe(true);
     expect(game.catchingUp).toBe(false);
   });
+
+  /**
+   * The UI's quiet path (ui/state.svelte.ts runCatchup): a gap under a minute
+   * gets no summary (runOfflineProgress returns null) but is still simulated.
+   * Those ticks are time away too. Mirrored here: a navy player hunting the
+   * roadstead with a full hold, the fourth leg ending inside a 30 s gap.
+   */
+  it('a short gap simulated without a summary is still offline: no crates won', () => {
+    const s = harborRun();
+    join(s, SEA_SIDES.navy);
+    s.level = 90; // strong enough to stand on the water through the gap
+    s.spot = 'f11_roadstead';
+    s.activity = 'hunt';
+    s.materials[SEA.cannon] = 4;
+    s.materials[SEA.shot] = 10;
+    s.materials[SEA.powder] = 10;
+    s.stock[SEA.ration] = { c: 10 };
+    s.totalTicks = 2 * SEA.convoyTicks + SEA.legs * SEA.legTicks - 10;
+    const worker = new Game(s);
+    const gapMs = 30_000;
+    expect(runOfflineProgress(worker, gapMs)).toBeNull();
+    catchUpTicks(worker, Math.floor(gapMs / MS_PER_TICK));
+    expect(s.stats['sea:f11_roadstead:leg'], 'the fourth leg resolved inside the gap').toBe(SEA.legs);
+    expect(s.stats[SEA_CRATES_WON] ?? 0).toBe(0);
+    expect(s.stats[SEA_CRATES_OFFLINE]).toBeGreaterThan(0);
+    expect(worker.catchingUp).toBe(false);
+  });
+
+  it('the UI runs every catch-up tick through catchUpTicks, never a bare tick loop', () => {
+    const src = fs.readFileSync(path.resolve(__dirname, '../src/ui/state.svelte.ts'), 'utf8');
+    expect(src).toContain('catchUpTicks(worker');
+    expect(src).not.toMatch(/worker\.tick\(\)/);
+  });
+});
+
+describe('the battery’s hold mints nothing', () => {
+  /**
+   * The no-arbitrage law (shops.ts buyPrice) applied to the three new
+   * recipes: buy every input at the cheapest counter, craft, sell the output.
+   * An input no vendor sells is priced at the least any counter could ever
+   * ask for it (its resale + 1, the buyPrice floor), so a vendor added later
+   * cannot open a mint either.
+   */
+  function inputCost(state: GameState, id: string, goldGain: number): number {
+    const line = { kind: 'material' as const, id };
+    const vendors = Object.values(NPCS).filter((n) => n.shop?.lines.some((l) => l.kind === 'material' && l.id === id));
+    const prices = vendors.map((n) => buyPrice(state, n.id, line, goldGain));
+    return prices.length ? Math.min(...prices) : resaleCeiling(state, line, goldGain) + 1;
+  }
+
+  for (const cha of [1, 30, 60]) {
+    it(`buying the inputs, crafting and selling never profits at Charisma ${cha}`, () => {
+      const s = fresh();
+      s.attrs.cha.level = cha;
+      for (const n of Object.values(NPCS)) s.stats[`met:${n.id}`] = 1; // every counter's best price
+      const goldGain = getDerivedStats(s).goldGain;
+      for (const id of ['ship_cannon', 'cannonball', 'powder_charge']) {
+        const r = RECIPES[id];
+        const cost = r.cost.reduce((n, c) => n + c.qty * inputCost(s, c.id, goldGain), 0);
+        const revenue = (r.result.qty ?? 1) * materialSellPrice(s, r.result.id, goldGain);
+        expect(revenue - cost, `${id} at Charisma ${cha} (goldGain ${goldGain.toFixed(2)})`).toBeLessThanOrEqual(0);
+      }
+    });
+  }
 });
 
 describe('floors 11 to 14, walked by each side', () => {

@@ -846,17 +846,20 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
   // ==== HARBOR: materials (2026-10-30; the harbor builder's section) ====
   // The battery's hold (sea.data.ts SEA, systems/sea.ts batteryOf): cannons are
   // kept, shot and powder are spent one a leg. Made at the quay on floor 11.
+  // Worth no more than their recipe's inputs (6 iron ingots = 48; 1 ingot =
+  // 8 for 3 cannonballs; 3 biomatter + 1 iron scrap = 20 for 2 charges), so
+  // buying the inputs to craft and sell never pays (tests/harbor.test.ts).
   ship_cannon: {
     id: 'ship_cannon',
     name: 'Ship’s Cannon',
     icon: '💣',
-    value: 120,
+    value: 40,
   },
   cannonball: {
     id: 'cannonball',
     name: 'Cannonball',
     icon: '⚫',
-    value: 4,
+    value: 2,
   },
   powder_charge: {
     id: 'powder_charge',
