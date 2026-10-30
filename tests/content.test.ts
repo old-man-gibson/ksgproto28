@@ -60,7 +60,7 @@ import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCES } from '../src/core/data/resources.data';
 import { XP_BASE, XP_RATE } from '../src/core/data/progression.data';
 import { TERRAIN_PROFILES } from '../src/core/data/climate.data';
-import { offLadderDoor } from '../src/core/data/towers.data';
+import { SPINE_EXEMPT, offLadderDoor } from '../src/core/data/towers.data';
 import { SEA_CRATES_OFFLINE, SEA_CRATES_WON, SEA_MISSION_DONE } from '../src/core/data/sea.data';
 import { seaContentIssues } from '../src/core/systems/seaValidation';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
@@ -2277,13 +2277,18 @@ describe('towers, bands & floors', () => {
     );
 
   it('every banded floor has a spine: its clear names a spot to measure from', () => {
-    // A floor whose clear is a quest turn-in names no spot and skips the spine
-    // rules below. None does today; list it here when one is added, so the
-    // exemption is a decision and not an accident.
+    // A floor whose clear names no spot (a quest turn-in, a stamped flag) skips
+    // the spine rules below. Each one is listed here and in towers.data.ts
+    // SPINE_EXEMPT, with its reason, so the exemption is a decision and not an
+    // accident:
+    // - ascent_f14: the harbor's final mission (FLOOR_IDEAS.md idea 3, ruling
+    //   Q2). Its clear is any one of four side wings, stamped as
+    //   flag:sea:14:done by the side's boss kill (systems/sea.ts).
     const skipped = reports()
       .filter(({ report }) => report.skipped !== undefined)
       .map(({ floor, report }) => `${floor.id} (${report.skipped})`);
-    expect(skipped, 'floors whose spine rules did not run').toEqual([]);
+    expect(skipped, 'floors whose spine rules did not run').toEqual(['ascent_f14 (no-clear-spot)']);
+    expect(Object.keys(SPINE_EXEMPT), 'the forge stays quiet for exactly these').toEqual(['ascent_f14']);
     expect(issuesOf('spine')).toEqual([]);
   });
 

@@ -255,6 +255,65 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   },
 
   // ==== HARBOR: NPCs (skeleton 2026-10-30; the harbor builder's section) ====
+  // The four recruiters on floor 11's berths (sea.data.ts SEA_SIDES `giver`).
+  // Each gives its side's join quest, whose acceptance picks the side for the
+  // run, then the side's preparation for its floor-14 mission. Placeholders.
+  f11_factor: {
+    id: 'f11_factor',
+    name: 'The Factor (placeholder)',
+    icon: '⚖️',
+    spotId: 'f11_merchant_berth',
+    quests: ['f11_join_merchants', 'f11_merchants_clearance'],
+  },
+  f11_bosun: {
+    id: 'f11_bosun',
+    name: 'The Bosun (placeholder)',
+    icon: '🏴‍☠️',
+    spotId: 'f11_smugglers_berth',
+    quests: ['f11_join_pirates', 'f11_pirates_signal'],
+  },
+  f11_letter_agent: {
+    id: 'f11_letter_agent',
+    name: 'The Letter Agent (placeholder)',
+    icon: '📜',
+    spotId: 'f11_privateer_berth',
+    quests: ['f11_join_privateers', 'f11_privateers_letter'],
+  },
+  f11_lieutenant: {
+    id: 'f11_lieutenant',
+    name: 'The Lieutenant (placeholder)',
+    icon: '⚓',
+    spotId: 'f11_navy_berth',
+    quests: ['f11_join_navy', 'f11_navy_lure'],
+  },
+  // Floor 13's Last Port. The pilot's passage opens the Pilot's Channel into
+  // the blockade (the approach: blockaders surprised). The harbor master's
+  // clearance is the merchants' gold sink before the closed port.
+  f13_pilot: {
+    id: 'f13_pilot',
+    name: 'The Pilot (placeholder)',
+    icon: '🧭',
+    spotId: 'f13_landing',
+    quests: [],
+    shop: { name: 'Passage', lines: [{ kind: 'material', id: 'pilot_passage' }] },
+  },
+  f13_harbor_master: {
+    id: 'f13_harbor_master',
+    name: 'The Harbor Master (placeholder)',
+    icon: '🗝️',
+    spotId: 'f13_landing',
+    quests: [],
+    shop: {
+      name: 'Papers',
+      lines: [
+        {
+          kind: 'material',
+          id: 'port_clearance',
+          requires: [{ type: 'stat', key: 'flag:quest:f11_join_merchants:accepted', value: 1 }],
+        },
+      ],
+    },
+  },
 
   // ==== FESTIVAL: NPCs (skeleton 2026-10-30; the festival builder's section) ====
 

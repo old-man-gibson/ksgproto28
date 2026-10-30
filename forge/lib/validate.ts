@@ -10,7 +10,7 @@ import type { store as Store } from './store.svelte';
 import { searchContentIssues } from '../../src/core/systems/searchValidation';
 import { smithingContentIssues } from '../../src/core/systems/assemblyValidation';
 import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
-import { offLadderDoor } from '../../src/core/data/towers.data';
+import { SPINE_EXEMPT, offLadderDoor } from '../../src/core/data/towers.data';
 import { seaContentIssues } from '../../src/core/systems/seaValidation';
 import type { ConvoyDef, SeaSideDef } from '../../src/core/data/sea.data';
 import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
@@ -352,7 +352,8 @@ export function validate(store: S): Issue[] {
       if (floor.bandId === undefined) continue;
       const report = floorStructureIssues(floor, spots, adjacency);
       for (const issue of report.issues) err('floor', floor.id, `${issue.rule}: ${issue.message}`);
-      if (report.skipped === 'no-clear-spot') {
+      // A listed exemption is a decision (towers.data.ts SPINE_EXEMPT), not news.
+      if (report.skipped === 'no-clear-spot' && !SPINE_EXEMPT[floor.id]) {
         warn('floor', floor.id, 'the clear names no spot, so the spine rules (no skip, wing depth, wing loops, clear table) did not run', ['clear']);
       }
     }

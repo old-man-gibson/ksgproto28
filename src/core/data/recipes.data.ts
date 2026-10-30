@@ -286,4 +286,39 @@ export const RECIPES: Record<string, RecipeDef> = {
     ticks: 200,
     xp: 6,
   },
+
+  // ==== HARBOR: recipes (2026-10-30; the harbor builder's section) ====
+  // The battery's hold (sea.data.ts SEA), made at the quay on floor 11.
+  // Smithing raises the volleys, alchemy the hit. Inputs are ungraded,
+  // because a recipe's cost reads the plain counts (crafting.ts affordable).
+  ship_cannon: {
+    id: 'ship_cannon',
+    name: 'Cast a Ship’s Cannon',
+    result: { kind: 'material', id: 'ship_cannon' },
+    cost: [{ id: 'iron_ingot', qty: 6 }],
+    tags: ['smithing'],
+    ticks: 600,
+    xp: 20,
+  },
+  cannonball: {
+    id: 'cannonball',
+    name: 'Cast Cannonballs',
+    result: { kind: 'material', id: 'cannonball', qty: 3 },
+    cost: [{ id: 'iron_ingot', qty: 1 }],
+    tags: ['smithing'],
+    ticks: 90,
+    xp: 2,
+  },
+  powder_charge: {
+    id: 'powder_charge',
+    name: 'Pack Powder Charges',
+    result: { kind: 'material', id: 'powder_charge', qty: 2 },
+    cost: [
+      { id: 'biomatter', qty: 3 },
+      { id: 'iron_scrap', qty: 1 },
+    ],
+    tags: ['alchemy'],
+    ticks: 120,
+    xp: 3,
+  },
 };

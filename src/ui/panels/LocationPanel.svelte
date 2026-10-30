@@ -51,6 +51,7 @@
   import type { Placement as ForgePlacement } from '../../core/types';
   import SpellcraftPanel from './SpellcraftPanel.svelte';
   import AscentPanel from './AscentPanel.svelte';
+  import SeaPanel from './SeaPanel.svelte';
   import Modal from '../lib/Modal.svelte';
   import CookBook from '../lib/CookBook.svelte';
   import { DISCIPLINES } from '../../core/data/disciplines.data';
@@ -280,6 +281,7 @@
     <p class="dim">{spot.desc}</p>
 
     <KeyItems />
+    <SeaPanel />
     <h3>Activities</h3>
     <div class="btn-grid">
       {#each spot.activities as act}

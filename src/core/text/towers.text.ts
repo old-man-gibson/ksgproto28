@@ -12,7 +12,7 @@ export const TOWERS_TEXT: ProseTable = {
 export const BANDS_TEXT: ProseTable = {
   'ascent_lower.desc': 'Floors 1 to 3: the Old Toll Level, the Flooded Stair and the Silk Gallery. Each floor must be cleared before the next opens.',
 
-  'ascent_harbor.desc': 'Floors 11 to 14, the harbor band. Floors 12 to 14 are skeletons. Placeholder text.',
+  'ascent_harbor.desc': 'Floors 11 to 14, the harbor band. Pick a side at the harbor on floor 11 (merchants, pirates, privateers or the navy; one per run), sail its convoys on floors 11 to 13 for crates, and finish its mission on floor 14. Placeholder text.',
 
   'ascent_festival.desc': 'Floors 15 and 16, the Vermin Festival. Skeletons. Placeholder text.',
 
@@ -48,12 +48,12 @@ export const FLOORS_TEXT: ProseTable = {
 
   'ascent_f10.desc': 'Floor 10, the city’s east ward: the artificers’ row, the quarry past the east gate, and a Stone Golem in the foundry, whose kill is the clear. Stand-in monsters. Placeholder text.',
 
-  'ascent_f11.desc': 'Floor 11. On your first climb here: the stronghold. Repair it through the steward’s two quests, then hold the wall through eight fights; the eighth ends the run in an automatic prestige, and the stronghold stays yours on every later run. On later runs: the door to your hold is in the gatehouse, and the road leads on to the quay; the roadstead fight there clears the floor. Placeholder monsters. Placeholder text.',
+  'ascent_f11.desc': 'Floor 11. On your first climb here: the stronghold. Repair it through the steward’s two quests, then hold the wall through eight fights; the eighth ends the run in an automatic prestige, and the stronghold stays yours on every later run. On later runs: the door to your hold is in the gatehouse, and the road leads on to the harbor, where a join quest picks your side for the run. Clear: 8 crates won on the roadstead’s convoy and one fight won there. Placeholder monsters. Placeholder text.',
 
   // ==== HARBOR: floor text (skeleton 2026-10-30; the harbor builder's section) ====
-  'ascent_f12.desc': 'Floor 12, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
-  'ascent_f13.desc': 'Floor 13, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
-  'ascent_f14.desc': 'Floor 14, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',
+  'ascent_f12.desc': 'Floor 12, the crossings: two ports and the water between them. Sailing out of a port is a boarding. Your side’s lane is long and weak, the strait short and strong; the pirates also have a hidden cove. Clear: 40 crates won this run and one fight won on the far water. Placeholder text.',
+  'ascent_f13.desc': 'Floor 13, the blockade. Through the picket line you arrive Flat-Footed; through the Pilot’s Channel, bought at the Last Port, the blockaders start Surprised. Clear: 160 crates won this run and one fight won on the blockade. Placeholder text.',
+  'ascent_f14.desc': 'Floor 14, the final mission: one wing per side, and only yours is open. Killing its boss clears the floor. Placeholder text.',
 
   // ==== FESTIVAL: floor text (skeleton 2026-10-30; the festival builder's section) ====
   'ascent_f15.desc': 'Floor 15, a skeleton: a landing with a placeholder hunt and a keeper whose fight clears the floor. Placeholder text.',

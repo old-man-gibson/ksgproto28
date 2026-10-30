@@ -137,9 +137,22 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'ph_siege_captain.desc': 'Placeholder elite humanoid, the last fight of the stronghold’s wave. Spawns with a raider and a brute. Slashing attacks with a 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops a Boss Token, iron ingots and gold.',
 
-  'ph_corsair.desc': 'Placeholder elite humanoid in floor 11’s roadstead. Spawns with a raider. Piercing attacks. Fights with Lunge, Dirty Stab and Gather. Drops a Boss Token, gold and leather.',
+  'ph_corsair.desc': 'Placeholder elite humanoid, a skeleton floor’s keeper. Spawns with a raider. Piercing attacks. Fights with Lunge, Dirty Stab and Gather. Drops a Boss Token, gold and leather.',
 
   // ==== HARBOR: monster text (skeleton 2026-10-30; the harbor builder's section) ====
+  'ph_reef_eel.desc': 'Placeholder basic sea monster on the harbor band’s waters. Piercing bite with a 15% chance to inflict Bleeding. Fights with Lunge and Gather. The navy’s and the merchants’ prey. Drops bone dust and biomatter.',
+  'ph_deep_serpent.desc': 'Placeholder veteran sea monster on the harbor band’s waters. Bludgeoning attacks. Fights with Heavy Blow and Gather. The navy’s and the merchants’ prey. Drops bone dust and biomatter.',
+  'ph_brood_matron.desc': 'Placeholder named ship of the sea beast’s brood: a once-only fight on floors 12 and 13 for the navy and the merchants, and the Sea Beast’s escort on floor 14. Bludgeoning attacks, 20% chance to inflict Bleeding. Fights with Heavy Blow, Hamstring and Gather.',
+  'ph_sea_beast.desc': 'Placeholder elite sea monster, the navy’s mission boss on floor 14. Spawns with four Brood Matrons. Bludgeoning attacks, 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, biomatter and bone dust.',
+  'ph_pirate_cutthroat.desc': 'Placeholder basic pirate on the harbor band’s waters. Slashing attacks. Fights with Pocket Sand, Dirty Stab and Gather. The privateers’ and the merchants’ prey. Drops gold, leather and iron scrap.',
+  'ph_pirate_gunner.desc': 'Placeholder veteran pirate on the harbor band’s waters. Piercing attacks. Fights with Lunge, Finishing Cut and Gather. The privateers’ and the merchants’ prey. Drops gold and iron scrap.',
+  'ph_pirate_captain.desc': 'Placeholder named pirate ship: a once-only fight on floors 12 and 13 for the privateers and the merchants, and an escort of the Pirate King and of the Warden of the Closed Port on floor 14. Slashing attacks, 20% chance to inflict Bleeding. Fights with Crosscut, Dirty Stab, Finishing Cut and Gather.',
+  'ph_pirate_king.desc': 'Placeholder elite pirate, the privateers’ mission boss on floor 14. Spawns with four Pirate Captains. Slashing attacks, 25% chance to inflict heavy Bleeding. Fights with Heavy Blow, Crosscut, Finishing Cut and Gather. Drops a Boss Token, gold and bronze ingots.',
+  'ph_convoy_guard.desc': 'Placeholder basic guard on the harbor band’s convoys. Slashing attacks. Fights with Crosscut and Gather. The pirates’ prey. Drops gold, leather and iron scrap.',
+  'ph_navy_marine.desc': 'Placeholder veteran navy marine escorting the harbor band’s convoys. Piercing attacks. Fights with Lunge, Hamstring and Gather. The pirates’ prey. Drops gold, iron scrap and leather.',
+  'ph_navy_frigate.desc': 'Placeholder named navy ship: a once-only fight on floors 12 and 13 for the pirates, and an escort of the treasure galleon on floor 14. Slashing attacks. Fights with Crosscut, Lunge, Finishing Cut and Gather.',
+  'ph_galleon_master.desc': 'Placeholder elite, the pirates’ mission boss on floor 14: the treasure galleon’s master. Spawns with four Frigate Captains. Slashing attacks. Fights with Heavy Blow, Crosscut, Finishing Cut and Gather. Drops a Boss Token, gold and bronze ingots.',
+  'ph_port_warden.desc': 'Placeholder elite, the merchants’ mission boss on floor 14: the raider who holds the closed port. Spawns with four Pirate Captains. Bludgeoning attacks. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, gold and iron ingots.',
 
   // ==== FESTIVAL: monster text (skeleton 2026-10-30; the festival builder's section) ====
 

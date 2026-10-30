@@ -842,6 +842,42 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     graded: false,
     smith: { rho: 0.3, hard: 0, tough: 0.5, unitCells: 3, label: 'Leather' },
   },
+
+  // ==== HARBOR: materials (2026-10-30; the harbor builder's section) ====
+  // The battery's hold (sea.data.ts SEA, systems/sea.ts batteryOf): cannons are
+  // kept, shot and powder are spent one a leg. Made at the quay on floor 11.
+  ship_cannon: {
+    id: 'ship_cannon',
+    name: 'Ship’s Cannon',
+    icon: '💣',
+    value: 120,
+  },
+  cannonball: {
+    id: 'cannonball',
+    name: 'Cannonball',
+    icon: '⚫',
+    value: 4,
+  },
+  powder_charge: {
+    id: 'powder_charge',
+    name: 'Powder Charge',
+    icon: '🧨',
+    value: 10,
+  },
+  // Harbor receipts. Conditions read the purchase (`shop:buys:<vendor>`) or
+  // a quest collects them; on their own they do nothing.
+  pilot_passage: {
+    id: 'pilot_passage',
+    name: 'Pilot’s Passage',
+    icon: '🧭',
+    value: 150,
+  },
+  port_clearance: {
+    id: 'port_clearance',
+    name: 'Port Clearance',
+    icon: '📃',
+    value: 400,
+  },
 });
 
 /*

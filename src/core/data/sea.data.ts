@@ -113,11 +113,120 @@ export const SEA_CRATES_OFFLINE = 'sea:crates:offline';
 export const SEA_MISSION_DONE = 'flag:sea:14:done';
 
 /** The four sides. Order is the berths' order on the quay. */
-export const SEA_SIDES = prose<SeaSideDef>('SEA_SIDES', SEA_SIDES_TEXT, {});
+export const SEA_SIDES = prose<SeaSideDef>('SEA_SIDES', SEA_SIDES_TEXT, {
+  merchants: {
+    id: 'merchants',
+    name: 'The Merchants',
+    icon: '⚖️',
+    giver: 'f11_factor',
+    joinQuest: 'f11_join_merchants',
+    flow: 'convoy',
+    prey: ['ph_pirate_cutthroat', 'ph_pirate_gunner', 'ph_pirate_captain', 'ph_reef_eel', 'ph_deep_serpent', 'ph_brood_matron'],
+    mission: { spot: 'f14_closed_port', monsterId: 'ph_port_warden' },
+  },
+  pirates: {
+    id: 'pirates',
+    name: 'The Pirates',
+    icon: '🏴‍☠️',
+    giver: 'f11_bosun',
+    joinQuest: 'f11_join_pirates',
+    flow: 'raid',
+    prey: ['ph_convoy_guard', 'ph_navy_marine', 'ph_navy_frigate'],
+    mission: { spot: 'f14_treasure_galleon', monsterId: 'ph_galleon_master' },
+  },
+  privateers: {
+    id: 'privateers',
+    name: 'The Privateers',
+    icon: '📜',
+    giver: 'f11_letter_agent',
+    joinQuest: 'f11_join_privateers',
+    flow: 'recover',
+    prey: ['ph_pirate_cutthroat', 'ph_pirate_gunner', 'ph_pirate_captain'],
+    mission: { spot: 'f14_flagship', monsterId: 'ph_pirate_king' },
+  },
+  navy: {
+    id: 'navy',
+    name: 'The Navy',
+    icon: '⚓',
+    giver: 'f11_lieutenant',
+    joinQuest: 'f11_join_navy',
+    flow: 'escort',
+    prey: ['ph_reef_eel', 'ph_deep_serpent', 'ph_brood_matron'],
+    mission: { spot: 'f14_beast_lair', monsterId: 'ph_sea_beast' },
+  },
+});
 
 /**
  * The convoy table: one row per water spot. Threat rises with the floor; a
  * floor's lanes trade distance for threat (FLOOR_IDEAS.md idea 3, floor 12:
  * long and weak, short and strong, hidden and cheap).
  */
-export const CONVOYS: Record<string, ConvoyDef> = {};
+export const CONVOYS: Record<string, ConvoyDef> = {
+  // Floor 11.
+  f11_roadstead: {
+    id: 'f11_roadstead',
+    raiders: [1, 2],
+    monsters: [1, 2],
+    guard: [1, 2],
+    cargo: ['rock_salt', 'rough_flour', 'iron_ingot', 'grain_spirit'],
+  },
+  // Floor 12. The four side lanes are long and weak; the strait is short and
+  // strong; the cove is hidden and cheap; the far water is the clear.
+  f12_trade_lane: {
+    id: 'f12_trade_lane',
+    raiders: [1, 2],
+    monsters: [0, 2],
+    guard: [1, 2],
+    cargo: ['rock_salt', 'wild_honey', 'copper_ingot', 'pressed_oil'],
+  },
+  f12_patrol_lane: {
+    id: 'f12_patrol_lane',
+    raiders: [0, 2],
+    monsters: [1, 2],
+    guard: [1, 2],
+    cargo: ['rough_flour', 'iron_ingot', 'tin_ingot', 'brimstone'],
+  },
+  f12_hidden_cove: {
+    id: 'f12_hidden_cove',
+    raiders: [0, 1],
+    monsters: [0, 1],
+    guard: [0, 1],
+    cargo: ['wild_honey', 'copper_ingot', 'grain_spirit'],
+  },
+  f12_hunting_ground: {
+    id: 'f12_hunting_ground',
+    raiders: [1, 2],
+    monsters: [0, 1],
+    guard: [1, 2],
+    cargo: ['rock_salt', 'bronze_ingot', 'tin_ingot', 'grain_spirit'],
+  },
+  f12_strait: {
+    id: 'f12_strait',
+    raiders: [2, 3],
+    monsters: [2, 3],
+    guard: [2, 3],
+    cargo: ['iron_ingot', 'copper_ingot', 'tin_ingot', 'bronze_ingot', 'brimstone'],
+  },
+  f12_far_water: {
+    id: 'f12_far_water',
+    raiders: [2, 3],
+    monsters: [1, 3],
+    guard: [2, 3],
+    cargo: ['wild_honey', 'bronze_ingot', 'pressed_oil', 'brimstone'],
+  },
+  // Floor 13.
+  f13_picket: {
+    id: 'f13_picket',
+    raiders: [2, 3],
+    monsters: [2, 3],
+    guard: [2, 3],
+    cargo: ['rough_flour', 'iron_ingot', 'tin_ingot', 'grain_spirit', 'brimstone'],
+  },
+  f13_blockade: {
+    id: 'f13_blockade',
+    raiders: [3, 4],
+    monsters: [2, 4],
+    guard: [3, 4],
+    cargo: ['rock_salt', 'wild_honey', 'copper_ingot', 'bronze_ingot', 'pressed_oil', 'brimstone'],
+  },
+};
