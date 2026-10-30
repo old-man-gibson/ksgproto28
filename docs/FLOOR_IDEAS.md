@@ -170,8 +170,10 @@ constraints, condensed from the post:
 - **Offline, the state of the three fixes** (ENGINEERING.md §1.4).
   Memoizing `getDerivedStats` is **done**: `modFingerprint` in
   `systems/derived.ts`, with a cache-consistency test. ENGINEERING.md §1.2–1.4
-  still says "nothing is memoized", and its ~30 s figure was measured before
-  the memo, so the real cost on a developed save today is unmeasured.
+  had said "nothing is memoized". Re-measured 2026-10-29 with the memo in:
+  8 h of catch-up still takes 17.6–28.6 s of wall clock on a developed save,
+  because a cache hit still pays for building the fingerprint string
+  (ENGINEERING.md §1.2 has the profile).
   Chunking is **not done**: `save/offline.ts:47` is still one synchronous
   loop of up to 288,000 ticks. Coarsening is a design call about what offline
   progress means (ENGINEERING.md says so) and has no card.
