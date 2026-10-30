@@ -542,7 +542,7 @@ quasi-realtime function where the player can gather resources and all from
 other floors, but "time" in those floors advances only if the player is
 present."*
 
-**Rulings (user, 2026-10-29).** Answers to Q1–Q8, in the user's words where
+**Rulings (user, 2026-10-29).** Answers to Q1–Q11, in the user's words where
 quoted.
 
 - **Leaders.** The conquerors are led by the Shōgun. The usurpers are led by
@@ -560,6 +560,12 @@ quoted.
 - **Hidden triggers.** *"Very difficult, needs to be tuned."*
 - **Routes.** Three per floor, one per side.
 - **Placement.** Band 4, floors 11–20, after band 3.
+- **The hold** (Q9): *"No matter how the player clears floor 12, the player
+  gains a base."*
+- **Finales** (Q10): a visible side fights the other two sides' leaders on
+  floor 20; the hidden paths fight all three.
+- **Titles' first rows** (Q11): six baselines (3 sides × 2 ranks) plus one
+  row per win mode; loadout and style rows are added as the user names them.
 
 **The place in one line.** Each side takes soldiers and supplies from the
 floors it holds; the towns and farms on contested floors pay. The player's
@@ -570,8 +576,8 @@ side pays the player in titles and a base to run.
   rooms (`base_*`), behind a door at the Foot that opens at `prestige:count`
   1 (`locations.data.ts:483`). Prestige now comes at floor 6, before this
   band. The door stays where it is. Per the ruling, the hold is the war base
-  only on the hidden paths; a visible side runs its own base (Q9 asks whether
-  visible runs also open building in the hold).
+  only on the hidden paths; a visible side fights from its own base. Every
+  path gains building in the hold at floor 12 (Q9).
 - `GameState.prestige` is already the legacy block (types.ts:5602) and v58
   grew it with the cookbook lists, so the hold's legacy ledger is the same
   move, not a new split.
@@ -688,10 +694,12 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
   island: its floor 11 camp area, with plots. On a visible side the player
   runs that base. It is run-scoped: the side changes each run, so it resets
   at prestige and needs no legacy ledger. Floor 12's `done` opens its plots.
-- **The player's base** (ruling): the hold, and only on the hidden paths.
-  There the player builds the same structures in the hold and creates
-  soldiers. The hold persists across prestige by base building's settled
-  rules (below).
+- **The player's base** (ruling): the hold. Floor 12's `done`, however it is
+  stamped (any side's route or either hidden path), opens building in the
+  hold for good: the opening is written to the legacy block, so later runs
+  build from the start. The hold is the war base only on the hidden paths;
+  there the player creates soldiers in it. It persists across prestige by
+  base building's settled rules (below).
 - **First structures, no workers.** The same set in both kinds of base.
   - Storehouse: caps the stock a front can draw.
   - Barracks: soldier pool cap and wounded recovery.
@@ -709,8 +717,8 @@ get one branch in the lint's `realStat` (`content.test.ts:105-142`).
 - Builds are world-clock jobs that train a construction skill.
 - No structure grants a `Modifier`, so `modFingerprint` is untouched. A later
   structure that does must join it.
-- Because faction bases are run-scoped, the visible sides can ship before the
-  run/legacy split. The hold's ledger comes with the hidden paths.
+- Because every path gains the hold at floor 12, the hold's legacy ledger
+  ships with the first visible side, not with the hidden paths.
 
 **Titles after floors 15 and 19** (the band's 5th and 9th).
 
@@ -774,16 +782,16 @@ past what anyone can name, so the pick is a table with fallbacks.
   - Both: the base is the hold; soldiers are created there, and the faction
     soldiers are gone.
   - Warlord: all three rosters are hostile on floors not yet done. Route:
-    the keep. Finale: all three leaderships (Q10).
+    the keep. Finale: all three leaderships.
   - Destroyer: mixed three-roster groups. Route: the depot. Finale: all
-    three leaderships at once (Q10).
+    three leaderships at once.
   - Kills alone still reach `need` on both (L5).
 - Both stamp the band's clear.
 
 | Floor | One idea (mechanism) | Boss / preparation |
 |---|---|---|
 | 11 | Pick a side: three join quests from the leaders, two hidden edges. One small battle (low `need`) teaches the counter. | none |
-| 12 | Take a castle: a `fightLimit` stretch to its commander. `done` opens the faction base's plots. | commander; scouting finds lower its escorts |
+| 12 | Take a castle: a `fightLimit` stretch to its commander. `done` opens the faction base's plots and, on every path, building in the hold. | commander; scouting finds lower its escorts |
 | 13 | Supply: `gather` and `job` sites fill the stock. Floor 14's gate reads a band material from an endless source (H2). | none |
 | 14 | Scouting: explore gates; finds add to the next battle's `front`. | none |
 | 15 | First full battle. Clear → rank 1 title. | commander, requires `broken` |
@@ -791,7 +799,7 @@ past what anyone can name, so the pick is a table with fallbacks.
 | 17 | Siege: three walls, each a `fightLimit` spot, each drawing stock. | gate commander |
 | 18 | Counterattack: a camp spot spawns waves; each wave won adds to `front`. | none |
 | 19 | A duel with a champion (alone, unfleeable, the `SpotDare` shape) plus sabotage finds. Clear → rank 2 title. | champion |
-| 20 | Finale, one per side: the other sides' leaders (Q10). Preparation flags remove escorts. | the Shōgun; the strategist and the figurehead; the triumvirate |
+| 20 | Finale, one per side: the other sides' leaders. Preparation flags remove escorts. | the Shōgun; the strategist and the figurehead; the triumvirate |
 
 **Hours.**
 
@@ -841,20 +849,21 @@ It is off-ladder; this band is on the ladder, so every side must clear it.
 [plans/demon-lord-army.md](plans/demon-lord-army.md) has the same conquest
 substrate.
 
-**Build cost** (estimate, nothing measured): about 16 sessions for one
-visible side, then about 1 session of data per further side, then about 3
+**Build cost** (estimate, nothing measured): about 17 sessions for one
+visible side, then about 1 session of data per further side, then about 2
 more for the hidden paths.
 
 1. Presence clock, the resolver and a test front on a band 2 floor. Stats
    only, no save change, on a branch (1.5).
 2. `state.war`, troops, supply, the orders panel (v60) (1.5).
-3. Faction base: structures, run-scoped, no legacy ledger (2).
+3. Structures for the faction base and the hold, and the hold's legacy
+   ledger (3).
 4. Floors 11–20 for one side, as the template (about 10, at band 1's rate of
    one session a floor).
 5. Title pick and kill-source field, then John through floor 20 on default
    orders (1.5).
-6. Hidden paths: the hold's legacy ledger, the triggers, soldier creation
-   (about 3, after worker creation exists).
+6. Hidden paths: the triggers and soldier creation (about 2, after worker
+   creation exists).
 
 **Objections and rulings.** From antagonist-design, 2026-10-29, verdict *fix
 first, then bank*. No reachable terminal state found.
@@ -892,25 +901,7 @@ Clean:
 - troll: no buy-sell loop; garrison ×2 is a rate; titles reset with the run
 - secrecy: unmet `revealWhen` edges are invisible; `TitleDef.secret` exists
 
-**Open questions.** Q1–Q8 are answered (Rulings, above).
-
-9. **Does a visible run open building in the hold?** The original post says
-   *"This band is how the player gains their own base"*; the ruling says the
-   player's base is the base only on the hidden paths.
-   - *Default:* yes. Clearing the band on any side opens building in the
-     hold for good (the legacy block). The hold is the war base only on the
-     hidden paths.
-   - Alternative: only the hidden paths open it. Base building is the hub of
-     the long game (base-building direction), so this would put a required
-     system behind very difficult secret content. That breaks COMPLETABILITY
-     §5 unless the hold also opens some other way.
-10. **Finales.** *Default:* a visible side's finale fights the other two
-    sides' leaders (two fights on floor 20); the hidden paths fight all
-    three: the Shōgun, the strategist with the figurehead, and the
-    triumvirate.
-11. **Titles' first rows.** *Default:* six baselines (3 sides × 2 ranks) plus
-    one row per win mode. Loadout and style rows are added as the user names
-    them.
+**Open questions.** None. Q1–Q11 are answered (Rulings, above).
 
 ---
 
