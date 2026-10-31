@@ -107,6 +107,7 @@ export function tickRoyale(state: GameState, bus: EventBus, run: FestivalRun): v
   // The royale must be able to end: a field with no one on it gets its champion back.
   restoreChampion(field);
   const stats = getDerivedStats(state);
+  const hp = hpFraction(state, stats);
   const baseLevel = SURVIVOR_LEVELS.base + Math.round(SURVIVOR_LEVELS.growth * prepShare(run.clock));
   const result = stepField(
     field,
@@ -114,7 +115,7 @@ export function tickRoyale(state: GameState, bus: EventBus, run: FestivalRun): v
       now,
       rng: () => rand(state),
       playerFree: !state.combat,
-      playerHp: hpFraction(state, stats),
+      playerHp: hp,
       playerPower: state.level,
       playerSpeed: stats.travelSpeed,
       plan: royalePlan(state),
@@ -123,8 +124,8 @@ export function tickRoyale(state: GameState, bus: EventBus, run: FestivalRun): v
     },
     baseLevel,
   );
-  // The spring heals the player out of combat only (the step reports it only then).
-  if (result.playerHeal > 0) {
+  // The spring heals the player out of combat only (the step reports it only then), and only a wound.
+  if (result.playerHeal > 0 && hp < 1) {
     const max = availableMax(state, stats, 'hp');
     heal(state, stats, max * result.playerHeal, 'idle');
   }

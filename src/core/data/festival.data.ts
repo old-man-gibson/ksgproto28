@@ -225,7 +225,7 @@ export const ROYALE_STRATEGIES = prose<RoyaleStrategyDef>('ROYALE_STRATEGIES', R
 // ---------- The field's layout (docs/FESTIVAL.md §9.2) ----------
 
 /** The layout a field is made for; a saved field from an older one is replaced whole (§9.3). */
-export const ROYALE_LAYOUT_VERSION = 2;
+export const ROYALE_LAYOUT_VERSION = 3;
 
 /** One festival hour without a fight and a fighter knows where the nearest enemy is (§9.2, the radar). */
 export const RADAR_TICKS = TICKS_PER_HOUR;

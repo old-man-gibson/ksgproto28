@@ -753,7 +753,9 @@ describe('the royale: the attempt’s field', () => {
     expect(run.field!.seed).toBe(run.fieldSeed);
     expect(run.field!.layout).toBe(ROYALE_LAYOUT_VERSION);
     expect(run.field!.openedAt).toBeLessThanOrEqual(game.state.totalTicks);
-    expect(run.field!.player).toMatchObject(mapOf(run.field!).start);
+    // On the map’s start (a tick of walking has passed).
+    const start = mapOf(run.field!).start;
+    expect(Math.hypot(run.field!.player.x - start.x, run.field!.player.y - start.y)).toBeLessThan(1);
     const old = inHall();
     const oldRun = festivalRun(old.state)!;
     delete oldRun.fieldSeed;
