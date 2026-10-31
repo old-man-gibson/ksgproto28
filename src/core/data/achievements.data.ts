@@ -95,7 +95,7 @@ export const ACHIEVEMENTS: Record<string, AchievementDef> = {
     name: 'Breaker',
     icon: '🧱',
     statKey: 'kills:tag:inorganic',
-    descTemplate: 'Destroy {n} things that were never alive',
+    descTemplate: 'Kill {n} Inorganic monsters',
     tiers: [
       { threshold: 5, bonus: [{ stat: 'penetration', op: 'add', value: 0.02, requiresMonsterTag: 'inorganic' }] },
       { threshold: 25, bonus: [{ stat: 'damage', op: 'mult', value: 0.05, requiresMonsterTag: 'inorganic' }] },
