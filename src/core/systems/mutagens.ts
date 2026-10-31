@@ -531,7 +531,7 @@ export function perTargetInflictIntensity(
   if (!per?.inflictRoot) return undefined;
   const stacks = findStatus(target, per.status)?.stacks ?? 0;
   if (stacks <= 0) return undefined;
-  return stacks ** (1 / atGrade(per.inflictRoot, gene));
+  return Math.min(per.inflictCap ?? Infinity, stacks ** (1 / atGrade(per.inflictRoot, gene)));
 }
 
 /** What one grant does to the ability when it arrives at the Active arm. */

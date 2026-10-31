@@ -34,6 +34,7 @@ import {
   noteUncappedResistance,
   statusDampingFor,
   statusResFloor,
+  applyResFloor,
   statusResOverrides,
 } from './statuses';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
@@ -550,7 +551,7 @@ export function computeDerivedStats(
   for (const key of RES_KEYS) {
     if (stats[key] > cap) aboveCap[key] = stats[key];
     stats[key] = Math.min(cap, stats[key]);
-    if (floor !== undefined) stats[key] = Math.max(floor, stats[key]);
+    if (floor) stats[key] = applyResFloor(stats[key], floor.floor, floor.taken[key] ?? 0);
   }
   if (Object.keys(aboveCap).length > 0) noteUncappedResistance(stats, aboveCap);
 

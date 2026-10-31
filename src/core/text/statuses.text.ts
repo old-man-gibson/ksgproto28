@@ -5,7 +5,7 @@ import type { ProseTable } from './prose';
 
 // ---------- STATUSES ----------
 export const STATUSES_TEXT: ProseTable = {
-  'toll_steam.desc': 'Applied to the Toll Collector by a heat spell. Its attacks have a 65% chance to miss for 8 seconds. Another heat spell resets the timer without adding to the effect.',
+  'toll_steam.desc': 'Applied to the Toll Collector by a heat spell. Its attacks have a 50% chance to miss for 8 seconds. Another heat spell resets the timer without adding to the effect.',
   'toll_ice.desc': 'Applied to the Toll Collector by a cold spell. Its dodge is 0 and its armor is reduced by 75% for 8 seconds. Another cold spell resets the timer without adding to the effect.',
   'toll_overdrive.desc': 'Applied to the Toll Collector by a lightning spell. Its attack speed is +65% for 8 seconds, and it takes 12 lightning damage each time its action bar fills. Another lightning spell resets the timer without adding to the effect.',
   'eyeless.desc': 'Cannot be Dazzled or Blinded. No other effect.',
@@ -82,7 +82,7 @@ export const STATUSES_TEXT: ProseTable = {
 
   'blinded.desc': 'Every attack rolls to hit twice and keeps the worse result. Dodge is reduced by 25%. Lasts 25 seconds.',
 
-  'tainted.desc': 'All resistances are reduced by 5% per stack, light and dark by 10%. Resistances cannot fall below -25% (a further -5% for each stack past the first). Weakens as the 45-second timer runs down. Doses add; at 5 it escalates to Corrupted.',
+  'tainted.desc': 'All resistances are reduced by 5% per stack, light and dark by 10%. Its penalty cannot push a resistance below -25% (a further -5% for each stack past the first); a resistance already lower is left as it is. Weakens as the 45-second timer runs down. Doses add; at 5 it escalates to Corrupted.',
 
   'corrupted.desc': 'Each stack reduces maximum spirit by 10% and maximum health, stamina and mana by 5% (up to 60%). Up to 10 stacks. No timer; only a cleansing removes it. If spirit reaches zero you are defeated and wake with half of it.',
 

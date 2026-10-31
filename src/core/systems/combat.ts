@@ -2155,7 +2155,7 @@ export function castMonsterWorking(
     feed(
       state,
       refusal.sealed
-        ? `🚫 Your body negates the ${e.name}'s ${spec.name}.`
+        ? `🚫 Your body negates the ${e.name}'s ${spec.name}; it cannot cast it again this fight.`
         : `🚫 Your body negates the ${e.name}'s ${spec.name}.`,
     );
     return false;
@@ -2566,6 +2566,10 @@ function pickMonsterAction(
       // A mind burned past empty cannot shape a working until it recovers —
       // it falls through to whatever else it can still do, or a plain swing.
       if (mindInDebt(e)) continue;
+      // A working sealed this fight (refuted once too often) stays unsaid; the
+      // key is the one castMonsterWorking seals under.
+      const slot = state.combat?.enemies.indexOf(e) ?? -1;
+      if (isSealed(state, `${e.defId}:${index}:${slot}`)) continue;
       return { index, cast: entry.cast };
     }
     const tech = TECHNIQUES[entry.technique];
@@ -3339,20 +3343,81 @@ function applyMonsterBarDamage(
 }
 
 /**
- * Conditions that strike back at their own bearer when they act or are struck.
- * Returns true if the recoil proved fatal.
+ * The player's conditions that fire when they act or are struck: shards hurt
+ * the player, a thorns ward (Refutation) hurts the enemy at `attacker` that
+ * struck them in melee. Returns true when the phase must stop: the player
+ * died, or the attacker died and the enemy list was swept.
  */
-function applyRetaliation(state: GameState, bus: EventBus, when: 'onAttack' | 'onContact'): boolean {
+function applyRetaliation(
+  state: GameState,
+  bus: EventBus,
+  when: 'onAttack' | 'onContact',
+  attacker?: number,
+): boolean {
   const back = statusRetaliation(state, when);
   if (back.length === 0) return false;
   const stats = getDerivedStats(state);
   for (const r of back) {
+    if (r.hits === 'attacker') {
+      const e = attacker === undefined ? null : state.combat?.enemies[attacker];
+      if (!e || e.hp <= 0) continue;
+      const slice = monsterSlice(e, r.type, r.name, r.amount, 0);
+      e.hp -= slice.dealt;
+      e.lastHit = r.type;
+      feed(state, `${r.icon} ${r.name} hits the ${e.name} for ${slice.dealt} ${r.type}.`);
+      for (const app of r.inflicts ?? []) applyStatus(state, e, app, r.name);
+      if (e.hp <= 0) {
+        sweepDead(state, bus);
+        return true;
+      }
+      continue;
+    }
     const dealt = incomingSlice(stats, r.type, r.name, r.amount).dealt;
     damagePlayer(state, dealt);
     feed(state, `${r.icon} ${r.name} tears at you for ${dealt} ${r.type}.`);
     for (const app of r.inflicts ?? []) applyStatus(state, state, app, r.name, stats);
     if (!isAlive(state)) {
       onDefeat(state, bus);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The same conditions on an enemy at `index`: shards hurt the enemy when it
+ * attacks or is struck, and a thorns ward on it hurts the player who struck it
+ * in melee. Returns true when the phase must stop (either side died).
+ */
+function applyMonsterRetaliation(
+  state: GameState,
+  bus: EventBus,
+  index: number,
+  when: 'onAttack' | 'onContact',
+): boolean {
+  const e = state.combat?.enemies[index];
+  if (!e || e.hp <= 0) return false;
+  for (const r of statusRetaliation(e, when)) {
+    if (r.hits === 'attacker') {
+      if (when !== 'onContact') continue;
+      const stats = getDerivedStats(state);
+      const dealt = incomingSlice(stats, r.type, r.name, r.amount).dealt;
+      damagePlayer(state, dealt);
+      feed(state, `${r.icon} The ${e.name}'s ${r.name} hits you for ${dealt} ${r.type}.`);
+      for (const app of r.inflicts ?? []) applyStatus(state, state, app, r.name, stats);
+      if (!isAlive(state)) {
+        onDefeat(state, bus);
+        return true;
+      }
+      continue;
+    }
+    const slice = monsterSlice(e, r.type, r.name, r.amount, 0);
+    e.hp -= slice.dealt;
+    e.lastHit = r.type;
+    feed(state, `${r.icon} ${r.name} hits the ${e.name} for ${slice.dealt} ${r.type}.`);
+    for (const app of r.inflicts ?? []) applyStatus(state, e, app, r.name);
+    if (e.hp <= 0) {
+      sweepDead(state, bus);
       return true;
     }
   }
@@ -4131,12 +4196,16 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         let hit = swing * bully * underdog * looming;
         // A named crit is not luck, so it neither pays the ledger nor is paid
         // by it — it skips the roll entirely (see PLAYER_CRIT).
-        const crit = forced ? true : procChance(state, PLAYER_CRIT, vs.crit);
+        // Iron in the target finds the seam for weapon blows too (Magnetized).
+        const crit = forced
+          ? true
+          : procChance(state, PLAYER_CRIT, vs.crit + magnetCritChance(monster, dmgType));
         if (crit) {
           // `critTaken` scales only the SURPLUS, so a body hardened against
           // crits flattens the spike into an ordinary blow and never below it
           // — the same rule its own crits already answered to on your side.
-          const critDamage = forced ? forcedCritDamage : vs.critDamage;
+          // A Magnet-Locked target discharges its charge into the first crit.
+          const critDamage = (forced ? forcedCritDamage : vs.critDamage) + consumeMagnetCharge(monster);
           hit *= 1 + (critDamage - 1) * Math.max(0, theirs.critTaken);
           isCrit = true;
           crits++;
@@ -4350,6 +4419,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         }
       }
 
+      // A weapon blow is contact: the target's own conditions answer it.
+      if (isWeaponHit && applyMonsterRetaliation(state, bus, 0, 'onContact')) return;
       // Some conditions cost you every time you swing.
       if (applyRetaliation(state, bus, 'onAttack')) return;
 
@@ -4465,6 +4536,15 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       continue;
     }
 
+    // Its own conditions can spoil the swing before your footwork is tested
+    // (Steam-blinded on the Toll Collector), and a swing that never arrives
+    // costs your guard nothing. Rolled only when there is a chance, so a
+    // clean attacker spends no draw from the seeded stream.
+    const selfMiss = statusMissChance(e);
+    if (selfMiss > 0 && chance(state, selfMiss)) {
+      feed(state, `🙈 The ${e.name}'s attack misses: a condition on it adds a miss chance.`);
+      continue;
+    }
     // Guarding stances pay stamina per incoming blow — footwork or set hips.
     const guard = exert(state, stats, defendExertion);
     // Your footing scales what evasion is even available: a position taken
@@ -4721,7 +4801,9 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       },
     );
     // Contact cuts both ways: a shard-bound body answers whatever touched it.
-    if (e.range === 'melee' && applyRetaliation(state, bus, 'onContact')) return;
+    if (e.range === 'melee' && applyRetaliation(state, bus, 'onContact', i)) return;
+    // And the attacker's own conditions cost it for swinging.
+    if (applyMonsterRetaliation(state, bus, i, 'onAttack')) return;
 
     // What its blows leave behind: venom, burns, the cut that keeps bleeding.
     // Rolled per landed hit, so a fight with a swarm compounds.

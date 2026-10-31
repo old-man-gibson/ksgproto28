@@ -213,7 +213,7 @@ describe('the submerged toll collector', () => {
     expect(findStatus(e, id)?.ticksLeft).toBe(TOLL_REACTION_TICKS);
     expect(findStatus(e, id)?.intensity).toBe(1);
     expect(findStatus(e, id)?.stacks).toBe(1);
-    if (type === 'heat') expect(statusMissChance(e)).toBeCloseTo(0.65);
+    if (type === 'heat') expect(statusMissChance(e)).toBeCloseTo(0.5);
     if (type === 'cold') {
       expect(monsterStats(e).dodge).toBe(0);
       expect(monsterStats(e).armor).toBeCloseTo(before.armor * 0.25);

@@ -26,7 +26,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
   toll_steam: {
     id: 'toll_steam', name: 'Steam-blinded', icon: '♨️', duration: 80,
     unresistable: "environmental: a phase of the Toll Collector's fight",
-    stacking: { mode: 'highest', cap: 1, refreshDuration: true }, missChance: 0.65,
+    stacking: { mode: 'highest', cap: 1, refreshDuration: true }, missChance: 0.5,
   },
   toll_ice: {
     id: 'toll_ice', name: 'Ice-locked Joints', icon: '🧊', duration: 80,
@@ -87,6 +87,7 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
       type: 'piercing',
       flat: 6,
       onContact: true,
+      hits: 'attacker',
       inflicts: [{ id: 'punctured', intensity: 1 }],
     },
   },
