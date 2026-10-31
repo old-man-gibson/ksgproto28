@@ -190,15 +190,16 @@ what it already knows enters early.
 |---|---|---|---|---|---|
 | `f15_hall` (kept) | rest, drill STR, spar DEX, cooking bench | cooking, attributes | — | open-ended | meals that last into the royale (cooking: long, out of combat) |
 | `f15_stores` (kept, more) | search: rations, meat, salve, plus more cooking ingredients | cooking | about 12 finds an attempt | 2 h a find | ingredients |
-| `f15_survey` (new) | search: one find per royale section; each sets `flag:festival:scouted:<section>` | — | 8 finds, once per RUN, not restocked | 12 h a find (4 days for all 8) | a scouted section shows its caches and dens on the royale's map before you walk in |
+| `f15_survey` (new) | search: one find per royale section; each sets `flag:festival:scouted:<section>` | — | 8 finds an attempt | 12 h a find (4 days for all 8) | a scouted section shows its caches and dens on this attempt's royale map before you walk in |
 | `f15_herb_yard` (new) | search: herbs | alchemy | about 8 finds an attempt | 2 h a find | ingredients for the workshop's alembic |
 | `f15_workshop` (new) | alchemy bench, forging bench; search: scrap | alchemy, smithing | about 6 scrap finds an attempt | 2 h a find | flasks for the fights; plain pieces forged from scrap |
 | `f15_gallery` (new) | train several attributes at once (watching the others drill), rest | attributes | — | open-ended | attributes |
 
 - **Restock.** Every search in `FESTIVAL_RESTOCK` (stores, herb yard,
-  workshop) resets its limits when an attempt starts, as the stores do
-  today. The survey's finds belong to the run: the field is authored, so
-  what was scouted stays scouted until the prestige.
+  workshop, survey) resets its limits when an attempt starts, as the stores
+  do today. Each attempt draws its field's seed at the start
+  (`FestivalRun.fieldSeed`), so the survey scouts the field this attempt's
+  royale will open on, and its flags are cleared with the next attempt.
 - **Kept.** What the hub's searches and benches put in the player's hands
   stays theirs after the attempt (§2's rule; the stores' rations already
   do). A farm loop is an attempt, a forfeit and a three-day lockout per
@@ -269,6 +270,29 @@ terrain only changes pace and sight.
   minimap of the whole field, its sections and what is known of it; a toggle
   shows the whole field.
 
+### 9.2a Rules from the design review (2026-10-30, all accepted)
+
+1. **A den never fells the last survivor**, nor the last free one while the
+   player's fight holds the others: a den fells a survivor only while at
+   least three stand and at least one free survivor would remain. The field
+   still empties only through the champion.
+2. **The champion's fall is the win.** `royaleFightWon` wins on a fight that
+   held `SURVIVOR_CHAMPION`, never on an empty field alone.
+3. **A field is never replaced during a fight.** The layout-marker check
+   waits for a tick with no fight.
+4. **The radar overrides the plan for survivors**: after `RADAR_TICKS` a
+   survivor's goal is the radar's target whatever its move, and with two or
+   fewer left every survivor walks at the player whatever its move.
+5. **The generator is tested over many seeds**: every section's pace above
+   0, the start outside every den's radius, every den and cache inside its
+   section, every village cache inside a building of its kind, every guarded
+   cache inside its den's radius. `ROYALE_LAYOUT_VERSION` goes up whenever
+   `generate` changes, since a saved seed would rebuild a different map.
+6. **Small contracts**: the validation's list of moves knows `loot`, `roam`
+   and `cover`; `createField` sets `openedAt` (the radar's clock); a den's
+   power is above 0; a cache has exactly one of item, weapon and heal; lent
+   gear is taken back on both endings and refused by `sellItems`.
+
 ### 9.3 State and save
 
 - `run.field` gains optional fields: caches taken, dens cleared, sections
@@ -295,7 +319,7 @@ terrain only changes pace and sight.
 | # | Question | Default |
 |---|---|---|
 | F1 | Royale finds: lent for the attempt, or kept | Lent: taken back at the end |
-| F2 | The hub's stock | Restocked each attempt, except the survey (once a run) |
+| F2 | The hub's stock | Restocked each attempt, the survey included (each attempt has its own field) |
 | F3 | Fog on fighters | On: only fighters in sight show; the radar finds the rest |
 | F4 | Can den monsters kill survivors | Yes, a survivor can fall to a den |
 | F5 | Field size | 180 units across (user, 2026-10-30), generated per attempt from a seed |

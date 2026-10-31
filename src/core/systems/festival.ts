@@ -8,6 +8,8 @@ import {
   FESTIVAL_DOOR_KEY,
   FESTIVAL_REWARD,
   FESTIVAL_RESTOCK,
+  ROYALE_SECTIONS,
+  scoutedKey,
   FESTIVAL_SWIFT_KEY,
   FESTIVAL_TOKEN,
   FESTIVAL_WINS_KEY,
@@ -200,6 +202,11 @@ function restockStores(state: GameState, bus: EventBus): void {
         if ((state.stats[k] ?? 0) !== 0) setStat(state, bus, k, 0);
       }
     }
+  }
+  // The last attempt's survey scouted the last attempt's field.
+  for (const id of Object.keys(ROYALE_SECTIONS)) {
+    const k = scoutedKey(id);
+    if ((state.stats[k] ?? 0) !== 0) setStat(state, bus, k, 0);
   }
 }
 

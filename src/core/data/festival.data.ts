@@ -284,10 +284,11 @@ export const CACHE_WEAPONS: Record<string, string> = {
 
 /**
  * Hub spots whose searches restock when an attempt starts (§9.1). The survey
- * is not here: what was scouted stays scouted for the run. A listed spot that
- * does not exist yet is skipped.
+ * restocks too: every attempt generates its own field (`FestivalRun.fieldSeed`),
+ * so what was scouted belongs to that attempt, and its flags are cleared with
+ * it. A listed spot that does not exist yet is skipped.
  */
-export const FESTIVAL_RESTOCK = ['f15_stores', 'f15_herb_yard', 'f15_workshop'];
+export const FESTIVAL_RESTOCK = ['f15_stores', 'f15_herb_yard', 'f15_workshop', 'f15_survey'];
 
 /** The flag a survey find sets for a section: the royale's map shows that section's caches and dens. */
 export const scoutedKey = (section: string): string => `flag:festival:scouted:${section}`;
