@@ -44,7 +44,7 @@ always give the same build, and a build is never stored.
 | Riders | The archetype's `inflicts` plus the weapon's (`SURVIVOR_WEAPON_INFLICTS`). |
 | Emphasis | `attrBias`: the archetype's multipliers, jittered a tenth either way, scaled so the species' attribute total at the royale's starting level is kept. `biasAttrs` re-applies that exactly where the bias is used. |
 | Power | `power`: bonus levels for duels between survivors: the archetype's, the wielded weapon's quality, each worn piece, accessory and healing tool. Held to `SURVIVOR_TOOLS.power.cap`. |
-| Name | Three syllable lists (`SURVIVOR_NAME_*`) walked in a per-field stride, so no two survivors on a field share a name. The display name is "Given, archetype". |
+| Name | Three syllable lists (`SURVIVOR_NAME_*`) walked in a per-field stride, so no two survivors on a field share a name. The display name is the archetype as a title before the given name, "Spearman Tamsin", so combat's "The <name> hits you" lines read as English; the champion is "Champion <given>". |
 
 A **monster rotation** reads a technique's entry positions, its cooldown and its
 move's damage, type, hits and riders, and nothing else: no triggers, no weapon

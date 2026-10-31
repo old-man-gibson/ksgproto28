@@ -40,7 +40,11 @@ import { baseMonsterAttrs } from './monsterStats';
 export type SurvivorSubject = Pick<FieldFighter, 'id' | 'monsterId' | 'tools'>;
 
 export interface SurvivorBuild {
-  /** The display name: the given name and the archetype, "Tamsin, spearman". */
+  /**
+   * The display name: the archetype as a title before the given name,
+   * "Spearman Tamsin", so combat's "The <name> hits you" lines read as
+   * English.
+   */
   name: string;
   /** The given name alone. */
   given: string;
@@ -397,7 +401,7 @@ export function survivorBuild(fieldSeed: number, fighter: SurvivorSubject): Surv
   power += tools.accessories.length * P.accessory + tools.heals * P.heal;
 
   return {
-    name: `${given}, ${arch.name}`,
+    name: `${titleCase(arch.name)} ${given}`,
     given,
     archetype: arch.id,
     family: family.id,
@@ -411,8 +415,8 @@ export function survivorBuild(fieldSeed: number, fighter: SurvivorSubject): Surv
 /**
  * The `startStagedGroup` member for one survivor meeting the player: its
  * species (the champion's def for the last one), its level and wounds, and
- * its build as kit, name and attribute emphasis. The champion keeps its def's
- * title after its given name.
+ * its build as kit, name and attribute emphasis. The champion is titled
+ * "Champion <given name>".
  */
 export function survivorMember(
   fieldSeed: number,
@@ -427,7 +431,12 @@ export function survivorMember(
     level,
     hpShare,
     kit: build.kit,
-    name: champion ? `${build.given}, ${MONSTERS[SURVIVOR_CHAMPION]?.name ?? 'Champion'}` : build.name,
+    name: champion ? `Champion ${build.given}` : build.name,
     attrBias: build.attrBias,
   };
+}
+
+/** "spearman" → "Spearman": an archetype noun as a title. */
+function titleCase(word: string): string {
+  return word.charAt(0).toUpperCase() + word.slice(1);
 }

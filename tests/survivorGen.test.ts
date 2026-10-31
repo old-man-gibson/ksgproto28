@@ -401,7 +401,7 @@ describe('what a build holds', () => {
   it('is named for the person and the archetype', () => {
     for (const b of sample) {
       const arch = SURVIVOR_ARCHETYPES.find((a) => a.id === b.archetype)!;
-      expect(b.name).toBe(`${b.given}, ${arch.name}`);
+      expect(b.name).toBe(`${arch.name.charAt(0).toUpperCase()}${arch.name.slice(1)} ${b.given}`);
       expect(b.given).toMatch(/^[A-Z][a-z]+$/);
     }
   });
@@ -557,7 +557,7 @@ describe('survivorMember', () => {
     const b = survivorBuild(SEED, fighter);
     const member = survivorMember(SEED, fighter, 40, 1, true);
     expect(member.monsterId).toBe(SURVIVOR_CHAMPION);
-    expect(member.name).toBe(`${b.given}, ${MONSTERS[SURVIVOR_CHAMPION].name}`);
+    expect(member.name).toBe(`Champion ${b.given}`);
     expect(member.kit).toEqual(b.kit);
   });
 });
