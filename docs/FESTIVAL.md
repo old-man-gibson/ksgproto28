@@ -333,6 +333,7 @@ terrain only changes pace and sight.
 | F6 | How long a plan-only royale should last | About 2 to 4 festival hours (12 to 24 minutes of play) |
 | F7 | Hub budget | Doing everything takes about 8 to 10 of the 10 days |
 | F8 | What the hub's searches and benches give | Kept after the attempt, as the stores' rations are today |
+| F9 | The survey's order | Random: one search that runs four days unattended (user, 2026-10-30: "keep it random") |
 
 ### 9.6 Survivors as fighters (user, 2026-10-30)
 
