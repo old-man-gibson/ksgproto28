@@ -342,11 +342,11 @@ proper enemies and not just stat sticks with some numbers."*
   houses in the village. Weapons, armour, accessories and healing, from
   existing items.
 - **Tools for everyone.** A survivor that takes a cache keeps the item as a
-  tool (\`FieldFighter.tools\`): it counts in the survivor's duels, and it joins
+  tool (`FieldFighter.tools`): it counts in the survivor's duels, and it joins
   the survivor's kit when it fights the player. The field can grow stronger
   than the player; losing is allowed (a loss is the festival's lockout, and
   the next attempt is a new field).
-- **The enemy generator** (\`systems/survivorGen.ts\`, \`data/survivors.data.ts\`).
+- **The enemy generator** (`systems/survivorGen.ts`, `data/survivors.data.ts`).
   A survivor's build is rebuilt from the field's seed, its id and its species,
   so nothing but the tools is saved: a generated name; an archetype (duelist,
   brawler, spearman, archer, knight, assassin, caster, priest and so on); a
@@ -356,6 +356,6 @@ proper enemies and not just stat sticks with some numbers."*
   armour value; an attribute emphasis. Tools taken on the field merge in (a
   better weapon, armour, a healing flask as a one-use rotation entry). In a
   fight with the player the survivor is its species' monster at its level,
-  carrying that build as \`MonsterInstance.kit\`, which combat reads before the
-  def (\`kitOf\`).
+  carrying that build as `MonsterInstance.kit`, which combat reads before the
+  def (`kitOf`).
 - **The map** shows a seen survivor's name, archetype and weapon on hover.
