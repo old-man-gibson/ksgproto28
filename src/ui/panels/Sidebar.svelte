@@ -29,6 +29,7 @@
   } from '../../core/systems/stamina';
   import { availableMax, resourceLock, resourceValue, trueMax } from '../../core/systems/resources';
   import { escalationPrimed, visibleStatuses } from '../../core/systems/statuses';
+  import { facetReadouts } from '../../core/facet/host';
   import { STATUSES } from '../../core/registry';
   import { statusTipLines } from '../lib/format';
   import { RECOVERY_MULT, RESOURCES } from '../../core/data/resources.data';
@@ -182,7 +183,12 @@
   const eff = $derived(effectiveAttrs(gs));
 
   const wornTitle = $derived(equippedTitle(gs));
-  const afflictions = $derived(visibleStatuses(gs));
+  /** The run's unique ability (docs/FACET.md): the cells its document marks for showing. */
+  const abilities = $derived(facetReadouts(gs));
+  /** Those cells ride on statuses; the readout shows them, so the status chips leave them out. */
+  const abilityStatusIds = $derived(new Set(abilities.flatMap((a) => a.cells.map((c) => c.statusId))));
+  const afflictions = $derived(visibleStatuses(gs).filter((s) => !abilityStatusIds.has(s.id)));
+  const signedPct = (v: number) => (v >= 0 ? '+' : '−') + Math.round(Math.abs(v) * 100) + '%';
 
   /** Which stat groups are open (per viewer, this session). Closed by default. */
   type StatGroup = 'offense' | 'defense' | 'growth' | 'fortune';
@@ -378,6 +384,35 @@
       </div>
       {#snippet tip()}{@render actionBarTip()}{/snippet}
     </Tip>
+
+    <!-- The run's unique ability. A 'bar' cell draws like a pool; a 'signedPct' cell is one line. -->
+    {#each abilities as ab (ab.name)}
+      {#each ab.cells as cell (cell.key)}
+        <Tip block>
+          <div class="res">
+            <span class="res-spacer ability-icon" style="width: {RES_ICON}px">{cell.icon}</span>
+            {#if cell.show === 'bar'}
+              <div class="bar res-bar">
+                <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent)"></div>
+                <div class="label">{cell.label} {Math.floor(cell.value)} / {Math.floor(cell.cap)}</div>
+              </div>
+            {:else}
+              <span class="ability-line" class:ability-low={cell.value < 0}>{cell.label} {signedPct(cell.value)}</span>
+            {/if}
+          </div>
+          {#snippet tip()}
+            <div class="tip-line tip-base">{ab.icon} {cell.label === ab.name ? ab.name : `${ab.name}: ${cell.label}`}</div>
+            <div class="tip-line">{cell.desc}</div>
+            {#each ab.inputs as input (input.label)}
+              <div class="tip-line">{input.label}: {pct(input.value, 0)}</div>
+            {/each}
+          {/snippet}
+        </Tip>
+      {/each}
+      {#each ab.inputs as input (input.label)}
+        <div class="ability-input dim">{input.label}: {pct(input.value, 0)}</div>
+      {/each}
+    {/each}
 
     <!-- Whatever is currently wrong with you. Absent when nothing is. -->
     {#if afflictions.length}
@@ -749,6 +784,23 @@
 
   .res-spacer {
     flex: none;
+  }
+
+  .ability-icon {
+    text-align: center;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .ability-line {
+    font-size: 0.8rem;
+    color: var(--xp);
+  }
+  .ability-line.ability-low {
+    color: var(--danger);
+  }
+  .ability-input {
+    font-size: 0.72rem;
+    padding-left: calc(32px + 4px);
   }
 
   .res-bar.action-bar {

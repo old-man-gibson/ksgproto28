@@ -72,6 +72,16 @@ still, clear, overcast, mist, rain, storm, snow, blizzard, gale, sandstorm.
 Adding a phenomenon means adding a branch there — never a new simulated
 variable.
 
+**Sunlight is a classification too.** `sunlight(state)` (exposure.ts) is 0
+under a roof (a sheltered region or an `indoor` tag) and on a `dark` tag, and
+otherwise the sky's daylight (1 − `naturalDarkness(hour)`) times `SUN_SHARE`
+for the weather kind: clear and still 1, gale 0.8, mist 0.5, overcast 0.4,
+snow 0.3, rain and sandstorm 0.2, storm 0.1, blizzard 0.05 (placeholders). An
+unplaced region reads as clear. Lamplight is not sun: a settlement street at
+night reads 0. Solar Charge banks it (docs/FACET.md). A new weather kind needs
+a share; `SUN_SHARE` is a `Record<WeatherKind, …>`, so it will not compile
+without one.
+
 ## Rules for future work
 
 - **Weather is not yet a mod source.** The day it modifies player stats, the

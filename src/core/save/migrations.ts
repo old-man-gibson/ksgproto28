@@ -699,6 +699,12 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     pruneLostSpots(raw, (lost) => (lost.startsWith('f7_') && SPOTS.f7_docks ? 'f7_docks' : 'ascent_foot'));
     raw.version = 60;
   },
+  // v60 → v61: the run's unique ability as FACET documents (docs/FACET.md).
+  // No earlier save held one, so every save starts with none.
+  60: (raw) => {
+    if (!Array.isArray(raw.facets)) raw.facets = [];
+    raw.version = 61;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {

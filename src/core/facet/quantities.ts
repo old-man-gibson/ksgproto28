@@ -3,6 +3,7 @@ import { STAT_NAMES } from '../types';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { effectiveAttr } from '../systems/attributes';
 import { getDerivedStats } from '../systems/derived';
+import { sunlight } from '../systems/exposure';
 import type { FacetQuantity } from './facet';
 
 /**
@@ -23,6 +24,8 @@ import type { FacetQuantity } from './facet';
  *    registered here.
  *  - `res.<type>`: the fourteen resistances, the same fourteen types in both.
  *  - `pool.<id>.cur` / `.max`: resource pools. Spirit exists only here.
+ *  - `world.<name>`: the world around the bearer. `world.sunlight` (0..1,
+ *    exposure.ts `sunlight`) is what Solar Charge banks; IG has none yet.
  *
  * A number only this game has is `ksg.<StatKey>`. A bank entry that reads one
  * runs only here until IG supplies the same number under a shared id.
@@ -176,6 +179,11 @@ function build(): Map<string, Entry> {
       (s) => s.resources[p],
     );
   }
+  // The world around the bearer. Read-only: an ability may react to the sun, not move it.
+  add(
+    { id: 'world.sunlight', label: 'Sunlight', kind: 'prob', namespace: 'world', nullifiable: false, writable: false, modStat: null },
+    sunlight,
+  );
   return out;
 }
 

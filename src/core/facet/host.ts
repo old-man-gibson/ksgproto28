@@ -1,6 +1,7 @@
 import type { DamageType, GameState, StatusApplication, StatusDef } from '../types';
 import { ELEMENTAL_TYPES, PHYSICAL_TYPES, RES_STAT_BY_TYPE } from '../types';
 import { TPS } from '../engine/loop';
+import { TICKS_PER_GAME_MINUTE } from '../data/climate.data';
 import { chance, rand } from '../engine/rng';
 import { procChance, procRate } from '../engine/mercy';
 import { STATUSES } from '../data/statuses.data';
@@ -8,7 +9,7 @@ import { applyStatus, findStatus, removeStatus } from '../systems/statuses';
 import { getDerivedStats } from '../systems/derived';
 import { appendLog } from '../systems/log';
 import { facetQuantities, readQuantity } from './quantities';
-import type { FacetHost } from './facet';
+import type { FacetDoc, FacetHost } from './facet';
 import './load';
 
 /**
@@ -24,8 +25,13 @@ import './load';
  *
  * Every member reads the state through `getState`, never a captured object:
  * offline catch-up ticks a detached copy of the state (ui/state.svelte.ts
- * `runCatchup`), and the binding to it arrives with the first ability that
- * ticks outside a fight (step 2).
+ * `runCatchup`), and `bindFacets` below moves the binding to whichever state
+ * is advancing.
+ *
+ * Step 2 (Solar Charge): `facetMinute` gives the ability time outside a fight,
+ * `state.facets` saves its documents (v61), and the sidebar reads
+ * `facetReadouts`. The ability is granted only from the debug panel until its
+ * discovery moment is decided.
  */
 
 /** The player's ref. Refs are strings so they survive JSON and the core's Map keys. */
@@ -75,8 +81,9 @@ function notYet(member: string, step: string): () => never {
 
 export function createFacetHost(getState: () => GameState): FacetHost {
   const s = getState;
-  // Cell state per tier and ref. Transient for now: no ability exists, and the
-  // run-long tier and its save field are step 2 (core addition 4).
+  // Scratch space per tier and ref; the core requires the member and reads it
+  // nowhere today. Cell values do not live here: they live in the documents,
+  // and the documents in `state.facets`, which is how they are saved.
   const bags = new Map<string, Record<string, unknown>>();
 
   return {
@@ -192,10 +199,144 @@ export function createFacetHost(getState: () => GameState): FacetHost {
   };
 }
 
+// ---------- the game's side ----------
+
+/** The state the core reads and writes: whichever one `bindFacets` was last given. */
+let bound: GameState | null = null;
+
 /**
- * Install the adapter. Called once at boot from the UI bridge, after the save
- * has loaded. Throws when the core is incomplete or a member is missing.
+ * Install the adapter over the bound state. Called once at boot from the UI
+ * bridge, then `bindFacets(gs, true)`. Throws when the core is incomplete or a
+ * member is missing. Tests that do not install it get no ability code at all:
+ * every function below is a no-op until it is installed.
  */
-export function installFacet(getState: () => GameState): void {
-  globalThis.Facet.install(createFacetHost(getState));
+export function installFacet(): void {
+  globalThis.Facet.install(createFacetHost(() => bound as GameState));
+}
+
+/**
+ * Point the core at the state being ticked and attach that state's ability.
+ * The core writes cell values into the document objects it was handed, so
+ * those must be the documents this state will save. The live game and offline
+ * catch-up's detached copy are different objects (ui/state.svelte.ts
+ * `runCatchup`), so the binding follows whichever state advances. `force`
+ * re-attaches the same state after its contents were replaced wholesale
+ * (catch-up landing, an import, a reset, a prestige): Game.resyncAnnouncers.
+ */
+export function bindFacets(state: GameState, force = false): void {
+  if (!globalThis.Facet?.ready()) return;
+  if (bound === state && !force) return;
+  bound = state;
+  globalThis.Facet.detach(PLAYER_REF);
+  globalThis.Facet.attach(PLAYER_REF, state.facets ?? []);
+}
+
+/**
+ * The run's ability, once per game minute. Game.advance calls it every tick,
+ * travel and fights included, like tickExposure.
+ */
+export function tickFacets(state: GameState): void {
+  if (state.totalTicks % TICKS_PER_GAME_MINUTE !== 0) return;
+  bindFacets(state);
+  if (bound === state && state.facets?.length) globalThis.Facet.minute(PLAYER_REF);
+}
+
+/**
+ * Debug panel only: set a cell of the held ability to a share of its cap,
+ * through the core's own cell write, so its status follows as in play.
+ */
+export function debugSetCell(state: GameState, key: string, share: number): void {
+  const F = globalThis.Facet;
+  if (!F?.ready() || bound !== state) return;
+  for (const doc of state.facets) {
+    const cell = doc.cells?.find((c) => c.key === key);
+    if (!cell) continue;
+    const ctx = { ref: PLAYER_REF, facet: doc, bindings: {} };
+    F.cellStep(cell, 'set', share * F.evalExpr(cell.cap, ctx), ctx);
+  }
+}
+
+/** The status ids a document's cells ride on; they start with this. */
+const carrierPrefix = (doc: FacetDoc) => 'fc_' + String(doc.id).replace('fc_', '') + '_';
+
+/**
+ * Give the player a bank ability, replacing the one held: one ability per run
+ * (plans/rolled-abilities.md). The document is a copy of the bank template with
+ * empty cells; the old document's statuses go with it. False when the bank has
+ * no such entry or the adapter is not installed.
+ */
+export function grantFacet(state: GameState, id: string): boolean {
+  const template = globalThis.Facet?.ready() ? globalThis.Facet.bank?.[id] : undefined;
+  if (!template) return false;
+  for (const doc of state.facets) {
+    const prefix = carrierPrefix(doc);
+    state.statuses = state.statuses.filter((s) => !s.id.startsWith(prefix));
+  }
+  state.facets = [globalThis.Facet.hydrate(JSON.parse(JSON.stringify(template)) as FacetDoc)];
+  bindFacets(state, true);
+  return true;
+}
+
+/**
+ * Take every ability status off a state. For a boot where the core failed to
+ * install: those statuses are saved, but their definitions are built at attach,
+ * and a held status with no definition breaks every panel that names it.
+ */
+export function dropFacetStatuses(state: GameState): void {
+  state.statuses = state.statuses.filter((s) => !s.id.startsWith('fc_'));
+}
+
+export interface CellReadout {
+  key: string;
+  label: string;
+  icon: string;
+  value: number;
+  cap: number;
+  show: string;
+  desc: string;
+  /** The carrier status this cell rides on, so a status list can leave it out. */
+  statusId: string;
+}
+
+export interface InputReadout {
+  label: string;
+  value: number;
+  show: string;
+}
+
+export interface FacetReadout {
+  name: string;
+  icon: string;
+  cells: CellReadout[];
+  inputs: InputReadout[];
+}
+
+/** What the sidebar shows for the run's ability: each cell's value, and the inputs it names. */
+export function facetReadouts(state: GameState): FacetReadout[] {
+  const F = globalThis.Facet;
+  if (!F?.ready() || bound !== state) return [];
+  return state.facets.map((doc) => {
+    const ctx = { ref: PLAYER_REF, facet: doc, bindings: {} };
+    return {
+      name: doc.reading?.name ?? 'Ability',
+      icon: doc.reading?.icon ?? '✦',
+      cells: (doc.cells ?? [])
+        .filter((c) => c.show)
+        .map((c) => ({
+          key: c.key,
+          label: c.label ?? c.key,
+          icon: c.icon ?? '',
+          value: c.state?.v ?? 0,
+          cap: F.evalExpr(c.cap, ctx),
+          show: c.show!,
+          desc: c.status?.desc ?? '',
+          statusId: carrierPrefix(doc) + c.key,
+        })),
+      inputs: (doc.reading?.inputs ?? []).map((i) => ({
+        label: i.label,
+        value: F.readQ(PLAYER_REF, i.q).value,
+        show: i.show ?? '',
+      })),
+    };
+  });
 }

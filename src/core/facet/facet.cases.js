@@ -28,6 +28,7 @@ function fakeHost(over) {
     rankers: () => ['front', 'random'],
     quantities: () => [
       { id: 'fighter.hp', label: 'HP', kind: 'pool', nullifiable: false, writable: false, mortalRole: 'vitality' },
+      { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
       { id: 'fighter.crit', label: 'Crit chance', kind: 'prob', from: [], feeds: ['fighter.critDamage'], gates: ['fighter.critDamage'] },
       { id: 'fighter.critDamage', label: 'Crit damage', kind: 'mult', nul: 1, from: ['fighter.crit'] },
       { id: 'fighter.speed', label: 'Speed', kind: 'rate', feeds: ['fighter.bar'], gates: ['fighter.bar'] },
@@ -274,6 +275,81 @@ CASES['compile: sugar expands to a primitive'] = (assert, H) => {
   const eff = c.hooks.tick[0].do[0];
   assert(eff.emit === 'gate' && eff.verb === 'veto', 'law did not expand to a gate veto');
   assert(eff.scope && eff.scope.side === 'arena', 'law did not force arena scope');
+};
+
+CASES['compile: a modifier named by quantity id takes the host stat name'] = (assert, H) => {
+  const base = H.quantities();
+  F.install(Object.assign(H, { quantities: () => base.map(q => q.id === 'fighter.speed' ? Object.assign({}, q, { modStat: 'quickness' }) : q) }));
+  const facet = { id: 'fc_test', v: 1, cells: [], clauses: [
+    { id: 'c1', on: 'tick', do: [{ emit: 'status', def: { id: 'z', mods: [
+      { q: 'fighter.speed', op: 'mult', value: 1 },
+      { q: 'fighter.crit', op: 'add', value: 1 },
+      { stat: 'raw', op: 'add', value: 1 },
+    ] } }] },
+  ] };
+  const def = F.compile(facet, F.host()).defs.filter(d => d.id === 'z')[0];
+  assert(def.mods.length === 2, 'expected the ported and the raw modifier, got ' + JSON.stringify(def.mods));
+  assert(def.mods[0].stat === 'quickness' && def.mods[0].q === undefined, 'the quantity id was not replaced by its modStat');
+  assert(def.mods[1].stat === 'raw', 'a modifier naming its stat directly was changed');
+};
+
+// ---------- carriers ----------
+// A cell with a magnitude rides on a carrier status. Until 2026-10-30 nothing applied the carrier,
+// so writes to its intensity went nowhere and a cell's value never reached a stat block.
+const bankFacet = () => F.hydrate({ v: 1, cells: [{ key: 'bank', hold: 'none', level: 'real', cap: 100, status: { mods: [{ stat: 'damage', op: 'mult', value: 0.01 }] } }],
+  clauses: [{ id: 'c1', on: 'minute', do: [{ emit: 'cell', cell: 'bank', verb: 'add', value: 10 }] }] });
+
+CASES['carrier: attach applies each cell carrier, with its authored fields'] = (assert, H) => {
+  F.install(H); H._add('a');
+  const facet = bankFacet();
+  F.attach('a', [facet]);
+  const id = F.carrierId(facet, facet.cells[0]);
+  assert(H.findStatus('a', id), 'the carrier was not applied at attach');
+  assert(H._statuses[id].mods[0].stat === 'damage', 'the cell status modifiers did not reach the carrier definition');
+};
+
+CASES['carrier: a carrier the host removed comes back on the next write'] = (assert, H) => {
+  F.install(H); H._add('a');
+  const facet = bankFacet();
+  F.attach('a', [facet]);
+  const id = F.carrierId(facet, facet.cells[0]);
+  H.removeStatus('a', id);
+  F.minute('a');
+  assert(H.findStatus('a', id), 'the carrier stayed gone after the cell changed');
+};
+
+// ---------- time outside a fight ----------
+CASES['minute: a minute clause fires from Facet.minute and not from the combat tick'] = (assert, H) => {
+  F.install(H); H._add('a');
+  const facet = bankFacet();
+  F.attach('a', [facet]);
+  F.tick('a');
+  assert(facet.cells[0].state.v === 0, 'a minute clause fired on the combat tick');
+  F.minute('a');
+  F.minute('a');
+  assert(facet.cells[0].state.v === 20, 'two minutes did not add twice');
+};
+
+CASES['expr: a share of max HP divides by fighter.maxHpAbs'] = (assert, H) => {
+  F.install(H); H._add('a', { 'fighter.hp': 30, 'fighter.maxHpAbs': 120 });
+  const v = F.evalExpr({ q: 'fighter.hp', of: 'frac' }, { ref: 'a', facet: null, bindings: {} });
+  assert(v === 0.25, 'hp 30 of 120 read as ' + v);
+};
+
+// ---------- the bank ----------
+// Game behaviour is each game's test; this checks only that every entry is a document the
+// compiler accepts and that granting one copies it instead of sharing the template.
+CASES['bank: every entry hydrates, compiles and attaches as a copy'] = (assert, H) => {
+  F.install(H); H._add('a');
+  const ids = Object.keys(F.bank || {});
+  assert(ids.length > 0, 'the bank is empty or not loaded');
+  for (const id of ids) {
+    const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank[id])));
+    assert(F.compile(doc, F.host()), id + ' did not compile');
+    F.attach('a', [doc]);
+    F.minute('a');
+    assert(!F.bank[id].cells || F.bank[id].cells.every(c => c.state === undefined), id + ': running a grant wrote into the template');
+  }
 };
 
 // ---------- the clause dispatcher ----------

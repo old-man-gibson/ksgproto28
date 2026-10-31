@@ -9,7 +9,8 @@
  * mistyped path here (FACET-SPEC §2.1).
  *
  * facet.cases.js is the core's test corpus and is not loaded by the game;
- * tests/facet.test.ts imports it.
+ * tests/facet.test.ts imports it. facet.bank.js is the ability bank: the
+ * documents a grant copies from.
  */
 import './facet.core.js';
 import './facet.data.js';
@@ -22,3 +23,4 @@ import './facet.mortal.js';
 import './facet.forge.js';
 import './facet.oracle.js';
 import './facet.compile.js';
+import './facet.bank.js';

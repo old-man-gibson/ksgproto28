@@ -4,7 +4,20 @@ import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import '../src/core/facet/load';
 import '../src/core/facet/facet.cases.js';
-import { createFacetHost, PLAYER_REF } from '../src/core/facet/host';
+import {
+  bindFacets,
+  createFacetHost,
+  debugSetCell,
+  grantFacet,
+  installFacet,
+  PLAYER_REF,
+  tickFacets,
+} from '../src/core/facet/host';
+import { Game } from '../src/core/game';
+import { MIGRATIONS } from '../src/core/save/migrations';
+import { deserialize, serialize } from '../src/core/save/save';
+import { sunlight } from '../src/core/systems/exposure';
+import { AREAS, REGIONS, SPOTS } from '../src/core/registry';
 import { facetQuantities, readQuantity } from '../src/core/facet/quantities';
 import type { FacetDoc } from '../src/core/facet/facet';
 import { createInitialState } from '../src/core/state';
@@ -123,5 +136,136 @@ describe('this game as host', () => {
     expect(findStatus(state, 'fc_test_plating')?.intensity).toBe(2);
     expect(getDerivedStats(state).armor).toBeCloseTo(armorBefore + 10);
     delete STATUSES.fc_test_plating;
+  });
+});
+
+/**
+ * Solar Charge, the first bank ability (Facet repo core/facet.bank.js): banks
+ * sunlight each game minute, drains a little every minute, and sets a damage
+ * and spell power multiplier from the charge, +20% from half charge up and
+ * −30% at empty. Numbers are the bank's placeholders.
+ */
+describe('Solar Charge', () => {
+  const HOUR = 600; // ticks: 10 per game minute
+  const probe = createInitialState(7);
+  const spotWhere = (test: (id: string) => boolean) => Object.keys(SPOTS).find(test)!;
+  const OPEN = spotWhere((id) => {
+    probe.spot = id;
+    probe.totalTicks = 12 * HOUR;
+    return sunlight(probe) > 0;
+  });
+  const ROOFED = spotWhere((id) => !!REGIONS[AREAS[SPOTS[id].areaId]?.regionId]?.sheltered);
+
+  /** A fresh state at `spot` and `hour` on day one, with Solar Charge granted. */
+  function solar(spot: string, hour = 12) {
+    const state = createInitialState(7);
+    state.spot = spot;
+    state.totalTicks = hour * HOUR;
+    installFacet();
+    bindFacets(state, true);
+    expect(grantFacet(state, 'solar_charge')).toBe(true);
+    return state;
+  }
+  const cell = (state: ReturnType<typeof createInitialState>, key: string) =>
+    state.facets[0].cells!.find((c) => c.key === key)!.state!.v;
+  const minutes = (state: ReturnType<typeof createInitialState>, n: number) => {
+    for (let i = 0; i < n; i++) {
+      state.totalTicks += 10;
+      tickFacets(state);
+    }
+  };
+  /** The same character with no ability, for comparing derived stats. */
+  const plainTwin = (spot: string) => {
+    const twin = createInitialState(7);
+    twin.spot = spot;
+    return getDerivedStats(twin);
+  };
+
+  it('reads sunlight: some under open sky at noon, none at midnight, none under a roof', () => {
+    expect(OPEN).toBeTruthy();
+    expect(ROOFED).toBeTruthy();
+    const s = createInitialState(7);
+    s.spot = OPEN;
+    s.totalTicks = 12 * HOUR;
+    expect(sunlight(s)).toBeGreaterThan(0);
+    expect(sunlight(s)).toBeLessThanOrEqual(1);
+    s.totalTicks = 0;
+    expect(sunlight(s)).toBe(0);
+    s.spot = ROOFED;
+    s.totalTicks = 12 * HOUR;
+    expect(sunlight(s)).toBe(0);
+  });
+
+  it('opens empty, at −30% damage and spell power', () => {
+    const state = solar(ROOFED);
+    expect(cell(state, 'charge')).toBe(0);
+    expect(cell(state, 'power')).toBeCloseTo(-0.3);
+    expect(getDerivedStats(state).damage).toBeCloseTo(plainTwin(ROOFED).damage * 0.7);
+    expect(getDerivedStats(state).spellPower).toBeCloseTo(plainTwin(ROOFED).spellPower * 0.7);
+  });
+
+  it('banks under open sky by day and drains under a roof', () => {
+    const state = solar(OPEN);
+    minutes(state, 60);
+    const banked = cell(state, 'charge');
+    expect(banked).toBeGreaterThan(0);
+    state.spot = ROOFED;
+    minutes(state, 60);
+    expect(cell(state, 'charge')).toBeLessThan(banked);
+    expect(cell(state, 'charge')).toBeGreaterThan(0);
+  });
+
+  it('sets power from the charge: +20% from half up, a straight line down to −30% at empty', () => {
+    const state = solar(ROOFED);
+    debugSetCell(state, 'charge', 0.5);
+    minutes(state, 1);
+    expect(cell(state, 'power')).toBeCloseTo(0.2);
+    expect(getDerivedStats(state).damage).toBeCloseTo(plainTwin(ROOFED).damage * 1.2);
+    debugSetCell(state, 'charge', 1);
+    minutes(state, 1);
+    expect(cell(state, 'power')).toBeCloseTo(0.2);
+    debugSetCell(state, 'charge', 0.25);
+    minutes(state, 1);
+    expect(cell(state, 'power')).toBeCloseTo(-0.05, 2);
+  });
+
+  it('runs from the game loop, travel and all, once per game minute', () => {
+    const state = solar(OPEN);
+    const game = new Game(state);
+    game.step(60); // six game minutes
+    expect(cell(state, 'charge')).toBeGreaterThan(0);
+  });
+
+  it('survives save and load, statuses rebuilt from the document', () => {
+    const state = solar(OPEN);
+    minutes(state, 90);
+    const damage = getDerivedStats(state).damage;
+    const loaded = deserialize(serialize(state));
+    installFacet();
+    bindFacets(loaded, true);
+    expect(cell(loaded, 'charge')).toBeCloseTo(cell(state, 'charge'));
+    expect(getDerivedStats(loaded).damage).toBeCloseTo(damage);
+  });
+
+  it('keeps what offline catch-up banked on its detached copy', () => {
+    const live = solar(OPEN);
+    const liveGame = new Game(live);
+    const plain = JSON.parse(JSON.stringify(live)) as typeof live;
+    const worker = new Game(plain);
+    worker.step(HOUR); // an hour in the sun, ticked on the copy
+    const banked = cell(plain, 'charge');
+    expect(banked).toBeGreaterThan(0);
+    expect(cell(live, 'charge')).toBe(0);
+    Object.assign(live, plain);
+    liveGame.resyncAnnouncers();
+    expect(cell(live, 'charge')).toBe(banked);
+    minutes(live, 1);
+    expect(cell(live, 'charge')).not.toBe(banked);
+  });
+
+  it('gives a v60 save an empty ability list', () => {
+    const raw: Record<string, unknown> = { version: 60 };
+    MIGRATIONS[60](raw);
+    expect(raw).toMatchObject({ version: 61, facets: [] });
   });
 });

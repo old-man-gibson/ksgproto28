@@ -30,7 +30,7 @@ F.compile = function compile(facet, host) {
     if (cell.reading === undefined) cell.reading = F.cellReading(cell);
     // A cell with a magnitude (level !== 'none') or a set (hold === 'many') gets a carrier status.
     // The cell's number has to live on a status for the source game's stat cache to see it change.
-    if (cell.level !== 'none' || cell.hold === 'many') {
+    if (F.hasCarrier(cell)) {
       out.defs.push(carrierDef(facet, cell, host));
     }
   }
@@ -104,7 +104,33 @@ function carrierDef(facet, cell, host) {
     mods: [],
     worth: 0,
   };
+  // `cell.status` describes the carrier further: modifiers, a description, anything else the host
+  // lists in statusSchema(). A modifier on a carrier is scaled by the cell's value, since the value
+  // is the carrier's intensity; that is how a bank's fill becomes a stat while staying visible to
+  // ksgproto28's stat cache (FACET-SPEC §3.1).
+  const authored = cell.status || {};
+  for (const k of Object.keys(authored)) if (k !== 'id' && k !== 'facet') def[k] = authored[k];
+  if (def.mods) def.mods = portMods(def.mods);
   return filterToSchema(def, schema);
+}
+
+// A modifier may name its number by quantity id (`{ q: 'fighter.damage', op, value }`) instead of
+// by the host's own stat name. The two games call the same number different things (spell power is
+// `magicDamage` in one and `spellPower` in the other), so a document meant for both names the
+// shared id and each host's registry row supplies `modStat`. A quantity this host does not register,
+// or registers with no modStat, cannot be modified here, and the modifier is dropped rather than
+// emitted under a name the host would ignore. A modifier that already names `stat` passes through.
+function portMods(mods) {
+  const out = [];
+  for (const m of mods) {
+    if (m.q === undefined) { out.push(m); continue; }
+    const q = F.registry.def(m.q);
+    if (!q || !q.modStat || q.modOps.indexOf(m.op || 'add') < 0) continue;
+    const port = Object.assign({}, m, { stat: q.modStat });
+    delete port.q;
+    out.push(port);
+  }
+  return out;
 }
 
 // host.statusSchema() declares which StatusDef fields exist, what kind each is, and what role it
@@ -126,6 +152,7 @@ function buildStatusDef(eff, facet, host) {
     if (!field) continue;                                  // undescribed: silently not emitted
     def[k] = src[k];
   }
+  if (def.mods) def.mods = portMods(def.mods);
   return filterToSchema(def, schema);
 }
 

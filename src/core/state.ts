@@ -3,7 +3,7 @@ import { STARTING_SPOT } from './data/locations.data';
 import { freshMutagenState } from './data/mutagens.data';
 import { freshPrestigeState } from './data/prestige.data';
 
-export const SAVE_VERSION = 60;
+export const SAVE_VERSION = 61;
 
 
 function freshAttrs(): Record<AttributeId, AttrState> {
@@ -44,6 +44,7 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     },
     resourceLocks: {},
     statuses: [],
+    facets: [],
     useCooldowns: {},
     meals: [],
     foreignClaims: [],
