@@ -3206,7 +3206,20 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       },
     ],
   },
-  // The hub: ten festival days with what the hall and the stores hold.
+  // The hub: ten festival days (144,000 ticks) as a budget (FESTIVAL.md §9.1).
+  // Every search below is finite and restocks with the next attempt
+  // (FESTIVAL_RESTOCK, data/festival.data.ts), and what the searches and the
+  // benches put in the player's hands is kept after the attempt. Each search
+  // runs on the clock (staticTime), so a fast body does not shorten the days.
+  // Finite stock at a full clear, 600 ticks to the festival hour:
+  //   stores      12 finds x 2,400 ticks  =  28,800
+  //   herb yard    8 finds x 2,400        =  19,200
+  //   workshop     6 finds x 2,400        =  14,400
+  //   survey       8 finds x 7,200        =  57,600
+  //   searches                            = 120,000 (8.3 days)
+  // plus about 4,000 of bench work (the stove 80 to 160 a dish, the alembic
+  // 45 a brew, the anvil 100 + 15 a cell, a smelt 120): about 8.6 of the 10
+  // days. The rest of the days are the open-ended training and rests.
   f15_hall: {
     id: 'f15_hall',
     name: 'The Survivors’ Hall',
@@ -3220,7 +3233,13 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'train_f15_spar', kind: 'train', attr: 'dex', name: 'Spar Between the Benches', icon: '🥊' },
     ],
     benches: ['cooking'],
-    connections: [{ to: 'f15_stores', ticks: 15, label: 'To the Stores', returnLabel: 'Back to the Hall' }],
+    connections: [
+      { to: 'f15_stores', ticks: 15, label: 'To the Stores', returnLabel: 'Back to the Hall' },
+      { to: 'f15_herb_yard', ticks: 15, label: 'To the Herb Yard', returnLabel: 'Back to the Hall' },
+      { to: 'f15_workshop', ticks: 15, label: 'To the Workshop', returnLabel: 'Back to the Hall' },
+      { to: 'f15_survey', ticks: 15, label: 'To the Survey Table', returnLabel: 'Back to the Hall' },
+      { to: 'f15_gallery', ticks: 15, label: 'To the Gallery', returnLabel: 'Back to the Hall' },
+    ],
   },
   // Limited by its search: the limits restart with every attempt.
   f15_stores: {
@@ -3236,15 +3255,134 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
         kind: 'search',
         name: 'Search the Stores',
         icon: '🔍',
-        ticksPer: 120,
+        ticksPer: 2400,
+        staticTime: true,
         rewards: [
           { id: 'rations', weight: 3, limit: 3, material: { id: 'travelers_ration', qty: 2 } },
           { id: 'meat', weight: 2, limit: 2, material: { id: 'raw_meat', qty: 3 } },
           { id: 'salve', weight: 2, limit: 2, material: { id: 'healing_salve', qty: 1 } },
+          // The stove's ingredients: meat and a vegetable (an onion or a
+          // mushroom) make a stew, and a seasoning besides makes a feast.
+          { id: 'onions', weight: 2, limit: 2, material: { id: 'wild_onion', qty: 2 } },
+          { id: 'salt', weight: 1, limit: 1, material: { id: 'rock_salt', qty: 2 } },
+          { id: 'mushrooms', weight: 1, limit: 1, material: { id: 'cave_mushroom', qty: 2 } },
+          { id: 'honey', weight: 1, limit: 1, material: { id: 'wild_honey', qty: 1 } },
         ],
       },
     ],
     connections: [],
+  },
+  // The survey: one find per royale section, in no order the player picks.
+  // Each sets the section's scouted flag (scoutedKey, festival.data.ts), which
+  // the royale's map reads; the next attempt clears them, since it generates a
+  // new field.
+  f15_survey: {
+    id: 'f15_survey',
+    name: 'The Surveyor’s Table',
+    icon: '🗺️',
+    areaId: 'ascent_f15_area',
+    map: { x: 55, y: 18 },
+    tags: ['indoor'],
+    activities: [
+      {
+        id: 'search_f15_survey',
+        kind: 'search',
+        name: 'Survey the Field',
+        icon: '🧭',
+        ticksPer: 7200,
+        staticTime: true,
+        rewards: [
+          { id: 'cliff', weight: 1, limit: 1, stat: { key: 'flag:festival:scouted:cliff', set: 1 } },
+          { id: 'waterfall', weight: 1, limit: 1, stat: { key: 'flag:festival:scouted:waterfall', set: 1 } },
+          { id: 'river', weight: 1, limit: 1, stat: { key: 'flag:festival:scouted:river', set: 1 } },
+          { id: 'bank', weight: 1, limit: 1, stat: { key: 'flag:festival:scouted:bank', set: 1 } },
+          { id: 'cave', weight: 1, limit: 1, stat: { key: 'flag:festival:scouted:cave', set: 1 } },
+          { id: 'glade', weight: 1, limit: 1, stat: { key: 'flag:festival:scouted:glade', set: 1 } },
+          { id: 'forest', weight: 1, limit: 1, stat: { key: 'flag:festival:scouted:forest', set: 1 } },
+          { id: 'village', weight: 1, limit: 1, stat: { key: 'flag:festival:scouted:village', set: 1 } },
+        ],
+      },
+    ],
+    connections: [],
+  },
+  // The alembic's herbs and its water: the workshop's bench brews them.
+  f15_herb_yard: {
+    id: 'f15_herb_yard',
+    name: 'The Herb Yard',
+    icon: '🌿',
+    areaId: 'ascent_f15_area',
+    map: { x: 80, y: 58 },
+    activities: [
+      {
+        id: 'search_f15_herb_yard',
+        kind: 'search',
+        name: 'Work the Beds',
+        icon: '🌿',
+        ticksPer: 2400,
+        staticTime: true,
+        rewards: [
+          { id: 'water', weight: 2, limit: 2, material: { id: 'spring_water', qty: 3 } },
+          { id: 'mendroot', weight: 2, limit: 2, material: { id: 'mendroot', qty: 2 } },
+          { id: 'emberbloom', weight: 1, limit: 1, material: { id: 'emberbloom', qty: 2 } },
+          { id: 'frostmoss', weight: 1, limit: 1, material: { id: 'frostmoss', qty: 2 } },
+          { id: 'bloodwort', weight: 1, limit: 1, material: { id: 'bloodwort', qty: 2 } },
+          { id: 'nightcap', weight: 1, limit: 1, material: { id: 'nightcap', qty: 2 } },
+        ],
+      },
+    ],
+    connections: [],
+  },
+  // Flasks for the fights and plain pieces forged from scrap. The smelt is the
+  // recipe, since the anvil takes ingots and not scrap.
+  f15_workshop: {
+    id: 'f15_workshop',
+    name: 'The Workshop',
+    icon: '⚒️',
+    areaId: 'ascent_f15_area',
+    map: { x: 58, y: 66 },
+    tags: ['indoor'],
+    activities: [
+      {
+        id: 'search_f15_workshop',
+        kind: 'search',
+        name: 'Sort the Scrap',
+        icon: '🔩',
+        ticksPer: 2400,
+        staticTime: true,
+        rewards: [
+          { id: 'scrap', weight: 3, limit: 3, material: { id: 'iron_scrap', qty: 5 } },
+          { id: 'timber', weight: 1, limit: 1, material: { id: 'hardwood', qty: 3 } },
+          { id: 'hide', weight: 1, limit: 1, material: { id: 'leather', qty: 2 } },
+          { id: 'spirit', weight: 1, limit: 1, material: { id: 'grain_spirit', qty: 3 } },
+        ],
+      },
+    ],
+    recipes: ['iron_ingot'],
+    benches: ['alchemy', 'forging'],
+    connections: [],
+  },
+  // Training that spreads over the attributes the hall's drills leave alone.
+  // Floors are checked for wings (floorRules.ts): this wing is six spots off
+  // the dark room, so it needs a oneWay edge back to the spine, which is the
+  // stair down to the dark room.
+  f15_gallery: {
+    id: 'f15_gallery',
+    name: 'The Gallery',
+    icon: '🏛️',
+    areaId: 'ascent_f15_area',
+    map: { x: 32, y: 66 },
+    tags: ['indoor'],
+    activities: [
+      { id: 'rest_f15_gallery', kind: 'rest', name: 'Rest in the Gallery', icon: '🛋️' },
+      {
+        id: 'train_f15_gallery',
+        kind: 'train',
+        name: 'Train With the Rows',
+        icon: '🏋️',
+        attrXp: { con: 0.5, int: 0.5, wis: 0.5 },
+      },
+    ],
+    connections: [{ to: 'f15_dark_room', ticks: 25, oneWay: true, label: 'Down to the Dark Room' }],
   },
   // Floor 16: the royale's field (systems/royale.ts). Empty outside an attempt.
   f16_arena: {
