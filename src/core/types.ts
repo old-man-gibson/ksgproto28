@@ -5382,6 +5382,13 @@ export interface FestivalRun {
   field?: RoyaleField;
   /** uids of royale finds lent to the player, taken back when the attempt ends (docs/FESTIVAL.md §9.2). */
   lent?: number[];
+  /**
+   * The seed of this attempt's royale field, drawn when the attempt starts so
+   * the hub's survey and its preview show the field the royale will open on
+   * (systems/royaleMap.ts). Absent on attempts saved before the rework: the
+   * field then draws its own.
+   */
+  fieldSeed?: number;
 }
 
 /**
