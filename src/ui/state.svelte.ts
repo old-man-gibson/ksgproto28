@@ -15,6 +15,7 @@ import { dropFight, isKept, keepFight, NOTEBOOK_MAX } from '../core/systems/ledg
 import { setSkipSettling } from '../core/systems/mutagens';
 import type { SortMode } from '../core/systems/inventory';
 import { forgetLayouts } from './lib/benchLayouts';
+import { installFacet } from '../core/facet/host';
 
 /**
  * Bridge between the pure core and Svelte. The game state is a deep-reactive
@@ -25,6 +26,16 @@ const loaded = loadFromStorage();
 export const gs: GameState = $state(loaded.state ?? createInitialState());
 
 export const game = new Game(gs);
+
+// The FACET ability core (docs/FACET.md). Nothing attaches an ability yet, so
+// installing it here only proves the adapter against the real save. A failure
+// is reported instead of thrown: an engine nothing uses must not stop the game
+// from starting. tests/facet.test.ts installs the same adapter and fails on it.
+try {
+  installFacet(() => gs);
+} catch (err) {
+  console.error(err);
+}
 
 if (loaded.corrupted) {
   game.bus.emit({

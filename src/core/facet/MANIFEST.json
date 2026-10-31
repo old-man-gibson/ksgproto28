@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "note": "Master copy: C:\\Users\\mersi\\Documents\\Facet\\core. Every game carries a copy of these files. Do not edit a copy: edit the master, then run `node tools/sync.mjs` there. `node tools/sync.mjs --check` reports a copy that has drifted. Hashes are sha256 over the text with CRLF folded to LF.",
+  "order": [
+    "facet.core.js",
+    "facet.data.js",
+    "facet.registry.js",
+    "facet.cells.js",
+    "facet.relations.js",
+    "facet.pipeline.js",
+    "facet.gate.js",
+    "facet.mortal.js",
+    "facet.forge.js",
+    "facet.oracle.js",
+    "facet.compile.js",
+    "facet.cases.js"
+  ],
+  "sha256": {
+    "facet.core.js": "c2777de5b2bec2c345547498d64fceb8e01324e61afd2e1eb0e40cb07d6957f6",
+    "facet.data.js": "387ca3a916df10adf4adb060fc7eaefdac506b076500592564480ab2bb1aca97",
+    "facet.registry.js": "f3beb5015946bc2d87a5416f27fe3aa7755f058229aa403062589fe4612618dd",
+    "facet.cells.js": "45f34dce054177b0b65e038a6c98378f29a0b7aa45375e00dd12769fc526f0de",
+    "facet.pipeline.js": "4562632d9bc70c39905f436f1a6f7ba00fbb2a2a6c720110896ca13ba1e16517",
+    "facet.gate.js": "549c864ff0af218cc5a1572e65718b521b0cba06ecbe334e3d2f417f5550d009",
+    "facet.mortal.js": "738bef83bf0734a5583fb7de51740e60f42a348bbd514caa5dfed89e03add396",
+    "facet.forge.js": "9905f4c9587171374b83f394a4e57a99a4afa7358c0d46a2b75ceafa1769d028",
+    "facet.oracle.js": "f6b36d39a55ece29ca3c8a0a4dc64f3a4e587aa0cda3e363c8a76d444783258e",
+    "facet.compile.js": "6f0e838c6dba5a667e392076348792bcf63e45b9b4416ceec4b92eb2a4223a71",
+    "facet.cases.js": "c75b518920cab60f4e2cd3e04c5152ce06a6ca0ecab23e08684868f24cd0c522",
+    "facet.relations.js": "2b044657252d66b8c276b7c25c6ecb314f6757f0e051114d3b4701255cb172f0"
+  }
+}
