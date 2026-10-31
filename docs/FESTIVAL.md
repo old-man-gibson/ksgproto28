@@ -326,3 +326,36 @@ terrain only changes pace and sight.
 | F6 | How long a plan-only royale should last | About 2 to 4 festival hours (12 to 24 minutes of play) |
 | F7 | Hub budget | Doing everything takes about 8 to 10 of the 10 days |
 | F8 | What the hub's searches and benches give | Kept after the attempt, as the stores' rations are today |
+
+### 9.6 Survivors as fighters (user, 2026-10-30)
+
+**As posted.** *"Distribute the various fighters randomly but somewhat spread
+out. Grant more caches and let all the fighters pick up various tools to help
+them as well. The player is after all allowed to lose. Also, try building an
+'enemy generator' that'll populate their skillsets as well, to make them
+proper enemies and not just stat sticks with some numbers."*
+
+- **Spread.** Survivors start at random places with a minimum spacing
+  between any two (InfiniteGacha's `scatter` with `minDist`), outside the
+  start's radius and every den's.
+- **More caches.** About 35 instead of 10: several in every section, more
+  houses in the village. Weapons, armour, accessories and healing, from
+  existing items.
+- **Tools for everyone.** A survivor that takes a cache keeps the item as a
+  tool (\`FieldFighter.tools\`): it counts in the survivor's duels, and it joins
+  the survivor's kit when it fights the player. The field can grow stronger
+  than the player; losing is allowed (a loss is the festival's lockout, and
+  the next attempt is a new field).
+- **The enemy generator** (\`systems/survivorGen.ts\`, \`data/survivors.data.ts\`).
+  A survivor's build is rebuilt from the field's seed, its id and its species,
+  so nothing but the tools is saved: a generated name; an archetype (duelist,
+  brawler, spearman, archer, knight, assassin, caster, priest and so on); a
+  weapon of the archetype's family, whose damage type and reach it fights
+  with; two to four techniques of that family from the martial registry; a
+  working (spell or miracle) for the casters and priests; worn armour as an
+  armour value; an attribute emphasis. Tools taken on the field merge in (a
+  better weapon, armour, a healing flask as a one-use rotation entry). In a
+  fight with the player the survivor is its species' monster at its level,
+  carrying that build as \`MonsterInstance.kit\`, which combat reads before the
+  def (\`kitOf\`).
+- **The map** shows a seen survivor's name, archetype and weapon on hover.

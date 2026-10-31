@@ -2269,6 +2269,21 @@ export interface MonsterDef {
   loot: DropTable;
 }
 
+/**
+ * What one specimen fights with when it differs from its species' def
+ * (docs/FESTIVAL.md §9.6: the royale's survivors, built by
+ * systems/survivorGen.ts). Every field present replaces the def's; combat
+ * reads it through `kitOf` (systems/monsterStats.ts), never the def alone.
+ */
+export interface MonsterKit {
+  rotation?: MonsterAction[];
+  damageType?: DamageType;
+  range?: MonsterRange;
+  resistances?: Partial<Record<DamageType, number>>;
+  armor?: number;
+  inflicts?: StatusApplication[];
+}
+
 export interface MonsterInstance {
   defId: string;
   name: string;
@@ -2335,6 +2350,8 @@ export interface MonsterInstance {
   lastHit?: DamageType;
   xp: Big;
   gold: Big;
+  /** This specimen's own kit, over its def's (MonsterKit). Absent = the def's. */
+  kit?: MonsterKit;
 }
 
 /**
@@ -5317,6 +5334,13 @@ export interface FieldFighter {
   lastFight?: number;
   /** Levels from caches taken, under their own cap. */
   loot?: number;
+  /**
+   * ItemDef ids this survivor took from caches (docs/FESTIVAL.md §9.6): they
+   * count in its duels and join its kit (systems/survivorGen.ts) when it
+   * fights the player. Its generated build is not saved: it is rebuilt from
+   * the field's seed, its id and its species.
+   */
+  tools?: string[];
 }
 
 /**
