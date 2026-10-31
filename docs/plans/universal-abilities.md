@@ -57,7 +57,7 @@ making abilities interesting first, then three hook fixes its team found (the
 mission-tier reset after a sortie has no caller, `townTierEnd` does not attach
 the person record, combat never calls `FacetHostIG.detach`).
 
-**KSG.** Nothing before K1 (branch `facet-k1`, 2026-10-30; see step 1).
+**KSG.** Nothing before K1 (merged 2026-10-30; see step 1).
 FACET-SPEC §13 "Commits K1–K4" is the port plan, written against
 `SAVE_VERSION` 48 and old `combat.ts` line numbers; main is at 60 on
 2026-10-30. Re-verify every line reference in K2–K4 before building the step.
@@ -166,7 +166,8 @@ Each step ships alone and is verified before the next.
    unmerged): the spec files move out, `FACET.md` points here, and
    `facet/MANIFEST.json` takes the master's note and hashes. This repo's
    `docs/ABILITY_IDEAS.md` is now a pointer.
-1. **K1. Built 2026-10-30 on branch `facet-k1` (unmerged).** The copy in
+1. **K1. Done 2026-10-30: branch `facet-k1`, merged into main as df377a4;
+   the Facet repo's drift check now covers this copy.** The copy in
    `src/core/facet/` (written by the Facet repo's `node tools/sync.mjs --to
    <dir>`, an option added for worktree copies), `facet.d.ts`, `load.ts`
    (bare side-effect imports), `host.ts` (player only), `quantities.ts`,
