@@ -10,7 +10,7 @@ import type {
   StatKey,
 } from '../types';
 import { DAMAGE_TYPE_NAMES, RES_STAT_BY_TYPE } from '../types';
-import { STATUSES } from './statuses.data';
+import { HUNGER_SLOW_CEILING, STATUSES } from './statuses.data';
 import { prose } from '../text/prose';
 import { MAIN_GENES_TEXT, NUCLEASES_TEXT } from '../text/mutagens.text';
 
@@ -1373,7 +1373,12 @@ export const MAIN_GENES = prose<MainGeneDef>('MAIN_GENES', MAIN_GENES_TEXT, {
         // the only ability in the game that does. `inflictRoot` makes the slow
         // it leaves scale with the same count, asked per target, so a room of
         // unequal appetites is slowed unequally.
-        perTargetStacks: { status: 'hunger_anupama', power: 3, inflictRoot: [4, 2.5] },
+        perTargetStacks: {
+          status: 'hunger_anupama',
+          power: 3,
+          inflictRoot: [4, 2.5],
+          inflictCap: HUNGER_SLOW_CEILING,
+        },
         // "All creatures in combat" — the room, not the blow's path.
         splash: 1,
         splashAll: true,

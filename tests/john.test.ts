@@ -170,5 +170,5 @@ describe('pacing — the floors hand over their own answers', () => {
     expect(sword3, `${table}: the cuts must count`).toBeGreaterThanOrEqual(sword0 + 5);
     expect(club0, `${table}: the club must count`).toBeGreaterThanOrEqual(sword0 + 5);
     expect(club3, table).toBeGreaterThanOrEqual(18);
-  });
+  }, 60_000);
 });

@@ -248,7 +248,7 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   // A placeholder name.
   f11_steward: {
     id: 'f11_steward',
-    name: 'The Steward (placeholder)',
+    name: 'The Steward',
     icon: '📜',
     spotId: 'f11_gatehouse',
     quests: ['f11_shore_up_the_gate', 'f11_arm_the_wall'],
@@ -260,28 +260,28 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   // run, then the side's preparation for its floor-14 mission. Placeholders.
   f11_factor: {
     id: 'f11_factor',
-    name: 'The Factor (placeholder)',
+    name: 'The Factor',
     icon: '⚖️',
     spotId: 'f11_merchant_berth',
     quests: ['f11_join_merchants', 'f11_merchants_clearance'],
   },
   f11_bosun: {
     id: 'f11_bosun',
-    name: 'The Bosun (placeholder)',
+    name: 'The Bosun',
     icon: '🏴‍☠️',
     spotId: 'f11_smugglers_berth',
     quests: ['f11_join_pirates', 'f11_pirates_signal'],
   },
   f11_letter_agent: {
     id: 'f11_letter_agent',
-    name: 'The Letter Agent (placeholder)',
+    name: 'The Letter Agent',
     icon: '📜',
     spotId: 'f11_privateer_berth',
     quests: ['f11_join_privateers', 'f11_privateers_letter'],
   },
   f11_lieutenant: {
     id: 'f11_lieutenant',
-    name: 'The Lieutenant (placeholder)',
+    name: 'The Lieutenant',
     icon: '⚓',
     spotId: 'f11_navy_berth',
     quests: ['f11_join_navy', 'f11_navy_lure'],
@@ -291,7 +291,7 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   // clearance is the merchants' gold sink before the closed port.
   f13_pilot: {
     id: 'f13_pilot',
-    name: 'The Pilot (placeholder)',
+    name: 'The Pilot',
     icon: '🧭',
     spotId: 'f13_landing',
     quests: [],
@@ -299,7 +299,7 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   },
   f13_harbor_master: {
     id: 'f13_harbor_master',
-    name: 'The Harbor Master (placeholder)',
+    name: 'The Harbor Master',
     icon: '🗝️',
     spotId: 'f13_landing',
     quests: [],
@@ -328,7 +328,7 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   // `shop` to at least one line.
   f20_broker: {
     id: 'f20_broker',
-    name: 'The Broker (placeholder)',
+    name: 'The Broker',
     icon: '💰',
     spotId: 'f20_quay',
     quests: [],

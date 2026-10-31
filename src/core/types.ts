@@ -1,6 +1,8 @@
 // Shared type definitions for the game core.
 // Everything here is plain data — no DOM, no framework imports.
 
+import type { FacetDoc } from './facet/facet';
+
 // ---------- Attributes ----------
 
 export type AttributeId = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
@@ -799,6 +801,8 @@ export type ActiveSpec =
          * would make the slow absolute long before the fight ended.
          */
         inflictRoot?: [number, number];
+        /** Ceiling on that rooted intensity (the Weight of Hunger: at most 3× slower). */
+        inflictCap?: number;
       };
       /** Conditions the blow leaves behind, on everything it reached. */
       inflicts?: StatusApplication[];
@@ -1632,7 +1636,7 @@ export interface StatusDef {
      */
     harvest?: { on: DamageType[]; type: DamageType; perIntensity: number };
   };
-  /** Damage dealt back to whoever is on the other side of a blow. */
+  /** Damage dealt each time the bearer attacks or is struck in melee. */
   retaliate?: {
     type: DamageType;
     /** Damage per point of intensity. */
@@ -1641,7 +1645,13 @@ export interface StatusDef {
     onAttack?: boolean;
     /** Fires when the bearer is struck in melee. */
     onContact?: boolean;
-    /** Conditions inflicted on the bearer by each retaliation. */
+    /**
+     * Who takes it. 'bearer' (the default): the condition hurts the body
+     * carrying it, as shards do. 'attacker': whoever struck the bearer in
+     * melee takes it, as a thorns ward does; only meaningful with onContact.
+     */
+    hits?: 'bearer' | 'attacker';
+    /** Conditions inflicted on whoever takes the damage. */
     inflicts?: StatusApplication[];
   };
   /**
@@ -5828,6 +5838,13 @@ export interface GameState {
   resourceLocks: Partial<Record<ResourceId, ResourceLock>>;
   /** Conditions currently afflicting the player (see systems/statuses.ts). */
   statuses: StatusInstance[];
+  /**
+   * The run's unique ability, as FACET documents (docs/FACET.md): at most one
+   * (one ability per run, plans/rolled-abilities.md). Each document carries its
+   * cells' values, so the bank of Solar Charge is saved here. Its statuses are
+   * rebuilt from it at load. Resets with the run (save v61).
+   */
+  facets: FacetDoc[];
   /** totalTicks at which each consumable may next be used. */
   useCooldowns: Record<string, number>;
   /**

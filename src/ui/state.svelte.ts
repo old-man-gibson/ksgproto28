@@ -15,6 +15,7 @@ import { dropFight, isKept, keepFight, NOTEBOOK_MAX } from '../core/systems/ledg
 import { setSkipSettling } from '../core/systems/mutagens';
 import type { SortMode } from '../core/systems/inventory';
 import { forgetLayouts } from './lib/benchLayouts';
+import { bindFacets, dropFacetStatuses, installFacet } from '../core/facet/host';
 
 /**
  * Bridge between the pure core and Svelte. The game state is a deep-reactive
@@ -25,6 +26,19 @@ const loaded = loadFromStorage();
 export const gs: GameState = $state(loaded.state ?? createInitialState());
 
 export const game = new Game(gs);
+
+// The FACET ability core (docs/FACET.md), installed and bound to the loaded
+// save before anything renders: the run's ability's statuses are saved, but
+// their definitions are rebuilt at attach. A failure is reported instead of
+// thrown, so the game still starts, and the ability's statuses come off with
+// it. tests/facet.test.ts installs the same adapter and fails on it.
+try {
+  installFacet();
+  bindFacets(gs, true);
+} catch (err) {
+  console.error(err);
+  dropFacetStatuses(gs);
+}
 
 if (loaded.corrupted) {
   game.bus.emit({

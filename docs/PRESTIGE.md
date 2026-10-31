@@ -55,8 +55,11 @@ All declarative, so the preview can be computed from them.
   Leaving requires either `spentThisReview ≥ 1` or a two-step confirmation.
 - **What carries.** `prestige` (count, points, purchases, peaks, the Cook's
   Book lists, the stronghold, the stronghold stash and what festival tokens
-  bought, the last harvest, the review flag) and `createdAt` (the world seed
-  — same world, same weather). Everything else is the run's and resets. The
+  bought, the last harvest, the review flag), `createdAt` (the world seed
+  — same world, same weather) and every opened alpha shutter
+  (`flag:unlock_*`, systems/unlocks.ts): a shutter invites a new player in,
+  and nothing in the alpha lifts `martial` a second time, so dropping it took
+  the rotation editor away for good. Everything else is the run's and resets. The
   stash is filled at the prestige: every keep-marked item (`ItemDef.keep`)
   goes back into it from wherever it is (docs/FESTIVAL.md §5). The reset
   is `createInitialState`, so a new run is exactly a new save plus legacy —

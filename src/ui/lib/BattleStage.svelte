@@ -359,14 +359,14 @@
   {#if !gs.combat}
     <div class="idle">
       {#if gs.recovering}
-        💫 Recovering from a knockout. Hunting resumes when you are steady.
+        💫 Recovering from a knockout. Hunting resumes when recovery ends.
       {:else if hunting && restingForFight(gs)}
         🛌 Resting before the next fight: HP {Math.floor(hpFraction(gs, stats) * 100)}% of
         {Math.round(restTarget(huntRest(gs)) * 100)}%.
       {:else if cleared}
         🏞️ {spot.name} is cleared. Nothing here fights any more.
       {:else if nobodyLeft}
-        🍃 Nothing stirs at {spot.name}.
+        🍃 No monsters are available at {spot.name} right now.
       {:else if hunting}
         🔍 Searching for the next fight{gs.respawnTimer > 0 ? ` — ${ticksToTime(gs.respawnTimer)}` : '…'}
       {:else if canHunt}

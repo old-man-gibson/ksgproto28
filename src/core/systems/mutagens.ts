@@ -467,7 +467,7 @@ export function priceGeneAbility(
   // — Kritavya's, whose whole blow is the ward it leaves — is stating a zero,
   // and a stated zero belongs in the working. Skipping it printed a Swing
   // header over nothing at all.
-  if (spec.flat !== undefined) steps.push({ label: `${name} (the body itself)`, value: damage });
+  if (spec.flat !== undefined) steps.push({ label: `${name} (flat damage)`, value: damage });
   // Priced per point of a derived stat, or of an ATTRIBUTE — the layer
   // underneath, which a body can read about itself rather than about its gear.
   const priced =
@@ -531,7 +531,7 @@ export function perTargetInflictIntensity(
   if (!per?.inflictRoot) return undefined;
   const stacks = findStatus(target, per.status)?.stacks ?? 0;
   if (stacks <= 0) return undefined;
-  return stacks ** (1 / atGrade(per.inflictRoot, gene));
+  return Math.min(per.inflictCap ?? Infinity, stacks ** (1 / atGrade(per.inflictRoot, gene)));
 }
 
 /** What one grant does to the ability when it arrives at the Active arm. */
@@ -2117,7 +2117,7 @@ export function slotMain(
   grantSkillXp(state, bus, ['craft', 'geneshaping'], 20 + cost);
   bus.emit({
     type: 'log',
-    msg: text('mutagens.gene_worn', { icon: MAIN_GENES[gene.id].icon, name: MAIN_GENES[gene.id].name, cost }),
+    msg: text('mutagens.gene_worn', { icon: MAIN_GENES[gene.id].icon, name: MAIN_GENES[gene.id].name, cost, seconds: SWAP_SETTLE_TICKS / 10 }),
     kind: 'action',
   });
   return { ok: true };

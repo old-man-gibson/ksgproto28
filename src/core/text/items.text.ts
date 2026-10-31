@@ -77,9 +77,9 @@ export const ITEMS_TEXT: ProseTable = {
 
   'tower_shield.desc': 'Offhand shield. +7 Armor, +6% Armor, -15% Speed.',
 
-  'festival_laurel.desc': 'Accessory, placeholder. The Vermin Festival pays it to the first royale won in a run. +8% Damage, +8% Max HP.',
+  'festival_laurel.desc': 'Accessory. The Vermin Festival pays it to the first royale won in a run. +8% Damage, +8% Max HP.',
 
-  'festival_regalia.desc': 'Accessory, placeholder, taken from a festival token. +15% Damage, +15% Max HP, +5% Attack Speed. Kept in the stronghold stash: every prestige returns it there, wherever it is.',
+  'festival_regalia.desc': 'Accessory, taken from a festival token. +15% Damage, +15% Max HP, +5% Attack Speed. Kept in the stronghold stash: every prestige returns it there, wherever it is.',
 
   'festival_spear.desc': 'Two-handed spear, lent by a weapon cache on the Vermin Festival’s royale field and taken back when the attempt ends. One step above the Old Spear. +10 Damage, +3 Armor.',
   'festival_greatsword.desc': 'Two-handed sword, lent by a weapon cache on the royale field and taken back when the attempt ends. One step above the Steel Greatsword. +3 STR, +18 Damage, -14% Attack Speed, +12% Crit Damage. Requires STR 12.',

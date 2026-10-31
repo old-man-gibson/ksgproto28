@@ -201,7 +201,7 @@
     if (t.trigger.event) {
       return TRIGGER_EVENTS.find((e) => e.id === t.trigger!.event)?.name ?? t.trigger.event;
     }
-    return 'When its opening shows';
+    return 'When its conditions are met';
   }
 
   const techId = (t: TechniqueDef) => `technique:${t.id}`;
@@ -229,7 +229,7 @@
         if (spec.flat) parts.push(`+${spec.flat}`);
         if (spec.splashAll) parts.push('all enemies');
         else if (spec.splash) parts.push(`${Math.round(spec.splash * 100)}% splash`);
-        if (spec.execute) parts.push('finishes the failing');
+        if (spec.execute) parts.push('kills low-HP enemies outright');
         return `${parts.join(' · ')} · ${ticksToTime(spec.cooldown)} cooldown`;
       }
     }
@@ -367,7 +367,7 @@
               {@render milestoneLine(def.milestones, s.level)}
             {/if}
             {#if def.active}
-              <div class="active-info">⚡ {activeSummary(def.active)} — fired automatically by style priority.</div>
+              <div class="active-info">⚡ {activeSummary(def.active)} — fired automatically in rotation order (Combat tab).</div>
             {/if}
             {@render trainsAt({ skill: def.id })}
           </div>

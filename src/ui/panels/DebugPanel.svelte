@@ -1,6 +1,7 @@
 <script lang="ts">
   import { DEBUG_SETTLE_KEY, gs, game } from '../state.svelte';
-  import { AFFIXES, FLOORS, ITEMS, MATERIALS, RUNES, SKILLS } from '../../core/registry';
+  import { AFFIXES, AREAS, FLOORS, ITEMS, MATERIALS, REGIONS, RUNES, SKILLS, SPOTS } from '../../core/registry';
+  import { locationBreadcrumb } from '../../core/systems/locations';
   import { raiseStat } from '../../core/systems/achievements';
   import { stashToken } from '../../core/systems/stash';
   import { STRONGHOLD_KEY } from '../../core/data/prestige.data';
@@ -13,6 +14,7 @@
   import { ARCANE_WORDS, PSI_AXIS_LIST } from '../../core/data/spellcraft.data';
   import { grantFavor } from '../../core/systems/deities';
   import { grantLevelXp } from '../../core/systems/levels';
+  import { debugSetCell, grantFacet } from '../../core/facet/host';
   import { recordKill } from '../../core/systems/bestiary';
   import { MONSTERS } from '../../core/registry';
   import { LOCKABLE_SUBSYSTEMS, unlockKey, wordUnlockKey } from '../../core/systems/unlocks';
@@ -145,6 +147,55 @@
   function giveLevelXp(amount: number) {
     grantLevelXp(gs, game.bus, amount);
     say(`+${fmt(amount)} level XP`);
+  }
+
+  // ---- The run's unique ability (docs/FACET.md) ----
+
+  /** Every ability the bank holds as a document. Granting replaces the held one. */
+  const bankList = Object.entries(globalThis.Facet?.bank ?? {}).map(([id, doc]) => ({
+    id,
+    name: doc.reading?.name ?? id,
+    icon: doc.reading?.icon ?? '✦',
+  }));
+
+  function giveAbility(id: string, name: string) {
+    say(grantFacet(gs, id) ? `Ability: ${name} (replaces any held)` : `Ability ${name}: the engine is not installed`);
+  }
+
+  function setCharge(share: number) {
+    debugSetCell(gs, 'charge', share);
+    say(`Charge set to ${Math.round(share * 100)}%`);
+  }
+
+  // ---- Teleport ----
+
+  /** Under open sky: no sheltered region, no `indoor` tag (the roof test sunlight uses). */
+  function openSky(id: string): boolean {
+    const spot = SPOTS[id];
+    const area = AREAS[spot.areaId];
+    const region = area ? REGIONS[area.regionId] : undefined;
+    const tags = [...(region?.tags ?? []), ...(area?.tags ?? []), ...(spot.tags ?? [])];
+    return !!region && !region.sheltered && !tags.includes('indoor');
+  }
+  const spotList = Object.keys(SPOTS)
+    .map((id) => ({ id, label: locationBreadcrumb(id) + (openSky(id) ? '  (open sky)' : '') }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+  let spotTo = $state(spotList[0]?.id ?? '');
+
+  /**
+   * Move without walking, the state writes the caravan's fast travel makes,
+   * then the arrival event; free and from anywhere. Refused mid-fight and
+   * mid-walk, where those have their own exits.
+   */
+  function teleport() {
+    if (gs.combat || gs.travel) return say('Teleport: leave the fight or finish the walk first');
+    game.selectActivity(null);
+    gs.travelPlan = [];
+    gs.travelIntent = null;
+    gs.pendingApproach = null;
+    gs.spot = spotTo;
+    game.bus.emit({ type: 'arrive', spot: spotTo });
+    say(`Teleported to ${locationBreadcrumb(spotTo)}`);
   }
 
   // ---- The ladder and the Vermin Festival ----
@@ -494,6 +545,33 @@
       <button onclick={() => giveLevelXp(1000)}>+1k level XP</button>
       <button onclick={() => recordAllCreatures()}>Record every creature</button>
       <button onclick={openAllSubsystems}>Open locked systems</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Unique ability</div>
+    <div class="row">
+      {#each bankList as a (a.id)}
+        <button onclick={() => giveAbility(a.id, a.name)}>Grant {a.icon} {a.name}</button>
+      {/each}
+    </div>
+    <div class="row">
+      {#each [0, 0.25, 0.5, 1] as share (share)}
+        <button onclick={() => setCharge(share)}>Charge {share * 100}%</button>
+      {/each}
+    </div>
+    <div class="dim small">The power cell follows the charge on the next game minute (one real second).</div>
+  </div>
+
+  <div class="section">
+    <div class="label">Teleport</div>
+    <div class="row">
+      <select bind:value={spotTo}>
+        {#each spotList as s (s.id)}
+          <option value={s.id}>{s.label}</option>
+        {/each}
+      </select>
+      <button onclick={teleport}>Go</button>
     </div>
   </div>
 

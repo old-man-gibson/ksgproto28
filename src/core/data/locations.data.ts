@@ -89,7 +89,7 @@ export const AREAS: Record<string, AreaDef> = {
   ascent_f15_area: { id: 'ascent_f15_area', name: 'The Dark Room and the Hall', regionId: 'the_ascent', scene: 'hall' },
   ascent_f16_area: { id: 'ascent_f16_area', name: 'The Royale Field', regionId: 'the_ascent', scene: 'hall' },
   // ==== ABERRANT: areas (skeleton 2026-10-30; the aberrant builder's section) ====
-  ascent_f17_area: { id: 'ascent_f17_area', name: 'Floor 17 (placeholder)', regionId: 'the_ascent' },
+  ascent_f17_area: { id: 'ascent_f17_area', name: 'Floor 17', regionId: 'the_ascent' },
   // ==== DESERT: areas (skeleton 2026-10-30; the desert builder's section) ====
   // Heat trains heat_resistance through place tags only: the Ascent region is
   // sheltered, and open sky with a per-area climate pin is not built here
@@ -207,7 +207,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     areaId: 'player_base_v1_area',
     map: { x: 75, y: 60 },
     activities: [
-      { id: 'train_skill', kind: 'train', attr: 'int', name: 'Study Alchemical ', icon: '🛠️', tags: ['alchemy'], attrXp: { str: 0, dex: 0, con: 0, int: 0.33, wis: 0, cha: 0 } },
+      { id: 'train_skill', kind: 'train', attr: 'int', name: 'Study Alchemical Texts', icon: '🛠️', tags: ['alchemy'], attrXp: { str: 0, dex: 0, con: 0, int: 0.33, wis: 0, cha: 0 } },
     ],
     benches: ['alchemy'],
     connections: [

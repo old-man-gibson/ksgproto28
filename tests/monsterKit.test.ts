@@ -237,14 +237,14 @@ describe('the kit in a fight', () => {
   it('kit.range ranged: a standing wall stops its blows, which it does not stop for a melee specimen', () => {
     const wall = (g: Game) => () => applyStatus(g.state, g.state, { id: 'kinetic_bulwark', intensity: 1 }, 'test');
     const ranged = stage({ monsterId: BRUTE, level: 30, kit: { range: 'ranged', damageType: 'piercing' } });
-    run(ranged.g, 600, () => /stops dead against the bulwark/.test(feed(ranged.g)), wall(ranged.g));
-    expect(feed(ranged.g)).toMatch(/stops dead against the bulwark/);
+    run(ranged.g, 600, () => /blocked by your Kinetic Bulwark/.test(feed(ranged.g)), wall(ranged.g));
+    expect(feed(ranged.g)).toMatch(/blocked by your Kinetic Bulwark/);
     expect(feed(ranged.g)).not.toMatch(/hits you for|CRITS you for/);
 
     const melee = stage({ monsterId: BRUTE, level: 30 });
     run(melee.g, 600, () => /hits you for|CRITS you for/.test(feed(melee.g)), wall(melee.g));
     expect(feed(melee.g)).toMatch(/hits you for|CRITS you for/);
-    expect(feed(melee.g)).not.toMatch(/stops dead against the bulwark/);
+    expect(feed(melee.g)).not.toMatch(/blocked by your Kinetic Bulwark/);
   });
 
   it('kit.damageType is the type it deals', () => {
@@ -275,8 +275,8 @@ describe('the kit in a fight', () => {
       level: 30,
       kit: { rotation: [{ cast: { school: 'arcane', words: ['fire', 'pierce'] } }] },
     });
-    run(fire.g, 900, () => /works Fire Pierce/.test(feed(fire.g)));
-    expect(feed(fire.g)).toMatch(/works Fire Pierce/);
+    run(fire.g, 900, () => /casts Fire Pierce/.test(feed(fire.g)));
+    expect(feed(fire.g)).toMatch(/casts Fire Pierce/);
   });
 
   it('kit.inflicts are its riders, over the def’s', () => {

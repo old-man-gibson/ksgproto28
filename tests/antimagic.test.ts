@@ -305,7 +305,7 @@ describe('the trap: a prepared counterspell springs inside an enemy casting', ()
     expect(burn?.intensity).toBeCloseTo(e * spec.counter!.burn * spellPower, 6);
     expect(lines(g).some((t) => /springs on the Death Knight's Gloom Cut: 30% efficiency/.test(t))).toBe(true);
     // What survived still went off.
-    expect(lines(g).some((t) => /works what is left of Gloom Cut/.test(t))).toBe(true);
+    expect(lines(g).some((t) => /casts Gloom Cut at .* strength/.test(t))).toBe(true);
   });
 
   it('at 100% or more nothing of the working arrives — and the burn is never capped', () => {
@@ -320,7 +320,7 @@ describe('the trap: a prepared counterspell springs inside an enemy casting', ()
     const { spellPower } = getDerivedStats(g.state);
     castMonsterWorking(g.state, g.bus, foe, monsterStats(foe), { school: 'arcane', words: working }, 99);
     expect(g.state.resources.hp).toBe(hp);
-    expect(lines(g).some((t) => /comes apart before it can land/.test(t))).toBe(true);
+    expect(lines(g).some((t) => /is fully undone by your counterspell/.test(t))).toBe(true);
     // Uncapped: the burn is the whole efficiency's worth, past 100%.
     expect(findStatus(foe, 'manaburn')!.intensity).toBeCloseTo(e * spec.counter!.burn * spellPower, 6);
   });
@@ -414,7 +414,7 @@ describe('manaburn on a monster eats its mind', () => {
     fight(g, 600, () => {
       g.state.resources.hp = getDerivedStats(g.state).maxHp;
       if (mindInDebt(foe)) debt = true;
-      if (lines(g).some((t) => /manaburn in the .* goes off/.test(t))) boom = true;
+      if (lines(g).some((t) => /Manaburn detonates on the/.test(t))) boom = true;
     });
     expect(debt).toBe(true);
     expect(boom).toBe(true);
@@ -429,7 +429,7 @@ describe('manaburn on a monster eats its mind', () => {
     let boom = false;
     fight(g, 600, () => {
       g.state.resources.hp = getDerivedStats(g.state).maxHp;
-      if (lines(g).some((t) => /manaburn in the .* goes off/.test(t))) boom = true;
+      if (lines(g).some((t) => /Manaburn detonates on the/.test(t))) boom = true;
     });
     expect(boom).toBe(false);
   });
@@ -443,14 +443,14 @@ describe('manaburn on a monster eats its mind', () => {
       g.state.resources.hp = getDerivedStats(g.state).maxHp;
     });
     expect(g.state.combat).not.toBeNull();
-    expect(lines(g).some((t) => / works /.test(t))).toBe(false);
+    expect(lines(g).some((t) => / casts /.test(t))).toBe(false);
     expect(lines(g).some((t) => /Psionic Slime/.test(t) && !/You /.test(t))).toBe(true);
 
     const { g: whole } = arena('psionic_slime');
     fight(whole, 600, () => {
       whole.state.resources.hp = getDerivedStats(whole.state).maxHp;
     });
-    expect(lines(whole).some((t) => / works /.test(t))).toBe(true);
+    expect(lines(whole).some((t) => / casts /.test(t))).toBe(true);
   });
 
   it('a burned mind recovers, and forgets once it is whole', () => {

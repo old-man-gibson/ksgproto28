@@ -11,6 +11,7 @@ import { carriedCookbook } from './cookbook';
 import { revealMapped } from './mapped';
 import { applyStartingLevel } from './levels';
 import { applyFestivalLegacy, carriedStash } from './stash';
+import { LOCKABLE_SUBSYSTEMS, subsystemUnlocked, unlockKey } from './unlocks';
 import { text } from '../text/log';
 
 /**
@@ -203,8 +204,9 @@ export function applyRunStart(state: GameState): void {
  * reactive proxy, as `hardReset` does).
  *
  * What carries: `prestige` (count, points, purchases, this harvest, the
- * review flag) and `createdAt` — the world seed, so the weather is the same
- * world's weather. Everything else is the run's and resets, per the
+ * review flag), `createdAt` — the world seed, so the weather is the same
+ * world's weather — and every opened alpha shutter (`flag:unlock_*`).
+ * Everything else is the run's and resets, per the
  * prestige economy settled 2026-07-31 ("most materials/unlockables reset").
  */
 export function prestigeNow(state: GameState, now = Date.now()): GameState | null {
@@ -253,6 +255,12 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
   };
   next.stats['prestige:count'] = next.prestige.count;
   if (next.prestige.stronghold) next.stats[STRONGHOLD_KEY] = 1;
+  // Alpha shutters are an invitation for a NEW player (systems/unlocks.ts),
+  // so an opened one stays open: nothing in the alpha lifts `martial` again,
+  // and losing it took the rotation editor away for good.
+  for (const id of LOCKABLE_SUBSYSTEMS) {
+    if (subsystemUnlocked(state, id)) next.stats[unlockKey(id)] = 1;
+  }
   // The stronghold ends the run without asking, so the bank the player had
   // not spent yet stays theirs; a prestige by choice spends it as before.
   if (strongholdHeld(state)) next.bonusTime.banked = state.bonusTime.banked;

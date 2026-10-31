@@ -105,7 +105,7 @@
       out.push(
         drainer
           ? `At rest, venting through ${name(drainer.element)}. It settles a little short of full and stays there.`
-          : `At rest and sealed — nothing vents it, so it sits full. Held, not used: only something tapping it from outside can spend this.`,
+          : `At rest and sealed: nothing vents it, so it stays full. Only something outside the cycle drawing on it can spend it.`,
       );
     } else if (isFull(i)) {
       out.push(
@@ -341,16 +341,16 @@
 
   const KIND_NOTE: Record<WuxinKind, string> = {
     harmonious:
-      'Destruction is generation walked twice — the classical relation, whatever is in the slots.',
+      'Hinders follows nourishes taken twice in a row (hinders = nourishes squared): the classical relation, whatever elements are in the slots.',
     counterflow:
-      'Destruction is generation run backwards: every element hinders the one that feeds it. A cycle at war with itself along the channel it lives by — the antipode of harmony, and always maximally discordant.',
+      'Hinders runs against nourishes: every element hinders the one that feeds it. This is the opposite of harmony and always has the maximum discord.',
     split: 'Generation closes as two separate loops: a feeding pair standing apart from a triangle. The only other closed shape five arrows can make.',
     burst:
       'Generation is cut, so it runs down a line instead of round a ring. The head has nothing feeding it; the tail has nothing to pass to.',
     sustain: 'Nothing in this cycle fights anything else in it.',
     tempered:
-      'Generation is whole, but destruction has a gap cut in it — the antagonism is still there with a deliberate hole left where one element answers nothing.',
-    irregular: 'Closed, but no single structure relates the two rings. Legal — nobody has worked out what it is for yet.',
+      'Nourishes is complete, but hinders has a gap: one element hinders nothing.',
+    irregular: 'Closed, but no single structure relates the two rings. Legal, but it has no named role yet.',
   };
 
   /** What the alignment exponent means, when there is one. */

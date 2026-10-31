@@ -156,7 +156,7 @@
   function offensiveAbilities(def: MonsterDef): { name: string; text: string }[] {
     const out = [];
     if (def.passive) {
-      out.push({ name: 'Harmless', text: 'Goes through the motions of attacking; the blows never land.' });
+      out.push({ name: 'Harmless', text: 'Attacks, but deals no damage.' });
     }
     if (!PHYSICAL_TYPES.has(def.damageType)) {
       out.push({
@@ -173,7 +173,7 @@
       out.push({ name: 'Immaterial', text: 'Most of a weapon passes straight through it.' });
     }
     if (def.escorts?.length) {
-      out.push({ name: 'Guarded', text: 'Rarely the first thing you get to swing at.' });
+      out.push({ name: 'Guarded', text: 'Spawns with escorts.' });
     }
     return out;
   }
@@ -419,7 +419,7 @@
                   {:else if (def.group?.min ?? 1) > 1}
                     Comes in packs of {def.group!.min}–{def.group!.max ?? 5}.
                   {:else}
-                    Turns up alone or in whatever crowd the area throws together.
+                    Appears alone, or in a group made up of other monsters from the same area.
                   {/if}
                 </li>
                 {#if def.escorts?.length}
@@ -427,8 +427,8 @@
                 {/if}
                 <li>
                   {def.range === 'ranged'
-                    ? 'Fights from the back rank; jostled and slowed if forced to the front.'
-                    : 'Fights up close, and loses bite when stuck behind its own line.'}
+                    ? 'Fights from the back row; its attacks keep getting delayed if it is in the front row.'
+                    : 'Fights in melee; deals less damage and attacks slower from the back row.'}
                 </li>
               </ul>
             {:else}
@@ -487,7 +487,7 @@
         <div class="panel cell notesrow" class:locked={!knows('lore')}>
           <h4>📝 Field Notes</h4>
           {#if knows('lore')}
-            <p class="lore">{def.desc ?? 'Nothing worth writing down.'}</p>
+            <p class="lore">{def.desc ?? 'No notes.'}</p>
           {:else}
             {@render locked(fact('lore'))}
           {/if}

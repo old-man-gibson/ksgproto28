@@ -776,18 +776,39 @@ export function statusResOverrides(
 }
 
 /**
- * The deepest this bearer's conditions may push a resistance. Stacks widen the
- * hole without each one having to hurt more.
+ * The deepest this bearer's floor-carrying conditions may push a resistance,
+ * and how much those conditions took off each stat (negative, scaled the way
+ * statusMods scales them). Stacks widen the hole without each one having to
+ * hurt more. The floor limits only their own penalties: see applyResFloor.
  */
-export function statusResFloor(bearer: GameState | MonsterInstance): number | undefined {
+export function statusResFloor(
+  bearer: GameState | MonsterInstance,
+): { floor: number; taken: Partial<Record<string, number>> } | undefined {
   let floor: number | undefined;
+  const taken: Partial<Record<string, number>> = {};
   for (const held of statusesOf(bearer)) {
-    const spec = STATUSES[held.id]?.resFloor;
+    const def = STATUSES[held.id];
+    const spec = def?.resFloor;
     if (!spec) continue;
     const own = spec.base - spec.perStack * Math.max(0, held.stacks - 1);
     floor = floor === undefined ? own : Math.min(floor, own);
+    const power = effectiveIntensity(held);
+    for (const mod of def!.mods ?? []) {
+      if (mod.op !== 'add' || mod.value >= 0) continue;
+      taken[mod.stat] = (taken[mod.stat] ?? 0) + mod.value * power;
+    }
   }
-  return floor;
+  return floor === undefined ? undefined : { floor, taken };
+}
+
+/**
+ * One resistance after the floor: the floor-carrying conditions may not push it
+ * below `floor`, but a body that was already lower before they landed keeps
+ * its own value rather than being raised to the floor.
+ */
+export function applyResFloor(value: number, floor: number, taken: number): number {
+  const before = value - taken;
+  return Math.max(value, Math.min(before, floor));
 }
 
 /**
@@ -1327,7 +1348,14 @@ export function statusBarDamage(
 export function statusRetaliation(
   bearer: GameState | MonsterInstance,
   when: 'onAttack' | 'onContact',
-): { type: DamageType; amount: number; name: string; icon: string; inflicts?: StatusApplication[] }[] {
+): {
+  type: DamageType;
+  amount: number;
+  name: string;
+  icon: string;
+  hits: 'bearer' | 'attacker';
+  inflicts?: StatusApplication[];
+}[] {
   const out = [];
   for (const held of statusesOf(bearer)) {
     const def = STATUSES[held.id];
@@ -1338,6 +1366,7 @@ export function statusRetaliation(
       amount: spec.flat * held.intensity,
       name: def!.name,
       icon: def!.icon,
+      hits: spec.hits ?? ('bearer' as const),
       inflicts: spec.inflicts,
     });
   }

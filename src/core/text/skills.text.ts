@@ -23,7 +23,7 @@ export const HAND_WRITTEN_TEXT: ProseTable = {
 
   'arcana.desc': 'Arcane spellcraft. Manifests at Intelligence 10 by working at the spell table; trained by composing new sentences, not by repeating old ones. Word order changes what a sentence does. Each level adds +1% spell power.',
 
-  'devotion.desc': 'Divine spellcraft. Manifests at Wisdom 10 by working at the spell table. Litanies are granted by a deity, not composed. Each level adds +0.5 max spirit.',
+  'devotion.desc': 'Divine spellcraft. Manifests at Wisdom 10 by working at the spell table. Miracles are granted by a deity, not composed. Each level adds +0.5 max spirit.',
 
   'psionics.desc': 'Psionic spellcraft. Manifests at Intelligence 12 and Wisdom 12 by working at the spell table. Levels buy more points to allocate and add +0.01 focus regeneration each.',
 

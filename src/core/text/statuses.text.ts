@@ -5,9 +5,9 @@ import type { ProseTable } from './prose';
 
 // ---------- STATUSES ----------
 export const STATUSES_TEXT: ProseTable = {
-  'toll_steam.desc': 'Steam covers the collector’s sight. Its attacks frequently miss. Further heat spells refresh the cloud without making it stronger.',
-  'toll_ice.desc': 'Ice holds the collector’s joints in place. It cannot dodge and loses most of its armor. Further cold spells refresh the ice without stacking it.',
-  'toll_overdrive.desc': 'Current runs through the submerged mechanism. It attacks faster and takes damage whenever its action bar fills. Further lightning spells refresh the effect without stacking it.',
+  'toll_steam.desc': 'Applied to the Toll Collector by a heat spell. Its attacks have a 50% chance to miss for 8 seconds. Another heat spell resets the timer without adding to the effect.',
+  'toll_ice.desc': 'Applied to the Toll Collector by a cold spell. Its dodge is 0 and its armor is reduced by 75% for 8 seconds. Another cold spell resets the timer without adding to the effect.',
+  'toll_overdrive.desc': 'Applied to the Toll Collector by a lightning spell. Its attack speed is +65% for 8 seconds, and it takes 12 lightning damage each time its action bar fills. Another lightning spell resets the timer without adding to the effect.',
   'eyeless.desc': 'Cannot be Dazzled or Blinded. No other effect.',
 
   'refutation.desc': 'Ward absorbs a flat 40 damage from each hit after resistances, plus 1.5 per point of spell power, for 15 seconds. Anything that strikes you in melee takes 6 piercing damage and is Punctured.',
@@ -22,13 +22,13 @@ export const STATUSES_TEXT: ProseTable = {
 
   'poison.desc': 'Deals 0.05 poison damage per tick per intensity for 30 seconds and cuts stamina regeneration by 20%. Only a stronger dose replaces it; at intensity 4 it escalates to Rotting. A poison cure (a Mendroot Salve) removes it.',
 
-  'rotting.desc': 'Deals 0.12 poison damage per tick for 45 seconds and cuts stamina regeneration by 35%. Half of every stamina spend is also removed from maximum stamina, up to 60%. When it ends the lost maximum returns slowly (Wasted). A poison cure (a Mendroot Salve) reduces it to Poisoned.',
+  'rotting.desc': 'Deals 0.12 poison damage per tick per intensity for 45 seconds and cuts stamina regeneration by 35%. Half of every stamina spend is also removed from maximum stamina, up to 60%. When it ends the lost maximum returns slowly (Wasted). A poison cure (a Mendroot Salve) reduces it to Poisoned.',
 
   'rot_recovery.desc': 'Maximum stamina removed by Rotting returns over time, about 20 seconds for a full 60% loss.',
 
-  'on_fire.desc': 'Deals 0.4 heat damage per tick for 8 seconds. A new flame adds half its intensity to the existing one without resetting the timer. At intensity 5 it escalates to Blazing.',
+  'on_fire.desc': 'Deals 0.4 heat damage per tick per intensity for 8 seconds. A new flame adds half its intensity to the existing one without resetting the timer. At intensity 5 it escalates to Blazing.',
 
-  'blazing.desc': 'Deals 0.9 heat damage per tick for 4 seconds. Healing can restore at most half of what it burns. When it ends it becomes Seared.',
+  'blazing.desc': 'Deals 0.9 heat damage per tick per intensity for 4 seconds. Healing can restore at most half of what it burns. When it ends it becomes Seared.',
 
   'blaze_burn.desc': 'Healing can restore at most half of what the blaze burned. No timer. Removed by rest, a salve, or a healing spell.',
 
@@ -38,43 +38,43 @@ export const STATUSES_TEXT: ProseTable = {
 
   'bleeding.desc': 'Deals 0.08 slashing damage per tick plus 0.15% of current health, at 30% rate out of combat. No timer. Each cut is its own stack; at 5 it escalates to Lacerated. Removed only by rest, a salve, a healing spell, or a bleed cure (a Mendroot Salve).',
 
-  'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and seals off 4% of maximum health per stack, up to 30%. No timer. Rest, a salve (a Mendroot Salve included), or a healing spell reduces it to Bleeding; a second treatment closes that.',
+  'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and reduces maximum health by 4% per stack, up to 30%. No timer. Rest, a salve (a Mendroot Salve included), or a healing spell reduces it to Bleeding; a second treatment closes that.',
 
-  'concussed.desc': 'Spells cannot be cast and attacks have a 12% miss chance per intensity, for 25 seconds. Rest, a salve, or a healing spell reduces intensity by 0.4. At intensity 3 it escalates to Dazed.',
+  'concussed.desc': 'Spells cannot be cast and attacks have a 12% miss chance per intensity, for 25 seconds. Rest, a salve, or a healing spell reduces its intensity by 40%. At intensity 3 it escalates to Dazed.',
 
   'dazed.desc': 'Spells and attacks cannot be taken. Each stack skips one completed action and is spent by it. Ends with the fight.',
 
-  'punctured.desc': 'Stamina costs rise by 25% per point (up to double) and maximum stamina is sealed off a little each tick while it is held, up to 5%. Lasts 40 seconds. Doses add; at 3 it escalates to Perforated.',
+  'punctured.desc': 'Stamina costs rise by 25% per point (up to double). Each tick it is held, maximum stamina is reduced by another 0.04% (0.4% per second), up to 5%. Lasts 40 seconds. Doses add; at 3 it escalates to Perforated.',
 
-  'perforated.desc': 'Stamina does not regenerate, 5% of maximum stamina per stack is sealed off (up to 40%), and the stance is forced to Balanced. Lasts 60 seconds.',
+  'perforated.desc': 'Stamina does not regenerate, maximum stamina is reduced by 5% per stack (up to 40%), and the stance is forced to Balanced. Lasts 60 seconds.',
 
-  'jolted.desc': 'Deals 1.2 lightning damage each time your action bar fills, for 20 seconds. Below 50% health you drop your weapon. Taking damage removes half the charge. Past intensity 2 each new dose may escalate it to Shocked; at 6 it does.',
+  'jolted.desc': 'Deals 1.2 lightning damage per intensity each time your action bar fills, for 20 seconds. Below 50% health you drop your weapon. Taking damage halves its intensity. Past intensity 2 each new dose may escalate it to Shocked; at 6 it does.',
 
-  'shocked.desc': 'The action bar drains instead of filling. When it empties, 2.5 lightning damage per intensity lands and the charge is spent. Ends with the fight.',
+  'shocked.desc': 'The action bar drains instead of filling. When it empties, the bearer takes 2.5 lightning damage per intensity and the condition ends. Ends with the fight.',
 
-  'shardbound.desc': 'Deals 0.8 piercing damage to the bearer each time they attack or are struck in melee, for 30 seconds. Doses add; at 4 it escalates to Shardbloom.',
+  'shardbound.desc': 'Deals 0.8 piercing damage per intensity to the bearer each time they attack or are struck in melee, for 30 seconds. Doses add; at 4 it escalates to Shardbloom.',
 
-  'shardbloom.desc': 'Deals 0.4 piercing damage to the bearer each time they attack or are struck in melee, and applies a Shard Cut each time. Lasts 25 seconds.',
+  'shardbloom.desc': 'Deals 0.4 piercing damage per intensity to the bearer each time they attack or are struck in melee, and applies a Shard Cut each time. Lasts 25 seconds.',
 
   'shard_bleed.desc': 'Deals 0.3 slashing damage per tick plus 0.1% of current health, for 4 seconds. Stacks up to 8 and never escalates.',
 
   'wet.desc': 'Heat resistance +8%; lightning and cold resistance -6%; poison resistance -4%. Lasts 30 seconds. Doses add; at 5 it escalates to Soaked. Heat damage removes one stack.',
 
-  'soaked.desc': 'Heat resistance is set to 80% (+10% if already higher). Lightning, cold and poison resistance are set to -50%. Chill lands at triple intensity, held Poison becomes Rotting, and Jolted escalates at 3. Lasts 60 seconds or until 3 hits of heat, poison, lightning or cold.',
+  'soaked.desc': 'Heat resistance is set to 80% (or raised by 10% if it is already 80% or more). Lightning, cold and poison resistance are set to -50%. Chill lands at triple intensity, and Jolted escalates at intensity 3. When Soaked first lands, any Poison already on the bearer becomes Rotting at 2/3 of its intensity. Lasts 60 seconds or until the bearer takes 3 hits of heat, poison, lightning or cold damage.',
 
   'buffeted.desc': 'Each point gives a 12% chance that a technique ends off balance instead of at its exit position, fading as the 12-second timer runs down. Doses add; at 5 it escalates to Unfooted. A plain swing still resets to neutral.',
 
   'unfooted.desc': 'Every technique ends off balance instead of at its exit position, for 20 seconds. A plain swing still resets to neutral.',
 
-  'seeded.desc': 'No effect on landing. Grows 0.15 per second while untouched and becomes Rootbound at 6. Each hit prunes 0.5 (piercing prunes double); water damage feeds it 1. Records every other condition that lands on the bearer. Heat damage removes it and deals 4 heat per intensity.',
+  'seeded.desc': 'No effect on landing. Its intensity rises 0.15 per second during a fight, and at 6 it becomes Rootbound. Each hit the bearer takes lowers its intensity by 0.5 (by 1 if the hit is piercing); each water hit raises it by 1. It records the intensity of every other condition applied to the bearer (up to 6 per condition). Heat damage removes it and deals 4 heat damage per recorded intensity.',
 
-  'rootbound.desc': 'Speed -20%, dodge -8%. Every 3 seconds a quarter of the recorded conditions is spread to every other enemy in the fight. Grows 0.08 per second; each hit prunes 0.25. Lasts 45 seconds. Heat damage removes it and deals 7 heat per intensity.',
+  'rootbound.desc': 'Speed -20%, dodge -8%. Every 3 seconds, 25% of the recorded conditions are applied to every other enemy in the fight. Its intensity rises 0.08 per second during a fight; each hit the bearer takes lowers it by 0.25 (by 0.5 if piercing) and each water hit raises it by 0.5. Lasts 45 seconds. Heat damage removes it and deals 7 heat damage per recorded intensity.',
 
-  'overgrowth.desc': 'Applied by healing a body past full health; the surplus is the ledger. Speed -15%, dodge -5%. The surplus fades 0.2% per second. At half of maximum health in surplus it escalates to Proliferating.',
+  'overgrowth.desc': 'Applied when you heal an enemy with a spell: the full amount healed is added to its surplus, whether or not it was wounded. Speed -15%, dodge -5%. The surplus shrinks by about 2% of itself every second. At surplus equal to 50% of its maximum health it escalates to Proliferating.',
 
-  'proliferating.desc': 'Speed -30%, dodge -10%. The surplus fades 0.1% per second. At a full maximum health of surplus it bursts: the bearer takes the whole surplus as damage, and every enemy beside it takes half as poison.',
+  'proliferating.desc': 'Speed -30%, dodge -10%. The surplus shrinks by about 1% of itself every second. At surplus equal to 100% of its maximum health it bursts: the bearer takes the whole surplus as damage, and every other enemy takes half of it as poison damage.',
 
-  'magnetized.desc': 'Each point ignores 10% of their dodge, and dodge is reduced by 3%. Lightning attacks cannot miss them. Piercing attacks gain 5% crit chance per point. Lasts 10 seconds. Doses add; at 6 it escalates to Magnet-Locked.',
+  'magnetized.desc': 'Each point gives attacks a 10% chance to ignore the bearer’s dodge, and lowers its dodge by 3%. Lightning attacks always ignore its dodge. Piercing attacks gain 5% crit chance per point. Lasts 10 seconds. Doses add; at 6 it escalates to Magnet-Locked.',
 
   'magnet_lock.desc': 'Dodge does not apply at all. Lightning attacks cannot miss them. Piercing attacks gain 5% crit chance per stack, and the next critical hit deals +35% damage per stack. Lasts 15 seconds.',
 
@@ -82,11 +82,11 @@ export const STATUSES_TEXT: ProseTable = {
 
   'blinded.desc': 'Every attack rolls to hit twice and keeps the worse result. Dodge is reduced by 25%. Lasts 25 seconds.',
 
-  'tainted.desc': 'All resistances are reduced by 5% per stack, light and dark by 10%. The total reduction is capped at 25% plus 5% per stack. Weakens as the 45-second timer runs down. Doses add; at 5 it escalates to Corrupted.',
+  'tainted.desc': 'All resistances are reduced by 5% per stack, light and dark by 10%. Its penalty cannot push a resistance below -25% (a further -5% for each stack past the first); a resistance already lower is left as it is. Weakens as the 45-second timer runs down. Doses add; at 5 it escalates to Corrupted.',
 
-  'corrupted.desc': 'Each stack seals off 10% of maximum spirit and 5% of maximum health, stamina and mana (up to 60%), to 10 stacks. No timer; only a cleansing removes it. If spirit reaches zero you are defeated and wake with half of it.',
+  'corrupted.desc': 'Each stack reduces maximum spirit by 10% and maximum health, stamina and mana by 5% (up to 60%). Up to 10 stacks. No timer; only a cleansing removes it. If spirit reaches zero you are defeated and wake with half of it.',
 
-  'manaburn.desc': 'Drains 1% of maximum mana per tick until the total intensity has been taken. Mana can go negative by a quarter of the pool per stack. When the debt bottoms out it deals arcane damage equal to the debt, ignoring 80% of arcane resistance. No timer.',
+  'manaburn.desc': 'Drains 1% of maximum mana per tick until mana equal to its intensity has been drained, then it ends. Mana can go below zero, down to -100% of maximum mana plus a further -25% for each stack past the first. When mana reaches that limit, it deals arcane damage equal to the mana debt, ignoring 80% of arcane resistance, and ends. No timer.',
 
   'well_fed.desc': 'Restores 0.06% of maximum health per tick, +8 maximum health and +10% stamina regeneration for 10 minutes.',
 
@@ -124,19 +124,19 @@ export const STATUSES_TEXT: ProseTable = {
 
   'kinetic_bulwark.desc': 'Blocks all ranged attacks except light, for 25 seconds.',
 
-  'psionic_haste.desc': '+3% speed and +3% travel speed per unit, for 20 seconds. Speed covers attacks, crafting and every activity.',
+  'psionic_haste.desc': '+3% speed and +3% travel speed per intensity, for 20 seconds. Speed covers attacks, crafting and every activity.',
 
-  'psionic_bracing.desc': '+1 armour per unit, for 20 seconds.',
+  'psionic_bracing.desc': '+1 armour per intensity, for 20 seconds.',
 
-  'psionic_root.desc': '+2% bludgeoning resistance per unit, for 20 seconds. Dazed and Concussed land at half intensity.',
+  'psionic_root.desc': '+2% bludgeoning resistance per intensity, for 20 seconds. Dazed and Concussed land at half intensity.',
 
-  'psionic_foresight.desc': 'Attacks against you have a 3% chance to miss per unit, for 20 seconds.',
+  'psionic_foresight.desc': 'Attacks against you have a 3% chance to miss per intensity, for 20 seconds.',
 
-  'psionic_compression.desc': 'Speed -2% per unit, for 20 seconds.',
+  'psionic_compression.desc': 'Speed -2% per intensity, for 20 seconds.',
 
-  'psionic_read.desc': 'Dodge -2% and parry -2% per unit, for 20 seconds.',
+  'psionic_read.desc': 'Dodge -2% and parry -2% per intensity, for 20 seconds.',
 
-  'psionic_wide_sight.desc': '+1.2% slashing, piercing and bludgeoning resistance per unit, for 20 seconds.',
+  'psionic_wide_sight.desc': '+1.2% slashing, piercing and bludgeoning resistance per intensity, for 20 seconds.',
 
   'artisans_cunning.desc': '+15% craft speed and +8% loot for 120 seconds.',
 
@@ -144,9 +144,9 @@ export const STATUSES_TEXT: ProseTable = {
 
   'surprised.desc': 'The next hit to land deals 30% more damage per intensity, then the surprise is spent. A fight opening on surprised enemies starts your action bar nearly full. Fades after two of their actions.',
 
-  'skewered.desc': 'Speed -5% and dodge -15% for 10 seconds. If the timer runs out, the blade works loose for 12 piercing damage; torn out early, it deals nothing.',
+  'skewered.desc': 'Speed -5% and dodge -15% for 10 seconds. If the timer runs out, the bearer takes 12 piercing damage per intensity; if it is removed early, no damage is dealt.',
 
-  'fasting.desc': 'Plain weapon swings cannot be taken. Workings, techniques and abilities still can. Ends with the fight.',
+  'fasting.desc': 'Plain weapon swings cannot be used. Spells, techniques and abilities still can. Ends with the fight.',
 
   'hunger_anupama.desc': 'Deals 0.05 dark damage per tick per intensity; half of it ignores resistance. No cap on stacks. Each application refreshes the 15-second timer. Ends with the fight.',
 

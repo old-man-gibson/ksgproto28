@@ -432,12 +432,12 @@
       strip's tail appends.
     -->
     <div class="small dim">
-      A spell is a sentence. Word order matters: <i>fire pierce</i> leads with the substance,
-      <i>pierce fire</i> with the action — same words, different spells. Saying a word again
+      A spell is a sentence. Word order matters: <i>fire pierce</i> starts with the noun,
+      <i>pierce fire</i> with the verb — same words, different spells. Repeating a word
       deepens it: <i>fire fire</i> is <i>flame</i>, a third makes <i>blaze</i> — stronger than
-      the sum, and costlier still. Drag a word onto its twin to fold them into one word (a
-      numeral on a pill says how deep you have mastered it); right-click a folded word to peel
-      a layer back off. Addresses never deepen; nothing survives a fourth saying.
+      the sum, and costlier still. Drag a word onto the same word to merge them into one (a
+      numeral on a word tile says how deep you have mastered it); right-click a merged word to remove
+      one layer. Targets and conjunctions never deepen; a word counts at most three times.
     </div>
 
     <div
@@ -488,8 +488,8 @@
             unstack(i);
           }}
           title={tok.tier > 1
-            ? 'Right-click to peel one layer off · click to remove · drag to reorder'
-            : 'Click to remove · drag to reorder, or onto its twin to deepen'}
+            ? 'Right-click to remove one layer · click to remove the word · drag to reorder'
+            : 'Click to remove · drag to reorder, or onto the same word to deepen'}
         >
           {w?.icon} {label}
           {#if tok.tier > 1}<span class="tier-mark">{TIER_MARK[tok.tier]}</span>{/if}
@@ -510,7 +510,7 @@
       {:else if check}
         <div class="small dim">🔒 {check.reason}</div>
       {:else}
-        <div class="small dim">The table is quiet.</div>
+        <div class="small dim">No words on the strip yet.</div>
       {/if}
       {#if overPool}
         <div class="small out-of-reach too-wide">
@@ -574,7 +574,7 @@
                         {#if next}
                           Practice {next}: {wordGift(w.id)}
                         {:else}
-                          Fully practised — {wordGift(w.id)}, thrice over
+                          Fully practised — {wordGift(w.id)} from each of the three milestones
                         {/if}
                       </div>
                     {/if}
@@ -587,8 +587,8 @@
                     </div>
                     <div class="tip-line">
                       {deep > 1
-                        ? `Drag one onto another in the sentence to fold them into ${w.stacked[0]}.`
-                        : `Inscribe with "${w.word}" in ${WORD_MASTERY[0]} different sentences to learn to fold it.`}
+                        ? `Drag one onto another in the sentence to merge them into ${w.stacked[0]}.`
+                        : `Inscribe with "${w.word}" in ${WORD_MASTERY[0]} different sentences to learn to merge it.`}
                     </div>
                   {/if}
                 {/snippet}
@@ -600,9 +600,9 @@
     </div>
   {:else if tab === 'divine'}
     <div class="small dim">
-      Miracles are received, never composed — each is an aspect of one deity's power, bought
-      with favor earned in their sight. Deeds done for others earn it today; deity-aligned
-      deeds and altars will, in time. Hostile powers refuse to be <i>prepared</i> together.
+      Miracles cannot be composed. Each is one deity's power, bought
+      with that deity's favor. Deeds done for others earn favor today; deity-aligned
+      deeds and altars will earn it later. Miracles of hostile deities cannot be <i>prepared</i> together.
     </div>
     {#if floatingFavor(gs) > 0}
       <!-- Later votive tokens (systems/consumables.ts): favor the player places. -->
@@ -641,7 +641,7 @@
             <b>{group.pantheon.icon} {group.pantheon.name}</b>
             {#if group.pantheon.desc}<span class="dim">{group.pantheon.desc}</span>{/if}
           {:else if godGroups.length > 1}
-            <span class="dim">Standing alone</span>
+            <span class="dim">No pantheon</span>
           {/if}
         </div>
 
@@ -745,15 +745,15 @@
     {/each}
 
     {#if godGroups.length === 0}
-      <div class="small dim">No power answers to that.</div>
+      <div class="small dim">No deity matches that search.</div>
     {/if}
   {:else}
     <div class="small dim">
-      No words, no prayers — will, injected along axes. Click a ring to set how much power an
-      axis holds. The axes are not the working: they are terms, and what you shape is read off
-      the QUANTITIES below them — mass held still is a wall, the same mass in motion is a
-      hammer. Vitality aims the whole working: turned outward that hammer is thrown, turned
-      inward it is your own speed. Some regions of that space have names. Greyed axes await
+      Psionic spells are shaped by spending points on axes. Click a ring to set how many points an
+      axis holds. The axes are inputs, not the spell: what you shape is read off
+      the QUANTITIES below them — for example, mass held still is a wall and the same mass in motion is a
+      hammer. Vitality sets the aim of the whole spell: turned outward that hammer is thrown, turned
+      inward it becomes your own speed. Some combinations have names. Locked axes need
       teachers.
     </div>
     <div class="favor">
@@ -857,15 +857,15 @@
       {/if}
       {#if outOfReach}
         <div class="small dim out-of-reach">
-          🔒 This shape settles toward <b>{outOfReach.icon} {outOfReach.name}</b> — a region your
-          mind cannot hold until a teacher raises you to tier {outOfReach.tier}.
+          🔒 This shape matches <b>{outOfReach.icon} {outOfReach.name}</b>, which
+          needs a teacher to raise you to tier {outOfReach.tier} before you can use it.
         </div>
       {/if}
       {#if tooWide}
         <div class="small out-of-reach too-wide">
-          🧠 Wider than you can hold: it asks <b>{tooWide.cost.toFixed(2)}</b> focus and your mind
-          holds <b>{tooWide.ceiling}</b>. You may shape it, but nothing will cast it until
-          Charisma widens you.
+          🧠 Costs <b>{tooWide.cost.toFixed(2)}</b> focus, and your maximum focus
+          is <b>{tooWide.ceiling}</b>. You can shape it, but it will not cast until
+          Charisma raises your maximum focus.
         </div>
       {/if}
     </div>
@@ -922,19 +922,19 @@
       <Tip>
         <span class="small dim">{prepared}/{preparedCap(gs)} prepared for combat</span>
         {#snippet tip()}
-          <div class="tip-line tip-base">Pages you can hold ready</div>
+          <div class="tip-line tip-base">Prepared spell slots</div>
           <div class="tip-line tip-sub">
             {BASE_PREPARED} to begin with, and one more for every {PREPARED_PER_LEVELS} levels
             of Arcana, Psionics or Devotion — each counted on its own.
           </div>
           <div class="tip-line">
-            A page earned studying one school may hold a working from any of them.
+            A slot earned from one school can hold a spell from any school.
           </div>
         {/snippet}
       </Tip>
     </div>
     {#if gs.grimoire.length === 0}
-      <div class="small dim">Empty. Whatever you craft here, whichever school, is written into it.</div>
+      <div class="small dim">Empty. Spells you craft here, from any school, are added to it.</div>
     {:else}
       {#each gs.grimoire as spell (spell.uid)}
         {@const spec = resolveSpell(spell)}

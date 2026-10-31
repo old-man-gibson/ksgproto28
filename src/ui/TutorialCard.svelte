@@ -51,7 +51,7 @@
   function rackFacts(w: TutorialWeapon): string[] {
     const id = TUTORIAL_RACK[w]?.item;
     const def = id ? ITEMS[id] : null;
-    if (!def) return ['No weapon. Both hands free; damage is your bare figure.'];
+    if (!def) return ['No weapon. Both hands free; damage is a flat base plus Strength.'];
     const hands = TUTORIAL_RACK[w].hands === 'two' ? 'Two-handed' : 'One-handed';
     return [hands, ...def.mods.map((m) => describeMod(m))];
   }

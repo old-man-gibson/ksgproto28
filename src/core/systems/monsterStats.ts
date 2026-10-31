@@ -23,6 +23,7 @@ import {
   setMonsterResistanceReader,
   statusMods,
   statusResFloor,
+  applyResFloor,
   statusResOverrides,
 } from './statuses';
 
@@ -767,9 +768,10 @@ function applyResOverrides(inst: MonsterInstance, stats: MonsterStats): MonsterS
     stats.resistances[type] = value;
   }
   const floor = statusResFloor(inst);
-  if (floor !== undefined) {
+  if (floor) {
     for (const type of Object.keys(stats.resistances) as DamageType[]) {
-      stats.resistances[type] = Math.max(floor, stats.resistances[type]);
+      const key = RES_STAT_BY_TYPE[type];
+      stats.resistances[type] = applyResFloor(stats.resistances[type], floor.floor, floor.taken[key] ?? 0);
     }
   }
   return stats;

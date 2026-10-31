@@ -142,7 +142,7 @@ describe('approach bonuses', () => {
     // The transcript keeps every blow's breakdown; the ambush names itself
     // there — and only on the blow that spent it.
     const bitten = g.state.lastFight!.transcript.filter((e) =>
-      e.damage?.steps.some((s) => s.label === 'Caught off guard'),
+      e.damage?.steps.some((s) => s.label === 'Conditions on the target'),
     );
     expect(bitten.length).toBe(1);
   });

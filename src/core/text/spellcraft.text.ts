@@ -9,17 +9,17 @@ export const ARCANE_WORDS_TEXT: ProseTable = {
 
   'ice.desc': 'Cold noun. 2 mana, 0.9 power. 40% chance to Chill the target: -40% speed.',
 
-  'spark.desc': 'Lightning noun. 2 mana, 0.85 power. 30% chance to Jolt the target; the charge discharges when it next acts.',
+  'spark.desc': 'Lightning noun. 2 mana, 0.85 power. 30% chance to Jolt the target: 1.2 lightning damage each time its action bar fills, for 20 seconds.',
 
   'water.desc': 'Water noun. 2 mana, 0.8 power. 50% chance to make the target Wet: cold, lightning and poison resistance drop, heat resistance rises.',
 
-  'stone.desc': 'Earth noun. 3 mana, 1.15 power. 30% chance to Shardbind the target: it takes piercing damage whenever it attacks or is hit.',
+  'stone.desc': 'Earth noun. 3 mana, 1.15 power. 30% chance to inflict Shardbound: the target takes 0.8 piercing damage whenever it attacks or is struck in melee, for 30 seconds.',
 
   'gust.desc': 'Wind noun. 2 mana, 0.85 power. 25% chance to Buffet the target: each point gives a 12% chance that a technique ends Off Balance instead of at its declared position.',
 
-  'seed.desc': 'Poison noun. 2 mana, 0.7 power. 50% chance to Seed the target. Seeded does nothing on arrival, grows +0.15 per second while the target is not hit, and records every other condition landed; matured to Rootbound it spreads that record to the other enemies.',
+  'seed.desc': 'Poison noun. 2 mana, 0.7 power. 50% chance to Seed the target. Seeded does nothing on landing; it grows 0.15 per second (each hit prunes 0.5, water damage feeds it 1), becomes Rootbound at 6, and records every other condition that lands. Rootbound spreads a quarter of that record to the other enemies every 3 seconds. Heat damage removes it.',
 
-  'iron.desc': 'Piercing noun. 2 mana, 0.9 power. 35% chance to Magnetize the target: each point ignores 10% of its dodge and adds 5% crit chance against it, and lightning cannot miss it.',
+  'iron.desc': 'Piercing noun. 2 mana, 0.9 power. 35% chance to Magnetize the target: each point ignores 10% of its dodge and gives piercing attacks +5% crit chance against it, lightning cannot miss it, and its dodge is also reduced by 3%.',
 
   'venom.desc': 'Poison noun. 2 mana, 0.7 power. 60% chance to Poison the target: poison damage over time and -20% stamina regeneration. Only a stronger dose deepens it.',
 
@@ -77,7 +77,7 @@ export const ARCANE_WORDS_TEXT: ProseTable = {
 
   'if.desc': 'Conjunction. 1 mana. The next clause does not strike; its noun names a condition, and the previous blow fires only while the target has that condition or one it escalates into.',
 
-  'with.desc': 'Conjunction. 1 mana. A next clause with a noun and no verb joins the previous clause instead of acting: an undo gains its element as tuning, a blow carries its condition, a ward adds a coat against its element at 75%, a mend adds its weight at 75%. A clause with its own verb acts on its own.',
+  'with.desc': 'Conjunction. 1 mana. A next clause with a noun and no verb joins the previous clause instead of acting: an undo also matches the noun’s element, a blow also applies the noun’s condition, a ward also adds resistance to the noun’s element at 75% (armor with no element), a mend also heals the noun’s power at 75%. A clause with its own verb acts on its own.',
 
   'one.desc': 'Target word: the front enemy. 0 mana. The default when no target is spoken.',
 
@@ -105,7 +105,7 @@ export const MIRACLES_TEXT: ProseTable = {
   'rime_of_the_cold_sun.desc': 'Xima. 6 favor, 6 mana, 60 second cooldown. Self: +12% heat, cold and lightning resistance for 60 seconds.',
 
   'blood_communion.desc': 'Xima. 8 favor, 5 mana, 70 second cooldown. Self: applies Bleeding at intensity 2, plus Blood Communion for 60 seconds, under which bleed damage heals you instead and you deal +8% damage.',
-  'blood_communion.spec.desc': 'You bleed; while Blood Communion holds, the bleed heals you instead of harming you.',
+  'blood_communion.spec.desc': 'You bleed; while Blood Communion lasts, the bleed heals you instead of harming you.',
 
   'litany_retribution.desc': 'D’Enjalle. 5 favor, 5 mana, 12 second cooldown. One 2.2 light strike with a 40% chance to Dazzle.',
   'litany_retribution.spec.desc': '2.2 light strike, 40% chance to Dazzle.',
@@ -169,38 +169,38 @@ export const MIRACLES_TEXT: ProseTable = {
 
 // ---------- PSI_AXES ----------
 export const PSI_AXES_TEXT: ProseTable = {
-  'force.desc': 'Raw imposition. Feeds Pressure (force + grip). Bare force lands as bludgeoning damage, 0.7 per curved point.',
+  'force.desc': 'Feeds Pressure (force + grip). Deals bludgeoning damage: 0.7 x points^1.25.',
 
-  'reach.desc': 'Spread. Feeds Awareness (clairvoyance x reach) and lowers Acuity. Each point splashes 20% of the strike onto flankers; at 4 spread the working hits every enemy. Delivery only: reach with nothing to deliver does nothing.',
+  'reach.desc': 'Feeds Awareness (clairvoyance x reach) and lowers Acuity. Spread = reach + 0.5 x √Awareness. Each point of spread splashes 20% of the strike onto flankers (up to 75%); at 4 spread the spell hits every enemy. Does nothing unless other axes give the spell a strike or an effect to deliver.',
 
-  'grip.desc': 'Hold. Feeds Pressure and Purchase (grip / (1 + speed)). 18% daze chance per point, 0.25 damage per curved point, and Purchase sets how long afflictions stay on the target.',
+  'grip.desc': 'Feeds Pressure (force + grip) and Purchase (grip / (1 + speed)). Each point gives an 18% chance to inflict Dazed and adds damage: 0.25 x points^1.25. Purchase sets how long afflictions stay on the target.',
 
-  'speed.desc': 'Cycle rate. Cooldown x0.93 per point. Multiplies mass into Momentum, subtracts from Inertia, and divides Purchase. Delivery only: speed with nothing to deliver does nothing.',
+  'speed.desc': 'Cooldown x0.93 per point. Momentum = mass x speed; speed also lowers Inertia (mass minus speed) and Purchase (grip / (1 + speed)). Does nothing unless other axes give the spell a strike or an effect to deliver.',
 
-  'clairvoyance.desc': 'Sight. Feeds Acuity (concentrated: piercing, cannot miss, armor penetration) and Awareness (spread: reaches every enemy). Aimed inward, it becomes Foresight: enemy blows miss.',
+  'clairvoyance.desc': 'Feeds Acuity (makes the strike piercing, unmissable and armor-penetrating) and Awareness (widens the spell to more enemies). The inward share of Acuity is Foresight: attacks against you have a chance to miss.',
 
-  'space.desc': 'Structure. Feeds Coherence (space / (force + mass)), which withholds part of the strike, carries acuity as armor penetration, and sets how long every inward effect lasts.',
+  'space.desc': 'Feeds Coherence (space / (force + mass)), which withholds part of the strike’s damage, multiplies Acuity’s armor penetration by (1 + Coherence), and sets how long every inward effect lasts.',
 
-  'mass.desc': 'Weight. With speed it becomes Momentum (a strike, 0.85 per curved point, and concussion); without speed it becomes Inertia (a standing wall outward, blunt resistance inward).',
+  'mass.desc': 'With speed it becomes Momentum (a bludgeoning strike of 0.85 x (√Momentum)^1.25, and concussion); without speed it becomes Inertia (Kinetic Bulwark outward, blunt resistance inward).',
 
-  'vitality.desc': 'The aim dial. Sets Inward (vitality / (vitality + pressure)): the share of every quantity applied to you instead of the target. Vitality alone heals, 0.35 per curved point.',
+  'vitality.desc': 'Sets Inward (vitality / (vitality + pressure)): the share of every quantity applied to you instead of the target. Also heals you: 0.35 x points^1.25 x (0.5 + Inward) spell power.',
 };
 
 // ---------- PSI_QUANTITIES ----------
 export const PSI_QUANTITIES_TEXT: ProseTable = {
-  'pressure.desc': 'force + grip. Outward: the blow. Inward: Braced, extra armor. Also the denominator of Inward, so more pressure means less of the working goes to you.',
+  'pressure.desc': 'force + grip. Outward: force and grip deal the strike’s damage. Inward: Braced, +1 armor per point of Pressure x Inward. Also the denominator of Inward, so more pressure means a smaller inward share.',
 
   'momentum.desc': 'mass x speed. Outward: bludgeoning strike power and a 9% concussion chance per point. Inward: Kinetic Haste, faster actions. Its square root also lowers Acuity.',
 
-  'inertia.desc': 'mass minus speed, floored at 0. Outward at 3 or more: Kinetic Bulwark, a wall that stops thrown, shot and spat attacks. Inward at 2 or more: Rooted, blunt resistance and dazes at half strength.',
+  'inertia.desc': 'mass minus speed, floored at 0. Outward at 3 or more: Kinetic Bulwark, which blocks all ranged attacks except light. Inward at 2 or more: Rooted, blunt resistance, and Dazed and Concussed land at half intensity.',
 
-  'acuity.desc': 'clairvoyance / (reach + square root of momentum). At 2 or more the strike is piercing and cannot miss; each unit through coherent space ignores 9% armor. Outward: Read, lowers the target’s dodge and parry. Inward: Foresight, enemy blows miss. Momentum spoils it, so a shape is a needle or a hammer, not both.',
+  'acuity.desc': 'clairvoyance / (reach + square root of momentum). At 2 or more the strike is piercing and cannot miss; it ignores 9% of armor per point, x (1 + Coherence). Outward: Read, lowers the target’s dodge and parry. Inward: Foresight, attacks against you have a 3% chance to miss per point of Acuity x Inward. Momentum lowers it, so a spell has high Acuity or high Momentum, not both.',
 
-  'awareness.desc': 'clairvoyance x reach. Outward: spread, so the working splashes and then hits every enemy, afflictions included. Inward: Wide Sight, physical resistances.',
+  'awareness.desc': 'clairvoyance x reach. Outward: adds 0.5 x √Awareness to spread (see Reach), so the spell splashes and then hits every enemy, afflictions included. Inward: Wide Sight, physical resistances.',
 
-  'coherence.desc': 'space / (force + mass). Withholds up to 40% of the strike and returns half of that as a standing effect. Outward: Compressed, the target loses time. Inward: sets duration of every inward effect, 20 seconds bare, over 3 minutes fully structured.',
+  'coherence.desc': 'space / (force + mass). Withholds up to 40% of the strike’s damage and multiplies armor penetration by (1 + Coherence). Outward at 1 or more: Compressed, the target loses speed. Inward: sets how long every inward effect lasts, 20 seconds x (1 + Coherence).',
 
-  'purchase.desc': 'grip / (1 + speed). Sets how long afflictions stay on the target: 10 seconds at 0, about 50 seconds at full grip with no speed. Nothing is gated on it; everything still lands.',
+  'purchase.desc': 'grip / (1 + speed). Sets how long afflictions stay on the target: 10 seconds + 4 seconds per point, about 50 seconds at grip 10 with no speed. At 0 every effect still applies, for 10 seconds.',
 
   'inward.desc': 'vitality / (vitality + pressure). The share of every quantity applied to you rather than the target; the rest goes outward. Momentum outward is a strike, inward is action speed. Nothing is discarded.',
 };
@@ -209,15 +209,15 @@ export const PSI_QUANTITIES_TEXT: ProseTable = {
 export const PSI_RECOGNITIONS_TEXT: ProseTable = {
   'unerring_needle.desc': 'Acuity 2 or more, Pressure 4 or more, Coherence 0.4 or more, Momentum 0, Inward at most 0.5. A piercing strike that cannot miss. Recognition bonus x1.12.',
 
-  'kinetic_bulwark.desc': 'Inertia 3 or more, Coherence 0.4 or more, Inward at most 0.4. A standing wall that stops thrown, shot and spat attacks; light passes through. Recognition bonus x1.12.',
+  'kinetic_bulwark.desc': 'Inertia 3 or more, Coherence 0.4 or more, Inward at most 0.4. Kinetic Bulwark: blocks all ranged attacks except light. Recognition bonus x1.12.',
 
-  'still_mind.desc': 'Inward 0.9 or more, Vitality 3 or more, with Momentum, Inertia, Acuity and Awareness at 0 and Coherence at most 0.5. Pure healing: the whole working goes to mending you. Recognition bonus x1.12.',
+  'still_mind.desc': 'Inward 0.9 or more, Vitality 3 or more, with Momentum, Inertia, Acuity and Awareness at 0 and Coherence at most 0.5. Pure healing: all of the spell’s points go to healing you. Recognition bonus x1.12.',
 
-  'kinetic_rush.desc': 'Momentum 36 or more, Inward 0.8 or more. The momentum is worn instead of thrown: Kinetic Haste, faster actions for as long as coherence sustains it. Recognition bonus x1.12.',
+  'kinetic_rush.desc': 'Momentum 36 or more, Inward 0.8 or more. Momentum is applied to you instead of the target: Kinetic Haste (+3% speed per point of √Momentum x Inward), lasting 20 seconds x (1 + Coherence). Recognition bonus x1.12.',
 
   'immovable.desc': 'Inertia 5 or more, Inward 0.8 or more. Rooted: blunt resistance, and dazes land at half strength. Recognition bonus x1.12.',
 
-  'second_sight.desc': 'Acuity 3 or more, Inward 0.8 or more. Foresight: enemy blows miss outright. Recognition bonus x1.12.',
+  'second_sight.desc': 'Acuity 3 or more, Inward 0.8 or more. Foresight: attacks against you have a 3% chance to miss per point of Acuity x Inward. Recognition bonus x1.12.',
 
-  'psionic_obliteration.desc': 'Pressure 10 or more, Momentum 48 or more, Inward at most 0.25. Maximum outward strike: pressure and momentum thrown together with almost nothing kept for you. Recognition bonus x1.12.',
+  'psionic_obliteration.desc': 'Pressure 10 or more, Momentum 48 or more, Inward at most 0.25. Maximum outward strike: high Pressure and Momentum with almost nothing applied to you. Recognition bonus x1.12.',
 };

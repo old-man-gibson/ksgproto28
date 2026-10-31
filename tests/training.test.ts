@@ -153,7 +153,7 @@ describe('David and Goslimath', () => {
       .map((l) => l.damage)
       .filter((d) => d !== undefined && !d.incoming);
     expect(mine.length).toBeGreaterThan(0);
-    const step = mine[0]!.steps.find((s) => s.label === 'Under its guard');
+    const step = mine[0]!.steps.find((s) => s.label === 'Damage vs Larger');
     expect(step?.mult).toBeCloseTo(1.18, 6);
   });
 });

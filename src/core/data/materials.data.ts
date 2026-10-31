@@ -903,7 +903,7 @@ for (const base of Object.values(MATERIALS).filter((m) => m.craftTags?.includes(
       name: `${prep.prefix} ${base.name}`,
       icon: base.icon,
       value: base.value + 1,
-      desc: `${base.name}, ${prep.prefix.toLowerCase()} and ready. The grade is the knife work.`,
+      desc: `${base.name}, ${prep.prefix.toLowerCase()}. Its grade is the cut grade, not the ingredient's grade. The grade sets what share of the ingredient's contribution reaches the dish (Divine: all of it).`,
       craftTags: [
         ...(base.craftTags ?? []).filter((t) => t !== 'whole'),
         prep.tag,
@@ -937,7 +937,7 @@ for (const gene of Object.values(MAIN_GENES)) {
     icon: gene.icon,
     // Worth roughly what it can do, so selling a jötunn gene stings properly.
     value: 20 + Math.round(gene.flatBase / 4),
-    desc: `Recovered whole. It still knows how to be a ${gene.name.replace(/ Gene$/, '').toLowerCase()}.`,
+    desc: `Main gene. Slot it into the centromere on the Chromosome tab to take on this body; swapping costs biomatter. Grade sets its strength and capacity cost.`,
     craftTags: ['gene'],
     graded: true,
   };
@@ -950,8 +950,8 @@ for (const mutagen of Object.values(MUTATIONS)) {
     icon: mutagen.icon,
     value: mutagen.rekey ? 40 : 15,
     desc: mutagen.rekey
-      ? 'A fragment carrying an instruction rather than an opinion — it rewrites what it is fused to.'
-      : 'A fragment with an opinion about what a body should do.',
+      ? 'Fused mutagen. Place it in a socket on the Chromosome tab: it changes one of your weaknesses to the damage type in its name, same size.'
+      : 'Mutagen. Place it in a socket on the Chromosome tab; its effect is routed along the connections to the centromere. Grade sets its strength and capacity cost.',
     craftTags: ['mutagen'],
     graded: true,
   };

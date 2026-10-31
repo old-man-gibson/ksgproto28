@@ -30,7 +30,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.02,
-      note: 'A measured breath per swing',
+      note: 'Small damage bonus on every attack, for a small stamina cost',
       hit: { damage: 0.1 },
     },
   },
@@ -47,7 +47,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.06,
-      note: 'Guard abandoned while the fire lasts',
+      note: 'Trades dodge and armor for damage and attack speed while stamina lasts',
       mods: [
         { stat: 'damage', op: 'mult', value: 0.2 },
         { stat: 'attackSpeed', op: 'mult', value: 0.25 },
@@ -68,7 +68,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.1,
-      note: 'Every ounce of weight behind the swing',
+      note: 'Large damage and penetration bonus on every attack, for a large stamina cost',
       hit: { damage: 0.5, penetration: 0.15 },
     },
   },
@@ -84,7 +84,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.05,
-      note: 'Follow the arc all the way through',
+      note: 'Small damage bonus, and part of each blow also hits a flanking enemy',
       hit: { damage: 0.1, splash: 0.25 },
     },
   },
@@ -99,7 +99,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.025,
-      note: 'Momentum builds while the breath holds out',
+      note: 'Each attack that spends stamina adds attack speed, up to a cap, until the fight ends',
       ramp: { stat: 'attackSpeed', per: 0.03, cap: 0.45 },
     },
   },
@@ -115,7 +115,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'defend',
       cost: 0.05,
-      note: 'A burst of footwork per incoming attack',
+      note: 'Spends stamina on each incoming attack to raise your dodge against it',
       hit: { dodge: 0.2 },
     },
   },
@@ -131,7 +131,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.08,
-      note: 'Breath held, eyes on the gap',
+      note: 'Raises crit chance and lowers attack speed while stamina lasts',
       mods: [
         { stat: 'crit', op: 'add', value: 0.12 },
         { stat: 'attackSpeed', op: 'mult', value: -0.12 },
@@ -150,7 +150,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'defend',
       cost: 0.05,
-      note: 'Set against every incoming blow',
+      note: 'Spends stamina on each incoming attack to raise your armor against it',
       hit: { armor: 0.6 },
     },
   },
@@ -165,7 +165,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.14,
-      note: 'Several blows in the space of one',
+      note: 'Each attack lands one extra simultaneous hit, for a high stamina cost',
       hit: { extraHits: 1 },
     },
   },
@@ -186,7 +186,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
       on: 'attack',
       cost: 1,
       drain: true,
-      note: 'One breath, one blow, nothing left',
+      note: 'Each attack empties the whole stamina bar for a very large damage and penetration bonus',
       hit: { damage: 1.5, penetration: 0.3 },
     },
     unlock: [
@@ -212,7 +212,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.12,
-      note: 'Twin arcs from one breath',
+      note: 'Each attack lands one extra simultaneous hit and adds a small damage bonus',
       hit: { extraHits: 1, damage: 0.1 },
     },
     unlock: [
@@ -234,7 +234,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.07,
-      note: 'Stillness before the draw',
+      note: 'Raises crit chance and lowers attack speed while stamina lasts',
       mods: [
         { stat: 'crit', op: 'add', value: 0.15 },
         { stat: 'attackSpeed', op: 'mult', value: -0.1 },
@@ -260,7 +260,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.03,
-      note: 'The pace climbs with every cut',
+      note: 'Each attack that spends stamina adds attack speed, up to a cap, until the fight ends',
       ramp: { stat: 'attackSpeed', per: 0.035, cap: 0.5 },
     },
     unlock: [
@@ -291,7 +291,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'defend',
       cost: 0.055,
-      note: 'The point already covering the line',
+      note: 'Spends stamina on each incoming attack to raise your parry against it',
       hit: { parry: 0.18 },
     },
     unlock: [
@@ -314,7 +314,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'defend',
       cost: 0.05,
-      note: 'Buckler out to meet it, sword ready behind',
+      note: 'Spends stamina on each incoming attack to raise your parry and armor against it',
       hit: { parry: 0.14, armor: 0.25 },
     },
     unlock: [
@@ -339,7 +339,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'defend',
       cost: 0.045,
-      note: 'Slip the punch, spend the breath',
+      note: 'Spends stamina on each incoming attack to raise your dodge against it',
       hit: { dodge: 0.22 },
     },
     unlock: [
@@ -361,7 +361,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.13,
-      note: 'A chain of kicks off one breath',
+      note: 'Each attack lands one extra simultaneous hit, for a high stamina cost',
       hit: { extraHits: 1 },
     },
     unlock: [
@@ -384,7 +384,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'attack',
       cost: 0.09,
-      note: 'Hips turned into every strike',
+      note: 'Large damage and penetration bonus on every attack',
       hit: { damage: 0.55, penetration: 0.1 },
     },
     unlock: [
@@ -406,7 +406,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'defend',
       cost: 0.045,
-      note: 'Hips set against every blow',
+      note: 'Spends stamina on each incoming attack to raise your armor against it',
       hit: { armor: 0.75 },
     },
     unlock: [
@@ -430,7 +430,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
       on: 'attack',
       pool: 'mana',
       cost: 0.08,
-      note: 'Will behind the edge — paid in mana',
+      note: 'Paid in mana, not stamina: large damage and penetration bonus on every attack',
       hit: { damage: 0.5, penetration: 0.12 },
     },
     unlock: [{ type: 'skill', id: 'school_magic_combat', level: 1 }],
@@ -447,7 +447,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     exertion: {
       on: 'defend',
       cost: 0.08,
-      note: 'Stay in motion to slip away from an incoming attack.',
+      note: 'Spends stamina on each incoming attack to raise your dodge against it',
       hit: {
              dodge: 0.15,
            },

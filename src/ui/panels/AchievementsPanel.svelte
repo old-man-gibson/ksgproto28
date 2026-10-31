@@ -17,7 +17,7 @@
 <div class="panel">
   <h2>👑 Titles</h2>
   {#if titles.length === 0}
-    <p class="dim">No titles yet — great deeds will be remembered.</p>
+    <p class="dim">No titles earned yet.</p>
   {/if}
   <div class="grid">
     {#each titles as title (title.id)}

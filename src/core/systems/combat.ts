@@ -190,7 +190,7 @@ export function landGraze(
 
   markCombatEvent(state, 'onGraze');
   bumpStat(state, bus, 'combat:grazes');
-  feed(state, `💢 Your swing goes wide but the edge still tells — ${dealt} ${type}.`);
+  feed(state, `💢 Your attack misses but grazes for ${dealt} ${type}.`);
   /*
    * A GRAZE DOES NOT SPEND THE COATING, and does not carry its riders.
    * Decided 2026-08-10, having been true by omission until then.
@@ -367,8 +367,8 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
   const run = {
     group: bladeGroup(c, !!c.volley),
     prefix: c.volley
-      ? `🗡️ ${c.volley.name} — the blades fall on the ${monster.name}:`
-      : `🌀 Your floating arms work the ${monster.name}:`,
+      ? `🗡️ ${c.volley.name} — your telekinetic weapons hit the ${monster.name}:`
+      : `🌀 Your telekinetic weapons attack the ${monster.name}:`,
   };
   // Advance the rack now that this strike's line is settled — the group string
   // above is already captured, so every exit path below leaves the next blade
@@ -395,7 +395,7 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
     feedFloating(state, {
       group: run.group,
       prefix: run.prefix,
-      tally: [{ label: 'wide', qty: 1 }],
+      tally: [{ label: 'missed', qty: 1 }],
       ids: [BLADE_RUN],
     });
     return false;
@@ -468,7 +468,7 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
   if (oil?.inflicts && monster.hp > 0) {
     for (const app of oil.inflicts) applyStatus(state, monster, app, oil.name, undefined, penetration);
   }
-  if (oil?.exhausted) feed(state, `🛢️ The last of the ${oil.name} wipes off your edge.`);
+  if (oil?.exhausted) feed(state, `🛢️ Your ${oil.name} coating is used up.`);
 
   /*
    * THE BLADES DO NOT GET LINES OF THEIR OWN.
@@ -487,11 +487,11 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
   const steps: DamageStep[] = [{ label: 'Damage', value: vs.damage }];
   // The same sentence the hands' swing pushes, so the two lines read as the two
   // halves of one split rather than as two unrelated penalties.
-  if (share !== 1) steps.push({ label: 'Held by the mind, not the hand', mult: share });
-  if (grip !== 1) steps.push({ label: 'How hard the mind holds', mult: grip });
+  if (share !== 1) steps.push({ label: 'Share of damage on telekinetic weapons', mult: share });
+  if (grip !== 1) steps.push({ label: 'Telekinetic grip (Wisdom)', mult: grip });
   if (crit) steps.push({ label: 'Critical hit', mult: vs.critDamage });
   steps.push({ label: 'Swing variance ±10%' });
-  if (bite !== 1) steps.push({ label: 'Caught off guard', mult: bite });
+  if (bite !== 1) steps.push({ label: 'Conditions on the target', mult: bite });
   feedFloating(state, {
     group: run.group,
     prefix: run.prefix,
@@ -501,7 +501,7 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
     ],
     ids: [BLADE_RUN],
     damage: {
-      label: c.volley?.name ?? 'Your floating arms',
+      label: c.volley?.name ?? 'Your telekinetic weapons',
       target: monster.name,
       steps,
       slices: [...slices.values()],
@@ -1057,7 +1057,7 @@ function startEncounter(
         told = !!applyStatus(state, e, app, 'your approach', undefined, getDerivedStats(state).penetration) || told;
       }
     }
-    if (told) feed(state, `🥷 Your approach catches them cold!`);
+    if (told) feed(state, `🥷 Your approach applied conditions to the enemies.`);
     // What the road did to YOU is still something done to you — wading in wet
     // answers to water resistance the same as a spell would.
     for (const inst of applyStatuses(
@@ -1123,7 +1123,7 @@ export function startForcedFight(state: GameState, bus: EventBus, spot: SpotDef)
   if (state.combat || spotCleared(state, spot) || !eligibleEncounters(state, spot).length) return;
   startEncounter(state, bus, spot, true);
   bus.emit({ type: 'log', msg: text('combat.ambushed'), kind: 'danger' });
-  feed(state, `⚔️ No retreat — this fight ends on its feet or on yours.`);
+  feed(state, `⚔️ You cannot flee this fight.`);
 }
 
 /**
@@ -1196,7 +1196,7 @@ export function startStagedGroup(
   const slots: (MonsterInstance | null)[] = Array(ENCOUNTER_SLOTS).fill(null);
   minted.forEach((m, i) => (slots[i] = m));
   startEncounter(state, bus, spot, true, slots);
-  feed(state, `⚔️ No retreat — this fight ends on its feet or on yours.`);
+  feed(state, `⚔️ You cannot flee this fight.`);
 }
 
 // ---------- Combat tags & rewards ----------
@@ -1683,7 +1683,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
     if (spot?.fightLimit) {
       bumpStat(state, bus, fightsKey(spot.id));
       if (spotCleared(state, spot)) {
-        if (spot.id === 'f1_storerooms') bus.emit({ type: 'log', kind: 'explore', msg: 'The remaining vermin scurry beneath a fallen shelf. Their retreat reveals a passage to the records rooms.' });
+        if (spot.id === 'f1_storerooms') bus.emit({ type: 'log', kind: 'explore', msg: 'The vermin are driven out. A route to The Records Passage is now open.' });
         bus.emit({ type: 'log', msg: text('combat.spot_cleared', { spot: spot.name }), kind: 'combat' });
         // The spot's clear stamp (M10), once: several spots may share one, as
         // ward 7's forms do, and the first to finish writes it.
@@ -1954,11 +1954,11 @@ function fireCounter(
     c.cooldowns[armed.id] = move.cooldown;
     setPosition(state, displacedExit(state, techniqueExit(state, def)));
     const reachedSpell = recordExecution(state, def);
-    if (reachedSpell) feed(state, `🎓 ${def.name} — ${reachedSpell.name}.`);
+    if (reachedSpell) feed(state, `🎓 ${def.name} mastery tier reached: ${reachedSpell.name}.`);
     grantAttrXp(state, bus, 'int', 3);
     grantSkillXp(state, bus, ['combat', 'magic'], 3);
     if (held) {
-      feed(state, `${def.icon} ${def.name} — the working answers in the blade's place.`);
+      feed(state, `${def.icon} ${def.name} — your readied spell is cast in place of the weapon strike.`);
       castCraftedAttack(state, bus, `technique:${def.id}`, resolveSpellFor(state, held));
     }
     return;
@@ -1997,7 +1997,7 @@ function fireCounter(
   c.cooldowns[armed.id] = move.cooldown;
   setPosition(state, displacedExit(state, techniqueExit(state, def)));
   const reached = recordExecution(state, def);
-  if (reached) feed(state, `🎓 ${def.name} — ${reached.name}.`);
+  if (reached) feed(state, `🎓 ${def.name} mastery tier reached: ${reached.name}.`);
   grantAttrXp(state, bus, 'dex', 2);
   grantSkillXp(state, bus, ['combat', ...(def.family ? [def.family] : [])], 3);
   if (e.hp <= 0) onKill(state, bus, index);
@@ -2080,7 +2080,7 @@ function castCraftedSelf(
       if (!state.combat) return true;
     }
     if (answer.remaining <= 0) {
-      feed(state, `↩️ ${spec.name} comes apart before it can take hold.`);
+      feed(state, `↩️ ${spec.name} is fully undone by the enemy's counterspell.`);
       selfCastXp(state, bus, id, spec);
       return false;
     }
@@ -2088,11 +2088,11 @@ function castCraftedSelf(
   }
 
   const synergy = miracleSynergy(state, c, spec);
-  if (synergy > 1) feed(state, `✨ ${spec.name} resonates with the miracle before it.`);
+  if (synergy > 1) feed(state, `✨ ${spec.name} gets ×${MIRACLE_SYNERGY_MULT} damage and healing (deity synergy with the previous miracle).`);
 
   if (spec.heal) {
     const healed = heal(state, stats, spec.heal * stats.spellPower * synergy, 'spell');
-    if (healed > 0) feed(state, `💚 ${spec.name} knits ${Math.round(healed)} health back.`);
+    if (healed > 0) feed(state, `💚 ${spec.name} heals you for ${Math.round(healed)} HP.`);
   }
   applySelfRiders(state, c, spec);
   for (const strike of spec.strikes) {
@@ -2104,7 +2104,7 @@ function castCraftedSelf(
         ? Math.max(1, Math.round(raw))
         : incomingSlice(stats, strike.type, spec.name, raw).dealt;
       damagePlayer(state, dealt, strike.type);
-      feed(state, `${spec.icon} ${spec.name} turns on you for ${dealt} ${strike.untyped ? 'untyped' : strike.type}.`);
+      feed(state, `${spec.icon} ${spec.name} hits you for ${dealt} ${strike.untyped ? 'untyped' : strike.type}.`);
       for (const app of strike.inflicts ?? []) applyStatus(state, state, app, spec.name, stats);
       if (!isAlive(state)) {
         onDefeat(state, bus);
@@ -2190,8 +2190,8 @@ export function castMonsterWorking(
     feed(
       state,
       refusal.sealed
-        ? `🚫 The ${e.name}'s ${spec.name} is refused — it will not find the words again.`
-        : `🚫 The ${e.name} reaches for ${spec.name} and the world declines.`,
+        ? `🚫 Your body negates the ${e.name}'s ${spec.name}; it cannot cast it again this fight.`
+        : `🚫 Your body negates the ${e.name}'s ${spec.name}.`,
     );
     return false;
   }
@@ -2224,12 +2224,12 @@ export function castMonsterWorking(
     const fell = livingEnemies(state.combat) !== standing;
     if (e.hp <= 0 || !state.combat.enemies.includes(e)) return true;
     if (remaining <= 0) {
-      feed(state, `↩️ The ${e.name}'s ${spec.name} comes apart before it can land.`);
+      feed(state, `↩️ The ${e.name}'s ${spec.name} is fully undone by your counterspell.`);
       return fell;
     }
     working = undoWorking(spec, remaining);
     if (fell) {
-      feed(state, `${spec.icon} The ${e.name} works what is left of ${spec.name}.`);
+      feed(state, `${spec.icon} The ${e.name} casts ${spec.name} at ${pctOf(remaining)} strength (reduced by your counterspell).`);
       resolveMonsterWorking(state, bus, e, es, working, stats);
       return true;
     }
@@ -2238,8 +2238,8 @@ export function castMonsterWorking(
   feed(
     state,
     remaining < 1
-      ? `${spec.icon} The ${e.name} works what is left of ${spec.name}.`
-      : `${spec.icon} The ${e.name} works ${spec.name}.`,
+      ? `${spec.icon} The ${e.name} casts ${spec.name} at ${pctOf(remaining)} strength (reduced by your counterspell).`
+      : `${spec.icon} The ${e.name} casts ${spec.name}.`,
   );
   resolveMonsterWorking(state, bus, e, es, working, stats);
   return !state.combat || !isAlive(state);
@@ -2435,7 +2435,7 @@ function springCounterspell(
   c.cooldowns[id] = spec.cooldown;
   if (refusal.negated) {
     if (refusal.backlash > 0) damagePlayer(state, refusal.backlash, 'arcane');
-    feed(state, `🚫 ${spec.name} is refused before it can spring.`);
+    feed(state, `🚫 ${spec.name} is negated by your own body before it can trigger.`);
     return 1;
   }
 
@@ -2533,7 +2533,7 @@ function springEnemyCounter(
       e.lastHit = 'arcane';
       noteOutgoing(state, Math.max(1, Math.round(refusal.backlash)));
     }
-    feed(state, `🚫 The ${e.name} reaches to undo your ${working.name} and the world declines.`);
+    feed(state, `🚫 Your body negates the ${e.name}'s counterspell against your ${working.name}.`);
     return { remaining: 1, fatal: false };
   }
 
@@ -2601,6 +2601,10 @@ function pickMonsterAction(
       // A mind burned past empty cannot shape a working until it recovers —
       // it falls through to whatever else it can still do, or a plain swing.
       if (mindInDebt(e)) continue;
+      // A working sealed this fight (refuted once too often) stays unsaid; the
+      // key is the one castMonsterWorking seals under.
+      const slot = state.combat?.enemies.indexOf(e) ?? -1;
+      if (isSealed(state, `${e.defId}:${index}:${slot}`)) continue;
       return { index, cast: entry.cast };
     }
     const tech = TECHNIQUES[entry.technique];
@@ -2665,10 +2669,10 @@ function landIncantation(state: GameState, bus: EventBus): void {
   monster.hp -= dealt;
   monster.lastHit = type;
   noteOutgoing(state, dealt);
-  feed(state, `${ability!.icon} The incantation finishes, and ${ability!.name} arrives — ${dealt}.`, {
+  feed(state, `${ability!.icon} ${ability!.name} finishes casting and hits for ${dealt} (guaranteed critical hit).`, {
     label: ability!.name,
     target: monster.name,
-    steps: [...priced.steps, { label: 'A crit it cannot miss', mult }],
+    steps: [...priced.steps, { label: 'Guaranteed crit', mult }],
     slices: [slice],
     hits: 1,
     crit: true,
@@ -2718,7 +2722,7 @@ function beginUnaimed(
     c.incantAt =
       state.totalTicks + Math.max(1, Math.round(atGrade(spec.incant.ticks, grade)));
     c.cooldowns[active!.id] = spec.cooldown;
-    feed(state, `${ability.icon} You begin ${ability.name}. The world slows around it.`);
+    feed(state, `${ability.icon} You begin ${ability.name}: it hits when the wind-up ends, and your action bar fills at ×${spec.incant.fillMult.toFixed(2)} speed until then.`);
     // The wind-up eats what was left on the bar as well as the action that
     // started it — that is the "most of several turns" the cost is priced at.
     c.playerBar = 0;
@@ -2727,7 +2731,7 @@ function beginUnaimed(
 
   const slots = floatingSlots(state, bearerGrants(state));
   if (!slots.length) {
-    feed(state, `${ability.icon} ${ability.name} — nothing is aloft to answer it.`);
+    feed(state, `${ability.icon} ${ability.name} — no weapon is equipped in a telekinetic grip, so it does nothing (cooldown still spent).`);
   } else {
     const hits = Math.max(1, Math.round(atGrade(spec.volley!.hits, grade)));
     // Every blade turns AT ONCE, so the volley starts the rack over rather than
@@ -2743,7 +2747,7 @@ function beginUnaimed(
       rate: hits / Math.max(1, spec.volley!.ticks),
       name: ability.name,
     };
-    feed(state, `${ability.icon} ${ability.name} — every blade turns on the ${monster.name} at once.`);
+    feed(state, `${ability.icon} ${ability.name} — your telekinetic weapons make ${hits} strikes on the ${monster.name}.`);
   }
   c.cooldowns[active!.id] = spec.cooldown;
   return true;
@@ -2913,11 +2917,11 @@ export function healEnemy(
       swollen.data.surplus = Math.max(0, swollen.data.surplus - withheld / OVERGROWTH_HEAL_TAX);
       if (swollen.data.surplus <= 0) {
         removeStatus(target, swollen.id);
-        feed(state, `🌿 The growth in the ${target.name} subsides.`);
+        feed(state, `🌿 The ${target.name} loses ${STATUSES[swollen.id]?.name ?? 'overgrowth'}: its overgrowth total is 0.`);
       }
     }
     if (mending > 0) target.hp += mending;
-    feed(state, `💚 ${source} knits the ${target.name} back together.`);
+    feed(state, `💚 ${source} heals the ${target.name} for ${Math.round(mending)} HP.`);
     return;
   }
 
@@ -2952,7 +2956,7 @@ export function healEnemy(
       next.data ??= {};
       next.data.surplus = surplus;
     }
-    feed(state, `🧬 The growth inside the ${target.name} takes on a will of its own!`);
+    feed(state, `🧬 The ${target.name}'s overgrowth escalates to ${STATUSES[def.escalatesTo]?.name ?? def.escalatesTo}.`);
     return;
   }
   if (cfg?.detonateAt !== undefined && surplus >= maxHp * cfg.detonateAt) {
@@ -2961,7 +2965,7 @@ export function healEnemy(
     const type = cfg.detonateType ?? 'poison';
     target.hp -= surplus;
     target.lastHit = type;
-    feed(state, `💥 The ${target.name} bursts under its own abundance!`);
+    feed(state, `💥 The ${target.name}'s overgrowth bursts: it takes ${Math.round(surplus)} ${type} damage.`);
     // ...and everything fighting beside it is showered.
     for (let i = 0; i < c.enemies.length; i++) {
       const other = c.enemies[i];
@@ -2970,11 +2974,11 @@ export function healEnemy(
       const dealt = Math.max(1, Math.round(slice.dealt));
       other.hp -= dealt;
       other.lastHit = type;
-      feed(state, `💥 The burst showers the ${other.name} for ${dealt} ${type}.`);
+      feed(state, `💥 The burst hits the ${other.name} for ${dealt} ${type}.`);
     }
     return;
   }
-  feed(state, `🌿 The ${target.name} swells with unwanted life.`);
+  feed(state, `🌿 ${source} heals the ${target.name} for ${Math.round(mending)} HP and adds ${Math.round(amount)} to its overgrowth (total ${Math.round(surplus)}).`);
 }
 
 /** How a crafted attack is being delivered, when it is not an ordinary cast. */
@@ -3049,10 +3053,10 @@ export function castCraftedAttack(
 
   // Divine resonance and affliction-feeding, resolved once per cast.
   const synergy = miracleSynergy(state, c, spec);
-  if (synergy > 1) feed(state, `✨ ${spec.name} resonates with the miracle before it.`);
+  if (synergy > 1) feed(state, `✨ ${spec.name} gets ×${MIRACLE_SYNERGY_MULT} damage and healing (deity synergy with the previous miracle).`);
   const empowered =
     spec.empowered && anyAfflicted(state, c, spec.empowered.statuses) ? spec.empowered.mult : 1;
-  if (empowered > 1) feed(state, `${spec.icon} ${spec.name} feeds on the poison in the air.`);
+  if (empowered > 1) feed(state, `${spec.icon} ${spec.name} gets ×${empowered}: a poison condition is active in the fight.`);
   const castMult = synergy * empowered;
 
   // Strip the caster's own afflictions and deliver them to the front enemy,
@@ -3070,7 +3074,7 @@ export function castCraftedAttack(
           stats.penetration,
         );
       }
-      feed(state, `${spec.icon} ${spec.name} strips your affliction and delivers it, sharpened.`);
+      feed(state, `${spec.icon} ${spec.name} moves your poison conditions onto the target at ×${spec.transfers.mult} intensity.`);
     }
   }
 
@@ -3174,9 +3178,9 @@ export function castCraftedAttack(
           landedAny = true;
           const reacted = reactTollGolem(state, target, type);
           if (reacted && h === 0) feed(state, type === 'heat'
-            ? '♨️ Water bursts into steam. The collector stamps blindly through the cloud.'
-            : type === 'cold' ? '🧊 Ice locks the collector in place and prises its armor apart.'
-            : '⚡ The collector stamps faster. Each stroke tears through its own mechanism.');
+            ? '♨️ Heat applies Steam-blinded to the collector for 8s.'
+            : type === 'cold' ? '🧊 Cold applies Ice-locked Joints to the collector for 8s: it cannot dodge and its armor is cut by 75%.'
+            : '⚡ Lightning applies Stamping Overdrive to the collector for 8s: it attacks faster and takes 12 lightning damage each time it acts.');
           for (const app of strike.inflicts ?? []) {
             applyStatus(state, target, app, spec.name, undefined, vs.penetration);
           }
@@ -3198,7 +3202,7 @@ export function castCraftedAttack(
       // An ambushed target takes the working harder (StatusDef.incomingBite);
       // the damageTaken event just below is what spends the surprise.
       const bite = statusIncomingDamageMult(target);
-      if (bite !== 1) steps.push({ label: 'Caught off guard', mult: bite });
+      if (bite !== 1) steps.push({ label: 'Conditions on the target', mult: bite });
       const dmg = Math.max(1, Math.round(total * bite));
       target.hp -= dmg;
       target.lastHit = heaviestType(slices.values());
@@ -3249,7 +3253,7 @@ export function castCraftedAttack(
   if (spec.amplify && aimed) {
     const touched = amplifyStatuses(aimed, spec.amplify.statuses, spec.amplify.mult);
     if (touched > 0) {
-      feed(state, `${spec.icon} The venom in the ${aimed.name} redoubles.`);
+      feed(state, `${spec.icon} ${spec.name} multiplies the poison on the ${aimed.name} by ${spec.amplify.mult}.`);
     }
   }
 
@@ -3262,7 +3266,7 @@ export function castCraftedAttack(
     }
   } else if (spec.heal) {
     const healed = heal(state, stats, spec.heal * stats.spellPower * castMult, 'spell');
-    if (healed > 0) feed(state, `💚 ${spec.name} knits ${Math.round(healed)} health back.`);
+    if (healed > 0) feed(state, `💚 ${spec.name} heals you for ${Math.round(healed)} HP.`);
   }
   applySelfRiders(state, c, spec);
 
@@ -3374,20 +3378,81 @@ function applyMonsterBarDamage(
 }
 
 /**
- * Conditions that strike back at their own bearer when they act or are struck.
- * Returns true if the recoil proved fatal.
+ * The player's conditions that fire when they act or are struck: shards hurt
+ * the player, a thorns ward (Refutation) hurts the enemy at `attacker` that
+ * struck them in melee. Returns true when the phase must stop: the player
+ * died, or the attacker died and the enemy list was swept.
  */
-function applyRetaliation(state: GameState, bus: EventBus, when: 'onAttack' | 'onContact'): boolean {
+function applyRetaliation(
+  state: GameState,
+  bus: EventBus,
+  when: 'onAttack' | 'onContact',
+  attacker?: number,
+): boolean {
   const back = statusRetaliation(state, when);
   if (back.length === 0) return false;
   const stats = getDerivedStats(state);
   for (const r of back) {
+    if (r.hits === 'attacker') {
+      const e = attacker === undefined ? null : state.combat?.enemies[attacker];
+      if (!e || e.hp <= 0) continue;
+      const slice = monsterSlice(e, r.type, r.name, r.amount, 0);
+      e.hp -= slice.dealt;
+      e.lastHit = r.type;
+      feed(state, `${r.icon} ${r.name} hits the ${e.name} for ${slice.dealt} ${r.type}.`);
+      for (const app of r.inflicts ?? []) applyStatus(state, e, app, r.name);
+      if (e.hp <= 0) {
+        sweepDead(state, bus);
+        return true;
+      }
+      continue;
+    }
     const dealt = incomingSlice(stats, r.type, r.name, r.amount).dealt;
     damagePlayer(state, dealt);
     feed(state, `${r.icon} ${r.name} tears at you for ${dealt} ${r.type}.`);
     for (const app of r.inflicts ?? []) applyStatus(state, state, app, r.name, stats);
     if (!isAlive(state)) {
       onDefeat(state, bus);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The same conditions on an enemy at `index`: shards hurt the enemy when it
+ * attacks or is struck, and a thorns ward on it hurts the player who struck it
+ * in melee. Returns true when the phase must stop (either side died).
+ */
+function applyMonsterRetaliation(
+  state: GameState,
+  bus: EventBus,
+  index: number,
+  when: 'onAttack' | 'onContact',
+): boolean {
+  const e = state.combat?.enemies[index];
+  if (!e || e.hp <= 0) return false;
+  for (const r of statusRetaliation(e, when)) {
+    if (r.hits === 'attacker') {
+      if (when !== 'onContact') continue;
+      const stats = getDerivedStats(state);
+      const dealt = incomingSlice(stats, r.type, r.name, r.amount).dealt;
+      damagePlayer(state, dealt);
+      feed(state, `${r.icon} The ${e.name}'s ${r.name} hits you for ${dealt} ${r.type}.`);
+      for (const app of r.inflicts ?? []) applyStatus(state, state, app, r.name, stats);
+      if (!isAlive(state)) {
+        onDefeat(state, bus);
+        return true;
+      }
+      continue;
+    }
+    const slice = monsterSlice(e, r.type, r.name, r.amount, 0);
+    e.hp -= slice.dealt;
+    e.lastHit = r.type;
+    feed(state, `${r.icon} ${r.name} hits the ${e.name} for ${slice.dealt} ${r.type}.`);
+    for (const app of r.inflicts ?? []) applyStatus(state, e, app, r.name);
+    if (e.hp <= 0) {
+      sweepDead(state, bus);
       return true;
     }
   }
@@ -3447,7 +3512,7 @@ function enemyTookDamage(
       }
       feed(
         state,
-        `${h.icon} What took root in the ${monster.name} goes up with it — ${Math.round(h.amount)} ${h.type}.`,
+        `${h.icon} The ${monster.name}'s ${h.name} is destroyed and deals ${Math.round(h.amount)} ${h.type} damage.`,
       );
     }
     // Water feeds a seed, metal cuts it, everything else prunes it back.
@@ -3529,7 +3594,7 @@ function tickEnemyRegen(state: GameState, c: CombatState): void {
   if (tally.length > 0) {
     feedFloating(state, {
       group: 'regen:foes',
-      prefix: '🌿 Knitting shut:',
+      prefix: '🌿 Enemies regain HP:',
       tally,
       // Regeneration is not a status, so there is no id to watch. The run is
       // keyed on the fight itself and ends when nothing can still knit.
@@ -3564,7 +3629,7 @@ function tickEnemyStatuses(state: GameState, bus: EventBus, c: CombatState): voi
         reached += 1;
       }
       if (reached > 0) {
-        feed(state, `🌳 The roots under the ${e.name} carry what is in it to ${reached} more.`);
+        feed(state, `🌳 Rootbound on the ${e.name} spreads its recorded conditions to ${reached} other ${reached === 1 ? 'enemy' : 'enemies'}.`);
       }
     }
 
@@ -3643,7 +3708,7 @@ function burnMind(
     e.hp -= dealt;
     e.lastHit = boom.type;
     noteOutgoing(state, dealt);
-    feed(state, `${boom.icon} The ${boom.name.toLowerCase()} in the ${e.name} goes off for ${dealt} ${boom.type}.`);
+    feed(state, `${boom.icon} ${boom.name} detonates on the ${e.name} for ${dealt} ${boom.type}!`);
   }
   return result.detonations.length > 0;
 }
@@ -3786,13 +3851,13 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         const held = findSpell(state, readied.uid);
         feed(
           state,
-          `🔮 ${def.name} — ${held ? resolveSpellFor(state, held).name : 'a working'} waits at your fingertips.`,
+          `🔮 ${def.name} — ${held ? resolveSpellFor(state, held).name : 'a spell'} is readied (mana paid now). You lose it, mana included, if you leave this position.`,
         );
       } else {
         feed(state, `${def.icon} ${def.name} — you settle ${POSITIONS[exit]?.name ?? exit}.`);
       }
       const reached = recordExecution(state, def);
-      if (reached) feed(state, `🎓 ${def.name} — ${reached.name}.`);
+      if (reached) feed(state, `🎓 ${def.name} mastery tier reached: ${reached.name}.`);
       grantAttrXp(state, bus, 'dex', 2);
       grantSkillXp(state, bus, ['combat', ...(def.family ? [def.family] : [])], 3);
     }
@@ -3834,7 +3899,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     const skipped = consumeSkippedAction(state);
     fireStatusEvent(state, state, 'barFill');
     if (skipped || statusBlocks(state, 'attack')) {
-      feed(state, `😵 You cannot bring yourself to act.`);
+      feed(state, `😵 A condition on you costs you this action.`);
       return;
     }
     trackWeaponFamily(state, bus);
@@ -3856,8 +3921,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     if (!active && statusBlocks(state, 'swing')) {
       feedRepeat(state, {
         group: 'fasting',
-        prefix: '🕳️ You do not reach for it —',
-        tally: [{ label: 'blow refused', qty: 1 }],
+        prefix: '🕳️ Fasting blocks plain attacks:',
+        tally: [{ label: 'action bar spent', qty: 1 }],
       });
       return;
     }
@@ -3877,8 +3942,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     if (usesHands && handSwingShare(state, bearerGrants(state)) === 0) {
       feedRepeat(state, {
         group: 'concentrating',
-        prefix: '🧘 You are concentrating —',
-        tally: [{ label: 'action held', qty: 1 }],
+        prefix: '🧘 No free hand for a weapon attack:',
+        tally: [{ label: 'action bar spent', qty: 1 }],
       });
       return;
     }
@@ -3936,10 +4001,10 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       feed(
         state,
         blind
-          ? `🙈 Blind, you swing at where it was.`
+          ? `🙈 Your attack misses: you are Blinded.`
           : dark > 0
-            ? `🌑 The dark swallows your swing.`
-            : `😵‍💫 Your head swims and the blow goes wide.`,
+            ? `🌑 Your attack misses: darkness adds a miss chance.`
+            : `😵‍💫 Your attack misses: a condition on you adds a miss chance.`,
       );
     } else if (active?.crafted) {
       // A crafted spell takes the swing's place entirely; its own machinery
@@ -3987,7 +4052,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
           const returned = stopped * move.preventedMult;
           dmg += returned;
           steps.push({
-            label: stoppedBy === 'onParry' ? 'Force turned aside' : 'Damage blocked',
+            label: stoppedBy === 'onParry' ? 'Damage parried' : 'Damage blocked',
             value: returned,
           });
           c.prevented = { ...c.prevented, [stoppedBy]: undefined };
@@ -4004,7 +4069,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         const ability = geneAbility(state)!;
         dmgType = spec.damageType ?? 'bludgeoning';
         isWeaponHit = false;
-        label = `${ability.icon} ${ability.name} lands`;
+        label = `${ability.icon} ${ability.name} hits`;
         hitLabel = hitSource = ability.name;
         // Through `priceGeneAbility`, which is also what every readout prints —
         // the card and the blow cannot state different numbers because there is
@@ -4034,13 +4099,13 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
           const torn = clearField(state);
           if (torn > 0) {
             dmg *= torn;
-            steps.push({ label: `${torn} condition${torn === 1 ? '' : 's'} unsaid`, mult: torn });
+            steps.push({ label: `${torn} condition${torn === 1 ? '' : 's'} removed`, mult: torn });
           }
           feed(
             state,
             torn > 0
-              ? `🌀 ${ability.name} — ${torn} affliction${torn === 1 ? '' : 's'} torn out of the air.`
-              : `🌀 ${ability.name} finds nothing in the air to unsay.`,
+              ? `🌀 ${ability.name} removes ${torn} condition${torn === 1 ? '' : 's'} from everyone in the fight (damage ×${torn}).`
+              : `🌀 ${ability.name} removes no conditions (damage unchanged).`,
           );
         }
         // Doubling per size gap, where `vsSmaller` is linear — the difference
@@ -4050,7 +4115,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
           if (doublings > 0) {
             const scale = 2 ** doublings;
             dmg *= scale;
-            steps.push({ label: 'Sheer scale', mult: scale });
+            steps.push({ label: 'Size difference', mult: scale });
           }
         }
         c.cooldowns[skillActive.id] = spec.cooldown;
@@ -4098,7 +4163,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       const handShare = isWeaponHit ? handSwingShare(state, bearerGrants(state)) : 1;
       if (handShare < 1) {
         dmg *= handShare;
-        steps.push({ label: 'Held by the mind, not the hand', mult: handShare });
+        steps.push({ label: 'Share of damage left in your hands', mult: handShare });
       }
       // Spells cost mana, not sweat — only physical blows burn stamina. Every
       // swing pays its upkeep; the style's bargain costs extra, and only if
@@ -4152,26 +4217,30 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       // per-hit loop: size does not change between swings.
       const smallerBy = stepsSmaller(state, monster.defId);
       const bully = 1 + vs.vsSmaller * smallerBy;
-      if (bully !== 1) steps.push({ label: 'Looming over it', mult: bully });
+      if (bully !== 1) steps.push({ label: 'Damage vs Smaller', mult: bully });
       // Being the SMALLER thing, for a body built for it (`vsLarger`).
       const underdog = 1 + vs.vsLarger * stepsLarger(state, monster.defId);
-      if (underdog !== 1) steps.push({ label: 'Under its guard', mult: underdog });
+      if (underdog !== 1) steps.push({ label: 'Damage vs Larger', mult: underdog });
       // …and the same gap read from ITS side. A thing far above you struggles
       // to be reached by you, exactly as the mirror rule already did to your
       // blows from something small. Floored at zero — never a heal.
       const theirs = monsterStats(monster);
       const looming = Math.max(0, 1 - theirs.fromSmaller * stepsLarger(state, monster.defId));
-      if (looming !== 1) steps.push({ label: 'It looms over you', mult: looming });
+      if (looming !== 1) steps.push({ label: 'Resistance vs Smaller (target)', mult: looming });
       for (let h = 0; h < hits; h++) {
         let hit = swing * bully * underdog * looming;
         // A named crit is not luck, so it neither pays the ledger nor is paid
         // by it — it skips the roll entirely (see PLAYER_CRIT).
-        const crit = forced ? true : procChance(state, PLAYER_CRIT, vs.crit);
+        // Iron in the target finds the seam for weapon blows too (Magnetized).
+        const crit = forced
+          ? true
+          : procChance(state, PLAYER_CRIT, vs.crit + magnetCritChance(monster, dmgType));
         if (crit) {
           // `critTaken` scales only the SURPLUS, so a body hardened against
           // crits flattens the spike into an ordinary blow and never below it
           // — the same rule its own crits already answered to on your side.
-          const critDamage = forced ? forcedCritDamage : vs.critDamage;
+          // A Magnet-Locked target discharges its charge into the first crit.
+          const critDamage = (forced ? forcedCritDamage : vs.critDamage) + consumeMagnetCharge(monster);
           hit *= 1 + (critDamage - 1) * Math.max(0, theirs.critTaken);
           isCrit = true;
           crits++;
@@ -4233,7 +4302,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       if (crits > 0) {
         steps.push({
           label: forced
-            ? 'Critical hit — the blade was already in'
+            ? 'Critical hit (guaranteed by the technique)'
             : crits === hits
               ? 'Critical hit'
               : `Critical hit (${crits} of ${hits})`,
@@ -4244,7 +4313,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       // An ambushed target takes the blow harder (StatusDef.incomingBite);
       // the damageTaken event just below is what spends the surprise.
       const bite = statusIncomingDamageMult(monster);
-      if (bite !== 1) steps.push({ label: 'Caught off guard', mult: bite });
+      if (bite !== 1) steps.push({ label: 'Conditions on the target', mult: bite });
       dmg = Math.max(1, Math.round(total * bite));
       monster.hp -= dmg;
       monster.lastHit = heaviestType(slices.values()) ?? dmgType;
@@ -4296,7 +4365,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         // blow that just landed rather than against level, so an execute keeps
         // pace with the build instead of expiring the moment you out-level it.
         if (gspec.execute && monster.hp <= dmg * gspec.execute) {
-          feed(state, `☠️ ${hitLabel} finishes the ${monster.name} outright.`);
+          feed(state, `☠️ ${hitLabel} kills the ${monster.name}: its HP was at or below ${pctOf(gspec.execute)} of the damage this hit dealt.`);
           monster.hp = 0;
         }
       }
@@ -4304,7 +4373,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         if (oilRiders && monster.hp > 0) {
           for (const app of oilRiders) applyStatus(state, monster, app, oilName, undefined, vs.penetration);
         }
-        if (oilExhausted) feed(state, `🛢️ The last of the ${oilName} wipes off your edge.`);
+        if (oilExhausted) feed(state, `🛢️ Your ${oilName} coating is used up.`);
       }
       // A plain swing recovers to neutral — and if that walks you out of the
       // spell-ready seat, the working you were holding is simply gone.
@@ -4329,7 +4398,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
           );
         }
         const reached = recordExecution(state, technique);
-        if (reached) feed(state, `🎓 ${technique.name} — ${reached.name}.`);
+        if (reached) feed(state, `🎓 ${technique.name} mastery tier reached: ${reached.name}.`);
       }
 
       // Cleave-style spill: part of the blow carries past its target into a
@@ -4377,7 +4446,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
               applyStatus(state, other, app, hitLabel, undefined, vs.penetration);
             }
             if (geneSpec.execute && other.hp <= spill * geneSpec.execute) {
-              feed(state, `☠️ ${hitLabel} finishes the ${other.name} outright.`);
+              feed(state, `☠️ ${hitLabel} kills the ${other.name}: its HP was at or below ${pctOf(geneSpec.execute)} of the spill damage.`);
               other.hp = 0;
             }
           }
@@ -4385,6 +4454,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         }
       }
 
+      // A weapon blow is contact: the target's own conditions answer it.
+      if (isWeaponHit && applyMonsterRetaliation(state, bus, 0, 'onContact')) return;
       // Some conditions cost you every time you swing.
       if (applyRetaliation(state, bus, 'onAttack')) return;
 
@@ -4460,7 +4531,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     }
     fireStatusEvent(state, e, 'barFill');
     if (consumeSkippedAction(e)) {
-      feed(state, `😵 The ${e.name} cannot bring itself to act.`);
+      feed(state, `😵 The ${e.name} loses this action to a condition.`);
       continue;
     }
 
@@ -4502,6 +4573,15 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       continue;
     }
 
+    // Its own conditions can spoil the swing before your footwork is tested
+    // (Steam-blinded on the Toll Collector), and a swing that never arrives
+    // costs your guard nothing. Rolled only when there is a chance, so a
+    // clean attacker spends no draw from the seeded stream.
+    const selfMiss = statusMissChance(e);
+    if (selfMiss > 0 && chance(state, selfMiss)) {
+      feed(state, `🙈 The ${e.name}'s attack misses: a condition on it adds a miss chance.`);
+      continue;
+    }
     // Guarding stances pay stamina per incoming blow — footwork or set hips.
     const guard = exert(state, stats, defendExertion);
     // Your footing scales what evasion is even available: a position taken
@@ -4520,9 +4600,9 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       feed(
         state,
         grazed > 0
-          ? `💢 You slip the ${e.name}'s attack, but it still tells for ${grazed}.`
+          ? `💢 You dodge the ${e.name}'s attack, but its graze still hits you for ${grazed}.`
           : guard.dodge > 0
-            ? `💨 A burst of footwork and the ${e.name}'s attack finds nothing.`
+            ? `💨 You dodge the ${e.name}'s attack (your stance spent stamina to add dodge chance).`
             : `💨 You dodge the ${e.name}'s attack.`,
       );
       markCombatEvent(state, 'onDodge');
@@ -4537,12 +4617,12 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // A shroud on top of footwork: veils and night-shrouds are rolled after
     // dodge has already failed, so they stack with it rather than replacing it.
     if (chance(state, statusIncomingMissChance(state))) {
-      feed(state, `🌑 The ${e.name}'s blow finds only shadow.`);
+      feed(state, `🌑 The ${e.name}'s attack misses you: a condition on you gives enemies a miss chance.`);
       continue;
     }
     // A standing wall stops anything THROWN — melee walks around it.
     if (e.range === 'ranged' && statusBlocksRangedType(state, kit.damageType)) {
-      feed(state, `🛡️ The ${e.name}'s shot stops dead against the bulwark.`);
+      feed(state, `🛡️ The ${e.name}'s ranged attack is blocked by your Kinetic Bulwark.`);
       continue;
     }
     // A parry turns the blow aside and answers it on the spot. The riposte is
@@ -4736,12 +4816,12 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
         target: 'You',
         steps: [
           { label: 'Its damage', value: es.damage },
-          ...(mod.damage !== 1 ? [{ label: 'Out of position', mult: mod.damage }] : []),
+          ...(mod.damage !== 1 ? [{ label: 'Melee attacker in the back row', mult: mod.damage }] : []),
           ...(posMult !== 1
             ? [{ label: posMult > 1 ? 'You are off balance' : 'You are guarded', mult: posMult }]
             : []),
           { label: 'Swing variance ±10%' },
-          ...(bite !== 1 ? [{ label: 'Caught off guard', mult: bite }] : []),
+          ...(bite !== 1 ? [{ label: 'Conditions on the target', mult: bite }] : []),
           // The interception names itself. A counter takes its share BEFORE
           // armor, so without this line the blow just arrives smaller than the
           // numbers above it say — the one thing a breakdown must never do.
@@ -4758,7 +4838,9 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       },
     );
     // Contact cuts both ways: a shard-bound body answers whatever touched it.
-    if (e.range === 'melee' && applyRetaliation(state, bus, 'onContact')) return;
+    if (e.range === 'melee' && applyRetaliation(state, bus, 'onContact', i)) return;
+    // And the attacker's own conditions cost it for swinging.
+    if (applyMonsterRetaliation(state, bus, i, 'onAttack')) return;
 
     // What its blows leave behind: venom, burns, the cut that keeps bleeding.
     // Rolled per landed hit, so a fight with a swarm compounds.

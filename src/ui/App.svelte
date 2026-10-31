@@ -88,7 +88,7 @@
     const miss = Math.round(DARK_MISS_CHANCE * dark * 100);
     const level = gs.skills.darkvision?.level ?? 0;
     const seen = level > 0 ? ` · ${SKILLS.darkvision.name} ${level} is buying it back` : '';
-    return `You are fighting in the dark: −${dodge}% dodge, +${miss}% chance of swinging at shadows${seen}`;
+    return `You are fighting in the dark: −${dodge}% dodge, +${miss}% chance of your attacks missing${seen}`;
   });
 
   const wxRegion = $derived(REGIONS[AREAS[SPOTS[gs.spot]?.areaId]?.regionId]);

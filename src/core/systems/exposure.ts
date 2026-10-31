@@ -180,6 +180,44 @@ export function darknessFactor(state: GameState): number {
   return dark * (1 - level / DARKVISION_CEILING);
 }
 
+// ---------- Sunlight ----------
+
+/**
+ * How much of the sun each sky lets through, 0..1. A classification by
+ * weather kind, not a simulated variable (WEATHER.md). Placeholder numbers.
+ */
+export const SUN_SHARE: Record<WeatherKind, number> = {
+  clear: 1,
+  still: 1,
+  gale: 0.8,
+  mist: 0.5,
+  overcast: 0.4,
+  snow: 0.3,
+  rain: 0.2,
+  sandstorm: 0.2,
+  storm: 0.1,
+  blizzard: 0.05,
+};
+
+/**
+ * Sunlight on the player, 0..1: what Solar Charge banks (`world.sunlight`,
+ * facet/quantities.ts). 0 under a roof (a sheltered region or an `indoor`
+ * tag, the roof tickExposure uses) and on a `dark` tag. Otherwise the sky's
+ * daylight times the weather's share, an unplaced region read as clear.
+ *
+ * Not `1 − placeDarkness`: that reads a lamplit street at midnight as noon,
+ * because lamplight cancels darkness there. Lamplight is not sun. While
+ * travelling, `state.spot` is still the place left, so that sky counts.
+ */
+export function sunlight(state: GameState): number {
+  const { region, tags } = placeOf(state);
+  if (!region || region.sheltered || tags.has('indoor') || tags.has('dark')) return 0;
+  const day = 1 - naturalDarkness(clockOf(state.totalTicks).hour);
+  if (day === 0) return 0;
+  const sample = weatherAt(worldSeedOf(state.createdAt), region, state.totalTicks);
+  return day * (sample ? SUN_SHARE[sample.kind] : 1);
+}
+
 // ---------- The per-minute tick ----------
 
 function grantExposure(state: GameState, bus: EventBus, element: string, amount: number): void {

@@ -776,7 +776,7 @@
   {@const rune = resolveRune(e.key)}
   {@const carved = e.key.startsWith('carved:')}
   <div class="tip-line tip-base">{rune.icon} {rune.name}{e.qty > 1 ? ` ×${fmt(e.qty)}` : ''}</div>
-  {#if carved}<div class="tip-line tip-sub">Your own work</div>{/if}
+  {#if carved}<div class="tip-line tip-sub">Carved by you</div>{/if}
   {#if rune.desc}<div class="tip-line tip-sub">{rune.desc}</div>{/if}
   <div class="tip-line">⚔️ {describeRuneEffect(rune.effects.weapon)}</div>
   <div class="tip-line">🛡️ {describeRuneEffect(rune.effects.armor)}</div>
@@ -832,8 +832,8 @@
             <div class="tip-line tip-base">{SLOT_NAMES[slot]}</div>
             {#if floats}
               <div class="tip-line tip-sub">
-                🌀 Held by the mind — a weapon here fights on its own clock, and your action bar
-                is free for something else. Wisdom is how hard the mind holds: ×{telekineticGrip(
+                🌀 Floating weapon slot — a weapon here attacks on its own timer, and your action bar
+                is free for something else. Wisdom sets the multiplier: ×{telekineticGrip(
                   gs,
                 ).toFixed(2)} on what it lands.
               </div>
@@ -857,7 +857,7 @@
 <div class="panel" style="margin-top: 12px">
   <h3>Inventory <span class="dim small">({gs.inventory.length})</span></h3>
   {#if gs.inventory.length === 0}
-    <p class="dim">Nothing but lint. Monsters drop equipment; exploring turns up the odd coin.</p>
+    <p class="dim">Nothing in the pack. Monsters drop equipment; exploring turns up the odd coin.</p>
   {:else}
     <div class="toolbar small">
       <span class="dim">Sort</span>
@@ -1101,7 +1101,7 @@
     {#snippet title()}
       <div class="win-title">{rune.icon} {rune.name}</div>
       <div class="small dim">
-        {entry?.carved ? 'your own work' : `×${fmt(entry?.qty ?? 0)} held`}
+        {entry?.carved ? 'carved by you' : `×${fmt(entry?.qty ?? 0)} held`}
       </div>
     {/snippet}
     {#if rune.desc}<p class="small dim desc">{rune.desc}</p>{/if}

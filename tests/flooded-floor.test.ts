@@ -104,7 +104,7 @@ describe('the flooded floor route', () => {
     expect(g.state.stats['fights:f1_storerooms']).toBe(6);
     walk(g, 'f1_bonded_deep');
     expect(g.state.spot).toBe('f1_bonded_deep');
-    expect(g.state.log.some((l) => l.msg.includes('scurry'))).toBe(true);
+    expect(g.state.log.some((l) => l.msg.includes('route to The Records Passage'))).toBe(true);
   });
 
   it('gates the offices on the book and every room door on the explored key', () => {
@@ -213,7 +213,7 @@ describe('the submerged toll collector', () => {
     expect(findStatus(e, id)?.ticksLeft).toBe(TOLL_REACTION_TICKS);
     expect(findStatus(e, id)?.intensity).toBe(1);
     expect(findStatus(e, id)?.stacks).toBe(1);
-    if (type === 'heat') expect(statusMissChance(e)).toBeCloseTo(0.65);
+    if (type === 'heat') expect(statusMissChance(e)).toBeCloseTo(0.5);
     if (type === 'cold') {
       expect(monsterStats(e).dodge).toBe(0);
       expect(monsterStats(e).armor).toBeCloseTo(before.armor * 0.25);

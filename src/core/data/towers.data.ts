@@ -397,7 +397,7 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
   // ==== ABERRANT: floors (skeleton 2026-10-30; the aberrant builder's section) ====
   ascent_f17: {
     id: 'ascent_f17',
-    name: 'Floor 17 (placeholder)',
+    name: 'Floor 17',
     towerId: 'the_ascent',
     bandId: 'ascent_aberrant',
     index: 17,

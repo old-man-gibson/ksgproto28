@@ -5,13 +5,13 @@ import type { ProseTable } from './prose';
 
 // ---------- MONSTERS ----------
 export const MONSTERS_TEXT: ProseTable = {
-  'ledger_tome.desc': 'Small basic construct. A bound ledger that opens and shuts on whatever comes near; the pages cut. Takes 25% less piercing and 50% more heat damage. Appears in the Long Hall.',
+  'ledger_tome.desc': 'Small basic construct. Slashing attacks. Takes 25% less piercing and 50% more heat damage. Appears in the Long Hall.',
   'filing_automaton.desc': 'Basic construct, armour 2. Strikes with a filing arm for bludgeoning damage. Takes 20% less slashing and piercing, 20% more bludgeoning and 50% more lightning damage. Appears in the Long Hall. Drops iron scrap.',
   'sorting_automaton.desc': 'Basic construct, quick. Slashes with sorting blades. Takes 20% less slashing and piercing, 20% more bludgeoning and 50% more lightning damage. Appears in the Long Hall. Drops iron scrap.',
   'living_doll.desc': 'Small basic construct, dark element. Stabs for piercing damage. Takes 30% less dark damage. Appears in the Long Hall.',
   'puppet_bureaucrat.desc': 'Large elite construct, dark element, on three strings. Always fights alone. Strikes for bludgeoning damage. Takes 30% less slashing, piercing and dark damage, 35% more bludgeoning and 20% more heat. Level 12 with all three strings; each string anchor cut on the floor above takes a level off. Appears in the Hearing Room. 200 XP; rare drop: Lucky Charm.',
-  'toll_collector_golem.desc': 'Water covers the collector’s legs. One hand turns a sodden form; the other brings the toll stamp down. Heat fills its sight with steam, cold locks its joints, and lightning drives its stamping arm beyond its limits.',
-  'forest_rat.desc': 'Small basic beast. Bites for piercing damage. Appears in The Cages and The Undercrofts. Rare drop: Cloth Tunic.',
+  'toll_collector_golem.desc': 'Large basic construct, earth element, armour 8. Bludgeoning attacks. Always fights alone. A heat spell blinds it (50% miss chance), a cold spell removes its dodge and 75% of its armour, a lightning spell speeds up its attacks by 65% and deals it 12 lightning damage each time its action bar fills; each lasts 8 s and does not stack. Level 4, in the Toll Collector’s Office. Drops iron scrap and the toll stamp.',
+  'forest_rat.desc': 'Small basic beast. Bites for piercing damage. Appears in The Cages, the Vermin Hall, the Woods Edge, the Docks and the Forest Gate. Rare drop: Cloth Tunic.',
 
   'young_wolf.desc': 'Basic beast. Bites for piercing damage with a 20% chance to inflict Punctured. Drops fur and raw meat.',
 
@@ -21,17 +21,17 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'cliff_hawk.desc': 'Veteran flying beast, wind element. Attacks from range for slashing damage with a 25% chance to inflict Bleeding. Rare drop: Hawk Feather Band.',
 
-  'cave_spider.desc': 'Veteran vermin. Poison bite with a 35% chance to inflict Poison. Takes 50% less poison damage. Appears in The Undercrofts.',
+  'cave_spider.desc': 'Veteran vermin. Poison bite with a 35% chance to inflict Poison. Takes 50% less poison damage.',
 
   'stone_golem.desc': 'Large elite construct, earth element. Always met alone. Bludgeoning blows with a 25% chance to inflict Concussed. Takes 60% less slashing and piercing damage, 50% more bludgeoning and arcane damage. Two loot rolls; drops iron scrap and gold.',
 
   'slime_cell.desc': 'Training slime on floor 0. Every hit it lands deals exactly 1 damage. No armour and no resistances, so every starting weapon deals its listed damage. Appears in the Cellblock (once) and the Field (three fights). Drops Slime Gel.',
 
-  'slime_base_basic.desc': 'Small basic slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in the floor 1 storerooms. Drops Slime Gel.',
+  'slime_base_basic.desc': 'Small basic slime. Bludgeoning attacks. Takes 50% less slashing and piercing, 25% less poison and 15% less cold damage, and 25% more bludgeoning damage. Appears in the Vermin Hall. Drops Slime Gel.',
   'cage_slime.desc': 'Small basic slime bred in The Cages to take the same damage from every type: no armour, no resistances. Bludgeoning attacks. Appears only in The Cages. Drops Slime Gel.',
 
   'suspiciously_large_slime.desc': 'Large basic slime, bred in The Cages like the Cage-Bred Slime: no armour, no resistances. Bludgeoning attacks. Appears only when the Cages keeper dares you: every 8 wins while you train there, until you beat it. The fight cannot be fled. Drops 2–4 Slime Gel.',
-  'slime_base_advanced.desc': 'Veteran slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in The Undercrofts. Drops Slime Gel.',
+  'slime_base_advanced.desc': 'Veteran slime. Bludgeoning attacks. Takes 50% less slashing and piercing, 25% less poison and 15% less cold damage, and 25% more bludgeoning damage. Drops Slime Gel.',
 
   'slime_base_elite.desc': 'Large elite slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage, 30% less poison, 20% less cold, and 25% more bludgeoning damage. Two loot rolls of Slime Gel.',
 
@@ -43,7 +43,7 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_fire_elite.desc': 'Large elite slime, fire element. Attacks from range for heat damage with a 40% chance to inflict On Fire. Takes 70% less heat and 70% more cold damage; 50% less slashing and piercing, 25% more bludgeoning. Two loot rolls; drops Warm Slime Gel and gold.',
 
-  'goblin.desc': 'Small basic goblin. Piercing attacks with a 15% chance to inflict Bleeding. Takes 10% less poison damage. Appears in The Cages and The Undercrofts. Drops fur and iron scrap.',
+  'goblin.desc': 'Small basic goblin. Piercing attacks with a 15% chance to inflict Bleeding. Takes 10% less poison damage. Appears in The Cages and on floors 4 to 6. Drops fur and iron scrap.',
 
   'goblin_boss.desc': 'Legendary goblin. Slashing attacks. Always spawns in a group of five with Goblin escorts. Takes 25% less poison damage. Two loot rolls; drops include a Boss Token, Iron Gauntlets, the Moonlit Katana and greater runes.',
 
@@ -61,7 +61,7 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_golem.desc': 'Gargantuan ancient slime construct, earth element. Bludgeoning attacks. Takes 75% less slashing and piercing damage, 70% less heat and cold, 75% more bludgeoning and double arcane damage. Three loot rolls; drops Warm Slime Gel, gold and a Boss Token.',
 
-  'slime_water.desc': 'Basic slime, water element. Bludgeoning attacks with a 40% chance to inflict Wet. Takes 60% less slashing and piercing, 40% less heat, 25% more bludgeoning and 60% more lightning damage. Appears in The Undercrofts. Drops Slime Gel and Chilled Slime Gel.',
+  'slime_water.desc': 'Basic slime, water element. Bludgeoning attacks with a 40% chance to inflict Wet. Takes 60% less slashing and piercing, 40% less heat, 25% more bludgeoning and 60% more lightning damage. Appears in the Bog and the Docks. Drops Slime Gel and Chilled Slime Gel.',
 
   'slime_nature.desc': 'Basic slime, nature element. Poison attacks with a 30% chance to inflict Poison. Takes 60% less poison, 40% more heat; 50% less slashing and piercing, 25% more bludgeoning. Drops Slime Gel and Common Herb.',
 
@@ -85,9 +85,9 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_zombie.desc': 'Veteran undead slime, toxic element. Poison attacks. Takes 80% less poison, 60% less piercing, 50% less slashing, and 25% more bludgeoning damage. Drops Slime Gel, ruined fur and iron scrap.',
 
-  'slime_spider.desc': 'Small veteran slime vermin, toxic element. Poison attacks. Spawns in packs of 2 to 5. Takes 60% less poison, 50% less piercing, 40% less slashing, and 25% more bludgeoning damage. Appears in The Undercrofts. Rare drop: Spider Silk Garb.',
+  'slime_spider.desc': 'Small veteran slime vermin, toxic element. Poison attacks. Spawns in packs of 2 to 5. Takes 60% less poison, 50% less piercing, 40% less slashing, and 25% more bludgeoning damage. Appears in the Cave Mouth and the Hollows. Rare drop: Spider Silk Garb.',
 
-  'slime_coin.desc': 'Medium veteran slime. Bludgeoning attacks. Always met alone. Higher DEX than other slimes. Takes 60% less slashing and piercing, 30% less arcane, 25% more bludgeoning and 40% more heat damage. Appears in The Undercrofts. Carries 20 to 60 gold and drops more; rare drop: Lucky Charm.',
+  'slime_coin.desc': 'Medium veteran slime. Bludgeoning attacks. Always met alone. Higher DEX than other slimes. Takes 60% less slashing and piercing, 30% less arcane, 25% more bludgeoning and 40% more heat damage. Carries 20 to 60 gold and drops more; rare drop: Lucky Charm.',
 
   'slime_soldier_spear.desc': 'Veteran humanoid slime. Piercing attacks. Escort of the Slime King. Takes 50% less slashing and piercing, 25% more bludgeoning and 20% more arcane damage. Drops Slime Gel, iron scrap and Old Spear; rare drop: Wooden Shield.',
 
@@ -105,11 +105,11 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_dark.desc': 'Elite incorporeal slime, dark element. Arcane damage attacks. Takes 85% less slashing and piercing, 50% less bludgeoning, and 50% more arcane damage. Two loot rolls; drops Void Slime Gel; rare drops: Slime Core, Spellwoven Cloak.',
 
-  'slime_metal.desc': 'Small elite slime construct. Bludgeoning attacks. Always met alone. Highest DEX in the slime family. Takes 90% less slashing and piercing, 60% less bludgeoning, 50% less heat and cold, and 60% more lightning damage. Appears in The Undercrofts. 120 XP, 40 to 90 gold; drops iron ingots, gold and Slime Cores.',
+  'slime_metal.desc': 'Small elite slime construct. Bludgeoning attacks. Always met alone. Highest DEX in the slime family. Takes 90% less slashing and piercing, 60% less bludgeoning, 50% less heat and cold, and 60% more lightning damage. 120 XP, 40 to 90 gold; drops iron ingots, gold and Slime Cores.',
 
   'boss_slime_guardian.desc': 'Colossal ancient slime construct. Bludgeoning attacks. Always met alone. Takes 80% less slashing and piercing, 50% less heat and cold, 50% more bludgeoning and 60% more arcane damage. Three loot rolls; drops Slime Cores, iron ingots, a Boss Token, Iron Breastplate and Greater Rune of Vitality.',
 
-  'slime_king.desc': 'Large legendary slime, unique. Bludgeoning attacks. Spawns in a group of 3 to 5 with Slime Legionary and Slime Skirmisher escorts. Takes 65% less slashing and piercing, 40% less heat and cold, 30% more bludgeoning and 30% more arcane damage. Appears in The Undercrofts. Three loot rolls; drops Slime Cores, Luminous Slime Gel, a Boss Token, the Moonlit Katana, Iron Gauntlets and Greater Rune of Might.',
+  'slime_king.desc': 'Large legendary slime, unique. Bludgeoning attacks. Spawns in a group of 3 to 5 with Slime Legionary and Slime Skirmisher escorts. Takes 65% less slashing and piercing, 40% less heat and cold, 30% more bludgeoning and 30% more arcane damage. Three loot rolls; drops Slime Cores, Luminous Slime Gel, a Boss Token, the Moonlit Katana, Iron Gauntlets and Greater Rune of Might.',
 
   'training_dummy.desc': 'Passive target at the Training Area; it never attacks. Spawns in groups of one, three or five so splash and flank behaviour can be tested. About 2,500 HP and 15% evasion. Takes 30% less slashing, piercing and bludgeoning damage; no elemental resistance. Dies and respawns; no loot.',
 
@@ -131,74 +131,74 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'paladin_x.desc': '',
 
-  'ph_siege_raider.desc': 'Placeholder veteran humanoid on floor 11. Slashing attacks with a 15% chance to inflict Bleeding. Fights with Hamstring, Lunge and Gather. Drops iron scrap and leather.',
+  'ph_siege_raider.desc': 'Veteran humanoid on floor 11. Slashing attacks with a 15% chance to inflict Bleeding. Fights with Hamstring, Lunge and Gather. Drops iron scrap and leather.',
 
-  'ph_siege_brute.desc': 'Placeholder large veteran humanoid on floor 11. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops iron scrap and hardwood.',
+  'ph_siege_brute.desc': 'Large veteran humanoid on floor 11. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops iron scrap and hardwood.',
 
-  'ph_siege_captain.desc': 'Placeholder elite humanoid, the last fight of the stronghold’s wave. Spawns with a raider and a brute. Slashing attacks with a 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops a Boss Token, iron ingots and gold.',
+  'ph_siege_captain.desc': 'Elite humanoid, the last fight of the stronghold’s wave. Spawns with a raider and a brute. Slashing attacks with a 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops a Boss Token, iron ingots and gold.',
 
-  'ph_corsair.desc': 'Placeholder elite humanoid, a skeleton floor’s keeper. Spawns with a raider. Piercing attacks. Fights with Lunge, Dirty Stab and Gather. Drops a Boss Token, gold and leather.',
+  'ph_corsair.desc': 'Elite humanoid. Spawns with a raider. Piercing attacks. Fights with Lunge, Dirty Stab and Gather. Drops a Boss Token, gold and leather.',
 
   // ==== WARD7: monster text (base 2026-10-30; the ward 7 builder's section) ====
-  'ph_bandit_thug.desc': 'Basic humanoid bandit on floor 7, on the merchant road and in the salt-flats camp. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops gold, iron scrap and leather. Placeholder text.',
-  'ph_bandit_archer.desc': 'Basic humanoid bandit on floor 7, on the merchant road and in the salt-flats camp, most of all on its watchtowers. Piercing attacks from range. Fights with Lunge and Gather. Drops gold, leather and iron scrap. Placeholder text.',
-  'ph_bandit_cutthroat.desc': 'Veteran humanoid bandit on floor 7, on the merchant road and in the salt-flats camp. Slashing attacks. Fights with Pocket Sand, Dirty Stab and Gather. Drops gold, leather and iron scrap. Placeholder text.',
-  'ph_bandit_chief.desc': 'Large elite humanoid, the bandits’ chief, in the camp’s tent on floor 7. Spawns with two escorts: thugs, archers or cutthroats. Slashing attacks. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Killing it clears floor 7. Drops a Boss Token, iron ingots and gold. Placeholder text.',
-  'ph_camp_demon.desc': 'Huge ancient eldritch, dark element, in the burnt camp on floor 7: summoned into the bandits’ camp, it absorbed them. Present only while floor 7 is the last ward of the city left, for 24 in-game hours from the third ward’s clear. Always fights alone. Dark attacks. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Keeps half of the HP it loses in a fight it survives. Takes 50% less dark and 20% less heat damage; takes 40% more light damage. Killing it clears floor 7. Drops a Boss Token, gold and iron ingots. Placeholder text.',
+  'ph_bandit_thug.desc': 'Basic humanoid bandit on floor 7, on the merchant road and in the salt-flats camp. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops gold, iron scrap and leather.',
+  'ph_bandit_archer.desc': 'Basic humanoid bandit on floor 7, on the merchant road and in the salt-flats camp, most of all on its watchtowers. Piercing attacks from range. Fights with Lunge and Gather. Drops gold, leather and iron scrap.',
+  'ph_bandit_cutthroat.desc': 'Veteran humanoid bandit on floor 7, on the merchant road and in the salt-flats camp. Slashing attacks. Fights with Pocket Sand, Dirty Stab and Gather. Drops gold, leather and iron scrap.',
+  'ph_bandit_chief.desc': 'Large elite humanoid, the bandits’ chief, in the camp’s tent on floor 7. Spawns with two escorts: thugs, archers or cutthroats. Slashing attacks. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Killing it clears floor 7. Drops a Boss Token, iron ingots and gold.',
+  'ph_camp_demon.desc': 'Huge ancient eldritch, dark element, in the burnt camp on floor 7: summoned into the bandits’ camp, it absorbed them. Present only while floor 7 is the last ward of the city left, for 24 in-game hours from the third ward’s clear. Always fights alone. Dark attacks. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Keeps half of the HP it loses in a fight it survives. Takes 50% less dark and 20% less heat damage; takes 40% more light damage. Killing it clears floor 7. Drops a Boss Token, gold and iron ingots.',
 
   // ==== WARDS8-10: monster text (base 2026-10-30; the wards 8-10 builder's section) ====
-  'ph_rogue_beast_young.desc': 'Placeholder large elite beast, floor 8’s keeper while one or none of the other wards is cleared: the beast before its change. Always met alone. Slashing attacks with a 20% chance to inflict heavy Bleeding. Fights with Hamstring, Lunge and Gather. Drops a Boss Token, pristine fur and meat. Placeholder text.',
-  'ph_rogue_beast_final.desc': 'Placeholder huge elite beast, floor 8’s keeper once two or more of the other wards are cleared: the beast after its change. Always met alone. About a third more health and a quarter more strength than the young form at the same level. Slashing attacks with a 30% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Lunge and Gather. Drops a Boss Token, pristine fur and meat. Placeholder text.',
-  'ph_death_squire.desc': 'Placeholder medium veteran armoured humanoid, dark element: floor 9’s keeper while one or none of the other wards is cleared, and a hunt in the Barrow Fields. Fights with a sword first (Gather, then Heavy Blow) and casts gloom cut when off balance; no counterspell. Takes 75% less poison, 50% less dark and cold, 30% more heat and 75% more light damage. Drops a Boss Token, bone dust and iron scrap. Placeholder text.',
-  'ph_ore_eater_1.desc': 'Placeholder medium elite vermin, earth element: floor 10’s keeper when none of the other wards is cleared. Always met alone. Bludgeoning attacks. Armoured shell; takes 30% less slashing and piercing and 35% more bludgeoning damage. Fights with Heavy Blow and Gather. Drops a Boss Token, copper ore and iron scrap. Placeholder text.',
-  'ph_ore_eater_2.desc': 'Placeholder large elite vermin, earth element: floor 10’s keeper when one of the other wards is cleared. Always met alone. Bludgeoning attacks with a 15% chance to inflict Concussed. Thicker shell than stage 1; takes 35% less slashing and piercing and 40% more bludgeoning damage. Fights with Heavy Blow and Gather. Drops a Boss Token, copper ore, tin ore and iron scrap. Placeholder text.',
-  'ph_ore_eater_3.desc': 'Placeholder huge elite vermin, earth element: floor 10’s keeper when two of the other wards are cleared. Always met alone. Bludgeoning attacks with a 20% chance to inflict Concussed. Thicker shell than stage 2; takes 40% less slashing and piercing and 45% more bludgeoning damage. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, copper ore, tin ore and iron scrap. Placeholder text.',
-  'ph_ore_eater_4.desc': 'Placeholder gargantuan elite vermin, earth element: floor 10’s keeper when all three other wards are cleared. Always met alone. Bludgeoning attacks with a 25% chance to inflict Concussed. The thickest shell; takes 50% less slashing and piercing and 50% more bludgeoning damage. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, copper ore, tin ore and iron scrap. Placeholder text.',
+  'ph_rogue_beast_young.desc': 'Large elite beast, floor 8’s keeper while one or none of the other wards is cleared: the beast before its change. Always met alone. Slashing attacks with a 20% chance to inflict heavy Bleeding. Fights with Hamstring, Lunge and Gather. Drops a Boss Token, pristine fur and meat.',
+  'ph_rogue_beast_final.desc': 'Huge elite beast, floor 8’s keeper once two or more of the other wards are cleared: the beast after its change. Always met alone. About a third more health and a quarter more strength than the young form at the same level. Slashing attacks with a 30% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Lunge and Gather. Drops a Boss Token, pristine fur and meat.',
+  'ph_death_squire.desc': 'Medium veteran armoured humanoid, dark element: floor 9’s keeper while one or none of the other wards is cleared, and a hunt in the Barrow Fields. Fights with a sword first (Gather, then Heavy Blow) and casts gloom cut when off balance; no counterspell. Takes 75% less poison, 50% less dark and cold, 30% more heat and 75% more light damage. Drops a Boss Token, bone dust and iron scrap.',
+  'ph_ore_eater_1.desc': 'Medium elite vermin, earth element: floor 10’s keeper when none of the other wards is cleared. Always met alone. Bludgeoning attacks. Armoured shell; takes 30% less slashing and piercing and 35% more bludgeoning damage. Fights with Heavy Blow and Gather. Drops a Boss Token, copper ore and iron scrap.',
+  'ph_ore_eater_2.desc': 'Large elite vermin, earth element: floor 10’s keeper when one of the other wards is cleared. Always met alone. Bludgeoning attacks with a 15% chance to inflict Concussed. Thicker shell than stage 1; takes 35% less slashing and piercing and 40% more bludgeoning damage. Fights with Heavy Blow and Gather. Drops a Boss Token, copper ore, tin ore and iron scrap.',
+  'ph_ore_eater_3.desc': 'Huge elite vermin, earth element: floor 10’s keeper when two of the other wards are cleared. Always met alone. Bludgeoning attacks with a 20% chance to inflict Concussed. Thicker shell than stage 2; takes 40% less slashing and piercing and 45% more bludgeoning damage. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, copper ore, tin ore and iron scrap.',
+  'ph_ore_eater_4.desc': 'Gargantuan elite vermin, earth element: floor 10’s keeper when all three other wards are cleared. Always met alone. Bludgeoning attacks with a 25% chance to inflict Concussed. The thickest shell; takes 50% less slashing and piercing and 50% more bludgeoning damage. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, copper ore, tin ore and iron scrap.',
 
   // ==== HARBOR: monster text (skeleton 2026-10-30; the harbor builder's section) ====
-  'ph_reef_eel.desc': 'Placeholder basic sea monster on the harbor band’s waters. Piercing bite with a 15% chance to inflict Bleeding. Fights with Lunge and Gather. The navy’s and the merchants’ prey. Drops bone dust and biomatter.',
-  'ph_deep_serpent.desc': 'Placeholder veteran sea monster on the harbor band’s waters. Bludgeoning attacks. Fights with Heavy Blow and Gather. The navy’s and the merchants’ prey. Drops bone dust and biomatter.',
-  'ph_brood_matron.desc': 'Placeholder named ship of the sea beast’s brood: a once-only fight on floors 12 and 13 for the navy and the merchants, and the Sea Beast’s escort on floor 14. Bludgeoning attacks, 20% chance to inflict Bleeding. Fights with Heavy Blow, Hamstring and Gather.',
-  'ph_sea_beast.desc': 'Placeholder elite sea monster, the navy’s mission boss on floor 14. Spawns with four Brood Matrons. Bludgeoning attacks, 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, biomatter and bone dust.',
-  'ph_pirate_cutthroat.desc': 'Placeholder basic pirate on the harbor band’s waters. Slashing attacks. Fights with Pocket Sand, Dirty Stab and Gather. The privateers’ and the merchants’ prey. Drops gold, leather and iron scrap.',
-  'ph_pirate_gunner.desc': 'Placeholder veteran pirate on the harbor band’s waters. Piercing attacks. Fights with Lunge, Finishing Cut and Gather. The privateers’ and the merchants’ prey. Drops gold and iron scrap.',
-  'ph_pirate_captain.desc': 'Placeholder named pirate ship: a once-only fight on floors 12 and 13 for the privateers and the merchants, and an escort of the Pirate King and of the Warden of the Closed Port on floor 14. Slashing attacks, 20% chance to inflict Bleeding. Fights with Crosscut, Dirty Stab, Finishing Cut and Gather.',
-  'ph_pirate_king.desc': 'Placeholder elite pirate, the privateers’ mission boss on floor 14. Spawns with four Pirate Captains. Slashing attacks, 25% chance to inflict heavy Bleeding. Fights with Heavy Blow, Crosscut, Finishing Cut and Gather. Drops a Boss Token, gold and bronze ingots.',
-  'ph_convoy_guard.desc': 'Placeholder basic guard on the harbor band’s convoys. Slashing attacks. Fights with Crosscut and Gather. The pirates’ prey. Drops gold, leather and iron scrap.',
-  'ph_navy_marine.desc': 'Placeholder veteran navy marine escorting the harbor band’s convoys. Piercing attacks. Fights with Lunge, Hamstring and Gather. The pirates’ prey. Drops gold, iron scrap and leather.',
-  'ph_navy_frigate.desc': 'Placeholder named navy ship: a once-only fight on floors 12 and 13 for the pirates, and an escort of the treasure galleon on floor 14. Slashing attacks. Fights with Crosscut, Lunge, Finishing Cut and Gather.',
-  'ph_galleon_master.desc': 'Placeholder elite, the pirates’ mission boss on floor 14: the treasure galleon’s master. Spawns with four Frigate Captains. Slashing attacks. Fights with Heavy Blow, Crosscut, Finishing Cut and Gather. Drops a Boss Token, gold and bronze ingots.',
-  'ph_port_warden.desc': 'Placeholder elite, the merchants’ mission boss on floor 14: the raider who holds the closed port. Spawns with four Pirate Captains. Bludgeoning attacks. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, gold and iron ingots.',
+  'ph_reef_eel.desc': 'Basic sea monster on the harbor band’s waters. Piercing bite with a 15% chance to inflict Bleeding. Fights with Lunge and Gather. The navy’s and the merchants’ prey. Drops bone dust and biomatter.',
+  'ph_deep_serpent.desc': 'Veteran sea monster on the harbor band’s waters. Bludgeoning attacks. Fights with Heavy Blow and Gather. The navy’s and the merchants’ prey. Drops bone dust and biomatter.',
+  'ph_brood_matron.desc': 'Named ship of the sea beast’s brood: a once-only fight on floors 12 and 13 for the navy and the merchants, and the Sea Beast’s escort on floor 14. Bludgeoning attacks, 20% chance to inflict Bleeding. Fights with Heavy Blow, Hamstring and Gather.',
+  'ph_sea_beast.desc': 'Elite sea monster, the navy’s mission boss on floor 14. Spawns with four Brood Matrons. Bludgeoning attacks, 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, biomatter and bone dust.',
+  'ph_pirate_cutthroat.desc': 'Basic pirate on the harbor band’s waters. Slashing attacks. Fights with Pocket Sand, Dirty Stab and Gather. The privateers’ and the merchants’ prey. Drops gold, leather and iron scrap.',
+  'ph_pirate_gunner.desc': 'Veteran pirate on the harbor band’s waters. Piercing attacks. Fights with Lunge, Finishing Cut and Gather. The privateers’ and the merchants’ prey. Drops gold and iron scrap.',
+  'ph_pirate_captain.desc': 'Named pirate ship: a once-only fight on floors 12 and 13 for the privateers and the merchants, and an escort of the Pirate King and of the Warden of the Closed Port on floor 14. Slashing attacks, 20% chance to inflict Bleeding. Fights with Crosscut, Dirty Stab, Finishing Cut and Gather.',
+  'ph_pirate_king.desc': 'Elite pirate, the privateers’ mission boss on floor 14. Spawns with four Pirate Captains. Slashing attacks, 25% chance to inflict heavy Bleeding. Fights with Heavy Blow, Crosscut, Finishing Cut and Gather. Drops a Boss Token, gold and bronze ingots.',
+  'ph_convoy_guard.desc': 'Basic guard on the harbor band’s convoys. Slashing attacks. Fights with Crosscut and Gather. The pirates’ prey. Drops gold, leather and iron scrap.',
+  'ph_navy_marine.desc': 'Veteran navy marine escorting the harbor band’s convoys. Piercing attacks. Fights with Lunge, Hamstring and Gather. The pirates’ prey. Drops gold, iron scrap and leather.',
+  'ph_navy_frigate.desc': 'Named navy ship: a once-only fight on floors 12 and 13 for the pirates, and an escort of the treasure galleon on floor 14. Slashing attacks. Fights with Crosscut, Lunge, Finishing Cut and Gather.',
+  'ph_galleon_master.desc': 'Elite, the pirates’ mission boss on floor 14: the treasure galleon’s master. Spawns with four Frigate Captains. Slashing attacks. Fights with Heavy Blow, Crosscut, Finishing Cut and Gather. Drops a Boss Token, gold and bronze ingots.',
+  'ph_port_warden.desc': 'Elite, the merchants’ mission boss on floor 14: the raider who holds the closed port. Spawns with four Pirate Captains. Bludgeoning attacks. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, gold and iron ingots.',
 
   // ==== FESTIVAL: monster text (skeleton 2026-10-30; the festival builder's section) ====
-  'ph_room_brawler.desc': 'Placeholder humanoid in the Vermin Festival’s dark room. Slashing attacks with a chance to bleed. Fights with Hamstring, Lunge and Gather. Drops nothing.',
-  'ph_room_bruiser.desc': 'Placeholder large humanoid in the Vermin Festival’s dark room. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops nothing.',
-  'ph_room_last.desc': 'Placeholder elite humanoid: the last of the dark room’s nine, always fought alone. Beating it clears floor 15. Slashing attacks with a chance to bleed. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops nothing.',
-  'ph_survivor_blade.desc': 'Placeholder humanoid on the Vermin Festival’s royale field, a survivor of another room. Piercing attacks with a chance to bleed. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops nothing.',
-  'ph_survivor_brute.desc': 'Placeholder large humanoid on the Vermin Festival’s royale field, a survivor of another room. Bludgeoning attacks. Fights with Heavy Blow, Crosscut and Gather. Drops nothing.',
-  'ph_survivor_champion.desc': 'Placeholder elite humanoid: the last survivor on the royale field, always fought alone. Beating it wins the festival. Slashing attacks with a chance to bleed. Fights with Crosscut, Finishing Cut, Heavy Blow, Hamstring and Gather. Drops nothing.',
-  'ph_den_harpy.desc': 'Placeholder beast in the harpy nest on the Vermin Festival’s royale field, met in twos. Slashing attacks with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
-  'ph_den_serpent.desc': 'Placeholder beast in the serpent pool under the royale field’s waterfall. Piercing bite with a 30% chance to inflict Poison. Fights with Lunge, Dirty Stab and Gather. Drops nothing.',
-  'ph_den_wolf.desc': 'Placeholder beast in the wolf den in the royale field’s forest, met in threes. Piercing bite with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
-  'ph_den_bear.desc': 'Placeholder large beast in the bear cave on the royale field. Bludgeoning attacks with a 15% chance to inflict Concussed. Fights with Heavy Blow, Hamstring and Gather. Drops nothing.',
-  'ph_den_hound.desc': 'Placeholder beast in the hound yard of the royale field’s village, met in twos. Piercing bite with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
+  'ph_room_brawler.desc': 'Humanoid in the Vermin Festival’s dark room. Slashing attacks with a 15% chance to inflict Bleeding. Fights with Hamstring, Lunge and Gather. Drops nothing.',
+  'ph_room_bruiser.desc': 'Large humanoid in the Vermin Festival’s dark room. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops nothing.',
+  'ph_room_last.desc': 'Elite humanoid: the last of the dark room’s nine, always fought alone. Beating it clears floor 15. Slashing attacks with a 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops nothing.',
+  'ph_survivor_blade.desc': 'Humanoid on the Vermin Festival’s royale field, a survivor of another room. Piercing attacks with a 20% chance to inflict Bleeding. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops nothing.',
+  'ph_survivor_brute.desc': 'Large humanoid on the Vermin Festival’s royale field, a survivor of another room. Bludgeoning attacks. Fights with Heavy Blow, Crosscut and Gather. Drops nothing.',
+  'ph_survivor_champion.desc': 'Elite humanoid: the last survivor on the royale field, always fought alone. Beating it wins the festival. Slashing attacks with a 25% chance to inflict heavy Bleeding. Fights with Crosscut, Finishing Cut, Heavy Blow, Hamstring and Gather. Drops nothing.',
+  'ph_den_harpy.desc': 'Beast in the harpy nest on the Vermin Festival’s royale field, met in twos. Slashing attacks with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
+  'ph_den_serpent.desc': 'Beast in the serpent pool under the royale field’s waterfall. Piercing bite with a 30% chance to inflict Poison. Fights with Lunge, Dirty Stab and Gather. Drops nothing.',
+  'ph_den_wolf.desc': 'Beast in the wolf den in the royale field’s forest, met in threes. Piercing bite with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
+  'ph_den_bear.desc': 'Large beast in the bear cave on the royale field. Bludgeoning attacks with a 15% chance to inflict Concussed. Fights with Heavy Blow, Hamstring and Gather. Drops nothing.',
+  'ph_den_hound.desc': 'Beast in the hound yard of the royale field’s village, met in twos. Piercing bite with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
 
   // ==== ABERRANT: monster text (skeleton 2026-10-30; the aberrant builder's section) ====
 
   // ==== DESERT: monster text (skeleton 2026-10-30; the desert builder's section) ====
-  'ph_scarab.desc': 'Placeholder vermin of the desert band, floors 18 to 20. Piercing attacks. Fights with Gather and Lunge. Killed by heat it can drop brimstone; killed by bludgeoning, copper ore. Sometimes drops gold leaf.',
+  'ph_scarab.desc': 'Vermin of the desert band, floors 18 to 20. Piercing attacks. Fights with Gather and Lunge. Killed by heat it can drop brimstone; killed by bludgeoning, copper ore. Sometimes drops gold leaf.',
 
-  'ph_cobra.desc': 'Placeholder beast of the desert band. Piercing bite with a 30% chance to inflict Poison. Takes 30% less poison damage. Fights with Lunge, Dirty Stab and Gather. Killed by a blade (slashing or piercing) it can drop leather; killed by heat, green vitriol. Sometimes drops raw meat.',
+  'ph_cobra.desc': 'Beast of the desert band. Piercing bite with a 30% chance to inflict Poison. Takes 30% less poison damage. Fights with Lunge, Dirty Stab and Gather. Killed by a blade (slashing or piercing) it can drop leather; killed by heat, green vitriol. Sometimes drops raw meat.',
 
-  'ph_scorpion.desc': 'Placeholder vermin of the desert band. Piercing sting with a 25% chance to inflict Poison. Takes 40% less poison damage. Fights with Hamstring, Crosscut and Gather. Killed by bludgeoning it can drop tin ore; killed by heat, fixing salt.',
+  'ph_scorpion.desc': 'Vermin of the desert band. Piercing sting with a 25% chance to inflict Poison. Takes 40% less poison damage. Fights with Hamstring, Crosscut and Gather. Killed by bludgeoning it can drop tin ore; killed by heat, fixing salt.',
 
-  'ph_mummy.desc': 'Placeholder undead of the desert band. Bludgeoning attacks. Takes 50% more heat damage and 50% less poison damage. Fights with Heavy Blow and Gather. Two drop rolls: killed by heat it can drop bone ash, killed by bludgeoning bone dust; any other kill drops neither.',
+  'ph_mummy.desc': 'Undead of the desert band. Bludgeoning attacks. Takes 50% more heat damage and 50% less poison damage. Fights with Heavy Blow and Gather. Two drop rolls: killed by heat it can drop bone ash, killed by bludgeoning bone dust; any other kill drops neither.',
 
-  'ph_sand_colossus.desc': 'Placeholder construct, floor 18’s forecourt guardian. Always fights alone. Bludgeoning attacks. Takes 90% less heat damage. Fights with Heavy Blow and Gather. Drops a Boss Token, gold, copper ore and tin ore; killed by bludgeoning it can also drop quicksilver.',
+  'ph_sand_colossus.desc': 'Construct, floor 18’s forecourt guardian. Always fights alone. Bludgeoning attacks. Takes 90% less heat damage. Fights with Heavy Blow and Gather. Drops a Boss Token, gold, copper ore and tin ore; killed by bludgeoning it can also drop quicksilver.',
 
-  'ph_sabaket.desc': 'Sabaket, the Weigher at the Door: the judge of floor 19’s pyramid. Placeholder stats. Always fights alone. Slashing attacks with a 25% chance to inflict Bleeding. Takes 50% less dark and 30% less poison damage. Fights with Heavy Blow, Hamstring, Finishing Cut and Gather. With nothing taken from the treasury it is weaker than the floor’s dens; each grave good taken raises its level, up to the band’s strongest. Drops a Boss Token, gold, bronze ingots and quicksilver.',
+  'ph_sabaket.desc': 'Sabaket, the Weigher at the Door: the judge of floor 19’s pyramid. Always fights alone. Slashing attacks with a 25% chance to inflict Bleeding. Takes 50% less dark and 30% less poison damage. Fights with Heavy Blow, Hamstring, Finishing Cut and Gather. With nothing taken from the treasury it is weaker than the floor’s dens; each grave good taken raises its level, up to the band’s strongest. Drops a Boss Token, gold, bronze ingots and quicksilver.',
 
-  'ph_roadstead_crew.desc': 'Placeholder crew of the ferry at floor 20’s roadstead. Always three at once. Piercing attacks. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops gold, leather and sometimes a Boss Token.',
+  'ph_roadstead_crew.desc': 'Crew of the ferry at floor 20’s roadstead. Always three at once. Piercing attacks. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops gold, leather and sometimes a Boss Token.',
 
-  'giant_spider_queen.desc': 'Huge elite vermin, toxic element. Always fights alone. Poison bite with a 60% chance to inflict heavy Poison. Takes 40% less slashing, 50% less poison, 35% less earth and 20% less bludgeoning; takes 50% more piercing, 40% more heat and 20% more cold damage. Appears in the Brood Den. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
+  'giant_spider_queen.desc': 'Huge elite vermin, toxic element. Always fights alone. Poison bite with a 60% chance to inflict heavy Poison. Takes 40% less slashing, 50% less poison, 35% less earth and 20% less bludgeoning; takes 50% more piercing, 40% more heat and 20% more cold damage. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
 };
