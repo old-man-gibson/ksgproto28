@@ -189,11 +189,11 @@ what it already knows enters early.
 | Spot | Activities | System | Stock | Time | What the royale gets |
 |---|---|---|---|---|---|
 | `f15_hall` (kept) | rest, drill STR, spar DEX, cooking bench | cooking, attributes | — | open-ended | meals that last into the royale (cooking: long, out of combat) |
-| `f15_stores` (kept, more) | search: rations, meat, salve, plus more cooking ingredients | cooking | about 12 finds an attempt | 2 h a find | ingredients |
+| `f15_stores` (kept, more) | search: rations, meat, salve, onions, salt, mushrooms, honey | cooking | 12 finds an attempt | 4 h a find | ingredients |
 | `f15_survey` (new) | search: one find per royale section; each sets `flag:festival:scouted:<section>` | — | 8 finds an attempt | 12 h a find (4 days for all 8) | a scouted section shows its caches and dens on this attempt's royale map before you walk in |
-| `f15_herb_yard` (new) | search: herbs | alchemy | about 8 finds an attempt | 2 h a find | ingredients for the workshop's alembic |
-| `f15_workshop` (new) | alchemy bench, forging bench; search: scrap | alchemy, smithing | about 6 scrap finds an attempt | 2 h a find | flasks for the fights; plain pieces forged from scrap |
-| `f15_gallery` (new) | train several attributes at once (watching the others drill), rest | attributes | — | open-ended | attributes |
+| `f15_herb_yard` (new) | search: spring water, mendroot, emberbloom, frostmoss, bloodwort, nightcap | alchemy | 8 finds an attempt | 4 h a find | ingredients for the workshop's alembic |
+| `f15_workshop` (new) | alchemy bench, forging bench, the iron ingot recipe; search: iron scrap, hardwood, leather, grain spirit | alchemy, smithing | 6 finds an attempt | 4 h a find | flasks for the fights; plain pieces forged from scrap |
+| `f15_gallery` (new) | train CON, INT and WIS at once (watching the others drill), rest; a one-way stair down to the dark room (the floor rules' wing loop) | attributes | — | open-ended | attributes |
 
 - **Restock.** Every search in `FESTIVAL_RESTOCK` (stores, herb yard,
   workshop, survey) resets its limits when an attempt starts, as the stores
@@ -205,7 +205,14 @@ what it already knows enters early.
   do). A farm loop is an attempt, a forfeit and a three-day lockout per
   restock.
 - No new activity kind: search, train, rest and benches only. The survey is
-  a search whose rewards set flags.
+  a search whose rewards set flags; it scouts sections in a random order.
+  Every hub search runs on fixed time (`staticTime`), so speed does not
+  shorten the ten days.
+- **As built** (festival-hub, 285e902): searches total 120,000 ticks (8.33
+  days: stores 28,800, herb yard 19,200, workshop 14,400, survey 57,600) plus
+  about 4,000 of bench work, about 8.6 of the 10 days. After a search's last
+  find the running search spends one more cycle finding nothing before it
+  stops (`tests/searchspent.test.ts`).
 
 ### 9.2 The royale's field: a miniature stage
 
@@ -237,6 +244,17 @@ terrain only changes pace and sight.
 | Village | a cluster of buildings in the east half, off the river | 1.0 | 0.7 | the smithy (weapon), the guard post (armour, a hound den), the baker (food), three houses (small finds) |
 | Meadow | everything else | 1.0 | 1.0 | — |
 
+- **As built** (festival-mapgen, 843d963): one mulberry32 stream from the
+  hashed seed; the cliff 8–18 deep; the waterfall's centre at x 64–100; the
+  river drifting inside x 62–102 so the east holds a large village; the bank
+  every cell within 3 of the river; forest and cave from a cellular pass; the
+  village sized from the buildings and caches the data asks for (at least
+  six buildings, two to four spare houses); dens at least 31 from the start;
+  caches at least 6 apart and 15 from the start. A step with no room retries
+  the build on the same stream, and the twelfth build keeps what it has, so
+  `royaleMap` never throws (never seen to fire in 3,003 seeds). About 5 ms a
+  map. No east-west mirror: the forest stays west, the cave and village east.
+  A den guards at most one cache that names a village building.
 - **Pace** multiplies a fighter's walking speed while it stands in the
   section. **Sight** multiplies how far a fighter standing there sees
   (`ROYALE_FIELD.sight`, 20 units). A fighter in a section with cover
@@ -266,7 +284,7 @@ terrain only changes pace and sight.
   `loot` while the field is crowded.
 - **The end** is unchanged: the last survivor is the champion, fought alone,
   and the royale runs until one stands.
-- **The map.** The view follows the player at about 50 units across, with a
+- **The map.** The view follows the player at 60 units across, with a
   minimap of the whole field, its sections and what is known of it; a toggle
   shows the whole field.
 
@@ -326,6 +344,7 @@ terrain only changes pace and sight.
 | F6 | How long a plan-only royale should last | About 2 to 4 festival hours (12 to 24 minutes of play) |
 | F7 | Hub budget | Doing everything takes about 8 to 10 of the 10 days |
 | F8 | What the hub's searches and benches give | Kept after the attempt, as the stores' rations are today |
+| F9 | The survey's order | Random: one search that runs four days unattended (user, 2026-10-30: "keep it random") |
 
 ### 9.6 Survivors as fighters (user, 2026-10-30)
 
