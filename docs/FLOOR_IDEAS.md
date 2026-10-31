@@ -227,7 +227,7 @@ list."*
 
 | Floors | Band | Archetype (user's words) |
 |---|---|---|
-| 1–3 | the Lower Reaches | not named in the list |
+| 1–3 | the Lower Reaches | tutorial, as it is now (user, same day) |
 | 4–6 | the Wilds | straightforward mission (goblin eradication) |
 | 7–10 | the City | pick your order (the city's troubles) |
 | 11–14 | the Harbor | pick your faction (sailing the six seas) |
