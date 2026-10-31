@@ -210,6 +210,20 @@ Each step ships alone and is verified before the next.
    discovery moment (debug grant only). Seen in play: with CON and WIS near
    157, the fill beats the drain only above about 23% sunlight, so rain by
    day drains the bank.
+2b. **Fight events and Zenkai. Built 2026-10-31 on branch `zenkai`
+   (01a549a, unmerged).** The user approved 70 of 100 team abilities on
+   "Abilities 1–100" and picked event hooks plus Zenkai (GEN-10) next. No
+   engine change: `Facet.event` already fired `on: 'event:<id>'` clauses.
+   KSG `src/core/facet/signal.ts` raises shared event ids (fightStart, kill,
+   fightWon, fightEnd, hitTaken, hit, crit, dodge, parry, graze, enemyCast,
+   flaskUsed, itemUsed, miracleCast) from the bus, `damagePlayer`,
+   `markCombatEvent`, `Game.useFlask/useConsumable` and the miracle cast.
+   Zenkai is a bank document (Facet 826dfc2; IG branch a0cad39, tests pass)
+   and an entry in the Facet bank's section 1b. Readings taken: "all stats"
+   = the six attributes, "prayer" = a miracle cast, a consumable counts as a
+   flask, enemy level = the strongest at fight start. Team 2's 0.99 decay is
+   one number in the document. These events only report; reacting inside a
+   blow (reflect, cancel) still needs K2.
 3. **Solar Charge in IG.** A day clock and sunlight read in IG; the same
    document runs unchanged.
 4. **Calorie Burn.** Core addition 2. KSG first, then IG's calories and
