@@ -34,6 +34,7 @@ reports a copy that has drifted from the master.
 | `src/core/facet/load.ts` | Loads the core with one bare side-effect import per file. |
 | `src/core/facet/facet.d.ts` | Types for the members this game calls. Add a line when you call a new one. |
 | `src/core/facet/host.ts` | The adapter: every member `Facet.install` requires, read off the player. |
+| `src/core/facet/signal.ts` | The fight events the ability hears, and which state the core is bound to. Imports nothing but types, so health.ts and combat.ts can call it. |
 | `src/core/facet/quantities.ts` | Every number a document may read, with its id. |
 | `tests/facet.test.ts` | The manifest check, the core's corpus run through this game's loader, and the adapter. |
 
@@ -62,6 +63,36 @@ Its power cell is a status whose two modifiers name `fighter.damage` and
 `fighter.magicDamage`; this game turns those into `damage` and `spellPower`.
 To try it: open the debug panel (🐞), Grant ☀️ Solar Charge, then stand under
 open sky by day. The Charge buttons there set the bank to a share of its cap.
+
+**Zenkai** is the second, and the first that listens to fight events: after a
+win where HP fell to 20% or below, with no flask, consumable or miracle used,
+all attributes gain 1.5% × (1 − lowest HP share) × min(1.5, enemy level / your
+level), times 0.97 per Zenkai already gained. The user approved it as written
+(team ability GEN-10, 2026-10-31). To try it: Grant 💥 Zenkai, press HP to 15%,
+and win a fight against an enemy at least 70% of your level.
+
+## Events
+
+A document listens with `on: 'event:<id>'` and reads the event's detail with
+`{ frame: '<field>' }`. Event ids are shared with InfiniteGacha, like quantity
+ids. Where this game raises each one (`signal.ts` has the same table):
+
+| id | Raised by | Detail |
+|---|---|---|
+| `fightStart` | bus `encounter` (host.ts `registerFacetListeners`) | `enemies`, `maxLevel` |
+| `kill` | bus `kill` | `level` |
+| `fightWon` | bus `fight:won`, after the last `kill` | |
+| `fightEnd` | bus `fight:closed`, however the fight ended | `won` (0 or 1) |
+| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` |
+| `hit`, `crit`, `dodge`, `parry`, `graze`, `enemyCast` | combat.ts `markCombatEvent` | |
+| `flaskUsed` | `Game.useFlask` | |
+| `itemUsed` | `Game.useConsumable` | |
+| `miracleCast` | combat.ts, when a miracle is cast | |
+
+A signal costs nothing when no ability is held: `facetSignal` returns before
+anything else. Adding an event is a line in `signal.ts` and a call where it
+happens. An event that changes the fight itself (reflect a blow, cancel a hit)
+needs the staged damage path (K2); these events only report.
 
 **Why only bare imports.** The core files have no exports. A named import
 (`import { x } from './facet.core.js'`) passes vitest and fails `vite build`

@@ -9,7 +9,9 @@ import { applyStatus, findStatus, removeStatus } from '../systems/statuses';
 import { getDerivedStats } from '../systems/derived';
 import { appendLog } from '../systems/log';
 import { facetQuantities, readQuantity } from './quantities';
+import type { EventBus } from '../engine/events';
 import type { FacetDoc, FacetHost } from './facet';
+import { bindFacets, boundState, facetSignal, PLAYER_REF } from './signal';
 import './load';
 
 /**
@@ -34,8 +36,7 @@ import './load';
  * discovery moment is decided.
  */
 
-/** The player's ref. Refs are strings so they survive JSON and the core's Map keys. */
-export const PLAYER_REF = 'player';
+export { bindFacets, facetSignal, PLAYER_REF } from './signal';
 
 const DAMAGE_TYPES = Object.keys(RES_STAT_BY_TYPE) as DamageType[];
 
@@ -201,34 +202,14 @@ export function createFacetHost(getState: () => GameState): FacetHost {
 
 // ---------- the game's side ----------
 
-/** The state the core reads and writes: whichever one `bindFacets` was last given. */
-let bound: GameState | null = null;
-
 /**
- * Install the adapter over the bound state. Called once at boot from the UI
- * bridge, then `bindFacets(gs, true)`. Throws when the core is incomplete or a
- * member is missing. Tests that do not install it get no ability code at all:
- * every function below is a no-op until it is installed.
+ * Install the adapter over the bound state (signal.ts `bindFacets`). Called
+ * once at boot from the UI bridge, then `bindFacets(gs, true)`. Throws when
+ * the core is incomplete or a member is missing. Tests that do not install it
+ * get no ability code at all: every function below is a no-op until then.
  */
 export function installFacet(): void {
-  globalThis.Facet.install(createFacetHost(() => bound as GameState));
-}
-
-/**
- * Point the core at the state being ticked and attach that state's ability.
- * The core writes cell values into the document objects it was handed, so
- * those must be the documents this state will save. The live game and offline
- * catch-up's detached copy are different objects (ui/state.svelte.ts
- * `runCatchup`), so the binding follows whichever state advances. `force`
- * re-attaches the same state after its contents were replaced wholesale
- * (catch-up landing, an import, a reset, a prestige): Game.resyncAnnouncers.
- */
-export function bindFacets(state: GameState, force = false): void {
-  if (!globalThis.Facet?.ready()) return;
-  if (bound === state && !force) return;
-  bound = state;
-  globalThis.Facet.detach(PLAYER_REF);
-  globalThis.Facet.attach(PLAYER_REF, state.facets ?? []);
+  globalThis.Facet.install(createFacetHost(() => boundState() as GameState));
 }
 
 /**
@@ -238,7 +219,25 @@ export function bindFacets(state: GameState, force = false): void {
 export function tickFacets(state: GameState): void {
   if (state.totalTicks % TICKS_PER_GAME_MINUTE !== 0) return;
   bindFacets(state);
-  if (bound === state && state.facets?.length) globalThis.Facet.minute(PLAYER_REF);
+  if (boundState() === state && state.facets?.length) globalThis.Facet.minute(PLAYER_REF);
+}
+
+/**
+ * Forward the fight events the bus already carries (signal.ts lists them all).
+ * Registered per Game, like every other listener, so offline catch-up's worker
+ * game signals its own detached state.
+ */
+export function registerFacetListeners(state: GameState, bus: EventBus): void {
+  bus.on('encounter', () => {
+    const foes = (state.combat?.enemies ?? []).filter((e) => e !== null);
+    facetSignal(state, 'fightStart', {
+      enemies: foes.length,
+      maxLevel: foes.reduce((n, e) => Math.max(n, e.level), 0),
+    });
+  });
+  bus.on('kill', (ev) => facetSignal(state, 'kill', { level: ev.monster.level }));
+  bus.on('fight:won', () => facetSignal(state, 'fightWon'));
+  bus.on('fight:closed', (ev) => facetSignal(state, 'fightEnd', { won: ev.standing.length === 0 ? 1 : 0 }));
 }
 
 /**
@@ -247,7 +246,7 @@ export function tickFacets(state: GameState): void {
  */
 export function debugSetCell(state: GameState, key: string, share: number): void {
   const F = globalThis.Facet;
-  if (!F?.ready() || bound !== state) return;
+  if (!F?.ready() || boundState() !== state) return;
   for (const doc of state.facets) {
     const cell = doc.cells?.find((c) => c.key === key);
     if (!cell) continue;
@@ -314,7 +313,7 @@ export interface FacetReadout {
 /** What the sidebar shows for the run's ability: each cell's value, and the inputs it names. */
 export function facetReadouts(state: GameState): FacetReadout[] {
   const F = globalThis.Facet;
-  if (!F?.ready() || bound !== state) return [];
+  if (!F?.ready() || boundState() !== state) return [];
   return state.facets.map((doc) => {
     const ctx = { ref: PLAYER_REF, facet: doc, bindings: {} };
     return {

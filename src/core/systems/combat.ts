@@ -677,6 +677,7 @@ import {
   noteParry,
 } from './ledger';
 import { encounterLevel, killXp } from './levels';
+import { facetCombatStamp, facetSignal } from '../facet/signal';
 import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
@@ -727,6 +728,8 @@ function rollAgainst(state: GameState, badChance: number, disadvantage: boolean)
 /** Stamp a trigger event so `event`-gated skills can react to it. */
 export function markCombatEvent(state: GameState, event: string): void {
   if (state.combat) state.combat.events[event] = state.totalTicks;
+  // The same stamps, where they are also events the run's ability hears.
+  facetCombatStamp(state, event);
 }
 
 // ---------- Monster generation ----------
@@ -1982,6 +1985,7 @@ const MIRACLE_SYNERGY_MULT = 1.25;
  */
 function miracleSynergy(state: GameState, c: CombatState, spec: SpellSpec): number {
   if (spec.school !== 'divine' || !spec.deity) return 1;
+  facetSignal(state, 'miracleCast');
   const last = c.lastMiracle;
   c.lastMiracle = { deity: spec.deity, tick: state.totalTicks };
   if (!last || state.totalTicks - last.tick > MIRACLE_SYNERGY_WINDOW) return 1;

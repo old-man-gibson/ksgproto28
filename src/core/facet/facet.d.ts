@@ -19,7 +19,7 @@ export interface FacetCell {
   cap?: unknown;
   floor?: number;
   tier?: string;
-  /** Display hint for a game's ability readout: 'bar' (value of cap) or 'signedPct'. */
+  /** Display hint for a game's ability readout: 'bar' (value of cap), 'signedPct' or 'count'. */
   show?: string;
   status?: { desc?: string; [field: string]: unknown };
   /** Written by the core; saved with the document. */

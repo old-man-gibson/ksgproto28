@@ -173,6 +173,11 @@ function build(): Map<string, Entry> {
     { id: 'fighter.hp', label: 'HP', kind: 'pool', namespace: 'fighter', nullifiable: false, writable: false, mortalRole: 'vitality', modStat: null },
     (s) => s.resources.hp,
   );
+  // Character level (levels.ts). Read-only: an ability may compare against it, not move it.
+  add(
+    { id: 'fighter.level', label: 'Level', kind: 'scalar', namespace: 'fighter', nullifiable: false, writable: false, modStat: null },
+    (s) => s.level,
+  );
   for (const p of POOLS) {
     add(
       { id: 'pool.' + p + '.cur', label: p + ' (current)', kind: 'pool', namespace: 'pool', modStat: null },
