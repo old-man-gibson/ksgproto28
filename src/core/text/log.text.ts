@@ -231,6 +231,7 @@ export const LOG_TEXT = {
   'festival.forfeit': 'Leaving floors 15–16 by the ladder before the royale ends forfeits the festival.',
   'festival.field_left': '🏟️ {alive} left on the field.',
   'festival.cache_worn': '🎁 {cache}: {icon} {item}, lent for the attempt and worn. It is taken back when the attempt ends.',
+  'festival.cache_swapped': '🎁 {cache}: {icon} {item}, lent for the attempt and wielded in place of the issued weapon, which is in your pack. Both are taken back when the attempt ends.',
   'festival.cache_packed': '🎁 {cache}: {icon} {item}, lent for the attempt, in your pack (the slot is taken). It is taken back when the attempt ends.',
   'festival.cache_empty': '📭 {cache}: nothing in it for your weapon.',
   'festival.cache_heal': '🩹 {cache}: {healed} health restored.',

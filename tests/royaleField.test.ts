@@ -438,6 +438,50 @@ describe('caches', () => {
     expect(heal.field.fighters[0].hp).toBeCloseTo(0.3 + ROYALE_CACHES.find((c) => c.id === 'fisher_hut')!.heal! + ROYALE_FIELD.healPerTick, 5);
   });
 
+  /** A meadow point whose nearest cache is `lo` to `hi` away, with no second cache within `clear`, and no den near. */
+  function pointByCache(lo: number, hi: number, clear: number): { p: Point; cache: string } {
+    for (let y = 6; y < MAP.size - 6; y += 3) {
+      for (let x = 6; x < MAP.size - 6; x += 3) {
+        const p = { x, y };
+        if (sectionAt(MAP, x, y) || ROYALE_DENS.some((d) => dist(p, MAP.dens[d.id]) < d.radius + 5)) continue;
+        // Open caches only (an unguarded one), and none in cover, which is seen at half the range.
+        const open = ROYALE_CACHES.filter((c) => !c.den && !sectionAt(MAP, MAP.caches[c.id].x, MAP.caches[c.id].y)?.cover);
+        const ds = open.map((c) => ({ id: c.id, d: dist(p, MAP.caches[c.id]) })).sort((a, b) => a.d - b.d);
+        // A cache in cover or guarded nearer than `clear` would still be a cache in sight or a closed one: keep clear of them all.
+        if (ROYALE_CACHES.some((c) => !open.includes(c) && dist(p, MAP.caches[c.id]) < clear)) continue;
+        if (ds[0].d < lo || ds[0].d > hi || ds[1].d < clear) continue;
+        return { p, cache: ds[0].id };
+      }
+    }
+    throw new Error(`seed ${MAP.seed}: no meadow point ${lo} to ${hi} from its nearest cache`);
+  }
+
+  it('a survivor walks at a cache only while it sees it, and roams past one it does not', () => {
+    const plan = only('loot');
+    const near = pointByCache(6, 15, 22);
+    const sees = fieldOf([fighter(1, near.p), fighter(2, at(-15, -15)), fighter(3, at(15, 15))], at(0, 15));
+    stepField(sees, step(1, seeded(1), plan), 34);
+    expect(dist(sees.fighters[0].goal!, MAP.caches[near.cache]), 'the cache in sight').toBeLessThan(0.5);
+    // Twenty-six or more away from every cache, on open ground (sight 20): none is known, so it roams.
+    const far = pointByCache(26, 40, 26);
+    const blind = fieldOf([fighter(1, far.p), fighter(2, at(-15, -15)), fighter(3, at(15, 15))], at(0, 15));
+    stepField(blind, step(1, seeded(1), plan), 34);
+    for (const c of ROYALE_CACHES) expect(dist(blind.fighters[0].goal!, MAP.caches[c.id]), `not at ${c.id}`).toBeGreaterThan(3);
+    expect(dist(blind.fighters[0].goal!, far.p)).toBeGreaterThanOrEqual(10);
+  });
+
+  it('the player also knows the caches of a section it has scouted or stood in, however far', () => {
+    const bank = ROYALE_CACHES.filter((c) => c.section === 'bank').map((c) => MAP.caches[c.id]);
+    const nearest = bank.reduce((a, b) => (dist(a, Q) <= dist(b, Q) ? a : b));
+    const field = fieldOf(crowd(), at(0, 0));
+    stepField(field, step(1, seeded(1), { ...only('hold'), plan: [strat('loot')], knows: (id) => id === 'bank' }), 34);
+    expect(dist(field.player.goal!, nearest)).toBeLessThan(0.5);
+    // Without the knowledge, and with nothing in sight, it roams.
+    const blind = fieldOf(crowd(), at(0, 0));
+    stepField(blind, step(1, seeded(1), { ...only('hold'), plan: [strat('loot')], knows: () => false }), 34);
+    expect(dist(blind.player.goal!, nearest)).toBeGreaterThan(3);
+  });
+
   it('a survivor busy in a duel takes nothing', () => {
     const { field } = atCache('ferry_shed', { duel: { foe: 2, until: 500 } });
     field.fighters[1].duel = { foe: 1, until: 500 };

@@ -1,5 +1,5 @@
 import type { EventBus } from '../engine/events';
-import type { FestivalRun, GameState, ItemInstance, RoyaleCacheDef, RoyaleDenDef, RoyaleStrategyDef } from '../types';
+import type { FestivalRun, GameState, ItemDef, ItemInstance, RoyaleCacheDef, RoyaleDenDef, RoyaleStrategyDef } from '../types';
 import { ITEMS, ROYALE_STRATEGIES, SPOTS } from '../registry';
 import {
   ARENA,
@@ -165,7 +165,9 @@ function issuedFamily(state: GameState, run: FestivalRun): string {
  * slots), worn if its slot is free and otherwise in the pack, its uid
  * recorded in `run.lent` for the attempt's end. A weapon cache lends the
  * weapon of the issued family (CACHE_WEAPONS), nothing for a family without
- * one. A heal cache restores a share of max health at once.
+ * one. A lent weapon of the issued family takes the hand from the issued
+ * weapon, which goes to the pack (`takesTheHand`), so a plan alone fights with
+ * what the field gave it. A heal cache restores a share of max health at once.
  */
 function takeCache(state: GameState, bus: EventBus, run: FestivalRun, cache: RoyaleCacheDef): void {
   const name = `${cache.icon} ${cache.name}`;
@@ -184,13 +186,39 @@ function takeCache(state: GameState, bus: EventBus, run: FestivalRun, cache: Roy
   const item: ItemInstance = { ...createItem(state, def.id), slots: 0, runes: [] };
   run.lent ??= [];
   run.lent.push(item.uid);
-  const worn = wearIfFree(state, def.slot, item);
+  const swapped = takesTheHand(state, run, def, item);
+  const worn = swapped || wearIfFree(state, def.slot, item);
   if (!worn) state.inventory.push(item);
-  bus.emit({
-    type: 'log',
-    msg: text(worn ? 'festival.cache_worn' : 'festival.cache_packed', { cache: name, icon: def.icon, item: def.name }),
-    kind: 'loot',
-  });
+  // Literal keys at each call: the log-template lint finds a template by its call site.
+  const vars = { cache: name, icon: def.icon, item: def.name };
+  const msg = swapped
+    ? text('festival.cache_swapped', vars)
+    : worn
+      ? text('festival.cache_worn', vars)
+      : text('festival.cache_packed', vars);
+  bus.emit({ type: 'log', msg, kind: 'loot' });
+}
+
+/**
+ * A lent weapon of the issued weapon's family goes into the hand in its place
+ * (the issued weapon moves to the pack) when the hand still holds the issued
+ * weapon and the lent one is a different item. There is no ranking of weapons
+ * in the code, so a different item of the same family always counts as the
+ * step up: the field's weapons are placed above the starters (CACHE_WEAPONS).
+ * Returns true when the lent weapon is now in the hand; the issued weapon
+ * stays put if the lent one cannot be wielded in its place.
+ */
+function takesTheHand(state: GameState, run: FestivalRun, def: ItemDef, item: ItemInstance): boolean {
+  const held = state.equipment.weapon;
+  if (def.slot !== 'weapon' || !held || held.uid !== run.issued || held.defId === def.id) return false;
+  if (ISSUED_WEAPONS.find((w) => def.tags.includes(w.family))?.family !== issuedFamily(state, run)) return false;
+  delete state.equipment.weapon;
+  if (!wearIfFree(state, 'weapon', item)) {
+    state.equipment.weapon = held;
+    return false;
+  }
+  state.inventory.push(held);
+  return true;
 }
 
 /** The player walks into a den: its monsters at their pinned levels, a staged fight at the arena. */

@@ -717,8 +717,7 @@ interface Royale {
 }
 
 /** In the royale with the board cleared: three survivors far from everything, nothing taken, cleared or seen, the player free. */
-function inRoyale(): Royale {
-  const game = inHall();
+function inRoyale(game: Game = inHall()): Royale {
   climb(game, ROYALE_FLOOR);
   game.tick(); // the field opens
   const s = game.state;
@@ -834,21 +833,21 @@ describe('the royale: caches and lent gear', () => {
     const vest = s.equipment.chest!;
     expect(run.lent).toContain(vest.uid);
     expect(vest.slots).toBe(0);
-    // The weapon slot holds the issued weapon, so a found weapon goes to the pack.
-    standAt(game, field, map.caches.ferry_shed);
+    // A bow is not the issued sword’s family and the weapon slot is taken, so it goes to the pack.
+    standAt(game, field, map.caches.poachers_stash);
     settle(game);
-    const sword = s.inventory.find((i) => i.defId === 'iron_sword' && run.lent!.includes(i.uid))!;
-    expect(sword).toBeDefined();
+    const bow = s.inventory.find((i) => i.defId === 'hunting_bow' && run.lent!.includes(i.uid))!;
+    expect(bow).toBeDefined();
     expect(s.equipment.weapon?.uid).toBe(run.issued);
     // Lent: not for sale.
     const gold = s.gold;
-    game.sell(sword.uid);
-    game.sellMany([sword.uid, vest.uid]);
+    game.sell(bow.uid);
+    game.sellMany([bow.uid, vest.uid]);
     expect(s.gold).toBe(gold);
-    expect(s.inventory.some((i) => i.uid === sword.uid)).toBe(true);
+    expect(s.inventory.some((i) => i.uid === bow.uid)).toBe(true);
     // Taken once: standing on it again gives nothing more.
     const lent = [...run.lent!];
-    standAt(game, field, map.caches.ferry_shed);
+    standAt(game, field, map.caches.poachers_stash);
     expect(run.lent).toEqual(lent);
     // A forfeit: everything lent goes back, wherever it is.
     climb(game, null);
@@ -862,7 +861,7 @@ describe('the royale: caches and lent gear', () => {
     const { game, s, run, field, map } = inRoyale();
     standAt(game, field, map.caches.woodcutter_hut);
     settle(game);
-    standAt(game, field, map.caches.ferry_shed);
+    standAt(game, field, map.caches.poachers_stash);
     settle(game);
     const lent = [...run.lent!];
     expect(lent.length).toBeGreaterThanOrEqual(2);
@@ -874,13 +873,68 @@ describe('the royale: caches and lent gear', () => {
     for (const uid of lent) expect(owned.some((i) => i.uid === uid), `lent ${uid}`).toBe(false);
   });
 
+  it('a lent weapon of the issued family takes the hand; the issued weapon goes to the pack; both are taken back, the held weapon returns', () => {
+    const s0 = strong(geared(atFourteen()));
+    const heldSword = s0.equipment.weapon!.uid;
+    const { game, s, run, field, map } = inRoyale(inHall(s0));
+    expect(s.equipment.weapon?.uid).toBe(run.issued);
+    expect(s.equipment.weapon?.defId).toBe('rusty_sword');
+    const issued = run.issued!;
+    // The smithy lends the weapon of the issued family: a step up on the rusty sword.
+    standAt(game, field, map.caches.smithy);
+    settle(game);
+    expect(field.taken).toContain('smithy');
+    const lentSword = s.equipment.weapon!;
+    expect(lentSword.defId).toBe(CACHE_WEAPONS.sword);
+    expect(run.lent).toContain(lentSword.uid);
+    expect(s.inventory.some((i) => i.uid === issued)).toBe(true);
+    // The hand holds a lent weapon now, not the issued one: a second one goes to the pack.
+    standAt(game, field, map.caches.trapper_cabin);
+    settle(game);
+    expect(s.equipment.weapon?.uid).toBe(lentSword.uid);
+    expect(s.inventory.some((i) => i.defId === 'wolf_fang_blade' && run.lent!.includes(i.uid))).toBe(true);
+    // Neither the lent weapons nor the issued one can be sold.
+    const gold = s.gold;
+    game.sellMany([issued, ...run.lent!]);
+    expect(s.gold).toBe(gold);
+    // A forfeit: all of it goes back, and the held sword is in the hand again.
+    const lent = [...run.lent!];
+    climb(game, null);
+    const owned = everythingOwned(s);
+    for (const uid of [issued, ...lent]) expect(owned.some((i) => i.uid === uid), `taken back ${uid}`).toBe(false);
+    expect(s.equipment.weapon?.uid).toBe(heldSword);
+  });
+
+  it('a lent weapon that is the issued item itself does not take the hand', () => {
+    const s0 = strong(atFourteen());
+    s0.skills.spear_combat = { level: 12, xp: 0 };
+    const { game, s, run, field, map } = inRoyale(inHall(s0));
+    expect(s.equipment.weapon?.defId).toBe('old_spear');
+    expect(CACHE_WEAPONS.spear).toBe('old_spear');
+    standAt(game, field, map.caches.smithy);
+    settle(game);
+    expect(field.taken).toContain('smithy');
+    expect(s.equipment.weapon?.uid).toBe(run.issued);
+    expect(s.inventory.some((i) => i.defId === 'old_spear' && run.lent!.includes(i.uid))).toBe(true);
+  });
+
+  it('a lent weapon is wielded when the hand is empty', () => {
+    const { game, s, run, field, map } = inRoyale();
+    game.unequip('weapon');
+    expect(s.equipment.weapon).toBeUndefined();
+    standAt(game, field, map.caches.trapper_cabin);
+    settle(game);
+    expect(s.equipment.weapon?.defId).toBe('wolf_fang_blade');
+    expect(run.lent).toContain(s.equipment.weapon!.uid);
+  });
+
   it('a weapon cache lends a weapon of the issued family; a heal cache restores health at once', () => {
     const { game, s, run, field, map } = inRoyale();
     // The door issued a rusty sword: the sword family.
     standAt(game, field, map.caches.smithy);
     settle(game);
     expect(field.taken).toContain('smithy');
-    expect(s.inventory.some((i) => i.defId === CACHE_WEAPONS.sword && run.lent!.includes(i.uid))).toBe(true);
+    expect([...Object.values(s.equipment), ...s.inventory].some((i) => i?.defId === CACHE_WEAPONS.sword && run.lent!.includes(i.uid))).toBe(true);
     const max = getDerivedStats(s).maxHp;
     s.resources.hp = max * 0.2;
     standAt(game, field, map.caches.fisher_hut);

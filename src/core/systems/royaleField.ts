@@ -509,8 +509,9 @@ export function stepField(field: RoyaleField, step: FieldStep, baseLevel: number
     const others = visibleTo(at, i);
     if (sees(map, at, { x: px, y: py })) others.push(playerBody());
     const s = activeStrategy(step.planOf(f.monsterId), f.hp, alive);
-    // Survivors know every cache.
-    return goalFor(s?.move ?? 'nearest', at, { others, caches: openCachesNow(), size, map, keep: f.goal, rng: step.rng });
+    // A survivor knows a cache only while it sees it: the player's rule, without the survey or the sections stood in.
+    const caches = openCachesNow().filter((c) => sees(map, at, c));
+    return goalFor(s?.move ?? 'nearest', at, { others, caches, size, map, keep: f.goal, rng: step.rng });
   };
 
   // ---- Recovery, walking ----
