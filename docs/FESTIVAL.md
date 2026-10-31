@@ -273,7 +273,7 @@ terrain only changes pace and sight.
   `loot` while the field is crowded.
 - **The end** is unchanged: the last survivor is the champion, fought alone,
   and the royale runs until one stands.
-- **The map.** The view follows the player at about 50 units across, with a
+- **The map.** The view follows the player at 60 units across, with a
   minimap of the whole field, its sections and what is known of it; a toggle
   shows the whole field.
 
