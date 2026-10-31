@@ -1991,7 +1991,10 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
         ticks: 45,
         label: 'Out to the Burnt Camp',
         returnLabel: 'Back to the Docks',
-        revealWhen: [{ type: 'stat', key: 'band:pos:ascent_f7', value: 3 }],
+        revealWhen: [
+          { type: 'stat', key: 'band:pos:ascent_f7', value: 3 },
+          { type: 'statMax', key: 'ward:f7:done', value: 0 },
+        ],
         requires: [{ type: 'stat', key: 'band:pos:ascent_f7', value: 3 }],
       },
     ],

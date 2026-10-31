@@ -268,7 +268,7 @@ describe('a monster keeps its wounds (keepsWounds)', () => {
     expect(b.hp).toBeGreaterThanOrEqual(1);
   });
 
-  it('is held to the cap, and written in place of what it carried', () => {
+  it('is held to the cap', () => {
     MONSTERS[RAT].keepsWounds = { key, share: 1 };
     const g = new Game(createInitialState(9, HALL));
     g.state.stats['flag:tutorial_done'] = 1;
@@ -276,14 +276,24 @@ describe('a monster keeps its wounds (keepsWounds)', () => {
     rat.hp = 1;
     g.selectActivity(null);
     expect(g.state.stats[key]).toBe(KEPT_WOUND_CAP);
+  });
 
-    // Untouched the next time: it came in at 5% and leaves at 5%, so with a
-    // share of 0.5 it now carries half of that.
-    MONSTERS[RAT].keepsWounds = { key, share: 0.5 };
-    const again = ratFight(g);
-    expect(again.hp).toBe(Math.max(1, Math.round(maxHpOf(again) * (1 - KEPT_WOUND_CAP))));
+  it('keeps every earlier wound, and adds share × only what this fight took', () => {
+    const g = new Game(createInitialState(11, HALL));
+    g.state.stats['flag:tutorial_done'] = 1;
+    g.state.stats[key] = 0.3;
+    // Untouched: it leaves as hurt as it came in, never healed by a retreat.
+    ratFight(g);
     g.selectActivity(null);
-    expect(g.state.stats[key]).toBeCloseTo(0.5 * (1 - again.hp / maxHpOf(again)), 10);
+    expect(g.state.stats[key]).toBeGreaterThanOrEqual(0.3 - 1e-9);
+    expect(g.state.stats[key]).toBeLessThan(0.31);
+    // Hurt to 40% of max: of the missing share, 0.3 was old; keeps old + 0.5 × the rest.
+    const before = g.state.stats[key];
+    const rat = ratFight(g);
+    rat.hp = Math.round(maxHpOf(rat) * 0.4);
+    const missing = 1 - rat.hp / maxHpOf(rat);
+    g.selectActivity(null);
+    expect(g.state.stats[key]).toBeCloseTo(before + 0.5 * (missing - before), 10);
   });
 
   it('its death deletes the stat', () => {

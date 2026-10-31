@@ -694,6 +694,9 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     for (const [slain, fights] of keepers) {
       if ((stats[slain] ?? 0) >= 1) stats[fights] = Math.max(stats[fights] ?? 0, 1);
     }
+    // The skeleton's marsh and wreck are gone: a save standing in them, walking
+    // to them or planning through them wakes on the docks.
+    pruneLostSpots(raw, (lost) => (lost.startsWith('f7_') && SPOTS.f7_docks ? 'f7_docks' : 'ascent_foot'));
     raw.version = 60;
   },
 };

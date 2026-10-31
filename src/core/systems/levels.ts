@@ -2,7 +2,7 @@ import type { GameState, MonsterInstance, QuestDef, SpotEncounter } from '../typ
 import type { EventBus } from '../engine/events';
 import { BANDS, FLOORS, floorsInBand } from '../registry';
 import { setStat } from './achievements';
-import { bandCleared, bandClearedKey, bandPosKey, clearMet, floorCleared } from './ladder';
+import { bandCleared, bandClearedKey, bandPosKey, clearLapsed, clearMet, floorCleared } from './ladder';
 import { startingLevel } from './legacy';
 import { text } from '../text/log';
 import {
@@ -138,6 +138,11 @@ export function checkFloorClears(state: GameState, bus: EventBus): void {
     // The floor's own clear: a band pass opens the way but pays no XP.
     if ((state.stats[key] ?? 0) >= 1 || !clearMet(state, floor)) continue;
     setStat(state, bus, key, 1);
+    // A clear by a lapsed ward window opens the way and pays nothing (Q24).
+    if (clearLapsed(state, floor)) {
+      bus.emit({ type: 'log', msg: text('levels.floor_lapsed', { name: floor.name }), kind: 'info' });
+      continue;
+    }
     bus.emit({ type: 'log', msg: text('levels.floor', { name: floor.name, xp: floor.clearXp }), kind: 'info' });
     grantLevelXp(state, bus, floor.clearXp);
   }

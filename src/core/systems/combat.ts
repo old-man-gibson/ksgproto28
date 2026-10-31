@@ -4851,12 +4851,12 @@ function spawnHp(state: GameState, def: MonsterDef, maxHp: number): number {
 
 /**
  * What each monster that keeps its wounds and is still standing would carry
- * away if the fight ended now, keyed by its run stat: `share` × the part of
- * its max HP it is missing (the max the spawn used: attributes before
- * conditions), held to [0, KEPT_WOUND_CAP]. Written in place of
- * the stored share, not added to it, so a fight in which it heals or is barely
- * touched leaves it less hurt than it came in. Two of one monster in a fight
- * keep the larger share. Pure: closeCombat writes it, `woundsForSave` saves it.
+ * away if the fight ended now, keyed by its run stat: every wound it came in
+ * with, plus `share` × the part of its max HP lost in this fight (the max the
+ * spawn used: attributes before conditions), held to [0, KEPT_WOUND_CAP]. A
+ * fight in which it is not touched leaves it exactly as hurt as it came in.
+ * Two of one monster in a fight keep the larger share. Pure: closeCombat
+ * writes it, `woundsForSave` saves it.
  */
 export function pendingWounds(state: GameState): Record<string, number> {
   const out: Record<string, number> = {};
@@ -4866,7 +4866,8 @@ export function pendingWounds(state: GameState): Record<string, number> {
     const kept = MONSTERS[e.defId]?.keepsWounds;
     if (!kept) continue;
     const missing = 1 - e.hp / statsFromAttrs(e.attrs).maxHp;
-    const share = Math.max(0, Math.min(KEPT_WOUND_CAP, kept.share * missing));
+    const before = Math.max(0, Math.min(KEPT_WOUND_CAP, state.stats[kept.key] ?? 0));
+    const share = Math.max(0, Math.min(KEPT_WOUND_CAP, before + kept.share * Math.max(0, missing - before)));
     out[kept.key] = Math.max(out[kept.key] ?? 0, share);
   }
   return out;

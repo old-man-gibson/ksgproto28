@@ -3,6 +3,7 @@ import { BANDS, FLOORS, FLOOR_BY_AREA, PRESTIGE_BOONS, floorsInBand } from '../r
 import { conditionsMet } from './conditions';
 import { boonRank } from './legacy';
 import { festivalLocked } from './festivalRules';
+import { WARD_WINDOWS } from '../data/wards.data';
 
 /**
  * The ladder's reads: which rungs are cleared, open, gated or sealed, where
@@ -35,6 +36,15 @@ export function ladderFloors(towerId: string): FloorDef[] {
  */
 export function clearMet(state: GameState, floor: FloorDef): boolean {
   return !!floor.clear?.length && conditionsMet(state, floor.clear);
+}
+
+/**
+ * The floor was cleared by a ward window running out, not by a kill
+ * (bands-2-3.md Q24): the way up opens, but it pays no clear XP and no
+ * harvest floor.
+ */
+export function clearLapsed(state: GameState, floor: Pick<FloorDef, 'id'>): boolean {
+  return WARD_WINDOWS.some((w) => w.floorId === floor.id && (state.stats[w.goneKey] ?? 0) >= 1);
 }
 
 /** An owned band pass covers this band (boon effect `bandPass`). */

@@ -1,6 +1,6 @@
 import type { EventBus } from '../engine/events';
 import type { GameState, WardWindowDef } from '../types';
-import { FLOORS } from '../registry';
+import { FLOORS, MONSTERS } from '../registry';
 import { WARD_WINDOWS } from '../data/wards.data';
 import { bumpStat, setStat } from './achievements';
 import { liveEnemies } from './combat';
@@ -117,7 +117,10 @@ function openWindow(state: GameState, bus: EventBus, w: WardWindowDef): void {
 function lapseWindow(state: GameState, bus: EventBus, w: WardWindowDef): void {
   const c = state.combat;
   if (c && state.spot === w.spotId && liveEnemies(c).some((e) => e.defId === w.monsterId)) return;
-  const fought = (state.stats[w.foughtKey] ?? 0) >= 1;
+  // Kept wounds are a fight's mark too: a tab closed mid-fight saves the
+  // wounds (combat.ts woundsForSave) but never closes the fight.
+  const wounds = MONSTERS[w.monsterId]?.keepsWounds;
+  const fought = (state.stats[w.foughtKey] ?? 0) >= 1 || (wounds !== undefined && (state.stats[wounds.key] ?? 0) > 0);
   setStat(state, bus, w.goneKey, 1);
   setStat(state, bus, w.doneKey, 1);
   setStat(state, bus, fought ? w.flags.fought : w.flags.unmet, 1);

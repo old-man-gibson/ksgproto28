@@ -687,9 +687,11 @@ eligible line, except where the stamp is already set. Give each form's rows
 
 **A monster that keeps its wounds — `keepsWounds`.** `keepsWounds: { key,
 share }` on a MonsterDef: when a fight ends without its death (the player
-walks away, is knocked out, climbs away), `share × (1 − hp / maxHp)` is
-written to the run stat `key` (written, not added; capped at 0.95), and its
-next spawn starts at `max(1, maxHp × (1 − stored))`. Its death deletes the
+walks away, is knocked out, climbs away), the run stat `key` keeps every
+wound it came in with plus `share` × the part of its max HP lost in that
+fight (a fraction of max HP, capped at 0.95), and its next spawn starts at
+`max(1, maxHp × (1 − stored))`. A fight in which it is not touched leaves it
+as hurt as it came in. A save taken mid-fight records the pending wound. Its death deletes the
 stat. Do not make its spot `forced`: walking away is the retreat.
 
 **A timed threat — `WARD_WINDOWS`.** data/wards.data.ts: a window opens when
@@ -698,7 +700,9 @@ a floor's position reaches `position` with the floor uncleared, and runs
 Killing `monsterId` at `spotId` in time clears the floor through the spot's
 `stampOnClear` (which must be `doneKey`). At the lapse the engine sets
 `goneKey` and `doneKey` together and exactly one of `flags`, silently:
-`fought` if the player ever dealt it damage, else `unmet`. The threat's
+`fought` if the player ever dealt it damage (or it still carries kept
+wounds), else `unmet`. A floor cleared by the lapse pays no clear XP and no
+harvest floor (`clearLapsed`, ladder.ts). The threat's
 row reads `statMax doneKey 0`. The forge and content.test.ts check every
 entry (systems/wardValidation.ts).
 
