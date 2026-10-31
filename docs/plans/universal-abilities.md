@@ -189,11 +189,27 @@ Each step ships alone and is verified before the next.
    `fighter.maxHp`, which in IG is a multiplier slot and in KSG is
    unregistered, where `fighter.maxHpAbs` is the maximum. And in KSG the
    mortality proof is inert until K2 supplies `probeSlice`/`probeNative`.
-2. **Solar Charge in KSG.** Core additions 1 and 4; a sunlight quantity; the
-   carrier fix above; the save field and bump moved from K1.
-   Done: banks in sunlight outside combat, drains in the dark and indoors,
-   empowers by fill, falls to −30% at empty, survives save, load and offline
-   catch-up.
+2. **Solar Charge in KSG. Built 2026-10-31 on branch `solar-charge`
+   (cb61579, unmerged).** Core (Facet dc9e80b, bea3ffa): carriers applied at
+   attach and whenever missing (`carrierSync`); a cell may describe its
+   carrier (`status: { mods, desc }`); a modifier may name a shared quantity
+   id (`q`) that each host maps to its own stat; `Facet.minute(ref)`; the
+   `frac` default reads `fighter.maxHpAbs`; `facet.bank.js` holds the bank as
+   documents. The run tier needed no core code: cell values live in the
+   document, and the document in `state.facets` (save v61, `MIGRATIONS[60]`).
+   KSG: `world.sunlight` (exposure.ts `sunlight`), `tickFacets` in
+   `Game.advance`, `bindFacets` following whichever state advances (offline
+   catch-up ticks a detached copy), a sidebar readout, and debug-panel grant,
+   charge and teleport buttons. IG's branch `facet-repo` carries the same
+   core (0f32ce2; its tests pass).
+   The document reads the user's 2026-10-29 prose: power follows the charge,
+   +20% from half charge up, a straight line down to −30% at empty, on damage
+   and spell power. Placeholders the user has not set: the +20% peak, the 50%
+   knee, the fill and drain rates (from the 2026-09-26 card), MAIN = CON + WIS
+   with gear counted, starting empty (a fresh grant opens at −30%), and the
+   discovery moment (debug grant only). Seen in play: with CON and WIS near
+   157, the fill beats the drain only above about 23% sunlight, so rain by
+   day drains the bank.
 3. **Solar Charge in IG.** A day clock and sunlight read in IG; the same
    document runs unchanged.
 4. **Calorie Burn.** Core addition 2. KSG first, then IG's calories and
