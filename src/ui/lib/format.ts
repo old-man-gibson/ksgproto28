@@ -272,6 +272,9 @@ export function termText(cond: UnlockCondition, state: GameState): string {
     if (cond.key === 'quests:completed') {
       return `Complete ${cond.value} quests (${Math.min(have, cond.value)}/${cond.value})`;
     }
+    // Every tag a corpse carried counts once (achievements.data.ts): band 2's goblin gates, band 5's desert ones.
+    const tag = cond.key.match(/^kills:tag:(.+)$/);
+    if (tag) return `Kill ${cond.value} ${tag[1]} monsters (${Math.min(Math.floor(have), cond.value)}/${cond.value})`;
   }
   return condText(cond);
 }
