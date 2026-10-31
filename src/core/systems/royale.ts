@@ -9,7 +9,6 @@ import {
   ROYALE_DENS,
   ROYALE_LAYOUT_VERSION,
   ROYALE_PLAN_SLOTS,
-  SURVIVOR_CHAMPION,
   SURVIVOR_LEVELS,
   SURVIVOR_SPECIES,
 } from '../data/festival.data';
@@ -22,6 +21,7 @@ import { heal, hpFraction } from './health';
 import { availableMax } from './resources';
 import { championFight, clearEngaged, createField, restoreChampion, stepField } from './royaleField';
 import { sectionKnown } from './royaleTerrain';
+import { survivorMember } from './survivorGen';
 import { createItem } from './runes';
 import { text } from '../text/log';
 
@@ -141,11 +141,9 @@ export function tickRoyale(state: GameState, bus: EventBus, run: FestivalRun): v
     state,
     bus,
     SPOTS[ARENA],
-    result.engaged.map((f) => ({
-      monsterId: last ? SURVIVOR_CHAMPION : f.monsterId,
-      level: survivorLevel(run.clock, f.wins, last),
-      hpShare: f.hp,
-    })),
+    // Each survivor fights as its generated build: name, kit, attribute
+    // emphasis (systems/survivorGen.ts, docs/FESTIVAL.md §9.6).
+    result.engaged.map((f) => survivorMember(field.seed ?? 0, f, survivorLevel(run.clock, f.wins, last), f.hp, last)),
   );
 }
 

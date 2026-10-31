@@ -1,6 +1,6 @@
 <script lang="ts">
   import { gs, game } from '../state.svelte';
-  import { MONSTERS, ROYALE_STRATEGIES, SPOTS } from '../../core/registry';
+  import { ITEMS, MONSTERS, ROYALE_STRATEGIES, SPOTS } from '../../core/registry';
   import {
     ARENA,
     ROYALE_DENS,
@@ -11,6 +11,7 @@
   } from '../../core/data/festival.data';
   import { royalePlan } from '../../core/systems/royale';
   import { mapOf, sectionAt, sectionKnown, sightAt } from '../../core/systems/royaleTerrain';
+  import { survivorBuild } from '../../core/systems/survivorGen';
   import { MS_PER_TICK } from '../../core/engine/loop';
   import type { FieldFighter, MonsterInstance, RoyaleStrategyDef } from '../../core/types';
   import { msToTime } from './format';
@@ -109,6 +110,25 @@
 
   const radar = $derived(field ? radarView(field, gs.totalTicks) : null);
   const shown = $derived(field && map && radar ? visibleFighters(map, field, radar) : []);
+
+  /** The survivors in sight as people: name, weapon, tools taken, nearest first. */
+  const sighted = $derived(
+    field
+      ? [...shown]
+          .sort((a, b) => Math.hypot(a.x - field.player.x, a.y - field.player.y) - Math.hypot(b.x - field.player.x, b.y - field.player.y))
+          .map((f) => {
+            const build = survivorBuild(field.seed ?? 0, f);
+            return {
+              id: f.id,
+              icon: icon(f),
+              name: build.name,
+              weapon: build.weapon ? (ITEMS[build.weapon]?.name ?? build.weapon) : 'bare hands',
+              tools: f.tools?.length ?? 0,
+              engaged: !!f.engaged,
+            };
+          })
+      : [],
+  );
   const features = $derived(
     field && map ? visibleFeatures(map, field, (id) => sectionKnown(gs, field, id), field.player) : [],
   );
@@ -371,6 +391,18 @@
         />
       </div>
     </div>
+
+    <!-- Who is in sight: each survivor's generated build (systems/survivorGen.ts). -->
+    {#if shown.length}
+      <details class="royale-known small">
+        <summary>In sight ({shown.length})</summary>
+        <ul>
+          {#each sighted as s (s.id)}
+            <li>{s.icon} {s.name}: {s.weapon}{s.tools ? `, ${s.tools} found` : ''}{s.engaged ? ', fighting you' : ''}</li>
+          {/each}
+        </ul>
+      </details>
+    {/if}
 
     {#if features.length}
       <details class="royale-known small">

@@ -306,6 +306,24 @@ const round = (v: number, places: number): number => {
   return Math.round(v * k) / k;
 };
 
+/**
+ * A survivor's build `power`, by seed, id, species and tools: the field reads
+ * every survivor's power every tick, so it is kept. Bounded; cleared whole
+ * when full. Only the number is kept: `survivorBuild` returns a fresh build.
+ */
+const POWERS = new Map<string, number>();
+const POWERS_MAX = 2048;
+
+export function survivorPower(fieldSeed: number, fighter: SurvivorSubject): number {
+  const key = `${fieldSeed}|${fighter.id}|${fighter.monsterId}|${(fighter.tools ?? []).join(',')}`;
+  const hit = POWERS.get(key);
+  if (hit !== undefined) return hit;
+  if (POWERS.size >= POWERS_MAX) POWERS.clear();
+  const power = survivorBuild(fieldSeed, fighter).power;
+  POWERS.set(key, power);
+  return power;
+}
+
 export function survivorBuild(fieldSeed: number, fighter: SurvivorSubject): SurvivorBuild {
   const id = fighter.id;
   const given = givenName(fieldSeed, id);

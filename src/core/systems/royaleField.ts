@@ -12,6 +12,7 @@ import {
 } from '../data/festival.data';
 import type { RoyaleMap } from './royaleMap';
 import { cacheOpen, denLive, mapOf, radarOn, sectionAt, sees } from './royaleTerrain';
+import { survivorPower } from './survivorGen';
 
 /**
  * The royale's field as a pure simulation (docs/FLOOR_IDEAS.md §5.3 items 13
@@ -94,9 +95,19 @@ function speciesWeight(monsterId: string): number {
  * wounds weaker, and each tool from a cache adds a little (`toolBonus`, up to
  * `toolCap` tools). On the player's scale (a level) so the two can be compared.
  */
-export function fighterPower(f: Pick<FieldFighter, 'monsterId' | 'wins' | 'hp' | 'tools'>, baseLevel: number): number {
-  const tools = Math.min(ROYALE_FIELD.toolCap, f.tools?.length ?? 0);
-  return (baseLevel + f.wins + tools * ROYALE_FIELD.toolBonus) * speciesWeight(f.monsterId) * (0.5 + 0.5 * f.hp);
+export function fighterPower(
+  f: Pick<FieldFighter, 'monsterId' | 'wins' | 'hp' | 'tools'> & Partial<Pick<FieldFighter, 'id'>>,
+  baseLevel: number,
+  seed?: number,
+): number {
+  // On a seeded field the survivor's generated build sizes it: archetype,
+  // weapon and every tool (systems/survivorGen.ts, capped). Without a seed
+  // or an id, a flat bonus per tool.
+  const gear =
+    seed === undefined || f.id === undefined
+      ? Math.min(ROYALE_FIELD.toolCap, f.tools?.length ?? 0) * ROYALE_FIELD.toolBonus
+      : survivorPower(seed, { id: f.id, monsterId: f.monsterId, tools: f.tools });
+  return (baseLevel + f.wins + gear) * speciesWeight(f.monsterId) * (0.5 + 0.5 * f.hp);
 }
 
 /** Two decimals: positions are drawn, not measured, and the save stays small. */
@@ -418,7 +429,7 @@ export function stepField(field: RoyaleField, step: FieldStep, baseLevel: number
       f.lastFight = now;
       const den = DENS.get(duel.den);
       if (!den || !denLive(field, den)) continue;
-      const pa = fighterPower(f, baseLevel);
+      const pa = fighterPower(f, baseLevel, field.seed);
       const pd = denPower(den);
       if (step.rng() < pa / (pa + pd)) {
         cleared.push(den.id);
@@ -435,8 +446,8 @@ export function stepField(field: RoyaleField, step: FieldStep, baseLevel: number
       delete f.duel;
       continue;
     }
-    const pa = fighterPower(f, baseLevel);
-    const pb = fighterPower(foe, baseLevel);
+    const pa = fighterPower(f, baseLevel, field.seed);
+    const pb = fighterPower(foe, baseLevel, field.seed);
     const [winner, loser] = step.rng() < pa / (pa + pb) ? [f, foe] : [foe, f];
     fallen.add(loser.id);
     delete winner.duel;
@@ -456,7 +467,7 @@ export function stepField(field: RoyaleField, step: FieldStep, baseLevel: number
   const xs = live.map((f) => f.x);
   const ys = live.map((f) => f.y);
   const busy = live.map((f) => !!f.duel || !!f.engaged);
-  const powers = live.map((f) => fighterPower(f, baseLevel));
+  const powers = live.map((f) => fighterPower(f, baseLevel, field.seed));
   const player = field.player;
   let px = player.x;
   let py = player.y;
