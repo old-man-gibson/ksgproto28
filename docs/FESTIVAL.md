@@ -161,3 +161,132 @@ play in probes with strong fighters). John stops at floor 6.
 - The festival's own monsters, the technique pool and the rewards are
   placeholders.
 - The stash's UI sits on the Prestige tab, not in the hold.
+
+## 9. Rework: the prep hub and the royale's field (user, 2026-10-30)
+
+**As posted.** *"Prep stage: there's too little to do after the dark room.
+It's practically impossible to fill the 10 days meaningfully."* *"The arena
+needs to be bigger, like a forest with several different sections to explore
+and fight in: forest, river and bank, a glade, a deserted village with various
+houses and shops like a smithy, baker, guard post, a waterfall, a cave, a
+cliff. All of those either feature other fighters, monsters, equipment, etc.
+It's basically a miniature stage, and fighters will always get a 'radar' to
+the closest enemy direction after 1 hour without fighting. The battle royale
+goes on until there is one winner."*
+
+### 9.1 The prep hub: ten days as a budget
+
+**The gap in numbers.** Ten festival days are 144,000 ticks: four hours of
+play, two on bonus time. The hub holds seven finds in the stores (about 14
+minutes of searching), a cooking bench, a rest and two training activities.
+Everything after the first quarter hour is training STR or DEX.
+
+**The rule.** Every hub activity turns festival time into something the
+royale reads, and the hub's stock is finite, so the ten days are a set of
+choices. Doing all of it takes about eight to ten days; a rerun that skips
+what it already knows enters early.
+
+| Spot | Activities | System | Stock | Time | What the royale gets |
+|---|---|---|---|---|---|
+| `f15_hall` (kept) | rest, drill STR, spar DEX, cooking bench | cooking, attributes | — | open-ended | meals that last into the royale (cooking: long, out of combat) |
+| `f15_stores` (kept, more) | search: rations, meat, salve, plus more cooking ingredients | cooking | about 12 finds an attempt | 2 h a find | ingredients |
+| `f15_survey` (new) | search: one find per royale section; each sets `flag:festival:scouted:<section>` | — | 8 finds, once per RUN, not restocked | 12 h a find (4 days for all 8) | a scouted section shows its caches and dens on the royale's map before you walk in |
+| `f15_herb_yard` (new) | search: herbs | alchemy | about 8 finds an attempt | 2 h a find | ingredients for the workshop's alembic |
+| `f15_workshop` (new) | alchemy bench, forging bench; search: scrap | alchemy, smithing | about 6 scrap finds an attempt | 2 h a find | flasks for the fights; plain pieces forged from scrap |
+| `f15_gallery` (new) | train several attributes at once (watching the others drill), rest | attributes | — | open-ended | attributes |
+
+- **Restock.** Every search in `FESTIVAL_RESTOCK` (stores, herb yard,
+  workshop) resets its limits when an attempt starts, as the stores do
+  today. The survey's finds belong to the run: the field is authored, so
+  what was scouted stays scouted until the prestige.
+- **Kept.** What the hub's searches and benches put in the player's hands
+  stays theirs after the attempt (§2's rule; the stores' rations already
+  do). A farm loop is an attempt, a forfeit and a three-day lockout per
+  restock.
+- No new activity kind: search, train, rest and benches only. The survey is
+  a search whose rewards set flags.
+
+### 9.2 The royale's field: a miniature stage
+
+The isometric field stays (§5.3 item 13). It grows from 60 to 120 units
+across (four times the area) and gets terrain: named **sections**, each an
+authored set of rectangles on the field; the first section whose rectangle
+holds a point owns it, and a point no section holds is open meadow.
+
+| Section | Where | Pace | Sight | Features |
+|---|---|---|---|---|
+| Cliff | a ridge along the far edge | 0.6 | 1.6 | a harpy nest (den) |
+| Waterfall | the river's head, below the cliff | 0.6 | 0.8 | a serpent den guarding a cache |
+| River | a band from the waterfall to the near edge | 0.4 | 1.0 | — (crossing is slow) |
+| Bank | a strip either side of the river | 1.0 | 1.0 | a fisher's cache |
+| Forest | the large west block | 0.8 | 0.5 | a wolf den guarding the hunter's cache |
+| Glade | a clearing inside the forest | 1.0 | 1.2 | a spring: heals while standing in it |
+| Cave | the north-east corner | 0.7 | 0.3 | a bear den guarding the deep cache |
+| Village | the south-east block | 1.0 | 0.7 | the smithy (weapon), the guard post (armour, a hound den), the baker (food), three houses (small finds) |
+| Meadow | everything else | 1.0 | 1.0 | — |
+
+- **Pace** multiplies a fighter's walking speed while it stands in the
+  section. **Sight** multiplies how far a fighter standing there sees
+  (`ROYALE_FIELD.sight`, 20 units). A fighter in a section with cover
+  (forest, cave) is seen at half range.
+- **Fog.** The player sees the fighters within their sight, and no others.
+  A section's features show once it is scouted (9.1), once the player has
+  stood in it this attempt, or while they are in sight.
+- **Caches.** A point; the first fighter to reach it takes it, once an
+  attempt. The player gets a piece of equipment lent for the attempt (worn
+  if the slot is free, taken back at the end with the issued weapon) or an
+  instant effect (a share of health back). A survivor that takes one gains a
+  level, as a win does, under its own cap.
+- **Dens.** Monsters that stay inside a radius, some guarding a cache. A
+  survivor that walks in fights the den as a duel (one weighted roll) and may
+  fall to it, which thins the field. The player walking in gets a staged
+  fight with the den's monsters at their pinned levels; won, the den is
+  cleared and its cache opens. Den monsters drop nothing (§5's reruns rule).
+  A knockout there is a festival loss like any other on floor 16.
+- **Radar.** Every fighter, the player included, that has not fought for one
+  festival hour (`RADAR_TICKS`, 600 ticks: a duel, a fight with the player or
+  with a den) knows the direction and distance to the nearest enemy, sight or
+  no sight. Survivors walk at it; the player's plan reads it as in sight; the
+  map draws an arrow, and a countdown until it switches on.
+- **New moves.** `loot` (the nearest known open cache), `roam` (the fallback
+  when nobody is in sight and there is no radar: walk to a point in another
+  section), `cover` (the nearest section with cover). The default plans gain
+  `loot` while the field is crowded.
+- **The end** is unchanged: the last survivor is the champion, fought alone,
+  and the royale runs until one stands.
+- **The map.** The view follows the player at about 50 units across, with a
+  minimap of the whole field, its sections and what is known of it; a toggle
+  shows the whole field.
+
+### 9.3 State and save
+
+- `run.field` gains optional fields: caches taken, dens cleared, sections
+  the player has stood in, each fighter's and the player's last fight tick,
+  a survivor's cache levels. A field without the new layout marker is
+  replaced whole on the next tick (the existing rule for the old counter
+  field), so a save taken mid-royale before the rework restarts its field.
+  No save version change.
+- `run.lent`: uids of royale finds, taken back when the attempt ends, as the
+  issued weapon is.
+
+### 9.4 Build split
+
+| Who | Files |
+|---|---|
+| Manager (base commit) | types; the layout data (sections, caches, dens) in festival.data.ts; `FESTIVAL_RESTOCK` and the restock loop |
+| Builder A, the field engine | royaleField.ts, royale.ts, the lent-gear return in festival.ts, the den monsters (monsters data and text), tests, a probe of how long a plan-only royale lasts |
+| Builder B, the field UI | RoyaleField.svelte (sections, features, fog, radar arrow and countdown, camera and minimap) and a read-only preview of the scouted field in the hub |
+| Builder C, the prep hub | the f15 spots, activities and text in locations data and text, the hub's materials or recipes if any are missing |
+
+### 9.5 Questions (defaults built)
+
+| # | Question | Default |
+|---|---|---|
+| F1 | Royale finds: lent for the attempt, or kept | Lent: taken back at the end |
+| F2 | The hub's stock | Restocked each attempt, except the survey (once a run) |
+| F3 | Fog on fighters | On: only fighters in sight show; the radar finds the rest |
+| F4 | Can den monsters kill survivors | Yes, a survivor can fall to a den |
+| F5 | Field size | 120 units across, four times today's area |
+| F6 | How long a plan-only royale should last | About 2 to 4 festival hours (12 to 24 minutes of play) |
+| F7 | Hub budget | Doing everything takes about 8 to 10 of the 10 days |
+| F8 | What the hub's searches and benches give | Kept after the attempt, as the stores' rations are today |
