@@ -93,5 +93,8 @@ User call: narrow the alpha slice.
   item windows or shop cards. Items still roll slots underneath.
 - Migration v54 → v55 stamps `flag:unlock_martial` and `flag:unlock_prep` on
   older saves (same rule as v47: a save that has had a system keeps it).
+- Prestige keeps every opened shutter (2026-10-30). Before that, `prestigeNow`
+  rebuilt the state from `createInitialState` and dropped them, so a stamped
+  save lost the rotation editor at its first prestige or stronghold run end.
 - Version note: `claude/kind-tesla-7sqw30` (cloud branch) defines a DIFFERENT
   v53 → v54 migration than this line. Reconcile before merging both.

@@ -25,6 +25,7 @@ import { getDerivedStats } from '../src/core/systems/derived';
 import { attrBreakdown, attrValue, collectBaseMods } from '../src/core/systems/attributes';
 import { preparedCap } from '../src/core/systems/spellcraft';
 import { startTravel } from '../src/core/systems/locations';
+import { LOCKABLE_SUBSYSTEMS, subsystemUnlocked, unlockKey } from '../src/core/systems/unlocks';
 import type { GameState } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
@@ -167,6 +168,18 @@ describe('the reset', () => {
     expect(next.stats['prestige:count']).toBe(1);
     expect(next.stats['legacy:stronghold']).toBeUndefined();
     expect(startTravel(next, new EventBus(), 'base_entrance')).toBe(false);
+  });
+
+  it('keeps every opened alpha shutter and leaves shut ones shut', () => {
+    const s = bandOneCleared();
+    s.stats[unlockKey('martial')] = 1;
+    s.stats[unlockKey('music')] = 1;
+    const next = prestigeNow(s, 1)!;
+    expect(subsystemUnlocked(next, 'martial')).toBe(true);
+    expect(subsystemUnlocked(next, 'music')).toBe(true);
+    for (const id of LOCKABLE_SUBSYSTEMS.filter((x) => x !== 'martial' && x !== 'music')) {
+      expect(subsystemUnlocked(next, id), id).toBe(false);
+    }
   });
 
   it('counts up across runs and keeps unspent points', () => {
