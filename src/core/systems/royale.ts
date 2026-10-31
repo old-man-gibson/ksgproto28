@@ -162,8 +162,7 @@ function issuedFamily(state: GameState, run: FestivalRun): string {
  * An item or weapon is lent for the attempt: a plain copy (no affix, no rune
  * slots), worn if its slot is free and otherwise in the pack, its uid
  * recorded in `run.lent` for the attempt's end. A weapon cache lends the
- * weapon of the issued family (CACHE_WEAPONS), nothing for a family without
- * one. A lent weapon of the issued family takes the hand from the issued
+ * weapon of the issued family (CACHE_WEAPONS; bare hands get gauntlets). A lent weapon of the issued family takes the hand from the issued
  * weapon, which goes to the pack (`takesTheHand`), so a plan alone fights with
  * what the field gave it. A heal cache restores a share of max health at once.
  */

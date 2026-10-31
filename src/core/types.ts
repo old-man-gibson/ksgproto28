@@ -5332,8 +5332,6 @@ export interface FieldFighter {
   goal?: { x: number; y: number };
   /** World tick its last fight ended (duel or den); absent = the royale's start. The radar reads it. */
   lastFight?: number;
-  /** Levels from caches taken, under their own cap. */
-  loot?: number;
   /**
    * ItemDef ids this survivor took from caches (docs/FESTIVAL.md §9.6): they
    * count in its duels and join its kit (systems/survivorGen.ts) when it

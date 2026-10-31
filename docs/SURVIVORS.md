@@ -69,6 +69,9 @@ merge in at build time:
 - **Healing.** A consumable restoring health becomes one more `litany_mending`
   entry with `uses: 1`, at the end of the rotation, up to `SURVIVOR_TOOLS.heals`.
   A rotation has no health condition, so a mending fires at its first opening.
+  Not reached from the field today: a heal cache heals a survivor on the spot
+  and puts nothing in its tools. The branch is a hook for a cache that hands
+  out a healing consumable.
 - Ids nothing knows are ignored.
 
 ## 4. The call site

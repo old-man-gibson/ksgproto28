@@ -340,10 +340,11 @@ export function denPower(den: { foes: { level: number }[] }): number {
  * (ISSUED_WEAPONS): one step above that family's starter, so a plan alone
  * fights with something better than it was issued. The festival's own
  * weapons (data/items.data.ts) are lent by caches only; the sword family
- * uses the catalog's iron sword. A family missing here (bare hands) lends
- * nothing from a weapon cache.
+ * uses the catalog's iron sword. Bare hands have no weapon to be given, so
+ * a weapon cache gives them iron gauntlets, worn on the hands they fight with.
  */
 export const CACHE_WEAPONS: Record<string, string> = {
+  unarmed: 'iron_gauntlets',
   sword: 'iron_sword',
   spear: 'festival_spear',
   dagger: 'festival_dagger',

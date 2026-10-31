@@ -114,6 +114,11 @@ time in a run; losing shuts both floors for three days.
 
 ## 6. The royale's field (`royaleField.ts`)
 
+*Reworked 2026-10-30 (§9): the field is 180 across and generated per attempt
+(`royaleMap.ts`), with sections, fog, the radar, 35 caches, 5 dens, tools and
+generated survivor builds (`survivorGen.ts`, docs/SURVIVORS.md). What follows
+is the walking and fighting core underneath; §9 says what was added to it.*
+
 - A square `ROYALE_FIELD.size` across. Ninety-nine survivors scattered over it
   in the species of `SURVIVOR_SPECIES`; the player on the near edge.
 - **Walking**: every fighter walks `speed` a tick toward a goal its strategy
@@ -147,14 +152,21 @@ time in a run; losing shuts both floors for three days.
 |---|---|---|
 | Dark room waves and levels | `DARK_ROOM_WAVES` | 2, 3, 3, then 1; levels 32–35 |
 | Survivor levels | `SURVIVOR_LEVELS` | 34 + 3 over ten days + up to 2 for wins; champion + 1 |
-| Field pace | `ROYALE_FIELD` | size 60, speed 0.2, duels 100 ticks |
+| Field pace | `ROYALE_FIELD` | size 180, speed 0.2, duels 100 ticks, sight 20 |
+| Spawns | `ROYALE_FIELD` | 8 apart, 30 from the start, 12 from any cache, outside den radii + 3 |
+| Caches | `ROYALE_CACHES`, `ROYALE_FIELD` | 35; taken within 1.5; a survivor notices one within 3 |
+| Dens | `ROYALE_DENS` | 5, levels 33–37 |
+| Radar | `RADAR_TICKS` | one festival hour without a fight |
+| Survivor builds | `data/survivors.data.ts` | 10 archetypes; build power capped at 6 levels in duels |
 | Lockout | `LOCKOUT_TICKS` | 3 world days |
 | Token bonus | `TOKEN_BONUS` | +3% damage and max HP a stack, cap 5 |
 
 Not measured: whether a floor-15 build wins the dark room with a starter
 weapon and no armour (a probe with every attribute at 40 lost it; at 60 it
-won), and how long the royale lasts for a real build (about 70–120 seconds of
-play in probes with strong fighters). John stops at floor 6.
+won), and whether a real floor-15 build wins the reworked royale against
+generated survivors and dens. A strong build (every attribute at 400) on the
+default plan wins it in 2.8–4.4 festival hours, which is 3–4 minutes of play.
+John stops at floor 6.
 
 ## 8. Open
 
@@ -265,8 +277,8 @@ terrain only changes pace and sight.
 - **Caches.** A point; the first fighter to reach it takes it, once an
   attempt. The player gets a piece of equipment lent for the attempt (worn
   if the slot is free, taken back at the end with the issued weapon) or an
-  instant effect (a share of health back). A survivor that takes one gains a
-  level, as a win does, under its own cap.
+  instant effect (a share of health back). A survivor that takes an item
+  keeps it as a tool (§9.6); a heal cache heals it.
 - **Dens.** Monsters that stay inside a radius, some guarding a cache. A
   survivor that walks in fights the den as a duel (one weighted roll) and may
   fall to it, which thins the field. The player walking in gets a staged
@@ -377,4 +389,6 @@ proper enemies and not just stat sticks with some numbers."*
   fight with the player the survivor is its species' monster at its level,
   carrying that build as `MonsterInstance.kit`, which combat reads before the
   def (`kitOf`).
-- **The map** shows a seen survivor's name, archetype and weapon on hover.
+- **The map** lists the survivors in sight under it ("In sight"): name, weapon
+  and tools found. A hover tooltip was not possible: the map's marks let
+  clicks through to the ground.

@@ -765,8 +765,10 @@ describe('the field’s weapons', () => {
   it('every weapon cache lends a real step up on its family’s starter, in the same family, slot and wield', () => {
     for (const w of ISSUED_WEAPONS) {
       if (!w.item) {
-        // Bare hands: nothing to lend.
-        expect(CACHE_WEAPONS[w.family], w.family).toBeUndefined();
+        // Bare hands: no weapon to give, so gauntlets for the hands they fight with.
+        const lent = ITEMS[CACHE_WEAPONS[w.family]];
+        expect(lent, w.family).toBeDefined();
+        expect(lent.slot, w.family).toBe('hands');
         continue;
       }
       const lent = CACHE_WEAPONS[w.family];
