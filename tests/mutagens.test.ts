@@ -2259,17 +2259,17 @@ describe('what a gene ability says about itself', () => {
     // The bug this whole pass started from: "0 bludgeoning damage", where the
     // zero came from a price with no terms and the type from a `?? ` fallback.
     expect(geneAbilityLanded(g.state)).toBeNull();
-    expect(lines(g)).not.toMatch(/damage/);
+    expect(lines(g)).not.toMatch(/\d\S* \w+ damage/);
     expect(lines(g)).not.toMatch(/bludgeoning/);
   });
 
   it('says what the volley does instead', () => {
     const said = lines(wearing('asurendra_vashkara'));
-    expect(said).toMatch(/every floating grip/i);
+    expect(said).toMatch(/telekinetic weapons/i);
     expect(said).toMatch(/\d+ strikes/);
     // And is explicit that the damage is not its own — the one thing a player
     // reading a burst ability will otherwise assume.
-    expect(said).toMatch(/Lands no blow of its own/i);
+    expect(said).toMatch(/No damage of its own/i);
   });
 
   it('quotes the wind-up at what actually arrives, and says when', () => {
@@ -2282,7 +2282,7 @@ describe('what a gene ability says about itself', () => {
     // quoted the bare figure understated the blow by the whole crit build.
     expect(geneAbilityLanded(g.state)).toBeCloseTo(bare * Math.max(1, stats.critDamage));
     expect(lines(g)).toMatch(/when it lands/);
-    expect(lines(g)).toMatch(/Begins rather than lands/);
+    expect(lines(g)).toMatch(/Wind-up: the hit lands/);
   });
 
   it('names the ward a zero-damage blow is actually for', () => {

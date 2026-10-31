@@ -605,8 +605,10 @@ export function mutagenLines(def: MutagenDef): string[] {
   if (def.rekey) {
     const element = DAMAGE_TYPE_NAMES[def.rekey.to].toLowerCase();
     if (def.rekey.kind === 'vulnerability') {
-      out.push(`Rewrites a weakness of this body to ${element} — the same size, pointed elsewhere`);
-      out.push('Nearest to the centromere rewrites the first; a body with no weakness is untouched');
+      out.push(`Changes one of your weaknesses to ${element}, same size`);
+      out.push(
+        'The one nearest the centromere changes your first weakness, the next nearest your second; no effect once weaknesses run out',
+      );
     } else {
       out.push(`Rewrites ${def.rekey.kind} to ${element}${PENDING}`);
     }
@@ -676,7 +678,7 @@ export function geneAbilityLines(state: GameState): string[] {
   const out: string[] = [];
   if (spec.type === 'buff') {
     out.push(spec.mods.map((m) => describeMod(m)).join(' · '));
-    out.push(`Holds for ${ticksToTime(spec.duration)}`);
+    out.push(`Lasts ${ticksToTime(spec.duration)}`);
     return out;
   }
   if (spec.type !== 'gene') return out;
@@ -712,7 +714,7 @@ export function geneAbilityLines(state: GameState): string[] {
     );
   }
   if (spec.incant) {
-    mults.push(`×${Math.max(1, stats.critDamage).toFixed(2)} for a crit it cannot miss`);
+    mults.push(`×${Math.max(1, stats.critDamage).toFixed(2)} crit damage (always crits)`);
   }
   // The headline, only when there IS one. An ability that lands no blow of its
   // own says what it does instead, below.
@@ -721,7 +723,7 @@ export function geneAbilityLines(state: GameState): string[] {
   // than as the point, which is the ward underneath it.
   const doesElse = !!spec.grants?.length || !!spec.inflicts?.length || !!spec.clearsField;
   if (landed !== null && Math.round(landed) === 0 && doesElse) {
-    out.push('Lands for nothing on its own — what it does, it does by what it leaves');
+    out.push('Deals no damage; its effects are the lines below');
   } else if (landed !== null) {
     const type = DAMAGE_TYPE_NAMES[spec.damageType ?? 'bludgeoning'].toLowerCase();
     out.push(
@@ -741,20 +743,20 @@ export function geneAbilityLines(state: GameState): string[] {
   if (spec.volley) {
     const hits = Math.max(1, Math.round(atGrade(spec.volley.hits, grade)));
     out.push(
-      `Turns every floating grip at once — ${hits} strikes over ${ticksToTime(spec.volley.ticks)}`,
+      `Your telekinetic weapons make ${hits} strikes in total over ${ticksToTime(spec.volley.ticks)}, taking turns`,
     );
-    out.push('Lands no blow of its own: each strike is an ordinary swing of whatever that grip holds.');
+    out.push('No damage of its own: each strike is a normal hit from that weapon');
   }
   if (spec.incant) {
     const ticks = Math.max(1, Math.round(atGrade(spec.incant.ticks, grade)));
     out.push(
-      `Begins rather than lands — the blow falls ${ticksToTime(ticks)} later, and your bar fills` +
-        ` at ${pct(spec.incant.fillMult)} of its rate until it does`,
+      `Wind-up: the hit lands ${ticksToTime(ticks)} after you use it; your action bar fills` +
+        ` at ${pct(spec.incant.fillMult)} speed until then`,
     );
   }
   if (spec.clearsField) {
-    out.push('Tears every condition out of the air — yours as readily as theirs');
-    out.push('Worth as much again for each one it unsaid');
+    out.push('Removes every condition from everyone in the fight, you included');
+    out.push('Damage × the number of conditions removed (unchanged if none)');
   }
   for (const app of spec.grants ?? []) {
     const held = spec.grantDuration
@@ -772,19 +774,21 @@ export function geneAbilityLines(state: GameState): string[] {
   }
   // `splashAll` is a capability and `splash` is a share; a spec that declares
   // only the first was advertising "every enemy, for 0% of the blow".
+  // Without a share of its own, splashAll only redirects splash from other
+  // sources (combat.ts sums them all before picking flankers).
   if (spec.splashAll && spec.splash) {
-    out.push(`Reaches every enemy for ${pct(spec.splash)} of the blow`);
-  } else if (spec.splashAll) out.push('Carries into every flanker standing');
-  else if (spec.splash) out.push(`${pct(spec.splash)} carries into a flanker`);
+    out.push(`${pct(spec.splash)} of the hit also hits every other enemy`);
+  } else if (spec.splashAll) out.push('Splash from other sources hits every other enemy instead of one');
+  else if (spec.splash) out.push(`${pct(spec.splash)} of the hit also hits a random flanker`);
   if (spec.sizeDouble) {
-    out.push(`Doubles for every ${spec.sizeDouble} sizes the target is beneath you`);
+    out.push(`Damage ×2 for every ${spec.sizeDouble} size steps the target is smaller than you`);
   }
   if (spec.execute) {
-    out.push(`Finishes anything left standing under ${pct(spec.execute)} of what landed`);
+    out.push(`Kills the target if its remaining HP is at or below ${pct(spec.execute)} of the damage this hit dealt`);
   }
-  if (spec.stun) out.push(`Costs the target ${spec.stun} ticks of its action bar`);
-  if (spec.selfDelay) out.push(`Costs you ${spec.selfDelay} ticks of your own`);
-  if (spec.inflicts?.length) out.push(`Leaves ${statusNames(spec.inflicts.map((a) => a.id))}`);
+  if (spec.stun) out.push(`Knocks ${spec.stun} ticks off the target's action bar`);
+  if (spec.selfDelay) out.push(`Knocks ${spec.selfDelay} ticks off your own action bar`);
+  if (spec.inflicts?.length) out.push(`Applies ${statusNames(spec.inflicts.map((a) => a.id))}`);
   return out;
 }
 
@@ -882,10 +886,15 @@ export function specLines(spec: SpellSpec): string[] {
     if (inflicts) line += ` · ${inflicts}`;
     lines.push(line);
   }
-  if (spec.splash) lines.push(`Spills ${Math.round(spec.splash * 100)}% into a flanker`);
+  if (spec.splash) lines.push(`${Math.round(spec.splash * 100)}% of each strike also hits a random flanker`);
   if (spec.heal && spec.healsEnemy) {
+    // Thresholds read off the statuses, so retuning them retunes the card.
+    const grow = STATUSES.overgrowth;
+    const burst = STATUSES.proliferating;
+    const type = DAMAGE_TYPE_NAMES[burst.surplus?.detonateType ?? 'poison'].toLowerCase();
     lines.push(
-      `Forces ${spec.heal.toFixed(2)}× spell power of life into the target — all of it swells them, and any wound it closes is the price`,
+      `Heals the target ${spec.heal.toFixed(2)}× spell power (restores its HP if it is wounded)`,
+      `The full amount is added to its overgrowth, wounded or not. At ${pct(grow.surplus?.escalateAt ?? 0)} of its max HP: ${burst.name}. At ${pct(burst.surplus?.detonateAt ?? 0)}: it takes the whole total as damage, and every other enemy takes ${pct(burst.surplus?.detonateShare ?? 0)} of it as ${type}`,
     );
   } else if (spec.heal) {
     lines.push(`Restores ${spec.heal.toFixed(2)}× spell power health`);

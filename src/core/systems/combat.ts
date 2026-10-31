@@ -2633,7 +2633,7 @@ function landIncantation(state: GameState, bus: EventBus): void {
   feed(state, `${ability!.icon} The incantation finishes, and ${ability!.name} arrives — ${dealt}.`, {
     label: ability!.name,
     target: monster.name,
-    steps: [...priced.steps, { label: 'A crit it cannot miss', mult }],
+    steps: [...priced.steps, { label: 'Guaranteed crit', mult }],
     slices: [slice],
     hits: 1,
     crit: true,
@@ -3999,7 +3999,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
           const torn = clearField(state);
           if (torn > 0) {
             dmg *= torn;
-            steps.push({ label: `${torn} condition${torn === 1 ? '' : 's'} unsaid`, mult: torn });
+            steps.push({ label: `${torn} condition${torn === 1 ? '' : 's'} removed`, mult: torn });
           }
           feed(
             state,
@@ -4015,7 +4015,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
           if (doublings > 0) {
             const scale = 2 ** doublings;
             dmg *= scale;
-            steps.push({ label: 'Sheer scale', mult: scale });
+            steps.push({ label: 'Size difference', mult: scale });
           }
         }
         c.cooldowns[skillActive.id] = spec.cooldown;
