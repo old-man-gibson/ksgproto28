@@ -210,8 +210,8 @@ Each step ships alone and is verified before the next.
    discovery moment (debug grant only). Seen in play: with CON and WIS near
    157, the fill beats the drain only above about 23% sunlight, so rain by
    day drains the bank.
-2b. **Fight events and Zenkai. Built 2026-10-31 on branch `zenkai`
-   (01a549a, unmerged).** The user approved 70 of 100 team abilities on
+2b. **Fight events and Zenkai. Done 2026-10-31: branch `zenkai`, merged
+   into main as ec8ecd0.** The user approved 70 of 100 team abilities on
    "Abilities 1–100" and picked event hooks plus Zenkai (GEN-10) next. No
    engine change: `Facet.event` already fired `on: 'event:<id>'` clauses.
    KSG `src/core/facet/signal.ts` raises shared event ids (fightStart, kill,
