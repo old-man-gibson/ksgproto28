@@ -177,6 +177,11 @@ export const MONSTERS_TEXT: ProseTable = {
   'ph_survivor_blade.desc': 'Placeholder humanoid on the Vermin Festival’s royale field, a survivor of another room. Piercing attacks with a chance to bleed. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops nothing.',
   'ph_survivor_brute.desc': 'Placeholder large humanoid on the Vermin Festival’s royale field, a survivor of another room. Bludgeoning attacks. Fights with Heavy Blow, Crosscut and Gather. Drops nothing.',
   'ph_survivor_champion.desc': 'Placeholder elite humanoid: the last survivor on the royale field, always fought alone. Beating it wins the festival. Slashing attacks with a chance to bleed. Fights with Crosscut, Finishing Cut, Heavy Blow, Hamstring and Gather. Drops nothing.',
+  'ph_den_harpy.desc': 'Placeholder beast in the harpy nest on the Vermin Festival’s royale field, met in twos. Slashing attacks with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
+  'ph_den_serpent.desc': 'Placeholder beast in the serpent pool under the royale field’s waterfall. Piercing bite with a 30% chance to inflict Poison. Fights with Lunge, Dirty Stab and Gather. Drops nothing.',
+  'ph_den_wolf.desc': 'Placeholder beast in the wolf den in the royale field’s forest, met in threes. Piercing bite with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
+  'ph_den_bear.desc': 'Placeholder large beast in the bear cave on the royale field. Bludgeoning attacks with a 15% chance to inflict Concussed. Fights with Heavy Blow, Hamstring and Gather. Drops nothing.',
+  'ph_den_hound.desc': 'Placeholder beast in the hound yard of the royale field’s village, met in twos. Piercing bite with a 20% chance to inflict Bleeding. Fights with Lunge, Hamstring and Gather. Drops nothing.',
 
   // ==== ABERRANT: monster text (skeleton 2026-10-30; the aberrant builder's section) ====
 

@@ -80,4 +80,11 @@ export const ITEMS_TEXT: ProseTable = {
   'festival_laurel.desc': 'Accessory, placeholder. The Vermin Festival pays it to the first royale won in a run. +8% Damage, +8% Max HP.',
 
   'festival_regalia.desc': 'Accessory, placeholder, taken from a festival token. +15% Damage, +15% Max HP, +5% Attack Speed. Kept in the stronghold stash: every prestige returns it there, wherever it is.',
+
+  'festival_spear.desc': 'Two-handed spear, lent by a weapon cache on the Vermin Festival’s royale field and taken back when the attempt ends. One step above the Old Spear. +10 Damage, +3 Armor.',
+  'festival_greatsword.desc': 'Two-handed sword, lent by a weapon cache on the royale field and taken back when the attempt ends. One step above the Steel Greatsword. +3 STR, +18 Damage, -14% Attack Speed, +12% Crit Damage. Requires STR 12.',
+  'festival_staff.desc': 'Two-handed staff, lent by a weapon cache on the royale field and taken back when the attempt ends. One step above the Oak Staff. +3 INT, +3 Damage, +7 Spell Power.',
+  'festival_bow.desc': 'Two-handed bow, lent by a weapon cache on the royale field and taken back when the attempt ends. One step above the Hunting Bow. +3 DEX, +6 Damage, +3% Crit.',
+  'festival_dagger.desc': 'Light dagger, lent by a weapon cache on the royale field and taken back when the attempt ends. One step above the Iron Dagger. +3 DEX, +4 Damage, +10% Attack Speed, +4% Crit.',
+  'festival_mace.desc': 'One-handed mace, lent by a weapon cache on the royale field and taken back when the attempt ends. One step above the Old Hammer. +8 Damage, -12% Attack Speed.',
 };

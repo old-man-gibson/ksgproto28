@@ -617,6 +617,95 @@ export const ITEMS = prose<ItemDef>('ITEMS', ITEMS_TEXT, {
     value: 1500,
     keep: true,
   },
+  // The royale field's weapon caches (CACHE_WEAPONS in data/festival.data.ts):
+  // one step above each issued starter, modelled on it, same family tags and
+  // wield. Lent by caches only and taken back when the attempt ends: in no
+  // shop, drop table or recipe.
+  festival_spear: {
+    id: 'festival_spear',
+    name: 'Festival Spear',
+    icon: '🔱️',
+    slot: 'weapon',
+    wield: 'two_handed',
+    tags: ['spear', 'wood'],
+    mods: [
+      { stat: 'damage', op: 'add', value: 10 },
+      { stat: 'armor', op: 'add', value: 3 },
+    ],
+    value: 90,
+  },
+  festival_greatsword: {
+    id: 'festival_greatsword',
+    name: 'Festival Greatsword',
+    icon: '⚔️',
+    slot: 'weapon',
+    wield: 'two_handed',
+    tags: ['greatsword', 'metal', 'twoHanded'],
+    mods: [
+      { stat: 'str', op: 'add', value: 3 },
+      { stat: 'damage', op: 'add', value: 18 },
+      { stat: 'attackSpeed', op: 'mult', value: -0.14 },
+      { stat: 'critDamage', op: 'mult', value: 0.12 },
+    ],
+    value: 260,
+    requirements: [{ type: 'attr', attr: 'str', level: 12 }],
+  },
+  festival_staff: {
+    id: 'festival_staff',
+    name: 'Festival Staff',
+    icon: '🪄',
+    slot: 'weapon',
+    wield: 'two_handed',
+    tags: ['staff', 'wood', 'magic'],
+    mods: [
+      { stat: 'int', op: 'add', value: 3 },
+      { stat: 'damage', op: 'add', value: 3 },
+      { stat: 'spellPower', op: 'add', value: 7 },
+    ],
+    value: 45,
+  },
+  festival_bow: {
+    id: 'festival_bow',
+    name: 'Festival Bow',
+    icon: '🏹',
+    slot: 'weapon',
+    wield: 'two_handed',
+    tags: ['bow', 'ranged', 'wood'],
+    mods: [
+      { stat: 'dex', op: 'add', value: 3 },
+      { stat: 'damage', op: 'add', value: 6 },
+      { stat: 'crit', op: 'add', value: 0.03 },
+    ],
+    value: 50,
+  },
+  festival_dagger: {
+    id: 'festival_dagger',
+    name: 'Festival Dagger',
+    icon: '🔪',
+    slot: 'weapon',
+    wield: 'light',
+    tags: ['dagger', 'metal'],
+    mods: [
+      { stat: 'dex', op: 'add', value: 3 },
+      { stat: 'damage', op: 'add', value: 4 },
+      { stat: 'attackSpeed', op: 'mult', value: 0.1 },
+      { stat: 'crit', op: 'add', value: 0.04 },
+    ],
+    value: 60,
+  },
+  festival_mace: {
+    id: 'festival_mace',
+    name: 'Festival Mace',
+    icon: '🔨',
+    slot: 'weapon',
+    wield: 'one_handed',
+    tags: ['blunt', 'iron'],
+    mods: [
+      { stat: 'damage', op: 'add', value: 8 },
+      { stat: 'attackSpeed', op: 'mult', value: -0.12 },
+    ],
+    value: 40,
+  },
 });
 
 /*

@@ -143,7 +143,8 @@ export const SURVIVORS = 99;
  * opens at the end of that line, waited out or jumped (§5.4 Q7). On the field
  * each duel a survivor wins adds `perWin` levels, up to `winCap`, so the
  * field gets stronger as it empties. The last one standing is the champion,
- * `champion` levels above that.
+ * `champion` levels above that. Tools taken from caches count in duels between
+ * survivors only (`ROYALE_FIELD.toolBonus`), not in this level.
  */
 export const SURVIVOR_LEVELS = { base: 34, growth: 3, perWin: 1, winCap: 2, champion: 1 };
 
@@ -154,8 +155,8 @@ export const SURVIVOR_LEVELS = { base: 34, growth: 3, perWin: 1, winCap: 2, cham
  * between survivors. The last survivor is the champion, fought alone.
  */
 export const SURVIVOR_SPECIES: { monsterId: string; weight: number; plan: string[] }[] = [
-  { monsterId: 'ph_survivor_blade', weight: 1, plan: ['fall_back_hurt', 'hunt_weakest'] },
-  { monsterId: 'ph_survivor_brute', weight: 1.1, plan: ['press_nearest'] },
+  { monsterId: 'ph_survivor_blade', weight: 1, plan: ['take_cover_hurt', 'loot_while_crowded', 'hunt_weakest'] },
+  { monsterId: 'ph_survivor_brute', weight: 1.1, plan: ['loot_while_crowded', 'press_nearest'] },
 ];
 export const SURVIVOR_CHAMPION = 'ph_survivor_champion';
 
@@ -167,7 +168,19 @@ export const SURVIVOR_CHAMPION = 'ph_survivor_champion';
  * `engageRadius` fight: two survivors duel for `duelTicks` and the loser
  * falls; survivors who reach the player, up to `maxGroup` of them, are the
  * player's next fight. A duel's winner is wounded by `duelWound` of its
- * health and recovers `healPerTick`. `sight` is how far `weakest` looks.
+ * health and recovers `healPerTick`. `sight` is how far a fighter standing on
+ * open ground sees (sections scale it, §9.2) and how far `weakest` looks.
+ * Survivors are scattered at least `spread` apart and `cacheClear` from every
+ * cache (both relaxed together if placement runs out of tries), `startClear`
+ * from the player's start and `denMargin` beyond every den's radius.
+ * `cacheReach` is how close a fighter must come to take a cache. Caches are
+ * hidden, not landmarks: a survivor notices an open one only within
+ * `cacheNotice`, whatever the terrain's sight (the player sees one at their
+ * full sight, and knows every cache of a scouted or stood-in section). Each
+ * tool a survivor holds adds `toolBonus` levels to its strength in duels, up to
+ * `toolCap` tools. `denPack` is the share of its other foes'
+ * level a den adds to its strongest foe's (`denPower`). A survivor starts no
+ * den duel within `duelTicks` of its last fight.
  */
 export const ROYALE_FIELD = {
   size: 180,
@@ -179,10 +192,19 @@ export const ROYALE_FIELD = {
   duelWound: 0.35,
   healPerTick: 0.002,
   sight: 20,
+  spread: 8,
+  startClear: 30,
+  denMargin: 3,
+  cacheClear: 12,
+  cacheNotice: 3,
+  cacheReach: 1.5,
+  toolBonus: 0.5,
+  toolCap: 4,
+  denPack: 0.4,
 };
 
 /** The player's strategies until they rank their own. */
-export const DEFAULT_ROYALE_PLAN = ['fall_back_hurt', 'press_nearest'];
+export const DEFAULT_ROYALE_PLAN = ['fall_back_hurt', 'loot_while_crowded', 'press_nearest'];
 
 /** Strategies a player may rank at once. */
 export const ROYALE_PLAN_SLOTS = 3;
@@ -201,12 +223,15 @@ export const ROYALE_STRATEGIES = prose<RoyaleStrategyDef>('ROYALE_STRATEGIES', R
   wait_at_edge: { id: 'wait_at_edge', name: 'Wait at the Edge', icon: '🧱', move: 'edge' },
   fall_back_hurt: { id: 'fall_back_hurt', name: 'Fall Back When Hurt', icon: '🩹', move: 'away', when: { hpBelow: 0.5 } },
   lie_low: { id: 'lie_low', name: 'Lie Low While Crowded', icon: '🫥', move: 'away', when: { fieldAbove: 30 } },
+  loot_while_crowded: { id: 'loot_while_crowded', name: 'Loot While Crowded', icon: '💎', move: 'loot', when: { fieldAbove: 50 } },
+  take_cover_hurt: { id: 'take_cover_hurt', name: 'Take Cover When Hurt', icon: '🌲', move: 'cover', when: { hpBelow: 0.5 } },
+  wander: { id: 'wander', name: 'Wander the Field', icon: '🧭', move: 'roam' },
 });
 
 // ---------- The field's layout (docs/FESTIVAL.md §9.2) ----------
 
 /** The layout a field is made for; a saved field from an older one is replaced whole (§9.3). */
-export const ROYALE_LAYOUT_VERSION = 2;
+export const ROYALE_LAYOUT_VERSION = 3;
 
 /** One festival hour without a fight and a fighter knows where the nearest enemy is (§9.2, the radar). */
 export const RADAR_TICKS = TICKS_PER_HOUR;
@@ -263,21 +288,69 @@ export const ROYALE_CACHES: RoyaleCacheDef[] = [
   { id: 'house_north', name: 'North House', icon: '🏠', section: 'village', building: 'house', item: 'leather_cap' },
   { id: 'house_south', name: 'South House', icon: '🏠', section: 'village', building: 'house', item: 'leather_boots' },
   { id: 'house_corner', name: 'Corner House', icon: '🏠', section: 'village', building: 'house', heal: 0.3 },
+  // Thirty-five in all (§9.6), none in the river. The village needs two
+  // smithies, two bakeries, two guard posts and six houses: a village cache
+  // stands in a building of its own kind, one cache to a building.
+  // Waterfall.
+  { id: 'falls_ledge', name: 'The Wet Ledge', icon: '🪨', section: 'waterfall', heal: 0.3 },
+  // Cliff.
+  { id: 'harpy_hoard', name: 'Harpy Hoard', icon: '🪶', section: 'cliff', item: 'hawk_feather_band', den: 'harpy_nest' },
+  { id: 'cliff_cairn', name: 'Cliff Cairn', icon: '🗿', section: 'cliff', item: 'old_spear' },
+  { id: 'signal_post', name: 'The Signal Post', icon: '🚩', section: 'cliff', weapon: true },
+  // Bank.
+  { id: 'ferry_shed', name: 'Ferry Shed', icon: '⛵', section: 'bank', item: 'iron_sword' },
+  { id: 'net_loft', name: 'Net Loft', icon: '🕸️', section: 'bank', item: 'leather_jerkin' },
+  { id: 'willow_stump', name: 'Willow Stump', icon: '🌿', section: 'bank', item: 'herbal_charm' },
+  { id: 'reed_basket', name: 'Reed Basket', icon: '🧺', section: 'bank', item: 'scout_bracers' },
+  // Forest.
+  { id: 'poachers_stash', name: 'Poacher’s Stash', icon: '🏹', section: 'forest', item: 'hunting_bow' },
+  { id: 'woodcutter_hut', name: 'Woodcutter’s Hut', icon: '🪓', section: 'forest', item: 'leather_vest' },
+  { id: 'forest_shrine', name: 'Forest Shrine', icon: '⛩️', section: 'forest', item: 'pilgrim_amulet' },
+  { id: 'hollow_log', name: 'Hollow Log', icon: '🪵', section: 'forest', heal: 0.4 },
+  { id: 'trapper_cabin', name: 'Trapper’s Cabin', icon: '🛖', section: 'forest', item: 'wolf_fang_blade' },
+  { id: 'stump_cache', name: 'Stump Cache', icon: '🌰', section: 'forest', item: 'oak_club' },
+  // Glade.
+  { id: 'spring_offering', name: 'Spring Offerings', icon: '🪙', section: 'glade', item: 'lucky_charm' },
+  { id: 'glade_stone', name: 'The Glade Stone', icon: '🪨', section: 'glade', heal: 0.3 },
+  // Cave.
+  { id: 'cave_mouth', name: 'Cave Mouth', icon: '🕳️', section: 'cave', item: 'soldier_greaves' },
+  { id: 'hermit_niche', name: 'Hermit’s Niche', icon: '🧙', section: 'cave', item: 'oak_staff' },
+  { id: 'miners_niche', name: 'Miner’s Niche', icon: '⛏️', section: 'cave', item: 'ember_knife' },
+  // Village.
+  { id: 'forge_rack', name: 'The Forge Rack', icon: '⚒️', section: 'village', building: 'smithy', item: 'katana' },
+  { id: 'guard_locker', name: 'Guard Locker', icon: '🔒', section: 'village', building: 'guard_post', item: 'parrying_dagger' },
+  { id: 'bakery_stores', name: 'Bakery Stores', icon: '🥖', section: 'village', building: 'bakery', heal: 0.4 },
+  { id: 'house_east', name: 'East House', icon: '🏠', section: 'village', building: 'house', item: 'warden_buckler' },
+  { id: 'house_attic', name: 'Attic House', icon: '🏠', section: 'village', building: 'house', item: 'apprentice_ring' },
+  { id: 'house_cellar', name: 'Cellar House', icon: '🏠', section: 'village', building: 'house', item: 'rapier' },
 ];
 
 /**
+ * A den's strength in a duel with a survivor, on the survivors' scale (a
+ * level): its strongest foe's level, plus `ROYALE_FIELD.denPack` of each
+ * other foe's. Above 0 for any den with a foe (the validation checks).
+ */
+export function denPower(den: { foes: { level: number }[] }): number {
+  const levels = den.foes.map((f) => f.level).sort((a, b) => b - a);
+  return levels.reduce((sum, level, i) => sum + (i === 0 ? level : level * ROYALE_FIELD.denPack), 0);
+}
+
+/**
  * The weapon a `weapon` cache lends, by the player's issued family
- * (ISSUED_WEAPONS). Placeholders: the catalog has few weapons above the
- * starters; a family missing here lends nothing from a weapon cache.
+ * (ISSUED_WEAPONS): one step above that family's starter, so a plan alone
+ * fights with something better than it was issued. The festival's own
+ * weapons (data/items.data.ts) are lent by caches only; the sword family
+ * uses the catalog's iron sword. A family missing here (bare hands) lends
+ * nothing from a weapon cache.
  */
 export const CACHE_WEAPONS: Record<string, string> = {
   sword: 'iron_sword',
-  spear: 'old_spear',
-  dagger: 'bronze_dagger',
-  blunt: 'oak_club',
-  greatsword: 'steel_greatsword',
-  staff: 'oak_staff',
-  bow: 'hunting_bow',
+  spear: 'festival_spear',
+  dagger: 'festival_dagger',
+  blunt: 'festival_mace',
+  greatsword: 'festival_greatsword',
+  staff: 'festival_staff',
+  bow: 'festival_bow',
 };
 
 // ---------- The hub's stock ----------

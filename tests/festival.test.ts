@@ -4,6 +4,7 @@ import { Game } from '../src/core/game';
 import { FLOORS, SPOTS, TITLES, TOWERS } from '../src/core/registry';
 import {
   ARENA,
+  CACHE_WEAPONS,
   DARK_FLOOR,
   DARK_ROOM,
   DARK_ROOM_WAVES,
@@ -14,12 +15,13 @@ import {
   FESTIVAL_WINS_KEY,
   LOCKOUT_TICKS,
   PREP_TICKS,
+  ROYALE_CACHES,
+  ROYALE_DENS,
   ROYALE_FIELD,
   ROYALE_FLOOR,
-  ROYALE_STRATEGIES,
-  SURVIVORS,
+  ROYALE_LAYOUT_VERSION,
+  ROYALE_SECTIONS,
   SURVIVOR_LEVELS,
-  SURVIVOR_SPECIES,
   SWIFT_ENTRY_TICKS,
   TOKEN_BONUS,
   TOKEN_REGALIA,
@@ -27,15 +29,10 @@ import {
   weaponKillsKey,
 } from '../src/core/data/festival.data';
 import { stashItem, stashToken, tokenTechniques } from '../src/core/systems/stash';
-import {
-  activeStrategy,
-  clearEngaged,
-  createField,
-  goalFor,
-  stepField,
-  type FieldStep,
-} from '../src/core/systems/royaleField';
-import { royalePlan } from '../src/core/systems/royale';
+import { royaleFightWon, royalePlan } from '../src/core/systems/royale';
+import { sectionIdOf, type RoyaleMap } from '../src/core/systems/royaleMap';
+import { mapOf } from '../src/core/systems/royaleTerrain';
+import { EventBus } from '../src/core/engine/events';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import {
   festivalHolds,
@@ -54,7 +51,7 @@ import { OFFLINE_CAP_MS, catchUpTicks, runOfflineProgress } from '../src/core/sa
 import { deserialize, serialize } from '../src/core/save/save';
 import { BONUS_CAP_TICKS } from '../src/core/systems/bonustime';
 import { MS_PER_TICK } from '../src/core/engine/loop';
-import type { FieldFighter, GameState, RoyaleField } from '../src/core/types';
+import type { FestivalRun, GameState, RoyaleField } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
 /**
@@ -455,8 +452,9 @@ describe('the time jump', () => {
     // The jump: whatever the clock read, the field opens at the full curve.
     const game = inHall();
     climb(game, ROYALE_FLOOR);
-    tickUntil(game, () => !!game.state.combat);
-    const foe = game.state.combat!.enemies[0]!;
+    // The first survivor fight (a den’s monsters are pinned at their own levels).
+    tickUntil(game, () => !!game.state.combat?.enemies.some((e) => e?.defId.startsWith('ph_survivor')));
+    const foe = game.state.combat!.enemies.find((e) => e?.defId.startsWith('ph_survivor'))!;
     expect(foe.level).toBeGreaterThanOrEqual(full);
   });
 
@@ -591,148 +589,6 @@ describe('the ladder out is a forfeit', () => {
   });
 });
 
-describe('the royale field (the pure simulation)', () => {
-  /** A seeded stand-in for the save's rng. */
-  function seeded(seed = 7): () => number {
-    let a = seed >>> 0;
-    return () => {
-      a = (a + 0x6d2b79f5) >>> 0;
-      let t = a;
-      t = Math.imul(t ^ (t >>> 15), t | 1);
-      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-  const plans = new Map(SURVIVOR_SPECIES.map((s) => [s.monsterId, s.plan.map((id) => ROYALE_STRATEGIES[id])]));
-  const step = (now: number, rng: () => number, plan = DEFAULT_ROYALE_PLAN, playerFree = true): FieldStep => ({
-    now,
-    rng,
-    playerFree,
-    playerHp: 1,
-    playerPower: 40,
-    playerSpeed: 1,
-    plan: plan.map((id) => ROYALE_STRATEGIES[id]),
-    planOf: (id) => plans.get(id) ?? [],
-  });
-  const fighter = (id: number, x: number, y: number, extra: Partial<FieldFighter> = {}): FieldFighter => ({
-    id,
-    monsterId: 'ph_survivor_blade',
-    x,
-    y,
-    hp: 1,
-    wins: 0,
-    ...extra,
-  });
-  const fieldOf = (fighters: FieldFighter[], px = 30, py = 58): RoyaleField => ({
-    size: ROYALE_FIELD.size,
-    fighters,
-    player: { x: px, y: py },
-    fallen: 0,
-  });
-
-  it('opens with ninety-nine survivors on the field and the player on its near edge', () => {
-    const field = createField(seeded());
-    expect(field.fighters).toHaveLength(SURVIVORS);
-    for (const f of field.fighters) {
-      expect(f.x).toBeGreaterThanOrEqual(0);
-      expect(f.x).toBeLessThanOrEqual(field.size);
-      expect(f.y).toBeGreaterThanOrEqual(0);
-      expect(f.y).toBeLessThanOrEqual(field.size);
-    }
-    expect(field.player.y).toBeGreaterThan(field.size - 5);
-  });
-
-  it('the first strategy whose condition holds decides', () => {
-    const plan = ['fall_back_hurt', 'lie_low', 'press_nearest'].map((id) => ROYALE_STRATEGIES[id]);
-    expect(activeStrategy(plan, 0.3, 80)?.id).toBe('fall_back_hurt');
-    expect(activeStrategy(plan, 0.9, 80)?.id).toBe('lie_low');
-    expect(activeStrategy(plan, 0.9, 10)?.id).toBe('press_nearest');
-    expect(activeStrategy([ROYALE_STRATEGIES.fall_back_hurt], 0.9, 10)).toBeNull();
-  });
-
-  it('every move sends its fighter somewhere sensible', () => {
-    const others = [{ id: 1, x: 10, y: 10, power: 30 }, { id: 2, x: 40, y: 40, power: 5 }];
-    const at = { x: 12, y: 12 };
-    expect(goalFor('nearest', at, others, 60)).toEqual({ x: 10, y: 10 });
-    expect(goalFor('weakest', at, others, 60)).toEqual({ x: 10, y: 10 }); // the weak one is out of sight
-    expect(goalFor('weakest', { x: 35, y: 35 }, others, 60)).toEqual({ x: 40, y: 40 });
-    expect(goalFor('centre', at, others, 60)).toEqual({ x: 30, y: 30 });
-    expect(goalFor('hold', at, others, 60)).toEqual(at);
-    const away = goalFor('away', at, others, 60);
-    expect(away.x).toBeGreaterThan(at.x);
-    expect(away.y).toBeGreaterThan(at.y);
-    const edge = goalFor('edge', { x: 3, y: 30 }, others, 60);
-    expect(edge).toEqual({ x: 1, y: 30 });
-  });
-
-  it('two survivors who meet duel; when it ends the loser falls and the winner is wounded', () => {
-    const rng = seeded(3);
-    const field = fieldOf([fighter(1, 10, 10), fighter(2, 11, 10), fighter(3, 50, 10)]);
-    stepField(field, step(0, rng), 34);
-    const a = field.fighters.find((f) => f.id === 1)!;
-    expect(a.duel?.foe).toBe(2);
-    let fallen = 0;
-    for (let t = 1; t <= ROYALE_FIELD.duelTicks; t++) fallen += stepField(field, step(t, rng), 34).fallen;
-    expect(fallen).toBe(1);
-    expect(field.fallen).toBe(1);
-    const winner = field.fighters.find((f) => f.id === 1 || f.id === 2)!;
-    expect(winner.wins).toBe(1);
-    expect(winner.hp).toBeLessThan(1);
-    expect(winner.duel).toBeUndefined();
-  });
-
-  it('survivors who reach a free player are the player\'s next fight; a busy player is left alone', () => {
-    const rng = seeded(5);
-    const busy = fieldOf([fighter(1, 30, 57), fighter(2, 5, 5), fighter(3, 55, 5)]);
-    expect(stepField(busy, step(0, rng, DEFAULT_ROYALE_PLAN, false), 34).engaged).toEqual([]);
-    const free = fieldOf([fighter(1, 30, 57), fighter(2, 5, 5), fighter(3, 55, 5)]);
-    const engaged = stepField(free, step(0, rng), 34).engaged;
-    expect(engaged.map((f) => f.id)).toEqual([1]);
-    expect(free.fighters.find((f) => f.id === 1)!.engaged).toBe(true);
-    expect(clearEngaged(free)).toBe(1);
-    expect(free.fighters.map((f) => f.id)).toEqual([2, 3]);
-  });
-
-  it('never puts every survivor left into one fight: the last is fought alone', () => {
-    const rng = seeded(9);
-    const field = fieldOf([fighter(1, 30, 57), fighter(2, 31, 57)], 30, 58);
-    const engaged = stepField(field, step(0, rng), 34).engaged;
-    expect(engaged).toHaveLength(1);
-    clearEngaged(field);
-    for (let t = 1; t < 2000 && !field.fighters.some((f) => f.engaged); t++) stepField(field, step(t, rng), 34);
-    expect(field.fighters).toHaveLength(1);
-    expect(field.fighters[0].engaged).toBe(true);
-  });
-
-  it('two survivors left never duel each other: both walk at the player', () => {
-    const rng = seeded(11);
-    const field = fieldOf([fighter(1, 10, 10), fighter(2, 10.5, 10)], 50, 50);
-    for (let t = 0; t < 600 && !field.fighters.some((f) => f.engaged); t++) stepField(field, step(t, rng), 34);
-    expect(field.fighters).toHaveLength(2);
-    expect(field.fighters.some((f) => f.duel)).toBe(false);
-    expect(field.fighters.some((f) => f.engaged)).toBe(true);
-  });
-
-  it('a plan alone empties the field: every engagement won, the last one alone', () => {
-    for (const plan of [DEFAULT_ROYALE_PLAN, ['keep_away'], ['wait_at_edge'], ['hold_centre'], ['lie_low', 'hunt_weakest']]) {
-      const rng = seeded(21);
-      const field = createField(rng);
-      let lastFight = 0;
-      let t = 0;
-      for (; t < 30_000 && field.fighters.length > 0; t++) {
-        const result = stepField(field, step(t, rng, plan), 37);
-        if (result.engaged.length) {
-          lastFight = result.engaged.length;
-          // The player wins every fight at once.
-          clearEngaged(field);
-        }
-      }
-      expect(field.fighters, `plan ${plan.join(', ')}`).toHaveLength(0);
-      expect(lastFight, `plan ${plan.join(', ')}: the champion is fought alone`).toBe(1);
-    }
-  });
-});
-
 describe('the royale', () => {
   it('a plan alone wins the royale in the game, with no hand on the field', () => {
     const game = inHall();
@@ -756,12 +612,13 @@ describe('the royale', () => {
     game.tick();
     const field = festivalRun(s)!.field!;
     // Clear the way so no fight interrupts the walk.
-    field.fighters = field.fighters.slice(0, 3).map((f, i) => ({ ...f, x: 1 + i, y: 1 }));
-    expect(game.moveOnField(55, 55)).toBe(true);
-    expect(field.player.target).toEqual({ x: 55, y: 55 });
-    tickUntil(game, () => !festivalRun(s)!.field!.player.target, 2000);
+    field.fighters = remote(mapOf(field), 3).map((p, i) => ({ id: i + 1, monsterId: 'ph_survivor_blade', x: p.x, y: p.y, hp: 1, wins: 0 }));
+    const goal = { x: field.player.x - 12, y: field.player.y - 12 };
+    expect(game.moveOnField(goal.x, goal.y)).toBe(true);
+    expect(field.player.target).toEqual(goal);
+    tickUntil(game, () => !festivalRun(s)!.field!.player.target, 4000);
     const p = festivalRun(s)!.field!.player;
-    expect(Math.hypot(p.x - 55, p.y - 55)).toBeLessThan(0.5);
+    expect(Math.hypot(p.x - goal.x, p.y - goal.y)).toBeLessThan(0.5);
     expect(game.moveOnField(500, -3)).toBe(true);
     expect(festivalRun(s)!.field!.player.target).toEqual({ x: ROYALE_FIELD.size, y: 0 });
   });
@@ -807,6 +664,353 @@ describe('the royale', () => {
     for (let i = 0; i < 500; i++) game.tick();
     expect(s.combat).toBeNull();
     expect(s.spot).toBe(ARENA);
+  });
+});
+
+// ---------- The royale's terrain, caches and dens (systems/royale.ts) ----------
+
+interface Spot {
+  x: number;
+  y: number;
+}
+
+/** Points far from the start, every den and every cache, and apart from each other: where a trimmed field keeps its survivors. */
+function remote(map: RoyaleMap, count: number): Spot[] {
+  const picks: Spot[] = [];
+  const far = (p: Spot, q: Spot, d: number) => Math.hypot(p.x - q.x, p.y - q.y) >= d;
+  for (let y = 6; y < map.size - 12; y += 6) {
+    for (let x = 6; x < map.size - 6; x += 6) {
+      const p = { x, y };
+      if (!far(p, map.start, 100)) continue;
+      if (ROYALE_DENS.some((d) => !far(p, map.dens[d.id], d.radius + 10))) continue;
+      if (ROYALE_CACHES.some((c) => !far(p, map.caches[c.id], 10))) continue;
+      if (picks.some((q) => !far(p, q, 30))) continue;
+      picks.push(p);
+      if (picks.length === count) return picks;
+    }
+  }
+  throw new Error(`seed ${map.seed}: no ${count} remote spots`);
+}
+
+/** The cell of a section nearest the middle of its cells, so a step does not leave it. */
+function heartOf(map: RoyaleMap, sectionId: string): Spot {
+  const cells: Spot[] = [];
+  for (let i = 0; i < map.cells.length; i++) {
+    if (sectionIdOf(map.cells[i]) === sectionId) cells.push({ x: (i % map.size) + 0.5, y: Math.floor(i / map.size) + 0.5 });
+  }
+  if (!cells.length) throw new Error(`seed ${map.seed}: no ${sectionId} on the map`);
+  const mid = { x: cells.reduce((a, c) => a + c.x, 0) / cells.length, y: cells.reduce((a, c) => a + c.y, 0) / cells.length };
+  return cells.reduce((a, b) => (Math.hypot(a.x - mid.x, a.y - mid.y) <= Math.hypot(b.x - mid.x, b.y - mid.y) ? a : b));
+}
+
+/** Tick until the fight, if any, is over. */
+function settle(game: Game): void {
+  tickUntil(game, () => !game.state.combat, 5000);
+}
+
+interface Royale {
+  game: Game;
+  s: GameState;
+  run: FestivalRun;
+  field: RoyaleField;
+  map: RoyaleMap;
+}
+
+/** In the royale with the board cleared: three survivors far from everything, nothing taken, cleared or seen, the player free. */
+function inRoyale(game: Game = inHall()): Royale {
+  climb(game, ROYALE_FLOOR);
+  game.tick(); // the field opens
+  const s = game.state;
+  const run = festivalRun(s)!;
+  const field = run.field!;
+  const map = mapOf(field);
+  field.fighters = remote(map, 3).map((p, i) => ({ id: i + 1, monsterId: 'ph_survivor_blade', x: p.x, y: p.y, hp: 1, wins: 0 }));
+  field.taken = [];
+  field.cleared = [];
+  field.seen = [];
+  return { game, s, run, field, map };
+}
+
+/** Put the player on a spot, the plan clear, and tick once. */
+function standAt(game: Game, field: RoyaleField, p: Spot): void {
+  field.player.x = p.x;
+  field.player.y = p.y;
+  delete field.player.target;
+  delete field.player.goal;
+  game.tick();
+}
+
+const everythingOwned = (s: GameState) => [...(Object.values(s.equipment) as { uid: number }[]), ...s.inventory, ...(s.sheathed ? [s.sheathed] : [])];
+
+describe('the royale: the attempt’s field', () => {
+  it('the attempt draws its field’s seed at the start and the field opens on it; one saved without a seed draws its own', () => {
+    const game = inHall();
+    const run = festivalRun(game.state)!;
+    expect(Number.isInteger(run.fieldSeed)).toBe(true);
+    climb(game, ROYALE_FLOOR);
+    game.tick();
+    expect(run.field!.seed).toBe(run.fieldSeed);
+    expect(run.field!.layout).toBe(ROYALE_LAYOUT_VERSION);
+    expect(run.field!.openedAt).toBeLessThanOrEqual(game.state.totalTicks);
+    // On the map’s start (a tick of walking has passed).
+    const start = mapOf(run.field!).start;
+    expect(Math.hypot(run.field!.player.x - start.x, run.field!.player.y - start.y)).toBeLessThan(1);
+    const old = inHall();
+    const oldRun = festivalRun(old.state)!;
+    delete oldRun.fieldSeed;
+    climb(old, ROYALE_FLOOR);
+    old.tick();
+    expect(oldRun.field!.seed).toBeDefined();
+    expect(oldRun.fieldSeed).toBe(oldRun.field!.seed);
+  });
+
+  it('a field from an older layout is replaced whole, but never during a fight', () => {
+    const { game, s, run, field } = inRoyale();
+    field.fighters[0].x = field.player.x;
+    field.fighters[0].y = field.player.y - 1;
+    tickUntil(game, () => !!s.combat, 50);
+    delete field.layout;
+    let during = 0;
+    for (let i = 0; i < 30 && s.combat; i++) {
+      game.tick();
+      if (s.combat) {
+        during += 1;
+        expect(run.field).toBe(field);
+        expect(field.layout).toBeUndefined();
+      }
+    }
+    expect(during, 'the fight lasted at least a tick past the layout change').toBeGreaterThan(0);
+    settle(game);
+    game.tick();
+    // The fight over: a new field on the attempt’s terrain.
+    expect(run.field).not.toBe(field);
+    expect(run.field!.layout).toBe(ROYALE_LAYOUT_VERSION);
+    expect(run.field!.fighters).toHaveLength(99);
+    expect(run.field!.seed).toBe(run.fieldSeed);
+  });
+
+  it('the champion’s fall is the win; a field emptied without it is not, and gets its champion back', () => {
+    const { game, s, run, field } = inRoyale();
+    const [a, b] = field.fighters;
+    // Two survivors in one fight and no one else standing: a fight that did not hold the champion.
+    a.engaged = true;
+    b.engaged = true;
+    field.fighters = [a, b];
+    expect(royaleFightWon(s, new EventBus(), run)).toBe(false);
+    expect(field.fighters).toHaveLength(0);
+    expect(festivalRun(s)).toBeDefined();
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBeUndefined();
+    game.tick();
+    expect(field.fighters).toHaveLength(1);
+    // That champion reaches the player: its fall is the win.
+    const champion = field.fighters[0];
+    champion.x = field.player.x;
+    champion.y = field.player.y - 1;
+    tickUntil(game, () => !festivalRun(s));
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBe(1);
+    expect(s.stats['boss:f16_arena']).toBe(1);
+  });
+
+  it('a plan alone wins within a festival day with the default plan, and the field ran on its radar', () => {
+    const game = inHall();
+    const s = game.state;
+    climb(game, ROYALE_FLOOR);
+    const from = s.totalTicks;
+    expect(royalePlan(s).map((p) => p.id)).toEqual(DEFAULT_ROYALE_PLAN);
+    tickUntil(game, () => !festivalRun(s), 14_400);
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBe(1);
+    expect(s.totalTicks - from).toBeLessThanOrEqual(14_400);
+  });
+});
+
+describe('the royale: caches and lent gear', () => {
+  it('a cache lends gear for the attempt: worn if its slot is free, in the pack if not, never sold, taken back when the attempt is lost', () => {
+    const { game, s, run, field, map } = inRoyale();
+    standAt(game, field, map.caches.woodcutter_hut);
+    settle(game);
+    expect(field.taken).toContain('woodcutter_hut');
+    expect(s.equipment.chest?.defId).toBe('leather_vest');
+    const vest = s.equipment.chest!;
+    expect(run.lent).toContain(vest.uid);
+    expect(vest.slots).toBe(0);
+    // A bow is not the issued sword’s family and the weapon slot is taken, so it goes to the pack.
+    standAt(game, field, map.caches.poachers_stash);
+    settle(game);
+    const bow = s.inventory.find((i) => i.defId === 'hunting_bow' && run.lent!.includes(i.uid))!;
+    expect(bow).toBeDefined();
+    expect(s.equipment.weapon?.uid).toBe(run.issued);
+    // Lent: not for sale.
+    const gold = s.gold;
+    game.sell(bow.uid);
+    game.sellMany([bow.uid, vest.uid]);
+    expect(s.gold).toBe(gold);
+    expect(s.inventory.some((i) => i.uid === bow.uid)).toBe(true);
+    // Taken once: standing on it again gives nothing more.
+    const lent = [...run.lent!];
+    standAt(game, field, map.caches.poachers_stash);
+    expect(run.lent).toEqual(lent);
+    // A forfeit: everything lent goes back, wherever it is.
+    climb(game, null);
+    expect(festivalRun(s)).toBeUndefined();
+    const owned = everythingOwned(s);
+    for (const uid of lent) expect(owned.some((i) => i.uid === uid), `lent ${uid}`).toBe(false);
+    expect(s.equipment.chest).toBeUndefined();
+  });
+
+  it('the lent gear is taken back when the royale is won, too', () => {
+    const { game, s, run, field, map } = inRoyale();
+    standAt(game, field, map.caches.woodcutter_hut);
+    settle(game);
+    standAt(game, field, map.caches.poachers_stash);
+    settle(game);
+    const lent = [...run.lent!];
+    expect(lent.length).toBeGreaterThanOrEqual(2);
+    // The last survivor reaches the player: the champion, fought alone.
+    field.fighters = [{ ...field.fighters[0], x: field.player.x, y: field.player.y - 1 }];
+    tickUntil(game, () => !festivalRun(s));
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBe(1);
+    const owned = everythingOwned(s);
+    for (const uid of lent) expect(owned.some((i) => i.uid === uid), `lent ${uid}`).toBe(false);
+  });
+
+  it('a lent weapon of the issued family takes the hand; the issued weapon goes to the pack; both are taken back, the held weapon returns', () => {
+    const s0 = strong(geared(atFourteen()));
+    const heldSword = s0.equipment.weapon!.uid;
+    const { game, s, run, field, map } = inRoyale(inHall(s0));
+    expect(s.equipment.weapon?.uid).toBe(run.issued);
+    expect(s.equipment.weapon?.defId).toBe('rusty_sword');
+    const issued = run.issued!;
+    // The smithy lends the weapon of the issued family: a step up on the rusty sword.
+    standAt(game, field, map.caches.smithy);
+    settle(game);
+    expect(field.taken).toContain('smithy');
+    const lentSword = s.equipment.weapon!;
+    expect(lentSword.defId).toBe(CACHE_WEAPONS.sword);
+    expect(run.lent).toContain(lentSword.uid);
+    expect(s.inventory.some((i) => i.uid === issued)).toBe(true);
+    // The hand holds a lent weapon now, not the issued one: a second one goes to the pack.
+    standAt(game, field, map.caches.trapper_cabin);
+    settle(game);
+    expect(s.equipment.weapon?.uid).toBe(lentSword.uid);
+    expect(s.inventory.some((i) => i.defId === 'wolf_fang_blade' && run.lent!.includes(i.uid))).toBe(true);
+    // Neither the lent weapons nor the issued one can be sold.
+    const gold = s.gold;
+    game.sellMany([issued, ...run.lent!]);
+    expect(s.gold).toBe(gold);
+    // A forfeit: all of it goes back, and the held sword is in the hand again.
+    const lent = [...run.lent!];
+    climb(game, null);
+    const owned = everythingOwned(s);
+    for (const uid of [issued, ...lent]) expect(owned.some((i) => i.uid === uid), `taken back ${uid}`).toBe(false);
+    expect(s.equipment.weapon?.uid).toBe(heldSword);
+  });
+
+  it('a two-handed family takes the hand the same way: the smithy’s spear for the issued spear', () => {
+    const s0 = strong(atFourteen());
+    s0.skills.spear_combat = { level: 12, xp: 0 };
+    const { game, s, run, field, map } = inRoyale(inHall(s0));
+    expect(s.equipment.weapon?.defId).toBe('old_spear');
+    standAt(game, field, map.caches.smithy);
+    settle(game);
+    expect(field.taken).toContain('smithy');
+    expect(s.equipment.weapon?.defId).toBe(CACHE_WEAPONS.spear);
+    expect(run.lent).toContain(s.equipment.weapon!.uid);
+    expect(s.inventory.some((i) => i.uid === run.issued)).toBe(true);
+  });
+
+  it('a lent weapon that is the issued item itself does not take the hand', () => {
+    const s0 = strong(atFourteen());
+    s0.skills.spear_combat = { level: 12, xp: 0 };
+    const { game, s, run, field, map } = inRoyale(inHall(s0));
+    // The cliff cairn holds an old spear, the item the door issued.
+    standAt(game, field, map.caches.cliff_cairn);
+    settle(game);
+    expect(field.taken).toContain('cliff_cairn');
+    expect(s.equipment.weapon?.uid).toBe(run.issued);
+    expect(s.inventory.some((i) => i.defId === 'old_spear' && run.lent!.includes(i.uid))).toBe(true);
+  });
+
+  it('a lent weapon is wielded when the hand is empty', () => {
+    const { game, s, run, field, map } = inRoyale();
+    game.unequip('weapon');
+    expect(s.equipment.weapon).toBeUndefined();
+    standAt(game, field, map.caches.trapper_cabin);
+    settle(game);
+    expect(s.equipment.weapon?.defId).toBe('wolf_fang_blade');
+    expect(run.lent).toContain(s.equipment.weapon!.uid);
+  });
+
+  it('a weapon cache lends a weapon of the issued family; a heal cache restores health at once', () => {
+    const { game, s, run, field, map } = inRoyale();
+    // The door issued a rusty sword: the sword family.
+    standAt(game, field, map.caches.smithy);
+    settle(game);
+    expect(field.taken).toContain('smithy');
+    expect([...Object.values(s.equipment), ...s.inventory].some((i) => i?.defId === CACHE_WEAPONS.sword && run.lent!.includes(i.uid))).toBe(true);
+    const max = getDerivedStats(s).maxHp;
+    s.resources.hp = max * 0.2;
+    standAt(game, field, map.caches.fisher_hut);
+    settle(game);
+    const share = ROYALE_CACHES.find((c) => c.id === 'fisher_hut')!.heal!;
+    expect(s.resources.hp - max * 0.2).toBeGreaterThanOrEqual(max * share * 0.9);
+  });
+
+  it('the glade’s spring heals the player while they stand in it', () => {
+    const { game, s, field, map } = inRoyale();
+    const max = getDerivedStats(s).maxHp;
+    const gain = (p: Spot) => {
+      s.resources.hp = max * 0.5;
+      standAt(game, field, p);
+      return s.resources.hp - max * 0.5;
+    };
+    const base = gain(map.start);
+    const spring = gain(heartOf(map, 'glade'));
+    expect(spring - base).toBeGreaterThanOrEqual(max * ROYALE_SECTIONS.glade.heal! * 0.9);
+  });
+});
+
+describe('the royale: dens', () => {
+  const serpent = ROYALE_DENS.find((d) => d.id === 'serpent_pool')!;
+
+  it('walking into a den is a staged fight with its monsters at their pinned levels; won, the den is cleared and the royale goes on', () => {
+    const { game, s, run, field, map } = inRoyale();
+    const gold = s.gold;
+    const standing = field.fighters.length;
+    standAt(game, field, map.dens[serpent.id]);
+    expect(s.combat).not.toBeNull();
+    expect(field.denFight).toBe(serpent.id);
+    const foes = s.combat!.enemies.filter((e) => !!e);
+    expect(foes.map((e) => e!.defId).sort()).toEqual(serpent.foes.map((f) => f.monsterId).sort());
+    expect(foes.map((e) => e!.level)).toEqual(serpent.foes.map((f) => f.level));
+    settle(game);
+    expect(field.denFight).toBeUndefined();
+    expect(field.cleared).toContain(serpent.id);
+    expect(field.player.lastFight).toBeDefined();
+    // Not a royale fight: nothing leaves the field, nothing is won, and the den’s monsters pay nothing.
+    expect(field.fighters).toHaveLength(standing);
+    expect(festivalRun(s)).toBe(run);
+    expect(s.stats[FESTIVAL_WINS_KEY]).toBeUndefined();
+    expect(s.gold).toBe(gold);
+    // The den stays cleared: standing in it starts nothing.
+    for (let i = 0; i < 20; i++) game.tick();
+    expect(s.combat).toBeNull();
+    // What it guarded is open now.
+    const guarded = ROYALE_CACHES.find((c) => c.den === serpent.id)!;
+    standAt(game, field, map.caches[guarded.id]);
+    settle(game);
+    expect(field.taken).toContain(guarded.id);
+  });
+
+  it('a knockout in a den is a festival loss like any other on floor 16', () => {
+    const { game, s, field, map } = inRoyale();
+    standAt(game, field, map.dens[serpent.id]);
+    expect(s.combat).not.toBeNull();
+    for (const a of ATTRIBUTE_LIST) s.attrs[a.id].level = 1;
+    s.resources.hp = 1;
+    tickUntil(game, () => s.recovering, 5_000);
+    expect(s.spot).toBe(FOOT);
+    expect(festivalRun(s)).toBeUndefined();
+    expect(lockoutLeft(s)).toBe(LOCKOUT_TICKS);
   });
 });
 
@@ -999,10 +1203,14 @@ describe('saving inside the festival', () => {
   it('a save mid-royale fight reloads with its survivors walking again, and the royale can still be won', () => {
     const game = inHall();
     climb(game, ROYALE_FLOOR);
-    tickUntil(game, () => !!game.state.combat);
-    expect(festivalRun(game.state)!.field!.fighters.some((f) => f.engaged)).toBe(true);
+    tickUntil(game, () => !!game.state.combat && festivalRun(game.state)!.field!.fighters.some((f) => f.engaged));
+    const before = festivalRun(game.state)!.field!;
+    expect(before.seed).toBe(festivalRun(game.state)!.fieldSeed);
     const loaded = new Game(deserialize(serialize(game.state)));
     const s = loaded.state;
+    // Only the seed is saved; the terrain is rebuilt from it.
+    expect(festivalRun(s)!.field!.seed).toBe(before.seed);
+    expect(mapOf(festivalRun(s)!.field!).start).toEqual(mapOf(before).start);
     loaded.tick();
     expect(festivalRun(s)!.field!.fighters.some((f) => f.engaged && !s.combat)).toBe(false);
     tickUntil(loaded, () => !festivalRun(s));

@@ -3395,6 +3395,12 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     encounters: [
       { monsterId: 'ph_survivor_blade', weight: 50, level: [34, 38] },
       { monsterId: 'ph_survivor_brute', weight: 50, level: [34, 38] },
+      // The field's dens (ROYALE_DENS): staged at their pinned levels, never rolled.
+      { monsterId: 'ph_den_harpy', weight: 10, level: [34, 34] },
+      { monsterId: 'ph_den_serpent', weight: 10, level: [36, 36] },
+      { monsterId: 'ph_den_wolf', weight: 10, level: [33, 34] },
+      { monsterId: 'ph_den_bear', weight: 10, level: [37, 37] },
+      { monsterId: 'ph_den_hound', weight: 10, level: [34, 34] },
       // The field's last survivor, fought alone once every other has fallen:
       // floor 16's clear.
       { monsterId: 'ph_survivor_champion', weight: 1, level: [38, 39], boss: true },
