@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CACHE_WEAPONS,
   DEFAULT_ROYALE_PLAN,
+  ISSUED_WEAPONS,
   RADAR_TICKS,
   ROYALE_CACHES,
   ROYALE_DENS,
@@ -13,7 +14,7 @@ import {
   SURVIVOR_SPECIES,
   denPower,
 } from '../src/core/data/festival.data';
-import { ITEMS } from '../src/core/registry';
+import { ITEMS, MONSTERS, NPCS } from '../src/core/registry';
 import {
   activeStrategy,
   championFight,
@@ -175,6 +176,10 @@ describe('the field opens', () => {
         expect(dist(f, map.start), `seed ${seed}: survivor ${f.id} by the start`).toBeGreaterThanOrEqual(cfg.startClear);
         for (const d of ROYALE_DENS) {
           expect(dist(f, map.dens[d.id]), `seed ${seed}: survivor ${f.id} in ${d.id}`).toBeGreaterThan(d.radius + cfg.denMargin);
+        }
+        // Caches are hidden: no one starts on top of one.
+        for (const c of ROYALE_CACHES) {
+          expect(dist(f, map.caches[c.id]), `seed ${seed}: survivor ${f.id} by ${c.id}`).toBeGreaterThanOrEqual(cfg.cacheClear);
         }
         for (const g of field.fighters.slice(i + 1)) nearest = Math.min(nearest, dist(f, g));
       }
@@ -438,32 +443,33 @@ describe('caches', () => {
     expect(heal.field.fighters[0].hp).toBeCloseTo(0.3 + ROYALE_CACHES.find((c) => c.id === 'fisher_hut')!.heal! + ROYALE_FIELD.healPerTick, 5);
   });
 
-  /** A meadow point whose nearest cache is `lo` to `hi` away, with no second cache within `clear`, and no den near. */
-  function pointByCache(lo: number, hi: number, clear: number): { p: Point; cache: string } {
-    for (let y = 6; y < MAP.size - 6; y += 3) {
-      for (let x = 6; x < MAP.size - 6; x += 3) {
-        const p = { x, y };
-        if (sectionAt(MAP, x, y) || ROYALE_DENS.some((d) => dist(p, MAP.dens[d.id]) < d.radius + 5)) continue;
-        // Open caches only (an unguarded one), and none in cover, which is seen at half the range.
-        const open = ROYALE_CACHES.filter((c) => !c.den && !sectionAt(MAP, MAP.caches[c.id].x, MAP.caches[c.id].y)?.cover);
-        const ds = open.map((c) => ({ id: c.id, d: dist(p, MAP.caches[c.id]) })).sort((a, b) => a.d - b.d);
-        // A cache in cover or guarded nearer than `clear` would still be a cache in sight or a closed one: keep clear of them all.
-        if (ROYALE_CACHES.some((c) => !open.includes(c) && dist(p, MAP.caches[c.id]) < clear)) continue;
-        if (ds[0].d < lo || ds[0].d > hi || ds[1].d < clear) continue;
-        return { p, cache: ds[0].id };
+  /**
+   * A point `d` from an open (unguarded) cache, with no other cache within `clear` and no den near:
+   * the cache is the only one a survivor standing there could be near.
+   */
+  function pointBy(d: number, clear: number): { p: Point; cache: string } {
+    for (const c of ROYALE_CACHES.filter((cc) => !cc.den)) {
+      const at0 = MAP.caches[c.id];
+      for (let k = 0; k < 8; k++) {
+        const p = { x: at0.x + d * Math.cos((k * Math.PI) / 4), y: at0.y + d * Math.sin((k * Math.PI) / 4) };
+        if (p.x < 3 || p.y < 3 || p.x > MAP.size - 3 || p.y > MAP.size - 3) continue;
+        if (ROYALE_DENS.some((den) => dist(p, MAP.dens[den.id]) < den.radius + 3)) continue;
+        if (ROYALE_CACHES.some((o) => o.id !== c.id && dist(p, MAP.caches[o.id]) < clear)) continue;
+        return { p, cache: c.id };
       }
     }
-    throw new Error(`seed ${MAP.seed}: no meadow point ${lo} to ${hi} from its nearest cache`);
+    throw new Error(`seed ${MAP.seed}: no point ${d} from a lone open cache`);
   }
 
-  it('a survivor walks at a cache only while it sees it, and roams past one it does not', () => {
+  it('a survivor notices a cache only within a few units, whatever the terrain’s sight, and roams past one it does not', () => {
     const plan = only('loot');
-    const near = pointByCache(6, 15, 22);
-    const sees = fieldOf([fighter(1, near.p), fighter(2, at(-15, -15)), fighter(3, at(15, 15))], at(0, 15));
-    stepField(sees, step(1, seeded(1), plan), 34);
-    expect(dist(sees.fighters[0].goal!, MAP.caches[near.cache]), 'the cache in sight').toBeLessThan(0.5);
-    // Twenty-six or more away from every cache, on open ground (sight 20): none is known, so it roams.
-    const far = pointByCache(26, 40, 26);
+    const notice = ROYALE_FIELD.cacheNotice;
+    const near = pointBy(notice - 1, 2 * notice);
+    const finds = fieldOf([fighter(1, near.p), fighter(2, at(-15, -15)), fighter(3, at(15, 15))], at(0, 15));
+    stepField(finds, step(1, seeded(1), plan), 34);
+    expect(dist(finds.fighters[0].goal!, MAP.caches[near.cache]), 'a cache within notice').toBeLessThan(0.5);
+    // Beyond notice but well inside sight (20): not known, so it roams.
+    const far = pointBy(notice + 4, 2 * notice);
     const blind = fieldOf([fighter(1, far.p), fighter(2, at(-15, -15)), fighter(3, at(15, 15))], at(0, 15));
     stepField(blind, step(1, seeded(1), plan), 34);
     for (const c of ROYALE_CACHES) expect(dist(blind.fighters[0].goal!, MAP.caches[c.id]), `not at ${c.id}`).toBeGreaterThan(3);
@@ -749,5 +755,49 @@ describe('a plan alone', () => {
     // Measured about 0.1 ms; the bound only catches a pass gone quadratic in the wrong place.
     expect((performance.now() - from) / steps).toBeLessThan(5);
     expect(field.fighters.length).toBeGreaterThan(80);
+  });
+});
+
+describe('the field’s weapons', () => {
+  const damageOf = (id: string) =>
+    ITEMS[id].mods.filter((m) => m.stat === 'damage' && m.op === 'add').reduce((sum, m) => sum + m.value, 0);
+
+  it('every weapon cache lends a real step up on its family’s starter, in the same family, slot and wield', () => {
+    for (const w of ISSUED_WEAPONS) {
+      if (!w.item) {
+        // Bare hands: nothing to lend.
+        expect(CACHE_WEAPONS[w.family], w.family).toBeUndefined();
+        continue;
+      }
+      const lent = CACHE_WEAPONS[w.family];
+      expect(lent, w.family).toBeDefined();
+      expect(ITEMS[lent], `${w.family}: ${lent}`).toBeDefined();
+      expect(lent, `${w.family} lends its own starter`).not.toBe(w.item);
+      const starter = ITEMS[w.item];
+      const up = ITEMS[lent];
+      expect(up.slot).toBe('weapon');
+      expect(up.wield).toBe(starter.wield);
+      expect(up.tags, `${lent} carries the family tag the issued-family check reads`).toContain(w.family);
+      expect(damageOf(lent), `${w.family}: ${lent} over ${w.item}`).toBeGreaterThan(damageOf(w.item));
+      // Wieldable by anyone who can wield the starter.
+      for (const r of up.requirements ?? []) {
+        if (r.type !== 'attr') continue;
+        const had = starter.requirements?.find((q) => q.type === 'attr' && q.attr === r.attr);
+        expect(had && had.type === 'attr' ? had.level : 0, `${lent} asks for more ${r.attr} than ${w.item}`).toBeGreaterThanOrEqual(r.level);
+      }
+    }
+  });
+
+  it('the festival’s own weapons are lent by caches only: in no drop table and no shop', () => {
+    const own = Object.values(CACHE_WEAPONS).filter((id) => id.startsWith('festival_'));
+    expect(own).toHaveLength(6);
+    for (const id of own) {
+      for (const m of Object.values(MONSTERS)) {
+        expect(m.loot.entries.some((e) => e.kind === 'item' && e.id === id), `${m.id} drops ${id}`).toBe(false);
+      }
+      for (const n of Object.values(NPCS)) {
+        expect(n.shop?.lines.some((l) => l.kind === 'item' && l.id === id), `${n.id} sells ${id}`).toBeFalsy();
+      }
+    }
   });
 });

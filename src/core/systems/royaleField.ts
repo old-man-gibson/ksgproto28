@@ -108,26 +108,33 @@ function round2(v: number): number {
 const SCATTER_TRIES = 40;
 
 /**
- * Where the survivors start: random, at least `spread` apart (relaxed by a
- * quarter whenever a survivor runs out of tries, so placement always ends),
- * `startClear` from the player's start and `denMargin` beyond every den's
- * radius (rejection sampling, after InfiniteGacha's `scatter`).
+ * Where the survivors start: random, at least `spread` apart and `cacheClear`
+ * from every cache (both relaxed by a quarter whenever a survivor runs out of
+ * tries, so placement always ends), `startClear` from the player's start and
+ * `denMargin` beyond every den's radius (rejection sampling, after
+ * InfiniteGacha's `scatter`).
  */
 function scatter(rng: () => number, map: RoyaleMap): Point[] {
   const cfg = ROYALE_FIELD;
   const size = cfg.size;
   const dens = ROYALE_DENS.flatMap((d) => (map.dens[d.id] ? [{ at: map.dens[d.id], reach: d.radius + cfg.denMargin }] : []));
+  const caches = ROYALE_CACHES.flatMap((c) => (map.caches[c.id] ? [map.caches[c.id]] : []));
   const placed: Point[] = [];
   let spread = cfg.spread;
+  let cacheClear = cfg.cacheClear;
   for (let n = 0; n < SURVIVORS; n++) {
     for (let tries = 0; ; tries++) {
-      if (tries > 0 && tries % SCATTER_TRIES === 0) spread *= 0.75;
+      if (tries > 0 && tries % SCATTER_TRIES === 0) {
+        spread *= 0.75;
+        cacheClear *= 0.75;
+      }
       const p = { x: round2(2 + rng() * (size - 4)), y: round2(2 + rng() * (size - 12)) };
       // A bound on the whole search, so a map that fills the field still ends.
       const last = tries >= SCATTER_TRIES * 12;
       if (!last) {
         if (dist(p.x, p.y, map.start.x, map.start.y) < cfg.startClear) continue;
         if (dens.some((d) => dist(p.x, p.y, d.at.x, d.at.y) <= d.reach)) continue;
+        if (caches.some((c) => dist(p.x, p.y, c.x, c.y) < cacheClear)) continue;
         if (placed.some((q) => dist(p.x, p.y, q.x, q.y) < spread)) continue;
       }
       placed.push(p);
@@ -509,8 +516,8 @@ export function stepField(field: RoyaleField, step: FieldStep, baseLevel: number
     const others = visibleTo(at, i);
     if (sees(map, at, { x: px, y: py })) others.push(playerBody());
     const s = activeStrategy(step.planOf(f.monsterId), f.hp, alive);
-    // A survivor knows a cache only while it sees it: the player's rule, without the survey or the sections stood in.
-    const caches = openCachesNow().filter((c) => sees(map, at, c));
+    // Caches are hidden: a survivor notices an open one only within `cacheNotice`, whatever its terrain's sight.
+    const caches = openCachesNow().filter((c) => dist(at.x, at.y, c.x, c.y) <= cfg.cacheNotice);
     return goalFor(s?.move ?? 'nearest', at, { others, caches, size, map, keep: f.goal, rng: step.rng });
   };
 

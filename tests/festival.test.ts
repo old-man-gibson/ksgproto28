@@ -905,15 +905,27 @@ describe('the royale: caches and lent gear', () => {
     expect(s.equipment.weapon?.uid).toBe(heldSword);
   });
 
-  it('a lent weapon that is the issued item itself does not take the hand', () => {
+  it('a two-handed family takes the hand the same way: the smithy’s spear for the issued spear', () => {
     const s0 = strong(atFourteen());
     s0.skills.spear_combat = { level: 12, xp: 0 };
     const { game, s, run, field, map } = inRoyale(inHall(s0));
     expect(s.equipment.weapon?.defId).toBe('old_spear');
-    expect(CACHE_WEAPONS.spear).toBe('old_spear');
     standAt(game, field, map.caches.smithy);
     settle(game);
     expect(field.taken).toContain('smithy');
+    expect(s.equipment.weapon?.defId).toBe(CACHE_WEAPONS.spear);
+    expect(run.lent).toContain(s.equipment.weapon!.uid);
+    expect(s.inventory.some((i) => i.uid === run.issued)).toBe(true);
+  });
+
+  it('a lent weapon that is the issued item itself does not take the hand', () => {
+    const s0 = strong(atFourteen());
+    s0.skills.spear_combat = { level: 12, xp: 0 };
+    const { game, s, run, field, map } = inRoyale(inHall(s0));
+    // The cliff cairn holds an old spear, the item the door issued.
+    standAt(game, field, map.caches.cliff_cairn);
+    settle(game);
+    expect(field.taken).toContain('cliff_cairn');
     expect(s.equipment.weapon?.uid).toBe(run.issued);
     expect(s.inventory.some((i) => i.defId === 'old_spear' && run.lent!.includes(i.uid))).toBe(true);
   });

@@ -170,11 +170,15 @@ export const SURVIVOR_CHAMPION = 'ph_survivor_champion';
  * player's next fight. A duel's winner is wounded by `duelWound` of its
  * health and recovers `healPerTick`. `sight` is how far a fighter standing on
  * open ground sees (sections scale it, §9.2) and how far `weakest` looks.
- * Survivors are scattered at least `spread` apart (relaxed if placement runs
- * out of tries), `startClear` from the player's start and `denMargin` beyond
- * every den's radius. `cacheReach` is how close a fighter must come to take a
- * cache; each tool a survivor holds adds `toolBonus` levels to its strength in
- * duels, up to `toolCap` tools. `denPack` is the share of its other foes'
+ * Survivors are scattered at least `spread` apart and `cacheClear` from every
+ * cache (both relaxed together if placement runs out of tries), `startClear`
+ * from the player's start and `denMargin` beyond every den's radius.
+ * `cacheReach` is how close a fighter must come to take a cache. Caches are
+ * hidden, not landmarks: a survivor notices an open one only within
+ * `cacheNotice`, whatever the terrain's sight (the player sees one at their
+ * full sight, and knows every cache of a scouted or stood-in section). Each
+ * tool a survivor holds adds `toolBonus` levels to its strength in duels, up to
+ * `toolCap` tools. `denPack` is the share of its other foes'
  * level a den adds to its strongest foe's (`denPower`). A survivor starts no
  * den duel within `duelTicks` of its last fight.
  */
@@ -191,6 +195,8 @@ export const ROYALE_FIELD = {
   spread: 8,
   startClear: 30,
   denMargin: 3,
+  cacheClear: 12,
+  cacheNotice: 3,
   cacheReach: 1.5,
   toolBonus: 0.5,
   toolCap: 4,
@@ -331,17 +337,20 @@ export function denPower(den: { foes: { level: number }[] }): number {
 
 /**
  * The weapon a `weapon` cache lends, by the player's issued family
- * (ISSUED_WEAPONS). Placeholders: the catalog has few weapons above the
- * starters; a family missing here lends nothing from a weapon cache.
+ * (ISSUED_WEAPONS): one step above that family's starter, so a plan alone
+ * fights with something better than it was issued. The festival's own
+ * weapons (data/items.data.ts) are lent by caches only; the sword family
+ * uses the catalog's iron sword. A family missing here (bare hands) lends
+ * nothing from a weapon cache.
  */
 export const CACHE_WEAPONS: Record<string, string> = {
   sword: 'iron_sword',
-  spear: 'old_spear',
-  dagger: 'bronze_dagger',
-  blunt: 'oak_club',
-  greatsword: 'steel_greatsword',
-  staff: 'oak_staff',
-  bow: 'hunting_bow',
+  spear: 'festival_spear',
+  dagger: 'festival_dagger',
+  blunt: 'festival_mace',
+  greatsword: 'festival_greatsword',
+  staff: 'festival_staff',
+  bow: 'festival_bow',
 };
 
 // ---------- The hub's stock ----------
