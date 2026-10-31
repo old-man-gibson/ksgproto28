@@ -5,8 +5,8 @@ kind: epic
 status: draft
 system: abilities
 parent: ''
-save: '58'
-updated: 2026-10-29
+save: ''
+updated: 2026-10-30
 invariants:
   - completability
   - no-terminal-states
@@ -18,7 +18,7 @@ done:
   - Every user entry in the Facet repo's docs/ABILITY_IDEAS.md runs as a FACET document in both games, or the card names the game-side supply still missing
   - Generated abilities pass the mortality proof; a hand-written ability may carry a written exemption, and each exemption states its reason on the document
   - Every core change passes both games' test suites (KSG npm run verify, IG node test/facet.*.js)
-  - Old KSG saves load at v58 with no ability attached
+  - Old KSG saves load at the version step 2 introduces, with no ability attached
   - npm run verify green
 ---
 
@@ -57,9 +57,10 @@ making abilities interesting first, then three hook fixes its team found (the
 mission-tier reset after a sortie has no caller, `townTierEnd` does not attach
 the person record, combat never calls `FacetHostIG.detach`).
 
-**KSG.** Nothing. FACET-SPEC §13 "Commits K1–K4" is the port plan, written
-against `SAVE_VERSION` 48 and old `combat.ts` line numbers. KSG is at 57.
-Re-verify every line reference in K1–K4 before building the step.
+**KSG.** Nothing before K1 (branch `facet-k1`, 2026-10-30; see step 1).
+FACET-SPEC §13 "Commits K1–K4" is the port plan, written against
+`SAVE_VERSION` 48 and old `combat.ts` line numbers; main is at 60 on
+2026-10-30. Re-verify every line reference in K2–K4 before building the step.
 
 # The user's rulings (2026-10-29)
 
@@ -165,15 +166,30 @@ Each step ships alone and is verified before the next.
    unmerged): the spec files move out, `FACET.md` points here, and
    `facet/MANIFEST.json` takes the master's note and hashes. This repo's
    `docs/ABILITY_IDEAS.md` is now a pointer.
-1. **K1, refreshed against v57.** `src/core/facet/` copy, `facet.d.ts`,
-   `host.ts` (player bearer only), `quantities.ts`, `tests/facet.test.ts`
-   over `facet.cases.js`. `GameState.facets` and `.facetState`;
-   `SAVE_VERSION` 57 → 58 with `MIGRATIONS[57]` (split assignment, never the
-   value of `x ??= …`, PITFALLS §1). Load the core with a bare side-effect
-   import only, and add `vite build` to `verify`, which today runs only
-   `svelte-check` and `vitest` (FACET-SPEC §2.1: a named import passes
-   vitest and fails the browser build).
-2. **Solar Charge in KSG.** Core additions 1 and 4; a sunlight quantity.
+1. **K1. Built 2026-10-30 on branch `facet-k1` (unmerged).** The copy in
+   `src/core/facet/` (written by the Facet repo's `node tools/sync.mjs --to
+   <dir>`, an option added for worktree copies), `facet.d.ts`, `load.ts`
+   (bare side-effect imports), `host.ts` (player only), `quantities.ts`,
+   `tests/facet.test.ts` (manifest check, the 41 core cases, the adapter,
+   and a status a document emits reaching `getDerivedStats`). Installed at
+   boot in `ui/state.svelte.ts`. `npm run verify` now ends with `vite build`.
+   `docs/FACET.md` is the maintenance page. Quantity ids are InfiniteGacha's
+   wherever both games have the number (`fighter.*`, `stat.eff.*`, `res.*`,
+   `pool.*`); the rest are `ksg.<StatKey>`.
+   **Moved to step 2: `GameState` fields and the save bump.** Their shape is
+   the run-long tier (core addition 4), which step 2 designs, and a field
+   nothing writes would only need renumbering each time another branch bumps
+   the save first. Step 2 takes the next free version, with its migration in
+   the same commit (PITFALLS §2; split assignment, PITFALLS §1).
+   Found while building, all core-side, so fixed in the Facet repo for both
+   games: nothing applies a cell's carrier status (the cells only set the
+   intensity of one already held), so a cell's fill never reaches the stat
+   block in either game; `{ of: 'frac' }` defaults its maximum to
+   `fighter.maxHp`, which in IG is a multiplier slot and in KSG is
+   unregistered, where `fighter.maxHpAbs` is the maximum. And in KSG the
+   mortality proof is inert until K2 supplies `probeSlice`/`probeNative`.
+2. **Solar Charge in KSG.** Core additions 1 and 4; a sunlight quantity; the
+   carrier fix above; the save field and bump moved from K1.
    Done: banks in sunlight outside combat, drains in the dark and indoors,
    empowers by fill, falls to −30% at empty, survives save, load and offline
    catch-up.
