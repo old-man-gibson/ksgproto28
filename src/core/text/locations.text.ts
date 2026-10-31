@@ -5,13 +5,13 @@ import type { ProseTable } from './prose';
 
 // ---------- SPOTS ----------
 export const SPOTS_TEXT: ProseTable = {
-  "f1_landing.desc": "Water runs down the stair and spreads beneath the doors. Somewhere inside, a stamp strikes a desk. Find the toll stamp still being used on this floor.",
-  "f1_storerooms.desc": "Rats crowd the fallen shelves. Drive them out and watch where they flee.",
-  "f1_bonded_deep.desc": "The fleeing vermin leave a gap beneath a shelf. Beyond it, cupboards and sodden files line a long passage. Search the rooms for a record of the toll stamp.",
-  "f1_archive.desc": "Daybooks sit on the upper shelves, above the waterline. Search here for the collector’s records.",
-  "f1_lockers.desc": "Coats hang above flooded lockers. Loose coins and tools collect beneath them.",
-  "f1_forms.desc": "Drawers of blank forms swell against their frames. An old sign points toward the office reception.",
-  "f1_reception.desc": "The reception desk is dry underneath. Search it before trying the office doors. Each door names the room beyond; the daybook records the order of the clerk’s visits.",
+  "f1_landing.desc": "Landing of floor 1, the Flooded Offices. Camp Above the Water is a rest activity, and the landing is a haven. The Vermin Hall is the only way on. Goal: take the toll stamp from the Toll Collector.",
+  "f1_storerooms.desc": "Drive Out the Vermin fights Forest Rats (levels 1 to 2), one at a time; Slimes (level 1) join after 4 wins. 6 wins clear the hall and open the way to the Records Passage.",
+  "f1_bonded_deep.desc": "Passage off the Vermin Hall. No activities. Leads to the Archive, the Staff Lockers and the Forms Store, each a search room. The clerk’s daybook is found by searching the Archive.",
+  "f1_archive.desc": "Search the Shelves (5 s) pays 1 common herb, 3 to 8 gold, or the clerk’s daybook (once per run, guaranteed by the 4th search). The daybook opens the Forms Store’s door to Office Reception.",
+  "f1_lockers.desc": "Search the Room (5 s) pays 1 iron scrap or 3 to 8 gold.",
+  "f1_forms.desc": "Search the Room (5 s) pays 1 iron scrap or 3 to 8 gold. With the clerk’s daybook, Enter the Office Section leads to Office Reception.",
+  "f1_reception.desc": "Search Beneath the Desk (4 s) finds the office key; the eight office doors stay locked until you have it. Each door is named for its room. The daybook gives the room order that leads to the Toll Collector; a wrong door sends you to another room.",
   "f1_registry.desc": "Numbered drawers reach the ceiling. The water has carried their labels across the floor.",
   "f1_scribe.desc": "Form templates lie beneath a paperweight. A ruler projects from the drawer beside them.",
   "f1_auditor.desc": "A validation ledger lies open beside a stack of rejected forms.",
@@ -19,7 +19,7 @@ export const SPOTS_TEXT: ProseTable = {
   "f1_dispatch.desc": "Pigeonholes cover the wall. Unsent envelopes cling to the table legs.",
   "f1_records.desc": "Copies of the same receipt hang from drying lines.",
   "f1_supplies.desc": "Boxes of spare nibs stand on a stool above the water.",
-  "f1_toll_hall.desc": "A golem stands submerged behind a desk, stamping sodden documents. The water around it can become steam, ice, or a conductor. The toll stamp remains in its hand.",
+  "f1_toll_hall.desc": "Arriving starts a fight that cannot be fled: the Toll Collector, level 4, alone. A heat spell blinds it, a cold spell removes its dodge and most of its armour, a lightning spell speeds up its attacks and hurts it; each lasts 8 s. Its kill gives the toll stamp and clears floor 1.",
 
   'base_entrance.desc': 'The door into your hold, from the gatehouse on floor 11. It opens once the stronghold is held, and stays open on every later run. Leads to the Main Hall; a one-way door also lets you out to the Foot of the Ascent.',
 
@@ -134,13 +134,13 @@ export const SPOTS_TEXT: ProseTable = {
 
   'f0_cellblock.desc': 'Corridor outside the cell. Fight the Cell Slime is one fight: the slime deals 1 damage per hit and is gone once beaten. The yard door leads to the Field (3 s).',
 
-  'f0_field.desc': 'Open ground between the cellblock and the gate. Fight in the Field holds three fights against Cell Slimes (levels 1 to 2), then goes quiet. Study the Gate Plaque trains Intelligence. The path leads to the Gate (3 s).',
+  'f0_field.desc': 'Open ground between the cellblock and the gate. Fight in the Field holds three fights against Cell Slimes (levels 1 to 2), then spawns no more fights. Study the Gate Plaque trains Intelligence. The path leads to the Gate (3 s).',
 
   'f0_gate.desc': 'The way out of floor 0. The road through it into Threshold (3 s) is one-way: the Foot of the Ascent is on the other side and the floor closes behind you.',
 
   'f2_stairhead.desc': 'Landing of floor 2, the same building as floor 1, one storey up. Camp on the Landing is a rest activity, and the landing is a haven. The Long Hall starts here (2.5 s).',
 
-  'f2_hall_1.desc': 'First stretch of the Long Hall. Clear the Stretch fights Bound Ledgers and Filing Automatons (levels 3 to 4), one at a time; after 3 wins the way on down the hall opens and the stretch goes quiet. A door leads to the Cleared Office, where the tutor teaches.',
+  'f2_hall_1.desc': 'First stretch of the Long Hall. Clear the Stretch fights Bound Ledgers and Filing Automatons (levels 3 to 4), one at a time; after 3 wins the way on down the hall opens and the stretch spawns no more fights. A door leads to the Cleared Office, where the tutor teaches.',
 
   'f2_gym.desc': 'An office emptied out for training. The tutor here teaches two techniques for free: Gather (Neutral → Coiled), then Lunge (Coiled → Extended) once you know a way into Coiled. Work the Heavy Bag trains Strength.',
 
@@ -153,7 +153,7 @@ export const SPOTS_TEXT: ProseTable = {
   'f2_break_room.desc': 'A haven halfway down the hall: Sit Down for a While is a rest activity. Go Through the Cupboards explores the room (30 s) for one find.',
   'f2_break_room.finds.f2_petty_cash.desc': '💰 A petty-cash tin behind the mugs: 70 to 110 gold.',
 
-  'f2_hall_4.desc': 'Far end of the Long Hall. Clear the Stretch fights Living Dolls and Filing Automatons (levels 6 to 7), at most two at a time. The third win clears floor 2 and the stretch goes quiet.',
+  'f2_hall_4.desc': 'Far end of the Long Hall. Clear the Stretch fights Living Dolls and Filing Automatons (levels 6 to 7), at most two at a time. The third win clears floor 2; the stretch then spawns no more fights.',
 
   'f3_stairhead.desc': 'Landing of floor 3, the top of the building’s stairwell. Camp on the Landing is a rest activity, and the landing is a haven. The Mail Room is off the landing; the next flight down opens once its floor plan is found there.',
 
@@ -162,21 +162,21 @@ export const SPOTS_TEXT: ProseTable = {
   'f3_mail_room.finds.f3_mail_purse.desc': '💰 An unclaimed parcel of coin: 60 to 90 gold.',
   'f3_mail_room.finds.f3_mail_string.desc': '✂️ A string anchor bolted under the sorting table, its line running down through the floor. Cut: the bureaucrat below loses a string (one level).',
 
-  'f3_landing_2.desc': 'Second landing of the stairwell. Clear the Landing fights Living Dolls and Sorting Automatons (levels 6 to 7), one at a time; 2 wins and it goes quiet. The Archive Stacks are off the landing; the next flight down opens once their floor plan is found.',
+  'f3_landing_2.desc': 'Second landing of the stairwell. Clear the Landing fights Living Dolls and Sorting Automatons (levels 6 to 7), one at a time; 2 wins and it spawns no more fights. The Archive Stacks are off the landing; the next flight down opens once their floor plan is found.',
 
   'f3_archive.desc': 'Search the Stacks explores the room (42 s) for three finds: the floor plan for the next flight, an oak club, and a string anchor.',
   'f3_archive.finds.f3_archive_plan.desc': '🗺️ A floor plan filed under the stairwell. The next flight down is open.',
   'f3_archive.finds.f3_archive_club.desc': '🏏 An oak club wedged between two shelves. A club deals bludgeoning damage, which the bureaucrat, a construct, takes more of.',
   'f3_archive.finds.f3_archive_string.desc': '✂️ A string anchor behind the end shelf. Cut: the bureaucrat below loses a string (one level).',
 
-  'f3_landing_3.desc': 'Third landing of the stairwell. Clear the Landing fights Living Dolls and Filing Automatons (levels 7 to 8), one at a time; 2 wins and it goes quiet. The Records Annex is off the landing; the way down to the Hearing Room opens once its floor plan is found.',
+  'f3_landing_3.desc': 'Third landing of the stairwell. Clear the Landing fights Living Dolls and Filing Automatons (levels 7 to 8), one at a time; 2 wins and it spawns no more fights. The Records Annex is off the landing; the way down to the Hearing Room opens once its floor plan is found.',
 
   'f3_annex.desc': 'Go Through the Files explores the room (42 s) for three finds: the floor plan to the Hearing Room, two healing salves, and the last string anchor.',
   'f3_annex.finds.f3_annex_plan.desc': '🗺️ A floor plan with the Hearing Room marked at the bottom of the stairwell. The way down is open.',
   'f3_annex.finds.f3_annex_salve.desc': '🧴 Two healing salves in a first-aid drawer.',
   'f3_annex.finds.f3_annex_string.desc': '✂️ The last string anchor, in the annex ceiling. Cut: the bureaucrat below loses a string (one level).',
 
-  'f3_hearing_room.desc': 'Bottom of the stairwell. Arriving starts a fight that cannot be fled: the Puppet Bureaucrat, alone. It is level 12 with all three strings, one level less for each string anchor cut in the side rooms above (level 9 with none left). Its kill clears floor 3 and the room goes quiet.',
+  'f3_hearing_room.desc': 'Bottom of the stairwell. Arriving starts a fight that cannot be fled: the Puppet Bureaucrat, alone. It is level 12 with all three strings, one level less for each string anchor cut in the side rooms above (level 9 with none left). Its kill clears floor 3; the room then spawns no more fights.',
 
   // ---- Band 2, the Wilds (floors 4–6). Placeholder text, sketch fidelity. ----
   'f4_treeline.desc': 'Landing of floor 4, where the tower opens onto woodland. Camp at the Treeline is a rest activity, and the landing is a haven.',
@@ -203,7 +203,7 @@ export const SPOTS_TEXT: ProseTable = {
   'f5_drowned_village.finds.f5_village_salves.desc': '🧴 Two healing salves in a hut that stayed dry.',
   'f5_drowned_village.finds.f5_village_cache.desc': '💰 A goblin cache under the floorboards: 70 to 120 gold.',
   'f5_cave_mouth.desc': 'Endless hunt: hobgoblins, spider slimes and goblins, level 9 to 11. Hobgoblins fight with techniques; with martial open, seeing one used on you 50 times teaches it.',
-  'f5_hollows.desc': 'Dark: dodging suffers until Darkvision pays it off. Endless hunt: hobgoblins, spider slimes and stone golems, level 10 to 11. Map the Hollows explores (36 s) for copper ore, the warren\'s back door and iron scrap.',
+  'f5_hollows.desc': 'Dark: your dodge is cut by 25% and your attacks gain a 15% extra miss chance; Darkvision shrinks both, to nothing at level 50. Endless hunt: hobgoblins, spider slimes and stone golems, level 10 to 11. Map the Hollows explores (36 s) for copper ore, the warren\'s back door and iron scrap.',
   'f5_hollows.finds.f5_hollows_ore.desc': '⛏️ Four chunks of copper ore in a seam.',
   'f5_hollows.finds.f5_hollows_door.desc': '🚪 A draught from a crack in the rock: a guarded door into the goblin warren. The way to the Back Door is open.',
   'f5_hollows.finds.f5_hollows_scrap.desc': '🔩 Four iron scrap from a broken cart.',
@@ -220,12 +220,12 @@ export const SPOTS_TEXT: ProseTable = {
   'f6_shrine.desc': 'Endless hunt: witch doctors and firetongues, level 11 to 12. Desecrate the Shrine explores (30 s) for an offering and one of the three sabotages. The drop down to the deep encampment starts here.',
   'f6_shrine.finds.f6_shrine_offering.desc': '💰 The shrine\'s offering bowl: 80 to 140 gold.',
   'f6_shrine.finds.f6_shrine_sabotage.desc': '🔥 The shrine is overturned and its fire out. Sabotage: the warchief loses a level.',
-  'f6_drop.desc': 'The deep encampment, second map of the warren. Dark. Camp in the Drop is a rest activity and a haven. Endless hunt: hobgoblins, witch doctors, firetongues and goblins, level 11 to 13, up to three at once.',
+  'f6_drop.desc': 'The deep encampment, second map of the warren. Dark: your dodge is cut by 25% and your attacks gain a 15% extra miss chance; Darkvision shrinks both, to nothing at level 50. Camp in the Drop is a rest activity and a haven. Endless hunt: hobgoblins, witch doctors, firetongues and goblins, level 11 to 13, up to three at once.',
   'f6_great_hall.desc': 'Arriving starts a fight that cannot be fled: the Goblin Warchief and two escorts (witch doctors, firetongues or hobgoblins). The warchief is level 11 with no sabotage, one level less for each of the three (8 with all three). Killing it clears floor 6 and opens prestige.',
 
   // Band 3, the City: a skeleton. Every level below is the base; each
   // direction cleared adds levels to all four floors. Placeholder text.
-  'castle_court.desc': 'The castle at the heart of the city, the hub of band 3. The ladder answers here: the four wards, south, west, north and east, are each one climb away. Rest in the Castle is a rest activity, and the court is a haven. Placeholder text.',
+  'castle_court.desc': 'The castle at the heart of the city, the hub of band 3. The four wards (south, west, north and east) are each one climb from here. Rest in the Castle is a rest activity, and the court is a haven. Placeholder text.',
   'f7_docks.desc': 'Landing of floor 7, the south ward. Bandits raid the merchants and convoys that feed the city. Which road leaves the docks depends on how many of the other three wards are cleared this run: none, the merchant road; one or two, the bandits\' camp in the salt flats; all three, the burnt camp. Camp on the Docks is a rest activity, and the landing is a haven. Endless hunt: rats and water slimes, level 12 to 13 before the band\'s step. Placeholder text.',
   'f7_merchant_road.desc': 'Open while no other ward is cleared. 12 fights of 2 to 4 bandits (thugs, archers, cutthroats), level 12 to 13. The 12th win clears floor 7. If another ward is cleared first, the raids stop: fights already won here count toward nothing. Placeholder text.',
   'f7_stockade.desc': 'The camp\'s palisade, open while one or two other wards are cleared. 4 fights of 2 to 4 bandits, mostly thugs and cutthroats, level 11 to 12 before the band\'s step (+2 or +5). Spending these fights and the watchtowers\' opens the chief\'s tent. Placeholder text.',
@@ -255,7 +255,7 @@ export const SPOTS_TEXT: ProseTable = {
   'f11_wall.desc': 'The wave, opened by the steward’s second quest: eight fights in groups of two or three, level 24 to 25; the eighth is the Siege Captain and its escort, level 27. Winning the eighth ends the run in an automatic prestige. Shut on every run after the stronghold. The postern leads back to the road. Placeholder text.',
 
   // ==== HARBOR: spot text (skeleton 2026-10-30; the harbor builder's section) ====
-  'f11_quay.desc': 'The harbor, on runs after the stronghold. Rest at the Quay is a rest activity, and the quay is a haven. Makes the battery’s hold: Ship’s Cannons (6 iron ingots), Cannonballs (3 from 1 iron ingot) and Powder Charges (2 from 3 biomatter and 1 iron scrap). Four berths each hold one side’s recruiter; accepting a join quest picks your side for the run. Placeholder text.',
+  'f11_quay.desc': 'The harbor, on runs after the stronghold. Rest at the Quay is a rest activity, and the quay is a haven. Crafts the battery’s parts: Ship’s Cannons (6 iron ingots), Cannonballs (3 from 1 iron ingot) and Powder Charges (2 from 3 biomatter and 1 iron scrap). Four berths each hold one side’s recruiter; accepting a join quest picks your side for the run. Placeholder text.',
   'f11_merchant_berth.desc': 'The merchants’ berth. The factor recruits here: the merchants own the convoy, defend it from pirates and sea monsters both, and sell what survives for gold. Placeholder text.',
   'f11_smugglers_berth.desc': 'The pirates’ berth. The bosun recruits here: the pirates seize crates from the convoy past its guard. Placeholder text.',
   'f11_privateer_berth.desc': 'The privateers’ berth. The letter agent recruits here: the privateers take the convoy’s crates back from the pirates. Placeholder text.',
@@ -284,8 +284,8 @@ export const SPOTS_TEXT: ProseTable = {
 
   // ==== FESTIVAL: spot text (skeleton 2026-10-30; the festival builder's section) ====
   'f15_dark_room.desc': 'A sealed room on floor 15 with nine other people in it. Arriving here starts a festival attempt: the door holds all your gear until it ends and issues one plain weapon of your family. The nine come at you in waves, the last alone, and none of it can be fled. The door to the hall opens when you are the only one standing. A knockout, or the ladder out, loses the attempt. Placeholder text.',
-  'f15_hall.desc': 'The hall behind the dark room’s door, where the survivors of ten rooms wait out ten festival days. No one fights here. The benches are a rest, the floor is a training yard, and a cooking fire burns at one end. The festival’s clock runs only while the game does. Placeholder text.',
-  'f15_stores.desc': 'The festival’s stores: a few rations, some meat and two salves per attempt, found by searching. They restock when the next attempt starts. Placeholder text.',
+  'f15_hall.desc': 'The hall behind the dark room’s door, where the survivors of ten rooms wait out ten festival days. No one fights here. Sleep on the Benches is a rest activity, Drill With the Others trains Strength, Spar Between the Benches trains Dexterity, and the hall holds a cooking bench. The festival’s clock runs only while the game does. Placeholder text.',
+  'f15_stores.desc': 'The festival’s stores. Search the Stores (12 s) pays traveler’s rations (2 each, up to 3 times), raw meat (3 each, up to 2 times) or a healing salve (up to 2 times) per attempt. They restock when the next attempt starts. Placeholder text.',
   'f16_arena.desc': 'The royale’s field on floor 16. In an attempt, the survivors fight each other and come at you one or two at a time, stronger as the field empties; the last one standing is fought alone, and beating it wins the festival. Outside an attempt the field is empty: attempts start in the dark room on floor 15. Placeholder text.',
 
   // ==== ABERRANT: spot text (skeleton 2026-10-30; the aberrant builder's section) ====

@@ -5,13 +5,13 @@ import type { ProseTable } from './prose';
 
 // ---------- MONSTERS ----------
 export const MONSTERS_TEXT: ProseTable = {
-  'ledger_tome.desc': 'Small basic construct. A bound ledger that opens and shuts on whatever comes near; the pages cut. Takes 25% less piercing and 50% more heat damage. Appears in the Long Hall.',
+  'ledger_tome.desc': 'Small basic construct. Slashing attacks. Takes 25% less piercing and 50% more heat damage. Appears in the Long Hall.',
   'filing_automaton.desc': 'Basic construct, armour 2. Strikes with a filing arm for bludgeoning damage. Takes 20% less slashing and piercing, 20% more bludgeoning and 50% more lightning damage. Appears in the Long Hall. Drops iron scrap.',
   'sorting_automaton.desc': 'Basic construct, quick. Slashes with sorting blades. Takes 20% less slashing and piercing, 20% more bludgeoning and 50% more lightning damage. Appears in the Long Hall. Drops iron scrap.',
   'living_doll.desc': 'Small basic construct, dark element. Stabs for piercing damage. Takes 30% less dark damage. Appears in the Long Hall.',
   'puppet_bureaucrat.desc': 'Large elite construct, dark element, on three strings. Always fights alone. Strikes for bludgeoning damage. Takes 30% less slashing, piercing and dark damage, 35% more bludgeoning and 20% more heat. Level 12 with all three strings; each string anchor cut on the floor above takes a level off. Appears in the Hearing Room. 200 XP; rare drop: Lucky Charm.',
-  'toll_collector_golem.desc': 'Water covers the collector’s legs. One hand turns a sodden form; the other brings the toll stamp down. Heat fills its sight with steam, cold locks its joints, and lightning drives its stamping arm beyond its limits.',
-  'forest_rat.desc': 'Small basic beast. Bites for piercing damage. Appears in The Cages and The Undercrofts. Rare drop: Cloth Tunic.',
+  'toll_collector_golem.desc': 'Large basic construct, earth element, armour 8. Bludgeoning attacks. Always fights alone. A heat spell blinds it (65% extra miss chance), a cold spell removes its dodge and 75% of its armour, a lightning spell speeds up its attacks by 65% and deals it 12 lightning damage each time its action bar fills; each lasts 8 s and does not stack. Level 4, in the Toll Collector’s Office. Drops iron scrap and the toll stamp.',
+  'forest_rat.desc': 'Small basic beast. Bites for piercing damage. Appears in The Cages, the Vermin Hall, the Woods Edge, the Docks and the Forest Gate. Rare drop: Cloth Tunic.',
 
   'young_wolf.desc': 'Basic beast. Bites for piercing damage with a 20% chance to inflict Punctured. Drops fur and raw meat.',
 
@@ -21,17 +21,17 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'cliff_hawk.desc': 'Veteran flying beast, wind element. Attacks from range for slashing damage with a 25% chance to inflict Bleeding. Rare drop: Hawk Feather Band.',
 
-  'cave_spider.desc': 'Veteran vermin. Poison bite with a 35% chance to inflict Poison. Takes 50% less poison damage. Appears in The Undercrofts.',
+  'cave_spider.desc': 'Veteran vermin. Poison bite with a 35% chance to inflict Poison. Takes 50% less poison damage.',
 
   'stone_golem.desc': 'Large elite construct, earth element. Always met alone. Bludgeoning blows with a 25% chance to inflict Concussed. Takes 60% less slashing and piercing damage, 50% more bludgeoning and arcane damage. Two loot rolls; drops iron scrap and gold.',
 
   'slime_cell.desc': 'Training slime on floor 0. Every hit it lands deals exactly 1 damage. No armour and no resistances, so every starting weapon deals its listed damage. Appears in the Cellblock (once) and the Field (three fights). Drops Slime Gel.',
 
-  'slime_base_basic.desc': 'Small basic slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in the floor 1 storerooms. Drops Slime Gel.',
+  'slime_base_basic.desc': 'Small basic slime. Bludgeoning attacks. Takes 50% less slashing and piercing, 25% less poison and 15% less cold damage, and 25% more bludgeoning damage. Appears in the Vermin Hall. Drops Slime Gel.',
   'cage_slime.desc': 'Small basic slime bred in The Cages to take the same damage from every type: no armour, no resistances. Bludgeoning attacks. Appears only in The Cages. Drops Slime Gel.',
 
   'suspiciously_large_slime.desc': 'Large basic slime, bred in The Cages like the Cage-Bred Slime: no armour, no resistances. Bludgeoning attacks. Appears only when the Cages keeper dares you: every 8 wins while you train there, until you beat it. The fight cannot be fled. Drops 2–4 Slime Gel.',
-  'slime_base_advanced.desc': 'Veteran slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage and 25% more bludgeoning damage. Appears in The Undercrofts. Drops Slime Gel.',
+  'slime_base_advanced.desc': 'Veteran slime. Bludgeoning attacks. Takes 50% less slashing and piercing, 25% less poison and 15% less cold damage, and 25% more bludgeoning damage. Drops Slime Gel.',
 
   'slime_base_elite.desc': 'Large elite slime. Bludgeoning attacks. Takes 50% less slashing and piercing damage, 30% less poison, 20% less cold, and 25% more bludgeoning damage. Two loot rolls of Slime Gel.',
 
@@ -43,7 +43,7 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_fire_elite.desc': 'Large elite slime, fire element. Attacks from range for heat damage with a 40% chance to inflict On Fire. Takes 70% less heat and 70% more cold damage; 50% less slashing and piercing, 25% more bludgeoning. Two loot rolls; drops Warm Slime Gel and gold.',
 
-  'goblin.desc': 'Small basic goblin. Piercing attacks with a 15% chance to inflict Bleeding. Takes 10% less poison damage. Appears in The Cages and The Undercrofts. Drops fur and iron scrap.',
+  'goblin.desc': 'Small basic goblin. Piercing attacks with a 15% chance to inflict Bleeding. Takes 10% less poison damage. Appears in The Cages and on floors 4 to 6. Drops fur and iron scrap.',
 
   'goblin_boss.desc': 'Legendary goblin. Slashing attacks. Always spawns in a group of five with Goblin escorts. Takes 25% less poison damage. Two loot rolls; drops include a Boss Token, Iron Gauntlets, the Moonlit Katana and greater runes.',
 
@@ -61,7 +61,7 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_golem.desc': 'Gargantuan ancient slime construct, earth element. Bludgeoning attacks. Takes 75% less slashing and piercing damage, 70% less heat and cold, 75% more bludgeoning and double arcane damage. Three loot rolls; drops Warm Slime Gel, gold and a Boss Token.',
 
-  'slime_water.desc': 'Basic slime, water element. Bludgeoning attacks with a 40% chance to inflict Wet. Takes 60% less slashing and piercing, 40% less heat, 25% more bludgeoning and 60% more lightning damage. Appears in The Undercrofts. Drops Slime Gel and Chilled Slime Gel.',
+  'slime_water.desc': 'Basic slime, water element. Bludgeoning attacks with a 40% chance to inflict Wet. Takes 60% less slashing and piercing, 40% less heat, 25% more bludgeoning and 60% more lightning damage. Appears in the Bog and the Docks. Drops Slime Gel and Chilled Slime Gel.',
 
   'slime_nature.desc': 'Basic slime, nature element. Poison attacks with a 30% chance to inflict Poison. Takes 60% less poison, 40% more heat; 50% less slashing and piercing, 25% more bludgeoning. Drops Slime Gel and Common Herb.',
 
@@ -85,9 +85,9 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_zombie.desc': 'Veteran undead slime, toxic element. Poison attacks. Takes 80% less poison, 60% less piercing, 50% less slashing, and 25% more bludgeoning damage. Drops Slime Gel, ruined fur and iron scrap.',
 
-  'slime_spider.desc': 'Small veteran slime vermin, toxic element. Poison attacks. Spawns in packs of 2 to 5. Takes 60% less poison, 50% less piercing, 40% less slashing, and 25% more bludgeoning damage. Appears in The Undercrofts. Rare drop: Spider Silk Garb.',
+  'slime_spider.desc': 'Small veteran slime vermin, toxic element. Poison attacks. Spawns in packs of 2 to 5. Takes 60% less poison, 50% less piercing, 40% less slashing, and 25% more bludgeoning damage. Appears in the Cave Mouth and the Hollows. Rare drop: Spider Silk Garb.',
 
-  'slime_coin.desc': 'Medium veteran slime. Bludgeoning attacks. Always met alone. Higher DEX than other slimes. Takes 60% less slashing and piercing, 30% less arcane, 25% more bludgeoning and 40% more heat damage. Appears in The Undercrofts. Carries 20 to 60 gold and drops more; rare drop: Lucky Charm.',
+  'slime_coin.desc': 'Medium veteran slime. Bludgeoning attacks. Always met alone. Higher DEX than other slimes. Takes 60% less slashing and piercing, 30% less arcane, 25% more bludgeoning and 40% more heat damage. Carries 20 to 60 gold and drops more; rare drop: Lucky Charm.',
 
   'slime_soldier_spear.desc': 'Veteran humanoid slime. Piercing attacks. Escort of the Slime King. Takes 50% less slashing and piercing, 25% more bludgeoning and 20% more arcane damage. Drops Slime Gel, iron scrap and Old Spear; rare drop: Wooden Shield.',
 
@@ -105,11 +105,11 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_dark.desc': 'Elite incorporeal slime, dark element. Arcane damage attacks. Takes 85% less slashing and piercing, 50% less bludgeoning, and 50% more arcane damage. Two loot rolls; drops Void Slime Gel; rare drops: Slime Core, Spellwoven Cloak.',
 
-  'slime_metal.desc': 'Small elite slime construct. Bludgeoning attacks. Always met alone. Highest DEX in the slime family. Takes 90% less slashing and piercing, 60% less bludgeoning, 50% less heat and cold, and 60% more lightning damage. Appears in The Undercrofts. 120 XP, 40 to 90 gold; drops iron ingots, gold and Slime Cores.',
+  'slime_metal.desc': 'Small elite slime construct. Bludgeoning attacks. Always met alone. Highest DEX in the slime family. Takes 90% less slashing and piercing, 60% less bludgeoning, 50% less heat and cold, and 60% more lightning damage. 120 XP, 40 to 90 gold; drops iron ingots, gold and Slime Cores.',
 
   'boss_slime_guardian.desc': 'Colossal ancient slime construct. Bludgeoning attacks. Always met alone. Takes 80% less slashing and piercing, 50% less heat and cold, 50% more bludgeoning and 60% more arcane damage. Three loot rolls; drops Slime Cores, iron ingots, a Boss Token, Iron Breastplate and Greater Rune of Vitality.',
 
-  'slime_king.desc': 'Large legendary slime, unique. Bludgeoning attacks. Spawns in a group of 3 to 5 with Slime Legionary and Slime Skirmisher escorts. Takes 65% less slashing and piercing, 40% less heat and cold, 30% more bludgeoning and 30% more arcane damage. Appears in The Undercrofts. Three loot rolls; drops Slime Cores, Luminous Slime Gel, a Boss Token, the Moonlit Katana, Iron Gauntlets and Greater Rune of Might.',
+  'slime_king.desc': 'Large legendary slime, unique. Bludgeoning attacks. Spawns in a group of 3 to 5 with Slime Legionary and Slime Skirmisher escorts. Takes 65% less slashing and piercing, 40% less heat and cold, 30% more bludgeoning and 30% more arcane damage. Three loot rolls; drops Slime Cores, Luminous Slime Gel, a Boss Token, the Moonlit Katana, Iron Gauntlets and Greater Rune of Might.',
 
   'training_dummy.desc': 'Passive target at the Training Area; it never attacks. Spawns in groups of one, three or five so splash and flank behaviour can be tested. About 2,500 HP and 15% evasion. Takes 30% less slashing, piercing and bludgeoning damage; no elemental resistance. Dies and respawns; no loot.',
 
@@ -171,12 +171,12 @@ export const MONSTERS_TEXT: ProseTable = {
   'ph_port_warden.desc': 'Placeholder elite, the merchants’ mission boss on floor 14: the raider who holds the closed port. Spawns with four Pirate Captains. Bludgeoning attacks. Fights with Heavy Blow, Hamstring and Gather. Drops a Boss Token, gold and iron ingots.',
 
   // ==== FESTIVAL: monster text (skeleton 2026-10-30; the festival builder's section) ====
-  'ph_room_brawler.desc': 'Placeholder humanoid in the Vermin Festival’s dark room. Slashing attacks with a chance to bleed. Fights with Hamstring, Lunge and Gather. Drops nothing.',
+  'ph_room_brawler.desc': 'Placeholder humanoid in the Vermin Festival’s dark room. Slashing attacks with a 15% chance to inflict Bleeding. Fights with Hamstring, Lunge and Gather. Drops nothing.',
   'ph_room_bruiser.desc': 'Placeholder large humanoid in the Vermin Festival’s dark room. Bludgeoning attacks. Fights with Heavy Blow and Gather. Drops nothing.',
-  'ph_room_last.desc': 'Placeholder elite humanoid: the last of the dark room’s nine, always fought alone. Beating it clears floor 15. Slashing attacks with a chance to bleed. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops nothing.',
-  'ph_survivor_blade.desc': 'Placeholder humanoid on the Vermin Festival’s royale field, a survivor of another room. Piercing attacks with a chance to bleed. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops nothing.',
+  'ph_room_last.desc': 'Placeholder elite humanoid: the last of the dark room’s nine, always fought alone. Beating it clears floor 15. Slashing attacks with a 20% chance to inflict heavy Bleeding. Fights with Heavy Blow, Hamstring, Dirty Stab and Gather. Drops nothing.',
+  'ph_survivor_blade.desc': 'Placeholder humanoid on the Vermin Festival’s royale field, a survivor of another room. Piercing attacks with a 20% chance to inflict Bleeding. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops nothing.',
   'ph_survivor_brute.desc': 'Placeholder large humanoid on the Vermin Festival’s royale field, a survivor of another room. Bludgeoning attacks. Fights with Heavy Blow, Crosscut and Gather. Drops nothing.',
-  'ph_survivor_champion.desc': 'Placeholder elite humanoid: the last survivor on the royale field, always fought alone. Beating it wins the festival. Slashing attacks with a chance to bleed. Fights with Crosscut, Finishing Cut, Heavy Blow, Hamstring and Gather. Drops nothing.',
+  'ph_survivor_champion.desc': 'Placeholder elite humanoid: the last survivor on the royale field, always fought alone. Beating it wins the festival. Slashing attacks with a 25% chance to inflict heavy Bleeding. Fights with Crosscut, Finishing Cut, Heavy Blow, Hamstring and Gather. Drops nothing.',
 
   // ==== ABERRANT: monster text (skeleton 2026-10-30; the aberrant builder's section) ====
 
@@ -195,5 +195,5 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'ph_roadstead_crew.desc': 'Placeholder crew of the ferry at floor 20’s roadstead. Always three at once. Piercing attacks. Fights with Lunge, Dirty Stab, Pocket Sand and Gather. Drops gold, leather and sometimes a Boss Token.',
 
-  'giant_spider_queen.desc': 'Huge elite vermin, toxic element. Always fights alone. Poison bite with a 60% chance to inflict heavy Poison. Takes 40% less slashing, 50% less poison, 35% less earth and 20% less bludgeoning; takes 50% more piercing, 40% more heat and 20% more cold damage. Appears in the Brood Den. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
+  'giant_spider_queen.desc': 'Huge elite vermin, toxic element. Always fights alone. Poison bite with a 60% chance to inflict heavy Poison. Takes 40% less slashing, 50% less poison, 35% less earth and 20% less bludgeoning; takes 50% more piercing, 40% more heat and 20% more cold damage. 200 XP; rare drops: Spider Silk Garb, Lucky Charm.',
 };

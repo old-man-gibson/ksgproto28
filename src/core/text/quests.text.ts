@@ -24,7 +24,7 @@ export const QUESTS_TEXT: ProseTable = {
   'a_taste_of_everything.objectives.5.desc': 'Inscribe a new spell at the Reading Hall’s Spellcrafting Table',
   'a_taste_of_everything.objectives.6.desc': 'Learn a miracle at the Nine Chapels (Spellcrafting Table, Divine tab)',
 
-  "the_first_ascent.desc": "Find the toll stamp that is still being used in the flooded offices. Follow the vermin’s retreat, search the records, and locate the collector. Reward: 350 gold, 100 level XP, 1 favor.",
+  "the_first_ascent.desc": "Take the toll stamp from the Toll Collector on floor 1. Clear the Vermin Hall, find the clerk’s daybook in the Archive and the office key at reception, then visit the offices in the order the daybook gives. Reward: 350 gold, 100 level XP, 1 favor.",
   "the_first_ascent.objectives.0.desc": "Recover the toll stamp from the collector",
 
   'f11_shore_up_the_gate.desc': 'Bring the steward on floor 11 twenty hardwood and fifteen iron scrap. The yard has timber; the road’s raiders drop scrap. Reward: 200 gold, 150 level XP. Placeholder text.',

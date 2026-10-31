@@ -94,8 +94,8 @@ export const NPCS_TEXT: ProseTable = {
 
   'hall_tutor.desc': 'Stands in the Cleared Office on floor 2. Teaches Gather (Neutral → Coiled), then Lunge (Coiled → Extended) once you know a way into Coiled. Both free.',
   'hall_tutor.dialogue': [
-    'Two moves. Gather winds you up. Lunge spends it. Then swing, and you are back where you started.',
-    'Coiled, you have paid for the next blow already. Extended, you have reach. A plain swing puts you back at neutral.',
+    'Two techniques. Gather moves you from Neutral to Coiled. Lunge moves you from Coiled to Extended. A plain swing returns you to Neutral.',
+    'Coiled is the wind-up position: heavy techniques start from it. Extended is the reach position.',
     'The rest of it I do not teach here. Not yet.',
   ],
 
@@ -120,7 +120,7 @@ export const NPCS_TEXT: ProseTable = {
   ],
   'f11_bosun.desc': 'The pirates’ recruiter at the smugglers’ berth on floor 11. Gives Sign On With the Pirates, which picks the pirates for the run, then Forge a Signal. Placeholder.',
   'f11_bosun.dialogue': [
-    'Sign on and you take crates off the convoy. Every guard you put down is one less between you and the hold.',
+    'Sign on and you seize crates from the convoy. Each leg, every guard you kill adds one crate to what you seize.',
     'The other berths stop dealing with you once you sign. One side a run.',
     'Floor 12 has a cove off the outer port. Search the port to find the way in.',
   ],
@@ -128,7 +128,7 @@ export const NPCS_TEXT: ProseTable = {
   'f11_letter_agent.dialogue': [
     'The pirates take the convoy; a letter of marque lets you take it back from them.',
     'The other berths stop dealing with you once you sign. One side a run.',
-    'Every pirate you put down on a leg is one less crew between you and their prize.',
+    'Each leg, every pirate you kill adds one crate to what you recover.',
   ],
   'f11_lieutenant.desc': 'The navy’s recruiter at the navy berth on floor 11. Gives Enlist With the Navy, which picks the navy for the run, then Bait a Lure. Placeholder.',
   'f11_lieutenant.dialogue': [
@@ -138,13 +138,13 @@ export const NPCS_TEXT: ProseTable = {
   ],
   'f13_pilot.desc': 'At the Last Port on floor 13. Sells a Pilot’s Passage; once bought, the Pilot’s Channel into the blockade is open and the blockaders start that fight Surprised. Placeholder.',
   'f13_pilot.dialogue': [
-    'Through the picket line you arrive flat-footed. Through my channel, they do.',
+    'Through the picket line you start the fight Flat-Footed. Through my channel, the blockaders start it Surprised.',
     'One passage, and the channel is yours for the run.',
   ],
   'f13_harbor_master.desc': 'At the Last Port on floor 13. Sells Port Clearance to merchants only: the factor’s Clear the Closed Port asks for one bought. Placeholder.',
   'f13_harbor_master.dialogue': [
-    'The closed port does not open for anyone. It opens for papers.',
-    'Merchants only. The price is the price.',
+    'The closed port on floor 14 opens only for Port Clearance papers.',
+    'I sell Port Clearance to merchants only.',
   ],
 
   // ==== DESERT: NPC text (the desert builder's section) ====
