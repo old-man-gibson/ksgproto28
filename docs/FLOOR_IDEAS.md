@@ -215,6 +215,36 @@ data model, after the antagonist's review of idea 4:
   eight core systems; "narrow" is read as the narrowest legal pick, which is
   what John measures. A narrower John would contradict §6a.
 
+### 1.6 Band archetypes and the quality bar (user, 2026-10-30)
+
+**As posted.** *"I feel like this might be the premier 'few but intense
+floors' band and the gold standard for how other floor groups of similar
+size should look like. I think in general, all bands from floor 1 to 30
+should all be of a similar level of quality to compare against later, but
+first everything else needs to be on the level of the Vermin Festival."*
+*"There might be other archetypes in the future but for now that's the
+list."*
+
+| Floors | Band | Archetype (user's words) |
+|---|---|---|
+| 1–3 | the Lower Reaches | not named in the list |
+| 4–6 | the Wilds | straightforward mission (goblin eradication) |
+| 7–10 | the City | pick your order (the city's troubles) |
+| 11–14 | the Harbor | pick your faction (sailing the six seas) |
+| 15–16 | the Vermin Festival | high-intensity: **the gold standard** |
+| 17 | special floor | one-off (to be determined) |
+| 18–20 | the Desert | adventure (tomb raiders) |
+| 21–30 | the Great Island at War | grand campaign |
+
+- **The bar.** Every band from 1 to 30 reaches a comparable level of
+  quality, measured against the Vermin Festival once its rework
+  (FESTIVAL.md §9) lands.
+- **The order of work.** The festival first, as the reference; then every
+  other band raised to its level, each in its own archetype. The archetype
+  says what kind of band it is; the festival says how finished it must be.
+- **Open.** What "the festival's level" means as a checklist is not written
+  yet. docs/FLOOR_STANDARD.md is the place for it once the rework ships.
+
 ## 2. Calibration: band 1 through the review
 
 | Check | Band 1 | Result |
