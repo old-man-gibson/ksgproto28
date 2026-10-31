@@ -343,7 +343,7 @@
       ).get(held.id) ?? 1;
       const lines = [p?.desc ?? ''].filter(Boolean);
       lines.push(`On a ${QUALITY_TIERS[slabGrade].name} slab: ${describeRuneEffect(patternEffectAt(held.id, slabGrade, ctx, copies))}`);
-      if (copies > 1) lines.push(`Cut ${copies}× — concentrated, not broadened`);
+      if (copies > 1) lines.push(`Cut ${copies}×: the copies add up, with a small bonus on top`);
       return { head: `${p?.icon ?? '🔷'} ${p?.name ?? held.id}`, lines };
     }
 
@@ -377,15 +377,15 @@
         );
       }
       if (disc.favoredPrep && tags.includes(disc.favoredPrep)) {
-        lines.push(`Cut the way the ${disc.benchName ?? disc.name} likes it`);
+        lines.push(`The cut the ${disc.benchName ?? disc.name} favors: adds a cut bonus to the grade`);
       }
       lines.push(`Tags: ${tags.join(', ')}`);
       if (mat?.consumable) lines.push('Already edible on its own');
       return { head: `${mat?.icon ?? '📦'} ${mat?.name ?? held.id}`, lines };
     }
     if (slot.picks === 'tool') {
-      lines.push('Worked with, not into — never spent');
-      lines.push('A better tool splits fewer slabs and cuts cleaner');
+      lines.push('Tool: needed for the cut, never used up');
+      lines.push('A better tool lowers the chance the slab splits');
     } else if (slot.role === 'adornment') {
       const effect = adornmentEffectAt(held.id, held.quality, ctx);
       lines.push(`Adds: ${describeRuneEffect(effect)}`);
@@ -691,7 +691,7 @@
           {#snippet tip()}
             <div class="tip-line tip-base">{subjectDef.icon} {subjectDef.name}</div>
             <div class="tip-line tip-sub">
-              Two of a grade, held against each other until the better one wins.
+              {REFINE_COPIES} copies of one grade become 1 copy of the next grade.
             </div>
             <div class="tip-line">
               🧬 spends {REFINE_COPIES} × {QUALITY_TIERS[subject.quality].name} — you hold {heldCopies}
@@ -700,7 +700,7 @@
               🩸 burns {fmt(cost)} biomatter — you have {fmt(gs.materials.biomatter ?? 0)}
             </div>
             <div class="tip-line tip-sub">
-              Tier never moves. A gene refined to Divine is the same species it was pulled from.
+              Tier never changes; refining raises the grade only.
             </div>
           {/snippet}
         </Tip>

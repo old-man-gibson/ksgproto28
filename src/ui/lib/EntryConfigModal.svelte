@@ -114,7 +114,7 @@
     </p>
     {#if tech.trigger?.event || tech.trigger?.conditions.length}
       <p class="small ctx baked">
-        ⚡ Baked reflex: {[
+        ⚡ Built-in reflex: {[
           ...(tech.trigger.event ? [eventName(tech.trigger.event)] : []),
           ...tech.trigger.conditions.map((c) => describeCondition(c, gs)),
         ].join(' · ')} — yours can only narrow it.

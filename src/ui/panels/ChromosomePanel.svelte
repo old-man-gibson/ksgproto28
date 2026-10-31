@@ -279,7 +279,7 @@
     if (now.splashAll && !was.splashAll) out.push('carries into every flanker');
     const had = new Set((was.inflicts ?? []).map((a) => a.id));
     for (const app of now.inflicts ?? []) {
-      if (!had.has(app.id)) out.push(`now leaves ${STATUSES[app.id]?.name ?? app.id}`);
+      if (!had.has(app.id)) out.push(`now inflicts ${STATUSES[app.id]?.name ?? app.id}`);
     }
     return out;
   });
@@ -414,7 +414,7 @@
         {/if}
         <div class="small dim">
           {#if wearingBare}
-            Your own sequence, unwritten-over. Everything still routes here.
+            No main gene is slotted. Mutagens still route into this body.
           {:else}
             Weapon coefficient ×{coefficientOf(expressed).toFixed(2)} · one route may be worth up to
             ×{res.ceiling.toFixed(1)} before this body stops carrying more
@@ -481,8 +481,8 @@
             {#if abilityScaling}
               <div class="small reach">
                 {abilityScaling.verb} your <b>{abilityScaling.stat}</b>, so anything raising that
-                stat sharpens it — from any arm. Route a <b>type</b> into <b>Active</b> to re-type
-                it, or a <b>condition</b> to make it leave one; magnitudes routed there land as
+                stat strengthens it, from any arm. Route a <b>type</b> into <b>Active</b> to re-type
+                it, or a <b>condition</b> to make it inflict one; magnitudes routed there land as
                 stats instead.
               </div>
             {/if}
@@ -601,7 +601,7 @@
       <div class="legend small dim">
         <div>
           Click a socket to fill it, the centromere for a gene, a connection to establish · cut ·
-          restore. Thicker lines are longer — <b>distance buys magnitude, hops buy character</b>.
+          restore. Thicker lines are longer: a longer path carries more magnitude, and each socket passed through can change the effect.
         </div>
         <div>
           The four glyphs around the centromere are its <b>doors</b>: an effect lands in whichever
@@ -645,10 +645,10 @@
           {#if picking === CENTRE}
             <div class="small dim">
               {#if settling > 0}
-                Still settling — {(settling / 10).toFixed(0)}s. A body has to take before it
-                can be rewritten again.
+                Settling: {(settling / 10).toFixed(0)}s left. The main gene cannot be changed
+                again until this ends.
               {:else}
-                Rewriting the centromere spends biomatter and has to take.
+                Changing the main gene spends biomatter, then needs time to settle.
                 You hold {fmt(gs.materials.biomatter ?? 0)}.
               {/if}
             </div>
@@ -709,7 +709,7 @@
               {#snippet tip()}
                 <div class="tip-line tip-base">How much is arriving here</div>
                 <div class="tip-line">
-                  Every route's strength added together — distance travelled, halved at each tie,
+                  Every route's strength added together — distance travelled, divided evenly where paths tie,
                   capped at the gene's ceiling of ×{res.ceiling.toFixed(1)}.
                 </div>
                 <div class="tip-line tip-sub">

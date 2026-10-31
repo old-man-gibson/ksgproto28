@@ -185,7 +185,7 @@
     // A word still being said outranks the cooldown it already stamped: the
     // cooldown answers "when can you do this again", and the honest answer to
     // "what is happening" is that the blow has not landed yet.
-    if (speaking !== undefined && speaking > 0) return `still speaking — ${ticksToTime(speaking)}`;
+    if (speaking !== undefined && speaking > 0) return `winding up — ${ticksToTime(speaking)}`;
     if (cd > 0) return `⟳ ${ticksToTime(cd)}`;
     if (status && status.kind !== 'ready' && status.kind !== 'cooldown') {
       return status.kind === 'primed' ? 'primed' : statusText(status);
@@ -223,13 +223,13 @@
 
   /** Short phrases for "waiting for <event>" on a reactive technique's card. */
   const EVENT_SHORT: Record<string, string> = {
-    onHit: 'a hit',
+    onHit: 'being hit',
     onCrit: 'a crit',
     onParry: 'a parry',
     onDodge: 'a dodge',
     onGraze: 'a graze',
-    onEncounterStart: 'the bell',
-    onEnemyCast: 'a casting',
+    onEncounterStart: 'fight start',
+    onEnemyCast: 'an enemy cast',
   };
 
   /**
@@ -248,10 +248,10 @@
   };
   const STATE_LONG: Record<StateNeed, string> = {
     wielded: 'Needs a weapon in hand.',
-    grounded: 'Nothing grounded to take up.',
+    grounded: 'Needs your weapon on the ground to pick up.',
     sheathed: 'Needs a blade sheathed.',
-    impaled: 'Nothing buried in anything to tear out.',
-    readied: 'Needs a working held ready.',
+    impaled: 'Needs your weapon stuck in an enemy to pull out.',
+    readied: 'Needs a spell held ready.',
   };
 
   function statusText(s: TechniqueStatus): string {
@@ -262,8 +262,8 @@
       case 'cooldown': return ticksToTime(s.ticks);
       // The pills already name the entries; the hourglass says "not there yet".
       case 'position': return `⏳ ${s.from.map((p) => POSITIONS[p]?.icon ?? p).join('')}`;
-      case 'trigger': return `⏳ ${s.event ? (EVENT_SHORT[s.event] ?? s.event) : 'its moment'}`;
-      case 'gated': return 'held';
+      case 'trigger': return `⏳ ${s.event ? (EVENT_SHORT[s.event] ?? s.event) : 'its conditions'}`;
+      case 'gated': return 'blocked';
       case 'primed': return 'primed';
       default: return 'ready';
     }
@@ -276,8 +276,8 @@
       case 'position':
         return `Waiting to be ${s.from.map((p) => POSITIONS[p]?.name ?? p).join(' or ')}.`;
       case 'trigger':
-        return `Waiting for ${s.event ? (EVENT_SHORT[s.event] ?? s.event) : 'its moment'}.`;
-      case 'gated': return 'Held back by your own conditions.';
+        return `Waiting for ${s.event ? (EVENT_SHORT[s.event] ?? s.event) : 'its conditions'}.`;
+      case 'gated': return 'Blocked by the conditions you set.';
       default: return '';
     }
   }
@@ -440,7 +440,7 @@
       Out of place: {Math.round((1 - mod.damage) * 100)}% less damage, {Math.round((1 - mod.fill) * 100)}% slower
     </div>
   {:else if mod.stunPerTick > 0}
-    <div class="tip-line tip-sub">Jostled up close — its attacks keep getting delayed</div>
+    <div class="tip-line tip-sub">Ranged enemy in the front row — its attacks keep getting delayed</div>
   {:else}
     <div class="tip-line tip-sub">Well placed — fighting at full effect</div>
   {/if}
@@ -608,7 +608,7 @@
         <b>{gs.sheathed ? 'Concealed' : 'Carrying openly'}</b>
         <span class="dim small">
           {#if gs.sheathed}
-            — {itemDefOf(gs.sheathed)?.name} hidden; you fight bare-handed until it matters
+            — {itemDefOf(gs.sheathed)?.name} hidden; you fight unarmed
           {:else}
             — click to sheathe the dagger and fight as unarmed
           {/if}
@@ -626,11 +626,11 @@
   <!-- Live stamina bargain: what the stance is (or isn't) buying right now. -->
   {#if staminaLock === 'empty'}
     <p class="small exhausted">
-      🥵 Spent — every action bar fills 15% slower, and nothing is spent until your stamina is full.
+      🥵 Exhausted — every action bar fills 15% slower, and nothing can be spent until your stamina is full.
     </p>
   {:else if staminaLock === 'low'}
     <p class="small winded">
-      😮‍💨 Winded — fighting on technique alone until your stamina bar fills back up.
+      😮‍💨 Winded — your stance gives no exertion bonuses until your stamina bar fills back up.
     </p>
   {/if}
   {#if effective.exertion?.ramp && momentum > 0}
@@ -680,17 +680,17 @@
          reminder that walking out of the seat loses it. -->
     {#if readied}
       <p class="small readied">
-        🔮 Holding <b>{readied.name}</b> — a plain swing lets it go.
+        🔮 Holding <b>{readied.name}</b> — a plain swing loses it; the mana is already spent.
       </p>
     {/if}
     {#if gs.combat?.impaled}
       <p class="small grounded">
-        🗡 Your {itemDefOf(gs.combat.impaled)?.name ?? 'weapon'} is buried in something.
+        🗡 Your {itemDefOf(gs.combat.impaled)?.name ?? 'weapon'} is stuck in the enemy.
       </p>
     {/if}
     {#if gs.combat?.grounded}
       <p class="small grounded">
-        🤲 Your {itemDefOf(gs.combat.grounded)?.name ?? 'weapon'} lies in the dirt.
+        🤲 Your {itemDefOf(gs.combat.grounded)?.name ?? 'weapon'} is on the ground.
       </p>
     {/if}
   {/if}

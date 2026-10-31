@@ -34,7 +34,7 @@
     salve: 'Salves',
     draught: 'Draughts',
     spell: 'Restorative magic',
-    lifesteal: 'Drawn from the wound',
+    lifesteal: 'Damage converted to health',
     other: 'Other',
   };
 
@@ -64,7 +64,7 @@
       <p class="dim">
         {#each ledger.foes as f, i}{i > 0 ? ', ' : ''}{f.icon}
           {f.name}{f.count > 1 ? ` ×${f.count}` : ''} (Lv {f.level}){/each}{#if ledger.foes.length === 0}No
-          encounter — this happened to you on your own time.{/if}
+          encounter — this happened outside a fight.{/if}
         · {duration(ledger.ticks)}
       </p>
     </header>
@@ -94,7 +94,7 @@
             <b>{fmt(Math.round(stopped.dodged))}</b>
           </li>
           {#if stopped.riposted > 0}
-            <li><span>↩️ Cut back for</span><b>{fmt(Math.round(stopped.riposted))}</b></li>
+            <li><span>↩️ Riposte damage</span><b>{fmt(Math.round(stopped.riposted))}</b></li>
           {/if}
         </ul>
 
@@ -118,7 +118,7 @@
 
       <!-- Right: what did it to you, worst first. -->
       <section>
-        <h3>What did you in</h3>
+        <h3>Damage taken</h3>
         {#if worst}
           <p class="lead">
             Most of it was <b>{worst.icon} {worst.label}</b> — {fmt(Math.round(worst.amount))} of
@@ -135,7 +135,7 @@
             </li>
           {/each}
           {#if ledger.incoming.length === 0}
-            <li class="dim"><span class="who">Nothing laid a finger on you.</span></li>
+            <li class="dim"><span class="who">No damage taken.</span></li>
           {/if}
         </ul>
 

@@ -363,7 +363,7 @@
       </div>
       {#snippet tip()}
         {@render resTip(`Focus ${pool('focus')}`, 'maxFocus', [
-          'The psionic pool. Overload will eat its MAXIMUM while a working is held (coming soon)',
+          'The psionic pool. Overload will lower its maximum while a sustained psionic spell is active (coming soon)',
         ])}
       {/snippet}
     </Tip>

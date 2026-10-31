@@ -458,15 +458,15 @@
           {SKILLS[MUSICIANSHIP_ID].icon} Musicianship {level}
         </span>
       {:else}
-        <span class="chip dim" title="Perform a finished sheet and the skill will come.">
-          unmanifested — the stage is the teacher
+        <span class="chip dim" title="Perform a finished sheet to learn Musicianship.">
+          Musicianship not learned yet
         </span>
       {/if}
       {#if reach}
         <span class="reach">next at Lv {reach.level}: {reach.what}</span>
       {/if}
     </div>
-    <label class="voice" title="What your ear hears. A listening preference — real instruments are their own thing, later.">
+    <label class="voice" title="The playback sound. A listening preference only; playable instruments come later.">
       <select
         value={voiceNow}
         onchange={(ev) => {
@@ -501,9 +501,9 @@
 
   {#if gs.compositions.length === 0}
     <p class="empty">
-      Nothing written yet. A sheet holds four bars — the theme. Fill each bar exactly, whole and
-      half notes to begin with, and what the piece <em>is</em> will be read from what it measures
-      as. Extra bars, finer notes, scales and tuning all come with practice.
+      No sheets yet. A sheet holds four bars (the theme). Fill each bar exactly, whole and
+      half notes to begin with. The piece's archetype is read from the notes you write: the
+      key, contour, syncopation and so on. Extra bars, finer notes, scales and tuning unlock as Musicianship rises.
     </p>
   {:else}
     <div class="body">
@@ -529,7 +529,7 @@
               maxlength="40"
               title="Name the piece — the log will announce it by this."
             />
-            <label title={scalesUnlocked(level) ? 'The ruling of the staff' : `Other scales need Musicianship ${MUSIC_UNLOCKS.scales}`}>
+            <label title={scalesUnlocked(level) ? 'Which notes the staff offers' : `Other scales need Musicianship ${MUSIC_UNLOCKS.scales}`}>
               Scale
               <select
                 value={comp.scale}
@@ -541,7 +541,7 @@
                 {/each}
               </select>
             </label>
-            <label title="The time signature: how long a bar is and where its heartbeats fall — never how fast.">
+            <label title="The time signature: how long a bar is and where its beats fall. It does not change the tempo.">
               Meter
               <select
                 value={comp.meter}
@@ -593,7 +593,7 @@
             <label
               class="tempo"
               title={pedalUnlocked(level)
-                ? 'A pedal tone: one pitch sounding under the whole piece, unchanging — the bagpipe trick. It pulls the key toward itself and gives the reading something to be consonant WITH.'
+                ? 'A pedal tone: one pitch held under the whole piece. It pulls the key toward itself and is what the Harmony measure compares the melody against.'
                 : `A pedal tone needs Musicianship ${MUSIC_UNLOCKS.pedal}`}
             >
               Pedal
@@ -623,7 +623,7 @@
                 onclick={() => setBarCount(gs, comp, comp.bars.length + 1)}
                 title={comp.bars.length >= maxBars(level)
                   ? `More bars come with Musicianship (${maxBars(level)} for now)`
-                  : 'Add a coda bar — read separately, it magnifies or turns the theme'}>＋</button>
+                  : 'Add a coda bar. It is read separately: it either reprises the theme (more power) or shifts the archetype toward another one'}>＋</button>
             </div>
             <button
               class="danger"
@@ -631,7 +631,7 @@
                 game.deleteComposition(comp.id);
                 selectedId = gs.compositions[0]?.id ?? null;
               }}
-              title="Tear the sheet up">🗑</button>
+              title="Delete this sheet">🗑</button>
           </div>
 
           <div class="palette">
@@ -738,7 +738,7 @@
                     title={!repeatsUnlocked(level)
                       ? `Repeat marks need Musicianship ${MUSIC_UNLOCKS.repeats}`
                       : rspan
-                        ? 'Lift this repeat'
+                        ? 'Remove this repeat'
                         : repeatAnchor === null
                           ? 'Start a repeat here — then click the bar it ends on'
                           : `Close the repeat from bar ${repeatAnchor + 1}`}>↻</button>
@@ -981,7 +981,7 @@
                   <span class="coda-note">
                     {reading.coda.relation === 'reprise'
                       ? `· coda reprises the theme (×${(1 + 0.25 * reading.coda.bars).toFixed(2)})`
-                      : `· coda turns ${reading.coda.match.archetype.name.toLowerCase()}ward`}
+                      : `· coda shifts toward ${reading.coda.match.archetype.name.toLowerCase()}`}
                   </span>
                 {/if}
               </div>
@@ -1014,21 +1014,21 @@
                   {pct(reading.themeAnalysis.motif)}
                 </dd>
                 <dt>Harmony</dt>
-                <dd title="Vertical consonance: how the melody sits against the pedal tone. Neutral with no pedal — one voice has no harmony to have an opinion about.">
+                <dd title="Vertical consonance: how the melody sits against the pedal tone. Shown as — when there is no pedal tone.">
                   {reading.themeAnalysis.pedal === null
                     ? '—'
                     : `${pct(reading.themeAnalysis.harmony)} over ${rowLabel(reading.themeAnalysis.pedal)}`}
                 </dd>
                 <dt>Pace</dt>
-                <dd title="The tempo, on the classifier's scale — a dirge and a reel can hold the same notes and differ only here.">
+                <dd title="The tempo as the reading measures it. The same notes can read as a dirge or as a reel depending only on this.">
                   ♩={reading.themeAnalysis.bpm}
                 </dd>
                 <dt>Cadence</dt>
-                <dd title="How the last gesture lands against the key.">
+                <dd title="How the last notes resolve against the key.">
                   {reading.themeAnalysis.cadence} — {CADENCE_WORDS[reading.themeAnalysis.cadence]}
                 </dd>
                 <dt>Power</dt>
-                <dd title="The magnitude the eventual effects will read. Dormant, but honest.">
+                <dd title="The magnitude music effects will use. Effects are not active yet.">
                   {reading.power}
                 </dd>
               </dl>

@@ -515,8 +515,8 @@
           <b class="k locked">╌</b> not yet learned · the outer ring answers from anywhere.
         </p>
         <p class="dim small directive">
-          A map, not a script: the graph only shows which moves happen to leave you where others
-          begin. The fight still decides the order.
+          The graph only shows which moves leave you in a position where other moves start.
+          It is not a sequence: on each swing, the first eligible move in the plan fires.
         </p>
       </div>
 

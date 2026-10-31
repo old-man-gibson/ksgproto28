@@ -36,7 +36,7 @@
   <h2>♻️ Prestige {report.ordinal}</h2>
   <p class="dim small">
     Ends the run. Everything resets except prestige points and what they bought.
-    Harvest pays whole points per source; the remainder carries nowhere.
+    Harvest pays whole points per source; the remainder is lost.
   </p>
 
   <h3>Harvest now: {report.total} point{report.total === 1 ? '' : 's'}</h3>

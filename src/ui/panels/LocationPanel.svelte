@@ -627,7 +627,7 @@
       {#snippet title()}
         <div class="win-title">🔮 Spellcrafting Table</div>
         <div class="small dim">
-          Three schools of magic, one table. What you craft here is written into your grimoire.
+          One table for every school of magic you have unlocked. Crafted spells are added to your grimoire.
         </div>
       {/snippet}
       <SpellcraftPanel large />

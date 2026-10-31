@@ -29,7 +29,7 @@
       <div class="entry" style="color: {KIND_COLORS[entry.kind] ?? 'var(--text)'}">{entry.msg}</div>
     {/each}
     {#if entries.length === 0}
-      <div class="dim">Your story begins...</div>
+      <div class="dim">No log entries yet.</div>
     {/if}
   </div>
 </div>
