@@ -5,13 +5,16 @@ import type { ProseTable } from './prose';
 
 // ---------- ROYALE_STRATEGIES ----------
 export const ROYALE_STRATEGIES_TEXT: ProseTable = {
-  'press_nearest.desc': 'Walk at the nearest fighter on the field. Fights come quickly, one after another.',
-  'hunt_weakest.desc': 'Walk at the weakest fighter within sight: the wounded and the ones who have won least. Falls back on the nearest when no one is in sight.',
+  'press_nearest.desc': 'Walk at the nearest fighter you can see. With no one in sight, roam until the radar finds one. Fights come quickly, one after another.',
+  'hunt_weakest.desc': 'Walk at the weakest fighter within sight: the wounded and the ones who have won least. Falls back on the nearest in sight; with no one in sight, roam.',
   'hold_centre.desc': 'Walk to the middle of the field and stand there. Whoever crosses it comes to you.',
-  'keep_away.desc': 'Walk away from the nearest fighter. A fight still starts when someone corners you.',
+  'keep_away.desc': 'Walk away from the nearest fighter you can see. With no one in sight, roam. A fight still starts when someone corners you.',
   'wait_at_edge.desc': 'Walk to the nearest edge of the field and stand there while the middle thins out.',
-  'fall_back_hurt.desc': 'While hurt, walk away from the nearest fighter until health returns.',
-  'lie_low.desc': 'While the field is crowded, walk away from the nearest fighter.',
+  'fall_back_hurt.desc': 'While hurt, walk away from the nearest fighter you can see until health returns. With no one in sight, roam.',
+  'lie_low.desc': 'While the field is crowded, walk away from the nearest fighter you can see. With no one in sight, roam.',
+  'loot_while_crowded.desc': 'While more than 50 survivors are left, walk to the nearest open cache you know of: in a section you have scouted or stood in, or in sight. With none, roam. Caches lend gear for the attempt or restore health.',
+  'take_cover_hurt.desc': 'While hurt, walk to the nearest forest or cave and stay there: anyone inside is seen at half range. With no cover on the map, roam.',
+  'wander.desc': 'Walk to a point in another section of the field, then another. Keeps the heading until it arrives, whoever is in sight.',
 };
 
 // ---------- ROYALE_SECTIONS ----------

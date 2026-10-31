@@ -146,20 +146,23 @@ function holdGear(state: GameState): HeldGear {
 }
 
 /**
- * Give the held set back (ruling 2026-10-30). The issued weapon is taken back
- * wherever it is. Whatever else the attempt put in the player's hands stays
- * where it is: a find worn stays worn. Each held piece goes back into its
+ * Give the held set back (ruling 2026-10-30). The issued weapon and the
+ * royale's lent finds (`run.lent`) are taken back wherever they are. Whatever
+ * else the attempt put in the player's hands stays where it is: a find from
+ * the hub worn stays worn. Each held piece goes back into its
  * slot if the slot is empty and the piece fits, otherwise into the pack.
  * Flasks and provisions are added to what the attempt left. Returns how many
  * held pieces went to the pack for want of a slot.
  */
 function returnGear(state: GameState, run: FestivalRun): number {
-  const issued = run.issued;
+  // The issued weapon and the royale's finds are lent: all taken back, wherever they are.
+  const lent = new Set<number>(run.lent ?? []);
+  if (run.issued !== undefined) lent.add(run.issued);
   for (const [slot, item] of Object.entries(state.equipment) as [SlotId, ItemInstance | undefined][]) {
-    if (item?.uid === issued) delete state.equipment[slot];
+    if (item && lent.has(item.uid)) delete state.equipment[slot];
   }
-  if (state.sheathed?.uid === issued) state.sheathed = null;
-  const gained = state.inventory.filter((i) => i.uid !== issued);
+  if (state.sheathed && lent.has(state.sheathed.uid)) state.sheathed = null;
+  const gained = state.inventory.filter((i) => !lent.has(i.uid));
   const held = plainCopy(run.held);
   const bumped: ItemInstance[] = [];
   for (const [slot, item] of Object.entries(held.equipment) as [SlotId, ItemInstance | undefined][]) {
@@ -236,6 +239,8 @@ export function startFestival(state: GameState, bus: EventBus): void {
     clock: 0,
     held,
     ...(issued !== undefined ? { issued } : {}),
+    // This attempt's royale terrain, fixed now so the hub's survey scouts the field it will open on.
+    fieldSeed: Math.floor(rand(state) * 0x100000000),
   };
   const pieces = held.inventory.length + Object.values(held.equipment).filter(Boolean).length + (held.sheathed ? 1 : 0);
   bus.emit({
