@@ -1040,7 +1040,7 @@ describe('the cook never amplifies a harmful condition a dish carries', () => {
 
 describe('the Book says so when a cook crosses a threshold', () => {
   // No trailing period: the tally joins its entries with ", ".
-  const TIME_NOTE = "Cook's Book: Seared Stew cook time noted (25 cooks)";
+  const TIME_NOTE = "Cook's Book: Seared Stew cook time now shown (25 cooks)";
   const SIGNATURE_NOTE = 'Seared Stew is now a Signature dish: eating it also gives Well Fed (100 cooks)';
   /** A kitchen that has read the Seared Stew card. */
   function searedKitchen(): Game {
@@ -1059,7 +1059,7 @@ describe('the Book says so when a cook crosses a threshold', () => {
   const notes = (g: Game) =>
     g.state.log
       .flatMap((l) => (l.tally ?? []).map((tl) => tl.label))
-      .filter((label) => /cook time noted|Signature dish/.test(label));
+      .filter((label) => /cook time now shown|Signature dish/.test(label));
 
   it('notes the cook time at the 25th cook of a dish that has one, once', () => {
     const g = searedKitchen();
@@ -1075,7 +1075,7 @@ describe('the Book says so when a cook crosses a threshold', () => {
     expect(g.state.stats[cookedKey('seared_stew')]).toBe(30);
     expect(row(g, 'cooking', 'seared_stew').cookTimeKnown).toBe(true);
     // Thirty cooks leave the note once in the running log, not thirty times, and never on a line of its own.
-    const logged = g.state.log.filter((l) => l.msg.includes('cook time noted'));
+    const logged = g.state.log.filter((l) => l.msg.includes('cook time now shown'));
     expect(logged).toHaveLength(1);
     expect(logged[0].msg).toContain('Cooked:');
   });
@@ -1138,10 +1138,10 @@ describe('the Book says so when a cook crosses a threshold', () => {
     ).toBe(true);
     for (let i = 0; i < 700 && g.state.benchWork; i++) g.tick();
     expect(g.state.stats[cookedKey('seared_stew')]).toBe(28);
-    const logged = g.state.log.filter((l) => l.msg.includes('cook time noted'));
+    const logged = g.state.log.filter((l) => l.msg.includes('cook time now shown'));
     expect(logged).toHaveLength(1);
     expect(logged[0].group).toBe('bench:cooking');
-    expect(logged[0].msg).toMatch(/Cooked: .*Seared Stew.*Cook's Book: Seared Stew cook time noted \(25 cooks\)/);
+    expect(logged[0].msg).toMatch(/Cooked: .*Seared Stew.*Cook's Book: Seared Stew cook time now shown \(25 cooks\)/);
     // The tally's ", " is the only punctuation between entries: no "., " run.
     expect(logged[0].msg).not.toMatch(/\.,/);
     // Nothing logged a line that is only the note.

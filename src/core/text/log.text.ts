@@ -30,7 +30,7 @@ export const LOG_TEXT = {
   'actions.condition_detonates': '{icon} {name} detonates for {dealt} {type}!',
   'actions.condition_knocks_out': '💀 {name} knocks you out. Recovering.',
   'actions.condition_passed': '{icon} {name} has passed.',
-  'actions.condition_fatal': '{icon} {name} knocks you out. You wake weakened.',
+  'actions.condition_fatal': '{icon} {name} knocks you out. It stays on you at reduced intensity.',
   'actions.find_marks_spot': '📍 Marked on your map: {icon} {name}',
   'actions.find_opens_path': '🚪 A way opens from {spot}: {label}.',
 
@@ -115,7 +115,7 @@ export const LOG_TEXT = {
   'combat.defeated': '☠️ Defeated {name} (Lv {level}): +{gold} gold',
   'combat.defeated_no_gold': '☠️ Defeated {name} (Lv {level}).',
   'combat.spot_cleared': '🏞️ {spot} cleared. No encounters remain.',
-  'combat.weapon_dropped': '⚡ Grip lost. {name} dropped.',
+  'combat.weapon_dropped': '⚡ Jolted below 50% health: {name} dropped.',
 
   // ---------- consumables ----------
   'consumables.reason.not_usable': 'Not usable',
@@ -162,7 +162,7 @@ export const LOG_TEXT = {
   // The Cook's Book crossing a threshold while cooking (systems/cooking.ts). Each
   // is a tally entry on the "Cooked:" line of the cook that crossed it, and the
   // tally joins its entries with ", ": so neither ends with a period.
-  'cooking.book.time': "Cook's Book: {name} cook time noted ({cooks} cooks)",
+  'cooking.book.time': "Cook's Book: {name} cook time now shown ({cooks} cooks)",
   'cooking.book.signature': '{name} is now a Signature dish: eating it also gives {status} ({cooks} cooks)',
 
   // ---------- forging (systems/assembly.ts, systems/forging.ts) ----------
@@ -185,8 +185,8 @@ export const LOG_TEXT = {
 
   // ---------- huntrest (systems/huntrest.ts) ----------
   'huntrest.resting': '🛌 HP {hp}%, below your {at}% threshold: resting before the next fight, until {to}%.',
-  'huntrest.done': '⚔️ Rested. The hunt goes on.',
-  'huntrest.stuck': '⚔️ HP is not recovering (a condition blocks it). The hunt goes on without resting.',
+  'huntrest.done': '⚔️ Rested. Hunting resumes.',
+  'huntrest.stuck': '⚔️ HP is not recovering (a condition blocks it). Hunting resumes without resting.',
 
   // ---------- training (systems/training.ts) ----------
   'training.patched_first': '🩹 Cage keeper: "Hey kid, here. Train safely." HP full; bleeds and poisons cleared. The keeper does this after every win here while your six attributes total {cap} or less.',
@@ -222,7 +222,7 @@ export const LOG_TEXT = {
   'equipment.sold_material': 'Sold {icon} {name} ×{qty} for {price} gold.',
 
   // ---------- festival (systems/festival.ts, systems/royale.ts) ----------
-  'festival.door_held': '🚪 The door holds {pieces} piece{plural} of gear, your flasks and your provisions until the festival ends, won or lost. Issued: {issued}.',
+  'festival.door_held': '🚪 {pieces} piece{plural} of your gear, your flasks and your provisions are stored until the festival ends, won or lost. Issued weapon: {issued}.',
   'festival.bumped': '🎒 {count} held piece{plural} went to the pack: the slot was taken.',
   'festival.door_shut': '🚪 The dark room’s door is shut until the room is empty.',
   'festival.issued_unsold': '🚪 The festival’s issued weapon is lent for the attempt and taken back at its end; it cannot be sold.',
@@ -275,11 +275,11 @@ export const LOG_TEXT = {
   'music.stopped': '⏹️ Performance stopped{reason}.',
   'music.stop_reason': ': {reason}',
   'music.reason.travelling': '🔒 Cannot perform while travelling.',
-  'music.reason.no_moment': '🔒 Cannot perform now.',
+  'music.reason.no_moment': '🔒 Cannot perform during a fight.',
   'music.reason.problem': '🔒 {problem}',
   'music.started': '🎵 Performing {name}.',
-  'music.classified': '{icon} {name} reads as {reading}.',
-  'music.lingers': '🎶 Lingering: {names}.',
+  'music.classified': '{icon} {name} is classified as {reading}.',
+  'music.lingers': '🎶 Gained from the performance: {names}.',
 
   // ---------- mutagens ----------
   'mutagens.reason.histones_short': 'Needs {cost} histones; {held} held',
@@ -302,9 +302,9 @@ export const LOG_TEXT = {
   'mutagens.fused': '🧬 {icon} {name} fused.',
   'mutagens.reason.bench_empty': 'Nothing on the bench to work on',
   'mutagens.reason.not_a_main_gene': 'That is not a main gene',
-  'mutagens.reason.settling': 'Settling: {seconds}s left',
+  'mutagens.reason.settling': 'Main gene was changed recently: {seconds}s before it can be changed again',
   'mutagens.reason.wear_needs_biomatter': 'Needs {cost} biomatter',
-  'mutagens.gene_worn': '🧬 {icon} {name} worn ({cost} biomatter). Settling.',
+  'mutagens.gene_worn': '🧬 {icon} {name} worn ({cost} biomatter). The main gene cannot be changed for {seconds}s.',
   'mutagens.reason.already_own_sequence': 'Already wearing your own sequence',
   'mutagens.reason.no_such_socket': 'No such socket',
   'mutagens.reason.not_a_mutagen': 'That is not a mutagen',
@@ -334,8 +334,8 @@ export const LOG_TEXT = {
   'quests.ready': '📜 "{name}" complete. Return to {giver} at {spot}.',
 
   // ---------- resources ----------
-  'resources.stamina_low': '😮‍💨 Winded: no strength behind your blows until stamina recovers.',
-  'resources.stamina_empty': '🥵 Spent: slowed until stamina recovers.',
+  'resources.stamina_low': '😮‍💨 Winded: stamina is down to 20%. Exertion bonuses stop until it is full again.',
+  'resources.stamina_empty': '🥵 Exhausted: stamina is empty. Speed is 15% lower until stamina is full again, and stamina regenerates at half rate until it passes 50%.',
   'resources.stamina_recovered': '💪 Recovered: stamina penalties gone.',
 
   // ---------- runecarving ----------
@@ -374,13 +374,13 @@ export const LOG_TEXT = {
   'shops.bought': 'Bought {icon} {name}{qty} for {total} gold.',
 
   // ---------- skills ----------
-  'skills.manifested': '✨ Skill manifested: {icon} {name}.',
+  'skills.manifested': '✨ Skill unlocked: {icon} {name}.',
   'skills.cap_raised': '⏫ {icon} {name} cap raised to Lv {cap}.',
 
   // ---------- spellcraft ----------
   'spellcraft.utility_cast': '{icon} {name}{effects}.',
   'spellcraft.effects': ': {list}',
-  'spellcraft.reason.no_such_working': 'No such working',
+  'spellcraft.reason.no_such_working': 'No such spell',
   'spellcraft.reason.needs_target': '{name} needs a target',
   'spellcraft.reason.in_combat': 'In combat: prepare it instead',
   'spellcraft.reason.cooldown': '{name} on cooldown',
@@ -390,7 +390,7 @@ export const LOG_TEXT = {
   'spellcraft.prepare_conflict': '⚡ {conflict}',
   'spellcraft.reason.already_inscribed': 'Already in your grimoire. Change or add a word to inscribe a new spell',
   'spellcraft.inscribed': '{icon} Inscribed: {name}',
-  'spellcraft.already_shaped': '🔒 Shape already held.',
+  'spellcraft.already_shaped': '🔒 That shape is already in your grimoire.',
   'spellcraft.recognition_locked': '🔒 Shape matches {recognition}, which needs a teacher.',
   'spellcraft.shaped': '{icon} Shaped: {name}',
 

@@ -2117,7 +2117,7 @@ export function slotMain(
   grantSkillXp(state, bus, ['craft', 'geneshaping'], 20 + cost);
   bus.emit({
     type: 'log',
-    msg: text('mutagens.gene_worn', { icon: MAIN_GENES[gene.id].icon, name: MAIN_GENES[gene.id].name, cost }),
+    msg: text('mutagens.gene_worn', { icon: MAIN_GENES[gene.id].icon, name: MAIN_GENES[gene.id].name, cost, seconds: SWAP_SETTLE_TICKS / 10 }),
     kind: 'action',
   });
   return { ok: true };
