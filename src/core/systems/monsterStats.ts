@@ -4,10 +4,14 @@ import type {
   FloorDef,
   GameState,
   Modifier,
+  MonsterAction,
   MonsterDef,
   MonsterInstance,
+  MonsterKit,
+  MonsterRange,
   SpotDef,
   StatKey,
+  StatusApplication,
   TierDef,
 } from '../types';
 import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE } from '../types';
@@ -188,10 +192,45 @@ export const TAG_ARMOR: Record<string, number> = {
 };
 
 /**
- * Species-innate armour: the declared value, or the toughest material its tags
- * imply. Zero for anything soft, which is most things.
+ * One specimen's fighting fields as combat reads them: its species' def with
+ * the specimen's own `kit` laid over it (docs/FESTIVAL.md §9.6, the royale's
+ * survivors). Each field the kit holds replaces the def's whole; a specimen
+ * without a kit reads exactly its def. Every combat read of these six goes
+ * through here, never `MONSTERS[defId]` directly. Loot, gold, wounds kept,
+ * escorts, group, passive and identity stay on the def.
+ *
+ * `resistances` and `armor` are the DECLARED values: `innateResistances` and
+ * `innateArmor` take the kit and fall back on what the tags imply.
  */
-export function innateArmor(defId: string): number {
+export interface ResolvedKit {
+  rotation: MonsterAction[] | undefined;
+  damageType: DamageType;
+  range: MonsterRange;
+  resistances: Partial<Record<DamageType, number>> | undefined;
+  armor: number | undefined;
+  inflicts: StatusApplication[] | undefined;
+}
+
+export function kitOf(e: Pick<MonsterInstance, 'defId' | 'kit'>): ResolvedKit {
+  const def = MONSTERS[e.defId];
+  const kit = e.kit;
+  return {
+    rotation: kit?.rotation ?? def?.rotation,
+    damageType: kit?.damageType ?? def?.damageType ?? 'bludgeoning',
+    range: kit?.range ?? def?.range ?? 'melee',
+    resistances: kit?.resistances ?? def?.resistances,
+    armor: kit?.armor ?? def?.armor,
+    inflicts: kit?.inflicts ?? def?.inflicts,
+  };
+}
+
+/**
+ * Species-innate armour: the specimen's kit value if it has one, else the def's
+ * declared value, else the toughest material its tags imply. Zero for anything
+ * soft, which is most things.
+ */
+export function innateArmor(defId: string, kit?: MonsterKit): number {
+  if (kit?.armor !== undefined) return kit.armor;
   const def = MONSTERS[defId];
   if (!def) return 0;
   if (def.armor !== undefined) return def.armor;
@@ -301,10 +340,13 @@ function taggedResistance(def: MonsterDef, type: DamageType): number | undefined
  *
  * A species that genuinely wants none of what its tags imply says so with an
  * explicit `0`. Absent means "whatever I am made of"; zero means "not that".
+ *
+ * A specimen's kit replaces the declared block whole (`MonsterKit.resistances`);
+ * the tags still speak for every type it leaves out.
  */
-export function innateResistances(defId: string): Record<DamageType, number> {
+export function innateResistances(defId: string, kit?: MonsterKit): Record<DamageType, number> {
   const def = MONSTERS[defId];
-  const declared = def?.resistances;
+  const declared = kit?.resistances ?? def?.resistances;
   const out = {} as Record<DamageType, number>;
   for (const type of Object.keys(RES_STAT_BY_TYPE) as DamageType[]) {
     out[type] = declared?.[type] ?? (def ? taggedResistance(def, type) ?? 0 : 0);
@@ -337,6 +379,30 @@ export function rollMonsterAttrs(
     attrs[a.id] = attrs[a.id] * jitter * statMult;
   }
   return attrs;
+}
+
+/**
+ * A specimen's attributes with an emphasis laid over them (a survivor's
+ * `attrBias`, docs/FESTIVAL.md §9.6): each attribute times its multiplier
+ * (missing = 1, negative = 0), then the lot scaled back so the sum is what it
+ * was. The emphasis moves points between attributes and adds none.
+ */
+export function biasAttrs(
+  attrs: Record<AttributeId, number>,
+  bias: Partial<Record<AttributeId, number>>,
+): Record<AttributeId, number> {
+  const out = {} as Record<AttributeId, number>;
+  let before = 0;
+  let after = 0;
+  for (const a of ATTRIBUTE_LIST) {
+    const value = attrs[a.id] ?? 0;
+    before += value;
+    out[a.id] = value * Math.max(0, bias[a.id] ?? 1);
+    after += out[a.id];
+  }
+  const scale = after > 0 ? before / after : 1;
+  for (const a of ATTRIBUTE_LIST) out[a.id] *= scale;
+  return out;
 }
 
 /** Book-value attributes scaled by a multiplier, with no roll — for the bestiary. */
@@ -603,10 +669,12 @@ export function penetrationProblems(
 
 /** `monsterStats` up to, and not including, `clampMonsterStats`. */
 function monsterStatsUnclamped(inst: MonsterInstance): MonsterStats {
-  const innate = innateResistances(inst.defId);
+  // Resistances and armour read the specimen's kit over its def's (kitOf).
+  const innate = innateResistances(inst.defId, inst.kit);
+  const armor = innateArmor(inst.defId, inst.kit);
   const mods = statusMods(inst);
   if (mods.length === 0) {
-    return applyResOverrides(inst, statsFromAttrs(inst.attrs, innate, innateArmor(inst.defId), MONSTERS[inst.defId]?.regen ?? 0, inst.level));
+    return applyResOverrides(inst, statsFromAttrs(inst.attrs, innate, armor, MONSTERS[inst.defId]?.regen ?? 0, inst.level));
   }
 
   const attrs = { ...inst.attrs };
@@ -617,7 +685,7 @@ function monsterStatsUnclamped(inst: MonsterInstance): MonsterStats {
     if (mod.op === 'mult' && mod.stat in attrs) attrs[mod.stat as AttributeId] *= 1 + mod.value;
   }
 
-  const stats = statsFromAttrs(attrs, innate, innateArmor(inst.defId), MONSTERS[inst.defId]?.regen ?? 0, inst.level);
+  const stats = statsFromAttrs(attrs, innate, armor, MONSTERS[inst.defId]?.regen ?? 0, inst.level);
   const num = (k: string) => stats[k as MonsterStatKey];
   for (const { mod } of mods) {
     if (mod.op !== 'add' || mod.fromStat) continue; // fromStat: layer 3, below
