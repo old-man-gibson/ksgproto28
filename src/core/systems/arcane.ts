@@ -1036,6 +1036,6 @@ export function checkSentence(state: GameState, wordIds: string[]): SentenceChec
   // The bench shows the sentence as THIS speaker would say it, practice and
   // all — the same reading resolveSpellFor gives once it is inscribed.
   const spec = composeArcane(wordIds, wordLevels(state));
-  if (!spec) return { ok: false, reason: parse.reason ?? 'The words fizzle', parse };
+  if (!spec) return { ok: false, reason: parse.reason ?? 'These words make no spell', parse };
   return { ok: true, spec, parse };
 }

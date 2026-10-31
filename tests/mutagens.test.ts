@@ -2297,7 +2297,7 @@ describe('what a gene ability says about itself', () => {
     // `flat: 0` is a statement, not an absence — without it the damage tooltip
     // printed a "Swing" header over no working at all.
     const priced = priceGeneAbility(g.state, spec, getDerivedStats(g.state), 'Refutation');
-    expect(priced.steps.some((s) => s.label.includes('the body itself'))).toBe(true);
+    expect(priced.steps.some((s) => s.label.includes('flat damage'))).toBe(true);
   });
 
   it('names an attribute-priced blow after the attribute it reads', () => {
@@ -2501,7 +2501,7 @@ describe('Vashkāra of the Unheld Blades', () => {
       // ready is something legal.
       if (g.state.combat) g.state.combat.cooldowns[GENE_ACTIVE] = 999;
       g.tick();
-      concentrated = g.state.combatFeed.some((l) => l.text.includes('concentrating'));
+      concentrated = g.state.combatFeed.some((l) => l.text.includes('No free hand for a weapon attack'));
     }
     expect(concentrated, 'the bar never reported being held').toBe(true);
   });

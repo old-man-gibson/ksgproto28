@@ -458,7 +458,7 @@ export function createComposition(state: GameState): Composition {
 }
 
 export function deleteComposition(state: GameState, bus: EventBus, id: number): void {
-  if (state.performance?.compositionId === id) stopPerformance(state, bus, 'set aside');
+  if (state.performance?.compositionId === id) stopPerformance(state, bus, 'the piece was deleted');
   const at = state.compositions.findIndex((c) => c.id === id);
   if (at >= 0) state.compositions.splice(at, 1);
 }
@@ -704,7 +704,7 @@ export function checkComposition(state: GameState, comp: Composition): string[] 
   const level = musicLevel(state);
   const allowed = maxBars(level);
   if (comp.bars.length > allowed) {
-    problems.push(`Your hands can hold ${allowed} bars for now — this sheet has ${comp.bars.length}.`);
+    problems.push(`Your Musicianship allows ${allowed} bars; this sheet has ${comp.bars.length}.`);
   }
   if (comp.scale !== 'major' && !scalesUnlocked(level)) {
     problems.push(`Other scales need Musicianship ${MUSIC_UNLOCKS.scales}.`);
@@ -752,7 +752,7 @@ export function checkComposition(state: GameState, comp: Composition): string[] 
         if (!tiesUnlocked(level)) {
           problems.push(`Bar ${i + 1}: ties need Musicianship ${MUSIC_UNLOCKS.ties}.`);
         } else if (e.pitch === null) {
-          problems.push(`Bar ${i + 1}: a rest is tied to something — silence does not carry.`);
+          problems.push(`Bar ${i + 1}: a rest cannot be tied.`);
         } else if (!next) {
           problems.push(`Bar ${i + 1}: the last note is tied into nothing.`);
         } else if (next.pitch !== e.pitch) {
@@ -1426,11 +1426,11 @@ export function conferredBy(
 
 /** How a cadence sounds, said plainly — for logs and tooltips. */
 export const CADENCE_WORDS: Record<MusicCadence, string> = {
-  closed: 'coming to rest',
-  open: 'left hanging',
-  deceptive: 'promising home and turning aside',
-  wandering: 'wandering off',
-  silent: 'saying nothing at all',
+  closed: 'ends on the tonic',
+  open: 'ends on the 5th or the leading tone',
+  deceptive: 'goes from the 5th to the 6th at the end',
+  wandering: 'ends on another note',
+  silent: 'no notes sounded',
 };
 
 /** One line for the log and the bench: what the world just heard. */
@@ -1495,11 +1495,11 @@ export function tickPerformance(state: GameState, bus: EventBus): void {
   const perf = state.performance;
   if (!perf) return;
   if (state.spot !== perf.spot || state.travel) {
-    stopPerformance(state, bus, 'the stage left behind');
+    stopPerformance(state, bus, 'you left the location');
     return;
   }
   if (state.combat) {
-    stopPerformance(state, bus, 'interrupted');
+    stopPerformance(state, bus, 'combat started');
     return;
   }
   const comp = state.compositions.find((c) => c.id === perf.compositionId);

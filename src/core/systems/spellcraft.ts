@@ -341,8 +341,8 @@ export function castUtility(state: GameState, bus: EventBus, uid: number): boole
   }
 
   const did = [
-    ...(healed > 0 ? [`knits ${Math.round(healed)} health back`] : []),
-    ...(worn.length ? [`you are wearing ${worn.join(', ')}`] : []),
+    ...(healed > 0 ? [`you heal ${Math.round(healed)} HP`] : []),
+    ...(worn.length ? [`you gain ${worn.join(', ')}`] : []),
   ];
   bus.emit({
     type: 'log',

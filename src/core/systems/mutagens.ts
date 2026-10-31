@@ -467,7 +467,7 @@ export function priceGeneAbility(
   // — Kritavya's, whose whole blow is the ward it leaves — is stating a zero,
   // and a stated zero belongs in the working. Skipping it printed a Swing
   // header over nothing at all.
-  if (spec.flat !== undefined) steps.push({ label: `${name} (the body itself)`, value: damage });
+  if (spec.flat !== undefined) steps.push({ label: `${name} (flat damage)`, value: damage });
   // Priced per point of a derived stat, or of an ATTRIBUTE — the layer
   // underneath, which a body can read about itself rather than about its gear.
   const priced =

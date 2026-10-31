@@ -205,14 +205,14 @@ const SUBJECT_LIST: TriggerSubjectDef[] = [
   // What the enemy is casting — blank when nothing began within the event
   // window. How several counterspells tuned for different things are routed:
   // each asks after the working it was tuned for.
-  { id: 'enemy.castSchool', name: 'Enemy Working (school)', kind: 'enum',
+  { id: 'enemy.castSchool', name: 'Enemy Spell School', kind: 'enum',
     read: (ctx) => freshCasting(ctx)?.school ?? '',
     options: () => [
       { value: 'arcane', label: '🔮 Arcane' },
       { value: 'divine', label: '🙏 Divine' },
       { value: 'psionic', label: '🧠 Psionic' },
     ] },
-  { id: 'enemy.castElement', name: 'Enemy Working (element)', kind: 'enum',
+  { id: 'enemy.castElement', name: 'Enemy Spell Element', kind: 'enum',
     read: (ctx) => freshCasting(ctx)?.element ?? '',
     options: () => Object.entries(DAMAGE_TYPE_NAMES).map(([value, label]) => ({ value, label })) },
   // The anticipation read: how close the enemy is to acting. "≥ 70" is

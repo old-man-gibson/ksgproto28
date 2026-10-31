@@ -1703,7 +1703,7 @@ describe('monsters that work', () => {
     const hpBefore = g.state.resources.hp;
     fight(g, 600, () => g.state.resources.hp < hpBefore);
     expect(
-      g.state.combatFeed.some((f) => /works /.test(f.text)),
+      g.state.combatFeed.some((f) => / casts /.test(f.text)),
       'never cast a working',
     ).toBe(true);
     expect(g.state.resources.hp).toBeLessThan(hpBefore);
@@ -1716,8 +1716,8 @@ describe('monsters that work', () => {
     const { g } = facing('psionic_slime');
     applyStatus(g.state, g.state, { id: 'kinetic_bulwark', intensity: 1 }, 'test');
     expect(statusBlocksRangedType(g.state, 'heat')).toBe(true);
-    fight(g, 600, () => g.state.combatFeed.some((f) => /works /.test(f.text)));
-    expect(g.state.combatFeed.some((f) => /works /.test(f.text))).toBe(true);
+    fight(g, 600, () => g.state.combatFeed.some((f) => / casts /.test(f.text)));
+    expect(g.state.combatFeed.some((f) => / casts /.test(f.text))).toBe(true);
   });
 
   it('a monster walks the position graph on its own, with nothing scripting it', () => {
@@ -1774,7 +1774,7 @@ describe('monsters that work', () => {
       g.state.resources.hp = getDerivedStats(g.state).maxHp;
       for (const f of g.state.combatFeed) {
         if (/moves into/.test(f.text)) opening.push('technique');
-        else if (/works /.test(f.text)) opening.push('cast');
+        else if (/ casts /.test(f.text)) opening.push('cast');
         if (opening.length) break;
       }
     }
