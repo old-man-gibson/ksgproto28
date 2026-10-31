@@ -1,6 +1,7 @@
 import { TOLL_GOLEM, TOLL_SPELL_FLAG, noteTollSpell, reactTollGolem, rewardTollGolem } from './floodedFloor';
 import type {
   ActiveSpec,
+  AttributeId,
   CombatState,
   DamageReport,
   DamageSlice,
@@ -16,6 +17,7 @@ import type {
   ModifierTierId,
   MonsterDef,
   MonsterInstance,
+  MonsterKit,
   MonsterRange,
   RarityId,
   ResourceId,
@@ -248,14 +250,15 @@ function landMonsterGraze(
   if (es.graze <= 0) return 0;
   const raw = es.damage * positionMult * es.graze;
   if (raw <= 0) return 0;
-  const type = MONSTERS[e.defId]?.damageType ?? 'bludgeoning';
+  const kit = kitOf(e);
+  const type = kit.damageType;
   const slice = incomingSlice(
     getDerivedStats(state),
     type,
     e.name,
     raw,
     0,
-    MONSTERS[e.defId]?.range === 'ranged',
+    kit.range === 'ranged',
   );
   const dealt = Math.max(1, Math.round(slice.dealt));
   damagePlayer(state, dealt, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon });
@@ -586,7 +589,9 @@ import {
   MONSTER_ACTION_BAR,
   MONSTER_RESIST_CAP,
   type MonsterStats,
+  biasAttrs,
   innateArmor,
+  kitOf,
   mindInDebt,
   monsterDamageResistance,
   monsterMind,
@@ -1136,21 +1141,51 @@ export function startStagedFight(
   startStagedGroup(state, bus, spot, [{ monsterId, level }]);
 }
 
+/** One member of a staged formation (`startStagedGroup`). */
+export interface StagedMember {
+  monsterId: string;
+  level: number;
+  /** Share of its (biased) maximum health it comes in with. */
+  hpShare?: number;
+  /** Its own rotation, damage type, reach, resistances, armour and riders over the def's. */
+  kit?: MonsterKit;
+  /** Replaces the minted name. */
+  name?: string;
+  /** Attribute multipliers, scaled back to keep the total (`biasAttrs`). */
+  attrBias?: Partial<Record<AttributeId, number>>;
+}
+
 /**
  * A staged formation, unfleeable: each member pinned and plain like the
  * dare's foe, a melee up front where the group has one. The Vermin
  * Festival's fights (systems/festival.ts): the dark room's waves and the
  * royale's engagements. `hpShare` brings a member in already wounded.
+ *
+ * A member can be a person rather than a species (docs/FESTIVAL.md §9.6): a
+ * `kit` is its own rotation, damage type, reach, resistances, armour and
+ * riders over the def's (`kitOf`), a `name` replaces the minted one, and an
+ * `attrBias` moves points between its attributes (`biasAttrs`) before its
+ * health is read, so `hpShare` is a share of the biased maximum. Its reach is
+ * resolved from the kit here, since the formation is laid out from it.
  */
 export function startStagedGroup(
   state: GameState,
   bus: EventBus,
   spot: SpotDef,
-  members: { monsterId: string; level: number; hpShare?: number }[],
+  members: StagedMember[],
 ): void {
   if (state.combat) abandonCombat(state, bus);
   const minted = members.slice(0, ENCOUNTER_SLOTS).map((m) => {
     const monster = spawnMonster(state, spot, { monsterId: m.monsterId, level: m.level, plain: true });
+    if (m.name) monster.name = m.name;
+    if (m.kit) {
+      monster.kit = m.kit;
+      monster.range = kitOf(monster).range;
+    }
+    if (m.attrBias) {
+      monster.attrs = biasAttrs(monster.attrs, m.attrBias);
+      monster.hp = statsFromAttrs(monster.attrs).maxHp;
+    }
     if (m.hpShare !== undefined && m.hpShare < 1) {
       monster.hp = Math.max(1, Math.round(monster.hp * Math.max(0, m.hpShare)));
     }
@@ -2461,7 +2496,7 @@ function answerPlayerWorking(
     if (!e || e.hp <= 0 || mindInDebt(e)) continue;
     // The terms of an honorable duel: everyone but the front can only watch.
     if (slot > 0 && statusPacifiesFlankers(state)) continue;
-    const rotation = MONSTERS[e.defId]?.rotation ?? [];
+    const rotation = kitOf(e).rotation ?? [];
     for (let index = 0; index < rotation.length; index++) {
       const entry = rotation[index];
       if (!('cast' in entry)) continue;
@@ -2544,7 +2579,7 @@ function pickMonsterAction(
   state: GameState,
   e: MonsterInstance,
 ): { index: number; cast?: SpellSource; tech?: TechniqueDef } | null {
-  const rotation = MONSTERS[e.defId]?.rotation;
+  const rotation = kitOf(e).rotation;
   if (!rotation?.length || MONSTERS[e.defId]?.passive) return null;
   const here = e.position ?? NEUTRAL_POSITION;
   for (let index = 0; index < rotation.length; index++) {
@@ -4456,6 +4491,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     }
 
     feedTheFast(state, e);
+    // Its damage type, reach and riders: the specimen's kit over its def's.
+    const kit = kitOf(e);
 
     if (action?.cast) {
       // A counterspell's answer can kill mid-cast, and sweeping moves the
@@ -4504,7 +4541,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       continue;
     }
     // A standing wall stops anything THROWN — melee walks around it.
-    if (e.range === 'ranged' && statusBlocksRangedType(state, MONSTERS[e.defId].damageType)) {
+    if (e.range === 'ranged' && statusBlocksRangedType(state, kit.damageType)) {
       feed(state, `🛡️ The ${e.name}'s shot stops dead against the bulwark.`);
       continue;
     }
@@ -4590,7 +4627,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       e.position = NEUTRAL_POSITION;
     }
 
-    const type = move?.damageType ?? MONSTERS[e.defId]?.damageType ?? 'bludgeoning';
+    const type = move?.damageType ?? kit.damageType;
     // Positions are felt: stumbling takes blows harder, a set guard softer.
     const posMult = positionIncomingMult(state, stats.stumbleTaken);
     // Everything that swings can crit. `critTaken` scales only the SURPLUS, so
@@ -4629,7 +4666,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
      */
     const hits = (move?.hits ?? 1) + rollExtraHits(state, es.extraSwings);
     const slices = new Map<string, DamageSlice>();
-    const ranged = MONSTERS[e.defId]?.range === 'ranged';
+    const ranged = kit.range === 'ranged';
     let thrown = 0;
     let dmg = 0;
     let critted = false;
@@ -4739,7 +4776,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     const inflicted = applyStatuses(
       state,
       state,
-      [...(MONSTERS[e.defId]?.inflicts ?? []), ...(move?.inflicts ?? [])],
+      [...(kit.inflicts ?? []), ...(move?.inflicts ?? [])],
       e.name,
       // Resistance answers the affliction on the way IN, not merely its ticks
       // afterwards: a cold-armoured body registers a shallower chill and needs

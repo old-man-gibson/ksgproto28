@@ -1433,7 +1433,7 @@ function bearerResistance(
  */
 function monsterResistanceUncapped(bearer: GameState | MonsterInstance, type: DamageType): number {
   const inst = bearer as MonsterInstance;
-  let res = MONSTERS[inst.defId]?.resistances?.[type] ?? 0;
+  let res = (inst.kit?.resistances ?? MONSTERS[inst.defId]?.resistances)?.[type] ?? 0;
   for (const held of statusesOf(bearer)) {
     for (const mod of STATUSES[held.id]?.mods ?? []) {
       if (mod.stat !== RES_STAT_BY_TYPE[type]) continue;

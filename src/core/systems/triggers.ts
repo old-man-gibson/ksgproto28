@@ -7,12 +7,12 @@ import type {
   TriggerOp,
 } from '../types';
 import { DAMAGE_TYPE_NAMES } from '../types';
-import { MONSTERS, RARITIES, STYLES, TIERS } from '../registry';
+import { RARITIES, STYLES, TIERS } from '../registry';
 import { RESOURCE_LIST } from '../data/resources.data';
 import { NEUTRAL_POSITION, POSITIONS, TECHNIQUE_LIST } from '../data/martial.data';
 import { effectiveStyleId, stances } from './styles';
 import { availableMax, resourceValue } from './resources';
-import { MONSTER_ACTION_BAR, monsterStats } from './monsterStats';
+import { MONSTER_ACTION_BAR, kitOf, monsterStats } from './monsterStats';
 import { statusesOf } from './statuses';
 import { STATUS_LIST } from '../data/statuses.data';
 
@@ -193,7 +193,7 @@ const SUBJECT_LIST: TriggerSubjectDef[] = [
   { id: 'enemy.damageType', name: 'Enemy Damage Type', kind: 'enum',
     read: (ctx) => {
       const e = front(ctx);
-      return e ? (MONSTERS[e.defId]?.damageType ?? 'bludgeoning') : '';
+      return e ? kitOf(e).damageType : '';
     },
     options: () => Object.entries(DAMAGE_TYPE_NAMES).map(([value, label]) => ({ value, label })) },
   { id: 'enemy.range', name: 'Enemy Reach', kind: 'enum',
