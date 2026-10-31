@@ -160,7 +160,11 @@ export function goalFor(move: RoyaleMove, at: Point, others: Body[], size: numbe
       const target = best ?? nearest();
       return target ? { x: target.x, y: target.y } : { x: at.x, y: at.y };
     }
-    case 'nearest': {
+    case 'nearest':
+    // The field engine builder replaces these three (docs/FESTIVAL.md §9.2).
+    case 'loot':
+    case 'roam':
+    case 'cover': {
       const n = nearest();
       return n ? { x: n.x, y: n.y } : { x: at.x, y: at.y };
     }

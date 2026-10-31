@@ -763,7 +763,7 @@ describe('the royale', () => {
     const p = festivalRun(s)!.field!.player;
     expect(Math.hypot(p.x - 55, p.y - 55)).toBeLessThan(0.5);
     expect(game.moveOnField(500, -3)).toBe(true);
-    expect(festivalRun(s)!.field!.player.target).toEqual({ x: 60, y: 0 });
+    expect(festivalRun(s)!.field!.player.target).toEqual({ x: ROYALE_FIELD.size, y: 0 });
   });
 
   it('the plan is ranked, kept between attempts, and cleans up what it is given', () => {

@@ -5208,9 +5208,11 @@ export type FestivalPhase = 'dark' | 'prep' | 'royale';
 /**
  * Where a royale strategy walks its fighter (systems/royaleField.ts): toward
  * the nearest fighter, toward the weakest one within sight, to the field's
- * centre, away from the nearest, to the nearest edge, or nowhere.
+ * centre, away from the nearest, to the nearest edge, nowhere, to the nearest
+ * known open cache, to a point in another section, or to the nearest section
+ * with cover (docs/FESTIVAL.md §9.2).
  */
-export type RoyaleMove = 'nearest' | 'weakest' | 'centre' | 'away' | 'edge' | 'hold';
+export type RoyaleMove = 'nearest' | 'weakest' | 'centre' | 'away' | 'edge' | 'hold' | 'loot' | 'roam' | 'cover';
 
 /**
  * A way to move on the royale's field. The player ranks up to three; every
@@ -5232,6 +5234,67 @@ export interface RoyaleStrategyDef {
   when?: { hpBelow?: number; fieldAbove?: number; fieldBelow?: number };
 }
 
+/**
+ * A section of the royale's field (docs/FESTIVAL.md §9.2): terrain that
+ * changes how fast a fighter walks and how far it sees. The first section in
+ * ROYALE_SECTIONS order with a rectangle holding a point owns that point; a
+ * point no section holds is open meadow (pace 1, sight 1).
+ */
+export interface RoyaleSectionDef {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  /** Rectangles in field units, `[x0, y0, x1, y1]`, edges included. */
+  rects: [number, number, number, number][];
+  /** Walking pace multiplier for a fighter standing in it. */
+  pace: number;
+  /** Sight multiplier for a fighter standing in it. */
+  sight: number;
+  /** A fighter standing in it is seen at COVER_SIGHT of the looker's range. */
+  cover?: boolean;
+  /** Health share a free fighter regains per tick standing in it (the glade's spring). */
+  heal?: number;
+}
+
+/**
+ * A one-time find on the royale's field: the first fighter to reach it takes
+ * it, once an attempt. Exactly one of `item`, `weapon` and `heal`. A player's
+ * item is lent for the attempt (`FestivalRun.lent`).
+ */
+export interface RoyaleCacheDef {
+  id: string;
+  name: string;
+  icon: string;
+  /** The section it stands in, for scouting and the map. */
+  section: string;
+  x: number;
+  y: number;
+  /** An ItemDef id, lent to the player for the attempt. */
+  item?: string;
+  /** A weapon of the player's issued family (CACHE_WEAPONS), lent for the attempt. */
+  weapon?: boolean;
+  /** A share of health back, at once. */
+  heal?: number;
+  /** Shut until this den is cleared. */
+  den?: string;
+}
+
+/**
+ * Monsters holding a place on the royale's field. They never leave it: a
+ * fighter that comes within `radius` of (`x`, `y`) fights them. Pinned levels.
+ */
+export interface RoyaleDenDef {
+  id: string;
+  name: string;
+  icon: string;
+  section: string;
+  x: number;
+  y: number;
+  radius: number;
+  foes: { monsterId: string; level: number }[];
+}
+
 /** One survivor on the royale's field. Coordinates are field units, 0 to the field's size. */
 export interface FieldFighter {
   id: number;
@@ -5243,12 +5306,19 @@ export interface FieldFighter {
   hp: number;
   /** Duels won on the field. Each adds to its level when it meets the player. */
   wins: number;
-  /** In a duel with another survivor: the foe's id and the world tick it ends. */
-  duel?: { foe: number; until: number };
+  /**
+   * In a duel with another survivor (the foe's id) or with a den (`den`, and
+   * `foe` 0), and the world tick it ends.
+   */
+  duel?: { foe: number; until: number; den?: string };
   /** In the player's fight. */
   engaged?: boolean;
   /** Where it is walking, chosen every few ticks. */
   goal?: { x: number; y: number };
+  /** World tick its last fight ended (duel or den); absent = the royale's start. The radar reads it. */
+  lastFight?: number;
+  /** Levels from caches taken, under their own cap. */
+  loot?: number;
 }
 
 /**
@@ -5265,9 +5335,26 @@ export interface RoyaleField {
     /** Where the player was sent by hand; the strategies resume on arrival. */
     target?: { x: number; y: number };
     goal?: { x: number; y: number };
+    /** World tick the player's last fight on the field ended; absent = the royale's start. The radar reads it. */
+    lastFight?: number;
   };
-  /** Survivors who have fallen to other survivors. */
+  /** Survivors who have fallen to other survivors or to dens. */
   fallen: number;
+  /**
+   * ROYALE_LAYOUT_VERSION the field was made for. A field without it, or with
+   * an older one, is replaced whole on the next tick (docs/FESTIVAL.md §9.3).
+   */
+  layout?: number;
+  /** World tick the field opened: the radar's clock for anyone who has not fought yet. */
+  openedAt?: number;
+  /** Cache ids taken this attempt, by anyone. */
+  taken?: string[];
+  /** Den ids cleared this attempt, by anyone. */
+  cleared?: string[];
+  /** Section ids the player has stood in this attempt. */
+  seen?: string[];
+  /** The den the player is fighting, while that fight lasts. */
+  denFight?: string;
 }
 
 /** One attempt at the festival, from the dark room to the royale's end. */
@@ -5290,6 +5377,8 @@ export interface FestivalRun {
   issued?: number;
   /** The royale's field, once the climb into it has begun. */
   field?: RoyaleField;
+  /** uids of royale finds lent to the player, taken back when the attempt ends (docs/FESTIVAL.md §9.2). */
+  lent?: number[];
 }
 
 /**

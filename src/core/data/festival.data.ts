@@ -1,6 +1,6 @@
-import type { Modifier, RoyaleStrategyDef } from '../types';
+import type { Modifier, RoyaleCacheDef, RoyaleDenDef, RoyaleSectionDef, RoyaleStrategyDef } from '../types';
 import { prose } from '../text/prose';
-import { ROYALE_STRATEGIES_TEXT } from '../text/festival.text';
+import { ROYALE_SECTIONS_TEXT, ROYALE_STRATEGIES_TEXT } from '../text/festival.text';
 import { HOURS_PER_DAY, MINUTES_PER_HOUR, TICKS_PER_GAME_MINUTE } from './climate.data';
 
 /**
@@ -170,7 +170,7 @@ export const SURVIVOR_CHAMPION = 'ph_survivor_champion';
  * health and recovers `healPerTick`. `sight` is how far `weakest` looks.
  */
 export const ROYALE_FIELD = {
-  size: 60,
+  size: 120,
   speed: 0.2,
   thinkTicks: 5,
   engageRadius: 2.5,
@@ -202,3 +202,110 @@ export const ROYALE_STRATEGIES = prose<RoyaleStrategyDef>('ROYALE_STRATEGIES', R
   fall_back_hurt: { id: 'fall_back_hurt', name: 'Fall Back When Hurt', icon: '🩹', move: 'away', when: { hpBelow: 0.5 } },
   lie_low: { id: 'lie_low', name: 'Lie Low While Crowded', icon: '🫥', move: 'away', when: { fieldAbove: 30 } },
 });
+
+// ---------- The field's layout (docs/FESTIVAL.md §9.2) ----------
+
+/** The layout a field is made for; a saved field from an older one is replaced whole (§9.3). */
+export const ROYALE_LAYOUT_VERSION = 2;
+
+/** One festival hour without a fight and a fighter knows where the nearest enemy is (§9.2, the radar). */
+export const RADAR_TICKS = TICKS_PER_HOUR;
+
+/** A fighter standing in a section with cover is seen at this share of the looker's range. */
+export const COVER_SIGHT = 0.5;
+
+/**
+ * The field's sections, in priority order: the first whose rectangle holds a
+ * point owns it (the river and its banks before the forest they cross). A
+ * point none holds is open meadow. Field units, 0–120; y = 0 is the far
+ * edge, and the player starts on the near one.
+ */
+export const ROYALE_SECTIONS = prose<RoyaleSectionDef>('ROYALE_SECTIONS', ROYALE_SECTIONS_TEXT, {
+  cliff: { id: 'cliff', name: 'The Cliff', icon: '⛰️', rects: [[0, 0, 120, 10]], pace: 0.6, sight: 1.6 },
+  waterfall: { id: 'waterfall', name: 'The Waterfall', icon: '💦', rects: [[64, 10, 80, 22]], pace: 0.6, sight: 0.8 },
+  river: {
+    id: 'river',
+    name: 'The River',
+    icon: '🌊',
+    rects: [
+      [68, 22, 76, 50],
+      [72, 50, 80, 80],
+      [66, 80, 74, 120],
+    ],
+    pace: 0.4,
+    sight: 1,
+  },
+  bank: {
+    id: 'bank',
+    name: 'The Riverbank',
+    icon: '🪨',
+    rects: [
+      [65, 22, 79, 50],
+      [69, 50, 83, 80],
+      [63, 80, 77, 120],
+    ],
+    pace: 1,
+    sight: 1,
+  },
+  cave: { id: 'cave', name: 'The Cave', icon: '🕳️', rects: [[96, 10, 120, 40]], pace: 0.7, sight: 0.3, cover: true },
+  glade: { id: 'glade', name: 'The Glade', icon: '🌼', rects: [[22, 40, 40, 56]], pace: 1, sight: 1.2, heal: 0.002 },
+  forest: { id: 'forest', name: 'The Forest', icon: '🌲', rects: [[0, 10, 58, 78]], pace: 0.8, sight: 0.5, cover: true },
+  village: { id: 'village', name: 'The Deserted Village', icon: '🏚️', rects: [[86, 62, 120, 104]], pace: 1, sight: 0.7 },
+});
+
+/**
+ * The field's dens (§9.2): monsters that never leave their place. Placeholder
+ * monsters (the den builder's section of monsters.data.ts); levels sit with
+ * the survivors'.
+ */
+export const ROYALE_DENS: RoyaleDenDef[] = [
+  { id: 'harpy_nest', name: 'Harpy Nest', icon: '🦅', section: 'cliff', x: 30, y: 5, radius: 5, foes: [{ monsterId: 'ph_den_harpy', level: 34 }, { monsterId: 'ph_den_harpy', level: 34 }] },
+  { id: 'serpent_pool', name: 'Serpent Pool', icon: '🐍', section: 'waterfall', x: 72, y: 17, radius: 4, foes: [{ monsterId: 'ph_den_serpent', level: 36 }] },
+  { id: 'wolf_den', name: 'Wolf Den', icon: '🐺', section: 'forest', x: 14, y: 24, radius: 6, foes: [{ monsterId: 'ph_den_wolf', level: 33 }, { monsterId: 'ph_den_wolf', level: 33 }, { monsterId: 'ph_den_wolf', level: 34 }] },
+  { id: 'bear_cave', name: 'Bear Cave', icon: '🐻', section: 'cave', x: 110, y: 24, radius: 5, foes: [{ monsterId: 'ph_den_bear', level: 37 }] },
+  { id: 'hound_yard', name: 'Hound Yard', icon: '🐕', section: 'village', x: 112, y: 95, radius: 5, foes: [{ monsterId: 'ph_den_hound', level: 34 }, { monsterId: 'ph_den_hound', level: 34 }] },
+];
+
+/**
+ * The field's caches (§9.2): taken once an attempt by whoever reaches them
+ * first. A player's item or weapon is lent for the attempt.
+ */
+export const ROYALE_CACHES: RoyaleCacheDef[] = [
+  { id: 'falls_hollow', name: 'Behind the Falls', icon: '💎', section: 'waterfall', x: 72, y: 12, item: 'iron_gauntlets', den: 'serpent_pool' },
+  { id: 'fisher_hut', name: 'Fisher’s Hut', icon: '🐟', section: 'bank', x: 64, y: 95, heal: 0.5 },
+  { id: 'hunter_cache', name: 'Hunter’s Cache', icon: '🏹', section: 'forest', x: 10, y: 20, item: 'wolf_cloak', den: 'wolf_den' },
+  { id: 'deep_cache', name: 'The Deep Cache', icon: '⚔️', section: 'cave', x: 114, y: 18, weapon: true, den: 'bear_cave' },
+  { id: 'smithy', name: 'The Smithy', icon: '🔨', section: 'village', x: 92, y: 70, weapon: true },
+  { id: 'armoury_rack', name: 'Guard Post Armoury', icon: '🛡️', section: 'village', x: 116, y: 99, item: 'iron_breastplate', den: 'hound_yard' },
+  { id: 'bakery', name: 'The Bakery', icon: '🍞', section: 'village', x: 100, y: 88, heal: 0.6 },
+  { id: 'house_north', name: 'North House', icon: '🏠', section: 'village', x: 104, y: 70, item: 'leather_cap' },
+  { id: 'house_south', name: 'South House', icon: '🏠', section: 'village', x: 90, y: 98, item: 'leather_boots' },
+  { id: 'house_corner', name: 'Corner House', icon: '🏠', section: 'village', x: 96, y: 82, heal: 0.3 },
+];
+
+/**
+ * The weapon a `weapon` cache lends, by the player's issued family
+ * (ISSUED_WEAPONS). Placeholders: the catalog has few weapons above the
+ * starters; a family missing here lends nothing from a weapon cache.
+ */
+export const CACHE_WEAPONS: Record<string, string> = {
+  sword: 'iron_sword',
+  spear: 'old_spear',
+  dagger: 'bronze_dagger',
+  blunt: 'oak_club',
+  greatsword: 'steel_greatsword',
+  staff: 'oak_staff',
+  bow: 'hunting_bow',
+};
+
+// ---------- The hub's stock ----------
+
+/**
+ * Hub spots whose searches restock when an attempt starts (§9.1). The survey
+ * is not here: what was scouted stays scouted for the run. A listed spot that
+ * does not exist yet is skipped.
+ */
+export const FESTIVAL_RESTOCK = ['f15_stores', 'f15_herb_yard', 'f15_workshop'];
+
+/** The flag a survey find sets for a section: the royale's map shows that section's caches and dens. */
+export const scoutedKey = (section: string): string => `flag:festival:scouted:${section}`;

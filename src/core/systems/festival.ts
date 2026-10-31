@@ -7,7 +7,7 @@ import {
   DARK_ROOM_WAVES,
   FESTIVAL_DOOR_KEY,
   FESTIVAL_REWARD,
-  FESTIVAL_STORES,
+  FESTIVAL_RESTOCK,
   FESTIVAL_SWIFT_KEY,
   FESTIVAL_TOKEN,
   FESTIVAL_WINS_KEY,
@@ -191,12 +191,14 @@ function reportBumped(bus: EventBus, count: number): void {
 
 /** Every attempt opens on a full store: the stores' search limits restart. */
 function restockStores(state: GameState, bus: EventBus): void {
-  const spot = SPOTS[FESTIVAL_STORES];
-  for (const act of spot?.activities ?? []) {
-    if (act.kind !== 'search') continue;
-    const key = searchKey(spot.id, act.id);
-    for (const k of [key, ...act.rewards.map((r) => `${key}:${r.id}`)]) {
-      if ((state.stats[k] ?? 0) !== 0) setStat(state, bus, k, 0);
+  for (const spotId of FESTIVAL_RESTOCK) {
+    const spot = SPOTS[spotId];
+    for (const act of spot?.activities ?? []) {
+      if (act.kind !== 'search') continue;
+      const key = searchKey(spot.id, act.id);
+      for (const k of [key, ...act.rewards.map((r) => `${key}:${r.id}`)]) {
+        if ((state.stats[k] ?? 0) !== 0) setStat(state, bus, k, 0);
+      }
     }
   }
 }
