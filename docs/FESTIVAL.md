@@ -189,11 +189,11 @@ what it already knows enters early.
 | Spot | Activities | System | Stock | Time | What the royale gets |
 |---|---|---|---|---|---|
 | `f15_hall` (kept) | rest, drill STR, spar DEX, cooking bench | cooking, attributes | — | open-ended | meals that last into the royale (cooking: long, out of combat) |
-| `f15_stores` (kept, more) | search: rations, meat, salve, plus more cooking ingredients | cooking | about 12 finds an attempt | 2 h a find | ingredients |
+| `f15_stores` (kept, more) | search: rations, meat, salve, onions, salt, mushrooms, honey | cooking | 12 finds an attempt | 4 h a find | ingredients |
 | `f15_survey` (new) | search: one find per royale section; each sets `flag:festival:scouted:<section>` | — | 8 finds an attempt | 12 h a find (4 days for all 8) | a scouted section shows its caches and dens on this attempt's royale map before you walk in |
-| `f15_herb_yard` (new) | search: herbs | alchemy | about 8 finds an attempt | 2 h a find | ingredients for the workshop's alembic |
-| `f15_workshop` (new) | alchemy bench, forging bench; search: scrap | alchemy, smithing | about 6 scrap finds an attempt | 2 h a find | flasks for the fights; plain pieces forged from scrap |
-| `f15_gallery` (new) | train several attributes at once (watching the others drill), rest | attributes | — | open-ended | attributes |
+| `f15_herb_yard` (new) | search: spring water, mendroot, emberbloom, frostmoss, bloodwort, nightcap | alchemy | 8 finds an attempt | 4 h a find | ingredients for the workshop's alembic |
+| `f15_workshop` (new) | alchemy bench, forging bench, the iron ingot recipe; search: iron scrap, hardwood, leather, grain spirit | alchemy, smithing | 6 finds an attempt | 4 h a find | flasks for the fights; plain pieces forged from scrap |
+| `f15_gallery` (new) | train CON, INT and WIS at once (watching the others drill), rest; a one-way stair down to the dark room (the floor rules' wing loop) | attributes | — | open-ended | attributes |
 
 - **Restock.** Every search in `FESTIVAL_RESTOCK` (stores, herb yard,
   workshop, survey) resets its limits when an attempt starts, as the stores
@@ -205,7 +205,14 @@ what it already knows enters early.
   do). A farm loop is an attempt, a forfeit and a three-day lockout per
   restock.
 - No new activity kind: search, train, rest and benches only. The survey is
-  a search whose rewards set flags.
+  a search whose rewards set flags; it scouts sections in a random order.
+  Every hub search runs on fixed time (`staticTime`), so speed does not
+  shorten the ten days.
+- **As built** (festival-hub, 285e902): searches total 120,000 ticks (8.33
+  days: stores 28,800, herb yard 19,200, workshop 14,400, survey 57,600) plus
+  about 4,000 of bench work, about 8.6 of the 10 days. After a search's last
+  find the running search spends one more cycle finding nothing before it
+  stops (`tests/searchspent.test.ts`).
 
 ### 9.2 The royale's field: a miniature stage
 
