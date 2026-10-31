@@ -158,7 +158,7 @@ describe('affliction tooltips', () => {
     const game = g();
     applyStatus(game.state, game.state, { id: 'lacerated', intensity: 2 });
     const cut = statusTipLines(game.state, findStatus(game.state, 'lacerated')!);
-    expect(cut.some((l) => l.includes('HP is closed off'))).toBe(true);
+    expect(cut.some((l) => l.includes('Max HP reduced by'))).toBe(true);
 
     applyStatus(game.state, game.state, { id: 'blazing', intensity: 1 });
     const burn = statusTipLines(game.state, findStatus(game.state, 'blazing')!);
