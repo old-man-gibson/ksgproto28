@@ -5,7 +5,7 @@ import type { ProseTable } from './prose';
 
 // ---------- TOWERS ----------
 export const TOWERS_TEXT: ProseTable = {
-  'the_ascent.desc': 'A stack of floors entered through the door at the Foot of the Ascent. Floors are cleared in order, except the city’s four wards, which open together and may be cleared in any order; every floor and its gate are visible from the start.',
+  'the_ascent.desc': 'A stack of floors entered through the door at the Foot of the Ascent. Floors are cleared in order, except the city’s four wards, which open together and may be cleared in any order. A floor is named once its door is reached; the next band shows only its name.',
 };
 
 // ---------- BANDS ----------

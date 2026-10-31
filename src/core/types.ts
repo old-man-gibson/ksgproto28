@@ -4928,6 +4928,13 @@ export interface PrestigeState {
    */
   stronghold?: boolean;
   /**
+   * Ladder floor ids reached (gated, open or cleared) in any run that ended
+   * in a prestige. Written by `prestigeNow`, never shortened; the ladder
+   * names these floors from the first tick of every later run (ladder.ts
+   * `floorReached`). Absent on saves from before it existed.
+   */
+  floorsSeen?: string[];
+  /**
    * The stronghold stash (FLOOR_IDEAS.md §5.3 item 24): festival tokens and
    * keep-marked items, the one store a prestige keeps. Copied by
    * `prestigeNow`; absent on saves from before it existed.

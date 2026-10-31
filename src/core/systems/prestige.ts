@@ -5,7 +5,7 @@ import { createInitialState } from '../state';
 import { TUTORIAL_DONE_KEY, TUTORIAL_EXIT } from '../data/tutorial.data';
 import { STRONGHOLD_HELD, STRONGHOLD_KEY } from '../data/prestige.data';
 import { conditionsMet } from './conditions';
-import { clearLapsed, clearMet, ladderFloors } from './ladder';
+import { clearLapsed, clearMet, floorsReachedThisRun, ladderFloors } from './ladder';
 import { boonRank } from './legacy';
 import { carriedCookbook } from './cookbook';
 import { revealMapped } from './mapped';
@@ -223,6 +223,8 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
     peakAttrs[id] = Math.max(peakAttrs[id] ?? 0, a.level);
   }
   const stash = carriedStash(state);
+  // Floors reached stay named on the ladder in every later run.
+  const floorsSeen = [...new Set([...(legacy.floorsSeen ?? []), ...floorsReachedThisRun(state)])];
   // Auto boons: rank 1 arrives with the first prestige, unasked and free.
   const purchases = { ...legacy.purchases };
   for (const def of Object.values(PRESTIGE_BOONS)) {
@@ -239,6 +241,7 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
     cookbook: carriedCookbook(state),
     // One base, unlocked for good (FLOOR_IDEAS.md §5.3 item 3).
     stronghold: !!legacy.stronghold || strongholdHeld(state),
+    ...(floorsSeen.length ? { floorsSeen } : {}),
     // The stronghold stash and what festival tokens bought (§5.3 item 24):
     // keep-marked items come back to the stash from wherever they are.
     ...(stash.tokens.length || stash.items.length ? { stash } : {}),

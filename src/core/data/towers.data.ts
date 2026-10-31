@@ -28,8 +28,10 @@ import { TOWERS_TEXT, BANDS_TEXT, FLOORS_TEXT } from '../text/towers.text';
 
 export const TOWERS = prose<TowerDef>('TOWERS', TOWERS_TEXT, {
   // The first stack. `foreknown` is what makes it read as a tower rather than
-  // a dungeon: you can see the ladder above you and plan toward its gates.
-  // A descent would set it false and reveal bands only as they open.
+  // a dungeon: the bands reached show every rung (unreached ones by number),
+  // the next band shows its name, and gates read as soon as their door is
+  // reached (ui/lib/ladderView.ts). A descent would set it false and show
+  // reached floors only.
   the_ascent: {
     id: 'the_ascent',
     name: 'The Ascent',

@@ -130,6 +130,28 @@ export function hubStatus(state: GameState, band: BandDef): Exclude<RungStatus, 
   return !band.gate || conditionsMet(state, band.gate) ? 'open' : 'gated';
 }
 
+/**
+ * The player has stood at this rung's door: this run it is gated, open or
+ * cleared, or a run that ended in a prestige reached it (`prestige.floorsSeen`).
+ * The ladder names a floor only once it is reached.
+ */
+export function floorReached(state: GameState, floor: FloorDef): boolean {
+  return rungStatus(state, floor) !== 'sealed' || !!state.prestige.floorsSeen?.includes(floor.id);
+}
+
+/** A floor of the band, or its hub, is reached: the ladder shows the band in full. */
+export function bandKnown(state: GameState, band: BandDef): boolean {
+  if (band.hub && hubStatus(state, band) !== 'sealed') return true;
+  return floorsInBand(band.id).some((f) => floorReached(state, f));
+}
+
+/** The banded floors this run has reached; prestigeNow adds them to `floorsSeen`. */
+export function floorsReachedThisRun(state: GameState): string[] {
+  return Object.values(FLOORS)
+    .filter((f) => f.bandId !== undefined && rungStatus(state, f) !== 'sealed')
+    .map((f) => f.id);
+}
+
 /** The band can be entered: everything below it cleared and its gate met. */
 export function bandOpen(state: GameState, band: BandDef): boolean {
   return hubStatus(state, band) === 'open';
