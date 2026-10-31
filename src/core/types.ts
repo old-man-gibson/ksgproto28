@@ -5236,17 +5236,15 @@ export interface RoyaleStrategyDef {
 
 /**
  * A section of the royale's field (docs/FESTIVAL.md §9.2): terrain that
- * changes how fast a fighter walks and how far it sees. The first section in
- * ROYALE_SECTIONS order with a rectangle holding a point owns that point; a
- * point no section holds is open meadow (pace 1, sight 1).
+ * changes how fast a fighter walks and how far it sees. Where each section
+ * lies is generated per attempt (systems/royaleMap.ts); a cell no section
+ * takes is open meadow (pace 1, sight 1).
  */
 export interface RoyaleSectionDef {
   id: string;
   name: string;
   icon: string;
   desc: string;
-  /** Rectangles in field units, `[x0, y0, x1, y1]`, edges included. */
-  rects: [number, number, number, number][];
   /** Walking pace multiplier for a fighter standing in it. */
   pace: number;
   /** Sight multiplier for a fighter standing in it. */
@@ -5260,7 +5258,8 @@ export interface RoyaleSectionDef {
 /**
  * A one-time find on the royale's field: the first fighter to reach it takes
  * it, once an attempt. Exactly one of `item`, `weapon` and `heal`. A player's
- * item is lent for the attempt (`FestivalRun.lent`).
+ * item is lent for the attempt (`FestivalRun.lent`). Its place is generated
+ * per attempt (systems/royaleMap.ts), inside `section`.
  */
 export interface RoyaleCacheDef {
   id: string;
@@ -5268,8 +5267,8 @@ export interface RoyaleCacheDef {
   icon: string;
   /** The section it stands in, for scouting and the map. */
   section: string;
-  x: number;
-  y: number;
+  /** In the village: the kind of building it stands in (smithy, bakery, guard_post, house). */
+  building?: string;
   /** An ItemDef id, lent to the player for the attempt. */
   item?: string;
   /** A weapon of the player's issued family (CACHE_WEAPONS), lent for the attempt. */
@@ -5282,15 +5281,14 @@ export interface RoyaleCacheDef {
 
 /**
  * Monsters holding a place on the royale's field. They never leave it: a
- * fighter that comes within `radius` of (`x`, `y`) fights them. Pinned levels.
+ * fighter that comes within `radius` of the den's place (generated per
+ * attempt inside `section`) fights them. Pinned levels.
  */
 export interface RoyaleDenDef {
   id: string;
   name: string;
   icon: string;
   section: string;
-  x: number;
-  y: number;
   radius: number;
   foes: { monsterId: string; level: number }[];
 }
@@ -5345,6 +5343,11 @@ export interface RoyaleField {
    * an older one, is replaced whole on the next tick (docs/FESTIVAL.md §9.3).
    */
   layout?: number;
+  /**
+   * The seed its terrain was generated from (systems/royaleMap.ts). Only the
+   * seed is saved; the map is rebuilt from it.
+   */
+  seed?: number;
   /** World tick the field opened: the radar's clock for anyone who has not fought yet. */
   openedAt?: number;
   /** Cache ids taken this attempt, by anyone. */

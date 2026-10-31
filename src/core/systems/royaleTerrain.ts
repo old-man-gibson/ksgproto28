@@ -1,40 +1,43 @@
 import type { GameState, RoyaleCacheDef, RoyaleDenDef, RoyaleField, RoyaleSectionDef } from '../types';
 import { COVER_SIGHT, RADAR_TICKS, ROYALE_FIELD, ROYALE_SECTIONS, scoutedKey } from '../data/festival.data';
+import { royaleMap, sectionIdOf, type RoyaleMap } from './royaleMap';
 
 /**
- * Pure reads of the royale field's layout (docs/FESTIVAL.md §9.2): which
+ * Pure reads of the royale field's terrain (docs/FESTIVAL.md §9.2): which
  * section owns a point, how fast and how far a fighter there walks and sees,
  * who sees whom, the radar, and what the player's map may show. Shared by
  * the simulation (royaleField.ts) and the map (ui/lib/RoyaleField.svelte),
- * so the two can never disagree about what is visible.
+ * so the two can never disagree about what is visible. The terrain itself is
+ * systems/royaleMap.ts, rebuilt from the field's seed.
  */
 
-/** Sections in priority order, resolved once. */
-const SECTIONS: RoyaleSectionDef[] = Object.values(ROYALE_SECTIONS);
+/** The terrain of a field: its map, from its seed (0 for a field saved without one). */
+export function mapOf(field: Pick<RoyaleField, 'seed'>): RoyaleMap {
+  return royaleMap(field.seed ?? 0);
+}
 
-/** The section that owns a point, or undefined for open meadow. */
-export function sectionAt(x: number, y: number): RoyaleSectionDef | undefined {
-  for (const s of SECTIONS) {
-    for (const [x0, y0, x1, y1] of s.rects) {
-      if (x >= x0 && x <= x1 && y >= y0 && y <= y1) return s;
-    }
-  }
-  return undefined;
+/** The section that owns a point, or undefined for open meadow (and off the field). */
+export function sectionAt(map: RoyaleMap, x: number, y: number): RoyaleSectionDef | undefined {
+  const cx = Math.floor(x);
+  const cy = Math.floor(y);
+  if (cx < 0 || cy < 0 || cx >= map.size || cy >= map.size) return undefined;
+  const id = sectionIdOf(map.cells[cy * map.size + cx]);
+  return id ? ROYALE_SECTIONS[id] : undefined;
 }
 
 /** Walking pace multiplier at a point. */
-export function paceAt(x: number, y: number): number {
-  return sectionAt(x, y)?.pace ?? 1;
+export function paceAt(map: RoyaleMap, x: number, y: number): number {
+  return sectionAt(map, x, y)?.pace ?? 1;
 }
 
 /** How far a fighter standing at a point sees, in field units. */
-export function sightAt(x: number, y: number): number {
-  return ROYALE_FIELD.sight * (sectionAt(x, y)?.sight ?? 1);
+export function sightAt(map: RoyaleMap, x: number, y: number): number {
+  return ROYALE_FIELD.sight * (sectionAt(map, x, y)?.sight ?? 1);
 }
 
 /** A fighter at `from` sees one at `to`: within its sight, cut to COVER_SIGHT when `to` stands in cover. */
-export function sees(from: { x: number; y: number }, to: { x: number; y: number }): boolean {
-  const range = sightAt(from.x, from.y) * (sectionAt(to.x, to.y)?.cover ? COVER_SIGHT : 1);
+export function sees(map: RoyaleMap, from: { x: number; y: number }, to: { x: number; y: number }): boolean {
+  const range = sightAt(map, from.x, from.y) * (sectionAt(map, to.x, to.y)?.cover ? COVER_SIGHT : 1);
   return Math.hypot(from.x - to.x, from.y - to.y) <= range;
 }
 

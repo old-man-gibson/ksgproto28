@@ -208,21 +208,32 @@ what it already knows enters early.
 
 ### 9.2 The royale's field: a miniature stage
 
-The isometric field stays (§5.3 item 13). It grows from 60 to 120 units
-across (four times the area) and gets terrain: named **sections**, each an
-authored set of rectangles on the field; the first section whose rectangle
-holds a point owns it, and a point no section holds is open meadow.
+The isometric field stays (§5.3 item 13). It grows from 60 to 180 units
+across (nine times the area; user, 2026-10-30) and gets terrain: named
+**sections**. The terrain is **generated per attempt from a seed**, after
+InfiniteGacha's `mapgen.js` (user's pointer, 2026-10-30): a grid of one cell
+per field unit, each cell holding a section; fixed rules say where each
+section lies, the seed decides its shape. Only the seed is saved
+(`RoyaleField.seed`); the map is rebuilt from it (`systems/royaleMap.ts`).
+What carries over from InfiniteGacha: one seeded random source drives the
+whole build; organic regions from a cellular-automaton pass; a river as a
+random walk with banks around it (its `genRoute`); a village as a cluster of
+walled buildings (its `genSettlement`); features placed by rule inside their
+region rather than by hand; monsters placed as packs; only the seed in the
+save. What does not: walls that block walking and line of sight. Every cell
+stays walkable, so walking stays a straight line and needs no pathfinding;
+terrain only changes pace and sight.
 
-| Section | Where | Pace | Sight | Features |
+| Section | Where (generation rule) | Pace | Sight | Features |
 |---|---|---|---|---|
-| Cliff | a ridge along the far edge | 0.6 | 1.6 | a harpy nest (den) |
+| Cliff | a ridge of uneven depth along the far edge | 0.6 | 1.6 | a harpy nest (den) |
 | Waterfall | the river's head, below the cliff | 0.6 | 0.8 | a serpent den guarding a cache |
-| River | a band from the waterfall to the near edge | 0.4 | 1.0 | — (crossing is slow) |
+| River | a random walk from the waterfall to the near edge, 5–8 wide | 0.4 | 1.0 | — (crossing is slow) |
 | Bank | a strip either side of the river | 1.0 | 1.0 | a fisher's cache |
-| Forest | the large west block | 0.8 | 0.5 | a wolf den guarding the hunter's cache |
-| Glade | a clearing inside the forest | 1.0 | 1.2 | a spring: heals while standing in it |
-| Cave | the north-east corner | 0.7 | 0.3 | a bear den guarding the deep cache |
-| Village | the south-east block | 1.0 | 0.7 | the smithy (weapon), the guard post (armour, a hound den), the baker (food), three houses (small finds) |
+| Forest | a cellular blob over most of the west half | 0.8 | 0.5 | a wolf den guarding the hunter's cache |
+| Glade | a round clearing inside the forest | 1.0 | 1.2 | a spring: heals while standing in it |
+| Cave | a blob in one far corner, on the side away from the forest | 0.7 | 0.3 | a bear den guarding the deep cache |
+| Village | a cluster of buildings in the east half, off the river | 1.0 | 0.7 | the smithy (weapon), the guard post (armour, a hound den), the baker (food), three houses (small finds) |
 | Meadow | everything else | 1.0 | 1.0 | — |
 
 - **Pace** multiplies a fighter's walking speed while it stands in the
@@ -273,7 +284,8 @@ holds a point owns it, and a point no section holds is open meadow.
 
 | Who | Files |
 |---|---|
-| Manager (base commit) | types; the layout data (sections, caches, dens) in festival.data.ts; `FESTIVAL_RESTOCK` and the restock loop |
+| Manager (base commit) | types; the section, cache and den data in festival.data.ts; the map interface with a stand-in generator (royaleMap.ts); the terrain reads (royaleTerrain.ts); `FESTIVAL_RESTOCK` and the restock loop |
+| Builder D, the map generator | royaleMap.ts's `generate`: the seeded generator, and its tests |
 | Builder A, the field engine | royaleField.ts, royale.ts, the lent-gear return in festival.ts, the den monsters (monsters data and text), tests, a probe of how long a plan-only royale lasts |
 | Builder B, the field UI | RoyaleField.svelte (sections, features, fog, radar arrow and countdown, camera and minimap) and a read-only preview of the scouted field in the hub |
 | Builder C, the prep hub | the f15 spots, activities and text in locations data and text, the hub's materials or recipes if any are missing |
@@ -286,7 +298,7 @@ holds a point owns it, and a point no section holds is open meadow.
 | F2 | The hub's stock | Restocked each attempt, except the survey (once a run) |
 | F3 | Fog on fighters | On: only fighters in sight show; the radar finds the rest |
 | F4 | Can den monsters kill survivors | Yes, a survivor can fall to a den |
-| F5 | Field size | 120 units across, four times today's area |
+| F5 | Field size | 180 units across (user, 2026-10-30), generated per attempt from a seed |
 | F6 | How long a plan-only royale should last | About 2 to 4 festival hours (12 to 24 minutes of play) |
 | F7 | Hub budget | Doing everything takes about 8 to 10 of the 10 days |
 | F8 | What the hub's searches and benches give | Kept after the attempt, as the stores' rations are today |

@@ -170,7 +170,7 @@ export const SURVIVOR_CHAMPION = 'ph_survivor_champion';
  * health and recovers `healPerTick`. `sight` is how far `weakest` looks.
  */
 export const ROYALE_FIELD = {
-  size: 120,
+  size: 180,
   speed: 0.2,
   thinkTicks: 5,
   engageRadius: 2.5,
@@ -215,72 +215,54 @@ export const RADAR_TICKS = TICKS_PER_HOUR;
 export const COVER_SIGHT = 0.5;
 
 /**
- * The field's sections, in priority order: the first whose rectangle holds a
- * point owns it (the river and its banks before the forest they cross). A
- * point none holds is open meadow. Field units, 0–120; y = 0 is the far
- * edge, and the player starts on the near one.
+ * The field's sections. Where each lies is generated per attempt from the
+ * field's seed (systems/royaleMap.ts, after InfiniteGacha's mapgen): the cliff
+ * along the far edge, the waterfall under it, the river from the waterfall to
+ * the near edge with a bank either side, the forest in the west with the glade
+ * inside it, the cave in a far corner, the village in the east. A cell no
+ * section takes is open meadow. Order is the index the map's cells store.
  */
 export const ROYALE_SECTIONS = prose<RoyaleSectionDef>('ROYALE_SECTIONS', ROYALE_SECTIONS_TEXT, {
-  cliff: { id: 'cliff', name: 'The Cliff', icon: '⛰️', rects: [[0, 0, 120, 10]], pace: 0.6, sight: 1.6 },
-  waterfall: { id: 'waterfall', name: 'The Waterfall', icon: '💦', rects: [[64, 10, 80, 22]], pace: 0.6, sight: 0.8 },
-  river: {
-    id: 'river',
-    name: 'The River',
-    icon: '🌊',
-    rects: [
-      [68, 22, 76, 50],
-      [72, 50, 80, 80],
-      [66, 80, 74, 120],
-    ],
-    pace: 0.4,
-    sight: 1,
-  },
-  bank: {
-    id: 'bank',
-    name: 'The Riverbank',
-    icon: '🪨',
-    rects: [
-      [65, 22, 79, 50],
-      [69, 50, 83, 80],
-      [63, 80, 77, 120],
-    ],
-    pace: 1,
-    sight: 1,
-  },
-  cave: { id: 'cave', name: 'The Cave', icon: '🕳️', rects: [[96, 10, 120, 40]], pace: 0.7, sight: 0.3, cover: true },
-  glade: { id: 'glade', name: 'The Glade', icon: '🌼', rects: [[22, 40, 40, 56]], pace: 1, sight: 1.2, heal: 0.002 },
-  forest: { id: 'forest', name: 'The Forest', icon: '🌲', rects: [[0, 10, 58, 78]], pace: 0.8, sight: 0.5, cover: true },
-  village: { id: 'village', name: 'The Deserted Village', icon: '🏚️', rects: [[86, 62, 120, 104]], pace: 1, sight: 0.7 },
+  cliff: { id: 'cliff', name: 'The Cliff', icon: '⛰️', pace: 0.6, sight: 1.6 },
+  waterfall: { id: 'waterfall', name: 'The Waterfall', icon: '💦', pace: 0.6, sight: 0.8 },
+  river: { id: 'river', name: 'The River', icon: '🌊', pace: 0.4, sight: 1 },
+  bank: { id: 'bank', name: 'The Riverbank', icon: '🪨', pace: 1, sight: 1 },
+  cave: { id: 'cave', name: 'The Cave', icon: '🕳️', pace: 0.7, sight: 0.3, cover: true },
+  glade: { id: 'glade', name: 'The Glade', icon: '🌼', pace: 1, sight: 1.2, heal: 0.002 },
+  forest: { id: 'forest', name: 'The Forest', icon: '🌲', pace: 0.8, sight: 0.5, cover: true },
+  village: { id: 'village', name: 'The Deserted Village', icon: '🏚️', pace: 1, sight: 0.7 },
 });
 
 /**
- * The field's dens (§9.2): monsters that never leave their place. Placeholder
- * monsters (the den builder's section of monsters.data.ts); levels sit with
- * the survivors'.
+ * The field's dens (§9.2): monsters that never leave their place, which the
+ * map generator puts inside the den's section. Placeholder monsters (the den
+ * section of monsters.data.ts); levels sit with the survivors'.
  */
 export const ROYALE_DENS: RoyaleDenDef[] = [
-  { id: 'harpy_nest', name: 'Harpy Nest', icon: '🦅', section: 'cliff', x: 30, y: 5, radius: 5, foes: [{ monsterId: 'ph_den_harpy', level: 34 }, { monsterId: 'ph_den_harpy', level: 34 }] },
-  { id: 'serpent_pool', name: 'Serpent Pool', icon: '🐍', section: 'waterfall', x: 72, y: 17, radius: 4, foes: [{ monsterId: 'ph_den_serpent', level: 36 }] },
-  { id: 'wolf_den', name: 'Wolf Den', icon: '🐺', section: 'forest', x: 14, y: 24, radius: 6, foes: [{ monsterId: 'ph_den_wolf', level: 33 }, { monsterId: 'ph_den_wolf', level: 33 }, { monsterId: 'ph_den_wolf', level: 34 }] },
-  { id: 'bear_cave', name: 'Bear Cave', icon: '🐻', section: 'cave', x: 110, y: 24, radius: 5, foes: [{ monsterId: 'ph_den_bear', level: 37 }] },
-  { id: 'hound_yard', name: 'Hound Yard', icon: '🐕', section: 'village', x: 112, y: 95, radius: 5, foes: [{ monsterId: 'ph_den_hound', level: 34 }, { monsterId: 'ph_den_hound', level: 34 }] },
+  { id: 'harpy_nest', name: 'Harpy Nest', icon: '🦅', section: 'cliff', radius: 5, foes: [{ monsterId: 'ph_den_harpy', level: 34 }, { monsterId: 'ph_den_harpy', level: 34 }] },
+  { id: 'serpent_pool', name: 'Serpent Pool', icon: '🐍', section: 'waterfall', radius: 4, foes: [{ monsterId: 'ph_den_serpent', level: 36 }] },
+  { id: 'wolf_den', name: 'Wolf Den', icon: '🐺', section: 'forest', radius: 6, foes: [{ monsterId: 'ph_den_wolf', level: 33 }, { monsterId: 'ph_den_wolf', level: 33 }, { monsterId: 'ph_den_wolf', level: 34 }] },
+  { id: 'bear_cave', name: 'Bear Cave', icon: '🐻', section: 'cave', radius: 5, foes: [{ monsterId: 'ph_den_bear', level: 37 }] },
+  { id: 'hound_yard', name: 'Hound Yard', icon: '🐕', section: 'village', radius: 5, foes: [{ monsterId: 'ph_den_hound', level: 34 }, { monsterId: 'ph_den_hound', level: 34 }] },
 ];
 
 /**
  * The field's caches (§9.2): taken once an attempt by whoever reaches them
- * first. A player's item or weapon is lent for the attempt.
+ * first. A player's item or weapon is lent for the attempt. The map generator
+ * puts each inside its section, a village cache inside a building of its
+ * kind, and a guarded cache beside its den.
  */
 export const ROYALE_CACHES: RoyaleCacheDef[] = [
-  { id: 'falls_hollow', name: 'Behind the Falls', icon: '💎', section: 'waterfall', x: 72, y: 12, item: 'iron_gauntlets', den: 'serpent_pool' },
-  { id: 'fisher_hut', name: 'Fisher’s Hut', icon: '🐟', section: 'bank', x: 64, y: 95, heal: 0.5 },
-  { id: 'hunter_cache', name: 'Hunter’s Cache', icon: '🏹', section: 'forest', x: 10, y: 20, item: 'wolf_cloak', den: 'wolf_den' },
-  { id: 'deep_cache', name: 'The Deep Cache', icon: '⚔️', section: 'cave', x: 114, y: 18, weapon: true, den: 'bear_cave' },
-  { id: 'smithy', name: 'The Smithy', icon: '🔨', section: 'village', x: 92, y: 70, weapon: true },
-  { id: 'armoury_rack', name: 'Guard Post Armoury', icon: '🛡️', section: 'village', x: 116, y: 99, item: 'iron_breastplate', den: 'hound_yard' },
-  { id: 'bakery', name: 'The Bakery', icon: '🍞', section: 'village', x: 100, y: 88, heal: 0.6 },
-  { id: 'house_north', name: 'North House', icon: '🏠', section: 'village', x: 104, y: 70, item: 'leather_cap' },
-  { id: 'house_south', name: 'South House', icon: '🏠', section: 'village', x: 90, y: 98, item: 'leather_boots' },
-  { id: 'house_corner', name: 'Corner House', icon: '🏠', section: 'village', x: 96, y: 82, heal: 0.3 },
+  { id: 'falls_hollow', name: 'Behind the Falls', icon: '💎', section: 'waterfall', item: 'iron_gauntlets', den: 'serpent_pool' },
+  { id: 'fisher_hut', name: 'Fisher’s Hut', icon: '🐟', section: 'bank', heal: 0.5 },
+  { id: 'hunter_cache', name: 'Hunter’s Cache', icon: '🏹', section: 'forest', item: 'wolf_cloak', den: 'wolf_den' },
+  { id: 'deep_cache', name: 'The Deep Cache', icon: '⚔️', section: 'cave', weapon: true, den: 'bear_cave' },
+  { id: 'smithy', name: 'The Smithy', icon: '🔨', section: 'village', building: 'smithy', weapon: true },
+  { id: 'armoury_rack', name: 'Guard Post Armoury', icon: '🛡️', section: 'village', building: 'guard_post', item: 'iron_breastplate', den: 'hound_yard' },
+  { id: 'bakery', name: 'The Bakery', icon: '🍞', section: 'village', building: 'bakery', heal: 0.6 },
+  { id: 'house_north', name: 'North House', icon: '🏠', section: 'village', building: 'house', item: 'leather_cap' },
+  { id: 'house_south', name: 'South House', icon: '🏠', section: 'village', building: 'house', item: 'leather_boots' },
+  { id: 'house_corner', name: 'Corner House', icon: '🏠', section: 'village', building: 'house', heal: 0.3 },
 ];
 
 /**
