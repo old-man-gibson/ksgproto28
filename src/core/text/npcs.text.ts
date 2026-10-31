@@ -104,7 +104,7 @@ export const NPCS_TEXT: ProseTable = {
     'Salve, broth, rations, bread. Tower prices.',
     'The hall runs four stretches. The break room is behind the third, with chairs.',
   ],
-  'f11_steward.desc': 'In the stronghold’s gatehouse on floor 11. Gives Shore Up the Gate, then Arm the Wall, which opens the wave on the wall. Only before the stronghold is held. Placeholder.',
+  'f11_steward.desc': 'In the stronghold’s gatehouse on floor 11. Gives Shore Up the Gate, then Arm the Wall, which opens the wave on the wall. Only before the stronghold is held.',
   'f11_steward.dialogue': [
     'The gate first: twenty hardwood from the yard, fifteen iron scrap. The road’s raiders carry scrap.',
     'Then the wall: ten raiders off the road, four iron ingots for the braces. The forge in town makes them, or the smith sells them.',
@@ -112,43 +112,43 @@ export const NPCS_TEXT: ProseTable = {
   ],
 
   // ==== HARBOR: NPC text (2026-10-30; the harbor builder's section) ====
-  'f11_factor.desc': 'The merchants’ recruiter at the merchant berth on floor 11. Gives Sign With the Merchants, which picks the merchants for the run, then Clear the Closed Port. Placeholder.',
+  'f11_factor.desc': 'The merchants’ recruiter at the merchant berth on floor 11. Gives Sign With the Merchants, which picks the merchants for the run, then Clear the Closed Port.',
   'f11_factor.dialogue': [
     'Sign with us and the convoy is yours: you defend it from anything that boards, and you sell what survives at port.',
     'The other berths stop dealing with you once you sign. One side a run.',
     'Speechcraft sets the price per crate: 5 waives the duty, 15 gets a broker instead of the dock buyer, 30 haggles the price.',
   ],
-  'f11_bosun.desc': 'The pirates’ recruiter at the smugglers’ berth on floor 11. Gives Sign On With the Pirates, which picks the pirates for the run, then Forge a Signal. Placeholder.',
+  'f11_bosun.desc': 'The pirates’ recruiter at the smugglers’ berth on floor 11. Gives Sign On With the Pirates, which picks the pirates for the run, then Forge a Signal.',
   'f11_bosun.dialogue': [
     'Sign on and you seize crates from the convoy. Each leg, every guard you kill adds one crate to what you seize.',
     'The other berths stop dealing with you once you sign. One side a run.',
     'Floor 12 has a cove off the outer port. Search the port to find the way in.',
   ],
-  'f11_letter_agent.desc': 'The privateers’ recruiter at the privateer berth on floor 11. Gives Take Out a Letter of Marque, which picks the privateers for the run, then Renew the Letter. Placeholder.',
+  'f11_letter_agent.desc': 'The privateers’ recruiter at the privateer berth on floor 11. Gives Take Out a Letter of Marque, which picks the privateers for the run, then Renew the Letter.',
   'f11_letter_agent.dialogue': [
     'The pirates take the convoy; a letter of marque lets you take it back from them.',
     'The other berths stop dealing with you once you sign. One side a run.',
     'Each leg, every pirate you kill adds one crate to what you recover.',
   ],
-  'f11_lieutenant.desc': 'The navy’s recruiter at the navy berth on floor 11. Gives Enlist With the Navy, which picks the navy for the run, then Bait a Lure. Placeholder.',
+  'f11_lieutenant.desc': 'The navy’s recruiter at the navy berth on floor 11. Gives Enlist With the Navy, which picks the navy for the run, then Bait a Lure.',
   'f11_lieutenant.dialogue': [
     'The navy escorts the convoy against the sea monsters. Pirates are not our business on these lanes.',
     'The other berths stop dealing with you once you sign. One side a run.',
     'The beast on floor 14 closes the lanes. Bait a lure first and it comes up Surprised.',
   ],
-  'f13_pilot.desc': 'At the Last Port on floor 13. Sells a Pilot’s Passage; once bought, the Pilot’s Channel into the blockade is open and the blockaders start that fight Surprised. Placeholder.',
+  'f13_pilot.desc': 'At the Last Port on floor 13. Sells a Pilot’s Passage; once bought, the Pilot’s Channel into the blockade is open and the blockaders start that fight Surprised.',
   'f13_pilot.dialogue': [
     'Through the picket line you start the fight Flat-Footed. Through my channel, the blockaders start it Surprised.',
     'One passage, and the channel is yours for the run.',
   ],
-  'f13_harbor_master.desc': 'At the Last Port on floor 13. Sells Port Clearance to merchants only: the factor’s Clear the Closed Port asks for one bought. Placeholder.',
+  'f13_harbor_master.desc': 'At the Last Port on floor 13. Sells Port Clearance to merchants only: the factor’s Clear the Closed Port asks for one bought.',
   'f13_harbor_master.dialogue': [
     'The closed port on floor 14 opens only for Port Clearance papers.',
     'I sell Port Clearance to merchants only.',
   ],
 
   // ==== DESERT: NPC text (the desert builder's section) ====
-  'f20_broker.desc': 'The port house broker on floor 20’s quay. Buys at the posted rates, which are the global sell prices: selling here pays what selling anywhere pays. Sells nothing. Placeholder.',
+  'f20_broker.desc': 'The port house broker on floor 20’s quay. Buys at the posted rates, which are the global sell prices: selling here pays what selling anywhere pays. Sells nothing.',
   'f20_broker.dialogue': [
     'Posted rates. The same coin you would get for it anywhere in the tower; the port house pays no premium.',
     'The port house licenses the digs and buys what comes out of them. It sells nothing back.',

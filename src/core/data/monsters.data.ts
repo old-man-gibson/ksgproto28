@@ -1749,7 +1749,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // the battle stage shows the emoji.
   ph_siege_raider: {
     id: 'ph_siege_raider',
-    name: 'Raider (placeholder)',
+    name: 'Raider',
     icon: '🗡️',
     tags: ['humanoid', 'living'],
     tier: 'veteran',
@@ -1771,7 +1771,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_siege_brute: {
     id: 'ph_siege_brute',
-    name: 'Brute (placeholder)',
+    name: 'Brute',
     icon: '🪓',
     tags: ['humanoid', 'living', 'large'],
     tier: 'veteran',
@@ -1792,7 +1792,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_siege_captain: {
     id: 'ph_siege_captain',
-    name: 'Siege Captain (placeholder)',
+    name: 'Siege Captain',
     icon: '⚔️',
     tags: ['humanoid', 'living'],
     tier: 'elite',
@@ -1817,7 +1817,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_corsair: {
     id: 'ph_corsair',
-    name: 'Corsair (placeholder)',
+    name: 'Corsair',
     icon: '🏴‍☠️',
     tags: ['humanoid', 'living'],
     tier: 'elite',
@@ -1849,7 +1849,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // step is added on top.
   ph_bandit_thug: {
     id: 'ph_bandit_thug',
-    name: 'Bandit Thug (placeholder)',
+    name: 'Bandit Thug',
     icon: '🪓',
     tags: ['humanoid', 'living', 'medium'],
     tier: 'basic',
@@ -1870,7 +1870,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_bandit_archer: {
     id: 'ph_bandit_archer',
-    name: 'Bandit Archer (placeholder)',
+    name: 'Bandit Archer',
     icon: '🏹',
     tags: ['humanoid', 'living', 'medium'],
     tier: 'basic',
@@ -1892,7 +1892,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_bandit_cutthroat: {
     id: 'ph_bandit_cutthroat',
-    name: 'Bandit Cutthroat (placeholder)',
+    name: 'Bandit Cutthroat',
     icon: '🗡️',
     tags: ['humanoid', 'living', 'medium'],
     tier: 'veteran',
@@ -1914,7 +1914,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // The camp's chief: the siege's last fight, in the tent, with two escorts.
   ph_bandit_chief: {
     id: 'ph_bandit_chief',
-    name: 'Bandit Chief (placeholder)',
+    name: 'Bandit Chief',
     icon: '⚔️',
     tags: ['humanoid', 'living', 'large'],
     tier: 'elite',
@@ -1943,7 +1943,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // and WARD_WINDOWS'.
   ph_camp_demon: {
     id: 'ph_camp_demon',
-    name: 'Camp Demon (placeholder)',
+    name: 'Camp Demon',
     icon: '👿',
     tags: ['living', 'eldritch', 'dark', 'huge'],
     tier: 'ancient',
@@ -1979,7 +1979,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // form at 2 and 3. Both solitary; bleeding is the threat.
   ph_rogue_beast_young: {
     id: 'ph_rogue_beast_young',
-    name: 'Rogue Beast (placeholder)',
+    name: 'Rogue Beast',
     icon: '🐻',
     tags: ['living', 'beast', 'large'],
     tier: 'elite',
@@ -2005,7 +2005,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // than the young form, and a Heavy Blow.
   ph_rogue_beast_final: {
     id: 'ph_rogue_beast_final',
-    name: 'Rogue Beast, Final Form (placeholder)',
+    name: 'Rogue Beast, Final Form',
     icon: '🐻',
     tags: ['living', 'beast', 'huge'],
     tier: 'elite',
@@ -2032,7 +2032,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // and no counterspell; its resistances, smaller.
   ph_death_squire: {
     id: 'ph_death_squire',
-    name: 'Death Squire (placeholder)',
+    name: 'Death Squire',
     icon: '💀',
     tags: ['humanoid', 'inorganic', 'dark', 'medium'],
     tier: 'veteran',
@@ -2063,7 +2063,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // blows taken harder. Elemental damage passes armour; acid corrodes it.
   ph_ore_eater_1: {
     id: 'ph_ore_eater_1',
-    name: 'Ore Eater, Stage 1 (placeholder)',
+    name: 'Ore Eater, Stage 1',
     icon: '🪲',
     tags: ['living', 'vermin', 'earth', 'medium'],
     tier: 'elite',
@@ -2088,7 +2088,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_ore_eater_2: {
     id: 'ph_ore_eater_2',
-    name: 'Ore Eater, Stage 2 (placeholder)',
+    name: 'Ore Eater, Stage 2',
     icon: '🪲',
     tags: ['living', 'vermin', 'earth', 'large'],
     tier: 'elite',
@@ -2115,7 +2115,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_ore_eater_3: {
     id: 'ph_ore_eater_3',
-    name: 'Ore Eater, Stage 3 (placeholder)',
+    name: 'Ore Eater, Stage 3',
     icon: '🪲',
     tags: ['living', 'vermin', 'earth', 'huge'],
     tier: 'elite',
@@ -2142,7 +2142,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_ore_eater_4: {
     id: 'ph_ore_eater_4',
-    name: 'Ore Eater, Stage 4 (placeholder)',
+    name: 'Ore Eater, Stage 4',
     icon: '🪲',
     tags: ['living', 'vermin', 'earth', 'gargantuan'],
     tier: 'elite',
@@ -2179,7 +2179,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // Sea monsters: the navy's prey; the merchants fight them too.
   ph_reef_eel: {
     id: 'ph_reef_eel',
-    name: 'Reef Eel (placeholder)',
+    name: 'Reef Eel',
     icon: '🐍',
     tags: ['living', 'beast', 'water', 'medium'],
     tier: 'basic',
@@ -2200,7 +2200,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_deep_serpent: {
     id: 'ph_deep_serpent',
-    name: 'Deep Serpent (placeholder)',
+    name: 'Deep Serpent',
     icon: '🐉',
     tags: ['living', 'beast', 'water', 'large'],
     tier: 'veteran',
@@ -2220,7 +2220,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_brood_matron: {
     id: 'ph_brood_matron',
-    name: 'Brood Matron (placeholder)',
+    name: 'Brood Matron',
     icon: '🦑',
     tags: ['living', 'beast', 'water', 'large'],
     tier: 'veteran',
@@ -2242,7 +2242,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_sea_beast: {
     id: 'ph_sea_beast',
-    name: 'The Sea Beast (placeholder)',
+    name: 'The Sea Beast',
     icon: '🐋',
     tags: ['living', 'beast', 'water', 'huge'],
     tier: 'elite',
@@ -2267,7 +2267,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // Pirates: the privateers' prey; the merchants fight them too.
   ph_pirate_cutthroat: {
     id: 'ph_pirate_cutthroat',
-    name: 'Cutthroat (placeholder)',
+    name: 'Cutthroat',
     icon: '🗡️',
     tags: ['humanoid', 'living'],
     tier: 'basic',
@@ -2288,7 +2288,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_pirate_gunner: {
     id: 'ph_pirate_gunner',
-    name: 'Pirate Gunner (placeholder)',
+    name: 'Pirate Gunner',
     icon: '🔫',
     tags: ['humanoid', 'living'],
     tier: 'veteran',
@@ -2308,7 +2308,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_pirate_captain: {
     id: 'ph_pirate_captain',
-    name: 'Pirate Captain (placeholder)',
+    name: 'Pirate Captain',
     icon: '🏴‍☠️',
     tags: ['humanoid', 'living'],
     tier: 'veteran',
@@ -2331,7 +2331,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_pirate_king: {
     id: 'ph_pirate_king',
-    name: 'The Pirate King (placeholder)',
+    name: 'The Pirate King',
     icon: '👑',
     tags: ['humanoid', 'living'],
     tier: 'elite',
@@ -2357,7 +2357,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // The convoy's guard and the navy's crews: the pirates' prey.
   ph_convoy_guard: {
     id: 'ph_convoy_guard',
-    name: 'Convoy Guard (placeholder)',
+    name: 'Convoy Guard',
     icon: '🛡️',
     tags: ['humanoid', 'living'],
     tier: 'basic',
@@ -2378,7 +2378,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_navy_marine: {
     id: 'ph_navy_marine',
-    name: 'Marine (placeholder)',
+    name: 'Marine',
     icon: '⚔️',
     tags: ['humanoid', 'living'],
     tier: 'veteran',
@@ -2399,7 +2399,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_navy_frigate: {
     id: 'ph_navy_frigate',
-    name: 'Frigate Captain (placeholder)',
+    name: 'Frigate Captain',
     icon: '🎖️',
     tags: ['humanoid', 'living'],
     tier: 'veteran',
@@ -2421,7 +2421,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_galleon_master: {
     id: 'ph_galleon_master',
-    name: 'Master of the Treasure Galleon (placeholder)',
+    name: 'Master of the Treasure Galleon',
     icon: '💰',
     tags: ['humanoid', 'living'],
     tier: 'elite',
@@ -2446,7 +2446,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // The merchants' mission boss: the raiders holding the closed port.
   ph_port_warden: {
     id: 'ph_port_warden',
-    name: 'Warden of the Closed Port (placeholder)',
+    name: 'Warden of the Closed Port',
     icon: '🚧',
     tags: ['humanoid', 'living', 'large'],
     tier: 'elite',
@@ -2477,7 +2477,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // pays at its end, and reruns pay nothing (§5.3 item 17). No art.
   ph_room_brawler: {
     id: 'ph_room_brawler',
-    name: 'Room Brawler (placeholder)',
+    name: 'Room Brawler',
     icon: '🔪',
     tags: ['humanoid', 'living'],
     tier: 'veteran',
@@ -2491,7 +2491,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_room_bruiser: {
     id: 'ph_room_bruiser',
-    name: 'Room Bruiser (placeholder)',
+    name: 'Room Bruiser',
     icon: '🪓',
     tags: ['humanoid', 'living', 'large'],
     tier: 'veteran',
@@ -2505,7 +2505,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // The last of the dark room's nine: fought alone, and floor 15's boss line.
   ph_room_last: {
     id: 'ph_room_last',
-    name: 'Last of the Room (placeholder)',
+    name: 'Last of the Room',
     icon: '☠️',
     tags: ['humanoid', 'living'],
     tier: 'elite',
@@ -2521,7 +2521,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // The other rooms' survivors, on the royale's field.
   ph_survivor_blade: {
     id: 'ph_survivor_blade',
-    name: 'Survivor Blade (placeholder)',
+    name: 'Survivor Blade',
     icon: '🗡️',
     tags: ['humanoid', 'living'],
     tier: 'veteran',
@@ -2535,7 +2535,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_survivor_brute: {
     id: 'ph_survivor_brute',
-    name: 'Survivor Brute (placeholder)',
+    name: 'Survivor Brute',
     icon: '🔨',
     tags: ['humanoid', 'living', 'large'],
     tier: 'veteran',
@@ -2549,7 +2549,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // The last survivor on the field, fought alone: beating it wins the royale.
   ph_survivor_champion: {
     id: 'ph_survivor_champion',
-    name: 'Champion of the Field (placeholder)',
+    name: 'Champion of the Field',
     icon: '👑',
     tags: ['humanoid', 'living'],
     tier: 'elite',
@@ -2576,7 +2576,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // bludgeoning (maces, martial), and a blade.
   ph_scarab: {
     id: 'ph_scarab',
-    name: 'Scarab (placeholder)',
+    name: 'Scarab',
     icon: '🪲',
     tags: ['living', 'vermin', 'desert', 'small'],
     tier: 'basic',
@@ -2597,7 +2597,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_cobra: {
     id: 'ph_cobra',
-    name: 'Cobra (placeholder)',
+    name: 'Cobra',
     icon: '🐍',
     tags: ['living', 'beast', 'desert'],
     tier: 'veteran',
@@ -2620,7 +2620,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   },
   ph_scorpion: {
     id: 'ph_scorpion',
-    name: 'Giant Scorpion (placeholder)',
+    name: 'Giant Scorpion',
     icon: '🦂',
     tags: ['living', 'vermin', 'desert'],
     tier: 'veteran',
@@ -2644,7 +2644,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // no dust. Takes 50% more from heat, so the keyed method is the fast one.
   ph_mummy: {
     id: 'ph_mummy',
-    name: 'Mummy (placeholder)',
+    name: 'Mummy',
     icon: '🧟',
     tags: ['living', 'undead', 'desert'],
     tier: 'veteran',
@@ -2668,7 +2668,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // its keyed row wants bludgeoning; quicksilver has no other live source.
   ph_sand_colossus: {
     id: 'ph_sand_colossus',
-    name: 'Sand Colossus (placeholder)',
+    name: 'Sand Colossus',
     icon: '🗿',
     tags: ['inorganic', 'construct', 'desert', 'earth', 'large'],
     tier: 'elite',
@@ -2724,7 +2724,7 @@ export const MONSTERS = prose<MonsterDef>('MONSTERS', MONSTERS_TEXT, {
   // Floor 20's roadstead: three of them, one fight, the floor's clear.
   ph_roadstead_crew: {
     id: 'ph_roadstead_crew',
-    name: 'Roadstead Crew (placeholder)',
+    name: 'Roadstead Crew',
     icon: '🚣',
     tags: ['living', 'humanoid', 'desert'],
     tier: 'veteran',

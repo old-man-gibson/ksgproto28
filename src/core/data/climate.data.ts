@@ -59,7 +59,7 @@ export const MONTHS: { id: string; name: string }[] = [
 // TODO: name the weekdays — same scaffolding.
 export const WEEKDAYS: string[] = [
   'Firstday',
-  'Seconday',
+  'Secondday',
   'Thirdday',
   'Fourthday',
   'Fifthday',

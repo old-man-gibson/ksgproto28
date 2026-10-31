@@ -111,7 +111,7 @@ export const DEITIES = prose<DeityDef>('DEITIES', DEITIES_TEXT, {
   goblin_fire: {
     id: 'goblin_fire',
     name: 'Goblin Fire God',
-    epithet: 'placeholder',
+    epithet: 'the Torch-Bearer',
     icon: '🔥',
     tags: ['tribal', 'humanoid', 'fire', 'chaotic', 'goblin pantheon'],
     synergies: [{ anyOf: ['goblin pantheon'] }],
@@ -120,7 +120,7 @@ export const DEITIES = prose<DeityDef>('DEITIES', DEITIES_TEXT, {
   goblin_mud: {
     id: 'goblin_mud',
     name: 'Goblin Mud God',
-    epithet: 'placeholder',
+    epithet: 'the Mire',
     icon: '🟤',
     tags: ['tribal', 'humanoid', 'earth', 'water', 'goblin pantheon'],
     synergies: [{ anyOf: ['goblin pantheon', 'earth'] }],
@@ -128,7 +128,7 @@ export const DEITIES = prose<DeityDef>('DEITIES', DEITIES_TEXT, {
   goblin_hunt: {
     id: 'goblin_hunt',
     name: 'Goblin Hunting God',
-    epithet: 'placeholder',
+    epithet: 'the Ratcatcher',
     icon: '🐀',
     tags: ['tribal', 'bestial', 'nature', 'goblin pantheon'],
     synergies: [{ anyOf: ['goblin pantheon', 'bestial'] }],
