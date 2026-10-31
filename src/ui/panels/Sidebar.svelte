@@ -396,6 +396,8 @@
                 <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent)"></div>
                 <div class="label">{cell.label} {Math.floor(cell.value)} / {Math.floor(cell.cap)}</div>
               </div>
+            {:else if cell.show === 'count'}
+              <span class="ability-line ability-count">{cell.label} {Math.round(cell.value)}</span>
             {:else}
               <span class="ability-line" class:ability-low={cell.value < 0}>{cell.label} {signedPct(cell.value)}</span>
             {/if}
@@ -797,6 +799,9 @@
   }
   .ability-line.ability-low {
     color: var(--danger);
+  }
+  .ability-line.ability-count {
+    color: var(--text-dim);
   }
   .ability-input {
     font-size: 0.72rem;

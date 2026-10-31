@@ -1,6 +1,7 @@
 import type { DamageType, DerivedStats, GameState } from '../types';
 import { availableMax, resourceValue, restoreResource, setResource, spendResource } from './resources';
 import { fireStatusEvent, healAllowance, noteHealed } from './statuses';
+import { facetSignal } from '../facet/signal';
 
 /**
  * The damage types that stop a MONSTER knitting. Fire and acid: the two that
@@ -122,6 +123,8 @@ export function damagePlayer(
   // The amount rides along with the type, for rules that answer to how hard a
   // blow was rather than how many there were (StatusRemoval.afterDamage).
   fireStatusEvent(state, state, 'damageTaken', type ? { damageType: type, amount: lost } : { amount: lost });
+  // The run's ability hears every blow from the same door (facet/signal.ts).
+  facetSignal(state, 'hitTaken', { amount: lost });
   // A body that knits itself back together stops while it is being burned or
   // eaten — but that rule is no longer written here. It rides the `knitting`
   // condition the gene confers, whose own `removal` names the types that douse

@@ -7,7 +7,7 @@
 // only quantity ids from the shared vocabulary (fighter.*, stat.eff.*, res.*, pool.*, world.*);
 // the comment above each entry lists what a game must register for it to run.
 //
-// Every number is a placeholder until the user sets it.
+// A number is a placeholder unless the entry says the user set it.
 
 (() => {
 const F = (globalThis.Facet || (globalThis.Facet = { _mods: {} }));
@@ -63,6 +63,81 @@ B.solar_charge = {
     // power = min(peak, floor + (peak - floor) / knee x share); peak 0.2, floor -0.3, knee 0.5.
     { id: 'power', on: 'minute', do: [{ emit: 'cell', cell: 'power', verb: 'set',
       value: { expr: 'min', a: 0.2, b: { expr: 'add', a: -0.3, b: { expr: 'mul', a: 1, b: { cell: 'charge', of: 'frac' } } } } }] },
+  ],
+};
+
+// ---------- Zenkai ----------
+//
+// Approved by the user 2026-10-31 as written (team ability GEN-10, artifact "Abilities 1–100"):
+// "After a win where your HP fell to 20% or below, you gain a permanent bonus to all stats. The
+// gain is 1.5% times the depth of the fall, times the level ratio. Depth is 1 minus your lowest
+// HP fraction. The ratio is enemy level over your level, capped at 1.5. Using a flask or prayer
+// during that fight cancels the gain. Enemies under 70% of your level give nothing. A knockout
+// gives nothing and costs nothing extra. Each Zenkai you already have multiplies the next gain by
+// 0.97. The total stalls between +50% and +75%."
+//
+//   bonus    the total, a multiplier on all six attributes. Lasts as long as the document (the
+//            run, in ksgproto28).
+//   gains    how many Zenkai so far; the 0.97 decay reads it. Team 2 proposed 0.99 so gains last
+//            the run; that is the DECAY number below.
+//   low      lowest HP share this fight: set at fightStart, lowered on each hitTaken.
+//   tainted  1 once a flask, a consumable or a miracle is used this fight. "Prayer" is read as a
+//            miracle cast; a consumable counts as a flask.
+//   foe      the strongest enemy's level this fight, from fightStart.
+//
+// Reads: fighter.hp, fighter.maxHpAbs (through `of: 'frac'`), fighter.level, stat.eff.* (to
+// modify). Events: fightStart (detail maxLevel), hitTaken, flaskUsed, itemUsed, miracleCast,
+// fightWon. A knockout raises no fightWon, so it pays and costs nothing.
+const DECAY = 0.97;
+const HP_SHARE = { q: 'fighter.hp', of: 'frac' };
+const LEVEL = { q: 'fighter.level' };
+const ATTRS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+const taint = (event) => ({ id: 'taint_' + event, on: 'event:' + event, do: [{ emit: 'cell', cell: 'tainted', verb: 'set', value: 1 }] });
+const hidden = { hidden: true };
+
+B.zenkai = {
+  v: 1,
+  reading: { name: 'Zenkai', icon: '💥' },
+  cells: [
+    {
+      key: 'bonus', label: 'Zenkai', icon: '💥', hold: 'none', level: 'real', tier: 'run', show: 'signedPct', cap: 10,
+      status: {
+        desc: 'All attributes, raised by every win where your HP fell to 20% or below without a flask or a prayer.',
+        mods: ATTRS.map((a) => ({ q: 'stat.eff.' + a, op: 'mult', value: 1 })),
+      },
+    },
+    { key: 'gains', label: 'Zenkai gains', icon: '📈', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, status: hidden },
+    { key: 'low', hold: 'none', level: 'real', tier: 'fight', cap: 1, status: hidden },
+    { key: 'tainted', hold: 'none', level: 'int', tier: 'fight', cap: 1, status: hidden },
+    { key: 'foe', hold: 'none', level: 'real', tier: 'fight', cap: 1e9, status: hidden },
+  ],
+  clauses: [
+    { id: 'start', on: 'event:fightStart', do: [
+      { emit: 'cell', cell: 'low', verb: 'set', value: HP_SHARE },
+      { emit: 'cell', cell: 'tainted', verb: 'set', value: 0 },
+      { emit: 'cell', cell: 'foe', verb: 'set', value: { frame: 'maxLevel' } },
+    ] },
+    { id: 'hurt', on: 'event:hitTaken', do: [
+      { emit: 'cell', cell: 'low', verb: 'set', value: { expr: 'min', a: { cell: 'low' }, b: HP_SHARE } },
+    ] },
+    taint('flaskUsed'),
+    taint('itemUsed'),
+    taint('miracleCast'),
+    { id: 'won', on: 'event:fightWon',
+      when: { all: [
+        { cell: 'low', op: 'lte', v: 0.2 },
+        { cell: 'tainted', op: 'eq', v: 0 },
+        { cell: 'foe', op: 'gte', v: { expr: 'mul', a: 0.7, b: LEVEL } },
+      ] },
+      do: [
+        // gain = 1.5% x (1 - low) x min(1.5, foe / level) x DECAY^gains; gains counts after.
+        { emit: 'cell', cell: 'bonus', verb: 'add', value: { expr: 'mul', a: 0.015, b: { expr: 'mul',
+          a: { expr: 'sub', a: 1, b: { cell: 'low' } },
+          b: { expr: 'mul',
+            a: { expr: 'min', a: 1.5, b: { expr: 'div', a: { cell: 'foe' }, b: LEVEL } },
+            b: { expr: 'pow', a: DECAY, b: { cell: 'gains' } } } } } },
+        { emit: 'cell', cell: 'gains', verb: 'add', value: 1 },
+      ] },
   ],
 };
 })();

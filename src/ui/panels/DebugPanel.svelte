@@ -15,6 +15,8 @@
   import { grantFavor } from '../../core/systems/deities';
   import { grantLevelXp } from '../../core/systems/levels';
   import { debugSetCell, grantFacet } from '../../core/facet/host';
+  import { getDerivedStats } from '../../core/systems/derived';
+  import { setResource } from '../../core/systems/resources';
   import { recordKill } from '../../core/systems/bestiary';
   import { MONSTERS } from '../../core/registry';
   import { LOCKABLE_SUBSYSTEMS, unlockKey, wordUnlockKey } from '../../core/systems/unlocks';
@@ -165,6 +167,12 @@
   function setCharge(share: number) {
     debugSetCell(gs, 'charge', share);
     say(`Charge set to ${Math.round(share * 100)}%`);
+  }
+
+  /** For abilities that read low HP (Zenkai). Outside a fight it holds until regeneration refills it. */
+  function hpTo(share: number) {
+    setResource(gs, 'hp', share * getDerivedStats(gs).maxHp);
+    say(`HP set to ${Math.round(share * 100)}% of max`);
   }
 
   // ---- Teleport ----
@@ -559,6 +567,7 @@
       {#each [0, 0.25, 0.5, 1] as share (share)}
         <button onclick={() => setCharge(share)}>Charge {share * 100}%</button>
       {/each}
+      <button onclick={() => hpTo(0.15)}>HP to 15%</button>
     </div>
     <div class="dim small">The power cell follows the charge on the next game minute (one real second).</div>
   </div>

@@ -102,7 +102,7 @@ import { appendLog } from './systems/log';
 import { RESOURCE_LIST } from './data/resources.data';
 import { resourceLock } from './systems/resources';
 import { autoPrestigeDue, buyBoon, leaveReview, prestigeNow } from './systems/prestige';
-import { bindFacets, tickFacets } from './facet/host';
+import { bindFacets, facetSignal, registerFacetListeners, tickFacets } from './facet/host';
 import type { PsionicShape, QualityTier, ResourceId, ResourceLock, SlotId } from './types';
 import { text } from './text/log';
 
@@ -173,6 +173,8 @@ export class Game {
     // The Vermin Festival: attempts start on arrival in its dark room, and its
     // staged fights report back through fight:won (systems/festival.ts).
     registerFestivalListeners(state, this.bus);
+    // The run's ability hears the fight events the bus carries (facet/host.ts).
+    registerFacetListeners(state, this.bus);
     this.bus.on('log', (ev) => {
       if (this.suppressLog) return;
       appendLog(this.state, {
@@ -570,6 +572,7 @@ export class Game {
     // A flask's dose may be ignored by a stronger dish's condition; the dish
     // slots still record it, with its own clock (systems/meals.ts).
     if (used) noteForeignDoses(this.state, used.grants);
+    if (used) facetSignal(this.state, 'flaskUsed');
     return used;
   }
 
@@ -594,7 +597,9 @@ export class Game {
 
   /** Eat, drink or apply something from stock. */
   useConsumable(id: string, quality: QualityTier = 'c') {
-    return useConsumable(this.state, this.bus, id, quality);
+    const used = useConsumable(this.state, this.bus, id, quality);
+    if (used) facetSignal(this.state, 'itemUsed');
+    return used;
   }
 
   /**
