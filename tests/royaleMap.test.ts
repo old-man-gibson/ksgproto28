@@ -452,9 +452,11 @@ describe('royale map generator: placements', () => {
 });
 
 describe('royale map generator: any number of caches', () => {
-  it('seats a list with every entry three times over', () => {
-    const defs = inflate(ROYALE_CACHES, 3);
-    expect(defs.length).toBe(ROYALE_CACHES.length * 3);
+  // Twice over: the data's 35 caches already ask for six houses, and the
+  // village caps at 32×26 cells, which seats about 13 buildings.
+  it('seats a list with every entry twice over', () => {
+    const defs = inflate(ROYALE_CACHES, 2);
+    expect(defs.length).toBe(ROYALE_CACHES.length * 2);
     const found: string[] = [];
     for (const seed of SEEDS.slice(0, 80)) found.push(...placementProblems(generate(seed, defs), defs));
     expect(report(found)).toEqual([]);
