@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest run",
-    "verify": "svelte-check --tsconfig ./tsconfig.json && vitest run",
+    "verify": "svelte-check --tsconfig ./tsconfig.json && vitest run && vite build",
     "names": "node scripts/names.mjs",
     "icons": "node scripts/icons.mjs",
     "pacing": "vite-node scripts/pacing.ts"

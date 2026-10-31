@@ -10,9 +10,10 @@ for all the "magic strings".
 > ```
 > npm run verify
 > ```
-> It typechecks (catches typos, wrong fields, duplicate keys) and runs the test
-> suite (catches broken references and behavior). If it's green, your content is
-> structurally sound.
+> It typechecks (catches typos, wrong fields, duplicate keys), runs the test
+> suite (catches broken references and behavior), and builds the game (catches
+> an import the browser cannot load, which the first two miss). If it's green,
+> your content is structurally sound.
 
 ---
 
