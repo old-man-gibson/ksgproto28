@@ -189,8 +189,8 @@ Each step ships alone and is verified before the next.
    `fighter.maxHp`, which in IG is a multiplier slot and in KSG is
    unregistered, where `fighter.maxHpAbs` is the maximum. And in KSG the
    mortality proof is inert until K2 supplies `probeSlice`/`probeNative`.
-2. **Solar Charge in KSG. Built 2026-10-31 on branch `solar-charge`
-   (cb61579, unmerged).** Core (Facet dc9e80b, bea3ffa): carriers applied at
+2. **Solar Charge in KSG. Done 2026-10-31: branch `solar-charge`, merged
+   into main as c00261f.** Core (Facet dc9e80b, bea3ffa): carriers applied at
    attach and whenever missing (`carrierSync`); a cell may describe its
    carrier (`status: { mods, desc }`); a modifier may name a shared quantity
    id (`q`) that each host maps to its own stat; `Facet.minute(ref)`; the
