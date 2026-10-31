@@ -341,7 +341,7 @@ terrain only changes pace and sight.
 | F3 | Fog on fighters | On: only fighters in sight show; the radar finds the rest |
 | F4 | Can den monsters kill survivors | Yes, a survivor can fall to a den |
 | F5 | Field size | 180 units across (user, 2026-10-30), generated per attempt from a seed |
-| F6 | How long a plan-only royale should last | About 2 to 4 festival hours (12 to 24 minutes of play) |
+| F6 | How long a plan-only royale should last | A long royale is fine (user, 2026-10-30). Measured with a strong player (attributes 400) and the default plan: 2.8 to 4.4 festival hours, which is 2.8 to 4.4 minutes of play (a festival hour is 600 ticks, one minute); walking speed left at 0.2 |
 | F7 | Hub budget | Doing everything takes about 8 to 10 of the 10 days |
 | F8 | What the hub's searches and benches give | Kept after the attempt, as the stores' rations are today |
 | F9 | The survey's order | Random: one search that runs four days unattended (user, 2026-10-30: "keep it random") |
