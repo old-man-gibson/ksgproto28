@@ -1,6 +1,8 @@
 // Shared type definitions for the game core.
 // Everything here is plain data — no DOM, no framework imports.
 
+import type { FacetDoc } from './facet/facet';
+
 // ---------- Attributes ----------
 
 export type AttributeId = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
@@ -5707,6 +5709,13 @@ export interface GameState {
   resourceLocks: Partial<Record<ResourceId, ResourceLock>>;
   /** Conditions currently afflicting the player (see systems/statuses.ts). */
   statuses: StatusInstance[];
+  /**
+   * The run's unique ability, as FACET documents (docs/FACET.md): at most one
+   * (one ability per run, plans/rolled-abilities.md). Each document carries its
+   * cells' values, so the bank of Solar Charge is saved here. Its statuses are
+   * rebuilt from it at load. Resets with the run (save v61).
+   */
+  facets: FacetDoc[];
   /** totalTicks at which each consumable may next be used. */
   useCooldowns: Record<string, number>;
   /**

@@ -160,8 +160,10 @@ function evalExpr(node, ctx) {
     if (!on) return 0;
     const r = F.readQ(on, node.q);
     if (!r.ok) return r.nulled ? NULLED : 0;
-    if (node.of === 'frac') { const m = F.readQ(on, node.max || 'fighter.maxHp'); return (m.ok && m.value) ? r.value / m.value : 0; }
-    if (node.of === 'max')  { const m = F.readQ(on, node.max || 'fighter.maxHp'); return m.ok ? m.value : 0; }
+    // The default maximum is max HP itself. It read `fighter.maxHp` until 2026-10-30, which in
+    // InfiniteGacha is a multiplier slot near 1 and in ksgproto28 is not registered.
+    if (node.of === 'frac') { const m = F.readQ(on, node.max || 'fighter.maxHpAbs'); return (m.ok && m.value) ? r.value / m.value : 0; }
+    if (node.of === 'max')  { const m = F.readQ(on, node.max || 'fighter.maxHpAbs'); return m.ok ? m.value : 0; }
     return r.value;
   }
 
@@ -357,6 +359,9 @@ F.attach = function attach(ref, facets) {
   }
   F.attached.set(ref, { facets: list, compiled, events: {}, dirty: true, sustainSpent: 0, revives: 0, once: {} });
   for (const c of compiled) for (const d of c.defs) HOST.defineStatus(d);
+  // Carriers go on at attach, so a cell's stored value counts from the first moment, including a
+  // value loaded from a save.
+  for (const c of compiled) for (const cell of (c.facet.cells || [])) F.carrierSync(ref, c.facet, cell);
   for (const c of compiled) if (c.onAttach) c.onAttach(ref);
   return compiled;
 };
@@ -372,6 +377,13 @@ F.tick = function tick(ref) {
   for (const c of rec.compiled) F.cellsTick(c.facet, ref);
   F.fire('tick', ref, {});
   if (F.mortal && F.mortal.tick) F.mortal.tick(ref, rec);
+};
+
+// Time outside a fight. A host with a game clock calls this once per game minute for each bearer,
+// in a fight or not; `tick` stays the combat tick. Clauses listen with `on: 'minute'`. A minute
+// costs one dispatch, so a host replaying hours of offline time can call it once per minute.
+F.minute = function minute(ref) {
+  F.fire('minute', ref, {});
 };
 
 F.event = function event(evId, ref, detail) {

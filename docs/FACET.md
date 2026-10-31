@@ -38,7 +38,30 @@ reports a copy that has drifted from the master.
 | `tests/facet.test.ts` | The manifest check, the core's corpus run through this game's loader, and the adapter. |
 
 The adapter is installed once at boot in `src/ui/state.svelte.ts`, after the
-save loads.
+save loads, and bound to the loaded state before anything renders.
+
+## The run's ability
+
+`state.facets` holds the run's unique ability as FACET documents (save v61; at
+most one, one ability per run). A document carries its cells' values, so
+saving the state saves the ability; the statuses those cells ride on are
+saved too, but their definitions are rebuilt when the document is attached.
+Prestige starts a fresh state, so the ability goes with the run.
+
+| Piece | Where |
+|---|---|
+| Granting one (a copy of a bank template, replacing the held one) | `grantFacet` in `host.ts`. For now only the debug panel's Unique ability row calls it: the discovery moment is undecided. |
+| Its time outside a fight: one `Facet.minute` per game minute, travel and fights included | `tickFacets`, called from `Game.advance` beside `tickExposure` |
+| Which state the core writes into | `bindFacets`. Offline catch-up ticks a detached copy of the state; the binding follows whichever state advances, and `Game.resyncAnnouncers` re-attaches after the contents are replaced (catch-up landing, import, reset, prestige). |
+| What the sidebar shows | `facetReadouts`: every cell whose document gives it a `show` hint, plus the document's `reading.inputs`. Those cells' statuses are left out of the status chips. |
+
+**Solar Charge** is the first ability (`core/facet.bank.js` in the Facet repo,
+where its numbers and formulas are written out). It reads `world.sunlight`
+(exposure.ts `sunlight`, see WEATHER.md), `stat.eff.con` and `stat.eff.wis`.
+Its power cell is a status whose two modifiers name `fighter.damage` and
+`fighter.magicDamage`; this game turns those into `damage` and `spellPower`.
+To try it: open the debug panel (🐞), Grant ☀️ Solar Charge, then stand under
+open sky by day. The Charge buttons there set the bank to a share of its cap.
 
 **Why only bare imports.** The core files have no exports. A named import
 (`import { x } from './facet.core.js'`) passes vitest and fails `vite build`
@@ -59,6 +82,7 @@ so ids are shared with InfiniteGacha wherever both games have the number:
 | `fighter.damage`, `.magicDamage`, `.speed`, `.dodge`, `.parry`, `.armor`, `.crit`, `.critDamage`, `.penetration`, `.splash`, `.ward`, `.resistCap` | the derived stat of the same meaning (`.magicDamage` is `spellPower`) |
 | `res.<type>` | the resistance to that damage type (the same fourteen types in both games) |
 | `pool.<stamina\|mana\|spirit\|focus>.cur` / `.max` | the pool and its maximum; spirit exists only here |
+| `world.sunlight` | sunlight on the player, 0..1 (exposure.ts `sunlight`); IG has none yet |
 | `ksg.<stat>` | every other derived stat, by its `StatKey` |
 
 A document that reads a `ksg.*` id runs only in this game until InfiniteGacha
@@ -75,21 +99,19 @@ inert, or refuse loudly; `host.ts` says which for each.
 
 | Off | Arrives with |
 |---|---|
-| Ticking an ability outside a fight; the run-long state tier and its save field | Step 2, Solar Charge |
 | The mortality proof (`probeSlice`, `probeNative`); damage stages | K2, the staged damage path |
 | Quantity overrides (`overrideQ` throws); the action gate; arena laws | K3 |
 | Overrides on monsters | K4 (monsters never wear an ability, but an ability can act on one) |
 | Allies, summons, revives, the calendar, the pricing oracle | not planned here (`caps` in `host.ts`) |
 
-## Known gaps in the core (found during K1, 2026-10-30)
+## Core gaps found during K1, fixed for Solar Charge (2026-10-30)
 
-These are core bugs, so they are fixed in the Facet repo and reach both games:
+- A cell's carrier status was never applied, so a cell's value never reached
+  the stat block in either game. The core now applies it at attach and
+  whenever it is missing (`Facet.carrierSync`).
+- `{ q: …, of: 'frac' }` defaulted its maximum to `fighter.maxHp`; it now reads
+  `fighter.maxHpAbs`.
 
-- **A cell's carrier status is never applied.** The compiler defines a carrier
-  status for every cell with a magnitude, and the cells call
-  `setStatusIntensity` on it, but nothing applies it first, so in both games a
-  cell's fill never reaches the stat block. Solar Charge's fill rides on it;
-  step 2 fixes it.
-- **`{ q: …, of: 'frac' }` defaults its maximum to `fighter.maxHp`**, which in
-  InfiniteGacha is the multiplier slot and here is unregistered. It should
-  default to `fighter.maxHpAbs`.
+Also added then: a cell may describe its carrier (`status: { mods, desc }`),
+and a modifier may name a shared quantity id (`q`) that each game maps to its
+own stat name.

@@ -102,6 +102,7 @@ import { appendLog } from './systems/log';
 import { RESOURCE_LIST } from './data/resources.data';
 import { resourceLock } from './systems/resources';
 import { autoPrestigeDue, buyBoon, leaveReview, prestigeNow } from './systems/prestige';
+import { bindFacets, tickFacets } from './facet/host';
 import type { PsionicShape, QualityTier, ResourceId, ResourceLock, SlotId } from './types';
 import { text } from './text/log';
 
@@ -226,11 +227,15 @@ export class Game {
    * constructor (load) and after every wholesale replacement and prestige: a
    * save that cleared wards before those stats existed reads its uncleared
    * wards' positions before the first spawn (levels.ts syncBandPositions).
+   *
+   * The run's ability is re-attached here for the same reason: its documents
+   * are part of the contents just replaced (facet/host.ts bindFacets).
    */
   resyncAnnouncers(): void {
     this.lastEffectiveStyle = effectiveStyleId(this.state);
     for (const def of RESOURCE_LIST) this.lastLocks[def.id] = resourceLock(this.state, def.id);
     syncBandPositions(this.state, this.bus);
+    bindFacets(this.state, true);
   }
 
   /**
@@ -281,6 +286,9 @@ export class Game {
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);
     tickExposure(this.state, this.bus);
+    // The run's ability, once a minute: Solar Charge banks the sky the
+    // exposure tick just sampled.
+    tickFacets(this.state);
     // After the conditions have ticked: the dish slots' own clocks run down by
     // the same amount, and a claim that ran out stops counting.
     tickMealClaims(this.state, clock);

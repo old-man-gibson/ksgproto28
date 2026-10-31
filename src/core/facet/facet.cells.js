@@ -112,7 +112,7 @@ F.cellStep = function cellStep(cell, verb, arg, ctx) {
       out.bindings.$spill = want - took;
       out.changed = took !== 0;
       // The fill rides on intensity. See the cache-discipline note at the top of this file.
-      if (host && out.changed) host.setStatusIntensity(ctx.ref, F.carrierId(ctx.facet, cell), s.v);
+      if (out.changed) F.carrierSync(ctx.ref, ctx.facet, cell);
       if (cap > 0 && s.v >= cap) out.fired.push('cap');
       break;
     }
@@ -123,7 +123,7 @@ F.cellStep = function cellStep(cell, verb, arg, ctx) {
       const before = s.v;
       s.v = clamp(F.num(arg), cell.floor || 0, cap);
       out.changed = s.v !== before;
-      if (host && out.changed) host.setStatusIntensity(ctx.ref, F.carrierId(ctx.facet, cell), s.v);
+      if (out.changed) F.carrierSync(ctx.ref, ctx.facet, cell);
       if (cap > 0 && s.v >= cap) out.fired.push('cap');
       break;
     }
@@ -145,10 +145,7 @@ F.cellStep = function cellStep(cell, verb, arg, ctx) {
       s.n = s.items.length;
       out.bindings.$drawn = drawn;
       out.changed = drawn.length > 0;
-      if (host && out.changed) {
-        host.setStatusStacks(ctx.ref, F.carrierId(ctx.facet, cell), s.n);
-        host.setStatusData(ctx.ref, F.carrierId(ctx.facet, cell), F.tokenCounts(cell));
-      }
+      if (out.changed) F.carrierSync(ctx.ref, ctx.facet, cell);
       break;
     }
 
@@ -158,10 +155,7 @@ F.cellStep = function cellStep(cell, verb, arg, ctx) {
       for (const i of idx) if (i >= 0 && i < s.items.length) s.items.splice(i, 1);
       s.n = s.items.length;
       out.changed = idx.length > 0;
-      if (host && out.changed) {
-        host.setStatusStacks(ctx.ref, F.carrierId(ctx.facet, cell), s.n);
-        host.setStatusData(ctx.ref, F.carrierId(ctx.facet, cell), F.tokenCounts(cell));
-      }
+      if (out.changed) F.carrierSync(ctx.ref, ctx.facet, cell);
       break;
     }
 
@@ -177,7 +171,7 @@ F.cellStep = function cellStep(cell, verb, arg, ctx) {
       out.bindings.$tags = r.tags || [];
       out.changed = true;
       out.fired.push('score');
-      if (host) host.setStatusIntensity(ctx.ref, F.carrierId(ctx.facet, cell), s.v);
+      F.carrierSync(ctx.ref, ctx.facet, cell);
       break;
     }
 
@@ -209,6 +203,8 @@ F.cellStep = function cellStep(cell, verb, arg, ctx) {
       const had = s.v || s.n || s.at !== null || s.items.length;
       s.at = null; s.v = cell.floor || 0; s.n = 0; s.items = []; s.until = null; s.cd = 0; s.since = null;
       out.changed = !!had;
+      // A reset that left the carrier at the old value would keep paying out a bank that is empty.
+      if (out.changed) F.carrierSync(ctx.ref, ctx.facet, cell);
       break;
     }
 
@@ -218,7 +214,7 @@ F.cellStep = function cellStep(cell, verb, arg, ctx) {
         const before = s.v;
         s.v = clamp(s.v - cell.decay * cap, cell.floor || 0, cap);
         out.changed = s.v !== before;
-        if (host && out.changed) host.setStatusIntensity(ctx.ref, F.carrierId(ctx.facet, cell), s.v);
+        if (out.changed) F.carrierSync(ctx.ref, ctx.facet, cell);
       }
       break;
     }
@@ -258,6 +254,10 @@ F.cellsTick = function cellsTick(facet, ref) {
 // tier. The source game has no equivalent table; it resets in a single line that clears position,
 // events, cooldowns, prevented and rank, and misses `charged`. Iterating over facet.cells means a
 // newly added engine-owned cell cannot be left out of that list.
+//
+// A tier is a name the host ends, not a list kept here. ksgproto28 keeps an ability for one run
+// and ends nothing before prestige, so its cells say tier: 'run'; the cell state is stored in the
+// document, and the document in the save, so it lasts exactly as long as the host keeps it.
 F.cellsReset = function cellsReset(facet, tier, ref) {
   const host = F.host();
   for (const cell of (facet.cells || [])) {
@@ -268,6 +268,29 @@ F.cellsReset = function cellsReset(facet, tier, ref) {
 
 F.carrierId = function carrierId(facet, cell, tag) {
   return 'fc_' + (facet ? facet.id.replace('fc_', '') : 'x') + '_' + cell.key + (tag ? '_' + tag : '');
+};
+
+// Which cells ride on a carrier status. facet.compile.js defines a carrier for exactly these.
+F.hasCarrier = (cell) => cell.level !== 'none' || cell.hold === 'many';
+
+// Every write to a carrier goes through here. Setting the intensity of a carrier that is not held
+// does nothing in either host, and until 2026-10-30 nothing applied one, so a cell's value never
+// reached a stat block in either game. A host can also take the carrier away on its own: a death,
+// a cure or a prestige that clears every status. So this applies the carrier when it is missing,
+// then writes the cell's value onto it: intensity for a magnitude, stacks and data for a set.
+F.carrierSync = function carrierSync(ref, facet, cell) {
+  const host = F.host();
+  if (!host || !ref || !facet || !F.hasCarrier(cell)) return;
+  F.cellInit(cell);
+  const id = F.carrierId(facet, cell);
+  const s = cell.state;
+  if (!host.findStatus(ref, id)) host.applyStatus(ref, { id, intensity: s.v }, facet.id);
+  if (cell.hold === 'many') {
+    host.setStatusStacks(ref, id, s.n);
+    host.setStatusData(ref, id, F.tokenCounts(cell));
+  } else {
+    host.setStatusIntensity(ref, id, s.v);
+  }
 };
 
 F.tokenCounts = function tokenCounts(cell) {
