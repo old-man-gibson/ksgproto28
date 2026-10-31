@@ -207,7 +207,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     areaId: 'player_base_v1_area',
     map: { x: 75, y: 60 },
     activities: [
-      { id: 'train_skill', kind: 'train', attr: 'int', name: 'Study Alchemical ', icon: '🛠️', tags: ['alchemy'], attrXp: { str: 0, dex: 0, con: 0, int: 0.33, wis: 0, cha: 0 } },
+      { id: 'train_skill', kind: 'train', attr: 'int', name: 'Study Alchemical Texts', icon: '🛠️', tags: ['alchemy'], attrXp: { str: 0, dex: 0, con: 0, int: 0.33, wis: 0, cha: 0 } },
     ],
     benches: ['alchemy'],
     connections: [
