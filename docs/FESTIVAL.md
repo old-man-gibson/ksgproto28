@@ -244,6 +244,17 @@ terrain only changes pace and sight.
 | Village | a cluster of buildings in the east half, off the river | 1.0 | 0.7 | the smithy (weapon), the guard post (armour, a hound den), the baker (food), three houses (small finds) |
 | Meadow | everything else | 1.0 | 1.0 | — |
 
+- **As built** (festival-mapgen, 843d963): one mulberry32 stream from the
+  hashed seed; the cliff 8–18 deep; the waterfall's centre at x 64–100; the
+  river drifting inside x 62–102 so the east holds a large village; the bank
+  every cell within 3 of the river; forest and cave from a cellular pass; the
+  village sized from the buildings and caches the data asks for (at least
+  six buildings, two to four spare houses); dens at least 31 from the start;
+  caches at least 6 apart and 15 from the start. A step with no room retries
+  the build on the same stream, and the twelfth build keeps what it has, so
+  `royaleMap` never throws (never seen to fire in 3,003 seeds). About 5 ms a
+  map. No east-west mirror: the forest stays west, the cave and village east.
+  A den guards at most one cache that names a village building.
 - **Pace** multiplies a fighter's walking speed while it stands in the
   section. **Sight** multiplies how far a fighter standing there sees
   (`ROYALE_FIELD.sight`, 20 units). A fighter in a section with cover
