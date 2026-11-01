@@ -415,9 +415,11 @@ the book can't contradict the monster: the `tier` tag, `ranged` (from `range`),
 `non_elemental` when nothing else claims an element. A content test enforces
 this — declare only the intrinsic tags.
 
-Art is optional and resolved by filename: drop a PNG in `src/assets/enemies/`
-and name it in `art:`. No file, no problem — the entry falls back to the emoji
-`icon`. A test fails if a declared file is missing.
+Art is optional and resolved by filename: drop a PNG in `src/assets/enemies/`,
+name it in `art:`, and run `npm run enemy-art`, which rewrites
+`src/ui/lib/enemyArt.gen.ts`, the list of portraits the game loads. No file, no
+problem — the entry falls back to the emoji `icon`. A test fails if a declared
+file is missing, and another fails until the list is regenerated.
 
 What the player has to earn is in `BESTIARY_FACTS`. The first kill opens the
 entry; each fact then needs `minKills` before it can roll at all, rolls once per

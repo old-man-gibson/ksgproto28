@@ -11,10 +11,25 @@ import { board } from './board/server/plugin';
 // 38 s with them ignored. Only THIS root's .claude is skipped: a glob like
 // '**/.claude/**' would also match every file of a server started inside a
 // worktree, whose own root sits under .claude/worktrees/.
-const CLAUDE_DIR = path.resolve(fileURLToPath(new URL('.', import.meta.url)), '.claude').toLowerCase();
-const inClaudeDir = (file: string) => {
+//
+// The third-party art packs are skipped for the same reason: 30,536 files
+// (2026-11-01) that the watcher stats one by one at startup, queued ahead of
+// every module read. A cold start served its first page in 43 s with them
+// watched and 6.4 s without. Nothing needs them watched: the game reaches
+// them only through the generated lists (enemyArt.gen.ts, icons/art.gen.ts,
+// tilemaps/sheets.gen.ts), which sit outside these folders and are watched,
+// and the forge scans the tile packs on request. A file changed in a pack
+// shows after a page reload.
+const ROOT = fileURLToPath(new URL('.', import.meta.url));
+const UNWATCHED = [
+  '.claude',
+  path.join('src', 'assets', 'enemies'),
+  path.join('src', 'assets', 'packs'),
+  path.join('src', 'assets', 'tilemaps'),
+].map((dir) => path.resolve(ROOT, dir).toLowerCase());
+const unwatched = (file: string) => {
   const p = path.resolve(file).toLowerCase();
-  return p === CLAUDE_DIR || p.startsWith(CLAUDE_DIR + path.sep);
+  return UNWATCHED.some((dir) => p === dir || p.startsWith(dir + path.sep));
 };
 
 export default defineConfig({
@@ -23,7 +38,7 @@ export default defineConfig({
   // produces exactly the game it always did.
   plugins: [svelte(), forge(), board()],
   base: './',
-  server: { watch: { ignored: inClaudeDir } },
+  server: { watch: { ignored: unwatched } },
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
