@@ -467,6 +467,7 @@ real path outside the worktree and serves the `?url` glob imports as raw files,
 so the art silently falls back (seen with the tile sheets, 2026-10-20). Copy only
 the files the game uses, then restart the server (globs resolve at startup):
 
+- enemy portraits: the paths in `src/ui/lib/enemyArt.gen.ts`
 - tile sheets: the paths in `src/ui/lib/tilemaps/sheets.gen.ts`
 - icons: the files in `src/ui/lib/icons/manifest.json`, e.g.
 
@@ -483,4 +484,11 @@ Icons are wired through `npm run icons` (scripts/icons.mjs), which writes
 `src/ui/lib/icons/art.gen.ts` from the manifest: one glob over exactly the listed
 files, so a build copies those and never a whole pack (the full Clockwork Raven
 sheet is 8,256 files). Rerun it after every manifest edit; `tests/icons.test.ts`
-fails when the two disagree.
+fails when the two disagree. Enemy portraits work the same way: `npm run
+enemy-art` (scripts/enemyArt.ts) writes `src/ui/lib/enemyArt.gen.ts` from the
+`art` the monsters name, and `tests/content.test.ts` fails when it is stale.
+
+The dev server does not watch the three art folders (vite.config.ts): 30,536
+files whose startup scan held the first page for 43 s on a cold start
+(2026-11-01). The generated lists above are watched, so naming new art reloads
+as usual; replacing a pack file in place shows after a page reload.

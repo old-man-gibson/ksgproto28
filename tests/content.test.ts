@@ -1,6 +1,8 @@
 // The countryside these tests stand on is SHELVED content; the fixture mounts it.
 import './fixtures/shelved-world';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { ENEMY_ART_GEN_PATH, declaredEnemyArt, renderEnemyArtGen } from '../scripts/enemyArt';
 import { KEY_ITEMS } from '../src/core/data/keyitems.data';
 import { searchContentIssues } from '../src/core/systems/searchValidation';
 import { smithingContentIssues } from '../src/core/systems/assemblyValidation';
@@ -841,8 +843,13 @@ describe('monsters', () => {
     }
   });
 
+  it('enemyArt.gen.ts lists exactly the art the monsters declare', () => {
+    const committed = readFileSync(ENEMY_ART_GEN_PATH, 'utf8').replace(/\r\n/g, '\n');
+    expect(committed, 'enemyArt.gen.ts is stale: run `npm run enemy-art`').toBe(renderEnemyArtGen(declaredEnemyArt()));
+  });
+
   it('declared bestiary art exists on disk', () => {
-    // Same glob the UI resolves portraits through, so a typo fails here first.
+    // The whole folder, so a typo in `art` fails here rather than as an emoji.
     const files = new Set(
       Object.keys(import.meta.glob('../src/assets/enemies/*.png')).map((p) => p.split('/').pop()!),
     );
