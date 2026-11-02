@@ -1298,6 +1298,28 @@ export interface StatusDamping {
   max?: number;
 }
 
+/**
+ * How a statue leaves the fight (`StatusDef.statue`; combat.ts `onKill`).
+ * Basilisk Hide's Stone escalates into one of three: the base `petrified`
+ * and its Rubble and Stoneskin branches (statuses.data.ts).
+ */
+export interface StatueRule {
+  /** Broken (killed while held): rocks at max HP × this, thrown behind it. 0: none. */
+  rocks: number;
+  /** Left alone until its condition runs out: rocks at max HP × this. 0: it crumbles quietly. */
+  burst: number;
+  /** Stone Chunks: the share of its gold it pays. */
+  chunks: number;
+  /** The share of its XP it pays. */
+  xp: number;
+  /**
+   * Stays until the fight ends, out of the centre slot, so the player's blows
+   * pass it by. The fight is won when only standing statues remain; they
+   * crumble then.
+   */
+  stands?: boolean;
+}
+
 export interface StatusDef {
   id: string;
   name: string;
@@ -1328,6 +1350,11 @@ export interface StatusDef {
    * names `con`.
    */
   contest?: AttributeId;
+  /**
+   * Holding this makes a monster a statue: it does nothing, and the rule says
+   * how it leaves the fight (Basilisk Hide; statuses.ts `statueOf`).
+   */
+  statue?: StatueRule;
   /** The worse condition this becomes when it is pushed far enough. */
   escalatesTo?: string;
   /** The milder condition a 'deescalate' removal drops this back to. */

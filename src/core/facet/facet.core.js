@@ -491,6 +491,25 @@ F.hydrate = function hydrate(rec) {
   return f;
 };
 
+// ---------- evolve ----------
+//
+// The document a branch grows into: a copy of the bank entry `key`, with every cell the two share
+// by key carrying its saved state across, so the branch keeps what was earned. `key` must be on
+// the document's offer (emit 'evolve'); otherwise null. The core keeps no copy: the host puts the
+// new document where it stores the old one and attaches again, which rebuilds the carriers and
+// the status definitions.
+F.evolve = function evolve(doc, key) {
+  if (!doc || !Array.isArray(doc.offer) || doc.offer.indexOf(key) < 0) return null;
+  const template = F.bank && F.bank[key];
+  if (!template) return null;
+  const next = F.hydrate(template);
+  for (const cell of (next.cells || [])) {
+    const old = F.cellOf(doc, cell.key);
+    if (old && old.state) cell.state = JSON.parse(JSON.stringify(old.state));
+  }
+  return next;
+};
+
 // A stable string over every facet id and cell state that could change a derived number.
 // ksgproto28's modFingerprint folds this in so its derived-stat cache cannot serve a stale block.
 // This host's stats() is uncached, so the value costs nothing here and is used by the AI's plan

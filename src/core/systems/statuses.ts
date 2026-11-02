@@ -11,6 +11,7 @@ import type {
   StatusDef,
   StatusInstance,
   StatusRemoval,
+  StatueRule,
 } from '../types';
 import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE, isMonsterBearer } from '../types';
 import { STATUSES } from '../data/statuses.data';
@@ -66,6 +67,15 @@ export function findStatus(
 
 export function hasStatus(bearer: GameState | MonsterInstance, id: string): boolean {
   return findStatus(bearer, id) !== undefined;
+}
+
+/** The rule of the statue condition a bearer holds (Basilisk Hide), or null when it holds none. */
+export function statueOf(bearer: GameState | MonsterInstance): StatueRule | null {
+  for (const s of statusesOf(bearer)) {
+    const rule = STATUSES[s.id]?.statue;
+    if (rule) return rule;
+  }
+  return null;
 }
 
 /** Total intensity of a condition, 0 when it is absent. */

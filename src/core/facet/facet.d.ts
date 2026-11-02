@@ -42,8 +42,13 @@ export interface FacetDoc {
   v?: number;
   cells?: FacetCell[];
   clauses: unknown[];
-  /** Display hints. `hit` is what the feed calls the ability's damage lines ('strike' when unset). */
-  reading?: { name?: string; icon?: string; inputs?: FacetInput[]; hit?: string };
+  /**
+   * Display hints. `hit` is what the feed calls the ability's damage lines
+   * ('strike' when unset); `desc` is what a branch's pick screen says.
+   */
+  reading?: { name?: string; icon?: string; inputs?: FacetInput[]; hit?: string; desc?: string };
+  /** Bank keys this document may evolve into, written by the core's `evolve` effect; saved with it. */
+  offer?: string[];
   [field: string]: unknown;
 }
 
@@ -105,6 +110,8 @@ export interface FacetCore {
   fingerprint(ref: string): string;
   serialize(facet: FacetDoc): FacetDoc;
   hydrate(record: FacetDoc): FacetDoc;
+  /** The branch `key` of a document's offer, built from the bank with the shared cells carried; null when not on offer. */
+  evolve(doc: FacetDoc, key: string): FacetDoc | null;
   idOf(facet: FacetDoc): string;
   readQ(ref: string, id: string): FacetRead;
   /** One write to a cell (verbs: add, set, reset, …), carrier status included. */

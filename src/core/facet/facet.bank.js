@@ -344,11 +344,25 @@ B.bramble = {
 //     Stone %"). At 1% a point the last hits took most of the time: at KSG floor 17, standing
 //     still with attributes 30, 3 statues in 10 minutes; at 0.5%, 10.
 //
-// The document only applies Stone. The evolution (three branches, user 2026-11-02) is the next
-// slice; its decisions are in docs/ABILITY_IDEAS.md.
+// The evolution (user 2026-11-02, docs/ABILITY_IDEAS.md "Evolution"). A statue counts when the
+// enemy stood at 85% of your level or 85% of your attribute total or more (statue detail
+// `levelShare`, `attrShare`, read through `not`, so a host that sends neither counts nothing). The
+// count is plain, with no decay. At EVOLVE_AT the document offers its three branches (emit
+// 'evolve'); the host holds play until one is picked and swaps it in with Facet.evolve, which
+// carries every cell the two share. No branch evolves again, so the pick is final for the run.
+// EVOLVE_AT is a placeholder.
 //
-// Events: hitTaken (detail attacker, boss). The boss guard reads `boss` through `not`, so a host
-// that does not report it treats every attacker as an ordinary enemy.
+// A branch changes which statue the host makes, through Stone's `escalatesTo`:
+//   petrified           the base: lasts 3 seconds; broken, it throws rocks; pays Stone Chunks.
+//   petrified_rubble    Rubble: as the base, and left alone it bursts at half strength; no Chunks.
+//   petrified_standing  Stoneskin: stays until the fight ends, out of the way of your blows;
+//                       throws no rocks; pays its Chunks as it crumbles.
+// ksgproto28 defines all three (statuses.data.ts). A host without them makes no statues.
+//
+// Events: hitTaken (detail attacker, boss), statue (target, levelShare, attrShare), rocks
+// (target), fightStart, fightEnd, tick. The boss guard reads `boss` through `not`, so a host that
+// does not report it treats every attacker as an ordinary enemy.
+const EVOLVE_AT = 100;
 const STONE = {
   id: 'basilisk_stone', name: 'Stone', icon: '🪨',
   desc: 'Slows its actions by 0.5% per point. At 100 it turns to stone.',
@@ -356,17 +370,115 @@ const STONE = {
   stacking: { mode: 'sum', cap: 100, onCap: 'escalate', escalateMult: 0.01 },
   mods: [{ q: 'fighter.speed', op: 'mult', value: -0.005 }],
 };
+const stoneEnding = (escalatesTo) => Object.assign({}, STONE, { escalatesTo });
 const IS_BOSS = { not: { frame: 'boss', op: 'ne', v: 1 } };
-const stone = (intensity) => ({ emit: 'status', scope: { frame: 'attacker' }, def: STONE, intensity });
+const ATTACKER = { frame: 'attacker' };
+const FRONT = { side: 'enemy', rank: 'front', n: 1 };
+const stoneOn = (def, scope, intensity) => ({ emit: 'status', scope, def, intensity });
+const HIT_STONE = { expr: 'add', a: 6, b: { expr: 'div', a: { q: 'stat.eff.con' }, b: 10 } };
+const RIVAL = { any: [
+  { not: { frame: 'levelShare', op: 'lt', v: 0.85 } },
+  { not: { frame: 'attrShare', op: 'lt', v: 0.85 } },
+] };
+const STATUES = {
+  key: 'statues', label: 'Statues', icon: '🗿', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: EVOLVE_AT,
+  carrier: false,
+  status: {
+    desc: 'Enemies turned to stone this run that stood at 85% of your level or attribute total or more. At '
+      + EVOLVE_AT + ' the ability evolves into the branch you pick.',
+  },
+};
+
+// Stone from enemy blows, and the statue count; every branch keeps both. `share` scales a blow's
+// dose (Gorgon's Gaze halves it).
+const fromBlows = (def, share) => {
+  const dose = (x) => share === 1 ? x : { expr: 'mul', a: share, b: x };
+  return [
+    { id: 'stone', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { not: IS_BOSS }] }, do: [stoneOn(def, ATTACKER, dose(HIT_STONE))] },
+    { id: 'stone_boss', on: 'event:hitTaken', when: { all: [FROM_ENEMY, IS_BOSS] }, do: [stoneOn(def, ATTACKER, dose(1.5))] },
+    { id: 'count', on: 'event:statue', when: RIVAL, do: [addCell('statues', 1)] },
+  ];
+};
 
 B.basilisk_hide = {
   v: 1,
   reading: { name: 'Basilisk Hide', icon: '🗿' },
-  cells: [],
+  cells: [STATUES],
   clauses: [
-    { id: 'stone', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { not: IS_BOSS }] },
-      do: [stone({ expr: 'add', a: 6, b: { expr: 'div', a: { q: 'stat.eff.con' }, b: 10 } })] },
-    { id: 'stone_boss', on: 'event:hitTaken', when: { all: [FROM_ENEMY, IS_BOSS] }, do: [stone(1.5)] },
+    ...fromBlows(STONE, 1),
+    { id: 'evolve', on: 'cell:statues:cap', do: [{ emit: 'evolve', into: ['basilisk_gorgon', 'basilisk_rubble', 'basilisk_stoneskin'] }] },
+  ],
+};
+
+// Gorgon's Gaze (builds that are not hit). Each second of fight time the front enemy gains
+// 2 + CON / 50 Stone, a quarter of that on the place's boss: the dose is read per target, and
+// `fighter.boss` is 1 on the boss. Blows add half the base dose. When an enemy turns to stone the
+// gaze moves on: the new front enemy takes 25 Stone (a quarter on a boss), resisted like any dose.
+const BOSS_QUARTER = { expr: 'sub', a: 1, b: { expr: 'mul', a: 0.75, b: { q: 'fighter.boss', on: 'target' } } };
+const GAZE = { expr: 'mul', a: BOSS_QUARTER, b: { expr: 'add', a: 2, b: { expr: 'div', a: { q: 'stat.eff.con' }, b: 50 } } };
+
+B.basilisk_gorgon = {
+  v: 1,
+  reading: {
+    name: "Gorgon's Gaze", icon: '👁️',
+    desc: 'Each second of a fight the front enemy gains 2 + CON/50 Stone, a quarter of that on a boss. '
+      + 'Blows on you add half the Stone they did. When an enemy turns to stone, the next front enemy takes 25 Stone.',
+  },
+  cells: [STATUES, counter('sec', { seconds: 1 })],
+  clauses: [
+    ...fromBlows(STONE, 0.5),
+    { id: 'start', on: 'event:fightStart', do: [setCell('sec', 0)] },
+    { id: 'clock', on: 'tick', do: [addCell('sec', 1)] },
+    { id: 'gaze', on: 'cell:sec:cap', do: [setCell('sec', 0), stoneOn(STONE, FRONT, GAZE)] },
+    { id: 'moves', on: 'event:statue', do: [stoneOn(STONE, FRONT, { expr: 'mul', a: BOSS_QUARTER, b: 25 })] },
+  ],
+};
+
+// Rubble (tanks in group fights). Rocks add 15 Stone to each enemy they hit (rocks detail
+// `target`), so one statue can turn the next. Its statue bursts at half strength when left alone,
+// and pays no Stone Chunks (petrified_rubble).
+const RUBBLE_STONE = stoneEnding('petrified_rubble');
+
+B.basilisk_rubble = {
+  v: 1,
+  reading: {
+    name: 'Rubble', icon: '🪨',
+    desc: 'Rocks from a statue add 15 Stone to each enemy they hit, so one statue can turn the next. '
+      + 'A statue left alone bursts when it would crumble, throwing rocks at half strength. Statues pay no Stone Chunks.',
+  },
+  cells: [STATUES],
+  clauses: [
+    ...fromBlows(RUBBLE_STONE, 1),
+    { id: 'rocks', on: 'event:rocks', do: [stoneOn(RUBBLE_STONE, { frame: 'target' }, 15)] },
+  ],
+};
+
+// Stoneskin (tanks). Its statue stays until the fight ends and your blows pass it by; it throws no
+// rocks (petrified_standing). Each statue standing in the fight (`world.statues`) raises your
+// armour by 10%, a placeholder.
+const STANDING_STONE = stoneEnding('petrified_standing');
+
+B.basilisk_stoneskin = {
+  v: 1,
+  reading: {
+    name: 'Stoneskin', icon: '🛡️',
+    desc: 'Statues stay until the fight ends, and your blows pass them by. Each standing statue raises your armour by 10%. '
+      + 'Statues no longer throw rocks.',
+  },
+  cells: [
+    STATUES,
+    {
+      key: 'standing', label: 'Standing statues', icon: '🗿', hold: 'none', level: 'int', tier: 'fight', show: 'count', cap: 1e9,
+      status: {
+        desc: 'Each statue standing in the fight raises your armour by 10%.',
+        mods: [{ q: 'fighter.armor', op: 'mult', value: 0.1 }],
+      },
+    },
+  ],
+  clauses: [
+    ...fromBlows(STANDING_STONE, 1),
+    { id: 'stand', on: 'tick', do: [setCell('standing', { q: 'world.statues' })] },
+    { id: 'end', on: 'event:fightEnd', do: [setCell('standing', 0)] },
   ],
 };
 })();

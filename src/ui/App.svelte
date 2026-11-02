@@ -21,6 +21,8 @@
   import PrestigeModal from './PrestigeModal.svelte';
   import DareModal from './DareModal.svelte';
   import { pendingDare } from '../core/systems/training';
+  import EvolveModal from './EvolveModal.svelte';
+  import { pendingEvolution } from '../core/facet/host';
   import { restingForFight } from '../core/systems/huntrest';
   import PrestigePanel from './panels/PrestigePanel.svelte';
   import { prestigeVisible } from '../core/systems/prestige';
@@ -474,6 +476,13 @@
   <!-- Save state, not UI state: the keeper's dare holds play until answered,
        reload or no reload (systems/training.ts). -->
   <DareModal spot={pendingDare(gs)!} />
+{/if}
+
+{#if pendingEvolution(gs)}
+  {@const offer = pendingEvolution(gs)!}
+  <!-- Save state, not UI state: the offer is on the ability's saved document,
+       and play holds until a branch is picked (facet/host.ts). -->
+  <EvolveModal from={offer.from} choices={offer.choices} />
 {/if}
 
 {#if ui.defeat}

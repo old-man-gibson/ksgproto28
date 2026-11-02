@@ -15,8 +15,8 @@ adapter beside it. The port plan, with every step and what each one adds, is
 **Never edit a `facet.*.js` file here.** Edit the master in the Facet repo,
 then:
 
-1. `node test/run.js` in the Facet repo (the core's own cases, 59 as of
-   Basilisk Hide).
+1. `node test/run.js` in the Facet repo (the core's own cases, 62 as of
+   Basilisk Hide's evolution).
 2. `node tools/sync.mjs` there. It writes every game's copy listed in
    `tools/targets.json`. For a copy in a worktree of this repo, name it:
    `node tools/sync.mjs --to D:/ksgproto28/.claude/worktrees/<name>/src/core/facet`.
@@ -38,7 +38,7 @@ reports a copy that has drifted from the master.
 | `src/core/facet/signal.ts` | The fight events the ability hears, and which state the core is bound to. Imports nothing but types, so health.ts and combat.ts can call it. |
 | `src/core/facet/quantities.ts` | Every number a document may read, with its id. |
 | `tests/facet.test.ts` | The manifest check, the core's corpus run through this game's loader, and the adapter. |
-| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts`, `tests/bramble.test.ts`, `tests/basiliskHide.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
+| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts`, `tests/bramble.test.ts`, `tests/basiliskHide.test.ts`, `tests/basiliskEvolve.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
 
 The adapter is installed once at boot in `src/ui/state.svelte.ts`, after the
 save loads, and bound to the loaded state before anything renders.
@@ -61,6 +61,7 @@ Prestige starts a fresh state, so the ability goes with the run.
 | A pool cost it pays (the `spend` verb) | host.ts `spendPool` → `spendResource`; stamina, mana, spirit or focus, never HP |
 | Which state the core writes into | `bindFacets`. Offline catch-up ticks a detached copy of the state; the binding follows whichever state advances, and `Game.resyncAnnouncers` re-attaches after the contents are replaced (catch-up landing, import, reset, prestige). |
 | What the sidebar shows | `facetReadouts`: every cell whose document gives it a `show` hint, plus the document's `reading.inputs`. Those cells' statuses are left out of the status chips. |
+| Evolving | The core's `evolve` effect writes the offer (bank keys) onto the document, so it is saved with it. While a document holds one, play holds as it does for the keeper's dare (`Game.tick`, `pendingEvolution` in host.ts) and the held time is banked as bonus time. `EvolveModal.svelte` shows the branches from their `reading`; `chooseEvolution` asks the core for the branch (`Facet.evolve`: a copy of the bank entry with every cell the two share carried over) and puts it in the old one's place. |
 
 **Solar Charge** is the first ability (`core/facet.bank.js` in the Facet repo,
 where its numbers and formulas are written out). It reads `world.sunlight`
@@ -120,8 +121,36 @@ rocks killed before it looks for survivors. Either way it pays Stone Chunks
 worth half its gold and half its XP, and drops nothing else. The user
 approved it as team ability ENM-18 with a note (resistance, the lingering
 statue, the rocks); the readings are written above the document in the
-Facet bank. Its three evolution branches are decided (Facet
-docs/ABILITY_IDEAS.md) and not built.
+Facet bank.
+
+Basilisk Hide is also the first ability that **evolves**. A dose that turns
+an enemy to stone raises `statue` (host.ts `applyStatus`), and the document
+counts it when the enemy stood at 85% of your level or 85% of your attribute
+total or more. At 100 (a placeholder) play holds on a pick of three branches,
+final for the run; each keeps the count:
+
+- **Gorgon's Gaze**: each second of a fight the front enemy gains 2 + CON / 50
+  Stone, a quarter on the spot's boss (the dose reads `fighter.boss` on its
+  target). Blows add half the base dose. When an enemy turns to stone, the
+  next front enemy takes 25 (a quarter on a boss).
+- **Rubble**: rocks raise `rocks` for each enemy they hit, and the document
+  puts 15 Stone on it. Its statue is `petrified_rubble`: left alone it bursts
+  for half the rocks when it would crumble, and it pays no Stone Chunks.
+- **Stoneskin**: its statue is `petrified_standing`. It stays until the fight
+  ends and never holds the centre slot (combat.ts `standAside` trades it for a
+  fighting enemy), so your blows pass it by; it throws no rocks. When only
+  standing statues remain the fight is won and they crumble, paying Chunks.
+  Each statue in the fight (`world.statues`) raises your armour 10%.
+
+A branch picks its statue through Stone's `escalatesTo`; how each statue
+leaves is its `StatusDef.statue` rule (rocks, burst, chunks, xp, stands),
+which combat.ts `onKill` reads. Statues are not targets for abilities
+(`resolve` skips them). Measured at floor 17 over 10 minutes, every statue
+counted: standing still at attributes 30, 10; CON 60 with the other
+attributes at 5, fighting, 10; CON 60 with the rest at 10, 2; even builds,
+none. At 100 a CON build evolves after about 100 minutes there. To try it:
+Grant 🗿 Basilisk Hide, press Statues to 99, and let an enemy near your level
+hit you until it turns to stone. The debug panel also grants each branch.
 
 ### Enemies as refs
 
@@ -130,8 +159,11 @@ by its slot: `foe:0` is the front enemy, `foe:1` the next. A ref lives for one
 call, because slots move when the front enemy dies. `resolve` answers
 `side: 'enemy'` (living enemies, front first, so `n: 1` is the front enemy) and
 `side: 'arena'` (the player and every enemy). The status members reach the
-enemy a ref names, so a document can put a condition on one. An enemy's
-numbers are not quantities until K4: `readQ` on a `foe:` ref returns 0.
+enemy a ref names, so a document can put a condition on one. Statues are left
+out of `resolve`. An enemy's numbers are not quantities until K4: `readQ` on a
+`foe:` ref answers `fighter.boss` (1 for the spot's boss) and `fighter.level`,
+and 0 for anything else. A status dose is read per target, so
+`{ q: 'fighter.boss', on: 'target' }` in its intensity reads the enemy it lands on.
 
 ## Events
 
@@ -150,6 +182,8 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `flaskUsed` | `Game.useFlask` | |
 | `itemUsed` | `Game.useConsumable` | |
 | `miracleCast` | combat.ts, when a miracle is cast | |
+| `statue` | host.ts `applyStatus`, when an ability's dose turns an enemy to stone | `target` (its ref), `level`, `levelShare` (its level ÷ yours), `attrShare` (its attribute total ÷ yours), `boss` |
+| `rocks` | combat.ts `throwRubble`, once per enemy the rocks hit | `target` (its ref), `amount` |
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it
@@ -190,6 +224,9 @@ so ids are shared with InfiniteGacha wherever both games have the number:
 | `res.<type>` | the resistance to that damage type (the same fourteen types in both games) |
 | `pool.<stamina\|mana\|spirit\|focus>.cur` / `.max` | the pool and its maximum; spirit exists only here |
 | `world.sunlight` | sunlight on the player, 0..1 (exposure.ts `sunlight`); IG has none yet |
+| `world.statues` | statues in the player's fight (Stoneskin); 0 out of one |
+| `fighter.level` | character level; on an enemy, its level |
+| `fighter.boss` | 0 for the player; on an enemy, 1 for the spot's boss |
 | `ksg.<stat>` | every other derived stat, by its `StatKey` |
 
 A document that reads a `ksg.*` id runs only in this game until InfiniteGacha

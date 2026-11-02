@@ -102,7 +102,14 @@ import { appendLog } from './systems/log';
 import { RESOURCE_LIST } from './data/resources.data';
 import { resourceLock } from './systems/resources';
 import { autoPrestigeDue, buyBoon, leaveReview, prestigeNow } from './systems/prestige';
-import { bindFacets, facetSignal, registerFacetListeners, tickFacets } from './facet/host';
+import {
+  bindFacets,
+  chooseEvolution,
+  facetSignal,
+  pendingEvolution,
+  registerFacetListeners,
+  tickFacets,
+} from './facet/host';
 import type { PsionicShape, QualityTier, ResourceId, ResourceLock, SlotId } from './types';
 import { text } from './text/log';
 
@@ -202,10 +209,11 @@ export class Game {
       this.prestige();
       return;
     }
-    // A question the game is waiting on (the keeper's dare) holds the world.
-    // The wall time spent deciding is banked as bonus time, not lost — which
-    // is also what happens when the question lands while the player is away.
-    if (dareHolds(this.state)) {
+    // A question the game is waiting on (the keeper's dare, an ability's
+    // evolution) holds the world. The wall time spent deciding is banked as
+    // bonus time, not lost — which is also what happens when the question
+    // lands while the player is away.
+    if (dareHolds(this.state) || pendingEvolution(this.state)) {
       bankTick(this.state);
       return;
     }
@@ -241,11 +249,11 @@ export class Game {
   }
 
   /**
-   * One tick. The pause check lives in `tick()`; a held dare stops this too, so
-   * the step buttons cannot walk past the question (or bank time doing it).
+   * One tick. The pause check lives in `tick()`; a held question stops this
+   * too, so the step buttons cannot walk past it (or bank time doing it).
    */
   private advance(): void {
-    if (dareHolds(this.state)) return;
+    if (dareHolds(this.state) || pendingEvolution(this.state)) return;
     this.state.totalTicks += 1;
     // How far the conditions' clocks will advance this tick (none while
     // travelling, faster while knocked out): the dish slots keep time with them.
@@ -660,6 +668,11 @@ export class Game {
   /** Answer the keeper's waiting dare: fight it (true) or pass (false). */
   answerDare(accept: boolean) {
     return answerDare(this.state, this.bus, accept);
+  }
+
+  /** Take the held ability's evolution branch `key` (facet/host.ts chooseEvolution). */
+  chooseEvolution(key: string) {
+    return chooseEvolution(this.state, key);
   }
 
   /** Shape a psionic working from force/reach/grip points. */

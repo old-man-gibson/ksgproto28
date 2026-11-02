@@ -167,10 +167,10 @@ function filterToSchema(def, schema) {
 
 // ---------- effect application ----------
 //
-// One dispatcher over six emission targets: cell, quantity, status, world, stage, gate. Every branch
-// either changes core-owned state or calls a host adapter method; no branch writes a host object
-// directly. That leaves the source game's frozen shared derived-stat block and its reactive proxy
-// untouched.
+// One dispatcher over seven emission targets: cell, quantity, status, world, stage, gate, evolve.
+// Every branch either changes core-owned state (the document included) or calls a host adapter
+// method; no branch writes a host object directly. That leaves the source game's frozen shared
+// derived-stat block and its reactive proxy untouched.
 F.applyEffect = function applyEffect(eff, ctx) {
   const host = F.host();
   if (!host) return;
@@ -203,14 +203,15 @@ F.applyEffect = function applyEffect(eff, ctx) {
     }
 
     case 'status': {
-      const targets = resolveScope(eff.scope, ctx);
-      const app = {
-        id: eff.defId || (eff.def && eff.def.id),
-        intensity: eff.intensity === undefined ? 1 : F.num(F.evalExpr(eff.intensity, ctx)),
-        duration: eff.ticks,
-      };
-      if (!app.id) return;
-      for (const t of targets) host.applyStatus(t, app, ctx.facet.id);
+      // The dose is read once per target, with ctx.target set to that target, so a document can
+      // scale it by who receives it: `{ q: 'fighter.boss', on: 'target' }` is 1 on a boss.
+      const id = eff.defId || (eff.def && eff.def.id);
+      if (!id) return;
+      for (const t of resolveScope(eff.scope, ctx)) {
+        const at = Object.assign({}, ctx, { target: t });
+        const intensity = eff.intensity === undefined ? 1 : F.num(F.evalExpr(eff.intensity, at));
+        host.applyStatus(t, { id, intensity, duration: eff.ticks }, ctx.facet.id);
+      }
       return;
     }
 
@@ -228,6 +229,20 @@ F.applyEffect = function applyEffect(eff, ctx) {
 
     case 'gate': {
       if (F.gate && F.gate.request) F.gate.request(eff, ctx);
+      return;
+    }
+
+    // An ability growing into one of several bank entries (`into`). The offer is written onto the
+    // document, so it is saved with it and a reload still holds it; a document already holding an
+    // offer ignores a second one, and an `into` name the bank lacks is dropped. The host asks the
+    // bearer (offerEvolution, optional: without it the offer waits on the document) and answers
+    // with Facet.evolve.
+    case 'evolve': {
+      if (Array.isArray(ctx.facet.offer) && ctx.facet.offer.length) return;
+      const into = (eff.into || []).filter(k => F.bank && F.bank[k]);
+      if (!into.length) return;
+      ctx.facet.offer = into;
+      if (host.offerEvolution) host.offerEvolution(ctx.ref, ctx.facet.id, into.slice());
       return;
     }
 

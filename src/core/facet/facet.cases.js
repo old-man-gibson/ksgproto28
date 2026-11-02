@@ -545,6 +545,91 @@ CASES['bank: Basilisk Hide puts Stone on the attacker: 6 + CON / 10 a hit, 1.5 o
   assert(slow.q === 'fighter.speed' && slow.value === -0.005, 'Stone should slow 0.5% a point, got ' + JSON.stringify(slow));
 };
 
+CASES['bank: Basilisk Hide counts rival statues and offers three branches at 100'] = (assert) => {
+  const offers = [];
+  const H = fakeHost({ offerEvolution: (ref, id, into) => offers.push(into) });
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.basilisk_hide)));
+  F.attach('a', [doc]);
+  const count = () => F.cellOf(doc, 'statues').state.v;
+  // Below 85% on both, or no shares sent: not counted.
+  F.event('statue', 'a', { target: 'e1', levelShare: 0.5, attrShare: 0.84 });
+  F.event('statue', 'a', { target: 'e1' });
+  assert(count() === 0, 'a weak statue, or one with no shares, was counted: ' + count());
+  F.event('statue', 'a', { target: 'e1', levelShare: 0.85, attrShare: 0.1 });
+  F.event('statue', 'a', { target: 'e1', levelShare: 0.1, attrShare: 2 });
+  assert(count() === 2, 'either share at 85% should count, got ' + count());
+  for (let i = 2; i < 99; i++) F.event('statue', 'a', { target: 'e1', levelShare: 1 });
+  assert(!doc.offer && offers.length === 0, 'offered before 100');
+  F.event('statue', 'a', { target: 'e1', levelShare: 1 });
+  F.event('statue', 'a', { target: 'e1', levelShare: 1 });
+  assert(doc.offer && doc.offer.join() === 'basilisk_gorgon,basilisk_rubble,basilisk_stoneskin', 'offer: ' + JSON.stringify(doc.offer));
+  assert(offers.length === 1, 'the host was asked ' + offers.length + ' times');
+  // The swap: only a branch on offer; the count carries; the branch offers nothing.
+  assert(F.evolve(doc, 'bramble') === null, 'evolved into an entry not on offer');
+  const next = F.evolve(doc, 'basilisk_rubble');
+  assert(next && next.reading.name === 'Rubble', 'no Rubble document');
+  assert(F.cellOf(next, 'statues').state.v === 100, 'the count did not carry: ' + F.cellOf(next, 'statues').state.v);
+  assert(!next.offer && next.id !== doc.id, 'the branch is not a fresh document');
+  assert(!F.bank.basilisk_rubble.cells[0].state, 'the swap wrote into the bank template');
+  assert(F.evolve(next, 'basilisk_gorgon') === null, 'a branch evolved again');
+  // Rubble: rocks put 15 Stone on what they hit.
+  F.detach('a');
+  F.attach('a', [next]);
+  F.event('rocks', 'a', { target: 'e2' });
+  const stone = (H._applied.e2 || []).filter((x) => x.id === 'basilisk_stone');
+  assert(stone.length === 1 && stone[0].intensity === 15, 'rocks should put 15 Stone on e2, got ' + JSON.stringify(stone));
+};
+
+CASES["bank: Gorgon's Gaze stones the front enemy each second, a quarter on a boss"] = (assert) => {
+  const base = fakeHost();
+  let front = 'e1';
+  const H = fakeHost({
+    resolve: (from, scope) => (scope.side === 'enemy' ? [front] : [from]),
+    quantities: () => base.quantities().concat([
+      { id: 'stat.eff.con', label: 'CON', kind: 'attribute', namespace: 'stat', nullifiable: false, writable: true },
+      { id: 'fighter.boss', label: 'Boss', kind: 'scalar', namespace: 'fighter', nullifiable: false, writable: false },
+    ]),
+  });
+  F.install(H);
+  H._add('a', { 'stat.eff.con': 50 });
+  H._add('e1', { 'fighter.boss': 0 }, 'enemy');
+  H._add('e2', { 'fighter.boss': 1 }, 'enemy');
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.basilisk_gorgon)));
+  F.attach('a', [doc]);
+  const doses = (r) => (H._applied[r] || []).filter((x) => x.id === 'basilisk_stone').map((x) => x.intensity);
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 9; i++) F.tick('a');
+  assert(doses('e1').length === 0, 'the gaze landed before a second passed');
+  F.tick('a');
+  assert(doses('e1').join() === '3', 'CON 50: 2 + 1 = 3 Stone a second, got ' + doses('e1'));
+  front = 'e2';
+  for (let i = 0; i < 10; i++) F.tick('a');
+  assert(doses('e2').join() === '0.75', 'a boss takes a quarter, got ' + doses('e2'));
+  // A blow adds half the base dose: (6 + 5) / 2.
+  F.event('hitTaken', 'a', { amount: 5, type: 'slashing', attacker: 'e3', boss: 0 });
+  assert(doses('e3').join() === '5.5', 'a blow should add 5.5, got ' + doses('e3'));
+  // A statue moves the gaze on: the front enemy (a boss here) takes 25, a quarter of it.
+  F.event('statue', 'a', { target: 'e3', levelShare: 1 });
+  assert(doses('e2').join() === '0.75,6.25', 'the next enemy should take 6.25, got ' + doses('e2'));
+};
+
+CASES['bank: Stoneskin counts the statues standing in the fight'] = (assert) => {
+  const base = fakeHost();
+  const H = fakeHost({ quantities: () => base.quantities().concat([
+    { id: 'world.statues', label: 'Statues', kind: 'scalar', namespace: 'world', nullifiable: false, writable: false },
+  ]) });
+  F.install(H);
+  H._add('a', { 'world.statues': 2 });
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.basilisk_stoneskin)));
+  F.attach('a', [doc]);
+  const standing = () => F.cellOf(doc, 'standing').state.v;
+  F.tick('a');
+  assert(standing() === 2, 'two statues standing should read 2, got ' + standing());
+  F.event('fightEnd', 'a', { won: 1 });
+  assert(standing() === 0, 'the count should clear when the fight ends, got ' + standing());
+};
+
 CASES['bank: Bramble raises its cap by 1 per 200 fights'] = (assert) => {
   const { H } = thornHost();
   F.install(H);

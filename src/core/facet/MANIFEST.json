@@ -17,7 +17,7 @@
     "facet.bank.js"
   ],
   "sha256": {
-    "facet.core.js": "183ec17e84e53f42f4316f264ec2d7968210a4f6f3c1018322848d80c6743497",
+    "facet.core.js": "720f872f1688478f0d5c03188f7151485b7927738f95494c558ea7bd975aeaa3",
     "facet.data.js": "387ca3a916df10adf4adb060fc7eaefdac506b076500592564480ab2bb1aca97",
     "facet.registry.js": "f3beb5015946bc2d87a5416f27fe3aa7755f058229aa403062589fe4612618dd",
     "facet.cells.js": "2507fe4996a3ba6262860430249f421c60eebc7e0280a8117cbc2a794604e022",
@@ -26,9 +26,9 @@
     "facet.mortal.js": "738bef83bf0734a5583fb7de51740e60f42a348bbd514caa5dfed89e03add396",
     "facet.forge.js": "9905f4c9587171374b83f394a4e57a99a4afa7358c0d46a2b75ceafa1769d028",
     "facet.oracle.js": "f6b36d39a55ece29ca3c8a0a4dc64f3a4e587aa0cda3e363c8a76d444783258e",
-    "facet.compile.js": "aaae48e5670c929a1d8f7e61fcd520ef0a8e111776b9c076a969f9a6c3d5fa48",
-    "facet.cases.js": "4cca44b61f7b20d77a4072303cc86ee8367f8f2f4845e16e38986c530e9e1f95",
+    "facet.compile.js": "4723bb78ac154e8f216b44707dffbfd9adc43f6928773fc68b2a37631b1742c9",
+    "facet.cases.js": "63b497ce0fda5749b66fe959d506a92330882c00314dfb3423361f720ca7f854",
     "facet.relations.js": "2b044657252d66b8c276b7c25c6ecb314f6757f0e051114d3b4701255cb172f0",
-    "facet.bank.js": "acce7c3229fde84ce2d37b09d7371ccee2378536bfafd228b76896285ddc0c82"
+    "facet.bank.js": "935f27900eab6ef1d51323c22d10e779e849dde649c3fe067fa39502c2f77213"
   }
 }

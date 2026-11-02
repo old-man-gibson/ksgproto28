@@ -322,6 +322,33 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     duration: 3 * SECOND,
     blocks: ['swing', 'spell', 'attack'],
     mods: [{ stat: 'speed', op: 'mult', value: -1 }],
+    statue: { rocks: 1, burst: 0, chunks: 0.5, xp: 0.5 },
+  },
+  // Basilisk Hide's Rubble branch: left alone, it bursts at half strength
+  // instead of crumbling, and no statue pays Stone Chunks.
+  petrified_rubble: {
+    id: 'petrified_rubble',
+    name: 'Petrified',
+    icon: '🗿',
+    unresistable: 'a statue: the Stone already decided it',
+    stacking: { mode: 'highest' },
+    duration: 3 * SECOND,
+    blocks: ['swing', 'spell', 'attack'],
+    mods: [{ stat: 'speed', op: 'mult', value: -1 }],
+    statue: { rocks: 1, burst: 0.5, chunks: 0, xp: 0.5 },
+  },
+  // Basilisk Hide's Stoneskin branch: stays until the fight ends, out of the
+  // centre slot, and throws no rocks however it falls.
+  petrified_standing: {
+    id: 'petrified_standing',
+    name: 'Petrified',
+    icon: '🗿',
+    unresistable: 'a statue: the Stone already decided it',
+    stacking: { mode: 'highest' },
+    duration: null,
+    blocks: ['swing', 'spell', 'attack'],
+    mods: [{ stat: 'speed', op: 'mult', value: -1 }],
+    statue: { rocks: 0, burst: 0, chunks: 0.5, xp: 0.5, stands: true },
   },
 
   // ---------- Slashing: bleeding ----------

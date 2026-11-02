@@ -5,7 +5,9 @@ import { TICKS_PER_GAME_MINUTE } from '../data/climate.data';
 import { chance, rand } from '../engine/rng';
 import { procChance, procRate } from '../engine/mercy';
 import { STATUSES } from '../data/statuses.data';
-import { applyStatus, findStatus, removeStatus } from '../systems/statuses';
+import { applyStatus, findStatus, removeStatus, statueOf } from '../systems/statuses';
+import { effectiveAttr } from '../systems/attributes';
+import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { getDerivedStats } from '../systems/derived';
 import { appendLog } from '../systems/log';
 import { abilityStrike, isSpotBoss } from '../systems/combat';
@@ -50,6 +52,12 @@ import './load';
  * health.ts damagePlayer's `source.by`), and a document aims at it with the
  * core's `{ frame: 'attacker' }` scope. combat.ts sweeps an attacker the
  * answer killed before the enemy phase goes on (`answeredToDeath`).
+ *
+ * Basilisk Hide: a dose that turns an enemy to stone raises `statue`, rocks
+ * raise `rocks` (combat.ts `throwRubble`), statues are not targets, and an
+ * enemy answers `fighter.boss` and `fighter.level`. Its evolution is the
+ * first: the core writes the offer onto the document, play holds on
+ * `pendingEvolution`, and `chooseEvolution` swaps the branch in.
  */
 
 export { bindFacets, facetSignal, PLAYER_REF } from './signal';
@@ -99,8 +107,36 @@ const STATUS_SCHEMA = {
 // health.ts reads it for hitTaken's attacker). A ref lives for one call: slots
 // move when the front enemy dies, so nothing keeps one.
 
+/** The enemies an ability can aim at: alive and not statues (Basilisk Hide). */
 function livingFoes(state: GameState): string[] {
-  return (state.combat?.enemies ?? []).flatMap((e, i) => (e && e.hp > 0 ? [FOE + i] : []));
+  return (state.combat?.enemies ?? []).flatMap((e, i) => (e && e.hp > 0 && !statueOf(e) ? [FOE + i] : []));
+}
+
+/**
+ * An enemy's numbers a document may read (`{ q, on: 'target' }`): its level,
+ * and `fighter.boss`, 1 for the spot's boss. Everything else reads 0 until K4.
+ */
+function readFoe(state: GameState, foe: MonsterInstance, id: string): number {
+  if (id === 'fighter.boss') return isSpotBoss(state, foe.defId) ? 1 : 0;
+  if (id === 'fighter.level') return foe.level;
+  return 0;
+}
+
+/**
+ * Raise `statue` when an enemy has just turned to stone. levelShare and
+ * attrShare are its level and attribute total over the player's (Basilisk
+ * Hide counts a statue at 0.85 or more on either).
+ */
+function signalStatue(state: GameState, ref: string, foe: MonsterInstance): void {
+  const mine = ATTRIBUTE_LIST.reduce((n, a) => n + effectiveAttr(state, a.id), 0);
+  const its = ATTRIBUTE_LIST.reduce((n, a) => n + (foe.attrs[a.id] ?? 0), 0);
+  facetSignal(state, 'statue', {
+    target: ref,
+    level: foe.level,
+    levelShare: foe.level / Math.max(1, state.level),
+    attrShare: its / Math.max(1, mine),
+    boss: isSpotBoss(state, foe.defId) ? 1 : 0,
+  });
 }
 
 function foeOf(state: GameState, ref: string): MonsterInstance | null {
@@ -184,9 +220,14 @@ export function createFacetHost(getState: () => GameState): FacetHost {
 
     // ---- quantities ----
     quantities: facetQuantities,
-    // The player's numbers only. An enemy's are not quantities until K4, so a
-    // document reading one gets 0.
-    readQ: (ref: string, id: string) => (ref === PLAYER_REF ? (readQuantity(s(), id) ?? 0) : 0),
+    // The player's numbers, and the few of an enemy's `readFoe` answers. An
+    // enemy's others are not quantities until K4, so a document reading one
+    // gets 0.
+    readQ: (ref: string, id: string) => {
+      if (ref === PLAYER_REF) return readQuantity(s(), id) ?? 0;
+      const foe = foeOf(s(), ref);
+      return foe ? readFoe(s(), foe, id) : 0;
+    },
     // The core keeps overrides and applies them to its own reads; the game's
     // stat block does not see them until K3 routes them through
     // collectModifiers. Until then an override would change what an ability
@@ -213,9 +254,17 @@ export function createFacetHost(getState: () => GameState): FacetHost {
         ...def,
       } as StatusDef;
     },
+    // A dose that turns an enemy to stone raises `statue` (Basilisk Hide's
+    // count, Gorgon's Gaze moving on).
     applyStatus: (ref: string, app: StatusApplication, source?: string) => {
-      const bearer = bearerOf(s(), ref);
-      return bearer ? applyStatus(s(), bearer, app, source) : null;
+      const state = s();
+      const bearer = bearerOf(state, ref);
+      if (!bearer) return null;
+      const foe = bearer === state ? null : (bearer as MonsterInstance);
+      const was = foe ? statueOf(foe) : null;
+      const held = applyStatus(state, bearer, app, source);
+      if (foe && !was && statueOf(foe)) signalStatue(state, ref, foe);
+      return held;
     },
     removeStatus: (ref: string, id: string) => {
       const bearer = bearerOf(s(), ref);
@@ -280,6 +329,16 @@ export function createFacetHost(getState: () => GameState): FacetHost {
     },
     log: (line: string) => {
       if (line) appendLog(s(), { msg: line, kind: 'info', t: s().totalTicks });
+    },
+    // The `evolve` effect wrote its offer onto the document; play holds on it
+    // (pendingEvolution) until the player picks. This only says so.
+    offerEvolution: (_ref: string, id: string) => {
+      const doc = s().facets.find((d) => d.id === id);
+      appendLog(s(), {
+        msg: `${doc?.reading?.icon ?? '✦'} ${doc?.reading?.name ?? 'Your ability'} can evolve: pick a branch.`,
+        kind: 'info',
+        t: s().totalTicks,
+      });
     },
   };
 }
@@ -359,6 +418,56 @@ export function grantFacet(state: GameState, id: string): boolean {
   }
   state.facets = [globalThis.Facet.hydrate(JSON.parse(JSON.stringify(template)) as FacetDoc)];
   bindFacets(state, true);
+  return true;
+}
+
+/** One branch a held ability may evolve into: its bank key and what the pick screen shows. */
+export interface EvolutionChoice {
+  key: string;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
+/**
+ * The held ability's evolution offer (the core's `evolve` effect writes it
+ * onto the document, so it is saved), or null. While there is one, play holds
+ * (Game.tick), as it does for the keeper's dare.
+ */
+export function pendingEvolution(state: GameState): { from: FacetDoc; choices: EvolutionChoice[] } | null {
+  const from = state.facets?.find((d) => Array.isArray(d.offer) && d.offer.length);
+  if (!from) return null;
+  const bank = globalThis.Facet?.bank ?? {};
+  const choices = (from.offer as string[]).map((key) => ({
+    key,
+    name: bank[key]?.reading?.name ?? key,
+    icon: bank[key]?.reading?.icon ?? '✦',
+    desc: bank[key]?.reading?.desc ?? '',
+  }));
+  return { from, choices };
+}
+
+/**
+ * Take the branch `key`: the core builds it from the bank, carrying every cell
+ * the two documents share, and it replaces the held one. The old document's
+ * carrier statuses go with it. False when nothing is on offer, `key` is not
+ * on it, or the adapter is not installed.
+ */
+export function chooseEvolution(state: GameState, key: string): boolean {
+  const F = globalThis.Facet;
+  const offer = pendingEvolution(state);
+  if (!F?.ready() || !offer) return false;
+  const next = F.evolve(offer.from, key);
+  if (!next) return false;
+  const prefix = carrierPrefix(offer.from);
+  state.statuses = state.statuses.filter((s) => !s.id.startsWith(prefix));
+  state.facets = state.facets.map((d) => (d === offer.from ? next : d));
+  bindFacets(state, true);
+  appendLog(state, {
+    msg: `${offer.from.reading?.icon ?? '✦'} ${offer.from.reading?.name ?? 'Your ability'} evolves into ${next.reading?.icon ?? '✦'} ${next.reading?.name ?? key}.`,
+    kind: 'info',
+    t: state.totalTicks,
+  });
   return true;
 }
 
