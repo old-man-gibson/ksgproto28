@@ -264,6 +264,17 @@ function applyWorld(eff, ctx, host) {
       });
       return;
     }
+    // Pays from a resource pool (`pool: 'mana'`), up to what the target holds. A quantity write
+    // cannot do this: the registry's verbs are overrides on a reading, and spending moves the
+    // pool itself. Optional on the host, like applyDamage: without spendPool nothing is paid.
+    // $paid is what was taken, so a later effect in the clause can scale by it.
+    case 'spend': {
+      const want = Math.max(0, F.num(F.evalExpr(eff.value, ctx)));
+      let paid = 0;
+      for (const t of targets) if (host.spendPool) paid += F.num(host.spendPool(t, eff.pool, want, ctx.facet.id));
+      ctx.bindings.$paid = paid;
+      return;
+    }
     case 'dismiss': { for (const t of targets) if (host.dismiss) host.dismiss(t); return; }
     case 'revive': {
       // Revive can never run in-encounter: the schema defines no `now` value for eff.when, so the

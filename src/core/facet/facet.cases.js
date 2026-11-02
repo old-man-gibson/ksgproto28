@@ -336,6 +336,89 @@ CASES['expr: a share of max HP divides by fighter.maxHpAbs'] = (assert, H) => {
   assert(v === 0.25, 'hp 30 of 120 read as ' + v);
 };
 
+CASES['carrier: a cell marked carrier false gets no status'] = (assert, H) => {
+  F.install(H); H._add('a');
+  const facet = F.hydrate({ v: 1, cells: [{ key: 't', hold: 'none', level: 'int', cap: 10, carrier: false }],
+    clauses: [{ id: 'c1', on: 'tick', do: [{ emit: 'cell', cell: 't', verb: 'add', value: 1 }] }] });
+  const c = F.attach('a', [facet])[0];
+  F.tick('a');
+  assert(facet.cells[0].state.v === 1, 'the cell did not count');
+  assert(c.defs.length === 0, 'a carrier was defined for a cell marked carrier: false');
+  assert(!H.findStatus('a', F.carrierId(facet, facet.cells[0])), 'a carrier was applied');
+};
+
+CASES['expr: seconds converts to the host ticks'] = (assert, H) => {
+  F.install(H);
+  const ctx = { ref: 'a', facet: null, bindings: {} };
+  assert(F.evalExpr({ seconds: 2.8 }, ctx) === 28, '2.8 s at 10 ticks per second read as ' + F.evalExpr({ seconds: 2.8 }, ctx));
+  assert(F.evalExpr({ seconds: { expr: 'mul', a: 3, b: 0.1 } }, ctx) === 3, 'a computed duration was not converted');
+};
+
+// A host with a weapon hit, a mana pool it lets the engine spend, and enemies that record damage.
+function moonHost(mana) {
+  const pool = { mana };
+  const hits = [];
+  const H = fakeHost({
+    quantities: () => [
+      { id: 'fighter.hp', label: 'HP', kind: 'pool', nullifiable: false, writable: false, mortalRole: 'vitality' },
+      { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
+      { id: 'fighter.damage', label: 'Weapon damage', kind: 'flat' },
+      { id: 'pool.mana.cur', label: 'Mana', kind: 'pool' },
+    ],
+    readQ: (r, q) => q === 'pool.mana.cur' ? pool.mana : q === 'fighter.damage' ? 100 : 1,
+    resolve: (from, scope) => scope.side === 'enemy' ? ['e1', 'e2'].slice(0, scope.n || 2) : [from],
+    spendPool: (r, id, amount) => { const paid = Math.min(pool[id] || 0, amount); pool[id] -= paid; return paid; },
+    applyDamage: (r, amount, type) => { hits.push({ r, amount, type }); return amount; },
+  });
+  return { H, pool, hits };
+}
+
+CASES['world: spend pays from a pool, up to what is held'] = (assert) => {
+  const { H, pool } = moonHost(1);
+  F.install(H);
+  const facet = F.hydrate({ v: 1, cells: [], clauses: [
+    { id: 'c1', on: 'tick', do: [{ emit: 'world', verb: 'spend', pool: 'mana', value: 0.75 }] },
+  ] });
+  F.attach('a', [facet]);
+  F.tick('a');
+  assert(Math.abs(pool.mana - 0.25) < 1e-9, 'the first spend left ' + pool.mana);
+  F.tick('a');
+  assert(Math.abs(pool.mana) < 1e-9, 'the pool was overdrawn: ' + pool.mana);
+};
+
+CASES['bank: Little Moons strikes the front enemy and combines line-ups'] = (assert) => {
+  const { H, hits } = moonHost(1e6);
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.little_moons)));
+  F.attach('a', [doc]);
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 120; i++) F.tick('a');
+  // Due at ticks 28 56 84 112, 37 74 111, and 79. 111 and 112 join one window; the rest strike
+  // alone, each 0.3 s after it came due.
+  assert(hits.length === 7, 'expected 7 strikes in 12 s, got ' + hits.length);
+  assert(hits.every(h => h.r === 'e1' && h.type === 'light'), 'a strike missed the front enemy or changed type');
+  const big = hits.filter(h => Math.abs(h.amount - 120) < 1e-9).length;
+  const small = hits.filter(h => Math.abs(h.amount - 30) < 1e-9).length;
+  assert(small === 6 && big === 1, 'strikes should be six of 30 and one combined of 4 x 30, got ' + hits.map(h => h.amount));
+  F.event('kill', 'a', { level: 5, boss: 1 });
+  F.event('kill', 'a', { level: 5 });
+  assert(doc.cells[0].state.v === 1, 'a boss kill and a plain kill made ' + doc.cells[0].state.v + ' boss kills');
+};
+
+CASES['bank: Little Moons goes dark when mana runs out'] = (assert) => {
+  const { H, pool, hits } = moonHost(1);
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.little_moons)));
+  F.attach('a', [doc]);
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 200; i++) F.tick('a');
+  assert(hits.length === 0, 'the moons struck with no mana to pay');
+  assert(pool.mana >= 0, 'the pool went negative');
+  pool.mana = 1e6;
+  for (let i = 0; i < 130; i++) F.tick('a');
+  assert(hits.length > 0, 'the moons stayed dark after the pool refilled');
+};
+
 // ---------- the bank ----------
 // Game behaviour is each game's test; this checks only that every entry is a document the
 // compiler accepts and that granting one copies it instead of sharing the template.

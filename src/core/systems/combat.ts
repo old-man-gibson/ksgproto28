@@ -682,7 +682,7 @@ import {
   noteParry,
 } from './ledger';
 import { encounterLevel, killXp } from './levels';
-import { facetCombatStamp, facetSignal } from '../facet/signal';
+import { facetCombatStamp, facetCombatTick, facetSignal } from '../facet/signal';
 import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
@@ -758,6 +758,11 @@ export const fightsKey = (spotId: string): string => `fights:${spotId}`;
  * AND-only condition language never needs an OR.
  */
 export const bossKey = (spotId: string): string => `boss:${spotId}`;
+
+/** Whether this monster is a boss of the spot the player is fighting at (SpotEncounter.boss). */
+export function isSpotBoss(state: GameState, defId: string): boolean {
+  return !!SPOTS[state.spot]?.encounters?.some((e) => e.boss && e.monsterId === defId);
+}
 
 /** Night as the darkness system already defines it: dusk through dawn. */
 function isNightNow(state: GameState): boolean {
@@ -1641,7 +1646,7 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   // A BOSS kill latches the spot's boss counter the same eager way. Announced
   // only the first time — variant keepers keep spawning, and a hunter farming
   // the ambush window does not need telling on every rematch.
-  if (spot?.encounters?.some((e) => e.boss && e.monsterId === monster.defId)) {
+  if (isSpotBoss(state, monster.defId)) {
     const first = (state.stats[bossKey(spot.id)] ?? 0) === 0;
     bumpStat(state, bus, bossKey(spot.id));
     if (first) {
@@ -3312,6 +3317,58 @@ export function sweepDead(state: GameState, bus: EventBus): boolean {
   return frontDied;
 }
 
+/** Feed groups for the run's ability; settled when the fight ends (tickCombat). */
+export const ABILITY_RUN = 'ability:';
+
+/**
+ * Damage the run's ability deals to an enemy (facet/host.ts `applyDamage`):
+ * a Little Moons strike, say. It always lands, with no dodge, crit or
+ * variance (those belong to blows), and goes through resistance, the target's
+ * conditions and the on-damage hooks like any other damage. The kill is left
+ * to `sweepDead`, which tickCombat runs after the ability's tick, because a
+ * kill needs the bus and the adapter has none. Returns the damage dealt.
+ *
+ * The strikes of one fight fold into one feed line, the way the floating
+ * blades' do, so three moons do not flood the log.
+ */
+export function abilityStrike(
+  state: GameState,
+  index: number,
+  amount: number,
+  type: DamageType,
+  by: { name: string; icon: string },
+): number {
+  const monster = state.combat?.enemies[index];
+  if (!monster || monster.hp <= 0 || !(amount > 0)) return 0;
+  const slices = new Map<string, DamageSlice>();
+  const landed = monsterSlice(monster, type, by.name, amount, 0);
+  addSlice(slices, landed);
+  const bite = statusIncomingDamageMult(monster);
+  const dmg = Math.max(1, Math.round(landed.dealt * bite));
+  monster.hp -= dmg;
+  monster.lastHit = type;
+  noteOutgoing(state, dmg);
+  const harvested = enemyTookDamage(state, monster, dealtByType(slices));
+  if (harvested > 0) {
+    const burned = Math.max(1, Math.round(harvested));
+    monster.hp -= burned;
+    noteOutgoing(state, burned);
+  }
+  const steps: DamageStep[] = [{ label: by.name, value: amount }];
+  if (bite !== 1) steps.push({ label: 'Conditions on the target', mult: bite });
+  feedFloating(state, {
+    group: ABILITY_RUN + by.name,
+    prefix: `${by.icon} ${by.name}:`,
+    tally: [
+      { label: 'strike', qty: 1 },
+      { label: 'damage', qty: dmg, style: 'amount' },
+    ],
+    ids: [],
+    damage: { label: by.name, target: monster.name, steps, slices: [...slices.values()], hits: 1, crit: false, total: dmg },
+  });
+  return dmg;
+}
+
 /**
  * Damage a condition deals as the player's action bar fills or bottoms out —
  * a jolt discharging, a shock landing. Returns true if it proved fatal.
@@ -3761,7 +3818,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // …and whatever the blades were mid-rotation on. Every run, not just the
     // newest: a fight that ended during a volley leaves two open at once.
     for (const g of (state.floatingFeed ?? []).map((f) => f.group)) {
-      if (g.startsWith('telekinesis:')) settleFloating(state, g);
+      if (g.startsWith('telekinesis:') || g.startsWith(ABILITY_RUN)) settleFloating(state, g);
     }
     if (state.respawnTimer > 0) {
       state.respawnTimer -= 1;
@@ -3810,6 +3867,14 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
   if (!state.combat) return;
   landIncantation(state, bus);
   if (!state.combat) return;
+
+  // The run's ability keeps its own clock in a fight (facet/signal.ts). Its
+  // strikes land without the bus (abilityStrike), so what they killed is
+  // swept here.
+  if (facetCombatTick(state)) {
+    sweepDead(state, bus);
+    if (!state.combat) return;
+  }
 
   const front = frontEnemy(c);
   if (!front) {
