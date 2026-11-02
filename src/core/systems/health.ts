@@ -102,7 +102,17 @@ export function damagePlayer(
   state: GameState,
   amount: number,
   type?: DamageType,
-  source?: { key: string; label: string; icon: string; by?: MonsterInstance } | null,
+  source?: {
+    key: string;
+    label: string;
+    icon: string;
+    /** The enemy whose blow it was. */
+    by?: MonsterInstance;
+    /** The blow as thrown, before armour, resistance and ward. */
+    thrown?: number;
+    /** Your own working landing on you (a spell you cast on yourself). */
+    self?: boolean;
+  } | null,
 ): number {
   if (amount <= 0) return 0;
   const lost = spendResource(state, 'hp', amount);
@@ -125,9 +135,16 @@ export function damagePlayer(
   fireStatusEvent(state, state, 'damageTaken', type ? { damageType: type, amount: lost } : { amount: lost });
   // The run's ability hears every blow from the same door (facet/signal.ts).
   // `by` is the enemy whose blow it was, so the ability can answer it; a
-  // condition ticking or your own backlash names none.
+  // condition ticking or your own backlash names none. `blow` is the blow as
+  // thrown, so an answer sized to it is not shrunk by your own armour.
   const slot = source?.by ? (state.combat?.enemies.indexOf(source.by) ?? -1) : -1;
-  facetSignal(state, 'hitTaken', { amount: lost, type: type ?? 'none', attacker: slot >= 0 ? FOE + slot : '' });
+  facetSignal(state, 'hitTaken', {
+    amount: lost,
+    blow: source?.thrown ?? lost,
+    type: type ?? 'none',
+    attacker: slot >= 0 ? FOE + slot : '',
+    self: source?.self ? 1 : 0,
+  });
   // A body that knits itself back together stops while it is being burned or
   // eaten — but that rule is no longer written here. It rides the `knitting`
   // condition the gene confers, whose own `removal` names the types that douse

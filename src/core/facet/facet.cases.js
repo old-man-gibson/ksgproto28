@@ -471,6 +471,54 @@ CASES['bank: Bramble grows on enemy blows, answers the attacker and burns on Hea
   assert(thorns() === 0, 'thorns outlived the fight');
 };
 
+CASES['bank: Bramble answers the blow as thrown, before armour'] = (assert) => {
+  const { H, hits } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  F.event('fightStart', 'a', {});
+  // Armour took 90 of a 100 blow: the answer is 2% of the 100.
+  F.event('hitTaken', 'a', { amount: 10, blow: 100, type: 'slashing', attacker: 'e1' });
+  assert(hits.length === 1 && Math.abs(hits[0].amount - 2) < 1e-9, 'the answer should read the thrown blow: ' + JSON.stringify(hits));
+};
+
+CASES['bank: Bramble grows 1 + 5% of its cap each second of fight time'] = (assert) => {
+  const { H } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  const thorns = () => doc.cells[0].state.v;
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 9; i++) F.tick('a');
+  assert(thorns() === 0, 'a thorn grew before a second passed');
+  F.tick('a');
+  assert(thorns() === 1, 'cap 10: one second should add floor(1 + 0.5) = 1, got ' + thorns());
+  // 4,000 fights make the cap 30: a second adds floor(1 + 1.5) = 2.
+  for (let i = 0; i < 4000; i++) F.event('fightEnd', 'a', { won: 1 });
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 10; i++) F.tick('a');
+  assert(thorns() === 2, 'cap 30: one second should add 2, got ' + thorns());
+};
+
+CASES['bank: Bramble grows 2 + 10% of its cap on Poison you cast on yourself'] = (assert) => {
+  const { H, hits } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  const thorns = () => doc.cells[0].state.v;
+  F.event('fightStart', 'a', {});
+  F.event('hitTaken', 'a', { amount: 5, type: 'poison', attacker: '', self: 1 });
+  assert(thorns() === 3, 'cap 10: a self-Poison hit should add floor(2 + 1) = 3, got ' + thorns());
+  assert(hits.length === 0, 'a self-hit answered someone');
+  F.event('hitTaken', 'a', { amount: 5, type: 'heat', attacker: '', self: 1 });
+  F.event('hitTaken', 'a', { amount: 5, type: 'poison', attacker: '' });
+  F.event('hitTaken', 'a', { amount: 5, type: 'poison' });
+  assert(thorns() === 3, 'self-Heat, or Poison not marked self, changed the thorns: ' + thorns());
+  // An enemy's Poison blow is an ordinary hit.
+  F.event('hitTaken', 'a', { amount: 5, type: 'poison', attacker: 'e1' });
+  assert(thorns() === 4, "an enemy's Poison blow should add 1, got " + thorns());
+};
+
 CASES['bank: Bramble raises its cap by 1 per 200 fights'] = (assert) => {
   const { H } = thornHost();
   F.install(H);

@@ -2,6 +2,9 @@
 import './fixtures/shelved-world';
 import { afterEach, describe, expect, it } from 'vitest';
 import { bindFacets, grantFacet, installFacet } from '../src/core/facet/host';
+import { facetCombatTick } from '../src/core/facet/signal';
+import { composeArcane } from '../src/core/systems/arcane';
+import { castCraftedSelf } from '../src/core/systems/combat';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { getDerivedStats } from '../src/core/systems/derived';
@@ -11,9 +14,10 @@ import type { GameState, MonsterInstance } from '../src/core/types';
 /**
  * Bramble (Facet repo core/facet.bank.js), the first bank ability that answers
  * the enemy who hit you: each enemy blow raises a thorn level (cap 10, +1 per
- * 200 fights), each level returns 2% of the blow to its attacker as Piercing
- * and slows the action bar by 0.5%, a Heat blow burns 5 levels, and thorns
- * clear when the fight ends.
+ * 200 fights), so does each second of fight time (1 + 5% of the cap) and each
+ * Poison spell you cast on yourself (2 + 10% of the cap). Each level returns 2%
+ * of the blow as thrown to its attacker as Piercing and slows the action bar
+ * by 0.5%, a Heat blow burns 5 levels, and thorns clear when the fight ends.
  *
  * The core's cases check the rules against a fake host. These check this
  * game's side: hitTaken naming the attacker, the answer reaching it, the slow
@@ -45,9 +49,14 @@ function intoFight(state: GameState, game: Game): MonsterInstance {
   return state.combat!.enemies[0]!;
 }
 
-/** A blow from `by`, through the one door every blow takes. */
-const blow = (state: GameState, by: MonsterInstance | undefined, amount: number, type: 'slashing' | 'heat' = 'slashing') =>
-  damagePlayer(state, amount, type, by ? { key: `monster:${by.defId}`, label: by.name, icon: by.icon, by } : undefined);
+/** A blow from `by`, through the one door every blow takes. `thrown` is the blow before armour. */
+const blow = (
+  state: GameState,
+  by: MonsterInstance | undefined,
+  amount: number,
+  type: 'slashing' | 'heat' = 'slashing',
+  thrown?: number,
+) => damagePlayer(state, amount, type, by ? { key: `monster:${by.defId}`, label: by.name, icon: by.icon, by, thrown } : undefined);
 
 describe('Bramble in this game', () => {
   it('a blow grows a thorn and the thorns answer its attacker as Piercing', () => {
@@ -61,6 +70,37 @@ describe('Bramble in this game', () => {
     expect(front.lastHit).toBe('piercing');
     const run = state.floatingFeed?.find((f) => f.group === 'ability:Bramble');
     expect(run?.tally.find((x) => x.label === 'thorns')?.qty).toBe(1);
+  });
+
+  it('the answer is sized to the blow as thrown, not what got past your armour', () => {
+    const { state, game } = bramble();
+    const front = intoFight(state, game);
+    front.hp = 1e9;
+    const before = front.hp;
+    // Armour took 90 of a 100 blow; one thorn returns 2% of the 100.
+    blow(state, front, 10, 'slashing', 100);
+    expect(before - front.hp).toBe(2);
+  });
+
+  it('each second of fight time adds a thorn at cap 10', () => {
+    const { state, game } = bramble();
+    intoFight(state, game);
+    for (let t = 0; t < 9; t++) facetCombatTick(state);
+    expect(thorns(state)).toBe(0);
+    facetCombatTick(state);
+    expect(thorns(state)).toBe(1);
+  });
+
+  it('a Poison spell cast on yourself adds 2 + 10% of the cap, and is credited to the spell', () => {
+    const { state, game } = bramble();
+    intoFight(state, game);
+    const spec = composeArcane(['venom', 'cut', 'me'])!;
+    expect(spec.target).toBe('self');
+    expect(spec.strikes[0].type).toBe('poison');
+    state.resources.mana = 1e6;
+    castCraftedSelf(state, game.bus, 'venom_me', spec, getDerivedStats(state));
+    expect(thorns(state)).toBe(3);
+    expect(state.fight?.incoming.find((x) => x.key === 'spell:venom_me')?.amount).toBeGreaterThan(0);
   });
 
   it('a hit with no attacker neither grows nor answers', () => {

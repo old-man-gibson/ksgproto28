@@ -261,7 +261,7 @@ function landMonsterGraze(
     kit.range === 'ranged',
   );
   const dealt = Math.max(1, Math.round(slice.dealt));
-  damagePlayer(state, dealt, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon, by: e });
+  damagePlayer(state, dealt, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon, by: e, thrown: raw });
   return dealt;
 }
 
@@ -2058,7 +2058,7 @@ function applySelfRiders(state: GameState, c: CombatState, spec: SpellSpec): voi
  * the spring that carries it, and not itself answerable — an undoing's own
  * words cannot be undone.
  */
-function castCraftedSelf(
+export function castCraftedSelf(
   state: GameState,
   bus: EventBus,
   id: string,
@@ -2112,7 +2112,7 @@ function castCraftedSelf(
       const dealt = strike.untyped
         ? Math.max(1, Math.round(raw))
         : incomingSlice(stats, strike.type, spec.name, raw).dealt;
-      damagePlayer(state, dealt, strike.type);
+      damagePlayer(state, dealt, strike.type, { key: `spell:${id}`, label: spec.name, icon: spec.icon, self: true });
       feed(state, `${spec.icon} ${spec.name} hits you for ${dealt} ${strike.untyped ? 'untyped' : strike.type}.`);
       for (const app of strike.inflicts ?? []) applyStatus(state, state, app, spec.name, stats);
       if (!isAlive(state)) {
@@ -2306,7 +2306,7 @@ function resolveMonsterWorking(
       const landed = strike.untyped
         ? Math.max(1, Math.round(raw))
         : incomingSlice(stats, strike.type, spec.name, raw).dealt;
-      damagePlayer(state, landed, strike.type);
+      damagePlayer(state, landed, strike.type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon, by: e, thrown: raw });
       feed(state, `${spec.icon} ${spec.name} hits you for ${landed} ${strike.type}.`);
       if (landed > 0) applyStatuses(state, state, strike.inflicts, spec.name, stats, monsterPenetration(e));
       if (!isAlive(state)) {
@@ -4652,6 +4652,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       // formation under this loop — the same reason bar damage ends the phase.
       if (castMonsterWorking(state, bus, e, es, action.cast, action.index)) return;
       if (!state.combat || !isAlive(state)) return;
+      if (answeredToDeath(state, bus, e)) return;
       continue;
     }
 
@@ -4881,7 +4882,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // already computing here and throwing away a line later. Clamped: a bite
     // amplifying past what was thrown is extra hurt, not negative absorption.
     noteAbsorbed(state, Math.max(0, thrown - dmg));
-    damagePlayer(state, dmg, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon, by: e });
+    damagePlayer(state, dmg, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon, by: e, thrown });
     const res = stats[RES_STAT_BY_TYPE[type]];
     markCombatEvent(state, 'onHit');
     bumpStat(state, bus, 'combat:hitsTaken');

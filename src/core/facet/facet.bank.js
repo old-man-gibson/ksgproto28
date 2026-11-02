@@ -239,28 +239,47 @@ B.little_moons = {
 //   Limit: The level cap tops out at 50. Thorns clear when the fight ends.
 // The entry predates the damage-type list: Fire is Heat.
 //
-// Readings taken (the entry does not say):
+// User additions (2026-11-01), after seeing it only grow on being hit:
+//   "an additional increase by floor(1 + 5% level cap) every second, and whenever the player hits
+//    themselves with nature damage, which makes the bramble increase by floor(2 levels + 10%
+//    bramble level cap) instead."
+//
+// Readings taken (neither text says):
 //   - A hit is a blow from an enemy. A condition ticking, a trap or your own backlash is not, so it
 //     neither grows nor burns thorns and has no attacker to answer.
-//   - The blow grows the thorn first, then the thorns answer it: the first hit of a fight returns
-//     2%, the tenth 20%.
+//   - The blow grows the thorn first, then the thorns answer it.
 //   - A Heat blow burns 5 levels and grows none. What is left still answers it.
-//   - The returned damage is Piercing, and the blow's damage is what reached your HP. Thorns that
-//     returned the blow's own type would barely scratch a fire elemental's heat blows.
+//   - The returned damage is Piercing, and "a blow's damage" is the blow as the enemy threw it,
+//     before your armour, resistance and ward. The entry's own note wants "a tank that wins by
+//     being hit"; a share of what got past a tank's armour returned 1 damage a blow at KSG floor 17.
+//   - "Every second" counts fight time: the per-second growth rides the host's combat tick.
+//   - Nature is Poison. KSG's spell word Seed is Poison and InfiniteGacha's Nature Slime hits with
+//     Poison; neither game has a Nature type.
+//   - "Hits themselves" is a blow the host marks `self: 1` (KSG: a spell you cast on yourself). A
+//     Poison one grows floor(2 + 10% of the cap) instead of 1, and answers no one. Heat you cast
+//     on yourself burns nothing.
 //   - "Fights fought" counts fights this run, won or lost.
 //
 //   thorns   the level, cleared at each fight's start and end. Its carrier slows `fighter.speed`
 //            (the action bar's fill) by 0.5% per level.
+//   sec      ticks toward the next second of fight time.
 //   fights   fights ended this run; the cap is 10 + floor(fights / 200), at most 50.
 //
-// Events: hitTaken (detail amount, type, attacker), fightStart, fightEnd. Needs a host that names
-// the attacker's ref in hitTaken, resolves it, and has applyDamage. The guards read `type` and
-// `attacker` through `not`, so they fail closed: a host that does not report the fields never grows
-// or burns thorns, rather than growing them on every hit (a bare frame guard passes when the field
-// is missing).
+// At cap 10 the clock adds 1 a second and a self-Poison hit adds 3; at cap 50, 3 and 7.
+//
+// Events: hitTaken (detail amount, blow, type, attacker, self), fightStart, fightEnd, tick. Needs a
+// host that names the attacker's ref in hitTaken, resolves it, and has applyDamage. The guards
+// read `type`, `attacker` and `self` through `not`, so they fail closed: a host that does not
+// report a field never takes that branch, rather than taking it on every hit (a bare frame guard
+// passes when the field is missing). A host that does not report `blow` is answered on `amount`.
 const THORNS = { cell: 'thorns' };
+const THORN_CAP = { expr: 'min', a: 50, b: { expr: 'add', a: 10, b: { expr: 'floor', a: { expr: 'div', a: { cell: 'fights' }, b: 200 } } } };
+const capped = (base, share) => ({ expr: 'floor', a: { expr: 'add', a: base, b: { expr: 'mul', a: share, b: THORN_CAP } } });
 const FROM_ENEMY = { not: { frame: 'attacker', op: 'eq', v: '' } };
+const FROM_SELF = { not: { frame: 'self', op: 'ne', v: 1 } };
 const IS_HEAT = { not: { frame: 'type', op: 'ne', v: 'heat' } };
+const IS_POISON = { not: { frame: 'type', op: 'ne', v: 'poison' } };
+const BLOW = { expr: 'max', a: { frame: 'amount' }, b: { frame: 'blow' } };
 
 B.bramble = {
   v: 1,
@@ -268,25 +287,31 @@ B.bramble = {
   cells: [
     {
       key: 'thorns', label: 'Thorns', icon: '🌿', hold: 'none', level: 'int', tier: 'fight', show: 'count',
-      cap: { expr: 'min', a: 50, b: { expr: 'add', a: 10, b: { expr: 'floor', a: { expr: 'div', a: { cell: 'fights' }, b: 200 } } } },
+      cap: THORN_CAP,
       status: {
-        desc: 'Each level returns 2% of every blow to its attacker and slows your actions by 0.5%. Heat burns 5 levels a hit. Clears when the fight ends.',
+        desc: 'Each level returns 2% of every enemy blow, as thrown, to its attacker and slows your actions by 0.5%. '
+          + '+1 per enemy blow, +1 and 5% of the cap each second, +2 and 10% of the cap per Poison spell you cast on yourself. '
+          + 'Heat burns 5 levels a hit. Clears when the fight ends.',
         mods: [{ q: 'fighter.speed', op: 'mult', value: -0.005 }],
       },
     },
+    counter('sec', { seconds: 1 }),
     {
       key: 'fights', label: 'Fights fought', icon: '⚔️', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, carrier: false,
       status: { desc: 'The thorn cap starts at 10 and rises by 1 per 200 fights this run, up to 50.' },
     },
   ],
   clauses: [
-    { id: 'start', on: 'event:fightStart', do: [setCell('thorns', 0)] },
+    { id: 'start', on: 'event:fightStart', do: [setCell('thorns', 0), setCell('sec', 0)] },
     { id: 'end', on: 'event:fightEnd', do: [setCell('thorns', 0), addCell('fights', 1)] },
+    { id: 'clock', on: 'tick', do: [addCell('sec', 1)] },
+    { id: 'second', on: 'cell:sec:cap', do: [setCell('sec', 0), addCell('thorns', capped(1, 0.05))] },
     { id: 'grow', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { not: IS_HEAT }] }, do: [addCell('thorns', 1)] },
     { id: 'burn', on: 'event:hitTaken', when: { all: [FROM_ENEMY, IS_HEAT] }, do: [addCell('thorns', -5)] },
+    { id: 'self', on: 'event:hitTaken', when: { all: [FROM_SELF, IS_POISON] }, do: [addCell('thorns', capped(2, 0.1))] },
     { id: 'answer', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { cell: 'thorns', op: 'gt', v: 0 }] }, do: [
       { emit: 'world', verb: 'damage', damageType: 'piercing', scope: { frame: 'attacker' },
-        value: { expr: 'mul', a: { frame: 'amount' }, b: { expr: 'mul', a: 0.02, b: THORNS } } },
+        value: { expr: 'mul', a: BLOW, b: { expr: 'mul', a: 0.02, b: THORNS } } },
     ] },
   ],
 };

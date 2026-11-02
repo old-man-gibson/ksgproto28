@@ -15,7 +15,7 @@ adapter beside it. The port plan, with every step and what each one adds, is
 **Never edit a `facet.*.js` file here.** Edit the master in the Facet repo,
 then:
 
-1. `node test/run.js` in the Facet repo (the core's own cases, 55 as of
+1. `node test/run.js` in the Facet repo (the core's own cases, 58 as of
    Bramble).
 2. `node tools/sync.mjs` there. It writes every game's copy listed in
    `tools/targets.json`. For a copy in a worktree of this repo, name it:
@@ -57,7 +57,7 @@ Prestige starts a fresh state, so the ability goes with the run.
 | Its time outside a fight: one `Facet.minute` per game minute, travel and fights included | `tickFacets`, called from `Game.advance` beside `tickExposure` |
 | Its time in a fight: one `Facet.tick` per combat tick (`on: 'tick'` clauses) | `facetCombatTick` (signal.ts), called from combat.ts `tickCombat` after the enemies' conditions and before anyone swings; `sweepDead` runs right after it for whatever the ability killed |
 | Damage it deals | host.ts `applyDamage` → combat.ts `abilityStrike`: resistance, the target's conditions and the on-damage hooks, never a dodge, crit or variance. One feed line per fight per ability (`ability:<name>`), settled when the fight ends. |
-| Answering the enemy who hit you | health.ts `damagePlayer` names the attacker in `hitTaken` (`source.by`, set by combat.ts's two monster-blow sites: the blow and the graze); the document aims at it with `{ frame: 'attacker' }`. combat.ts `answeredToDeath` sweeps an attacker the answer killed before the enemy phase goes on, as a thorns ward's kill is swept. |
+| Answering the enemy who hit you | health.ts `damagePlayer` names the attacker in `hitTaken` (`source.by`, set by combat.ts's three monster sites: the blow, the graze and an enemy's spell) and passes the blow as thrown (`source.thrown`); the document aims at it with `{ frame: 'attacker' }`. combat.ts `answeredToDeath` sweeps an attacker the answer killed before the enemy phase goes on, as a thorns ward's kill is swept. A spell you cast on yourself passes `source.self` (`castCraftedSelf`). |
 | A pool cost it pays (the `spend` verb) | host.ts `spendPool` → `spendResource`; stamina, mana, spirit or focus, never HP |
 | Which state the core writes into | `bindFacets`. Offline catch-up ticks a detached copy of the state; the binding follows whichever state advances, and `Game.resyncAnnouncers` re-attaches after the contents are replaced (catch-up landing, import, reset, prestige). |
 | What the sidebar shows | `facetReadouts`: every cell whose document gives it a `show` hint, plus the document's `reading.inputs`. Those cells' statuses are left out of the status chips. |
@@ -92,11 +92,13 @@ running line of strikes per fight.
 
 **Bramble** is the fourth, and the first that answers the enemy who hit you.
 Each enemy blow raises a thorn level by 1 (cap 10, +1 per 200 fights this run,
-at most 50); each level returns 2% of the blow's damage to its attacker as
+at most 50), each second of fight time by floor(1 + 5% of the cap), and each
+Poison spell you cast on yourself by floor(2 + 10% of the cap). Each level
+returns 2% of the blow as thrown (before your armour) to its attacker as
 Piercing and slows the action bar (`fighter.speed`) by 0.5%. A Heat blow burns
 5 levels. Thorns clear when the fight ends. The user approved it without a
-note (team ability FLD-04); the readings are written above the document in the
-Facet bank. A condition ticking, a trap or your own backlash is not a blow:
+note (team ability FLD-04) and added the second and Poison growth on
+2026-11-01; the readings are written above the document in the Facet bank. A condition ticking, a trap or your own backlash is not a blow:
 it has no attacker, so it neither grows nor burns thorns. The thorn level
 rides a status (Thorns), which is how the slow reaches the stat block. To try
 it: Grant 🌿 Bramble and hunt; the feed shows one running line of thorns per
@@ -124,7 +126,7 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `kill` | bus `kill` | `level`, `boss` (1 when the enemy is a boss of the spot, combat.ts `isSpotBoss`) |
 | `fightWon` | bus `fight:won`, after the last `kill` | |
 | `fightEnd` | bus `fight:closed`, however the fight ended | `won` (0 or 1) |
-| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` (what reached HP), `type` (`'none'` when untyped), `attacker` (the enemy's ref, `''` for a condition, a trap or your own backlash) |
+| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` (what reached HP), `blow` (the blow as thrown, before armour, resistance and ward; `amount` when nothing was thrown), `type` (`'none'` when untyped), `attacker` (the enemy's ref, `''` for a condition, a trap or your own backlash), `self` (1 for a spell you cast on yourself) |
 | `hit`, `crit`, `dodge`, `parry`, `graze`, `enemyCast` | combat.ts `markCombatEvent` | |
 | `flaskUsed` | `Game.useFlask` | |
 | `itemUsed` | `Game.useConsumable` | |
@@ -141,7 +143,8 @@ field is missing, so a document should not guard on a field one game might not
 send. Little Moons adds the flag instead (`value: { frame: 'boss' }`), which
 reads a missing field as 0. Bramble guards on strings through `not`, which
 fails closed: `{ not: { frame: 'attacker', op: 'eq', v: '' } }` passes only
-when an attacker is named. This game always sends `type` and `attacker`.
+when an attacker is named. This game always sends `type`, `attacker` and
+`self`.
 
 **Why only bare imports.** The core files have no exports. A named import
 (`import { x } from './facet.core.js'`) passes vitest and fails `vite build`
