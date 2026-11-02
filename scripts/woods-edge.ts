@@ -53,7 +53,8 @@ import { expectedHitTaken, roughDps } from '../src/ui/lib/statSummary';
 import { incomingSlice, startForcedFight } from '../src/core/systems/combat';
 import { MONSTERS } from '../src/core/registry';
 import { baseMonsterAttrs } from '../src/core/systems/monsterStats';
-import { addSpell } from '../src/core/systems/spellcraft';
+import { addSpell, preparedCap, resolveSpellFor } from '../src/core/systems/spellcraft';
+import { TRIGGER_SUBJECTS, type TriggerSubjectDef } from '../src/core/systems/triggers';
 
 const args = process.argv.slice(2);
 const opt = (flag: string, fallback: string) => {
@@ -88,12 +89,17 @@ interface Variant {
   growth?: Partial<Record<AttributeId, number>>;
   /** The tutorial's one-word spell, prepared before the skip (INT 2). */
   spell?: string;
-  /** One-word sentences put in the grimoire and prepared, e.g. a mastered `fire:3`. */
-  spells?: string[];
+  /** Sentences put in the grimoire and prepared, e.g. [['fire:3'], ['slowly', 'fire:2']]. */
+  spells?: string[][];
+  /** Gate the self spells (see setSpellTriggers): wards on no buff, mendings on HP down by a heal. */
+  spellTriggers?: boolean;
 }
 
 /** The user's basic three (2026-11-02): Blaze, Sanctum, Renew. Not optimal on purpose. */
-const WIZARD_SPELLS = ['fire:3', 'ward:3', 'mend:3'];
+const WIZARD_SPELLS = [['fire:3'], ['ward:3'], ['mend:3']];
+/** The user's second set (2026-11-02): cheaper, castable from INT 3, 7 and 8. */
+const FIRE_SET = [['fire', 'quickly'], ['fire:2', 'quickly'], ['slowly', 'fire:2']];
+const WIZARD_GROWTH = { str: 0.33, dex: 0.33, con: 0.33, int: 3, wis: 1.2, cha: 0.8 };
 
 /**
  * Per-level growth to compare (user, 2026-11-02): +1 to all six stays until
@@ -103,7 +109,12 @@ const WIZARD_SPELLS = ['fire:3', 'ward:3', 'mend:3'];
 const GROWTH_VARIANTS: Variant[] = [
   { id: 'class-barbarian', martial: false, growth: { str: 1.3, dex: 1, con: 2, int: 0.3, wis: 0.8, cha: 0.6 } },
   { id: 'class-wizard', martial: false, spell: 'fire', growth: { str: 0.33, dex: 0.33, con: 0.33, int: 3, wis: 1.2, cha: 0.8 } },
-  { id: 'class-wizard3', martial: false, spells: WIZARD_SPELLS, growth: { str: 0.33, dex: 0.33, con: 0.33, int: 3, wis: 1.2, cha: 0.8 } },
+  { id: 'class-wizard3', martial: false, spells: WIZARD_SPELLS, growth: WIZARD_GROWTH },
+  { id: 'wiz3-triggers', martial: false, spells: WIZARD_SPELLS, growth: WIZARD_GROWTH, spellTriggers: true },
+  { id: 'wiz-fire-quickly', martial: false, spells: [FIRE_SET[0]], growth: WIZARD_GROWTH },
+  { id: 'wiz-flame-quickly', martial: false, spells: [FIRE_SET[1]], growth: WIZARD_GROWTH },
+  { id: 'wiz-slowly-flame', martial: false, spells: [FIRE_SET[2]], growth: WIZARD_GROWTH },
+  { id: 'wiz-fire-set', martial: false, spells: FIRE_SET, growth: WIZARD_GROWTH },
   { id: 'pts5-con', martial: false, growth: { con: 5 } },
 ];
 
@@ -154,6 +165,34 @@ function syncPoints(s: GameState): void {
   else delete s.achievements[POINTS_ID];
 }
 
+/**
+ * The user's triggers (2026-11-02): Sanctum at fight start and whenever no buff
+ * is up; Renew once HP is down by at least what Renew heals. One trigger per
+ * spell, its conditions ANDed, so "at fight start OR no buff" is the single
+ * condition "no buff": combat buffs start empty every fight. The engine has
+ * no buff subject; `player.buffCount` is added in process only. Renew's
+ * threshold is a share of max HP, so it is re-set as the character grows.
+ */
+(TRIGGER_SUBJECTS as Record<string, TriggerSubjectDef>)['player.buffCount'] = {
+  id: 'player.buffCount',
+  name: 'Your Buffs (sim)',
+  kind: 'number',
+  read: ({ combat }) => combat.buffs.length,
+};
+function setSpellTriggers(s: GameState): void {
+  const stats = getDerivedStats(s);
+  s.skillTriggers ??= {};
+  for (const spell of s.grimoire.filter((x) => x.prepared)) {
+    const spec = resolveSpellFor(s, spell);
+    const id = `grimoire:${spell.uid}`;
+    if (spec.buff) s.skillTriggers[id] = { conditions: [{ subject: 'player.buffCount', op: '==', value: 0 }] };
+    else if (spec.heal && !spec.healsEnemy) {
+      const share = Math.max(0, 1 - (spec.heal * stats.spellPower) / stats.maxHp);
+      s.skillTriggers[id] = { conditions: [{ subject: 'player.hpPct', op: '<=', value: Math.round(share * 1000) / 10 }] };
+    }
+  }
+}
+
 /** Progress as the game stores it: a level and the XP banked toward the next. */
 type Progress = { level: number; xp: number };
 /**
@@ -200,6 +239,10 @@ interface Run {
   fights: Fight[];
   /** Taken at the start of each attempt, plus one after the last. */
   snaps: Snapshot[];
+  /** The save as the last attempt left it (`--duel-after` fights with it). */
+  state: GameState;
+  /** Mana drops of 3 or more in one tick, by size: casts by spell cost. */
+  casts: Record<number, number>;
 }
 
 const skill = (s: GameState, id: string) => s.skills[id]?.level ?? 0;
@@ -225,7 +268,8 @@ function run(seed: number, variant: Variant): Run {
   const s = g.state;
   if (variant.spell && !g.chooseTutorialSpell(variant.spell)) throw new Error(`no spell ${variant.spell}`);
   g.skipTutorial();
-  for (const w of variant.spells ?? []) addSpell(s, { school: 'arcane', words: [w] }).prepared = true;
+  for (const words of variant.spells ?? []) addSpell(s, { school: 'arcane', words }).prepared = true;
+  if (variant.spellTriggers) setSpellTriggers(s);
   const sword = s.inventory.find((i) => i.defId === 'rusty_sword');
   if (sword && !s.equipment.weapon) g.equip(sword.uid, 'weapon');
   if (variant.martial) s.stats['flag:unlock_martial'] = 1;
@@ -242,12 +286,17 @@ function run(seed: number, variant: Variant): Run {
   if (!s.discovered.includes(CAMP)) s.discovered.push(CAMP);
   noteSafeSpot(s, CAMP);
 
-  const out: Run = { seed, variant, fights: [], snaps: [] };
+  const out: Run = { seed, variant, fights: [], snaps: [], state: s, casts: {} };
   const fresh = structuredClone({ attrs: s.attrs, skills: s.skills });
   const freeze = new Set(variant.freeze ?? []);
+  let ticks = 0;
   const step = () => {
     if (variant.growth) syncPoints(s);
+    if (variant.spellTriggers && ++ticks % 50 === 0) setSpellTriggers(s);
+    const manaBefore = s.resources.mana;
     g.tick();
+    const drop = Math.round(manaBefore - s.resources.mana);
+    if (drop >= 3) out.casts[drop] = (out.casts[drop] ?? 0) + 1;
     if (variant.growth) syncPoints(s);
     if (freeze.has('attrs')) for (const [k, v] of Object.entries(fresh.attrs)) Object.assign(s.attrs[k as keyof typeof s.attrs], v);
     if (freeze.has('skills')) s.skills = structuredClone(fresh.skills);
@@ -386,7 +435,7 @@ for (const v of VARIANTS.filter((x) => picked.includes(x.id))) {
   }
   const end = mine.map((r) => r.snaps[r.snaps.length - 1]);
   console.log(
-    `after ${ATTEMPTS}: lvl ${f1(mean(end.map((x) => x.level)))}, fighting ${f1(mean(end.map((x) => x.fighting)))}, sword ${f1(mean(end.map((x) => x.sword)))}, total wins ${f1(mean(end.map((x) => x.wins)))}`,
+    `after ${ATTEMPTS} (${f1(mean(end.map((x) => x.minute)))} game min): lvl ${f1(mean(end.map((x) => x.level)))}, fighting ${f1(mean(end.map((x) => x.fighting)))}, sword ${f1(mean(end.map((x) => x.sword)))}, total wins ${f1(mean(end.map((x) => x.wins)))}`,
   );
   // The attempt by which a run first wins more fights than it loses (wins > 1 in one attempt).
   const turn = mine.map((r) => {
@@ -397,6 +446,17 @@ for (const v of VARIANTS.filter((x) => picked.includes(x.id))) {
   const at = mine.map((r, i) => (turn[i] ? r.snaps[turn[i]! - 1].minute : null));
   console.log(`  ...game minutes played by then: ${at.map((x) => (x === null ? '—' : x.toFixed(0))).join(' ')}`);
   console.log(`knockouts per run over ${ATTEMPTS} attempts: ${f1(mean(mine.map((r) => r.fights.filter((f) => !f.won).length)))}`);
+  if (v.spells) {
+    // What casting taught: Arcana, Magic, each word, and the prepared cap they buy.
+    const lvl = (r: Run, id: string) => r.state.skills[id]?.level ?? 0;
+    const words = [...new Set(v.spells.flat().map((w) => w.split(':')[0]))];
+    console.log(
+      `practice after ${ATTEMPTS}: INT ${f1(mean(mine.map((r) => effectiveAttr(r.state, 'int'))))}, arcana ${f1(mean(mine.map((r) => lvl(r, 'arcana'))))}, magic ${f1(mean(mine.map((r) => lvl(r, 'magic'))))}, ` +
+        words.map((w) => `${w} ${f1(mean(mine.map((r) => lvl(r, `word_${w}`))))}`).join(', ') +
+        `, prepared cap ${f1(mean(mine.map((r) => preparedCap(r.state))))}` +
+        `, casts per run by mana cost ${JSON.stringify(Object.fromEntries([...new Set(mine.flatMap((r) => Object.keys(r.casts)))].sort((a, b) => +a - +b).map((k) => [k, Math.round(mean(mine.map((r) => r.casts[+k] ?? 0)))])))}`,
+    );
+  }
   if (verbose)
     for (const r of mine) {
       console.log(`  seed ${r.seed}`);
@@ -505,7 +565,81 @@ if (args.includes('--power')) {
 // spot and seed, each from full HP and mana, growth held. The rows differ only
 // in per-level growth and the grimoire, so this reads what a class vector
 // plus three basic spells buys against monsters well above level 1. A cast is
-// counted as a drop of 5 mana or more in one tick.
+// counted as a drop of more than 2.5 mana in one tick (the cheapest spell here costs 3).
+const full = (s: GameState) => {
+  const st = getDerivedStats(s);
+  s.statuses = [];
+  s.resources.hp = st.maxHp;
+  s.resources.stamina = st.maxStamina;
+  s.resources.mana = st.maxMana;
+};
+type Duel = { won: boolean; ticks: number; hpLost: number; casts: number };
+/** `n` fights at a hunt spot, or `n` walk-ins at a forced (boss) spot, with `v`'s growth held at the save's level. */
+function duelGame(g: Game, v: Variant, spotId: string, n: number): Duel[] {
+  const s = g.state;
+  const level = s.level;
+  if (v.spellTriggers) setSpellTriggers(s);
+  const held = structuredClone({ attrs: s.attrs, skills: s.skills });
+  const hold = () => {
+    for (const [k, x] of Object.entries(held.attrs)) Object.assign(s.attrs[k as AttributeId], x);
+    s.skills = structuredClone(held.skills);
+    s.level = level;
+    s.levelXp = 0;
+    if (v.growth) syncPoints(s);
+  };
+  const forced = !!SPOTS[spotId].forced;
+  const out: Duel[] = [];
+  let start = 0;
+  let hp0 = 0;
+  let max0 = 1;
+  let casts = 0;
+  let mana = 0;
+  for (let t = 0, idle = 0; out.length < n && idle < 600 * TPS; t++) {
+    if (!s.combat) {
+      if (forced || s.spot !== spotId || s.activity !== 'hunt' || s.recovering) {
+        s.recovering = false;
+        s.travel = null;
+        s.travelPlan = [];
+        s.spot = spotId;
+        s.respawnTimer = 0;
+        full(s);
+        if (forced) {
+          // A fresh walk-in: the boss row is `once`, so its kill is wiped.
+          for (const k of Object.keys(s.stats)) if (k.startsWith(`slain:${spotId}:`) || k === `fights:${spotId}`) delete s.stats[k];
+          startForcedFight(s, g.bus, SPOTS[spotId]);
+          // The fight is already on before the tick below: take its start here.
+          start = t;
+          hp0 = s.resources.hp;
+          max0 = getDerivedStats(s).maxHp;
+          casts = 0;
+          mana = s.resources.mana;
+        } else g.selectActivity('hunt');
+      }
+    }
+    const before = !!s.combat;
+    if (before && s.resources.mana < mana - 2.5) casts++;
+    mana = s.resources.mana;
+    g.tick();
+    hold();
+    if (!before && s.combat) {
+      start = t;
+      hp0 = s.resources.hp;
+      max0 = getDerivedStats(s).maxHp;
+      casts = 0;
+      mana = s.resources.mana;
+    } else if (before && !s.combat) {
+      const won = !s.recovering;
+      out.push({ won, ticks: t - start, hpLost: won ? (hp0 - s.resources.hp) / max0 : hp0 / max0, casts });
+      if (won && !forced) {
+        full(s);
+        s.respawnTimer = 0;
+      }
+    }
+    idle = s.combat ? 0 : idle + 1;
+  }
+  return out;
+}
+
 if (args.includes('--duels')) {
   const rows: Variant[] = [
     { id: 'today', martial: false },
@@ -520,7 +654,7 @@ if (args.includes('--duels')) {
     const g = new Game(createInitialState(seed));
     const s = g.state;
     g.skipTutorial();
-    for (const w of v.spells ?? []) addSpell(s, { school: 'arcane', words: [w] }).prepared = true;
+    for (const words of v.spells ?? []) addSpell(s, { school: 'arcane', words }).prepared = true;
     const blade = s.inventory.find((i) => i.defId === 'rusty_sword');
     if (blade) g.equip(blade.uid, 'weapon');
     if (v.growth) installGrowth(v.growth);
@@ -529,84 +663,44 @@ if (args.includes('--duels')) {
     if (v.growth) syncPoints(s);
     return g;
   };
-  const full = (s: GameState) => {
-    const st = getDerivedStats(s);
-    s.statuses = [];
-    s.resources.hp = st.maxHp;
-    s.resources.stamina = st.maxStamina;
-    s.resources.mana = st.maxMana;
-  };
-  type Duel = { won: boolean; ticks: number; hpLost: number; casts: number };
-  /** `n` fights at a hunt spot, or `n` walk-ins at a forced (boss) spot. */
-  const duels = (v: Variant, seed: number, level: number, spotId: string, n: number): Duel[] => {
-    const g = character(v, seed, level);
-    const s = g.state;
-    const held = structuredClone({ attrs: s.attrs, skills: s.skills });
-    const hold = () => {
-      for (const [k, x] of Object.entries(held.attrs)) Object.assign(s.attrs[k as AttributeId], x);
-      s.skills = structuredClone(held.skills);
-      s.level = level;
-      s.levelXp = 0;
-      if (v.growth) syncPoints(s);
-    };
-    const forced = !!SPOTS[spotId].forced;
-    const out: Duel[] = [];
-    let start = 0;
-    let hp0 = 0;
-    let max0 = 1;
-    let casts = 0;
-    let mana = 0;
-    for (let t = 0, idle = 0; out.length < n && idle < 600 * TPS; t++) {
-      if (!s.combat) {
-        if (forced || s.spot !== spotId || s.activity !== 'hunt' || s.recovering) {
-          s.recovering = false;
-          s.travel = null;
-          s.travelPlan = [];
-          s.spot = spotId;
-          s.respawnTimer = 0;
-          full(s);
-          if (forced) {
-            // A fresh walk-in: the boss row is `once`, so its kill is wiped.
-            for (const k of Object.keys(s.stats)) if (k.startsWith(`slain:${spotId}:`) || k === `fights:${spotId}`) delete s.stats[k];
-            startForcedFight(s, g.bus, SPOTS[spotId]);
-          } else g.selectActivity('hunt');
-        }
-      }
-      const before = !!s.combat;
-      if (before && s.resources.mana < mana - 5) casts++;
-      mana = s.resources.mana;
-      g.tick();
-      hold();
-      if (!before && s.combat) {
-        start = t;
-        hp0 = s.resources.hp;
-        max0 = getDerivedStats(s).maxHp;
-        casts = 0;
-        mana = s.resources.mana;
-      } else if (before && !s.combat) {
-        const won = !s.recovering;
-        out.push({ won, ticks: t - start, hpLost: won ? (hp0 - s.resources.hp) / max0 : hp0 / max0, casts });
-        if (won && !forced) {
-          full(s);
-          s.respawnTimer = 0;
-        }
-      }
-      idle = s.combat ? 0 : idle + 1;
-    }
-    return out;
-  };
   for (const level of levels) {
     console.log(`\n== Duels at level ${level}: ${seeds.length} seeds × ${FIGHTS} fights per cell, full HP and mana each fight ==`);
     console.log('cells: win rate / kill s / HP lost per win / casts per fight');
     console.log('row              ' + spots.map((x) => x.padEnd(26)).join(''));
     for (const v of rows) {
       const cells = spots.map((spotId) => {
-        const fights = seeds.flatMap((seed) => duels(v, seed, level, spotId, FIGHTS));
+        const fights = seeds.flatMap((seed) => duelGame(character(v, seed, level), v, spotId, FIGHTS));
         const won = fights.filter((f) => f.won);
         return `${pct(won.length / fights.length)} / ${f1(mean(won.map((f) => f.ticks / TPS)))} / ${pct(mean(won.map((f) => f.hpLost)))} / ${f1(mean(fights.map((f) => f.casts)))}`.padEnd(26);
       });
       console.log(`${v.id.padEnd(16)} ${cells.join('')}`);
     }
+  }
+  uninstallPoints();
+}
+
+// ---------- Duels with the save each run ended with ----------
+//
+// `--duel-after`: every picked variant's runs, as their last attempt left them
+// (levels, attributes, Arcana and word skills earned by casting), fight the
+// strong spots from full HP and mana, growth held. Practice counts here, which
+// `--duels` (a fresh save set to a level) leaves out.
+if (args.includes('--duel-after')) {
+  const spots = opt('--duel-spots', 'f4_woods_edge,f4_deep_woods,f5_hollows,f6_tunnels,f6_drop,f6_great_hall').split(',');
+  const FIGHTS = Number(opt('--fights', '15'));
+  console.log(`\n== Duels with each run's final save: ${seeds.length} runs × ${FIGHTS} fights per cell, full HP and mana each fight ==`);
+  console.log('cells: win rate / kill s / HP lost per win / casts per fight');
+  console.log('variant            lvl   ' + spots.map((x) => x.padEnd(26)).join(''));
+  for (const v of VARIANTS.filter((x) => picked.includes(x.id))) {
+    const mine = runs.filter((r) => r.variant.id === v.id);
+    if (v.growth) installGrowth(v.growth);
+    else uninstallPoints();
+    const cells = spots.map((spotId) => {
+      const fights = mine.flatMap((r) => duelGame(new Game(structuredClone(r.state)), v, spotId, FIGHTS));
+      const won = fights.filter((f) => f.won);
+      return `${pct(won.length / fights.length)} / ${f1(mean(won.map((f) => f.ticks / TPS)))} / ${pct(mean(won.map((f) => f.hpLost)))} / ${f1(mean(fights.map((f) => f.casts)))}`.padEnd(26);
+    });
+    console.log(`${v.id.padEnd(18)} ${f1(mean(mine.map((r) => r.state.level))).padStart(4)}  ${cells.join('')}`);
   }
   uninstallPoints();
 }
