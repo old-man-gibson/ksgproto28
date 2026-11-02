@@ -303,6 +303,13 @@ function resolveArg(arg, ctx) {
 function resolveScope(scope, ctx) {
   const host = F.host();
   if (!scope) return [ctx.ref];
+  // `{ frame: 'attacker' }` targets the ref an event names, such as the enemy whose blow raised
+  // hitTaken. No ref, or a dead one, targets nothing: a reflected thorn has no one to reach.
+  if (scope.frame !== undefined) {
+    const src = ctx.frame || ctx.detail || {};
+    const ref = src[scope.frame];
+    return (typeof ref === 'string' && ref && host.isAlive(ref)) ? [ref] : [];
+  }
   return host.resolve(ctx.ref, scope) || [];
 }
 

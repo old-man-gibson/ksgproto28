@@ -42,7 +42,8 @@ export interface FacetDoc {
   v?: number;
   cells?: FacetCell[];
   clauses: unknown[];
-  reading?: { name?: string; icon?: string; inputs?: FacetInput[] };
+  /** Display hints. `hit` is what the feed calls the ability's damage lines ('strike' when unset). */
+  reading?: { name?: string; icon?: string; inputs?: FacetInput[]; hit?: string };
   [field: string]: unknown;
 }
 

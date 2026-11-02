@@ -12,6 +12,9 @@ import type { GameState } from '../types';
 /** The player's ref. Refs are strings so they survive JSON and the core's Map keys. */
 export const PLAYER_REF = 'player';
 
+/** An enemy's ref is this plus its slot in the fight (`foe:0` is the front). */
+export const FOE = 'foe:';
+
 /**
  * Event ids are shared vocabulary, like quantity ids: one document listens
  * for `fightWon` in both games, and each game says where it raises it. A
@@ -23,7 +26,7 @@ export const PLAYER_REF = 'player';
  * | kill | an enemy dies (bus `kill`) | level, boss (1 for the spot's boss) |
  * | fightWon | the last enemy fell (bus `fight:won`), after its `kill` | |
  * | fightEnd | a fight closed however it ended (bus `fight:closed`) | won (0 or 1) |
- * | hitTaken | any damage reached the player (health.ts damagePlayer) | amount |
+ * | hitTaken | any damage reached the player (health.ts damagePlayer) | amount, type ('none' when untyped), attacker (the enemy's ref; '' for a condition, a trap, your own backlash) |
  * | hit, crit, dodge, parry, graze, enemyCast | combat's trigger stamps (markCombatEvent) | |
  * | flaskUsed | an alchemy flask was used (Game.useFlask) | |
  * | itemUsed | a consumable was used (Game.useConsumable) | |

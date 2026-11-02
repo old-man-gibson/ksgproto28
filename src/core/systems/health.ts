@@ -1,7 +1,7 @@
-import type { DamageType, DerivedStats, GameState } from '../types';
+import type { DamageType, DerivedStats, GameState, MonsterInstance } from '../types';
 import { availableMax, resourceValue, restoreResource, setResource, spendResource } from './resources';
 import { fireStatusEvent, healAllowance, noteHealed } from './statuses';
-import { facetSignal } from '../facet/signal';
+import { FOE, facetSignal } from '../facet/signal';
 
 /**
  * The damage types that stop a MONSTER knitting. Fire and acid: the two that
@@ -102,7 +102,7 @@ export function damagePlayer(
   state: GameState,
   amount: number,
   type?: DamageType,
-  source?: { key: string; label: string; icon: string } | null,
+  source?: { key: string; label: string; icon: string; by?: MonsterInstance } | null,
 ): number {
   if (amount <= 0) return 0;
   const lost = spendResource(state, 'hp', amount);
@@ -124,7 +124,10 @@ export function damagePlayer(
   // blow was rather than how many there were (StatusRemoval.afterDamage).
   fireStatusEvent(state, state, 'damageTaken', type ? { damageType: type, amount: lost } : { amount: lost });
   // The run's ability hears every blow from the same door (facet/signal.ts).
-  facetSignal(state, 'hitTaken', { amount: lost });
+  // `by` is the enemy whose blow it was, so the ability can answer it; a
+  // condition ticking or your own backlash names none.
+  const slot = source?.by ? (state.combat?.enemies.indexOf(source.by) ?? -1) : -1;
+  facetSignal(state, 'hitTaken', { amount: lost, type: type ?? 'none', attacker: slot >= 0 ? FOE + slot : '' });
   // A body that knits itself back together stops while it is being burned or
   // eaten — but that rule is no longer written here. It rides the `knitting`
   // condition the gene confers, whose own `removal` names the types that douse

@@ -227,4 +227,67 @@ B.little_moons = {
     { id: 'wait', on: 'tick', when: { cell: 'win', op: 'gt', v: 1 }, do: [addCell('win', -1)] },
   ],
 };
+
+// ---------- Bramble ----------
+//
+// Approved by the user (team ability FLD-04, review page 1), no note:
+//   Does: Each hit you take raises your thorn level by 1 until the fight ends. Each level returns
+//         2% of every blow's damage to its attacker.
+//   Costs: Each level slows your actions by 0.5%.
+//   Grows: The level cap starts at 10. It rises by 1 per 200 fights fought.
+//   Fails: Fire damage you take burns away 5 levels per hit.
+//   Limit: The level cap tops out at 50. Thorns clear when the fight ends.
+// The entry predates the damage-type list: Fire is Heat.
+//
+// Readings taken (the entry does not say):
+//   - A hit is a blow from an enemy. A condition ticking, a trap or your own backlash is not, so it
+//     neither grows nor burns thorns and has no attacker to answer.
+//   - The blow grows the thorn first, then the thorns answer it: the first hit of a fight returns
+//     2%, the tenth 20%.
+//   - A Heat blow burns 5 levels and grows none. What is left still answers it.
+//   - The returned damage is Piercing, and the blow's damage is what reached your HP. Thorns that
+//     returned the blow's own type would barely scratch a fire elemental's heat blows.
+//   - "Fights fought" counts fights this run, won or lost.
+//
+//   thorns   the level, cleared at each fight's start and end. Its carrier slows `fighter.speed`
+//            (the action bar's fill) by 0.5% per level.
+//   fights   fights ended this run; the cap is 10 + floor(fights / 200), at most 50.
+//
+// Events: hitTaken (detail amount, type, attacker), fightStart, fightEnd. Needs a host that names
+// the attacker's ref in hitTaken, resolves it, and has applyDamage. The guards read `type` and
+// `attacker` through `not`, so they fail closed: a host that does not report the fields never grows
+// or burns thorns, rather than growing them on every hit (a bare frame guard passes when the field
+// is missing).
+const THORNS = { cell: 'thorns' };
+const FROM_ENEMY = { not: { frame: 'attacker', op: 'eq', v: '' } };
+const IS_HEAT = { not: { frame: 'type', op: 'ne', v: 'heat' } };
+
+B.bramble = {
+  v: 1,
+  reading: { name: 'Bramble', icon: '🌿', hit: 'thorns' },
+  cells: [
+    {
+      key: 'thorns', label: 'Thorns', icon: '🌿', hold: 'none', level: 'int', tier: 'fight', show: 'count',
+      cap: { expr: 'min', a: 50, b: { expr: 'add', a: 10, b: { expr: 'floor', a: { expr: 'div', a: { cell: 'fights' }, b: 200 } } } },
+      status: {
+        desc: 'Each level returns 2% of every blow to its attacker and slows your actions by 0.5%. Heat burns 5 levels a hit. Clears when the fight ends.',
+        mods: [{ q: 'fighter.speed', op: 'mult', value: -0.005 }],
+      },
+    },
+    {
+      key: 'fights', label: 'Fights fought', icon: '⚔️', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, carrier: false,
+      status: { desc: 'The thorn cap starts at 10 and rises by 1 per 200 fights this run, up to 50.' },
+    },
+  ],
+  clauses: [
+    { id: 'start', on: 'event:fightStart', do: [setCell('thorns', 0)] },
+    { id: 'end', on: 'event:fightEnd', do: [setCell('thorns', 0), addCell('fights', 1)] },
+    { id: 'grow', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { not: IS_HEAT }] }, do: [addCell('thorns', 1)] },
+    { id: 'burn', on: 'event:hitTaken', when: { all: [FROM_ENEMY, IS_HEAT] }, do: [addCell('thorns', -5)] },
+    { id: 'answer', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { cell: 'thorns', op: 'gt', v: 0 }] }, do: [
+      { emit: 'world', verb: 'damage', damageType: 'piercing', scope: { frame: 'attacker' },
+        value: { expr: 'mul', a: { frame: 'amount' }, b: { expr: 'mul', a: 0.02, b: THORNS } } },
+    ] },
+  ],
+};
 })();

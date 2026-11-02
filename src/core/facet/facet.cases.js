@@ -419,6 +419,69 @@ CASES['bank: Little Moons goes dark when mana runs out'] = (assert) => {
   assert(hits.length > 0, 'the moons stayed dark after the pool refilled');
 };
 
+// A host whose enemies record damage, and where the ref 'dead' is not alive.
+function thornHost() {
+  const hits = [];
+  const H = fakeHost({
+    isAlive: (r) => r !== 'dead',
+    applyDamage: (r, amount, type) => { hits.push({ r, amount, type }); return amount; },
+  });
+  return { H, hits };
+}
+
+CASES['scope: frame targets the ref an event names, and nothing when it is missing or dead'] = (assert) => {
+  const { H, hits } = thornHost();
+  F.install(H);
+  const facet = F.hydrate({ v: 1, cells: [], clauses: [
+    { id: 'c1', on: 'event:hitTaken', do: [{ emit: 'world', verb: 'damage', damageType: 'piercing', scope: { frame: 'attacker' }, value: { frame: 'amount' } }] },
+  ] });
+  F.attach('a', [facet]);
+  F.event('hitTaken', 'a', { amount: 10, attacker: 'e2' });
+  assert(hits.length === 1 && hits[0].r === 'e2' && hits[0].amount === 10, 'the attacker was not the target: ' + JSON.stringify(hits));
+  F.event('hitTaken', 'a', { amount: 10, attacker: '' });
+  F.event('hitTaken', 'a', { amount: 10 });
+  F.event('hitTaken', 'a', { amount: 10, attacker: 'dead' });
+  assert(hits.length === 1, 'an empty, missing or dead attacker was hit: ' + JSON.stringify(hits));
+};
+
+CASES['bank: Bramble grows on enemy blows, answers the attacker and burns on Heat'] = (assert) => {
+  const { H, hits } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  const thorns = () => doc.cells[0].state.v;
+  F.event('fightStart', 'a', {});
+  F.event('hitTaken', 'a', { amount: 100, type: 'slashing', attacker: 'e1' });
+  assert(thorns() === 1, 'one blow made ' + thorns() + ' thorns');
+  assert(hits.length === 1 && hits[0].r === 'e1' && hits[0].type === 'piercing' && Math.abs(hits[0].amount - 2) < 1e-9,
+    'the first blow should return 2 piercing to e1, got ' + JSON.stringify(hits));
+  // A condition ticking has no attacker: no thorn, no answer.
+  F.event('hitTaken', 'a', { amount: 100, type: 'poison', attacker: '' });
+  assert(thorns() === 1 && hits.length === 1, 'a hit with no attacker grew or answered');
+  // A host that reports neither field never grows thorns (the guards fail closed).
+  F.event('hitTaken', 'a', { amount: 100 });
+  assert(thorns() === 1, 'a hit with no attacker field grew a thorn');
+  for (let i = 0; i < 15; i++) F.event('hitTaken', 'a', { amount: 100, type: 'slashing', attacker: 'e1' });
+  assert(thorns() === 10, 'the cap of 10 did not hold: ' + thorns());
+  assert(Math.abs(hits[hits.length - 1].amount - 20) < 1e-9, 'ten levels should return 20% of the blow');
+  F.event('hitTaken', 'a', { amount: 100, type: 'heat', attacker: 'e1' });
+  assert(thorns() === 5, 'a Heat blow should burn 5 of 10, left ' + thorns());
+  assert(Math.abs(hits[hits.length - 1].amount - 10) < 1e-9, 'the thorns left after the burn should answer the Heat blow');
+  F.event('fightEnd', 'a', { won: 1 });
+  assert(thorns() === 0, 'thorns outlived the fight');
+};
+
+CASES['bank: Bramble raises its cap by 1 per 200 fights'] = (assert) => {
+  const { H } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  for (let i = 0; i < 400; i++) F.event('fightEnd', 'a', { won: 1 });
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 20; i++) F.event('hitTaken', 'a', { amount: 1, type: 'slashing', attacker: 'e1' });
+  assert(doc.cells[0].state.v === 12, '400 fights should cap thorns at 12, got ' + doc.cells[0].state.v);
+};
+
 // ---------- the bank ----------
 // Game behaviour is each game's test; this checks only that every entry is a document the
 // compiler accepts and that granting one copies it instead of sharing the template.

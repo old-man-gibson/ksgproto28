@@ -15,8 +15,8 @@ adapter beside it. The port plan, with every step and what each one adds, is
 **Never edit a `facet.*.js` file here.** Edit the master in the Facet repo,
 then:
 
-1. `node test/run.js` in the Facet repo (the core's own cases, 52 as of
-   Little Moons).
+1. `node test/run.js` in the Facet repo (the core's own cases, 55 as of
+   Bramble).
 2. `node tools/sync.mjs` there. It writes every game's copy listed in
    `tools/targets.json`. For a copy in a worktree of this repo, name it:
    `node tools/sync.mjs --to D:/ksgproto28/.claude/worktrees/<name>/src/core/facet`.
@@ -38,7 +38,7 @@ reports a copy that has drifted from the master.
 | `src/core/facet/signal.ts` | The fight events the ability hears, and which state the core is bound to. Imports nothing but types, so health.ts and combat.ts can call it. |
 | `src/core/facet/quantities.ts` | Every number a document may read, with its id. |
 | `tests/facet.test.ts` | The manifest check, the core's corpus run through this game's loader, and the adapter. |
-| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
+| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts`, `tests/bramble.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
 
 The adapter is installed once at boot in `src/ui/state.svelte.ts`, after the
 save loads, and bound to the loaded state before anything renders.
@@ -57,6 +57,7 @@ Prestige starts a fresh state, so the ability goes with the run.
 | Its time outside a fight: one `Facet.minute` per game minute, travel and fights included | `tickFacets`, called from `Game.advance` beside `tickExposure` |
 | Its time in a fight: one `Facet.tick` per combat tick (`on: 'tick'` clauses) | `facetCombatTick` (signal.ts), called from combat.ts `tickCombat` after the enemies' conditions and before anyone swings; `sweepDead` runs right after it for whatever the ability killed |
 | Damage it deals | host.ts `applyDamage` → combat.ts `abilityStrike`: resistance, the target's conditions and the on-damage hooks, never a dodge, crit or variance. One feed line per fight per ability (`ability:<name>`), settled when the fight ends. |
+| Answering the enemy who hit you | health.ts `damagePlayer` names the attacker in `hitTaken` (`source.by`, set by combat.ts's two monster-blow sites: the blow and the graze); the document aims at it with `{ frame: 'attacker' }`. combat.ts `answeredToDeath` sweeps an attacker the answer killed before the enemy phase goes on, as a thorns ward's kill is swept. |
 | A pool cost it pays (the `spend` verb) | host.ts `spendPool` → `spendResource`; stamina, mana, spirit or focus, never HP |
 | Which state the core writes into | `bindFacets`. Offline catch-up ticks a detached copy of the state; the binding follows whichever state advances, and `Game.resyncAnnouncers` re-attaches after the contents are replaced (catch-up landing, import, reset, prestige). |
 | What the sidebar shows | `facetReadouts`: every cell whose document gives it a `show` hint, plus the document's `reading.inputs`. Those cells' statuses are left out of the status chips. |
@@ -89,6 +90,18 @@ stat cache, which would otherwise rebuild on every combat tick. To try it:
 Grant 🌙 Little Moons and hunt with mana in the pool; the feed shows one
 running line of strikes per fight.
 
+**Bramble** is the fourth, and the first that answers the enemy who hit you.
+Each enemy blow raises a thorn level by 1 (cap 10, +1 per 200 fights this run,
+at most 50); each level returns 2% of the blow's damage to its attacker as
+Piercing and slows the action bar (`fighter.speed`) by 0.5%. A Heat blow burns
+5 levels. Thorns clear when the fight ends. The user approved it without a
+note (team ability FLD-04); the readings are written above the document in the
+Facet bank. A condition ticking, a trap or your own backlash is not a blow:
+it has no attacker, so it neither grows nor burns thorns. The thorn level
+rides a status (Thorns), which is how the slow reaches the stat block. To try
+it: Grant 🌿 Bramble and hunt; the feed shows one running line of thorns per
+fight.
+
 ### Enemies as refs
 
 A document aims at enemies through scopes, and the adapter names each enemy
@@ -111,7 +124,7 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `kill` | bus `kill` | `level`, `boss` (1 when the enemy is a boss of the spot, combat.ts `isSpotBoss`) |
 | `fightWon` | bus `fight:won`, after the last `kill` | |
 | `fightEnd` | bus `fight:closed`, however the fight ended | `won` (0 or 1) |
-| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` |
+| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` (what reached HP), `type` (`'none'` when untyped), `attacker` (the enemy's ref, `''` for a condition, a trap or your own backlash) |
 | `hit`, `crit`, `dodge`, `parry`, `graze`, `enemyCast` | combat.ts `markCombatEvent` | |
 | `flaskUsed` | `Game.useFlask` | |
 | `itemUsed` | `Game.useConsumable` | |
@@ -126,7 +139,9 @@ cancel it) needs the staged damage path (K2).
 A frame guard (`when: { frame: 'boss', op: 'eq', v: 1 }`) passes when the
 field is missing, so a document should not guard on a field one game might not
 send. Little Moons adds the flag instead (`value: { frame: 'boss' }`), which
-reads a missing field as 0.
+reads a missing field as 0. Bramble guards on strings through `not`, which
+fails closed: `{ not: { frame: 'attacker', op: 'eq', v: '' } }` passes only
+when an attacker is named. This game always sends `type` and `attacker`.
 
 **Why only bare imports.** The core files have no exports. A named import
 (`import { x } from './facet.core.js'`) passes vitest and fails `vite build`
@@ -191,3 +206,11 @@ own stat name.
 - The `spend` world verb (`{ emit: 'world', verb: 'spend', pool: 'mana',
   value }`) pays from a pool through the host's `spendPool`, up to what is
   held. A quantity write cannot do this: those are overrides on a reading.
+
+## Core additions for Bramble (2026-11-01)
+
+- `{ frame: 'attacker' }` as a scope targets the ref an event names in that
+  field, and nothing when it is empty or dead (facet.compile.js
+  `resolveScope`).
+- `reading.hit`, a display hint: what the feed calls the ability's damage
+  lines (`'thorns'`; `'strike'` when unset).

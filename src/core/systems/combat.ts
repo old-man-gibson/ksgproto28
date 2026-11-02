@@ -261,7 +261,7 @@ function landMonsterGraze(
     kit.range === 'ranged',
   );
   const dealt = Math.max(1, Math.round(slice.dealt));
-  damagePlayer(state, dealt, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon });
+  damagePlayer(state, dealt, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon, by: e });
   return dealt;
 }
 
@@ -3336,7 +3336,7 @@ export function abilityStrike(
   index: number,
   amount: number,
   type: DamageType,
-  by: { name: string; icon: string },
+  by: { name: string; icon: string; hit?: string },
 ): number {
   const monster = state.combat?.enemies[index];
   if (!monster || monster.hp <= 0 || !(amount > 0)) return 0;
@@ -3360,13 +3360,26 @@ export function abilityStrike(
     group: ABILITY_RUN + by.name,
     prefix: `${by.icon} ${by.name}:`,
     tally: [
-      { label: 'strike', qty: 1 },
+      { label: by.hit ?? 'strike', qty: 1 },
       { label: 'damage', qty: dmg, style: 'amount' },
     ],
     ids: [],
     damage: { label: by.name, target: monster.name, steps, slices: [...slices.values()], hits: 1, crit: false, total: dmg },
   });
   return dmg;
+}
+
+/**
+ * The run's ability can answer an enemy's blow from inside damagePlayer
+ * (Bramble's thorns, through hitTaken). An attacker the answer killed is swept
+ * at once, as a thorns ward's kill is (applyRetaliation), so a dead enemy
+ * never stays in the line for the rest of the phase. True when the phase must
+ * stop. A knocked-out player is left to the defeat check.
+ */
+function answeredToDeath(state: GameState, bus: EventBus, e: MonsterInstance): boolean {
+  if (e.hp > 0 || !isAlive(state)) return false;
+  sweepDead(state, bus);
+  return true;
 }
 
 /**
@@ -4677,6 +4690,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       markCombatEvent(state, 'onDodge');
       bumpStat(state, bus, 'combat:dodges');
       if (!isAlive(state)) return;
+      if (answeredToDeath(state, bus, e)) return;
       // Nothing landed, so nothing was resolved — what the swing was WORTH is
       // the honest measure of what the footwork saved.
       noteDodge(state, es.damage * mod.damage * positionIncomingMult(state, stats.stumbleTaken));
@@ -4867,7 +4881,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // already computing here and throwing away a line later. Clamped: a bite
     // amplifying past what was thrown is extra hurt, not negative absorption.
     noteAbsorbed(state, Math.max(0, thrown - dmg));
-    damagePlayer(state, dmg, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon });
+    damagePlayer(state, dmg, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon, by: e });
     const res = stats[RES_STAT_BY_TYPE[type]];
     markCombatEvent(state, 'onHit');
     bumpStat(state, bus, 'combat:hitsTaken');
@@ -4908,6 +4922,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     );
     // Contact cuts both ways: a shard-bound body answers whatever touched it.
     if (e.range === 'melee' && applyRetaliation(state, bus, 'onContact', i)) return;
+    if (answeredToDeath(state, bus, e)) return;
     // And the attacker's own conditions cost it for swinging.
     if (applyMonsterRetaliation(state, bus, i, 'onAttack')) return;
 

@@ -14,7 +14,7 @@ import { spendResource } from '../systems/resources';
 import { FACET_POOLS, facetQuantities, readQuantity } from './quantities';
 import type { EventBus } from '../engine/events';
 import type { FacetDoc, FacetHost } from './facet';
-import { bindFacets, boundState, facetSignal, PLAYER_REF } from './signal';
+import { bindFacets, boundState, facetSignal, FOE, PLAYER_REF } from './signal';
 import './load';
 
 /**
@@ -45,6 +45,11 @@ import './load';
  * pool cost. tickCombat calls `Facet.tick` once per combat tick
  * (signal.ts `facetCombatTick`). Still player-only: anything that reads an
  * enemy's quantities (K4), and damage aimed at the player.
+ *
+ * Bramble: hitTaken names the enemy whose blow it was (`attacker`, from
+ * health.ts damagePlayer's `source.by`), and a document aims at it with the
+ * core's `{ frame: 'attacker' }` scope. combat.ts sweeps an attacker the
+ * answer killed before the enemy phase goes on (`answeredToDeath`).
  */
 
 export { bindFacets, facetSignal, PLAYER_REF } from './signal';
@@ -85,11 +90,9 @@ const STATUS_SCHEMA = {
   },
 };
 
-/**
- * An enemy's ref is its slot in `combat.enemies`. A ref lives for one call:
- * slots move when the front enemy dies, so nothing keeps one.
- */
-const FOE = 'foe:';
+// An enemy's ref is FOE plus its slot in `combat.enemies` (signal.ts, where
+// health.ts reads it for hitTaken's attacker). A ref lives for one call: slots
+// move when the front enemy dies, so nothing keeps one.
 
 function livingFoes(state: GameState): string[] {
   return (state.combat?.enemies ?? []).flatMap((e, i) => (e && e.hp > 0 ? [FOE + i] : []));
@@ -242,6 +245,7 @@ export function createFacetHost(getState: () => GameState): FacetHost {
       return abilityStrike(state, Number(ref.slice(FOE.length)), amount, known, {
         name: doc?.reading?.name ?? 'Ability',
         icon: doc?.reading?.icon ?? '✦',
+        hit: doc?.reading?.hit,
       });
     },
     // A pool cost (the `spend` verb): stamina, mana, spirit or focus, never HP.
