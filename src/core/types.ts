@@ -4718,12 +4718,14 @@ export interface BandDef {
   /**
    * Monster levels that follow the player's strength on the band's floors
    * (systems/levels.ts `dynamicLevelBonus`). A table-rolled spawn gains
-   * `floor(factor × gap / growth)` levels, at most `cap`, where gap is how far
-   * the player's three highest final attributes are ahead of the monster's
-   * three highest at its rolled level. `once` lines (bosses) and their escorts
-   * gain nothing. Rewards read the level without it.
+   * `floor(factor × gap / growth)` levels, at most `capShare` × its rolled
+   * level (at least 1), where gap is how far the player's three highest final
+   * attributes are ahead of the monster's three highest at that level. The cap
+   * is a share, not a count: +8 doubles an L8 rat and adds a fifth to an L40
+   * monster. `once` lines (bosses) and their escorts gain nothing. Rewards
+   * read the level without it.
    */
-  dynamicLevel?: { factor: number; cap: number };
+  dynamicLevel?: { factor: number; capShare: number };
   desc?: string;
 }
 

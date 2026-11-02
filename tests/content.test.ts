@@ -2158,9 +2158,9 @@ describe('towers, bands & floors', () => {
         }
       }
       if (band.dynamicLevel) {
-        const { factor, cap } = band.dynamicLevel;
+        const { factor, capShare } = band.dynamicLevel;
         expect(factor > 0 && factor <= 1, `${band.id}: dynamic level factor is above 0 and at most 1`).toBe(true);
-        expect(Number.isInteger(cap) && cap >= 1, `${band.id}: dynamic level cap is a whole number of at least 1`).toBe(true);
+        expect(capShare > 0 && capShare <= 4, `${band.id}: dynamic level cap share is above 0 and at most 4`).toBe(true);
       }
     }
   });

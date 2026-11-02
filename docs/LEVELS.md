@@ -135,19 +135,20 @@ ahead of them.
 
 | Part | Rule |
 |---|---|
-| Formula | `min(cap, floor(factor × max(0, P − M) / g))` levels on top of the rolled level |
+| Formula | `min(cap, floor(factor × max(0, P − M) / g))` levels on top of the rolled level L |
+| Cap | `max(1, floor(capShare × L))`: a share of the level, not a count. Monster attributes grow linearly with level, so k extra levels add about k / L of its strength; a fixed +8 doubles an L8 rat and adds a fifth to an L40 monster (user, 2026-11-02) |
 | P | Mean of the player's three highest final attributes (`derived.ts finalAttributes`: gear, titles, conditions and the level bonus included), read at the spawn |
 | M | Mean of the monster's three highest book attributes at the rolled level (`baseMonsterAttrs`) |
 | g | Mean growth per level of those three. A rat (0.63) takes more levels than a goblin (0.9) for the same gap |
-| Band 2 | `factor` 0.5 (half the gap), `cap` 8 (towers.data.ts) |
+| Band 2 | `factor` 1 (the whole gap), `capShare` 1: up to double the rolled level (towers.data.ts). 0.5 was the first setting; the user took 1: "rather a bit too difficult than a bit too easy" |
 | Exempt | `once` lines (the three bosses) and their escorts; pinned spawns |
 | Rewards | Kill XP, its level-gap share, gold and per-hit skill XP read `level − levelBonus` (`rewardLevel`). A stronger player meets stronger monsters for the same pay |
-| Shown | The bestiary's level range includes it; band 2 spot texts say "up to +8" |
+| Shown | The bestiary's level range includes it; band 2 spot texts say "up to double that while your attributes are higher than theirs" |
 | Save | `MonsterInstance.levelBonus`, optional. No migration |
 
 Top three of six, not a fixed set: a caster's INT and WIS count the way a
 fighter's STR and CON do. The cap keeps it bounded: past `M + cap × g / factor`
-the player outgrows the den again. `--dyn factor,cap` on both sim scripts
+the player outgrows the den again. `--dyn factor,capShare` on both sim scripts
 tries other values without touching data. Tests: tests/dynamicLevels.test.ts.
 
 Not covered: an ambush `window` line (`encounterPowerRatio`) prices its

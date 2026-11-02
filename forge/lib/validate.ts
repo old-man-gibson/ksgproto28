@@ -103,7 +103,7 @@ export function validate(store: S): Issue[] {
     order?: string;
     hub?: string;
     levelSteps?: number[];
-    dynamicLevel?: { factor: number; cap: number };
+    dynamicLevel?: { factor: number; capShare: number };
   }>('band');
   const floors = store.all<{
     id: string;
@@ -270,11 +270,12 @@ export function validate(store: S): Issue[] {
       }
     }
     // Dynamic levels (levels.ts dynamicLevelBonus): a share of the gap that
-    // is closed, and a whole-number cap, so the player always outgrows it.
+    // is closed, and a cap that is a share of the rolled level, so the player
+    // always outgrows it.
     const dyn = band.dynamicLevel;
     if (dyn) {
       if (!(dyn.factor > 0 && dyn.factor <= 1)) err('band', band.id, 'dynamic level factor is above 0 and at most 1', ['dynamicLevel']);
-      if (!(Number.isInteger(dyn.cap) && dyn.cap >= 1)) err('band', band.id, 'dynamic level cap is a whole number of at least 1', ['dynamicLevel']);
+      if (!(dyn.capShare > 0 && dyn.capShare <= 4)) err('band', band.id, 'dynamic level cap share is above 0 and at most 4', ['dynamicLevel']);
     }
   }
   // The sequential ascent's per-rung rules. Every rung is mandatory, so a

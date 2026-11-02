@@ -51,10 +51,10 @@ const ATTEMPTS = Number(opt('--attempts', '15'));
 const CAP = Number(opt('--cap', '20'));
 const SPOT = opt('--spot', 'f4_woods_edge');
 const verbose = args.includes('--verbose');
-// `--dyn factor,cap` replaces band 2's dynamic levels in this process (towers.data.ts holds the real ones; 0,0 = off).
+// `--dyn factor,capShare` replaces band 2's dynamic levels in this process (towers.data.ts holds the real ones; 0,0 = off).
 if (args.includes('--dyn')) {
-  const [factor, cap] = opt('--dyn', '').split(',').map(Number);
-  BANDS.ascent_middle.dynamicLevel = cap > 0 ? { factor, cap } : undefined;
+  const [factor, capShare] = opt('--dyn', '').split(',').map(Number);
+  BANDS.ascent_middle.dynamicLevel = capShare > 0 ? { factor, capShare } : undefined;
 }
 /** The landing of the spot's floor: its camp is where a knockout there wakes. */
 const CAMP = Object.values(FLOORS).find((f) => f.areaId === SPOTS[SPOT].areaId)!.landing!;

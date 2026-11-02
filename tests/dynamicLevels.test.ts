@@ -12,14 +12,14 @@ import type { AttributeId, GameState } from '../src/core/types';
 /**
  * Dynamic monster levels (BandDef.dynamicLevel, levels.ts dynamicLevelBonus):
  * on band 2 a table-rolled spawn gains floor(factor × gap / growth) levels, at
- * most `cap`, where gap is the player's three highest final attributes (gear,
+ * most capShare × the rolled level, where gap is the player's three highest final attributes (gear,
  * titles, conditions and the level bonus included) over the monster's three
  * highest at its rolled level. Bosses are exempt and rewards read the level
  * without the bonus.
  *
  * The worked case is a forest rat at L8: book DEX 9.6, STR 6.2, CON 5.5
- * (mean 7.1), growth 0.8 / 0.6 / 0.5 (mean 0.633). Band 2 closes half the
- * gap, up to 8 levels.
+ * (mean 7.1), growth 0.8 / 0.6 / 0.5 (mean 0.633). Band 2 closes the whole
+ * gap, up to double the rolled level (capShare 1).
  */
 
 const ATTRS: AttributeId[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
@@ -33,19 +33,19 @@ function character(attrs: Partial<Record<AttributeId, number>>, level = 1): Game
 const all = (n: number) => Object.fromEntries(ATTRS.map((a) => [a, n])) as Record<AttributeId, number>;
 const edge = SPOTS.f4_woods_edge;
 
-/** The worked case by hand: half the gap over a L8 rat's top three (7.1), over its growth (0.633), capped at 8. */
+/** The worked case by hand: the whole gap over a L8 rat's top three (7.1), over its growth (0.633), capped at 8 (1 × L8). */
 function ratBonus(s: GameState): number {
   const f = finalAttributes(s);
   const top = ATTRS.map((a) => f[a])
     .sort((a, b) => b - a)
     .slice(0, 3);
   const p = (top[0] + top[1] + top[2]) / 3;
-  return Math.min(8, Math.max(0, Math.floor((0.5 * (p - 7.1)) / (1.9 / 3))));
+  return Math.min(8, Math.max(0, Math.floor((1 * (p - 7.1)) / (1.9 / 3))));
 }
 
 describe('the bonus', () => {
-  it('band 2 carries it: half the gap, up to 8 levels', () => {
-    expect(BANDS.ascent_middle.dynamicLevel).toEqual({ factor: 0.5, cap: 8 });
+  it('band 2 carries it: the whole gap, up to double the level', () => {
+    expect(BANDS.ascent_middle.dynamicLevel).toEqual({ factor: 1, capShare: 1 });
   });
 
   it('a fresh character gets none', () => {
@@ -53,7 +53,7 @@ describe('the bonus', () => {
     for (const e of edge.encounters!) expect(dynamicLevelBonus(s, edge, e.monsterId, e.level[1]), e.monsterId).toBe(0);
   });
 
-  it('closes half the gap, divided by the species growth: a rat at L8', () => {
+  it('closes the gap, divided by the species growth: a rat at L8', () => {
     const s = character(all(12));
     expect(dynamicLevelBonus(s, edge, 'forest_rat', 8)).toBe(ratBonus(s));
     expect(ratBonus(s)).toBeGreaterThan(0);
@@ -72,7 +72,8 @@ describe('the bonus', () => {
   });
 
   it('reads gear: a weapon that adds STR raises it', () => {
-    const g = new Game(character({ str: 14, dex: 10, con: 10 }));
+    // STR 14 wields the greatsword fully; DEX and CON low keep the bonus under the cap.
+    const g = new Game(character({ str: 14, dex: 6, con: 6 }));
     const before = dynamicLevelBonus(g.state, edge, 'forest_rat', 8);
     const blade = createItem(g.state, 'steel_greatsword'); // +3 STR
     g.state.inventory.push(blade);
@@ -82,8 +83,14 @@ describe('the bonus', () => {
     expect(dynamicLevelBonus(g.state, edge, 'forest_rat', 8)).toBeGreaterThan(before);
   });
 
-  it('stops at the cap', () => {
+  it('stops at the cap: as many levels as the rolled level', () => {
     expect(dynamicLevelBonus(character(all(40)), edge, 'forest_rat', 8)).toBe(8);
+  });
+
+  it('the cap grows with the level: an L20 rat can gain 20, an L8 one 8', () => {
+    const s = character(all(80));
+    expect(dynamicLevelBonus(s, edge, 'forest_rat', 20)).toBe(20);
+    expect(dynamicLevelBonus(s, edge, 'forest_rat', 8)).toBe(8);
   });
 
   it('a strong species takes fewer levels for the same player', () => {
@@ -104,7 +111,7 @@ describe('spawning', () => {
     for (let i = 0; i < 40; i++) {
       const m = spawnMonster(g.state, edge);
       const line = edge.encounters!.find((e) => e.monsterId === m.defId)!;
-      expect(m.levelBonus, m.defId).toBe(8);
+      expect(m.levelBonus, m.defId).toBe(rewardLevel(m));
       expect(rewardLevel(m)).toBeGreaterThanOrEqual(line.level[0]);
       expect(rewardLevel(m)).toBeLessThanOrEqual(line.level[1]);
     }
@@ -129,7 +136,7 @@ describe('spawning', () => {
       const foes = s.combat?.enemies.filter((m) => m !== null) ?? [];
       if (foes.length > 1) {
         groups++;
-        for (const m of foes) expect(m!.levelBonus, m!.defId).toBe(8);
+        for (const m of foes) expect(m!.levelBonus, m!.defId).toBe(rewardLevel(m!));
         s.combat = null;
       }
       s.resources.hp = 1e6;
@@ -164,9 +171,9 @@ describe('rewards read the level without the bonus', () => {
     const plain = new Game(character({}));
     const a = spawnMonster(strong.state, edge);
     const b = spawnMonster(plain.state, edge);
-    // Same seed, same draws: the same species, roll and modifier, eight levels apart.
+    // Same seed, same draws: the same species, roll and modifier, at double the level.
     expect(a.defId).toBe(b.defId);
-    expect(a.level - b.level).toBe(8);
+    expect(a.level).toBe(2 * b.level);
     expect(a.xp).toBeCloseTo(b.xp);
     expect(a.gold).toBe(b.gold);
   });

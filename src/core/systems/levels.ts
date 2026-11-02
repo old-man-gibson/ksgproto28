@@ -88,7 +88,12 @@ const meanOf = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
  * M the mean of the monster's three highest at the rolled level, and g the
  * mean growth per level of those three:
  *
- *   min(cap, floor(factor × max(0, P − M) / g))
+ *   min(cap, floor(factor × max(0, P − M) / g)),  cap = max(1, floor(capShare × L))
+ *
+ * with L the rolled level. The cap is a share of the level (user, 2026-11-02):
+ * monster attributes grow linearly with level, so k extra levels add about
+ * k / L of a monster's strength. A fixed +8 doubles an L8 rat and adds a fifth
+ * to an L40 monster; a share keeps the same lift on every floor.
  *
  * - Final = the score the stat formulas read (derived.ts finalAttributes):
  *   gear, titles, conditions and the character-level bonus included, read
@@ -123,7 +128,8 @@ export function dynamicLevelBonus(
   const growth = meanOf(top.map((id) => def.growth[id] ?? 0));
   if (!(growth > 0)) return 0;
   const gap = meanOf(mine.slice(0, 3)) - meanOf(top.map((id) => book[id]));
-  return Math.min(dyn.cap, Math.max(0, Math.floor((dyn.factor * gap) / growth)));
+  const cap = Math.max(1, Math.floor(dyn.capShare * level));
+  return Math.min(cap, Math.max(0, Math.floor((dyn.factor * gap) / growth)));
 }
 
 /**

@@ -31,10 +31,10 @@ const offsets = opt('--offsets', '0,2,4,6').split(',').map(Number);
 const groups = args.includes('--groups') ? opt('--groups', '').split(',').map(Number) : null;
 /** Measure only these hunts (comma list) and skip the bosses; default every band 2 hunt. */
 const only = args.includes('--spots') ? opt('--spots', '').split(',') : null;
-// `--dyn factor,cap` replaces band 2's dynamic levels in this process (towers.data.ts holds the real ones).
+// `--dyn factor,capShare` replaces band 2's dynamic levels in this process (towers.data.ts holds the real ones).
 if (args.includes('--dyn')) {
-  const [factor, cap] = opt('--dyn', '').split(',').map(Number);
-  BANDS.ascent_middle.dynamicLevel = cap > 0 ? { factor, cap } : undefined;
+  const [factor, capShare] = opt('--dyn', '').split(',').map(Number);
+  BANDS.ascent_middle.dynamicLevel = capShare > 0 ? { factor, capShare } : undefined;
 }
 
 const BAND2 = ['ascent_f4', 'ascent_f5', 'ascent_f6'];
