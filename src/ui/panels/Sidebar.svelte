@@ -542,7 +542,11 @@
   <h3>Combat Stats</h3>
   <table class="small">
     <tbody>
-      {@render groupHead('offense', '⚔️ Offense', `~${fmt(roughDps(stats))} dmg/s · ${pct(stats.crit)} crit`, 'Weapon damage per second before the target\'s armour and resistances: damage × hits per swing × average crit bonus ÷ attack time. Spells and techniques are not included.')}
+      {@render groupHead('offense', '⚔️ Offense', `~${fmt(roughDps(stats))} dmg/s · ${pct(stats.crit)} crit`, [
+        'Weapon damage per second, before the target\'s armor and resistances.',
+        'Formula: damage × hits per swing × average crit bonus ÷ attack time.',
+        'Not counted: spells, techniques, splash.',
+      ])}
       {#if openGroups.offense}
       {@render statRow('Damage', 'damage', fmt(stats.damage))}
       {@render statRow('Speed', 'speed', fmt(stats.speed))}
@@ -588,7 +592,12 @@
       {@render statRow('Spell Power', 'spellPower', fmt(stats.spellPower))}
       {/if}
 
-      {@render groupHead('defense', '🛡️ Defense', `takes ~${fmt(expectedHitTaken(stats))} of a ${REFERENCE_BLOW} hit`, `What one typical ${REFERENCE_BLOW}-damage physical blow costs you on average: it must get past your dodge, then your parry, then armour, resistance and ward. Averaged over slashing, piercing and bludgeoning; enemy crits are not included.`)}
+      {@render groupHead('defense', '🛡️ Defense', `takes ~${fmt(expectedHitTaken(stats))} of a ${REFERENCE_BLOW} hit`, [
+        `Health you lose to one ${REFERENCE_BLOW}-damage physical blow, on average.`,
+        'Order: Dodge, Parry, Armor, resistance, Damage Taken, Ward.',
+        'Averaged over slashing, piercing and bludgeoning.',
+        'Not counted: enemy crits, your stance and position, darkness, conditions that make enemies miss.',
+      ])}
       {#if openGroups.defense}
       {@render statRow('Armor', 'armor', fmt(stats.armor))}
       {@render statRow('Dodge', 'dodge', pct(stats.dodge))}
@@ -625,13 +634,21 @@
       {/each}
       {/if}
 
-      {@render groupHead('growth', '📈 Growth', `skill ×${stats.skillXp.toFixed(2)} · attribute ×${stats.trainXp.toFixed(2)}`, 'How fast skills and attributes level: multipliers on the XP every action pays.')}
+      {@render groupHead('growth', '📈 Growth', `skill ×${stats.skillXp.toFixed(2)} · attribute ×${stats.trainXp.toFixed(2)}`, [
+        'Skill XP: multiplier on all skill XP.',
+        'Attribute XP: multiplier on attribute XP from activities.',
+        'Attribute XP from fighting is not multiplied.',
+      ])}
       {#if openGroups.growth}
       {@render statRow('Skill XP', 'skillXp', `×${stats.skillXp.toFixed(2)}`)}
       {@render statRow('Attribute XP', 'trainXp', `×${stats.trainXp.toFixed(2)}`)}
       {/if}
 
-      {@render groupHead('fortune', '💰 Fortune & pace', `loot ×${stats.loot.toFixed(2)} · gold ×${stats.goldGain.toFixed(2)}`, 'What drops and pays, how fast you travel and craft, and how long and how hard eaten food works.')}
+      {@render groupHead('fortune', '💰 Fortune & pace', `loot ×${stats.loot.toFixed(2)} · gold ×${stats.goldGain.toFixed(2)}`, [
+        'Loot Luck: multiplier on monster drops, gathering and exploring finds.',
+        'Gold Gain: multiplier on gold from kills, paid work and selling.',
+        'Also listed: Travel Speed. Craft Speed and food stats appear once they change from base.',
+      ])}
       {#if openGroups.fortune}
       {@render statRow('Loot Luck', 'loot', `×${stats.loot.toFixed(2)}`)}
       {@render statRow('Gold Gain', 'goldGain', `×${stats.goldGain.toFixed(2)}`)}
@@ -652,7 +669,7 @@
 </div>
 {/if}
 
-{#snippet groupHead(id: StatGroup, name: string, summary: string, explain: string)}
+{#snippet groupHead(id: StatGroup, name: string, summary: string, explain: string[])}
   <tr class="stat-group-row">
     <td colspan="2">
       <button
@@ -664,7 +681,11 @@
         <span class="stat-group-name">{openGroups[id] ? '▾' : '▸'} {name}</span>
         <Tip>
           <span class="stat-group-sum">{summary}</span>
-          {#snippet tip()}<div class="tip-line tip-base">{explain}</div>{/snippet}
+          {#snippet tip()}
+            {#each explain as line, i}
+              <div class="tip-line" class:tip-base={i === 0}>{line}</div>
+            {/each}
+          {/snippet}
         </Tip>
       </button>
     </td>
