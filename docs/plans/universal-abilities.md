@@ -224,6 +224,21 @@ Each step ships alone and is verified before the next.
    flask, enemy level = the strongest at fight start. Team 2's 0.99 decay is
    one number in the document. These events only report; reacting inside a
    blow (reflect, cancel) still needs K2.
+2c. **Little Moons: abilities act on enemies. Built 2026-11-01 on branch
+   `little-moons` (813eb8d, 7257b0f), not merged.** The user asked which
+   approved ability to build next and took the recommendation: Little Moons
+   (R3-SKY-19), the smallest one that acts on an enemy, which a large share
+   of the approved list needs. Core (Facet 10eb95b, branch `little-moons`;
+   IG branch `facet-repo` ca404e2, tests pass): `carrier: false` cells, a
+   `{ seconds }` Expr node, the `spend` world verb through an optional
+   `host.spendPool`. KSG: `Facet.tick` once per combat tick
+   (`facetCombatTick`, then `sweepDead`), enemies as `foe:<slot>` refs
+   (resolve, status members, `readQ` 0 until K4), `applyDamage` through
+   combat.ts `abilityStrike`, `spendPool`, and `boss` on the kill event.
+   Readings: target = front enemy, "your hit" = weapon damage, a combined
+   strike = sum ×2 or ×5 (adds about 19% over a 30 s fight; ×2 of one strike
+   would add nothing), Light damage, only in fights, from zero each fight.
+   Seen in play on floor 4: one strike of about 27 per 3–4 s fight.
 3. **Solar Charge in IG.** A day clock and sunlight read in IG; the same
    document runs unchanged.
 4. **Calorie Burn.** Core addition 2. KSG first, then IG's calories and
