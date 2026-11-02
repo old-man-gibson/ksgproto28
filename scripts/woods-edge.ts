@@ -14,13 +14,17 @@
 // the debug panel grants it); `frozen-*` hold attributes, skills or character
 // level at the fresh values every tick, which ranks what carries the climb;
 // `loss-xp-*` emulate a candidate fix (a knockout keeps only part of the XP
-// earned in that fight) without touching game code.
+// earned in that fight) without touching game code. `pts<k>-<split>` replace
+// the +1 to all six per character level with k free points per level, split
+// even / all CON / half STR half CON / all INT (with the tutorial Fire).
 //
 //   npx vite-node scripts/woods-edge.ts
 //   npx vite-node scripts/woods-edge.ts -- --seeds 1,2,3 --attempts 12 --spot f6_tunnels
 //   npx vite-node scripts/woods-edge.ts -- --variants base,martial
 //   npx vite-node scripts/woods-edge.ts -- --john        John's floor 4 fights, the expected numbers
 //   npx vite-node scripts/woods-edge.ts -- --verbose     every attempt of every run
+//   npx vite-node scripts/woods-edge.ts -- --variants base,pts5-con,pts5-int   free level points
+//   npx vite-node scripts/woods-edge.ts -- --variants none --power             power by level, no fights
 //
 // Deterministic: seeds in, same runs out. Variants on the same seed share the
 // opening and drift apart once their RNG draws differ, so read the seed means.
@@ -37,8 +41,13 @@ import { noteSafeSpot } from '../src/core/systems/safety';
 import { bandedXpNeeded } from '../src/core/systems/progression';
 import { skillXpNeeded } from '../src/core/systems/skills';
 import { ATTRIBUTE_PROGRESSION } from '../src/core/data/progression.data';
-import type { GameState } from '../src/core/types';
+import type { AchievementDef, AttributeId, GameState, Modifier } from '../src/core/types';
 import { runJohn } from '../tests/john';
+import { ACHIEVEMENTS } from '../src/core/registry';
+import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
+import { LEVEL_ATTR_BONUS } from '../src/core/data/levels.data';
+import { expectedHitTaken, roughDps } from '../src/ui/lib/statSummary';
+import { incomingSlice } from '../src/core/systems/combat';
 
 const args = process.argv.slice(2);
 const opt = (flag: string, fallback: string) => {
@@ -66,7 +75,31 @@ interface Variant {
    * player keep. Undefined = all of it, as the game does today.
    */
   lossXp?: number;
+  /**
+   * Free level points instead of +1 to all six per level: `k` points per
+   * level split by `split`'s weights (emulated, see installPoints).
+   */
+  points?: { k: number; split: Partial<Record<AttributeId, number>> };
+  /** The tutorial's one-word spell, prepared before the skip (INT 2). */
+  spell?: string;
 }
+
+/** The free-point splits the sim compares (user, 2026-11-02). */
+const SPLITS: Record<string, Partial<Record<AttributeId, number>>> = {
+  even: { str: 1, dex: 1, con: 1 },
+  con: { con: 1 },
+  strcon: { str: 1, con: 1 },
+  int: { int: 1 },
+};
+const POINT_VARIANTS: Variant[] = [3, 4, 5].flatMap((k) =>
+  Object.entries(SPLITS).map(([name, split]) => ({
+    id: `pts${k}-${name}`,
+    martial: false,
+    points: { k, split },
+    ...(name === 'int' ? { spell: 'fire' } : {}),
+  })),
+);
+
 const VARIANTS: Variant[] = [
   { id: 'base', martial: false },
   { id: 'martial', martial: true },
@@ -80,7 +113,40 @@ const VARIANTS: Variant[] = [
   { id: 'frozen-all', martial: false, freeze: ['attrs', 'skills', 'level'] },
   { id: 'loss-xp-50', martial: true, lossXp: 0.5 },
   { id: 'loss-xp-0', martial: true, lossXp: 0 },
+  { id: 'base-fire', martial: false, spell: 'fire' },
+  ...POINT_VARIANTS,
 ];
+
+/**
+ * Free level points, emulated in process: a sim-only achievement whose every
+ * tier is one level's worth. A tier takes LEVEL_ATTR_BONUS back off all six
+ * and adds k points split by weight. `syncPoints` keeps the claimed tiers at
+ * level − 1 every tick; modFingerprint keys on `a<id>:<tiers>`, so the stat
+ * cache rebuilds whenever the level moves. No game code changes.
+ */
+const POINTS_ID = 'sim_level_points';
+function installPoints(points: NonNullable<Variant['points']>): void {
+  const weight = Object.values(points.split).reduce((a, b) => a + (b ?? 0), 0);
+  const bonus: Modifier[] = [
+    ...ATTRIBUTE_LIST.map((a): Modifier => ({ stat: a.id, op: 'add', value: -LEVEL_ATTR_BONUS })),
+    ...Object.entries(points.split).map(([a, w]): Modifier => ({ stat: a as AttributeId, op: 'add', value: (points.k * (w ?? 0)) / weight })),
+  ];
+  (ACHIEVEMENTS as Record<string, AchievementDef>)[POINTS_ID] = {
+    id: POINTS_ID,
+    name: 'Level points (sim)',
+    icon: '•',
+    statKey: 'sim:never',
+    descTemplate: '',
+    tiers: Array.from({ length: 500 }, () => ({ threshold: Infinity, bonus })),
+  };
+}
+function uninstallPoints(): void {
+  delete (ACHIEVEMENTS as Record<string, AchievementDef>)[POINTS_ID];
+}
+function syncPoints(s: GameState): void {
+  if (s.level > 1) s.achievements[POINTS_ID] = s.level - 1;
+  else delete s.achievements[POINTS_ID];
+}
 
 /** Progress as the game stores it: a level and the XP banked toward the next. */
 type Progress = { level: number; xp: number };
@@ -151,10 +217,13 @@ function snapshot(s: GameState, attempt: number, wins: number, t: number): Snaps
 function run(seed: number, variant: Variant): Run {
   const g = new Game(createInitialState(seed));
   const s = g.state;
+  if (variant.spell && !g.chooseTutorialSpell(variant.spell)) throw new Error(`no spell ${variant.spell}`);
   g.skipTutorial();
   const sword = s.inventory.find((i) => i.defId === 'rusty_sword');
   if (sword && !s.equipment.weapon) g.equip(sword.uid, 'weapon');
   if (variant.martial) s.stats['flag:unlock_martial'] = 1;
+  if (variant.points) installPoints(variant.points);
+  else uninstallPoints();
   if (variant.ability) {
     installFacet();
     bindFacets(s, true);
@@ -170,7 +239,9 @@ function run(seed: number, variant: Variant): Run {
   const fresh = structuredClone({ attrs: s.attrs, skills: s.skills });
   const freeze = new Set(variant.freeze ?? []);
   const step = () => {
+    if (variant.points) syncPoints(s);
     g.tick();
+    if (variant.points) syncPoints(s);
     if (freeze.has('attrs')) for (const [k, v] of Object.entries(fresh.attrs)) Object.assign(s.attrs[k as keyof typeof s.attrs], v);
     if (freeze.has('skills')) s.skills = structuredClone(fresh.skills);
     if (freeze.has('level')) {
@@ -318,6 +389,7 @@ for (const v of VARIANTS.filter((x) => picked.includes(x.id))) {
   console.log(`first attempt with 2+ wins, per seed: ${turn.map((x) => x ?? '—').join(' ')}`);
   const at = mine.map((r, i) => (turn[i] ? r.snaps[turn[i]! - 1].minute : null));
   console.log(`  ...game minutes played by then: ${at.map((x) => (x === null ? '—' : x.toFixed(0))).join(' ')}`);
+  console.log(`knockouts per run over ${ATTEMPTS} attempts: ${f1(mean(mine.map((r) => r.fights.filter((f) => !f.won).length)))}`);
   if (verbose)
     for (const r of mine) {
       console.log(`  seed ${r.seed}`);
@@ -330,6 +402,73 @@ for (const v of VARIANTS.filter((x) => picked.includes(x.id))) {
         );
       }
     }
+}
+
+// ---------- Static power by level: free points against +1 to all six ----------
+//
+// `--power`: a fresh character (trained attributes 1, rusty sword; INT 2 and
+// the prepared Fire with the INT split) set straight to a level, no fights.
+// Power = rough weapon DPS × max HP / expected damage from a 20-damage
+// physical blow (the sidebar's Offense and Defense, src/ui/lib/statSummary.ts).
+if (args.includes('--power')) {
+  const rows: Variant[] = [{ id: 'today', martial: false }, { id: 'today-fire', martial: false, spell: 'fire' }, ...POINT_VARIANTS];
+  const statsAt = (v: Variant, level: number) => {
+    const g = new Game(createInitialState(1));
+    const s = g.state;
+    if (v.spell) g.chooseTutorialSpell(v.spell);
+    g.skipTutorial();
+    const blade = s.inventory.find((i) => i.defId === 'rusty_sword');
+    if (blade) g.equip(blade.uid, 'weapon');
+    if (v.points) installPoints(v.points);
+    else uninstallPoints();
+    s.level = level;
+    if (v.points) syncPoints(s);
+    const st = getDerivedStats(s);
+    const landed = (['slashing', 'piercing', 'bludgeoning'] as const).reduce((n, t) => n + incomingSlice(st, t, '', 20).dealt, 0) / 3;
+    const hit = expectedHitTaken(st);
+    return {
+      attrs: (['str', 'dex', 'con', 'int'] as const).map((a) => effectiveAttr(s, a)),
+      hp: st.maxHp,
+      dps: roughDps(st),
+      landed,
+      hit,
+      power: (roughDps(st) * st.maxHp) / Math.max(0.01, hit),
+      spellPower: st.spellPower,
+    };
+  };
+  for (const level of [5, 10, 15]) {
+    const today = statsAt(rows[0], level);
+    console.log(`\n== Level ${level}, fresh trained attributes ==`);
+    console.log('variant        STR   DEX   CON   INT   max HP  DPS    20-blow lands  per hit  power   × today  spell power × today');
+    for (const v of rows) {
+      const r = statsAt(v, level);
+      console.log(
+        [
+          v.id.padEnd(13),
+          ...r.attrs.map((x) => f1(x).padStart(5)),
+          String(Math.round(r.hp)).padStart(7),
+          f1(r.dps).padStart(6),
+          f1(r.landed).padStart(14),
+          f1(r.hit).padStart(8),
+          String(Math.round(r.power)).padStart(7),
+          f1(r.power / today.power).padStart(8),
+          f1(r.spellPower / today.spellPower).padStart(19),
+        ].join(' '),
+      );
+    }
+  }
+  // Where a CON dump stops taking damage from a 20-damage blow.
+  for (const k of [3, 4, 5]) {
+    const v = POINT_VARIANTS.find((x) => x.id === `pts${k}-con`)!;
+    let at: number | null = null;
+    for (let level = 1; level <= 60 && at === null; level++) if (statsAt(v, level).landed <= 1) at = level;
+    const today = (() => {
+      for (let level = 1; level <= 200; level++) if (statsAt(rows[0], level).landed <= 1) return level;
+      return null;
+    })();
+    console.log(`20-damage blow lands for 1 or less: CON dump k=${k} at level ${at ?? '>60'}; today's +1 to all six at level ${today ?? '>200'}`);
+  }
+  uninstallPoints();
 }
 
 // ---------- The expected numbers: John at floor 4 ----------
