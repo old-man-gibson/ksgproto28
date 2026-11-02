@@ -1,4 +1,4 @@
-import type { DamageType, GameState, StatusApplication, StatusDef } from '../types';
+import type { DamageType, GameState, MonsterInstance, ResourceId, StatusApplication, StatusDef } from '../types';
 import { ELEMENTAL_TYPES, PHYSICAL_TYPES, RES_STAT_BY_TYPE } from '../types';
 import { TPS } from '../engine/loop';
 import { TICKS_PER_GAME_MINUTE } from '../data/climate.data';
@@ -8,7 +8,10 @@ import { STATUSES } from '../data/statuses.data';
 import { applyStatus, findStatus, removeStatus } from '../systems/statuses';
 import { getDerivedStats } from '../systems/derived';
 import { appendLog } from '../systems/log';
-import { facetQuantities, readQuantity } from './quantities';
+import { abilityStrike, isSpotBoss } from '../systems/combat';
+import { monsterStats } from '../systems/monsterStats';
+import { spendResource } from '../systems/resources';
+import { FACET_POOLS, facetQuantities, readQuantity } from './quantities';
 import type { EventBus } from '../engine/events';
 import type { FacetDoc, FacetHost } from './facet';
 import { bindFacets, boundState, facetSignal, PLAYER_REF } from './signal';
@@ -34,6 +37,14 @@ import './load';
  * `state.facets` saves its documents (v61), and the sidebar reads
  * `facetReadouts`. The ability is granted only from the debug panel until its
  * discovery moment is decided.
+ *
+ * Little Moons: enemies are refs (`foe:<slot>`, a slot of `combat.enemies`),
+ * so a document can aim at them. `resolve` answers `side: 'enemy'` and
+ * `'arena'`, `applyDamage` hits an enemy through combat.ts `abilityStrike`,
+ * the status members reach the enemy a ref names, and `spendPool` pays a
+ * pool cost. tickCombat calls `Facet.tick` once per combat tick
+ * (signal.ts `facetCombatTick`). Still player-only: anything that reads an
+ * enemy's quantities (K4), and damage aimed at the player.
  */
 
 export { bindFacets, facetSignal, PLAYER_REF } from './signal';
@@ -74,6 +85,27 @@ const STATUS_SCHEMA = {
   },
 };
 
+/**
+ * An enemy's ref is its slot in `combat.enemies`. A ref lives for one call:
+ * slots move when the front enemy dies, so nothing keeps one.
+ */
+const FOE = 'foe:';
+
+function livingFoes(state: GameState): string[] {
+  return (state.combat?.enemies ?? []).flatMap((e, i) => (e && e.hp > 0 ? [FOE + i] : []));
+}
+
+function foeOf(state: GameState, ref: string): MonsterInstance | null {
+  if (!ref.startsWith(FOE)) return null;
+  const e = state.combat?.enemies[Number(ref.slice(FOE.length))];
+  return e && e.hp > 0 ? e : null;
+}
+
+/** Who a ref names: the player, a living enemy, or nobody. */
+function bearerOf(state: GameState, ref: string): GameState | MonsterInstance | null {
+  return ref === PLAYER_REF ? state : foeOf(state, ref);
+}
+
 function notYet(member: string, step: string): () => never {
   return () => {
     throw new Error(`Facet host (ksgproto28): ${member} arrives with ${step}; no document may use it yet`);
@@ -86,6 +118,10 @@ export function createFacetHost(getState: () => GameState): FacetHost {
   // nowhere today. Cell values do not live here: they live in the documents,
   // and the documents in `state.facets`, which is how they are saved.
   const bags = new Map<string, Record<string, unknown>>();
+  const heldBy = (ref: string, id: string) => {
+    const bearer = bearerOf(s(), ref);
+    return (bearer && findStatus(bearer, id)) ?? null;
+  };
 
   return {
     id: 'ksgproto28',
@@ -115,19 +151,34 @@ export function createFacetHost(getState: () => GameState): FacetHost {
     // ---- the bearer ----
     now: () => s().totalTicks,
     bearerId: (ref: string) => ref,
-    isAlive: () => s().resources.hp > 0,
-    sideOf: () => 'party',
-    levelOf: () => s().level,
-    hp: () => s().resources.hp,
-    maxHp: () => getDerivedStats(s()).maxHp,
+    isAlive: (ref: string) => (ref === PLAYER_REF ? s().resources.hp > 0 : !!foeOf(s(), ref)),
+    sideOf: (ref: string) => (ref.startsWith(FOE) ? 'enemy' : 'party'),
+    levelOf: (ref: string) => (ref === PLAYER_REF ? s().level : (foeOf(s(), ref)?.level ?? 0)),
+    hp: (ref: string) => (ref === PLAYER_REF ? s().resources.hp : (foeOf(s(), ref)?.hp ?? 0)),
+    maxHp: (ref: string) => {
+      if (ref === PLAYER_REF) return getDerivedStats(s()).maxHp;
+      const foe = foeOf(s(), ref);
+      return foe ? monsterStats(foe).maxHp : 0;
+    },
     personOf: () => s(),
-    resolve: (from: string, scope: { side?: string }) =>
-      !scope.side || scope.side === 'self' || scope.side === 'party' || scope.side === 'ally' ? [from] : [],
+    // The player is the only bearer on the party side. Enemies come in slot
+    // order, so the front enemy (slot 0) is first and `n: 1` picks it: 'front'
+    // is the only ranker.
+    resolve: (from: string, scope: { side?: string; n?: number | null }) => {
+      let pool: string[];
+      if (!scope.side || scope.side === 'self' || scope.side === 'party' || scope.side === 'ally') pool = [from];
+      else if (scope.side === 'enemy') pool = livingFoes(s());
+      else if (scope.side === 'arena') pool = [PLAYER_REF, ...livingFoes(s())];
+      else pool = [];
+      return scope.n === null || scope.n === undefined ? pool : pool.slice(0, scope.n);
+    },
     rankers: () => ['front'],
 
     // ---- quantities ----
     quantities: facetQuantities,
-    readQ: (_ref: string, id: string) => readQuantity(s(), id) ?? 0,
+    // The player's numbers only. An enemy's are not quantities until K4, so a
+    // document reading one gets 0.
+    readQ: (ref: string, id: string) => (ref === PLAYER_REF ? (readQuantity(s(), id) ?? 0) : 0),
     // The core keeps overrides and applies them to its own reads; the game's
     // stat block does not see them until K3 routes them through
     // collectModifiers. Until then an override would change what an ability
@@ -154,24 +205,48 @@ export function createFacetHost(getState: () => GameState): FacetHost {
         ...def,
       } as StatusDef;
     },
-    applyStatus: (_ref: string, app: StatusApplication, source?: string) =>
-      applyStatus(s(), s(), app, source),
-    removeStatus: (_ref: string, id: string) => removeStatus(s(), id),
-    findStatus: (_ref: string, id: string) => findStatus(s(), id) ?? null,
+    applyStatus: (ref: string, app: StatusApplication, source?: string) => {
+      const bearer = bearerOf(s(), ref);
+      return bearer ? applyStatus(s(), bearer, app, source) : null;
+    },
+    removeStatus: (ref: string, id: string) => {
+      const bearer = bearerOf(s(), ref);
+      if (bearer) removeStatus(bearer, id);
+    },
+    findStatus: (ref: string, id: string) => heldBy(ref, id),
     // These change a held condition only. A condition not held is left absent,
     // the same as InfiniteGacha's host, so one document behaves the same in both.
-    setStatusIntensity: (_ref: string, id: string, v: number) => {
-      const held = findStatus(s(), id);
+    setStatusIntensity: (ref: string, id: string, v: number) => {
+      const held = heldBy(ref, id);
       if (held) held.intensity = v;
     },
-    setStatusStacks: (_ref: string, id: string, n: number) => {
-      const held = findStatus(s(), id);
+    setStatusStacks: (ref: string, id: string, n: number) => {
+      const held = heldBy(ref, id);
       if (held) held.stacks = n;
     },
-    setStatusData: (_ref: string, id: string, data: Record<string, number>) => {
-      const held = findStatus(s(), id);
+    setStatusData: (ref: string, id: string, data: Record<string, number>) => {
+      const held = heldBy(ref, id);
       if (held) held.data = { ...held.data, ...data };
     },
+
+    // ---- damage and costs ----
+    // An enemy takes a document's damage through combat's own path
+    // (abilityStrike: resistance, conditions, the feed). The player is not a
+    // target yet: no bank ability hurts its bearer, and damage to the player
+    // needs the knockout handling a blow gets (health.ts damagePlayer).
+    applyDamage: (ref: string, amount: number, type: string, source?: string) => {
+      const state = s();
+      if (!foeOf(state, ref)) return 0;
+      const doc = state.facets.find((d) => d.id === source);
+      const known = type in RES_STAT_BY_TYPE ? (type as DamageType) : 'arcane';
+      return abilityStrike(state, Number(ref.slice(FOE.length)), amount, known, {
+        name: doc?.reading?.name ?? 'Ability',
+        icon: doc?.reading?.icon ?? '✦',
+      });
+    },
+    // A pool cost (the `spend` verb): stamina, mana, spirit or focus, never HP.
+    spendPool: (ref: string, pool: string, amount: number) =>
+      ref === PLAYER_REF && FACET_POOLS.includes(pool as ResourceId) ? spendResource(s(), pool as ResourceId, amount) : 0,
 
     // ---- damage ----
     // No stages until K2 collapses the two damage paths onto one staged runner.
@@ -235,7 +310,9 @@ export function registerFacetListeners(state: GameState, bus: EventBus): void {
       maxLevel: foes.reduce((n, e) => Math.max(n, e.level), 0),
     });
   });
-  bus.on('kill', (ev) => facetSignal(state, 'kill', { level: ev.monster.level }));
+  bus.on('kill', (ev) =>
+    facetSignal(state, 'kill', { level: ev.monster.level, boss: isSpotBoss(state, ev.monster.defId) ? 1 : 0 }),
+  );
   bus.on('fight:won', () => facetSignal(state, 'fightWon'));
   bus.on('fight:closed', (ev) => facetSignal(state, 'fightEnd', { won: ev.standing.length === 0 ? 1 : 0 }));
 }

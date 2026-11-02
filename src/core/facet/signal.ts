@@ -20,7 +20,7 @@ export const PLAYER_REF = 'player';
  * | id | when (this game) | detail |
  * |---|---|---|
  * | fightStart | an encounter begins (bus `encounter`) | enemies, maxLevel |
- * | kill | an enemy dies (bus `kill`) | level |
+ * | kill | an enemy dies (bus `kill`) | level, boss (1 for the spot's boss) |
  * | fightWon | the last enemy fell (bus `fight:won`), after its `kill` | |
  * | fightEnd | a fight closed however it ended (bus `fight:closed`) | won (0 or 1) |
  * | hitTaken | any damage reached the player (health.ts damagePlayer) | amount |
@@ -85,6 +85,19 @@ export function facetSignal(state: GameState, id: FacetEventId, detail: Record<s
   if (!state.facets?.length) return;
   bindFacets(state);
   if (bound === state) globalThis.Facet.event(id, PLAYER_REF, detail);
+}
+
+/**
+ * One combat tick for the run's ability: fires its `on: 'tick'` clauses
+ * (combat.ts tickCombat). True when an ability ticked, so the caller knows to
+ * sweep anything it killed. Free when no ability is held.
+ */
+export function facetCombatTick(state: GameState): boolean {
+  if (!state.facets?.length) return false;
+  bindFacets(state);
+  if (bound !== state) return false;
+  globalThis.Facet.tick(PLAYER_REF);
+  return true;
 }
 
 /** Forward one of combat.ts's trigger stamps, when it is also an ability event. */

@@ -140,4 +140,91 @@ B.zenkai = {
       ] },
   ],
 };
+
+// ---------- Little Moons ----------
+//
+// Approved by the user 2026-11-01 (team ability R3-SKY-19, review page 3), with the note "might
+// need to tweak numbers":
+//   Does: Three small moons orbit you. They strike your target every 2.8 s, 3.7 s and 7.9 s.
+//   Grows: Each strike is 30% of your hit. Each boss kill adds 5% for the run.
+//   Costs: The moons use 2 mana per second. At 0 mana they go dark for 10 s.
+//   Limit: Strikes within 0.3 s combine. Two combined strikes deal x2. Three deal x5.
+//
+// Readings taken (the entry does not say):
+//   - "Your target" is the front enemy, and "your hit" is weapon damage (fighter.damage) before
+//     crit and variance. A strike always lands and never crits.
+//   - A combined strike deals the sum of its strikes times 2 or 5, so two moons together deal 4
+//     strikes' worth and three deal 15. Read as x2 or x5 of one strike, two moons together would
+//     deal exactly what they deal apart. Over a 30 s fight the combining adds about 19% to the
+//     moons' damage, over an hour about 35%.
+//   - The damage type is Light.
+//   - The moons run on the combat tick, so only in fights, and start each fight from zero. The
+//     first two-moon line-up comes about 11 s in.
+//   - "At 0 mana" is when the pool cannot pay this tick's share of the 2 per second. While dark
+//     the moons neither turn nor drain, and a line-up being held is lost.
+//
+//   bosses      boss kills this run; each adds 5 points to the 30% share.
+//   m1 m2 m3    ticks since each moon last came due. At its cap the moon comes due.
+//   due         moons waiting in the open window (1 to 3).
+//   win         ticks left before the window strikes; 0 when no window is open.
+//   dark        ticks left dark.
+//
+// None of the counting cells carries a status (`carrier: false`): no modifier reads them, and they
+// change every tick.
+//
+// Reads: fighter.damage, pool.mana.cur. Events: fightStart, kill (detail boss: 1 for a boss).
+// Needs a host that calls Facet.tick once per combat tick, resolves { side: 'enemy', rank: 'front' },
+// and has applyDamage and spendPool.
+const MOONS = [['m1', 2.8], ['m2', 3.7], ['m3', 7.9]];
+const STRIKE_SHARE = { expr: 'add', a: 0.3, b: { expr: 'mul', a: 0.05, b: { cell: 'bosses' } } };
+// due x (1, 2 or 5): 1, 4 or 15 strikes' worth.
+const DUE = { cell: 'due' };
+const COMBINED = { expr: 'mul', a: DUE, b: { expr: 'add', a: DUE, b: { expr: 'mul', a: 2, b: { expr: 'max', a: 0, b: { expr: 'sub', a: DUE, b: 2 } } } } };
+const MANA_PER_TICK = { expr: 'div', a: 2, b: { seconds: 1 } };
+// One more than the window in ticks: the countdown strikes at 1, so a moon due 0.3 s after the
+// first still joins.
+const WINDOW = { expr: 'add', a: { seconds: 0.3 }, b: 1 };
+const counter = (key, cap) => ({ key, hold: 'none', level: 'int', tier: 'fight', cap, carrier: false });
+const setCell = (cell, value) => ({ emit: 'cell', cell, verb: 'set', value });
+const addCell = (cell, value) => ({ emit: 'cell', cell, verb: 'add', value });
+const isZero = (cell) => ({ cell, op: 'eq', v: 0 });
+
+B.little_moons = {
+  v: 1,
+  reading: { name: 'Little Moons', icon: '🌙' },
+  cells: [
+    {
+      key: 'bosses', label: 'Boss kills', icon: '👑', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, carrier: false,
+      status: { desc: 'Each moon strike deals 30% of your weapon damage, plus 5% per boss killed this run.' },
+    },
+    ...MOONS.map(([key, s]) => counter(key, { seconds: s })),
+    counter('due', 3),
+    counter('win', WINDOW),
+    counter('dark', { seconds: 10 }),
+  ],
+  clauses: [
+    { id: 'start', on: 'event:fightStart', do: ['m1', 'm2', 'm3', 'due', 'win', 'dark'].map((c) => setCell(c, 0)) },
+    // Adds the flag rather than guarding on it: a frame guard passes when the field is missing, so
+    // a host that does not report `boss` would count every kill. A missing field adds 0.
+    { id: 'boss', on: 'event:kill', do: [addCell('bosses', { frame: 'boss' })] },
+    // The tick, in order: dark counts down, the pool pays or the moons go dark, the moons turn,
+    // and an open window counts down or strikes.
+    { id: 'cool', on: 'tick', when: { cell: 'dark', op: 'gt', v: 0 }, do: [addCell('dark', -1)] },
+    { id: 'go_dark', on: 'tick', when: { all: [isZero('dark'), { q: 'pool.mana.cur', op: 'lt', v: MANA_PER_TICK }] },
+      do: [setCell('dark', { seconds: 10 }), setCell('due', 0), setCell('win', 0)] },
+    { id: 'drain', on: 'tick', when: isZero('dark'), do: [{ emit: 'world', verb: 'spend', pool: 'mana', value: MANA_PER_TICK }] },
+    { id: 'turn', on: 'tick', when: isZero('dark'), do: MOONS.map(([key]) => addCell(key, 1)) },
+    // A moon at its cap comes due: back to zero, one more waiting, and a window opens if none is.
+    ...MOONS.flatMap(([key]) => [
+      { id: 'due_' + key, on: 'cell:' + key + ':cap', do: [setCell(key, 0), addCell('due', 1)] },
+      { id: 'open_' + key, on: 'cell:' + key + ':cap', when: isZero('win'), do: [setCell('win', WINDOW)] },
+    ]),
+    { id: 'strike', on: 'tick', when: { cell: 'win', op: 'eq', v: 1 }, do: [
+      { emit: 'world', verb: 'damage', damageType: 'light', scope: { side: 'enemy', rank: 'front', n: 1 },
+        value: { expr: 'mul', a: { q: 'fighter.damage' }, b: { expr: 'mul', a: STRIKE_SHARE, b: COMBINED } } },
+      setCell('due', 0), setCell('win', 0),
+    ] },
+    { id: 'wait', on: 'tick', when: { cell: 'win', op: 'gt', v: 1 }, do: [addCell('win', -1)] },
+  ],
+};
 })();

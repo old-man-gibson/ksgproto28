@@ -179,6 +179,11 @@ function evalExpr(node, ctx) {
     return v === undefined ? 0 : v;
   }
 
+  // A duration in the host's ticks, authored in seconds: { seconds: 2.8 } is 28 at 10 ticks per
+  // second. For a cell that counts ticks against a cap; an effect's own `seconds` field is
+  // converted at compile time instead (facet.compile.js normaliseEffect).
+  if (node.seconds !== undefined) return F.data.seconds(num(evalExpr(node.seconds, ctx)), HOST && HOST.ticksPerSecond);
+
   if (node.roll !== undefined) {
     const lo = node.roll[0], hi = node.roll[1];
     return Math.floor(lo + HOST.rand() * (hi - lo + 1));

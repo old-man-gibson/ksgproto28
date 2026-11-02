@@ -22,6 +22,8 @@ export interface FacetCell {
   /** Display hint for a game's ability readout: 'bar' (value of cap), 'signedPct' or 'count'. */
   show?: string;
   status?: { desc?: string; [field: string]: unknown };
+  /** False for a counter no modifier reads: it gets no carrier status, so it never moves the stat cache. */
+  carrier?: boolean;
   /** Written by the core; saved with the document. */
   state?: { v: number; n: number; [field: string]: unknown };
   [field: string]: unknown;

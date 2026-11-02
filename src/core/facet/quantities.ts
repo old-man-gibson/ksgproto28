@@ -124,8 +124,11 @@ const STATS: Record<StatKey, StatRow> = {
   graze: { kind: 'prob' },
 };
 
-/** The pools whose current value is a quantity. HP is `fighter.hp`, the rest `pool.<id>.cur`. */
-const POOLS: ResourceId[] = ['stamina', 'mana', 'spirit', 'focus'];
+/**
+ * The pools whose current value is a quantity, and the pools a document may
+ * spend (host.ts `spendPool`). HP is `fighter.hp`, the rest `pool.<id>.cur`.
+ */
+export const FACET_POOLS: ResourceId[] = ['stamina', 'mana', 'spirit', 'focus'];
 
 /** Reads one quantity off the player: the native value, with no override applied. */
 type Reader = (state: GameState) => number;
@@ -178,7 +181,7 @@ function build(): Map<string, Entry> {
     { id: 'fighter.level', label: 'Level', kind: 'scalar', namespace: 'fighter', nullifiable: false, writable: false, modStat: null },
     (s) => s.level,
   );
-  for (const p of POOLS) {
+  for (const p of FACET_POOLS) {
     add(
       { id: 'pool.' + p + '.cur', label: p + ' (current)', kind: 'pool', namespace: 'pool', modStat: null },
       (s) => s.resources[p],

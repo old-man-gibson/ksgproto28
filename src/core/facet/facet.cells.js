@@ -271,7 +271,11 @@ F.carrierId = function carrierId(facet, cell, tag) {
 };
 
 // Which cells ride on a carrier status. facet.compile.js defines a carrier for exactly these.
-F.hasCarrier = (cell) => cell.level !== 'none' || cell.hold === 'many';
+//
+// `carrier: false` opts a cell out: a timer or a counter that no modifier reads. Such a cell can
+// change every combat tick, and in ksgproto28 a carrier's intensity is part of the derived-stat
+// cache key, so a carrier on it would rebuild the stat block on every tick of every fight.
+F.hasCarrier = (cell) => cell.carrier !== false && (cell.level !== 'none' || cell.hold === 'many');
 
 // Every write to a carrier goes through here. Setting the intensity of a carrier that is not held
 // does nothing in either host, and until 2026-10-30 nothing applied one, so a cell's value never

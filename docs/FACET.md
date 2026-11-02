@@ -15,7 +15,8 @@ adapter beside it. The port plan, with every step and what each one adds, is
 **Never edit a `facet.*.js` file here.** Edit the master in the Facet repo,
 then:
 
-1. `node test/run.js` in the Facet repo (the core's own 41 cases).
+1. `node test/run.js` in the Facet repo (the core's own cases, 52 as of
+   Little Moons).
 2. `node tools/sync.mjs` there. It writes every game's copy listed in
    `tools/targets.json`. For a copy in a worktree of this repo, name it:
    `node tools/sync.mjs --to D:/ksgproto28/.claude/worktrees/<name>/src/core/facet`.
@@ -33,10 +34,11 @@ reports a copy that has drifted from the master.
 | `src/core/facet/facet.*.js`, `MANIFEST.json` | The copy. Plain JS, no imports or exports; each file publishes into `globalThis.Facet`. |
 | `src/core/facet/load.ts` | Loads the core with one bare side-effect import per file. |
 | `src/core/facet/facet.d.ts` | Types for the members this game calls. Add a line when you call a new one. |
-| `src/core/facet/host.ts` | The adapter: every member `Facet.install` requires, read off the player. |
+| `src/core/facet/host.ts` | The adapter: every member `Facet.install` requires, read off the player and the enemies in the fight. |
 | `src/core/facet/signal.ts` | The fight events the ability hears, and which state the core is bound to. Imports nothing but types, so health.ts and combat.ts can call it. |
 | `src/core/facet/quantities.ts` | Every number a document may read, with its id. |
 | `tests/facet.test.ts` | The manifest check, the core's corpus run through this game's loader, and the adapter. |
+| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
 
 The adapter is installed once at boot in `src/ui/state.svelte.ts`, after the
 save loads, and bound to the loaded state before anything renders.
@@ -53,6 +55,9 @@ Prestige starts a fresh state, so the ability goes with the run.
 |---|---|
 | Granting one (a copy of a bank template, replacing the held one) | `grantFacet` in `host.ts`. For now only the debug panel's Unique ability row calls it: the discovery moment is undecided. |
 | Its time outside a fight: one `Facet.minute` per game minute, travel and fights included | `tickFacets`, called from `Game.advance` beside `tickExposure` |
+| Its time in a fight: one `Facet.tick` per combat tick (`on: 'tick'` clauses) | `facetCombatTick` (signal.ts), called from combat.ts `tickCombat` after the enemies' conditions and before anyone swings; `sweepDead` runs right after it for whatever the ability killed |
+| Damage it deals | host.ts `applyDamage` → combat.ts `abilityStrike`: resistance, the target's conditions and the on-damage hooks, never a dodge, crit or variance. One feed line per fight per ability (`ability:<name>`), settled when the fight ends. |
+| A pool cost it pays (the `spend` verb) | host.ts `spendPool` → `spendResource`; stamina, mana, spirit or focus, never HP |
 | Which state the core writes into | `bindFacets`. Offline catch-up ticks a detached copy of the state; the binding follows whichever state advances, and `Game.resyncAnnouncers` re-attaches after the contents are replaced (catch-up landing, import, reset, prestige). |
 | What the sidebar shows | `facetReadouts`: every cell whose document gives it a `show` hint, plus the document's `reading.inputs`. Those cells' statuses are left out of the status chips. |
 
@@ -71,6 +76,29 @@ level), times 0.97 per Zenkai already gained. The user approved it as written
 (team ability GEN-10, 2026-10-31). To try it: Grant 💥 Zenkai, press HP to 15%,
 and win a fight against an enemy at least 70% of your level.
 
+**Little Moons** is the third, and the first that acts on an enemy. Three moons
+strike the front enemy every 2.8 s, 3.7 s and 7.9 s for 30% of weapon damage
+(+5% per boss killed this run), as Light. Strikes within 0.3 s combine into one
+that deals their sum ×2 (two moons) or ×5 (three). The moons cost 2 mana per
+second and go dark for 10 s when the pool cannot pay. They run only in fights
+and start each fight from zero. The user approved it with "might need to tweak
+numbers" (team ability R3-SKY-19, 2026-11-01); the readings taken where the
+entry is silent are written above the document in the Facet bank. Its counting
+cells say `carrier: false`, so they hold no status and never move the derived
+stat cache, which would otherwise rebuild on every combat tick. To try it:
+Grant 🌙 Little Moons and hunt with mana in the pool; the feed shows one
+running line of strikes per fight.
+
+### Enemies as refs
+
+A document aims at enemies through scopes, and the adapter names each enemy
+by its slot: `foe:0` is the front enemy, `foe:1` the next. A ref lives for one
+call, because slots move when the front enemy dies. `resolve` answers
+`side: 'enemy'` (living enemies, front first, so `n: 1` is the front enemy) and
+`side: 'arena'` (the player and every enemy). The status members reach the
+enemy a ref names, so a document can put a condition on one. An enemy's
+numbers are not quantities until K4: `readQ` on a `foe:` ref returns 0.
+
 ## Events
 
 A document listens with `on: 'event:<id>'` and reads the event's detail with
@@ -80,7 +108,7 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | id | Raised by | Detail |
 |---|---|---|
 | `fightStart` | bus `encounter` (host.ts `registerFacetListeners`) | `enemies`, `maxLevel` |
-| `kill` | bus `kill` | `level` |
+| `kill` | bus `kill` | `level`, `boss` (1 when the enemy is a boss of the spot, combat.ts `isSpotBoss`) |
 | `fightWon` | bus `fight:won`, after the last `kill` | |
 | `fightEnd` | bus `fight:closed`, however the fight ended | `won` (0 or 1) |
 | `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` |
@@ -91,8 +119,14 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it
-happens. An event that changes the fight itself (reflect a blow, cancel a hit)
-needs the staged damage path (K2); these events only report.
+happens. An ability may answer an event after it happens (damage the attacker
+once a blow has landed, for example), but changing the blow itself (reduce it,
+cancel it) needs the staged damage path (K2).
+
+A frame guard (`when: { frame: 'boss', op: 'eq', v: 1 }`) passes when the
+field is missing, so a document should not guard on a field one game might not
+send. Little Moons adds the flag instead (`value: { frame: 'boss' }`), which
+reads a missing field as 0.
 
 **Why only bare imports.** The core files have no exports. A named import
 (`import { x } from './facet.core.js'`) passes vitest and fails `vite build`
@@ -132,7 +166,8 @@ inert, or refuse loudly; `host.ts` says which for each.
 |---|---|
 | The mortality proof (`probeSlice`, `probeNative`); damage stages | K2, the staged damage path |
 | Quantity overrides (`overrideQ` throws); the action gate; arena laws | K3 |
-| Overrides on monsters | K4 (monsters never wear an ability, but an ability can act on one) |
+| Overrides on monsters, and reading an enemy's quantities | K4 (monsters never wear an ability, but an ability can act on one) |
+| Damage aimed at the player (`applyDamage` on the player returns 0) | the first bank ability that hurts its bearer; it needs `damagePlayer`'s knockout handling |
 | Allies, summons, revives, the calendar, the pricing oracle | not planned here (`caps` in `host.ts`) |
 
 ## Core gaps found during K1, fixed for Solar Charge (2026-10-30)
@@ -146,3 +181,13 @@ inert, or refuse loudly; `host.ts` says which for each.
 Also added then: a cell may describe its carrier (`status: { mods, desc }`),
 and a modifier may name a shared quantity id (`q`) that each game maps to its
 own stat name.
+
+## Core additions for Little Moons (2026-11-01)
+
+- `carrier: false` on a cell: no status rides on it. For counters and timers
+  that no modifier reads.
+- `{ seconds: x }` in an Expr is x seconds in the host's ticks, for a cell
+  that counts ticks against a cap.
+- The `spend` world verb (`{ emit: 'world', verb: 'spend', pool: 'mana',
+  value }`) pays from a pool through the host's `spendPool`, up to what is
+  held. A quantity write cannot do this: those are overrides on a reading.
