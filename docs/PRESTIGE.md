@@ -59,7 +59,8 @@ All declarative, so the preview can be computed from them.
   — same world, same weather) and every opened alpha shutter
   (`flag:unlock_*`, systems/unlocks.ts): a shutter invites a new player in,
   and nothing in the alpha lifts `martial` a second time, so dropping it took
-  the rotation editor away for good. Everything else is the run's and resets. The
+  the planner, loadouts and drilling away for good (the rotation editor no
+  longer rides it, 2026-11-02). Everything else is the run's and resets. The
   stash is filled at the prestige: every keep-marked item (`ItemDef.keep`)
   goes back into it from wherever it is (docs/FESTIVAL.md §5). The reset
   is `createInitialState`, so a new run is exactly a new save plus legacy —

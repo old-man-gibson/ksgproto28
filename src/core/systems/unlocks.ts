@@ -8,8 +8,9 @@ import { grantFavor } from './deities';
  *
  * Seven systems are shuttered for the alpha: their tabs, benches and school
  * pages simply do not render until the flag lifts. The last two (save v55,
- * user 2026-10-17): `martial` hides the position planner, loadouts, drilling
- * and the rotation editor — known techniques still fire on their own, but
+ * user 2026-10-17): `martial` hides the position planner, loadouts and
+ * drilling (the rotation editor left it 2026-11-02: it opens with the first
+ * active in the rotation) — known techniques still fire on their own, but
  * since 2026-10-21 none learns itself while it is shut (`checkTechniqueLearning`):
  * teachers are the only way in — and `prep` hides the kitchen side-benches (the Cutting Board
  * and the Cold Counter), leaving the Cooking Stove. Runes ride the
