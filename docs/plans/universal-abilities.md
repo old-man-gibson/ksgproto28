@@ -240,6 +240,21 @@ Each step ships alone and is verified before the next.
    strike = sum ×2 or ×5 (adds about 19% over a 30 s fight; ×2 of one strike
    would add nothing), Light damage, only in fights, from zero each fight.
    Seen in play on floor 4: one strike of about 27 per 3–4 s fight.
+2d. **Bramble: abilities answer the enemy who hit you. Built 2026-11-01 on
+   branch `bramble` (9407825), not merged.** The user asked for "the next one
+   you think would be a good addition"; Bramble (FLD-04) is the smallest entry
+   that needs the attacker of a blow, which Basilisk Hide, Thunderhead,
+   Backlog, Rally and Just War also need. Core (Facet 7b59f58, branch
+   `bramble`; IG branch `facet-repo` d7b488e, tests pass): the
+   `{ frame: 'attacker' }` scope, `hitTaken` carrying `type` and `attacker`,
+   and the `reading.hit` feed label. KSG: damagePlayer's `source.by` (set at
+   the monster blow and the graze) becomes `attacker`, and combat.ts
+   `answeredToDeath` sweeps an attacker the thorns killed before the enemy
+   phase goes on. Readings: a hit is an enemy's blow (condition ticks do not
+   count), grow then answer, a Heat blow burns 5 and grows none, Piercing
+   damage on what reached HP, "slows your actions" = `fighter.speed`. Seen in
+   play on floor 17: a raider's 18-damage blow answered for 1 (2% rounds up to
+   the 1-damage floor).
 3. **Solar Charge in IG.** A day clock and sunlight read in IG; the same
    document runs unchanged.
 4. **Calorie Burn.** Core addition 2. KSG first, then IG's calories and
