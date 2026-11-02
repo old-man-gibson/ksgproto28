@@ -16,8 +16,9 @@
 // `loss-xp-*` emulate a candidate fix (a knockout keeps only part of the XP
 // earned in that fight) without touching game code. `class-*` replace the +1
 // to all six per character level with a class growth vector (Barbarian;
-// Wizard, with the tutorial Fire); `pts5-con` is 5 free points a level all in
-// CON, the extreme reference.
+// Wizard, with the tutorial Fire; `class-wizard3` with fire:3, ward:3 and
+// mend:3 instead); `pts5-con` is 5 free points a level all in CON, the extreme
+// reference.
 //
 //   npx vite-node scripts/woods-edge.ts
 //   npx vite-node scripts/woods-edge.ts -- --seeds 1,2,3 --attempts 12 --spot f6_tunnels
@@ -26,6 +27,7 @@
 //   npx vite-node scripts/woods-edge.ts -- --verbose     every attempt of every run
 //   npx vite-node scripts/woods-edge.ts -- --variants base,class-barbarian,base-fire,class-wizard,pts5-con   per-level growth
 //   npx vite-node scripts/woods-edge.ts -- --variants none --power             power by level, no fights
+//   npx vite-node scripts/woods-edge.ts -- --variants none --duels --seeds 1,2,3,4   levels 5/10/15 vs strong spots
 //
 // Deterministic: seeds in, same runs out. Variants on the same seed share the
 // opening and drift apart once their RNG draws differ, so read the seed means.
@@ -48,9 +50,10 @@ import { ACHIEVEMENTS } from '../src/core/registry';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { LEVEL_ATTR_BONUS } from '../src/core/data/levels.data';
 import { expectedHitTaken, roughDps } from '../src/ui/lib/statSummary';
-import { incomingSlice } from '../src/core/systems/combat';
+import { incomingSlice, startForcedFight } from '../src/core/systems/combat';
 import { MONSTERS } from '../src/core/registry';
 import { baseMonsterAttrs } from '../src/core/systems/monsterStats';
+import { addSpell } from '../src/core/systems/spellcraft';
 
 const args = process.argv.slice(2);
 const opt = (flag: string, fallback: string) => {
@@ -85,7 +88,12 @@ interface Variant {
   growth?: Partial<Record<AttributeId, number>>;
   /** The tutorial's one-word spell, prepared before the skip (INT 2). */
   spell?: string;
+  /** One-word sentences put in the grimoire and prepared, e.g. a mastered `fire:3`. */
+  spells?: string[];
 }
+
+/** The user's basic three (2026-11-02): Blaze, Sanctum, Renew. Not optimal on purpose. */
+const WIZARD_SPELLS = ['fire:3', 'ward:3', 'mend:3'];
 
 /**
  * Per-level growth to compare (user, 2026-11-02): +1 to all six stays until
@@ -95,6 +103,7 @@ interface Variant {
 const GROWTH_VARIANTS: Variant[] = [
   { id: 'class-barbarian', martial: false, growth: { str: 1.3, dex: 1, con: 2, int: 0.3, wis: 0.8, cha: 0.6 } },
   { id: 'class-wizard', martial: false, spell: 'fire', growth: { str: 0.33, dex: 0.33, con: 0.33, int: 3, wis: 1.2, cha: 0.8 } },
+  { id: 'class-wizard3', martial: false, spells: WIZARD_SPELLS, growth: { str: 0.33, dex: 0.33, con: 0.33, int: 3, wis: 1.2, cha: 0.8 } },
   { id: 'pts5-con', martial: false, growth: { con: 5 } },
 ];
 
@@ -216,6 +225,7 @@ function run(seed: number, variant: Variant): Run {
   const s = g.state;
   if (variant.spell && !g.chooseTutorialSpell(variant.spell)) throw new Error(`no spell ${variant.spell}`);
   g.skipTutorial();
+  for (const w of variant.spells ?? []) addSpell(s, { school: 'arcane', words: [w] }).prepared = true;
   const sword = s.inventory.find((i) => i.defId === 'rusty_sword');
   if (sword && !s.equipment.weapon) g.equip(sword.uid, 'weapon');
   if (variant.martial) s.stats['flag:unlock_martial'] = 1;
@@ -484,6 +494,119 @@ if (args.includes('--power')) {
     let at: number | null = null;
     for (let level = 1; level <= 200 && at === null; level++) if (statsAt(v, level).landed <= 1) at = level;
     console.log(`20-damage blow lands for 1 or less: ${v.id} at level ${at ?? '>200'}`);
+  }
+  uninstallPoints();
+}
+
+// ---------- Duels: a fixed level against the strong spots ----------
+//
+// `--duels`: a fresh character (trained attributes 1, rusty sword) set straight
+// to level 5, 10 and 15 with each row's growth and spells, then N fights per
+// spot and seed, each from full HP and mana, growth held. The rows differ only
+// in per-level growth and the grimoire, so this reads what a class vector
+// plus three basic spells buys against monsters well above level 1. A cast is
+// counted as a drop of 5 mana or more in one tick.
+if (args.includes('--duels')) {
+  const rows: Variant[] = [
+    { id: 'today', martial: false },
+    { id: 'today+3 spells', martial: false, spells: WIZARD_SPELLS },
+    GROWTH_VARIANTS.find((v) => v.id === 'class-barbarian')!,
+    GROWTH_VARIANTS.find((v) => v.id === 'class-wizard3')!,
+  ];
+  const spots = opt('--duel-spots', 'f4_woods_edge,f4_deep_woods,f5_hollows,f6_tunnels,f6_drop,f6_great_hall').split(',');
+  const levels = opt('--duel-levels', '5,10,15').split(',').map(Number);
+  const FIGHTS = Number(opt('--fights', '15'));
+  const character = (v: Variant, seed: number, level: number) => {
+    const g = new Game(createInitialState(seed));
+    const s = g.state;
+    g.skipTutorial();
+    for (const w of v.spells ?? []) addSpell(s, { school: 'arcane', words: [w] }).prepared = true;
+    const blade = s.inventory.find((i) => i.defId === 'rusty_sword');
+    if (blade) g.equip(blade.uid, 'weapon');
+    if (v.growth) installGrowth(v.growth);
+    else uninstallPoints();
+    s.level = level;
+    if (v.growth) syncPoints(s);
+    return g;
+  };
+  const full = (s: GameState) => {
+    const st = getDerivedStats(s);
+    s.statuses = [];
+    s.resources.hp = st.maxHp;
+    s.resources.stamina = st.maxStamina;
+    s.resources.mana = st.maxMana;
+  };
+  type Duel = { won: boolean; ticks: number; hpLost: number; casts: number };
+  /** `n` fights at a hunt spot, or `n` walk-ins at a forced (boss) spot. */
+  const duels = (v: Variant, seed: number, level: number, spotId: string, n: number): Duel[] => {
+    const g = character(v, seed, level);
+    const s = g.state;
+    const held = structuredClone({ attrs: s.attrs, skills: s.skills });
+    const hold = () => {
+      for (const [k, x] of Object.entries(held.attrs)) Object.assign(s.attrs[k as AttributeId], x);
+      s.skills = structuredClone(held.skills);
+      s.level = level;
+      s.levelXp = 0;
+      if (v.growth) syncPoints(s);
+    };
+    const forced = !!SPOTS[spotId].forced;
+    const out: Duel[] = [];
+    let start = 0;
+    let hp0 = 0;
+    let max0 = 1;
+    let casts = 0;
+    let mana = 0;
+    for (let t = 0, idle = 0; out.length < n && idle < 600 * TPS; t++) {
+      if (!s.combat) {
+        if (forced || s.spot !== spotId || s.activity !== 'hunt' || s.recovering) {
+          s.recovering = false;
+          s.travel = null;
+          s.travelPlan = [];
+          s.spot = spotId;
+          s.respawnTimer = 0;
+          full(s);
+          if (forced) {
+            // A fresh walk-in: the boss row is `once`, so its kill is wiped.
+            for (const k of Object.keys(s.stats)) if (k.startsWith(`slain:${spotId}:`) || k === `fights:${spotId}`) delete s.stats[k];
+            startForcedFight(s, g.bus, SPOTS[spotId]);
+          } else g.selectActivity('hunt');
+        }
+      }
+      const before = !!s.combat;
+      if (before && s.resources.mana < mana - 5) casts++;
+      mana = s.resources.mana;
+      g.tick();
+      hold();
+      if (!before && s.combat) {
+        start = t;
+        hp0 = s.resources.hp;
+        max0 = getDerivedStats(s).maxHp;
+        casts = 0;
+        mana = s.resources.mana;
+      } else if (before && !s.combat) {
+        const won = !s.recovering;
+        out.push({ won, ticks: t - start, hpLost: won ? (hp0 - s.resources.hp) / max0 : hp0 / max0, casts });
+        if (won && !forced) {
+          full(s);
+          s.respawnTimer = 0;
+        }
+      }
+      idle = s.combat ? 0 : idle + 1;
+    }
+    return out;
+  };
+  for (const level of levels) {
+    console.log(`\n== Duels at level ${level}: ${seeds.length} seeds × ${FIGHTS} fights per cell, full HP and mana each fight ==`);
+    console.log('cells: win rate / kill s / HP lost per win / casts per fight');
+    console.log('row              ' + spots.map((x) => x.padEnd(26)).join(''));
+    for (const v of rows) {
+      const cells = spots.map((spotId) => {
+        const fights = seeds.flatMap((seed) => duels(v, seed, level, spotId, FIGHTS));
+        const won = fights.filter((f) => f.won);
+        return `${pct(won.length / fights.length)} / ${f1(mean(won.map((f) => f.ticks / TPS)))} / ${pct(mean(won.map((f) => f.hpLost)))} / ${f1(mean(fights.map((f) => f.casts)))}`.padEnd(26);
+      });
+      console.log(`${v.id.padEnd(16)} ${cells.join('')}`);
+    }
   }
   uninstallPoints();
 }
