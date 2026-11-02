@@ -646,6 +646,7 @@ if (args.includes('--duels')) {
     { id: 'today+3 spells', martial: false, spells: WIZARD_SPELLS },
     GROWTH_VARIANTS.find((v) => v.id === 'class-barbarian')!,
     GROWTH_VARIANTS.find((v) => v.id === 'class-wizard3')!,
+    GROWTH_VARIANTS.find((v) => v.id === 'wiz3-triggers')!,
   ];
   const spots = opt('--duel-spots', 'f4_woods_edge,f4_deep_woods,f5_hollows,f6_tunnels,f6_drop,f6_great_hall').split(',');
   const levels = opt('--duel-levels', '5,10,15').split(',').map(Number);
