@@ -255,6 +255,16 @@ Each step ships alone and is verified before the next.
    damage on what reached HP, "slows your actions" = `fighter.speed`. Seen in
    play on floor 17: a raider's 18-damage blow answered for 1 (2% rounds up to
    the 1-damage floor).
+   Second pass the same day (KSG 2ed9c3e, Facet a38571d, IG ac6cc59), after
+   the user saw it grow only on being hit: their addition grows thorns
+   floor(1 + 5% of the cap) each second of fight time and floor(2 + 10% of
+   the cap) on Poison cast on yourself (Nature read as Poison). The answer now
+   reads the blow as thrown, before armour (`hitTaken.blow`); `hitTaken.self`
+   marks a spell cast on yourself; enemy spells name their caster. Measured on
+   floor 17 (scratch sim): standing still, thorns alone kill an enemy every
+   ~59 s at cap 10 and ~17 s at cap 50; fighting with every attribute at 20
+   they deal 5% of the kill damage at cap 10 and 31% at cap 50; a character
+   that kills in ~1 s gets 0.1–0.3%.
 3. **Solar Charge in IG.** A day clock and sunlight read in IG; the same
    document runs unchanged.
 4. **Calorie Burn.** Core addition 2. KSG first, then IG's calories and
