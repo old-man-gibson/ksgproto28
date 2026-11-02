@@ -265,6 +265,21 @@ Each step ships alone and is verified before the next.
    ~59 s at cap 10 and ~17 s at cap 50; fighting with every attribute at 20
    they deal 5% of the kill damage at cap 10 and 31% at cap 50; a character
    that kills in ~1 s gets 0.1–0.3%.
+2e. **Basilisk Hide: abilities put conditions on enemies. Built 2026-11-02
+   on branch `basilisk-hide` (a9027b8, stacked on `bramble`), not merged.**
+   ENM-18 with the user's note. Facet 8803fa5 (branch `basilisk`, 59 cases),
+   IG `facet-repo` 261724f. The core already had `emit: 'status'`; KSG's
+   status schema now lets a document set `element`, `contest` and
+   `escalatesTo`. Stone (Earth, CON contest via the new `StatusDef.contest`)
+   escalates at 100 into KSG's `petrified`: a statue that does nothing,
+   crumbles after 3 s, or, broken first, throws rocks behind it; Stone Chunks
+   = half gold, half XP, no drops. `hitTaken.boss` added. Measured at floor
+   17: no statues while fighting normally; standing still 3 per 10 minutes,
+   because the slow equal to Stone stretches the last hits (0.5% a point gives
+   10, none gives 12). Evolution decided (plain count of statues of enemies at
+   85% of your level or attribute total, threshold placeholder 100, one split
+   into Gorgon's Gaze, Rubble or Stoneskin; Facet docs/ABILITY_IDEAS.md), not
+   built.
 3. **Solar Charge in IG.** A day clock and sunlight read in IG; the same
    document runs unchanged.
 4. **Calorie Burn.** Core addition 2. KSG first, then IG's calories and
