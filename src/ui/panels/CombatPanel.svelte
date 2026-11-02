@@ -300,8 +300,8 @@
     return spell ? resolveSpell(spell) : null;
   });
 
-  /** Alpha shutter (systems/unlocks.ts): the position planner, loadouts,
-   *  drilling and the rotation editor show only once `martial` is open. */
+  /** Alpha shutter (systems/unlocks.ts): the position planner, loadouts and
+   *  drilling show only once `martial` is open. */
   const martialOpen = $derived(subsystemUnlocked(gs, 'martial'));
 
   // ---- Loadouts ----
@@ -339,6 +339,12 @@
       return !(tech && gs.skillTriggers[id]?.enabled === false);
     }),
   );
+  /**
+   * The rotation editor (drag to reorder, click to set triggers) is open as
+   * soon as any active is in the rotation, martial shutter or not (user,
+   * 2026-11-02): usually the tutorial's fire, spark or ice word.
+   */
+  const rotationEditable = $derived(rotation.length > 0);
   // One button per stance, always in the same place. A manifested school takes
   // over its stance's slot for as long as its weapon is held — no extra list.
   const slots = $derived(styleSlots(gs));
@@ -703,8 +709,12 @@
     <p class="dim small">No active skills learned yet — they manifest as you fight.</p>
   {:else}
     {#if !martialOpen}
-      <!-- Alpha shutter (systems/unlocks.ts, `martial`): the list is read-only. -->
-      <p class="dim small hint">Fired top-down, each one whenever it is ready. Hover for the details.</p>
+      <!-- Alpha shutter (systems/unlocks.ts, `martial`): no drilling or loadouts;
+           the order and the triggers are editable all the same. -->
+      <p class="dim small hint">
+        Fired top-down — drag a card to reorder. Click one to set when it fires; hover for the
+        details.
+      </p>
     {:else}
       <p class="dim small hint">
         Fired top-down — drag a card to reorder. Click one to set when it fires; hover for the
@@ -757,8 +767,8 @@
           class:drop-before={dropTarget === id && dragging !== id}
           style={tech ? flowGradient(tech) : undefined}
           role="listitem"
-          draggable={martialOpen}
-          ondragstart={() => { if (martialOpen) dragging = id; }}
+          draggable={rotationEditable}
+          ondragstart={() => { if (rotationEditable) dragging = id; }}
           ondragend={() => { dragging = null; dropTarget = null; }}
           ondragover={(e) => { e.preventDefault(); dropTarget = id; }}
           ondragleave={() => { if (dropTarget === id) dropTarget = null; }}
@@ -769,7 +779,7 @@
                on the right of line 1 — nothing else has either. -->
           <div class="line1">
             <Tip>
-              <button class="skill-name" onclick={() => { if (martialOpen) configId = id; }}>
+              <button class="skill-name" onclick={() => { if (rotationEditable) configId = id; }}>
                 <span class="nm">{entry.icon} {entry.name}</span>
                 {#if tuned}<span class="tuned" title="You have set conditions on this">⚡</span>{/if}
               </button>
@@ -823,7 +833,7 @@
                     ].join(' · ')}
                   </div>
                 {/if}
-                {#if martialOpen}
+                {#if rotationEditable}
                   <div class="tip-line tip-sub">Click to set when it fires · drag to reorder.</div>
                 {/if}
               {/snippet}

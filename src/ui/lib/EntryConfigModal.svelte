@@ -14,6 +14,7 @@
     techniqueForm,
   } from '../../core/systems/martial';
   import { findSpell, resolveSpell } from '../../core/systems/spellcraft';
+  import { subsystemUnlocked } from '../../core/systems/unlocks';
   import { GENE_ACTIVE, geneAbility } from '../../core/systems/mutagens';
   import {
     TRIGGER_EVENTS,
@@ -61,6 +62,7 @@
   });
 
   const trigger = $derived(gs.skillTriggers[id]);
+  const martialOpen = $derived(subsystemUnlocked(gs, 'martial'));
   // Techniques you have not learned are not offered as conditions — asking
   // after them would spoil them (a stored condition still evaluates fine).
   const subjects = $derived(visibleTriggerSubjects(gs));
@@ -134,11 +136,14 @@
           ? ' · rough'
           : ''}{toNext !== undefined && drilled ? ` · next in ${toNext}` : ''}
       </span>
-      <button class="tiny drill" class:on={drilled} onclick={() => game.toggleDrill(tech.id)}>
-        {drilled ? '🏋️ Drilling' : 'Drill'}
-      </button>
+      <!-- Drilling stays behind the `martial` shutter; the triggers below do not. -->
+      {#if martialOpen}
+        <button class="tiny drill" class:on={drilled} onclick={() => game.toggleDrill(tech.id)}>
+          {drilled ? '🏋️ Drilling' : 'Drill'}
+        </button>
+      {/if}
     </div>
-    {#if !drilled}
+    {#if martialOpen && !drilled}
       <p class="dim small ctx">Only drilled techniques bank reps — {MAX_DRILLED} slots.</p>
     {/if}
   {:else if spell}
@@ -228,7 +233,9 @@
     >
       + Add condition
     </button>
-    <p class="dim small foot">Saved plans remember these conditions — see Loadouts.</p>
+    {#if martialOpen}
+      <p class="dim small foot">Saved plans remember these conditions — see Loadouts.</p>
+    {/if}
   </div>
 </Modal>
 

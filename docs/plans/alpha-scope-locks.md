@@ -81,10 +81,12 @@ Two more shutters from the user's onboarding spec, same flag philosophy:
 
 User call: narrow the alpha slice.
 
-- `martial`: hides the Position Planner, loadouts, drilling, trigger editing
-  and drag-to-reorder on the Combat tab. Active Skills stays as a read-only
-  list. Techniques still self-learn and fire. Undrilled techniques bank no
-  mastery reps while it is shut.
+- `martial`: hides the Position Planner, loadouts and drilling on the
+  Combat tab. Techniques still fire. Undrilled techniques bank no mastery reps
+  while it is shut. Until 2026-11-02 it also hid trigger editing and
+  drag-to-reorder; the user moved those out: the rotation editor opens as soon
+  as any active is in the rotation, usually the tutorial's fire, spark or ice
+  word (CombatPanel `rotationEditable`).
 - `prep`: hides the Cutting Board (Kitchens, Alembics) and the Cold Counter
   (Forges). The Cooking Stove stays. Spot, NPC and stove texts no longer name
   the hidden benches; restore those lines when `prep` opens.
