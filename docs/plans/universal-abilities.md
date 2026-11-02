@@ -276,7 +276,9 @@ Each step ships alone and is verified before the next.
    = half gold, half XP, no drops. `hitTaken.boss` added. Measured at floor
    17: no statues while fighting normally; standing still 3 per 10 minutes,
    because the slow equal to Stone stretches the last hits (0.5% a point gives
-   10, none gives 12). Evolution decided (plain count of statues of enemies at
+   10, none gives 12). The user halved the slow ("Half the Stone %"): Stone
+   slows 0.5% a point (KSG 5c564a6, Facet 3e4128a, IG 8b4f7f3); standing still
+   10 per 10 minutes, fighting still none. Evolution decided (plain count of statues of enemies at
    85% of your level or attribute total, threshold placeholder 100, one split
    into Gorgon's Gaze, Rubble or Stoneskin; Facet docs/ABILITY_IDEAS.md), not
    built.
