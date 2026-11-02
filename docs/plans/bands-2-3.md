@@ -243,6 +243,11 @@ three boss rooms have a `fightLimit` (1). Gates read `kills:tag:goblin`.
 - **Tuning note (user, 2026-10-25):** smithing XP is too fast (one iron
   nodachi is about seven Smithing levels), and the Growth panel can show skill
   XP ×2.5 on a modest save. Tuning later, not part of this card.
+- **Dynamic levels (user, 2026-11-02):** band 1 left the player past these
+  dens (the band 1 exit save won 93-100% of floor 4-5 fights; John cleared
+  band 2 in 7.0-8.5 minutes). Band 2 now carries `dynamicLevel` (factor
+  1, capShare 1 = up to double the rolled level; 0.5 and a fixed +8 measured first): den monsters gain levels while the player's top three final
+  attributes exceed theirs. Bosses exempt, rewards unchanged. LEVELS.md §4a.
 
 ### M3, M4, M5 and the band 3 skeleton as built (2026-10-29, branch `band3-machinery`)
 

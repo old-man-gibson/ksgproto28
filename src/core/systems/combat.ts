@@ -512,7 +512,7 @@ function floatingSwing(state: GameState, bus: EventBus): boolean {
   });
 
   grantAttrXp(state, bus, 'wis', 1);
-  grantSkillXp(state, bus, ['combat', 'geneshaping'], 2 + monster.level * 0.25);
+  grantSkillXp(state, bus, ['combat', 'geneshaping'], 2 + rewardLevel(monster) * 0.25);
   if (monster.hp <= 0) {
     onKill(state, bus, 0);
     return true;
@@ -681,7 +681,7 @@ import {
   noteOutgoing,
   noteParry,
 } from './ledger';
-import { encounterLevel, killXp } from './levels';
+import { dynamicLevelBonus, encounterLevel, killXp, rewardLevel } from './levels';
 import { facetCombatStamp, facetCombatTick, facetSignal } from '../facet/signal';
 import { text } from '../text/log';
 
@@ -830,24 +830,35 @@ export function spawnMonster(
    * Mint a specific monster (escorts) instead of rolling the spot table.
    * `plain` also skips the modifier and rarity rolls — a staged fight is the
    * one the keeper described, not a champion that happened to roll.
+   * `levelBonus` is how much of `level` is dynamic levels (an escort carries
+   * its leader's, a filler its own), so rewards can leave it out.
    */
-  override?: { monsterId: string; level: number; plain?: boolean },
+  override?: { monsterId: string; level: number; plain?: boolean; levelBonus?: number },
 ): MonsterInstance {
   const table = eligibleEncounters(state, spot);
   // A rare thing that lives here is a drop like any other — "I have hunted this
   // ravine for an hour and never seen the hawk" is the same complaint as a fang
   // blade that will not fall. Keyed per spot: the ravine's hawk is not the
   // moor's. Escorts (`override`) roll nothing, so they pay nothing.
-  const pick: Pick<SpotEncounter, 'monsterId' | 'level' | 'levelRise'> = override
+  const pick: Pick<SpotEncounter, 'monsterId' | 'level' | 'levelRise' | 'once'> = override
     ? { monsterId: override.monsterId, level: [override.level, override.level] }
     : mercyPick(state, table, (e, rate) => (mercyTracked(rate) ? `spawn:${spot.id}:${e.monsterId}` : null));
   const def = MONSTERS[pick.monsterId];
   // A pinned level (escorts at their leader's, a staged dare) is final. A
   // rolled one takes the line's own rise (floor 19's judge, levels.ts
   // encounterLevel), then the band's step: on band 3 every direction cleared
-  // raises the rest (bands-2-3.md M5).
+  // raises the rest (bands-2-3.md M5). Last, the band's dynamic levels when
+  // it scales with the player (levels.ts dynamicLevelBonus), never on a
+  // `once` line (a boss); rewards read the level without them.
   const rolled = randInt(state, pick.level[0], pick.level[1]);
-  const level = override ? rolled : encounterLevel(state, pick, rolled) + bandLevelStep(state, spot);
+  const stepped = override ? rolled : encounterLevel(state, pick, rolled) + bandLevelStep(state, spot);
+  const levelBonus = override
+    ? (override.levelBonus ?? 0)
+    : pick.once
+      ? 0
+      : dynamicLevelBonus(state, spot, pick.monsterId, stepped);
+  const level = override ? rolled : stepped + levelBonus;
+  const paid = level - levelBonus;
 
   // Three classification axes: intrinsic tier (rolled multiplier within the
   // def's tier range), rolled modifier (demiboss/boss/aberrant), rolled rarity.
@@ -894,10 +905,11 @@ export function spawnMonster(
     range: def.range ?? 'melee',
     bar: 0,
     stunSpent: 0,
-    xp: def.xp * (1 + 0.35 * (level - 1)) * rewardMult,
+    xp: def.xp * (1 + 0.35 * (paid - 1)) * rewardMult,
     gold: def.gold
-      ? Math.round(randInt(state, def.gold[0], def.gold[1]) * level * tier.rewardMult * modifier.rewardMult)
+      ? Math.round(randInt(state, def.gold[0], def.gold[1]) * paid * tier.rewardMult * modifier.rewardMult)
       : 0,
+    ...(levelBonus ? { levelBonus } : {}),
   };
   // What it IS, as opposed to what it does to you. See MonsterDef.wears — the
   // monster-side mirror of a gene's `confers`, which only ever dresses the
@@ -1006,17 +1018,21 @@ export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | 
         spawnMonster(state, spot, {
           monsterId: escorts[randInt(state, 0, escorts.length - 1)],
           level: leader.level,
+          levelBonus: leader.levelBonus,
         }),
       );
     } else if (filler.length) {
       const pick = weightedPick(state, filler);
-      // Rolled from the table, so it rises as its line does (levelRise) and
-      // takes the band's step, exactly as a leader rolled from that line
-      // would; only then is the level pinned.
+      // Rolled from the table, so it rises as its line does (levelRise),
+      // takes the band's step and its dynamic levels, exactly as a leader
+      // rolled from that line would; only then is the level pinned.
+      const stepped = encounterLevel(state, pick, randInt(state, pick.level[0], pick.level[1])) + bandLevelStep(state, spot);
+      const levelBonus = pick.once ? 0 : dynamicLevelBonus(state, spot, pick.monsterId, stepped);
       members.push(
         spawnMonster(state, spot, {
           monsterId: pick.monsterId,
-          level: encounterLevel(state, pick, randInt(state, pick.level[0], pick.level[1])) + bandLevelStep(state, spot),
+          level: stepped + levelBonus,
+          levelBonus,
         }),
       );
     } else {
@@ -1580,7 +1596,7 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
       case 'nothing':
         break;
       case 'gold': {
-        const gold = Math.round(qty * monster.level * getDerivedStats(state).goldGain);
+        const gold = Math.round(qty * rewardLevel(monster) * getDerivedStats(state).goldGain);
         state.gold += gold;
         bumpStat(state, bus, 'gold:earned', gold);
         bus.emit({ type: 'log', msg: text('combat.scavenged_gold', { gold }), kind: 'loot' });
@@ -4530,7 +4546,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
 
       grantAttrXp(state, bus, 'str', 2);
       grantAttrXp(state, bus, 'dex', 1);
-      grantSkillXp(state, bus, usedTags, 4 + monster.level * 0.5);
+      grantSkillXp(state, bus, usedTags, 4 + rewardLevel(monster) * 0.5);
       // Full-tag discovery: weapon families and stance schools manifest here
       // (tags carry the weapon and the active style).
       checkDiscovery(state, bus, tags);

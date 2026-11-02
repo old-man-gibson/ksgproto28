@@ -125,6 +125,37 @@ holds.
 - A new ladder floor: give it `clearXp` (tests/levels.test.ts checks band 1).
 - A new XP source: call `grantLevelXp`; add it to the table in §2.2.
 
+## 4a. Monster levels that follow the player (2026-11-02)
+
+Band 1's 28 mandatory fights leave a character at level 5 with STR, DEX
+and CON 15 to 19 (`scripts/band2-entry.ts`). Band 2's dens open at L7 to 9,
+and monster attributes grow 0.5 to 1.5 per level, so those dens fell behind.
+`BandDef.dynamicLevel` raises a band's monster levels while the player is
+ahead of them.
+
+| Part | Rule |
+|---|---|
+| Formula | `min(cap, floor(factor × max(0, P − M) / g))` levels on top of the rolled level L |
+| Cap | `max(1, floor(capShare × L))`: a share of the level, not a count. Monster attributes grow linearly with level, so k extra levels add about k / L of its strength; a fixed +8 doubles an L8 rat and adds a fifth to an L40 monster (user, 2026-11-02) |
+| P | Mean of the player's three highest final attributes (`derived.ts finalAttributes`: gear, titles, conditions and the level bonus included), read at the spawn |
+| M | Mean of the monster's three highest book attributes at the rolled level (`baseMonsterAttrs`) |
+| g | Mean growth per level of those three. A rat (0.63) takes more levels than a goblin (0.9) for the same gap |
+| Band 2 | `factor` 1 (the whole gap), `capShare` 1: up to double the rolled level (towers.data.ts). 0.5 was the first setting; the user took 1: "rather a bit too difficult than a bit too easy" |
+| Exempt | `once` lines (the three bosses) and their escorts; pinned spawns |
+| Rewards | Kill XP, its level-gap share, gold and per-hit skill XP read `level − levelBonus` (`rewardLevel`). A stronger player meets stronger monsters for the same pay |
+| Shown | The bestiary's level range includes it; band 2 spot texts say "up to double that while your attributes are higher than theirs" |
+| Save | `MonsterInstance.levelBonus`, optional. No migration |
+
+Top three of six, not a fixed set: a caster's INT and WIS count the way a
+fighter's STR and CON do. The cap keeps it bounded: past `M + cap × g / factor`
+the player outgrows the den again. `--dyn factor,capShare` on both sim scripts
+tries other values without touching data. Tests: tests/dynamicLevels.test.ts.
+
+Not covered: an ambush `window` line (`encounterPowerRatio`) prices its
+spawn at the authored level, without the bonus. Band 2 has none; a band
+that gets both needs the window priced at the dynamic level.
+
+
 ## 5. Open
 
 - Classes: the reason the track exists; nothing reads the level yet besides

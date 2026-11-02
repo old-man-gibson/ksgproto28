@@ -1,6 +1,9 @@
-import type { GameState, MonsterInstance, QuestDef, SpotEncounter } from '../types';
+import type { GameState, MonsterInstance, QuestDef, SpotDef, SpotEncounter } from '../types';
 import type { EventBus } from '../engine/events';
-import { BANDS, FLOORS, floorsInBand } from '../registry';
+import { BANDS, FLOORS, FLOOR_BY_AREA, MONSTERS, floorsInBand } from '../registry';
+import { ATTRIBUTE_LIST } from '../data/attributes.data';
+import { baseMonsterAttrs } from './monsterStats';
+import { finalAttributes } from './derived';
 import { setStat } from './achievements';
 import { bandCleared, bandClearedKey, bandPosKey, clearLapsed, clearMet, floorCleared } from './ladder';
 import { startingLevel } from './legacy';
@@ -62,8 +65,71 @@ export function levelGapXpMult(playerLevel: number, monsterLevel: number): numbe
  * never under MIN_KILL_XP. Computed once in combat and handed to both skill
  * XP and level XP (the `kill` event carries it), so the two never disagree.
  */
-export function killXp(state: GameState, monster: Pick<MonsterInstance, 'xp' | 'level'>): number {
-  return Math.max(MIN_KILL_XP, monster.xp * levelGapXpMult(state.level ?? 1, monster.level));
+export function killXp(state: GameState, monster: Pick<MonsterInstance, 'xp' | 'level' | 'levelBonus'>): number {
+  return Math.max(MIN_KILL_XP, monster.xp * levelGapXpMult(state.level ?? 1, rewardLevel(monster)));
+}
+
+/**
+ * The level a monster's rewards read: its level without the band's dynamic
+ * levels (`MonsterInstance.levelBonus`). Kill XP and its level-gap share,
+ * gold, and per-hit skill XP use it, so a stronger player meets stronger
+ * monsters without being paid more for them.
+ */
+export function rewardLevel(monster: Pick<MonsterInstance, 'level' | 'levelBonus'>): number {
+  return monster.level - (monster.levelBonus ?? 0);
+}
+
+const meanOf = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+/**
+ * Dynamic monster levels (BandDef.dynamicLevel; user, 2026-11-02). On a band
+ * that sets it, a table-rolled spawn gains levels while the player is ahead
+ * of it. With P the mean of the player's three highest final attributes,
+ * M the mean of the monster's three highest at the rolled level, and g the
+ * mean growth per level of those three:
+ *
+ *   min(cap, floor(factor × max(0, P − M) / g)),  cap = max(1, floor(capShare × L))
+ *
+ * with L the rolled level. The cap is a share of the level (user, 2026-11-02):
+ * monster attributes grow linearly with level, so k extra levels add about
+ * k / L of a monster's strength. A fixed +8 doubles an L8 rat and adds a fifth
+ * to an L40 monster; a share keeps the same lift on every floor.
+ *
+ * - Final = the score the stat formulas read (derived.ts finalAttributes):
+ *   gear, titles, conditions and the character-level bonus included, read
+ *   at the moment of the spawn.
+ * - Top three of six, not a fixed three: a caster's INT and WIS count the way
+ *   a fighter's STR and CON do.
+ * - M and g are book values (monsterStats.ts baseMonsterAttrs, no jitter or
+ *   tier roll). Dividing by g gives a weak species (a rat gains 0.6 STR per
+ *   level) more levels than a strong one for the same gap.
+ * - The cap bounds it, so the player always outgrows it. No RNG draw.
+ *
+ * `spawnMonster` and `spawnGroup`'s filler add it after `encounterLevel` and
+ * the band step; the bestiary's level range reads it too. `once` lines and
+ * pinned spawns (escorts, staged fights) never call it.
+ */
+export function dynamicLevelBonus(
+  state: GameState,
+  spot: Pick<SpotDef, 'areaId'>,
+  monsterId: string,
+  level: number,
+): number {
+  const floor = FLOOR_BY_AREA.get(spot.areaId);
+  const dyn = floor?.bandId === undefined ? undefined : BANDS[floor.bandId]?.dynamicLevel;
+  const def = MONSTERS[monsterId];
+  if (!dyn || !def) return 0;
+  const final = finalAttributes(state);
+  const mine = ATTRIBUTE_LIST.map((a) => final[a.id]).sort((a, b) => b - a);
+  const book = baseMonsterAttrs(def, level);
+  const top = ATTRIBUTE_LIST.map((a) => a.id)
+    .sort((a, b) => book[b] - book[a])
+    .slice(0, 3);
+  const growth = meanOf(top.map((id) => def.growth[id] ?? 0));
+  if (!(growth > 0)) return 0;
+  const gap = meanOf(mine.slice(0, 3)) - meanOf(top.map((id) => book[id]));
+  const cap = Math.max(1, Math.floor(dyn.capShare * level));
+  return Math.min(cap, Math.max(0, Math.floor((dyn.factor * gap) / growth)));
 }
 
 /**

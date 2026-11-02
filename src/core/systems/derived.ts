@@ -591,6 +591,8 @@ interface StatsCacheEntry {
   stats: DerivedStats;
   /** Target-gated variants (hunter bonuses), keyed by sorted tag string. */
   vs: Map<string, DerivedStats>;
+  /** The final attributes (`finalAttributes`), filled on first read. */
+  attrs?: Record<AttributeId, number>;
 }
 
 const STATS_CACHE = new WeakMap<GameState, StatsCacheEntry>();
@@ -714,6 +716,23 @@ export function getDerivedStats(state: GameState, vsTags?: ReadonlySet<string>):
     entry.vs.set(key, vs);
   }
   return vs;
+}
+
+/**
+ * The six attributes as the stat formulas read them: trained level plus every
+ * attribute modifier (character level, gear, titles, skills, conditions,
+ * endowment), fused super-attributes read as their sum. Memoized with the
+ * stat block, so it is as fresh as `getDerivedStats`. Treat as frozen.
+ */
+export function finalAttributes(state: GameState): Readonly<Record<AttributeId, number>> {
+  const entry = statsCacheEntry(state);
+  if (!entry.attrs) {
+    const eff = effectiveAttrsFrom(state, entry.mods);
+    const out = {} as Record<AttributeId, number>;
+    for (const a of ATTRIBUTE_LIST) out[a.id] = attrValueFrom(state, eff, a.id);
+    entry.attrs = out;
+  }
+  return entry.attrs;
 }
 
 // ---------- Tooltip breakdowns ----------
