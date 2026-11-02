@@ -14,16 +14,17 @@
 // the debug panel grants it); `frozen-*` hold attributes, skills or character
 // level at the fresh values every tick, which ranks what carries the climb;
 // `loss-xp-*` emulate a candidate fix (a knockout keeps only part of the XP
-// earned in that fight) without touching game code. `pts<k>-<split>` replace
-// the +1 to all six per character level with k free points per level, split
-// even / all CON / half STR half CON / all INT (with the tutorial Fire).
+// earned in that fight) without touching game code. `class-*` replace the +1
+// to all six per character level with a class growth vector (Barbarian;
+// Wizard, with the tutorial Fire); `pts5-con` is 5 free points a level all in
+// CON, the extreme reference.
 //
 //   npx vite-node scripts/woods-edge.ts
 //   npx vite-node scripts/woods-edge.ts -- --seeds 1,2,3 --attempts 12 --spot f6_tunnels
 //   npx vite-node scripts/woods-edge.ts -- --variants base,martial
 //   npx vite-node scripts/woods-edge.ts -- --john        John's floor 4 fights, the expected numbers
 //   npx vite-node scripts/woods-edge.ts -- --verbose     every attempt of every run
-//   npx vite-node scripts/woods-edge.ts -- --variants base,pts5-con,pts5-int   free level points
+//   npx vite-node scripts/woods-edge.ts -- --variants base,class-barbarian,base-fire,class-wizard,pts5-con   per-level growth
 //   npx vite-node scripts/woods-edge.ts -- --variants none --power             power by level, no fights
 //
 // Deterministic: seeds in, same runs out. Variants on the same seed share the
@@ -48,6 +49,8 @@ import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { LEVEL_ATTR_BONUS } from '../src/core/data/levels.data';
 import { expectedHitTaken, roughDps } from '../src/ui/lib/statSummary';
 import { incomingSlice } from '../src/core/systems/combat';
+import { MONSTERS } from '../src/core/registry';
+import { baseMonsterAttrs } from '../src/core/systems/monsterStats';
 
 const args = process.argv.slice(2);
 const opt = (flag: string, fallback: string) => {
@@ -76,29 +79,24 @@ interface Variant {
    */
   lossXp?: number;
   /**
-   * Free level points instead of +1 to all six per level: `k` points per
-   * level split by `split`'s weights (emulated, see installPoints).
+   * What each character level adds, replacing +1 to all six: a class growth
+   * vector, fractions allowed (emulated, see installGrowth).
    */
-  points?: { k: number; split: Partial<Record<AttributeId, number>> };
+  growth?: Partial<Record<AttributeId, number>>;
   /** The tutorial's one-word spell, prepared before the skip (INT 2). */
   spell?: string;
 }
 
-/** The free-point splits the sim compares (user, 2026-11-02). */
-const SPLITS: Record<string, Partial<Record<AttributeId, number>>> = {
-  even: { str: 1, dex: 1, con: 1 },
-  con: { con: 1 },
-  strcon: { str: 1, con: 1 },
-  int: { int: 1 },
-};
-const POINT_VARIANTS: Variant[] = [3, 4, 5].flatMap((k) =>
-  Object.entries(SPLITS).map(([name, split]) => ({
-    id: `pts${k}-${name}`,
-    martial: false,
-    points: { k, split },
-    ...(name === 'int' ? { spell: 'fire' } : {}),
-  })),
-);
+/**
+ * Per-level growth to compare (user, 2026-11-02): +1 to all six stays until
+ * classes exist; a class will set a vector like these. Each sums to about 6.
+ * `pts5-con` (5 free points a level, all CON) is the extreme reference.
+ */
+const GROWTH_VARIANTS: Variant[] = [
+  { id: 'class-barbarian', martial: false, growth: { str: 1.3, dex: 1, con: 2, int: 0.3, wis: 0.8, cha: 0.6 } },
+  { id: 'class-wizard', martial: false, spell: 'fire', growth: { str: 0.33, dex: 0.33, con: 0.33, int: 3, wis: 1.2, cha: 0.8 } },
+  { id: 'pts5-con', martial: false, growth: { con: 5 } },
+];
 
 const VARIANTS: Variant[] = [
   { id: 'base', martial: false },
@@ -114,26 +112,25 @@ const VARIANTS: Variant[] = [
   { id: 'loss-xp-50', martial: true, lossXp: 0.5 },
   { id: 'loss-xp-0', martial: true, lossXp: 0 },
   { id: 'base-fire', martial: false, spell: 'fire' },
-  ...POINT_VARIANTS,
+  ...GROWTH_VARIANTS,
 ];
 
 /**
- * Free level points, emulated in process: a sim-only achievement whose every
+ * Per-level growth, emulated in process: a sim-only achievement whose every
  * tier is one level's worth. A tier takes LEVEL_ATTR_BONUS back off all six
- * and adds k points split by weight. `syncPoints` keeps the claimed tiers at
+ * and adds the growth vector. `syncPoints` keeps the claimed tiers at
  * level − 1 every tick; modFingerprint keys on `a<id>:<tiers>`, so the stat
  * cache rebuilds whenever the level moves. No game code changes.
  */
-const POINTS_ID = 'sim_level_points';
-function installPoints(points: NonNullable<Variant['points']>): void {
-  const weight = Object.values(points.split).reduce((a, b) => a + (b ?? 0), 0);
+const POINTS_ID = 'sim_level_growth';
+function installGrowth(growth: NonNullable<Variant['growth']>): void {
   const bonus: Modifier[] = [
     ...ATTRIBUTE_LIST.map((a): Modifier => ({ stat: a.id, op: 'add', value: -LEVEL_ATTR_BONUS })),
-    ...Object.entries(points.split).map(([a, w]): Modifier => ({ stat: a as AttributeId, op: 'add', value: (points.k * (w ?? 0)) / weight })),
+    ...Object.entries(growth).map(([a, v]): Modifier => ({ stat: a as AttributeId, op: 'add', value: v ?? 0 })),
   ];
   (ACHIEVEMENTS as Record<string, AchievementDef>)[POINTS_ID] = {
     id: POINTS_ID,
-    name: 'Level points (sim)',
+    name: 'Level growth (sim)',
     icon: '•',
     statKey: 'sim:never',
     descTemplate: '',
@@ -222,7 +219,7 @@ function run(seed: number, variant: Variant): Run {
   const sword = s.inventory.find((i) => i.defId === 'rusty_sword');
   if (sword && !s.equipment.weapon) g.equip(sword.uid, 'weapon');
   if (variant.martial) s.stats['flag:unlock_martial'] = 1;
-  if (variant.points) installPoints(variant.points);
+  if (variant.growth) installGrowth(variant.growth);
   else uninstallPoints();
   if (variant.ability) {
     installFacet();
@@ -239,9 +236,9 @@ function run(seed: number, variant: Variant): Run {
   const fresh = structuredClone({ attrs: s.attrs, skills: s.skills });
   const freeze = new Set(variant.freeze ?? []);
   const step = () => {
-    if (variant.points) syncPoints(s);
+    if (variant.growth) syncPoints(s);
     g.tick();
-    if (variant.points) syncPoints(s);
+    if (variant.growth) syncPoints(s);
     if (freeze.has('attrs')) for (const [k, v] of Object.entries(fresh.attrs)) Object.assign(s.attrs[k as keyof typeof s.attrs], v);
     if (freeze.has('skills')) s.skills = structuredClone(fresh.skills);
     if (freeze.has('level')) {
@@ -404,14 +401,30 @@ for (const v of VARIANTS.filter((x) => picked.includes(x.id))) {
     }
 }
 
-// ---------- Static power by level: free points against +1 to all six ----------
+// ---------- Static power by level: class growth against +1 to all six ----------
 //
 // `--power`: a fresh character (trained attributes 1, rusty sword; INT 2 and
-// the prepared Fire with the INT split) set straight to a level, no fights.
-// Power = rough weapon DPS × max HP / expected damage from a 20-damage
-// physical blow (the sidebar's Offense and Defense, src/ui/lib/statSummary.ts).
+// the prepared Fire where the row says so) set straight to a level, no fights.
+// - melee = rough weapon DPS × effective HP, where effective HP = max HP /
+//   expected damage from a 20-damage physical blow (the sidebar's Offense
+//   and Defense, src/ui/lib/statSummary.ts).
+// - burst = max mana × spell power; sustained = mana regen × spell power.
+// - P = the mean of the three highest attributes, what band 2's dynamic
+//   levels read (branch dynamic-levels, levels.ts dynamicLevelBonus), and the
+//   levels that would add to a L8 goblin and a L8 rat at factor 0.5, cap 8.
 if (args.includes('--power')) {
-  const rows: Variant[] = [{ id: 'today', martial: false }, { id: 'today-fire', martial: false, spell: 'fire' }, ...POINT_VARIANTS];
+  const rows: Variant[] = [{ id: 'today', martial: false }, { id: 'today-fire', martial: false, spell: 'fire' }, ...GROWTH_VARIANTS];
+  /** The dynamic-levels formula, inlined: this branch does not carry it. */
+  const bonusVs = (p: number, monsterId: string, level: number) => {
+    const def = MONSTERS[monsterId];
+    const book = baseMonsterAttrs(def, level);
+    const top = ATTRIBUTE_LIST.map((a) => a.id)
+      .sort((a, b) => book[b] - book[a])
+      .slice(0, 3);
+    const m = top.reduce((n, id) => n + book[id], 0) / 3;
+    const g = top.reduce((n, id) => n + (def.growth[id] ?? 0), 0) / 3;
+    return Math.min(8, Math.max(0, Math.floor((0.5 * (p - m)) / g)));
+  };
   const statsAt = (v: Variant, level: number) => {
     const g = new Game(createInitialState(1));
     const s = g.state;
@@ -419,54 +432,58 @@ if (args.includes('--power')) {
     g.skipTutorial();
     const blade = s.inventory.find((i) => i.defId === 'rusty_sword');
     if (blade) g.equip(blade.uid, 'weapon');
-    if (v.points) installPoints(v.points);
+    if (v.growth) installGrowth(v.growth);
     else uninstallPoints();
     s.level = level;
-    if (v.points) syncPoints(s);
+    if (v.growth) syncPoints(s);
     const st = getDerivedStats(s);
     const landed = (['slashing', 'piercing', 'bludgeoning'] as const).reduce((n, t) => n + incomingSlice(st, t, '', 20).dealt, 0) / 3;
-    const hit = expectedHitTaken(st);
+    const ehp = st.maxHp / Math.max(0.01, expectedHitTaken(st));
+    const attrs = ATTRIBUTE_LIST.map((a) => effectiveAttr(s, a.id));
+    const top = [...attrs].sort((a, b) => b - a).slice(0, 3);
+    const p = (top[0] + top[1] + top[2]) / 3;
     return {
-      attrs: (['str', 'dex', 'con', 'int'] as const).map((a) => effectiveAttr(s, a)),
-      hp: st.maxHp,
+      attrs,
       dps: roughDps(st),
+      ehp,
       landed,
-      hit,
-      power: (roughDps(st) * st.maxHp) / Math.max(0.01, hit),
-      spellPower: st.spellPower,
+      melee: roughDps(st) * ehp,
+      burst: st.maxMana * st.spellPower,
+      sustained: st.manaRegen * st.spellPower,
+      p,
+      goblin: bonusVs(p, 'goblin', 8),
+      rat: bonusVs(p, 'forest_rat', 8),
     };
   };
   for (const level of [5, 10, 15]) {
     const today = statsAt(rows[0], level);
-    console.log(`\n== Level ${level}, fresh trained attributes ==`);
-    console.log('variant        STR   DEX   CON   INT   max HP  DPS    20-blow lands  per hit  power   × today  spell power × today');
+    const todayFire = statsAt(rows[1], level);
+    console.log(`\n== Level ${level}, fresh trained attributes. × columns: against 'today' (melee) and 'today-fire' (spells) ==`);
+    console.log('variant          STR   DEX   CON   INT   WIS   CHA   DPS ×   EHP ×   melee ×  burst ×  sustain ×  20-blow lands  P     +lv gob L8  +lv rat L8');
     for (const v of rows) {
       const r = statsAt(v, level);
       console.log(
         [
-          v.id.padEnd(13),
+          v.id.padEnd(15),
           ...r.attrs.map((x) => f1(x).padStart(5)),
-          String(Math.round(r.hp)).padStart(7),
-          f1(r.dps).padStart(6),
+          f1(r.dps / today.dps).padStart(6),
+          f1(r.ehp / today.ehp).padStart(7),
+          f1(r.melee / today.melee).padStart(9),
+          f1(r.burst / todayFire.burst).padStart(8),
+          f1(r.sustained / todayFire.sustained).padStart(10),
           f1(r.landed).padStart(14),
-          f1(r.hit).padStart(8),
-          String(Math.round(r.power)).padStart(7),
-          f1(r.power / today.power).padStart(8),
-          f1(r.spellPower / today.spellPower).padStart(19),
+          f1(r.p).padStart(5),
+          String(r.goblin).padStart(10),
+          String(r.rat).padStart(11),
         ].join(' '),
       );
     }
   }
-  // Where a CON dump stops taking damage from a 20-damage blow.
-  for (const k of [3, 4, 5]) {
-    const v = POINT_VARIANTS.find((x) => x.id === `pts${k}-con`)!;
+  // Where each growth stops taking damage from a 20-damage blow.
+  for (const v of [rows[0], ...GROWTH_VARIANTS.filter((x) => x.id !== 'class-wizard')]) {
     let at: number | null = null;
-    for (let level = 1; level <= 60 && at === null; level++) if (statsAt(v, level).landed <= 1) at = level;
-    const today = (() => {
-      for (let level = 1; level <= 200; level++) if (statsAt(rows[0], level).landed <= 1) return level;
-      return null;
-    })();
-    console.log(`20-damage blow lands for 1 or less: CON dump k=${k} at level ${at ?? '>60'}; today's +1 to all six at level ${today ?? '>200'}`);
+    for (let level = 1; level <= 200 && at === null; level++) if (statsAt(v, level).landed <= 1) at = level;
+    console.log(`20-damage blow lands for 1 or less: ${v.id} at level ${at ?? '>200'}`);
   }
   uninstallPoints();
 }
