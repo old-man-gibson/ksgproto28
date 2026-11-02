@@ -340,6 +340,9 @@ B.bramble = {
 //     ksgproto28 keeps it 3 seconds; broken before then it throws its max HP as rocks at the
 //     enemies behind it, half Piercing and half Slashing; either way it pays Stone Chunks worth
 //     half its gold and half its XP (statuses.data.ts, combat.ts onKill).
+//   - Stone slows 0.5% a point, half the approved "same percent" (user 2026-11-02: "Half the
+//     Stone %"). At 1% a point the last hits took most of the time: at KSG floor 17, standing
+//     still with attributes 30, 3 statues in 10 minutes; at 0.5%, 10.
 //
 // The document only applies Stone. The evolution (three branches, user 2026-11-02) is the next
 // slice; its decisions are in docs/ABILITY_IDEAS.md.
@@ -348,10 +351,10 @@ B.bramble = {
 // that does not report it treats every attacker as an ordinary enemy.
 const STONE = {
   id: 'basilisk_stone', name: 'Stone', icon: '🪨',
-  desc: 'Slows its actions by 1% per point. At 100 it turns to stone.',
+  desc: 'Slows its actions by 0.5% per point. At 100 it turns to stone.',
   element: 'earth', contest: 'con', escalatesTo: 'petrified', duration: null,
   stacking: { mode: 'sum', cap: 100, onCap: 'escalate', escalateMult: 0.01 },
-  mods: [{ q: 'fighter.speed', op: 'mult', value: -0.01 }],
+  mods: [{ q: 'fighter.speed', op: 'mult', value: -0.005 }],
 };
 const IS_BOSS = { not: { frame: 'boss', op: 'ne', v: 1 } };
 const stone = (intensity) => ({ emit: 'status', scope: { frame: 'attacker' }, def: STONE, intensity });

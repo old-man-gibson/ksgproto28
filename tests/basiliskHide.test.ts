@@ -15,7 +15,7 @@ import type { GameState, MonsterInstance } from '../src/core/types';
 /**
  * Basilisk Hide (Facet repo core/facet.bank.js): each enemy blow puts Stone on
  * its attacker, 6 + CON / 10 a hit (1.5 on a boss), resisted by Earth and by
- * the attacker's CON against yours; Stone slows it 1% a point and at 100 it
+ * the attacker's CON against yours; Stone slows it 0.5% a point and at 100 it
  * becomes a statue (statuses.data.ts `petrified`). A statue does nothing; left
  * alone 3 seconds it crumbles, broken first it throws rocks at the enemies
  * behind it; either way it pays Stone Chunks worth half its gold and half its
@@ -68,14 +68,14 @@ describe('Basilisk Hide in this game', () => {
     expect(stoneOn(front)).toBeCloseTo(full / 2, 6);
   });
 
-  it('Stone slows the attacker 1% a point', () => {
+  it('Stone slows the attacker 0.5% a point', () => {
     const { state, game } = basilisk();
     const front = intoFight(state, game);
     front.hp = 1e9;
     front.attrs.con = 1;
     const speed = monsterStats(front).speed;
     blow(state, front);
-    expect(monsterStats(front).speed).toBeCloseTo(speed * (1 - 0.01 * stoneOn(front)), 6);
+    expect(monsterStats(front).speed).toBeCloseTo(speed * (1 - 0.005 * stoneOn(front)), 6);
   });
 
   it('at 100 Stone the attacker becomes a statue that does nothing', () => {

@@ -541,6 +541,8 @@ CASES['bank: Basilisk Hide puts Stone on the attacker: 6 + CON / 10 a hit, 1.5 o
   assert(Object.keys(H._applied).length === 3, 'a hit with no attacker applied Stone somewhere');
   const def = H._statuses.basilisk_stone;
   assert(def && def.stacking.mode === 'sum' && def.stacking.cap === 100, 'Stone should be defined to add up to 100');
+  const slow = F.bank.basilisk_hide.clauses[0].do[0].def.mods[0];
+  assert(slow.q === 'fighter.speed' && slow.value === -0.005, 'Stone should slow 0.5% a point, got ' + JSON.stringify(slow));
 };
 
 CASES['bank: Bramble raises its cap by 1 per 200 fights'] = (assert) => {

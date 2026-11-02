@@ -109,7 +109,8 @@ enemy. Each enemy blow puts Stone on its attacker: 6 + CON / 10 a hit, a
 flat 1.5 on the spot's boss. Stone is Earth, so the enemy's Earth resistance
 cuts it, and it names a CON contest (`StatusDef.contest`): an enemy with more
 CON than you takes it × yours ÷ its, never below the application floor.
-Stone slows the enemy 1% a point and at 100 escalates into `petrified`, this
+Stone slows the enemy 0.5% a point (half the approved "same percent"; the
+user halved it 2026-11-02) and at 100 escalates into `petrified`, this
 game's statue (statuses.data.ts). A statue does nothing (combat.ts
 `isStatue` skips its turn). Left alone, its Petrified runs out after 3
 seconds and it crumbles away; broken before then (killed while Petrified),
