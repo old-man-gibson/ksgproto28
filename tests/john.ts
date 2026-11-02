@@ -5,7 +5,7 @@ import { getDerivedStats } from '../src/core/systems/derived';
 import { hasKeyItem } from '../src/core/systems/keyitems';
 import { xpToReach } from '../src/core/systems/levels';
 import { FLOORS, NPCS, SPOTS } from '../src/core/registry';
-import type { TutorialWeapon, UnlockCondition } from '../src/core/types';
+import type { GameState, TutorialWeapon, UnlockCondition } from '../src/core/types';
 
 /**
  * JOHN (docs/COMPLETABILITY.md §8) — the floor build, played up the tower.
@@ -97,6 +97,8 @@ export interface ClimbReport {
   /** Lifetime character-level XP at the end of the climb. */
   levelXp: number;
   fights: FightRecord[];
+  /** The save as the climb left it, for drivers that carry on from there. */
+  state: GameState;
 }
 
 /** The office route the clerk's daybook gives (systems/floodedFloor.ts). */
@@ -124,6 +126,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     levels: Object.fromEntries(SEGMENTS.map((k) => [k, null])) as ClimbReport['levels'],
     levelXp: 0,
     fights: [],
+    state: s,
   };
 
   let t = 0;
