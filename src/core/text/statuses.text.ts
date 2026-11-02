@@ -36,6 +36,8 @@ export const STATUSES_TEXT: ProseTable = {
 
   'frozen.desc': 'Speed is reduced by 95% and bludgeoning resistance by 50% for 3 seconds. Any damage taken removes it.',
 
+  'petrified.desc': 'A statue: it cannot act. Break it within 3 seconds and it throws its max HP as rocks at the enemies behind it; left alone, it crumbles away. Either way it pays Stone Chunks worth half its gold and half its XP.',
+
   'bleeding.desc': 'Deals 0.08 slashing damage per tick plus 0.15% of current health, at 30% rate out of combat. No timer. Each cut is its own stack; at 5 it escalates to Lacerated. Removed only by rest, a salve, a healing spell, or a bleed cure (a Mendroot Salve).',
 
   'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and reduces maximum health by 4% per stack, up to 30%. No timer. Rest, a salve (a Mendroot Salve included), or a healing spell reduces it to Bleeding; a second treatment closes that.',

@@ -26,7 +26,7 @@ export const FOE = 'foe:';
  * | kill | an enemy dies (bus `kill`) | level, boss (1 for the spot's boss) |
  * | fightWon | the last enemy fell (bus `fight:won`), after its `kill` | |
  * | fightEnd | a fight closed however it ended (bus `fight:closed`) | won (0 or 1) |
- * | hitTaken | any damage reached the player (health.ts damagePlayer) | amount (what reached your HP), blow (the blow as thrown, before armour, resistance and ward; equals amount when nothing was thrown), type ('none' when untyped), attacker (the enemy's ref; '' for a condition, a trap, your own backlash), self (1 for a spell you cast on yourself, else 0) |
+ * | hitTaken | any damage reached the player (health.ts damagePlayer) | amount (what reached your HP), blow (the blow as thrown, before armour, resistance and ward; equals amount when nothing was thrown), type ('none' when untyped), attacker (the enemy's ref; '' for a condition, a trap, your own backlash), self (1 for a spell you cast on yourself, else 0), boss (1 when the attacker is the spot's boss) |
  * | hit, crit, dodge, parry, graze, enemyCast | combat's trigger stamps (markCombatEvent) | |
  * | flaskUsed | an alchemy flask was used (Game.useFlask) | |
  * | itemUsed | a consumable was used (Game.useConsumable) | |

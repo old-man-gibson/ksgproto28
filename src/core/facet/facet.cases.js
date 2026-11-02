@@ -519,6 +519,30 @@ CASES['bank: Bramble grows 2 + 10% of its cap on Poison you cast on yourself'] =
   assert(thorns() === 4, "an enemy's Poison blow should add 1, got " + thorns());
 };
 
+CASES['bank: Basilisk Hide puts Stone on the attacker: 6 + CON / 10 a hit, 1.5 on a boss'] = (assert) => {
+  const base = fakeHost();
+  const H = fakeHost({ quantities: () => base.quantities().concat([
+    { id: 'stat.eff.con', label: 'CON', kind: 'attribute', namespace: 'stat', nullifiable: false, writable: true },
+  ]) });
+  F.install(H);
+  H._add('a', { 'stat.eff.con': 30 });
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.basilisk_hide)));
+  F.attach('a', [doc]);
+  const stone = (r) => (H._applied[r] || []).filter((x) => x.id === 'basilisk_stone');
+  F.event('hitTaken', 'a', { amount: 10, type: 'slashing', attacker: 'e1', boss: 0 });
+  assert(stone('e1').length === 1 && Math.abs(stone('e1')[0].intensity - 9) < 1e-9,
+    'CON 30 should put 9 Stone on e1, got ' + JSON.stringify(stone('e1')));
+  F.event('hitTaken', 'a', { amount: 10, type: 'slashing', attacker: 'e2', boss: 1 });
+  assert(stone('e2').length === 1 && Math.abs(stone('e2')[0].intensity - 1.5) < 1e-9, 'a boss should take 1.5 Stone');
+  // No attacker: no one to turn to stone. A host without `boss` treats the attacker as ordinary.
+  F.event('hitTaken', 'a', { amount: 10, type: 'poison', attacker: '' });
+  F.event('hitTaken', 'a', { amount: 10, type: 'slashing', attacker: 'e3' });
+  assert(stone('e3').length === 1 && Math.abs(stone('e3')[0].intensity - 9) < 1e-9, 'a host without boss should give the ordinary 9');
+  assert(Object.keys(H._applied).length === 3, 'a hit with no attacker applied Stone somewhere');
+  const def = H._statuses.basilisk_stone;
+  assert(def && def.stacking.mode === 'sum' && def.stacking.cap === 100, 'Stone should be defined to add up to 100');
+};
+
 CASES['bank: Bramble raises its cap by 1 per 200 fights'] = (assert) => {
   const { H } = thornHost();
   F.install(H);

@@ -309,6 +309,20 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     // The ice cannot survive being hit.
     removal: [{ on: 'damageTaken', effect: 'remove' }],
   },
+  // A statue (Basilisk Hide's Stone at 100). It does nothing and leaves when
+  // the clock runs out; combat.ts pays it in Stone Chunks either way, and a
+  // statue broken before then throws rocks at the enemies behind it
+  // (`onKill`, `throwRubble`). Arrives only by escalation, already decided.
+  petrified: {
+    id: 'petrified',
+    name: 'Petrified',
+    icon: '🗿',
+    unresistable: 'a statue: the Stone already decided it',
+    stacking: { mode: 'highest' },
+    duration: 3 * SECOND,
+    blocks: ['swing', 'spell', 'attack'],
+    mods: [{ stat: 'speed', op: 'mult', value: -1 }],
+  },
 
   // ---------- Slashing: bleeding ----------
 

@@ -1,4 +1,5 @@
 import type {
+  AttributeId,
   DamageType,
   GameState,
   Modifier,
@@ -149,6 +150,18 @@ export function setMonsterResistanceReader(reader: MonsterResistanceReader): voi
 }
 
 /**
+ * The player's effective attribute, for `StatusDef.contest`. Registered by
+ * `attributes.ts` when it loads, for the same reason as the resistance reader:
+ * that module imports this one. Unregistered, a contest is not held.
+ */
+type PlayerAttributeReader = (state: GameState, attr: AttributeId) => number;
+let playerAttributeReader: PlayerAttributeReader | undefined;
+
+export function setPlayerAttributeReader(reader: PlayerAttributeReader): void {
+  playerAttributeReader = reader;
+}
+
+/**
  * A live monster's resistance to a type as its DAMAGE path applies it: the same
  * pipeline as above (innate from the species and its tags, conditions' mods,
  * derived mods, overrides and floors, plus `resElemental` for the elemental
@@ -266,20 +279,35 @@ function applicationMult(
   // Exempt by design (`StatusDef.unresistable`): nothing about the bearer is
   // read, so no stat, element or penetration can change the dose.
   if (def.unresistable) return 1;
-  if (!def.element) return 1;
+  const contest = contestMult(state, bearer, def);
+  if (!def.element) return contest;
   // No block passed means the caller cannot see one, not that the player is
   // unarmoured — leave the dose alone rather than inventing a resistance.
   const res =
     bearer === state
       ? playerConditionResistance(stats, def.element)
       : monsterConditionResistance(bearer as MonsterInstance, def.element);
-  if (res === undefined) return 1;
+  if (res === undefined) return contest;
   // The epsilon is for sums that are 1 on paper: 0.7 + 3 × 0.1 is a hair under.
   if (res - penetration >= IMMUNITY_RESISTANCE - 1e-9) return 0;
   // Vulnerability amplifies by the same arithmetic it resists by; the clamp is
   // the one `bearerResistance` applies to monsters, extended to the player so
   // equipment cannot stack its way past the floor.
-  return Math.max(APPLICATION_FLOOR, 1 - Math.max(-1, Math.min(0.9, res)));
+  return Math.max(APPLICATION_FLOOR, 1 - Math.max(-1, Math.min(0.9, res))) * contest;
+}
+
+/**
+ * `StatusDef.contest`: a monster with more of the named attribute than the
+ * player takes the dose cut by the ratio (yours ÷ its), never below the
+ * application floor. A weaker monster takes it in full; the contest only
+ * resists, it never amplifies. Only monster bearers: the condition is the
+ * player's, applied by the run's ability (Basilisk Hide's Stone against CON).
+ */
+function contestMult(state: GameState, bearer: GameState | MonsterInstance, def: StatusDef): number {
+  if (!def.contest || !isMonsterBearer(bearer) || !playerAttributeReader) return 1;
+  const theirs = bearer.attrs[def.contest] ?? 0;
+  if (theirs <= 0) return 1;
+  return Math.max(APPLICATION_FLOOR, Math.min(1, playerAttributeReader(state, def.contest) / theirs));
 }
 
 /**

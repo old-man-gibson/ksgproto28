@@ -315,4 +315,55 @@ B.bramble = {
     ] },
   ],
 };
+
+// ---------- Basilisk Hide ----------
+//
+// Approved by the user (team ability ENM-18, review page 1):
+//   Does: Each time an enemy lands a hit on you, it gains Stone: 6% + CON / 10 per hit. Bosses
+//         gain 1.5% per hit.
+//   Grows: Stone slows its attack speed by the same percent.
+//   Fails: At 100% it becomes a statue and leaves the fight. Its loot is replaced by Stone Chunks
+//          worth 50% of the normal gold. It gives 50% XP.
+//   Costs: You have to be hit for it to work.
+// User note: "enemies will be able to resist it based on their own attributes and resistances
+//   (earth? arcane? dark? poison?). the statue doesn't leave the fight immediately but disappears
+//   after a few seconds. the player can break it to pelt remaining enemies behind the statue with
+//   rocks for piercing and slashing damage."
+//
+// Readings taken (offered to the user 2026-11-01 as defaults, not overruled):
+//   - A hit is an enemy's blow (hitTaken with an attacker), as for Bramble.
+//   - CON / 10 is percentage points: CON 25 gives 8.5 Stone a hit. A boss (hitTaken `boss`) takes
+//     a flat 1.5.
+//   - Stone is Earth, so the host resists it by the enemy's Earth resistance, and it names a CON
+//     contest (`contest: 'con'`): an enemy with more CON than you takes it × yours ÷ its.
+//   - The statue is the host's: Stone escalates at 100 into the host's `petrified` condition.
+//     ksgproto28 keeps it 3 seconds; broken before then it throws its max HP as rocks at the
+//     enemies behind it, half Piercing and half Slashing; either way it pays Stone Chunks worth
+//     half its gold and half its XP (statuses.data.ts, combat.ts onKill).
+//
+// The document only applies Stone. The evolution (three branches, user 2026-11-02) is the next
+// slice; its decisions are in docs/ABILITY_IDEAS.md.
+//
+// Events: hitTaken (detail attacker, boss). The boss guard reads `boss` through `not`, so a host
+// that does not report it treats every attacker as an ordinary enemy.
+const STONE = {
+  id: 'basilisk_stone', name: 'Stone', icon: '🪨',
+  desc: 'Slows its actions by 1% per point. At 100 it turns to stone.',
+  element: 'earth', contest: 'con', escalatesTo: 'petrified', duration: null,
+  stacking: { mode: 'sum', cap: 100, onCap: 'escalate', escalateMult: 0.01 },
+  mods: [{ q: 'fighter.speed', op: 'mult', value: -0.01 }],
+};
+const IS_BOSS = { not: { frame: 'boss', op: 'ne', v: 1 } };
+const stone = (intensity) => ({ emit: 'status', scope: { frame: 'attacker' }, def: STONE, intensity });
+
+B.basilisk_hide = {
+  v: 1,
+  reading: { name: 'Basilisk Hide', icon: '🗿' },
+  cells: [],
+  clauses: [
+    { id: 'stone', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { not: IS_BOSS }] },
+      do: [stone({ expr: 'add', a: 6, b: { expr: 'div', a: { q: 'stat.eff.con' }, b: 10 } })] },
+    { id: 'stone_boss', on: 'event:hitTaken', when: { all: [FROM_ENEMY, IS_BOSS] }, do: [stone(1.5)] },
+  ],
+};
 })();

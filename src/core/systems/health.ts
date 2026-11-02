@@ -112,6 +112,8 @@ export function damagePlayer(
     thrown?: number;
     /** Your own working landing on you (a spell you cast on yourself). */
     self?: boolean;
+    /** The attacker is the boss of the spot you are fighting at (combat.ts isSpotBoss). */
+    boss?: boolean;
   } | null,
 ): number {
   if (amount <= 0) return 0;
@@ -144,6 +146,7 @@ export function damagePlayer(
     type: type ?? 'none',
     attacker: slot >= 0 ? FOE + slot : '',
     self: source?.self ? 1 : 0,
+    boss: source?.boss ? 1 : 0,
   });
   // A body that knits itself back together stops while it is being burned or
   // eaten — but that rule is no longer written here. It rides the `knitting`

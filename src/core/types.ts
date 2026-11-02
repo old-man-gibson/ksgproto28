@@ -1321,6 +1321,13 @@ export interface StatusDef {
    * Developer-facing; the tooltip only says "Cannot be resisted".
    */
   unresistable?: string;
+  /**
+   * An attribute contest on top of the element: a monster with more of this
+   * attribute than the player takes the dose × (yours ÷ its), never below the
+   * application floor (statuses.ts `contestMult`). Basilisk Hide's Stone
+   * names `con`.
+   */
+  contest?: AttributeId;
   /** The worse condition this becomes when it is pushed far enough. */
   escalatesTo?: string;
   /** The milder condition a 'deescalate' removal drops this back to. */

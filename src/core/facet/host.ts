@@ -87,6 +87,11 @@ const STATUS_SCHEMA = {
     stacking: { kind: 'meta' },
     desc: { kind: 'meta' },
     overrideRes: { kind: 'res', mortality: 'coverage' },
+    // Basilisk Hide's Stone: resisted by Earth and a CON contest, escalating to
+    // the game's own statue condition (statuses.data.ts `petrified`).
+    element: { kind: 'meta' },
+    contest: { kind: 'meta' },
+    escalatesTo: { kind: 'meta' },
   },
 };
 

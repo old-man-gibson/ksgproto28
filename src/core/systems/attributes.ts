@@ -14,7 +14,7 @@ import type {
 import { runeContextFor } from '../types';
 import { sizeFit, wieldScale } from './wield';
 import { sizeRank } from '../types';
-import { fieldHunger, statusMods } from './statuses';
+import { fieldHunger, setPlayerAttributeReader, statusMods } from './statuses';
 // Mutual with mutagens.ts, which reads `attrValue` from here. Safe the same way
 // derived.ts's mutual is: neither side touches the other at module-evaluation
 // time, only from inside functions.
@@ -356,6 +356,10 @@ export function effectiveAttrs(state: GameState): Record<AttributeId, number> {
 export function effectiveAttr(state: GameState, attr: AttributeId): number {
   return effectiveAttrs(state)[attr];
 }
+
+// A condition's attribute contest reads this (StatusDef.contest); statuses.ts
+// cannot import this module back.
+setPlayerAttributeReader(effectiveAttr);
 
 // ---------- Super-attribute resolution (fusion over EFFECTIVE values) ----------
 

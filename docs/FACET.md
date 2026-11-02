@@ -15,8 +15,8 @@ adapter beside it. The port plan, with every step and what each one adds, is
 **Never edit a `facet.*.js` file here.** Edit the master in the Facet repo,
 then:
 
-1. `node test/run.js` in the Facet repo (the core's own cases, 58 as of
-   Bramble).
+1. `node test/run.js` in the Facet repo (the core's own cases, 59 as of
+   Basilisk Hide).
 2. `node tools/sync.mjs` there. It writes every game's copy listed in
    `tools/targets.json`. For a copy in a worktree of this repo, name it:
    `node tools/sync.mjs --to D:/ksgproto28/.claude/worktrees/<name>/src/core/facet`.
@@ -38,7 +38,7 @@ reports a copy that has drifted from the master.
 | `src/core/facet/signal.ts` | The fight events the ability hears, and which state the core is bound to. Imports nothing but types, so health.ts and combat.ts can call it. |
 | `src/core/facet/quantities.ts` | Every number a document may read, with its id. |
 | `tests/facet.test.ts` | The manifest check, the core's corpus run through this game's loader, and the adapter. |
-| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts`, `tests/bramble.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
+| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts`, `tests/bramble.test.ts`, `tests/basiliskHide.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
 
 The adapter is installed once at boot in `src/ui/state.svelte.ts`, after the
 save loads, and bound to the loaded state before anything renders.
@@ -104,6 +104,24 @@ rides a status (Thorns), which is how the slow reaches the stat block. To try
 it: Grant 🌿 Bramble and hunt; the feed shows one running line of thorns per
 fight.
 
+**Basilisk Hide** is the fifth, and the first that puts a condition on an
+enemy. Each enemy blow puts Stone on its attacker: 6 + CON / 10 a hit, a
+flat 1.5 on the spot's boss. Stone is Earth, so the enemy's Earth resistance
+cuts it, and it names a CON contest (`StatusDef.contest`): an enemy with more
+CON than you takes it × yours ÷ its, never below the application floor.
+Stone slows the enemy 1% a point and at 100 escalates into `petrified`, this
+game's statue (statuses.data.ts). A statue does nothing (combat.ts
+`isStatue` skips its turn). Left alone, its Petrified runs out after 3
+seconds and it crumbles away; broken before then (killed while Petrified),
+it throws its max HP as rocks at the living enemies behind it, half
+Piercing and half Slashing (`throwRubble`), and `onKill` sweeps what the
+rocks killed before it looks for survivors. Either way it pays Stone Chunks
+worth half its gold and half its XP, and drops nothing else. The user
+approved it as team ability ENM-18 with a note (resistance, the lingering
+statue, the rocks); the readings are written above the document in the
+Facet bank. Its three evolution branches are decided (Facet
+docs/ABILITY_IDEAS.md) and not built.
+
 ### Enemies as refs
 
 A document aims at enemies through scopes, and the adapter names each enemy
@@ -126,7 +144,7 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `kill` | bus `kill` | `level`, `boss` (1 when the enemy is a boss of the spot, combat.ts `isSpotBoss`) |
 | `fightWon` | bus `fight:won`, after the last `kill` | |
 | `fightEnd` | bus `fight:closed`, however the fight ended | `won` (0 or 1) |
-| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` (what reached HP), `blow` (the blow as thrown, before armour, resistance and ward; `amount` when nothing was thrown), `type` (`'none'` when untyped), `attacker` (the enemy's ref, `''` for a condition, a trap or your own backlash), `self` (1 for a spell you cast on yourself) |
+| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` (what reached HP), `blow` (the blow as thrown, before armour, resistance and ward; `amount` when nothing was thrown), `type` (`'none'` when untyped), `attacker` (the enemy's ref, `''` for a condition, a trap or your own backlash), `self` (1 for a spell you cast on yourself), `boss` (1 when the attacker is the spot's boss) |
 | `hit`, `crit`, `dodge`, `parry`, `graze`, `enemyCast` | combat.ts `markCombatEvent` | |
 | `flaskUsed` | `Game.useFlask` | |
 | `itemUsed` | `Game.useConsumable` | |
@@ -143,8 +161,13 @@ field is missing, so a document should not guard on a field one game might not
 send. Little Moons adds the flag instead (`value: { frame: 'boss' }`), which
 reads a missing field as 0. Bramble guards on strings through `not`, which
 fails closed: `{ not: { frame: 'attacker', op: 'eq', v: '' } }` passes only
-when an attacker is named. This game always sends `type`, `attacker` and
-`self`.
+when an attacker is named. This game always sends `type`, `attacker`,
+`self` and `boss`.
+
+A document may define a condition (`emit: 'status'` with a `def`). The
+fields this game accepts are host.ts `STATUS_SCHEMA`: `mods`, `duration`,
+`hidden`, `stacking`, `desc`, `overrideRes`, and since Basilisk Hide
+`element`, `contest` and `escalatesTo`. Anything else is dropped at compile.
 
 **Why only bare imports.** The core files have no exports. A named import
 (`import { x } from './facet.core.js'`) passes vitest and fails `vite build`
