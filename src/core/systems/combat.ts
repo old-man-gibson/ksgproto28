@@ -3360,7 +3360,7 @@ export function abilityStrike(
     group: ABILITY_RUN + by.name,
     prefix: `${by.icon} ${by.name}:`,
     tally: [
-      { label: 'strikes', qty: 1 },
+      { label: 'strike', qty: 1 },
       { label: 'damage', qty: dmg, style: 'amount' },
     ],
     ids: [],

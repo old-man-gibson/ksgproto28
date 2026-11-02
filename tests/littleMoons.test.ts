@@ -99,7 +99,7 @@ describe('Little Moons in the game loop', () => {
     const run = state.floatingFeed?.find((f) => f.group === 'ability:Little Moons');
     // Due at 2.8, 3.7, 5.6 and 7.4 s, each striking 0.3 s later; the 7.9 s moon strikes at
     // 8.2 s, after the window. Four strikes in 8 s.
-    expect(run?.tally.find((x) => x.label === 'strikes')?.qty).toBe(4);
+    expect(run?.tally.find((x) => x.label === 'strike')?.qty).toBe(4);
     expect(state.resources.mana).toBeLessThan(mana);
   });
 
