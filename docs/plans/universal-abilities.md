@@ -224,12 +224,13 @@ Each step ships alone and is verified before the next.
    flask, enemy level = the strongest at fight start. Team 2's 0.99 decay is
    one number in the document. These events only report; reacting inside a
    blow (reflect, cancel) still needs K2.
-2c. **Little Moons: abilities act on enemies. Built 2026-11-01 on branch
-   `little-moons` (813eb8d, 7257b0f), not merged.** The user asked which
-   approved ability to build next and took the recommendation: Little Moons
-   (R3-SKY-19), the smallest one that acts on an enemy, which a large share
-   of the approved list needs. Core (Facet 10eb95b, branch `little-moons`;
-   IG branch `facet-repo` ca404e2, tests pass): `carrier: false` cells, a
+2c. **Little Moons: abilities act on enemies. Built 2026-11-01 and merged
+   into main the same day (b13a88f, unpushed); Facet main 10eb95b.** The
+   user asked which approved ability to build next and took the
+   recommendation: Little Moons (R3-SKY-19), the smallest one that acts on
+   an enemy, which a large share of the approved list needs. Core (Facet
+   10eb95b; IG branch `facet-repo` ca404e2, unmerged, tests pass):
+   `carrier: false` cells, a
    `{ seconds }` Expr node, the `spend` world verb through an optional
    `host.spendPool`. KSG: `Facet.tick` once per combat tick
    (`facetCombatTick`, then `sweepDead`), enemies as `foe:<slot>` refs
