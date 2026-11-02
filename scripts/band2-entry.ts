@@ -14,7 +14,7 @@ import { getDerivedStats } from '../src/core/systems/derived';
 import { effectiveAttr } from '../src/core/systems/attributes';
 import { knownTechniques } from '../src/core/systems/martial';
 import { startForcedFight } from '../src/core/systems/combat';
-import { FLOORS, SKILLS, SPOTS } from '../src/core/registry';
+import { BANDS, FLOORS, SKILLS, SPOTS } from '../src/core/registry';
 import type { GameState, TutorialWeapon } from '../src/core/types';
 import { runJohn, type ClimbReport } from '../tests/john';
 
@@ -31,6 +31,11 @@ const offsets = opt('--offsets', '0,2,4,6').split(',').map(Number);
 const groups = args.includes('--groups') ? opt('--groups', '').split(',').map(Number) : null;
 /** Measure only these hunts (comma list) and skip the bosses; default every band 2 hunt. */
 const only = args.includes('--spots') ? opt('--spots', '').split(',') : null;
+// `--dyn factor,cap` replaces band 2's dynamic levels in this process (towers.data.ts holds the real ones).
+if (args.includes('--dyn')) {
+  const [factor, cap] = opt('--dyn', '').split(',').map(Number);
+  BANDS.ascent_middle.dynamicLevel = cap > 0 ? { factor, cap } : undefined;
+}
 
 const BAND2 = ['ascent_f4', 'ascent_f5', 'ascent_f6'];
 const BOSSES = ['f4_ravine_floor', 'f5_back_door', 'f6_great_hall'];

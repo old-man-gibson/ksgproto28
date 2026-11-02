@@ -2157,6 +2157,11 @@ describe('towers, bands & floors', () => {
           expect(band.levelSteps[i], `${band.id}: steps never fall`).toBeGreaterThanOrEqual(band.levelSteps[i - 1]);
         }
       }
+      if (band.dynamicLevel) {
+        const { factor, cap } = band.dynamicLevel;
+        expect(factor > 0 && factor <= 1, `${band.id}: dynamic level factor is above 0 and at most 1`).toBe(true);
+        expect(Number.isInteger(cap) && cap >= 1, `${band.id}: dynamic level cap is a whole number of at least 1`).toBe(true);
+      }
     }
   });
 

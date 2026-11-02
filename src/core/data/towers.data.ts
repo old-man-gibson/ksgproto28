@@ -70,6 +70,10 @@ export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
     towerId: 'the_ascent',
     index: 2,
     clearsToAdvance: 2,
+    // Band 1's 28 mandatory fights leave the player well past these dens
+    // (user, 2026-11-02: scripts/band2-entry.ts). Monsters close half the
+    // gap, up to 8 levels (levels.ts dynamicLevelBonus). Bosses are exempt.
+    dynamicLevel: { factor: 0.5, cap: 8 },
   },
   // Band 3, the city (docs/plans/bands-2-3.md R6-R8, M3-M5). The castle is
   // the band's hub, a place the ladder also answers; the four directions open

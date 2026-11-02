@@ -14,7 +14,7 @@ import { attackIntervalOf, innateArmor, scaledMonsterAttrs, statsFromAttrs } fro
 import { attrValue } from './attributes';
 import { grantDiscoveryXp } from './skills';
 import { bumpStat } from './achievements';
-import { encounterLevel } from './levels';
+import { dynamicLevelBonus, encounterLevel } from './levels';
 import { text } from '../text/log';
 
 /**
@@ -269,8 +269,9 @@ export interface MonsterProfile {
 /**
  * Level range a monster spawns at, including as somebody else's escort. With
  * `state`, a line whose level follows a counter (SpotEncounter.levelRise) is
- * read as it stands now, through the same `encounterLevel` spawning uses;
- * without it, the authored range.
+ * read as it stands now, through the same `encounterLevel` spawning uses,
+ * plus the band's dynamic levels for this player; without it, the authored
+ * range.
  */
 export function spawnLevels(monsterId: string, state?: GameState): [number, number] {
   let lo = Infinity;
@@ -279,8 +280,15 @@ export function spawnLevels(monsterId: string, state?: GameState): [number, numb
     for (const enc of spot.encounters ?? []) {
       const escorted = MONSTERS[enc.monsterId]?.escorts?.includes(monsterId);
       if (enc.monsterId !== monsterId && !escorted) continue;
-      lo = Math.min(lo, state ? encounterLevel(state, enc, enc.level[0]) : enc.level[0]);
-      hi = Math.max(hi, state ? encounterLevel(state, enc, enc.level[1]) : enc.level[1]);
+      // A line's dynamic levels (levels.ts dynamicLevelBonus) follow the
+      // player, so the live book reads them as spawning would; an escort
+      // takes its leader's.
+      const at = (rolled: number) => {
+        const lvl = encounterLevel(state!, enc, rolled);
+        return enc.once ? lvl : lvl + dynamicLevelBonus(state!, spot, enc.monsterId, lvl);
+      };
+      lo = Math.min(lo, state ? at(enc.level[0]) : enc.level[0]);
+      hi = Math.max(hi, state ? at(enc.level[1]) : enc.level[1]);
     }
   }
   return Number.isFinite(lo) ? [lo, hi] : [1, 1];

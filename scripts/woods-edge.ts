@@ -32,7 +32,7 @@ import { getDerivedStats } from '../src/core/systems/derived';
 import { effectiveAttr } from '../src/core/systems/attributes';
 import { knownTechniques } from '../src/core/systems/martial';
 import { bindFacets, grantFacet, installFacet } from '../src/core/facet/host';
-import { FLOORS, SPOTS } from '../src/core/registry';
+import { BANDS, FLOORS, SPOTS } from '../src/core/registry';
 import { noteSafeSpot } from '../src/core/systems/safety';
 import { bandedXpNeeded } from '../src/core/systems/progression';
 import { skillXpNeeded } from '../src/core/systems/skills';
@@ -51,6 +51,11 @@ const ATTEMPTS = Number(opt('--attempts', '15'));
 const CAP = Number(opt('--cap', '20'));
 const SPOT = opt('--spot', 'f4_woods_edge');
 const verbose = args.includes('--verbose');
+// `--dyn factor,cap` replaces band 2's dynamic levels in this process (towers.data.ts holds the real ones; 0,0 = off).
+if (args.includes('--dyn')) {
+  const [factor, cap] = opt('--dyn', '').split(',').map(Number);
+  BANDS.ascent_middle.dynamicLevel = cap > 0 ? { factor, cap } : undefined;
+}
 /** The landing of the spot's floor: its camp is where a knockout there wakes. */
 const CAMP = Object.values(FLOORS).find((f) => f.areaId === SPOTS[SPOT].areaId)!.landing!;
 

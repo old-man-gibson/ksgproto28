@@ -2317,6 +2317,12 @@ export interface MonsterInstance {
   /** Attack reach, resolved from the def (absent there = melee). */
   range: MonsterRange;
   /**
+   * Levels in `level` that came from the band's dynamic scaling
+   * (BandDef.dynamicLevel). Rewards (kill XP, gold, per-hit skill XP) read
+   * `level − levelBonus` (levels.ts `rewardLevel`). Absent = 0.
+   */
+  levelBonus?: number;
+  /**
    * Ticks (absolute, against `totalTicks`) at which each of this specimen's
    * workings comes ready again, keyed by its index in `MonsterDef.casts`.
    * Transient like the encounter, and per-SPECIMEN so two of the same monster
@@ -4709,6 +4715,15 @@ export interface BandDef {
    * the order is a decision (bands-2-3.md M5).
    */
   levelSteps?: number[];
+  /**
+   * Monster levels that follow the player's strength on the band's floors
+   * (systems/levels.ts `dynamicLevelBonus`). A table-rolled spawn gains
+   * `floor(factor × gap / growth)` levels, at most `cap`, where gap is how far
+   * the player's three highest final attributes are ahead of the monster's
+   * three highest at its rolled level. `once` lines (bosses) and their escorts
+   * gain nothing. Rewards read the level without it.
+   */
+  dynamicLevel?: { factor: number; cap: number };
   desc?: string;
 }
 
