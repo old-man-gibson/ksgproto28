@@ -160,6 +160,38 @@ that gets both needs the window priced at the dynamic level.
 
 - Classes: the reason the track exists; nothing reads the level yet besides
   the attribute bonus.
+- **Class growth vectors: an idea, not a plan (user, 2026-11-02).** No
+  class system exists. The flat +1 to all six is a placeholder until one
+  does. The idea: a class replaces it with a per-level vector over STR /
+  DEX / CON / INT / WIS / CHA, fractional values allowed. Two made-up
+  vectors were used to test the idea. They are illustrations, not class
+  data:
+
+  | example | STR | DEX | CON | INT | WIS | CHA |
+  |---|---|---|---|---|---|---|
+  | barbarian | 1.3 | 1 | 2 | 0.3 | 0.8 | 0.6 |
+  | wizard | 0.33 | 0.33 | 0.33 | 3 | 1.2 | 0.8 |
+
+  - Engine fit: `collectBaseMods` would push vector × (level − 1) instead
+    of `(level − 1) × LEVEL_ATTR_BONUS`. `effectiveAttrsFrom` already sums
+    fractional adds (Endowment makes fractions today). Monsters already
+    grow this way: `baseMonsterAttrs` = `attrs + growth × (level − 1)`.
+  - Dropped: 3–5 free points per level that the player assigns. Dumping
+    them into one attribute reaches two breakpoints too fast. Armor is
+    0.3 × CON against flat blows with a 1-damage floor. Spell burst grows
+    with INT², because max mana is INT and spell power is 2 + 1.5 × INT.
+  - Sim of the two examples, against +1 to all six:
+    `scripts/woods-edge.ts --power` (branch `sim/woods-edge-fresh`,
+    b6e031c).
+    - Barbarian: power ×1.8 at level 5, ×2.4 at level 10, mostly effective
+      HP. A 20-damage blow lands for 1 at level 32, against 62 today.
+    - Wizard: spell burst ×4.9 at level 5, ×6.5 at level 10. Melee power
+      ×0.5 at level 5, ×0.3 at level 10.
+  - Clash with §4a: P is the mean of the top three attributes. It grows
+    1.0 per level today, 1.43 for the barbarian example and 1.67 for the
+    wizard example. A class that concentrates growth meets higher monster
+    levels, even where its melee is weaker. Revisit P before classes ship.
+  - Monster growth totals: median 4.8 per level, max 14.4 (115 monsters).
 - The Cages heal cap reads the trained attribute total. Switching it to
   "character level ≤ N" is a one-line change in `keeperTends` if wanted.
 - No level cap. The curve slows growth; nothing stops it.
