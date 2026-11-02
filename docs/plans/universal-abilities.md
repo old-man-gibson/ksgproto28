@@ -280,8 +280,21 @@ Each step ships alone and is verified before the next.
    slows 0.5% a point (KSG 5c564a6, Facet 3e4128a, IG 8b4f7f3); standing still
    10 per 10 minutes, fighting still none. Evolution decided (plain count of statues of enemies at
    85% of your level or attribute total, threshold placeholder 100, one split
-   into Gorgon's Gaze, Rubble or Stoneskin; Facet docs/ABILITY_IDEAS.md), not
-   built.
+   into Gorgon's Gaze, Rubble or Stoneskin; Facet docs/ABILITY_IDEAS.md);
+   built in 2f.
+2f. **Basilisk Hide evolves: abilities grow into a branch. Built 2026-11-02
+   on branch `basilisk-evolve` (217b0d0, stacked on `basilisk-hide`), not
+   merged.** Core: `emit: 'evolve'` writes the offer onto the document (saved
+   with it), `Facet.evolve` builds the pick from the bank with every shared
+   cell carried, and a status dose is read per target. Facet 9e60c74 (branch
+   `basilisk-evolve`, 62 cases), IG `facet-repo` 4811906. KSG: the `statue`
+   and `rocks` events, `fighter.boss` on an enemy, `world.statues`, statues
+   out of `resolve`, `StatusDef.statue` rules (petrified, petrified_rubble,
+   petrified_standing), Stoneskin's `standAside`, play held on
+   `pendingEvolution` like the keeper's dare, `EvolveModal.svelte`, a
+   Statues to 99 debug button. Measured at floor 17 over 10 minutes: CON 60
+   with the rest at 5 makes 10 counted statues fighting, even builds none, so
+   the placeholder 100 is about 100 minutes for a CON build.
 3. **Solar Charge in IG.** A day clock and sunlight read in IG; the same
    document runs unchanged.
 4. **Calorie Burn.** Core addition 2. KSG first, then IG's calories and
