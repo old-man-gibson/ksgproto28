@@ -437,14 +437,7 @@ export interface EvolutionChoice {
 export function pendingEvolution(state: GameState): { from: FacetDoc; choices: EvolutionChoice[] } | null {
   const from = state.facets?.find((d) => Array.isArray(d.offer) && d.offer.length);
   if (!from) return null;
-  const bank = globalThis.Facet?.bank ?? {};
-  const choices = (from.offer as string[]).map((key) => ({
-    key,
-    name: bank[key]?.reading?.name ?? key,
-    icon: bank[key]?.reading?.icon ?? '✦',
-    desc: bank[key]?.reading?.desc ?? '',
-  }));
-  return { from, choices };
+  return { from, choices: (from.offer as string[]).map(choiceOf) };
 }
 
 /**
@@ -490,6 +483,12 @@ export interface CellReadout {
   desc: string;
   /** The carrier status this cell rides on, so a status list can leave it out. */
   statusId: string;
+  /**
+   * Its carrier modifies one of your numbers, so while the value is not zero
+   * the cell is acting on you now. The sidebar shows only these; the Ability
+   * tab shows every cell.
+   */
+  acts: boolean;
 }
 
 export interface InputReadout {
@@ -498,22 +497,95 @@ export interface InputReadout {
   show: string;
 }
 
+/** A condition an ability's clauses put on fighters, and the one it turns into at its cap. */
+export interface ConditionReadout {
+  name: string;
+  icon: string;
+  desc: string;
+  becomes: { name: string; icon: string; desc: string } | null;
+}
+
 export interface FacetReadout {
   name: string;
   icon: string;
+  /** What the ability does. Empty for a document with no description. */
+  desc: string;
   cells: CellReadout[];
   inputs: InputReadout[];
+  conditions: ConditionReadout[];
+  /** The evolution its clauses offer: which cell triggers it, at what value, into which branches. */
+  evolves: { label: string; at: number; into: EvolutionChoice[] } | null;
 }
 
-/** What the sidebar shows for the run's ability: each cell's value, and the inputs it names. */
+type ClauseShape = { on?: string; do?: unknown[] };
+type EffectShape = {
+  emit?: string;
+  into?: string[];
+  defId?: string;
+  def?: { id?: string; name?: string; icon?: string; desc?: string; escalatesTo?: string };
+};
+
+/** Every effect object in a document's clauses. */
+const effectsOf = (doc: FacetDoc): { on: string; eff: EffectShape }[] =>
+  (doc.clauses as ClauseShape[]).flatMap((c) =>
+    (c.do ?? []).filter((e): e is EffectShape => !!e && typeof e === 'object').map((eff) => ({ on: c.on ?? '', eff })),
+  );
+
+/** A bank entry as a branch the pick screen or the Ability tab lists. */
+const choiceOf = (key: string): EvolutionChoice => {
+  const reading = globalThis.Facet?.bank?.[key]?.reading;
+  return { key, name: reading?.name ?? key, icon: reading?.icon ?? '✦', desc: reading?.desc ?? '' };
+};
+
+/**
+ * A document's description. One saved before its bank entry had one falls back
+ * to the entry with the same name: a document is a copy taken at grant, so it
+ * keeps the text it was granted with.
+ */
+function descOf(doc: FacetDoc): string {
+  if (doc.reading?.desc) return doc.reading.desc;
+  const name = doc.reading?.name;
+  const twin = Object.values(globalThis.Facet?.bank ?? {}).find((b) => name && b.reading?.name === name);
+  return twin?.reading?.desc ?? '';
+}
+
+/** The conditions a document's status effects apply: inline definitions, or host statuses by id. */
+function conditionsOf(doc: FacetDoc): ConditionReadout[] {
+  const seen = new Map<string, ConditionReadout>();
+  for (const { eff } of effectsOf(doc)) {
+    if (eff.emit !== 'status') continue;
+    const id = eff.def?.id ?? eff.defId;
+    if (!id || seen.has(id)) continue;
+    const def = eff.def ?? STATUSES[id];
+    if (!def) continue;
+    const next = eff.def?.escalatesTo ? STATUSES[eff.def.escalatesTo] : undefined;
+    seen.set(id, {
+      name: def.name ?? id,
+      icon: def.icon ?? '',
+      desc: def.desc ?? '',
+      becomes: next ? { name: next.name, icon: next.icon, desc: next.desc } : null,
+    });
+  }
+  return [...seen.values()];
+}
+
+/**
+ * Every ability the run holds, read for the sidebar and the Ability tab: the
+ * cells its document marks for showing, the inputs it names, the conditions
+ * it applies, and its evolution.
+ */
 export function facetReadouts(state: GameState): FacetReadout[] {
   const F = globalThis.Facet;
   if (!F?.ready() || boundState() !== state) return [];
   return state.facets.map((doc) => {
     const ctx = { ref: PLAYER_REF, facet: doc, bindings: {} };
+    const cell = (key: string) => doc.cells?.find((c) => c.key === key);
+    const evolve = effectsOf(doc).find(({ on, eff }) => eff.emit === 'evolve' && /^cell:\w+:cap$/.test(on));
+    const trigger = evolve && cell(evolve.on.split(':')[1]);
     return {
       name: doc.reading?.name ?? 'Ability',
       icon: doc.reading?.icon ?? '✦',
+      desc: descOf(doc),
       cells: (doc.cells ?? [])
         .filter((c) => c.show)
         .map((c) => ({
@@ -525,12 +597,21 @@ export function facetReadouts(state: GameState): FacetReadout[] {
           show: c.show!,
           desc: c.status?.desc ?? '',
           statusId: carrierPrefix(doc) + c.key,
+          acts: c.carrier !== false && Array.isArray(c.status?.mods) && (c.status.mods as unknown[]).length > 0,
         })),
       inputs: (doc.reading?.inputs ?? []).map((i) => ({
         label: i.label,
         value: F.readQ(PLAYER_REF, i.q).value,
         show: i.show ?? '',
       })),
+      conditions: conditionsOf(doc),
+      evolves: trigger
+        ? {
+            label: trigger.label ?? trigger.key,
+            at: F.evalExpr(trigger.cap, ctx),
+            into: (evolve.eff.into ?? []).filter((k) => F.bank?.[k]).map(choiceOf),
+          }
+        : null,
     };
   });
 }

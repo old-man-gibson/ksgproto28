@@ -8,6 +8,7 @@
   import LocationPanel from './panels/LocationPanel.svelte';
   import CombatPanel from './panels/CombatPanel.svelte';
   import SkillsPanel from './panels/SkillsPanel.svelte';
+  import AbilityPanel from './panels/AbilityPanel.svelte';
   import EquipmentPanel from './panels/EquipmentPanel.svelte';
   import QuestsPanel from './panels/QuestsPanel.svelte';
   import AchievementsPanel from './panels/AchievementsPanel.svelte';
@@ -114,6 +115,8 @@
         { id: 'location', name: '🗺️ Location' },
         { id: 'combat', name: '⚔️ Combat' },
         { id: 'skills', name: '📜 Skills' },
+        // The run's ability (docs/FACET.md), while it holds one.
+        { id: 'ability', name: '✦ Ability' },
         { id: 'equipment', name: '🎒 Equipment' },
         { id: 'chromosome', name: '🧬 Chromosome' },
         { id: 'music', name: '🎼 Music' },
@@ -126,15 +129,17 @@
         { id: 'prestige', name: '♻️ Prestige' },
       ] as const
     ).filter((t) =>
-      t.id === 'chromosome'
-        ? subsystemUnlocked(gs, 'genes')
-        : t.id === 'music'
-          ? subsystemUnlocked(gs, 'music')
-          : t.id === 'wuxin'
-            ? subsystemUnlocked(gs, 'wuxin')
-            : t.id === 'prestige'
-              ? prestigeVisible(gs)
-              : true,
+      t.id === 'ability'
+        ? gs.facets.length > 0
+        : t.id === 'chromosome'
+          ? subsystemUnlocked(gs, 'genes')
+          : t.id === 'music'
+            ? subsystemUnlocked(gs, 'music')
+            : t.id === 'wuxin'
+              ? subsystemUnlocked(gs, 'wuxin')
+              : t.id === 'prestige'
+                ? prestigeVisible(gs)
+                : true,
     ),
   );
 
@@ -418,6 +423,8 @@
         <CombatPanel />
       {:else if ui.tab === 'skills'}
         <SkillsPanel />
+      {:else if ui.tab === 'ability'}
+        <AbilityPanel />
       {:else if ui.tab === 'equipment'}
         <EquipmentPanel />
       {:else if ui.tab === 'chromosome'}

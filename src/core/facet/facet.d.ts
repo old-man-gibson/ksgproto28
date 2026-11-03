@@ -44,7 +44,8 @@ export interface FacetDoc {
   clauses: unknown[];
   /**
    * Display hints. `hit` is what the feed calls the ability's damage lines
-   * ('strike' when unset); `desc` is what a branch's pick screen says.
+   * ('strike' when unset); `desc` is what the ability does, for the Ability
+   * tab and a branch's pick screen.
    */
   reading?: { name?: string; icon?: string; inputs?: FacetInput[]; hit?: string; desc?: string };
   /** Bank keys this document may evolve into, written by the core's `evolve` effect; saved with it. */

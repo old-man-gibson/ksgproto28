@@ -33,7 +33,7 @@
   import { STATUSES } from '../../core/registry';
   import { statusTipLines } from '../lib/format';
   import { RECOVERY_MULT, RESOURCES } from '../../core/data/resources.data';
-  import { fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
+  import { abilityValue, fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
   import Tip from '../lib/Tip.svelte';
   import DishSlots from '../lib/DishSlots.svelte';
   import Icon from '../lib/icons/Icon.svelte';
@@ -183,12 +183,19 @@
   const eff = $derived(effectiveAttrs(gs));
 
   const wornTitle = $derived(equippedTitle(gs));
-  /** The run's unique ability (docs/FACET.md): the cells its document marks for showing. */
+  /**
+   * The run's unique ability (docs/FACET.md). The sidebar shows only the cells
+   * acting on you now: a cell whose carrier modifies your numbers, while it is
+   * not zero. Counters, banks and inputs are in the Ability tab and in these
+   * lines' tooltips.
+   */
   const abilities = $derived(facetReadouts(gs));
-  /** Those cells ride on statuses; the readout shows them, so the status chips leave them out. */
+  const acting = $derived(
+    abilities.map((ab) => ({ ab, cells: ab.cells.filter((c) => c.acts && c.value !== 0) })).filter((a) => a.cells.length),
+  );
+  /** Those cells ride on statuses; the ability readouts show them, so the status chips leave them all out. */
   const abilityStatusIds = $derived(new Set(abilities.flatMap((a) => a.cells.map((c) => c.statusId))));
   const afflictions = $derived(visibleStatuses(gs).filter((s) => !abilityStatusIds.has(s.id)));
-  const signedPct = (v: number) => (v >= 0 ? '+' : '−') + Math.round(Math.abs(v) * 100) + '%';
 
   /** Which stat groups are open (per viewer, this session). Closed by default. */
   type StatGroup = 'offense' | 'defense' | 'growth' | 'fortune';
@@ -385,9 +392,9 @@
       {#snippet tip()}{@render actionBarTip()}{/snippet}
     </Tip>
 
-    <!-- The run's unique ability. A 'bar' cell draws like a pool; a 'signedPct' cell is one line. -->
-    {#each abilities as ab (ab.name)}
-      {#each ab.cells as cell (cell.key)}
+    <!-- The run's ability, while it acts on you. A 'bar' cell draws like a pool; the rest are one line. -->
+    {#each acting as { ab, cells } (ab.name)}
+      {#each cells as cell (cell.key)}
         <Tip block>
           <div class="res">
             <span class="res-spacer ability-icon" style="width: {RES_ICON}px">{cell.icon}</span>
@@ -396,23 +403,22 @@
                 <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent)"></div>
                 <div class="label">{cell.label} {Math.floor(cell.value)} / {Math.floor(cell.cap)}</div>
               </div>
-            {:else if cell.show === 'count'}
-              <span class="ability-line ability-count">{cell.label} {Math.round(cell.value)}</span>
             {:else}
-              <span class="ability-line" class:ability-low={cell.value < 0}>{cell.label} {signedPct(cell.value)}</span>
+              <span class="ability-line" class:ability-low={cell.show === 'signedPct' && cell.value < 0}>{cell.label} {abilityValue(cell)}</span>
             {/if}
           </div>
           {#snippet tip()}
             <div class="tip-line tip-base">{ab.icon} {cell.label === ab.name ? ab.name : `${ab.name}: ${cell.label}`}</div>
             <div class="tip-line">{cell.desc}</div>
-            {#each ab.inputs as input (input.label)}
-              <div class="tip-line">{input.label}: {pct(input.value, 0)}</div>
+            {#each ab.cells.filter((c) => c.key !== cell.key) as other (other.key)}
+              <div class="tip-line">{other.icon} {other.label}: {abilityValue(other)}</div>
             {/each}
+            {#each ab.inputs as input (input.label)}
+              <div class="tip-line">{input.label}: {input.show === 'pct' ? pct(input.value, 0) : input.value}</div>
+            {/each}
+            <div class="tip-line dim">The ✦ Ability tab has the rest.</div>
           {/snippet}
         </Tip>
-      {/each}
-      {#each ab.inputs as input (input.label)}
-        <div class="ability-input dim">{input.label}: {pct(input.value, 0)}</div>
       {/each}
     {/each}
 
@@ -799,13 +805,6 @@
   }
   .ability-line.ability-low {
     color: var(--danger);
-  }
-  .ability-line.ability-count {
-    color: var(--text-dim);
-  }
-  .ability-input {
-    font-size: 0.72rem;
-    padding-left: calc(32px + 4px);
   }
 
   .res-bar.action-bar {

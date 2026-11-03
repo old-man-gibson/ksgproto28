@@ -32,11 +32,16 @@ const B = F.bank = F.bank || {};
 // Starts empty, so a fresh grant opens at -30%.
 const MAIN = { expr: 'add', a: { q: 'stat.eff.con' }, b: { q: 'stat.eff.wis' } };
 
-// `show` on a cell and `reading.inputs` are display hints for a game's ability readout; the engine
-// never reads them.
+// `show` on a cell, `reading.inputs` and `reading.desc` (what the ability does, in a sentence or
+// four) are display hints for a game's ability readout; the engine never reads them.
 B.solar_charge = {
   v: 1,
-  reading: { name: 'Solar Charge', icon: '☀️', inputs: [{ q: 'world.sunlight', label: 'Sunlight here', show: 'pct' }] },
+  reading: {
+    name: 'Solar Charge', icon: '☀️', inputs: [{ q: 'world.sunlight', label: 'Sunlight here', show: 'pct' }],
+    desc: 'Banks sunlight under open sky by day and loses a little every minute, sun or not. Damage and spell power '
+      + 'follow the charge: +20% from half charge up, falling to -30% when empty. CON and WIS raise the cap, the fill '
+      + 'and the drain.',
+  },
   cells: [
     {
       key: 'charge', label: 'Solar Charge', icon: '☀️', hold: 'none', level: 'real', tier: 'run', show: 'bar',
@@ -97,7 +102,12 @@ const hidden = { hidden: true };
 
 B.zenkai = {
   v: 1,
-  reading: { name: 'Zenkai', icon: '💥' },
+  reading: {
+    name: 'Zenkai', icon: '💥',
+    desc: 'Each win where your HP fell to 20% or below raises all attributes for the run by 1.5% x the depth of the fall '
+      + '(1 - your lowest HP share) x the enemy level over yours, at most 1.5. A flask, a consumable or a prayer that '
+      + 'fight cancels it, and an enemy under 70% of your level gives nothing. Each gain shrinks the next by 3%.',
+  },
   cells: [
     {
       key: 'bonus', label: 'Zenkai', icon: '💥', hold: 'none', level: 'real', tier: 'run', show: 'signedPct', cap: 10,
@@ -191,7 +201,12 @@ const isZero = (cell) => ({ cell, op: 'eq', v: 0 });
 
 B.little_moons = {
   v: 1,
-  reading: { name: 'Little Moons', icon: '🌙' },
+  reading: {
+    name: 'Little Moons', icon: '🌙',
+    desc: 'In a fight, three moons strike the front enemy every 2.8 s, 3.7 s and 7.9 s for 30% of your weapon damage as '
+      + 'Light, plus 5% per boss killed this run. Strikes within 0.3 s combine: two deal 4 strikes\' worth, three deal 15. '
+      + 'The moons cost 2 mana a second; when you cannot pay they go dark for 10 s.',
+  },
   cells: [
     {
       key: 'bosses', label: 'Boss kills', icon: '👑', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, carrier: false,
@@ -283,7 +298,13 @@ const BLOW = { expr: 'max', a: { frame: 'amount' }, b: { frame: 'blow' } };
 
 B.bramble = {
   v: 1,
-  reading: { name: 'Bramble', icon: '🌿', hit: 'thorns' },
+  reading: {
+    name: 'Bramble', icon: '🌿', hit: 'thorns',
+    desc: 'Thorns grow during a fight: +1 per enemy blow, +1 and 5% of the cap each second, +2 and 10% of the cap per '
+      + 'Poison spell you cast on yourself. Each level returns 2% of every enemy blow, as thrown, to its attacker as '
+      + 'Piercing, and slows your actions by 0.5%. Heat burns 5 levels a hit. The cap starts at 10 and rises by 1 per '
+      + '200 fights this run, up to 50. Thorns clear when the fight ends.',
+  },
   cells: [
     {
       key: 'thorns', label: 'Thorns', icon: '🌿', hold: 'none', level: 'int', tier: 'fight', show: 'count',
@@ -402,7 +423,11 @@ const fromBlows = (def, share) => {
 
 B.basilisk_hide = {
   v: 1,
-  reading: { name: 'Basilisk Hide', icon: '🗿' },
+  reading: {
+    name: 'Basilisk Hide', icon: '🗿',
+    desc: 'Each enemy blow puts 6 + CON/10 Stone on the attacker, 1.5 on a boss. Its Earth resistance cuts the dose, and '
+      + 'so does CON above yours. Stone slows its actions by 0.5% a point; at 100 it turns to stone.',
+  },
   cells: [STATUES],
   clauses: [
     ...fromBlows(STONE, 1),
