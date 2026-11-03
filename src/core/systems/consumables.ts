@@ -202,12 +202,12 @@ function useCard(state: GameState, bus: EventBus, def: MaterialDef, spec: Consum
   }
   if (spec.teachesTechnique) {
     const tech = TECHNIQUES[spec.teachesTechnique];
-    if (tech) learnTechnique(state, tech, 'canonical');
     bus.emit({
       type: 'log',
       msg: text('consumables.technique_learned', { name: tech?.name ?? spec.teachesTechnique }),
       kind: 'skill',
     });
+    if (tech) learnTechnique(state, tech, 'canonical', bus);
     return;
   }
   if (spec.stamps) {

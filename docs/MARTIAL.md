@@ -17,12 +17,13 @@ emerge — Gather → Heavy Blow, dodge → Riposte → Thrust — were never au
 anywhere. Two fights with the same loadout play out differently. That is the
 point, and it is the rule every future technique must keep: **never let the
 player script a sequence.** The player's entire authored surface is rotation
-order, drill slots, and optional extra trigger conditions.
+order, which techniques fill the slots, drill slots, and optional extra trigger
+conditions.
 
 Files:
 
-- `src/core/data/martial.data.ts` — positions, techniques, weapon families, `MAX_DRILLED`
-- `src/core/systems/martial.ts` — gating, mastery, drill slots, the position graph
+- `src/core/data/martial.data.ts` — positions, techniques, weapon families, `MAX_DRILLED`, `BASE_TECHNIQUE_SLOTS`
+- `src/core/systems/martial.ts` — gating, mastery, drill slots, technique slots, the position graph
 - `src/ui/panels/MartialPlanner.svelte` — the position-graph planner (§9b)
 - `src/core/systems/combat.ts` — execution (buff slot + the swing branch)
 - `src/core/systems/triggers.ts` — events, windows, the `combat.position` subject
@@ -318,6 +319,30 @@ the martial answer to the grimoire's prepared cap. An undrilled technique still 
 learning. Reps are counted per technique, shared across weapons: the motion is
 the motion, the weapon is an accent.
 
+**Technique slots** (user, 2026-11-03; `techniqueSlots`, martial.ts): the
+rotation holds at most `n + 3 + m` techniques, where n = the drill slots
+(`MAX_DRILLED`), 3 = `BASE_TECHNIQUE_SLOTS`, and m = extras (today the
+`technique_slot` prestige boon, +1 per rank; titles and other sources can add
+to the same sum). Six on a fresh save. Reason: the number of techniques
+available at once was the main source of confusion in the martial system.
+
+- A slot holds a technique that fights use: known and not benched
+  (`techniqueSlotted`). Every known technique stays in the ledger; the rest
+  wait on the bench.
+- Anything that fires through the position graph is a technique and takes a
+  slot: reflexes (`'any'` entries), counters and rough forms included.
+- Drilling only works on slotted techniques. `toggleDrill` refuses a benched
+  one, the auto-claim skips it, and benching a drilled technique stops its
+  drill. Drilled techniques are a subset of slotted ones, so n of the slots
+  can drill and the other 3 + m cannot.
+- A technique learned with every slot in use goes to the bench, with a log line
+  (`learnTechnique`). Slotting one while full is refused
+  (`setTechniqueSlotted`, the path for every bench toggle: Skills tab, planner,
+  entry window).
+- `fitTechniqueSlots` trims an over-full rotation: the first techniques in
+  rotation order keep their slots. It runs after applying a loadout and in the
+  v62 migration.
+
 Family techniques additionally demand the weapon *in hand* at fire time —
 known and armed are separate checks.
 
@@ -407,6 +432,9 @@ power with position and stamina, never for free.
 - Save v29 (`28:`): the loadout shelf (`loadouts: []`).
 - Save v30 (`29:`): loadouts widen to a whole fighting identity — existing
   plans backfill `spells: []` / `equipment: {}`, which reapply as no-ops.
+- Save v62 (`61:`): technique slots (§6). A save with more slotted techniques
+  than slots keeps the first ones in rotation order; the rest go to the bench,
+  and their drills stop (`fitTechniqueSlots`).
 - `CombatState.position` is transient with the encounter; `techniques` and
   `drilling` persist.
 - Rotation ids and trigger keys are namespaced (`technique:<id>`), so they can

@@ -4854,6 +4854,8 @@ export type PrestigeBoonEffect =
   | { kind: 'skillCap'; skill: string; by: number }
   /** Prepared-spell pages, read by `preparedCap`. */
   | { kind: 'preparedPages'; pages: number }
+  /** Technique slots, read by `techniqueSlots`. */
+  | { kind: 'techniqueSlots'; slots: number }
   /**
    * Talent: every skill's effects scale by
    * `1 + rate × rank × peakLevel(skill) × prestige.count`, where the peak is

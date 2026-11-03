@@ -107,6 +107,13 @@ export const PRESTIGE_BOONS = prose<PrestigeBoonDef>('PRESTIGE_BOONS', PRESTIGE_
     cost: [2, 3],
     effect: { kind: 'preparedPages', pages: 1 },
   },
+  technique_slot: {
+    id: 'technique_slot',
+    name: 'Technique slot',
+    icon: '🥋',
+    cost: [2, 3],
+    effect: { kind: 'techniqueSlots', slots: 1 },
+  },
   chronosense_ceiling: {
     id: 'chronosense_ceiling',
     name: 'Chronosense ceiling',

@@ -5,6 +5,7 @@ import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { migrate } from '../src/core/save/migrations';
 import {
+  BASE_TECHNIQUE_SLOTS,
   FORK_ARCHETYPES,
   FORK_ARCHETYPE_LIST,
   FORK_TIER,
@@ -66,6 +67,10 @@ import {
   techniqueStatus,
   techniquesUnderSkill,
   toggleDrill,
+  fitTechniqueSlots,
+  slottedTechniques,
+  techniqueSlots,
+  techniqueSlotted,
   lessonState,
   reachablePositions,
   selfLearnProgress,
@@ -414,6 +419,88 @@ describe('repetition and drilling', () => {
     g.state.drilling.push('gather');
     expect(recordExecution(g.state, TECHNIQUES.gather)).toEqual({ tier: 1, name: 'Practiced' });
     expect(recordExecution(g.state, TECHNIQUES.gather)).toBeUndefined();
+  });
+});
+
+// ---------- Technique slots ----------
+
+describe('technique slots', () => {
+  const CAP = MAX_DRILLED + BASE_TECHNIQUE_SLOTS;
+  /** The first `n` techniques in registry order (= rotation order on a fresh save). */
+  const first = (n: number) => TECHNIQUE_LIST.slice(0, n).map((t) => t.id);
+
+  it('holds the drill slots plus three, plus one per Technique slot rank', () => {
+    const g = fresh(40);
+    expect(techniqueSlots(g.state)).toBe(CAP);
+    expect(CAP).toBe(6);
+    g.state.prestige.purchases.technique_slot = 2;
+    expect(techniqueSlots(g.state)).toBe(CAP + 2);
+  });
+
+  it('a technique learned with every slot in use goes to the bench, and the log says so', () => {
+    const g = fresh(41);
+    const logs: string[] = [];
+    g.bus.on('log', (ev) => logs.push(ev.msg));
+    const ids = first(CAP + 1);
+    for (const id of ids) learnTechnique(g.state, TECHNIQUES[id], 'canonical', g.bus);
+    expect(slottedTechniques(g.state)).toEqual(ids.slice(0, CAP));
+    expect(techniqueBenched(g.state, ids[CAP])).toBe(true);
+    expect(logs.some((m) => m.includes(TECHNIQUES[ids[CAP]].name) && m.includes('bench'))).toBe(true);
+    // Re-learning a held technique (rough → canonical) never moves it.
+    learnTechnique(g.state, TECHNIQUES[ids[0]], 'canonical', g.bus);
+    expect(techniqueSlotted(g.state, ids[0])).toBe(true);
+  });
+
+  it('slotting is refused while full; benching frees the slot and stops the drill', () => {
+    const g = fresh(42);
+    const ids = first(CAP + 1);
+    for (const id of ids) learnTechnique(g.state, TECHNIQUES[id], 'canonical');
+    const extra = ids[CAP];
+    g.setSkillEnabled(`technique:${extra}`, true);
+    expect(techniqueSlotted(g.state, extra)).toBe(false);
+
+    expect(toggleDrill(g.state, ids[0])).toBe(true);
+    g.setSkillEnabled(`technique:${ids[0]}`, false);
+    expect(isDrilled(g.state, ids[0])).toBe(false);
+
+    g.setSkillEnabled(`technique:${extra}`, true);
+    expect(techniqueSlotted(g.state, extra)).toBe(true);
+    expect(slottedTechniques(g.state)).toHaveLength(CAP);
+  });
+
+  it('only a slotted technique drills, by hand or by the auto-claim', () => {
+    const g = fresh(43);
+    const [a, b] = first(2);
+    learn(g.state, a);
+    learn(g.state, b);
+    g.setSkillEnabled(`technique:${a}`, false);
+    expect(toggleDrill(g.state, a)).toBe(false);
+    recordExecution(g.state, TECHNIQUES[a]);
+    expect(techniqueExecutions(g.state, a)).toBe(0);
+    recordExecution(g.state, TECHNIQUES[b]);
+    expect(isDrilled(g.state, b)).toBe(true);
+  });
+
+  it('fitting keeps the first techniques in rotation order and benches the rest', () => {
+    const g = fresh(44);
+    const ids = first(CAP + 2);
+    for (const id of ids) learn(g.state, id); // the ledger directly: no cap applied
+    const order = [...ids].reverse();
+    g.state.skillOrder = order.map((id) => `technique:${id}`);
+    g.state.drilling = [order[0], order[CAP]];
+    expect(fitTechniqueSlots(g.state)).toBe(2);
+    expect(slottedTechniques(g.state)).toEqual(order.slice(0, CAP));
+    expect(g.state.drilling).toEqual([order[0]]);
+  });
+
+  it('a loadout holding more techniques than slots is trimmed to its first ones', () => {
+    const g = fresh(45);
+    const ids = first(CAP + 2);
+    for (const id of ids) learn(g.state, id);
+    g.state.skillOrder = ids.map((id) => `technique:${id}`);
+    g.saveLoadout('wide'); // saved with every technique slotted
+    g.applyLoadout('wide');
+    expect(slottedTechniques(g.state)).toEqual(ids.slice(0, CAP));
   });
 });
 
@@ -1517,6 +1604,21 @@ describe('save migration v24 → v25', () => {
     expect(raw.skillOrder).toEqual([]);
     expect((raw.combat as { position: string }).position).toBe('neutral');
     expect(raw.version).toBe(25);
+  });
+});
+
+describe('save migration v61 → v62', () => {
+  it('benches slotted techniques past the cap, in rotation order, and stops their drills', () => {
+    const raw = createInitialState(46) as unknown as Record<string, unknown> & GameState;
+    raw.version = 61;
+    const ids = TECHNIQUE_LIST.slice(0, 8).map((t) => t.id);
+    for (const id of ids) learn(raw, id);
+    raw.drilling = [ids[0], ids[7]];
+    migrate(raw, 62);
+    expect(slottedTechniques(raw)).toEqual(ids.slice(0, 6));
+    expect(techniqueBenched(raw, ids[6])).toBe(true);
+    expect(raw.drilling).toEqual([ids[0]]);
+    expect(raw.version).toBe(62);
   });
 });
 

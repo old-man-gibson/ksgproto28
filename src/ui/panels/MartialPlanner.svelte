@@ -9,6 +9,7 @@
     techniqueDisplayName,
     techniqueExit,
     techniqueKnown,
+    techniqueSlots,
     techniquesForFamilies,
     entryPositions,
     type PositionEdge,
@@ -156,6 +157,9 @@
   const edges = $derived(positionGraph(gs, pool));
   const posEdges = $derived(edges.filter((e) => e.from !== null));
   const reflexEdges = $derived(edges.filter((e) => e.from === null));
+
+  const slotCap = $derived(techniqueSlots(gs));
+  const slotsFull = $derived(planned.length >= slotCap);
 
   type PlanState = 'planned' | 'benched' | 'locked';
 
@@ -373,7 +377,14 @@
                   {:else if st === 'planned'}
                     <span class="small in-plan">in plan</span>
                   {:else}
-                    <button class="tiny" onclick={() => addToPlan(t)}>+ Add</button>
+                    <button
+                      class="tiny"
+                      disabled={slotsFull}
+                      title={slotsFull
+                        ? `All ${slotCap} technique slots are in use. Discard a technique first.`
+                        : ''}
+                      onclick={() => addToPlan(t)}>+ Add</button
+                    >
                   {/if}
                 </div>
               {:else}
@@ -526,6 +537,7 @@
       <div class="plan">
         <h4>
           In the plan
+          <span class="small" class:full={slotsFull}>{planned.length}/{slotCap} slots</span>
           <span class="dim small">— drag to set priority · double-click to configure</span>
         </h4>
         {#if planned.length === 0}
@@ -620,6 +632,9 @@
 {/if}
 
 <style>
+  .full {
+    color: var(--danger);
+  }
   .planner {
     margin-top: 12px;
   }

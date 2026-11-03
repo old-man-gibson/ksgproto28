@@ -13,6 +13,8 @@ export const PRESTIGE_BOONS_TEXT: ProseTable = {
 
   'grimoire_page.desc': '+1 prepared spell, per rank.',
 
+  'technique_slot.desc': '+1 technique slot, per rank.',
+
   'chronosense_ceiling.desc': 'Chronosense can reach 5 levels higher, per rank.',
 
   'weathersense_ceiling.desc': 'Weathersense can reach 5 levels higher, per rank.',

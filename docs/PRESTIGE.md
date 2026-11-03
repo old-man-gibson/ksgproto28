@@ -97,6 +97,7 @@ which is in `modFingerprint` (LEVELS.md §2.3).
 | `startGold` | `applyRunStart` on every new run; and at purchase, for the run in progress | — |
 | `skillCap` | — | `skillCap` (skills.ts), alongside the run's own `capRaised` |
 | `preparedPages` | — | `preparedCap` (spellcraft.ts) |
+| `techniqueSlots` | — | `techniqueSlots` (martial.ts), through `legacyTechniqueSlots` (legacy.ts). The `technique_slot` boon, cost [2, 3], +1 slot per rank. See MARTIAL.md §6 |
 | `talent` | — | `collectBaseMods` (attributes.ts): a skill's effects × `1 + rate × rank × peakLevel × prestiges` |
 | `endowment` | — | `effectiveAttrsFrom` (attributes.ts), last pass: an attribute's effective value × `1 + rate × rank × peakAttr × prestiges` |
 | `foresight` | — | `skillRevealed` (skills.ts) and the Skills panel's milestone line: locked skills and the next milestone show at any progress instead of only at 90% of the threshold (`REVEAL_FRACTION`) |
