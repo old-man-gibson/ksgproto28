@@ -26,7 +26,9 @@
     techniqueExecutions,
     techniqueExit,
     techniqueForm,
+    techniqueSlots,
     techniquesUnderSkill,
+    slottedTechniques,
   } from '../../core/systems/martial';
   import { ANY_POSITION_COLOR } from '../../core/data/martial.data';
   import type { ForkArchetypeDef, TechniqueForm } from '../../core/types';
@@ -206,6 +208,8 @@
 
   const techId = (t: TechniqueDef) => `technique:${t.id}`;
   const techniqueOn = (t: TechniqueDef) => gs.skillTriggers[techId(t)]?.enabled !== false;
+  const slotCap = $derived(techniqueSlots(gs));
+  const slotsFull = $derived(slottedTechniques(gs).length >= slotCap);
 
   function activeSummary(spec: ActiveSpec): string {
     switch (spec.type) {
@@ -417,7 +421,17 @@
                   ? ' · rough'
                   : ''}
               </span>
-              <button class="tiny bench" class:on onclick={() => game.setSkillEnabled(techId(t), !on)}>
+              <button
+                class="tiny bench"
+                class:on
+                disabled={!on && slotsFull}
+                title={on
+                  ? 'Bench it. Frees a technique slot.'
+                  : slotsFull
+                    ? `All ${slotCap} technique slots are in use. Bench a technique first.`
+                    : 'Put it in a technique slot.'}
+                onclick={() => game.setSkillEnabled(techId(t), !on)}
+              >
                 {on ? '⚔️ In rotation' : 'Benched'}
               </button>
             </div>

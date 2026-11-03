@@ -3,7 +3,12 @@
   import { dropFight } from '../../core/systems/ledger';
   import { POSITIONS, SKILLS, STATUSES, STYLES, TECHNIQUES, TIERS, getSpot } from '../../core/registry';
   import { itemDefOf } from '../../core/systems/assembly';
-  import { ANY_POSITION_COLOR, MAX_DRILLED, NEUTRAL_POSITION } from '../../core/data/martial.data';
+  import {
+    ANY_POSITION_COLOR,
+    BASE_TECHNIQUE_SLOTS,
+    MAX_DRILLED,
+    NEUTRAL_POSITION,
+  } from '../../core/data/martial.data';
   import {
     entryPositions,
     isDrilled,
@@ -17,7 +22,9 @@
     techniqueExecutions,
     techniqueExit,
     techniqueForm,
+    techniqueSlots,
     techniqueStatus,
+    slottedTechniques,
     type TechniqueStatus,
   } from '../../core/systems/martial';
   import type { TechniqueDef } from '../../core/types';
@@ -303,6 +310,8 @@
   /** Alpha shutter (systems/unlocks.ts): the position planner, loadouts and
    *  drilling show only once `martial` is open. */
   const martialOpen = $derived(subsystemUnlocked(gs, 'martial'));
+  const slotCap = $derived(techniqueSlots(gs));
+  const slotsUsed = $derived(slottedTechniques(gs).length);
 
   // ---- Loadouts ----
   let loadoutName = $state('');
@@ -718,8 +727,21 @@
     {:else}
       <p class="dim small hint">
         Fired top-down — drag a card to reorder. Click one to set when it fires; hover for the
-        details. 🏋️ drills a technique — {MAX_DRILLED} slots, and only drilled ones bank reps.
+        details. 🏋️ drills a technique — {MAX_DRILLED} drill slots, and only drilled ones bank reps.
         Benched techniques live under their skill in the Skills tab.
+      </p>
+    {/if}
+    {#if knownTechs.length > 0}
+      <p
+        class="small hint"
+        class:slots-full={slotsUsed >= slotCap}
+        title="{MAX_DRILLED} drill slots + {BASE_TECHNIQUE_SLOTS}{slotCap > MAX_DRILLED + BASE_TECHNIQUE_SLOTS
+          ? ` + ${slotCap - MAX_DRILLED - BASE_TECHNIQUE_SLOTS} from prestige`
+          : ''}. Only slotted techniques fire or drill."
+      >
+        🥋 Technique slots: {slotsUsed}/{slotCap}.{slotsUsed >= slotCap && knownTechs.length > slotsUsed
+          ? ' Techniques past the slots wait on the bench (Skills tab).'
+          : ''}
       </p>
     {/if}
 
@@ -1037,6 +1059,9 @@
 </div>
 
 <style>
+  .slots-full {
+    color: var(--danger);
+  }
   /* A condition one dose from turning (see escalationPrimed). */
   .tip-line.primed {
     color: var(--danger);

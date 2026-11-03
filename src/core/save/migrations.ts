@@ -11,6 +11,7 @@ import { TECHNIQUE_LIST } from '../data/martial.data';
 import { freshMutagenState, startingKit } from '../data/mutagens.data';
 import { freshPrestigeState } from '../data/prestige.data';
 import { conditionsMet } from '../systems/conditions';
+import { fitTechniqueSlots } from '../systems/martial';
 import { floorXpKey, levelFromXp, questLevelXp } from '../systems/levels';
 import { KILL_LEVEL_XP_RATE } from '../data/levels.data';
 
@@ -704,6 +705,13 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
   60: (raw) => {
     if (!Array.isArray(raw.facets)) raw.facets = [];
     raw.version = 61;
+  },
+  // v61 → v62: technique slots (MARTIAL.md §6). A save with more slotted
+  // techniques than slots keeps the first ones in rotation order; the rest go
+  // to the bench, and their drills stop.
+  61: (raw) => {
+    fitTechniqueSlots(raw as unknown as GameState);
+    raw.version = 62;
   },
 };
 

@@ -127,8 +127,8 @@ export function spendToken(state: GameState, bus: EventBus, index: number, choic
     const def = TECHNIQUES[choice.id];
     const legacy = state.prestige.festivalTechniques ?? [];
     state.prestige.festivalTechniques = [...legacy, choice.id];
-    learnTechnique(state, def, 'canonical');
     bus.emit({ type: 'log', msg: text('stash.technique', { icon: def.icon, name: def.name }), kind: 'achievement' });
+    learnTechnique(state, def, 'canonical', bus);
   } else {
     stashItem(state, createItem(state, TOKEN_REGALIA));
     const def = ITEMS[TOKEN_REGALIA];

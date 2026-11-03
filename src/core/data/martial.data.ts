@@ -106,6 +106,12 @@ export const WEAPON_FAMILIES: readonly WeaponFamilyDef[] = [
 /** How many techniques may advance their practice counters at once. */
 export const MAX_DRILLED = 3;
 
+/**
+ * Technique slots beyond the drill slots. The rotation holds
+ * MAX_DRILLED + BASE_TECHNIQUE_SLOTS + extras (`techniqueSlots`, martial.ts).
+ */
+export const BASE_TECHNIQUE_SLOTS = 3;
+
 // ---------- The standard mastery ladder ----------
 // Powers of ten: the first rung lands in the first session, the last is the
 // proverbial ten thousand swings. Growth per rep is logarithmic by

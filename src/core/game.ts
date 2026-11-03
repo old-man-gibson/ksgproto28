@@ -68,7 +68,15 @@ import {
 } from './systems/spellcraft';
 import { forgetPsiShape, memorizePsiShape } from './systems/psionic';
 import { assignFloatingFavor, learnMiracle } from './systems/divine';
-import { chooseFork, teachSchool, teachTechnique, toggleDrill, toggleSheathe } from './systems/martial';
+import {
+  chooseFork,
+  fitTechniqueSlots,
+  setTechniqueSlotted,
+  teachSchool,
+  teachTechnique,
+  toggleDrill,
+  toggleSheathe,
+} from './systems/martial';
 import { TECHNIQUES } from './data/martial.data';
 import type { Placement } from './systems/disciplines';
 import { tickAction, selectActivity, conditionClockRate } from './systems/actions';
@@ -764,7 +772,12 @@ export class Game {
     return fresh;
   }
 
+  /** A technique goes through its slots: slotting one is refused while all are in use. */
   setSkillEnabled(skillId: string, enabled: boolean): void {
+    if (skillId.startsWith('technique:')) {
+      setTechniqueSlotted(this.state, this.bus, skillId.slice('technique:'.length), enabled);
+      return;
+    }
     this.trigger(skillId).enabled = enabled;
   }
 
@@ -875,9 +888,15 @@ export class Game {
       for (const id of loadout.order) delete this.state.skillTriggers[id];
       Object.assign(this.state.skillTriggers, cloneTriggers(loadout.triggers, loadout.order));
     } else {
-      for (const id of loadout.order) this.setSkillEnabled(id, !loadout.benched.includes(id));
+      // Written directly, not through setSkillEnabled: the slot check would
+      // refuse a technique while one the plan benches still holds its slot.
+      // fitTechniqueSlots below trims the result.
+      for (const id of loadout.order) this.trigger(id).enabled = !loadout.benched.includes(id);
     }
     this.state.drilling = loadout.drilling.filter((id) => !!this.state.techniques[id]);
+    // A plan saved before technique slots, or with techniques learned since,
+    // can hold more than the slots: the first ones in its order keep them.
+    fitTechniqueSlots(this.state);
 
     const wantSpells = new Set(loadout.spells ?? []);
     for (const spell of preparedSpells(this.state)) {

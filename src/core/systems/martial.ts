@@ -14,6 +14,7 @@ import type {
 } from '../types';
 import type { EventBus } from '../engine/events';
 import {
+  BASE_TECHNIQUE_SLOTS,
   FORK_ARCHETYPES,
   FORK_ARCHETYPE_LIST,
   FORK_TIER,
@@ -39,6 +40,7 @@ import { subsystemUnlocked } from './unlocks';
 import { NPCS, SKILLS } from '../registry';
 import { setStat } from './achievements';
 import { itemDefOf } from './assembly';
+import { legacyTechniqueSlots } from './legacy';
 import { text } from '../text/log';
 
 /**
@@ -85,17 +87,110 @@ export function eligibleToLearn(state: GameState, def: TechniqueDef): boolean {
 /**
  * Enter a technique in the ledger. Re-learning never downgrades: an existing
  * entry keeps its executions, and its form only moves rough → canonical.
+ * A new technique takes a free slot; with every slot in use it goes to the
+ * bench, and `bus` (when given) logs that.
  */
 export function learnTechnique(
   state: GameState,
   def: TechniqueDef,
   form: TechniqueForm,
+  bus?: EventBus,
 ): TechniqueState {
   const ledger = (state.techniques ??= {});
   const held = ledger[def.id];
-  if (!held) return (ledger[def.id] = { executions: 0, form });
+  if (!held) {
+    const cap = techniqueSlots(state);
+    const full = slottedTechniques(state).length >= cap;
+    ledger[def.id] = { executions: 0, form };
+    if (full) {
+      benchTechnique(state, def.id);
+      bus?.emit({
+        type: 'log',
+        msg: text('martial.learned_benched', { icon: def.icon, name: def.name, cap }),
+        kind: 'combat',
+      });
+    }
+    return ledger[def.id];
+  }
   if (held.form === 'rough' && form === 'canonical') held.form = 'canonical';
   return held;
+}
+
+// ---------- Slots ----------
+
+/**
+ * How many techniques the rotation holds (user, 2026-11-03): the drill slots,
+ * plus BASE_TECHNIQUE_SLOTS, plus extras (prestige). The martial twin of the
+ * grimoire's prepared cap. Anything that fires through the position graph is
+ * a technique and takes a slot: reflexes, counters and rough forms included.
+ * Known techniques past the cap stay in the ledger, on the bench.
+ */
+export function techniqueSlots(state: GameState): number {
+  return MAX_DRILLED + BASE_TECHNIQUE_SLOTS + legacyTechniqueSlots(state);
+}
+
+/** In a slot: known and not benched. Only a slotted technique fires or drills. */
+export function techniqueSlotted(state: GameState, id: string): boolean {
+  return !!state.techniques?.[id] && !techniqueBenched(state, id);
+}
+
+/**
+ * Slotted techniques in the order the rotation considers them: the stored
+ * order first, then the rest in registry order (activeRotation's order).
+ */
+export function slottedTechniques(state: GameState): string[] {
+  const out: string[] = [];
+  const add = (id: string) => {
+    if (!out.includes(id) && TECHNIQUES[id] && techniqueSlotted(state, id)) out.push(id);
+  };
+  for (const entry of state.skillOrder ?? []) {
+    if (entry.startsWith('technique:')) add(entry.slice('technique:'.length));
+  }
+  for (const def of TECHNIQUE_LIST) add(def.id);
+  return out;
+}
+
+/** Bench a technique. Its drill stops with it: only a slotted technique drills. */
+function benchTechnique(state: GameState, id: string): void {
+  const key = `technique:${id}`;
+  if (!state.skillTriggers[key]) state.skillTriggers[key] = { conditions: [] };
+  state.skillTriggers[key].enabled = false;
+  if (state.drilling?.includes(id)) state.drilling = state.drilling.filter((d) => d !== id);
+}
+
+/**
+ * Put a known technique in a slot, or bench it. Slotting is refused while
+ * every slot is in use. Returns whether it is slotted afterwards.
+ */
+export function setTechniqueSlotted(state: GameState, bus: EventBus, id: string, on: boolean): boolean {
+  if (!on) {
+    benchTechnique(state, id);
+    return false;
+  }
+  if (!state.techniques?.[id]) return false;
+  if (techniqueSlotted(state, id)) return true;
+  const cap = techniqueSlots(state);
+  if (slottedTechniques(state).length >= cap) {
+    bus.emit({ type: 'log', msg: text('martial.slots_full', { cap }), kind: 'danger' });
+    return false;
+  }
+  const key = `technique:${id}`;
+  if (!state.skillTriggers[key]) state.skillTriggers[key] = { conditions: [] };
+  state.skillTriggers[key].enabled = true;
+  return true;
+}
+
+/**
+ * Bring the rotation back inside its slots: slotted techniques past the cap,
+ * in rotation order, go to the bench, and drills on unslotted techniques
+ * stop. For saves and loadouts from before the cap. Returns how many were
+ * benched.
+ */
+export function fitTechniqueSlots(state: GameState): number {
+  const over = slottedTechniques(state).slice(techniqueSlots(state));
+  for (const id of over) benchTechnique(state, id);
+  state.drilling = (state.drilling ?? []).filter((id) => techniqueSlotted(state, id));
+  return over.length;
 }
 
 // ---------- Reach ----------
@@ -208,12 +303,12 @@ export function checkTechniqueLearning(state: GameState, bus: EventBus): void {
     if (!techniqueReachable(state, def, reach)) continue;
     if (!autodidactReady(state, def)) continue;
     if (!eligibleToLearn(state, def)) continue;
-    learnTechnique(state, def, 'rough');
     bus.emit({
       type: 'log',
       msg: text('martial.technique_learned', { icon: def.icon, name: def.name }),
       kind: 'combat',
     });
+    learnTechnique(state, def, 'rough', bus);
   }
 }
 
@@ -252,7 +347,6 @@ export function teachTechnique(state: GameState, bus: EventBus, npcId: string, t
   const def = TECHNIQUES[techniqueId];
   if (!lesson || !def || lessonState(state, lesson) !== 'open') return false;
   const refined = techniqueForm(state, def.id) === 'rough';
-  learnTechnique(state, def, 'canonical');
   bus.emit({
     type: 'log',
     msg: text(refined ? 'martial.technique_refined' : 'martial.technique_taught', {
@@ -262,6 +356,7 @@ export function teachTechnique(state: GameState, bus: EventBus, npcId: string, t
     }),
     kind: 'skill',
   });
+  learnTechnique(state, def, 'canonical', bus);
   return true;
 }
 
@@ -947,7 +1042,8 @@ export function isDrilled(state: GameState, id: string): boolean {
 
 /**
  * Add or remove a technique from the drill slots. Returns whether it is
- * drilled afterwards — a push into a full roster is refused, not queued.
+ * drilled afterwards — a push into a full roster is refused, not queued, and
+ * so is a technique that is not slotted.
  */
 export function toggleDrill(state: GameState, id: string): boolean {
   const drilling = (state.drilling ??= []);
@@ -956,7 +1052,7 @@ export function toggleDrill(state: GameState, id: string): boolean {
     drilling.splice(at, 1);
     return false;
   }
-  if (drilling.length >= MAX_DRILLED || !TECHNIQUES[id]) return false;
+  if (drilling.length >= MAX_DRILLED || !TECHNIQUES[id] || !techniqueSlotted(state, id)) return false;
   drilling.push(id);
   return true;
 }
@@ -972,7 +1068,7 @@ export function recordExecution(
 ): { tier: number; name: string } | undefined {
   const drilling = (state.drilling ??= []);
   if (!drilling.includes(def.id)) {
-    if (drilling.length >= MAX_DRILLED) return undefined;
+    if (drilling.length >= MAX_DRILLED || !techniqueSlotted(state, def.id)) return undefined;
     drilling.push(def.id);
   }
   const held = state.techniques?.[def.id];

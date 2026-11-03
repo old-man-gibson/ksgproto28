@@ -103,6 +103,15 @@ export function legacyPreparedPages(state: GameState): number {
   return pages;
 }
 
+/** Technique slots prestige adds to the rotation. */
+export function legacyTechniqueSlots(state: GameState): number {
+  let slots = 0;
+  for (const { def, rank } of boughtBoons(state)) {
+    if (def.effect.kind === 'techniqueSlots') slots += def.effect.slots * rank;
+  }
+  return slots;
+}
+
 /**
  * Stacks of the Vermin Festival's permanent bonus, taken from festival
  * tokens (systems/stash.ts), capped by TOKEN_BONUS.cap.

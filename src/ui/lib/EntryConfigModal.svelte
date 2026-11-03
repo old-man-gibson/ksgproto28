@@ -12,6 +12,9 @@
     techniqueExecutions,
     techniqueExit,
     techniqueForm,
+    techniqueSlots,
+    techniqueSlotted,
+    slottedTechniques,
   } from '../../core/systems/martial';
   import { findSpell, resolveSpell } from '../../core/systems/spellcraft';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
@@ -42,6 +45,8 @@
   const tech = $derived(
     id.startsWith('technique:') ? (TECHNIQUES[id.slice('technique:'.length)] ?? null) : null,
   );
+  /** Slotting a benched technique needs a free technique slot. */
+  const slotsFull = $derived(slottedTechniques(gs).length >= techniqueSlots(gs));
   const spell = $derived(
     id.startsWith('grimoire:') ? (findSpell(gs, Number(id.slice('grimoire:'.length))) ?? null) : null,
   );
@@ -127,6 +132,7 @@
     {@const tierName = masteryTierName(tech, tier)}
     {@const toNext = repsToNextTier(gs, tech)}
     {@const drilled = isDrilled(gs, tech.id)}
+    {@const slotted = techniqueSlotted(gs, tech.id)}
     <div class="drill-row">
       <span class="dim small">
         {techniqueExecutions(gs, tech.id)} reps{tierName ? ` · ${tierName}` : ''}{techniqueForm(
@@ -138,13 +144,21 @@
       </span>
       <!-- Drilling stays behind the `martial` shutter; the triggers below do not. -->
       {#if martialOpen}
-        <button class="tiny drill" class:on={drilled} onclick={() => game.toggleDrill(tech.id)}>
+        <button
+          class="tiny drill"
+          class:on={drilled}
+          disabled={!slotted}
+          title={slotted ? '' : 'Benched techniques cannot drill.'}
+          onclick={() => game.toggleDrill(tech.id)}
+        >
           {drilled ? '🏋️ Drilling' : 'Drill'}
         </button>
       {/if}
     </div>
     {#if martialOpen && !drilled}
-      <p class="dim small ctx">Only drilled techniques bank reps — {MAX_DRILLED} slots.</p>
+      <p class="dim small ctx">
+        Only drilled techniques bank reps — {MAX_DRILLED} drill slots, for techniques in the rotation.
+      </p>
     {/if}
   {:else if spell}
     {@const spec = resolveSpell(spell)}
@@ -175,6 +189,10 @@
       <input
         type="checkbox"
         checked={trigger?.enabled !== false}
+        disabled={!!tech && trigger?.enabled === false && slotsFull}
+        title={!!tech && trigger?.enabled === false && slotsFull
+          ? `All ${techniqueSlots(gs)} technique slots are in use. Bench a technique first.`
+          : ''}
         onchange={(e) => game.setSkillEnabled(id, e.currentTarget.checked)}
       />
       <span class="small">Enabled</span>
