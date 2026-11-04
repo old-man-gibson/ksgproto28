@@ -6141,7 +6141,9 @@ export interface GameState {
    * What the journey is for: on the final peaceful arrival at `spot`, start
    * `activity`. Set by "go and do" (the map's feature list, the destination
    * preview); cleared by anything that changes the plan. Wins over
-   * `resumeActivity`. See systems/actions.ts `settleArrival`.
+   * `resumeActivity`. An empty `activity` (`ARRIVE_IDLE`) starts nothing and
+   * leaves `resumeActivity` as it was ("Stay here"). See systems/actions.ts
+   * `settleArrival`.
    */
   travelIntent: { spot: string; activity: string } | null;
   /**

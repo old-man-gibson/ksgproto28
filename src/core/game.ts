@@ -81,7 +81,7 @@ import {
 } from './systems/martial';
 import { TECHNIQUES } from './data/martial.data';
 import type { Placement } from './systems/disciplines';
-import { tickAction, selectActivity, conditionClockRate } from './systems/actions';
+import { ARRIVE_IDLE, tickAction, selectActivity, conditionClockRate } from './systems/actions';
 import {
   tickTravel,
   startTravel,
@@ -107,7 +107,7 @@ import {
   type StackRef,
 } from './systems/equipment';
 import { effectiveStyleId, stanceIdFor, styleUnlocked } from './systems/styles';
-import { STYLES } from './registry';
+import { STYLES, getSpot } from './registry';
 import { appendLog } from './systems/log';
 import { RESOURCE_LIST } from './data/resources.data';
 import { resourceLock } from './systems/resources';
@@ -441,15 +441,23 @@ export class Game {
    * at the haven, a fallback hunt and a recovery then run out with nothing
    * queued behind them. A walk back is the return's own (a walk the player
    * sets out on would have ended the return), so its remaining legs and its
-   * arrival work go too; the leg under way still completes, as with Cancel
-   * journey. False, and nothing touched, when no return is in flight.
+   * arrival work go too. The leg under way cannot be called off (as with Cancel
+   * journey), so it completes, and `ARRIVE_IDLE` on it makes the arrival start
+   * nothing: what the player had remembered at that spot stays remembered.
+   * False, and nothing touched, when no return is in flight.
    */
   stayHere(): boolean {
     if (!this.state.pendingReturn) return false;
     clearReturn(this.state);
     cancelTravelPlan(this.state, this.bus);
-    setJourneyIntent(this.state, null);
-    this.bus.emit({ type: 'log', msg: text('knockout.stay'), kind: 'action' });
+    const leg = this.state.travel;
+    this.state.travelIntent = leg ? { spot: leg.to, activity: ARRIVE_IDLE } : null;
+    const msg = leg
+      ? text('knockout.stay_leg', {
+          spot: this.state.discovered.includes(leg.to) ? getSpot(leg.to).name : text('locations.unknown_place'),
+        })
+      : text('knockout.stay');
+    this.bus.emit({ type: 'log', msg, kind: 'action' });
     return true;
   }
 

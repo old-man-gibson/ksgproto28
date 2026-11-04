@@ -14,11 +14,11 @@ import {
 import { deserialize, serialize } from '../src/core/save/save';
 import { hasWayfinding } from '../src/core/systems/legacy';
 import { festivalFloorOf } from '../src/core/systems/festivalRules';
-import { spotActivities } from '../src/core/systems/actions';
+import { ARRIVE_IDLE, spotActivities } from '../src/core/systems/actions';
 import { captureFall, noteKnockout, returnBlock, tickKnockoutReturn } from '../src/core/systems/knockoutReturn';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { noteSafeSpot, retreatToSafety } from '../src/core/systems/safety';
-import { returnLine, routeInfo, stationBlock, stations, STATION_MAX } from '../src/ui/lib/navigation';
+import { returnLine, routeInfo, stationBlock, stations, stayLabel, STATION_MAX } from '../src/ui/lib/navigation';
 import type { PendingReturn, SpotDef } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
@@ -231,6 +231,46 @@ describe('never offered, in the real world', () => {
     expect(spotsOf(g)).not.toContain(spot.id);
   });
 
+  it('a hunt whose fight budget is spent: offered at 5 of 6 fights, refused at 6', () => {
+    const g = midgame(14);
+    for (const id of ['f1_landing', 'f1_storerooms']) {
+      if (!g.state.discovered.includes(id)) g.state.discovered.push(id);
+    }
+    work(g, 'f1_storerooms', 'hunt');
+    expect(SPOTS['f1_storerooms'].fightLimit).toBe(6);
+    standAt(g, 'granary_gate');
+    const goal = { spot: 'f1_storerooms', activity: 'hunt' };
+
+    g.state.stats['fights:f1_storerooms'] = 5;
+    expect(stationBlock(g.state, goal)).toBeNull();
+    expect(spotsOf(g)).toContain('f1_storerooms');
+
+    g.state.stats['fights:f1_storerooms'] = 6;
+    expect(returnBlock(g.state, goal)).toBeNull(); // the return's own check does not look
+    expect(stationBlock(g.state, goal)).toBe('spent');
+    expect(spotsOf(g)).not.toContain('f1_storerooms');
+  });
+
+  it('a hunt with no encounter eligible now', () => {
+    const g = midgame(15);
+    for (const id of ['f1_landing', 'f1_storerooms']) {
+      if (!g.state.discovered.includes(id)) g.state.discovered.push(id);
+    }
+    work(g, 'f1_storerooms', 'hunt');
+    standAt(g, 'granary_gate');
+    const spot = SPOTS['f1_storerooms'];
+    const lines = spot.encounters;
+    try {
+      // Every line gated behind a counter that is not there.
+      spot.encounters = (lines ?? []).map((e) => ({ ...e, requires: [{ type: 'stat' as const, key: 'never:station', value: 1 }] }));
+      expect(stationBlock(g.state, { spot: 'f1_storerooms', activity: 'hunt' })).toBe('empty');
+      expect(spotsOf(g)).not.toContain('f1_storerooms');
+    } finally {
+      spot.encounters = lines;
+    }
+    expect(spotsOf(g)).toContain('f1_storerooms');
+  });
+
   it('an undiscovered spot', () => {
     const g = midgame(13);
     g.state.resumeActivity['the_sand'] = 'train_dex_sand';
@@ -428,8 +468,10 @@ describe('with a knockout return in flight', () => {
       expect(g.state.spot).toBe('f4_treeline');
     });
 
-    it('drops the return\'s own walk: the legs not yet taken and the work queued at the end', () => {
+    it('drops the return\'s own walk: the legs not yet taken, and what the leg under way starts', () => {
       const g = knockedOut(35, 'ascent_foot');
+      // The landing's camp was worked at before: it is remembered, and must stay so.
+      g.state.resumeActivity['f4_treeline'] = 'camp_f4';
       recovered(g);
       for (let i = 0; i < 20 && !g.state.travel; i++) g.tick();
       expect(g.state.travel).not.toBeNull(); // the ride to floor 4 has begun
@@ -438,23 +480,78 @@ describe('with a knockout return in flight', () => {
       g.stayHere();
       expect(g.state.pendingReturn).toBeNull();
       expect(g.state.travelPlan).toEqual([]);
-      expect(g.state.travelIntent).toBeNull();
+      // The leg under way ends at the landing and starts nothing there.
+      expect(g.state.travelIntent).toEqual({ spot: 'f4_treeline', activity: ARRIVE_IDLE });
       walkUntilStill(g);
-      // The leg under way completed; the road after it was not walked.
-      expect(g.state.spot).toBe('f4_treeline');
+      for (let i = 0; i < 100; i++) g.tick();
+      expect(g.state.spot).toBe('f4_treeline'); // the road after it was not walked
       expect(g.state.activity).toBeNull();
+      expect(g.state.combat).toBeNull();
+      expect(g.state.resumeActivity['f4_treeline']).toBe('camp_f4');
+      expect(g.state.travelIntent).toBeNull();
+      expect(g.state.log.map((l) => l.msg)).toContain('Return cancelled. Stopping at The Treeline.');
     });
 
-    it('drops the work queued at the end of a one-leg walk back', () => {
+    it('the last leg of a walk back arrives at the target and starts nothing, and the target stays remembered', () => {
       const g = knockedOut(38);
       recovered(g);
       for (let i = 0; i < 20 && !g.state.travel; i++) g.tick();
       expect(g.state.travel?.to).toBe('f4_woods_edge');
       expect(g.state.travelPlan).toEqual([]);
       expect(g.state.travelIntent).toEqual({ spot: 'f4_woods_edge', activity: 'hunt' });
+      expect(g.state.resumeActivity['f4_woods_edge']).toBe('hunt');
+
       g.stayHere();
+      expect(g.state.pendingReturn).toBeNull();
+      expect(g.state.travelIntent).toEqual({ spot: 'f4_woods_edge', activity: ARRIVE_IDLE });
+      walkUntilStill(g);
+      expect(g.state.spot).toBe('f4_woods_edge');
+      // The arrival started nothing, and nothing starts later.
+      for (let i = 0; i < 200; i++) g.tick();
+      expect(g.state.activity).toBeNull();
+      expect(g.state.combat).toBeNull();
       expect(g.state.travelIntent).toBeNull();
       expect(g.state.pendingReturn).toBeNull();
+      // What the player had remembered there is still remembered: a later visit resumes it.
+      expect(g.state.resumeActivity['f4_woods_edge']).toBe('hunt');
+      expect(g.state.log.map((l) => l.msg)).toContain('Return cancelled. Stopping at The Woods Edge.');
+      g.travelPlanTo('f4_treeline');
+      walkUntilStill(g);
+      g.travelPlanTo('f4_woods_edge');
+      walkUntilStill(g);
+      expect(g.state.activity).toBe('hunt');
+    });
+
+    it('without Stay here the same walk does start the hunt on arrival', () => {
+      const g = knockedOut(39);
+      recovered(g);
+      for (let i = 0; i < 20 && !g.state.travel; i++) g.tick();
+      walkUntilStill(g);
+      expect(g.state.spot).toBe('f4_woods_edge');
+      expect(g.state.activity).toBe('hunt');
+    });
+
+    it('says Stay here standing still, and where the leg ends while walking', () => {
+      const g = knockedOut(40);
+      expect(stayLabel(g.state)).toBe('Stay here');
+      recovered(g);
+      for (let i = 0; i < 20 && !g.state.travel; i++) g.tick();
+      expect(stayLabel(g.state)).toBe('Stop at The Woods Edge');
+      g.state.discovered = g.state.discovered.filter((id) => id !== 'f4_woods_edge');
+      expect(stayLabel(g.state)).toBe('Stop at Unknown place');
+    });
+
+    it('an arrival ends a plain "Stay here" intent without starting what the spot remembers', () => {
+      // The sentinel on its own, with no return: the arrival at the spot starts nothing.
+      const g = midgame(41);
+      work(g, 'the_sand', 'train_dex_sand');
+      standAt(g, 'granary_gate');
+      g.travelPlanTo('the_sand');
+      g.state.travelIntent = { spot: 'the_sand', activity: ARRIVE_IDLE };
+      walkUntilStill(g);
+      expect(g.state.spot).toBe('the_sand');
+      expect(g.state.activity).toBeNull();
+      expect(g.state.resumeActivity['the_sand']).toBe('train_dex_sand');
     });
 
     it('does nothing when no return is in flight, and does not touch a walk the player started', () => {
@@ -513,6 +610,33 @@ describe('with a knockout return in flight', () => {
       expect(returnLine(s)).toBe('Hunting The Sand for 187 wins or 1 h 30 min, then The Woods Edge');
       s.pendingReturn = base({ target: null, phase: 'fallback', fallback, wins: 0, until: s.totalTicks + 3600 * TPS });
       expect(returnLine(s)).toBe('Hunting The Sand for 200 wins or 1 h');
+    });
+
+    it('at a hunt target, says the return ends at the first win instead of "Returning to" the place it stands at', () => {
+      const s = midgame(43).state;
+      s.pendingReturn = base({});
+      s.spot = 'f4_woods_edge';
+      expect(returnLine(s)).toBe('At The Woods Edge: the return ends at the first win.');
+      // Work with no fights ends the return on arrival: no claim about a win.
+      s.pendingReturn = base({ target: { spot: 'the_sand', activity: 'train_dex_sand' } });
+      s.spot = 'the_sand';
+      expect(returnLine(s)).toBe('Returning to The Sand');
+      // A hold and a fallback are about somewhere else, wherever the character stands.
+      s.pendingReturn = base({ phase: 'hold', until: s.totalTicks + 10 * 60 * TPS });
+      s.spot = 'f4_woods_edge';
+      expect(returnLine(s)).toBe('Retrying The Woods Edge in 10 min');
+    });
+
+    it('in a real return, changes to the first-win line when the walk back ends at the target', () => {
+      const g = knockedOut(44);
+      expect(returnLine(g.state)).toBe('Returning to The Woods Edge after recovery');
+      recovered(g);
+      for (let i = 0; i < 20 && !g.state.travel; i++) g.tick();
+      expect(returnLine(g.state)).toBe('Returning to The Woods Edge');
+      walkUntilStill(g);
+      expect(g.state.spot).toBe('f4_woods_edge');
+      expect(g.state.pendingReturn?.phase).toBe('return'); // it lasts until the first win
+      expect(returnLine(g.state)).toBe('At The Woods Edge: the return ends at the first win.');
     });
 
     it('never names a place that is not discovered', () => {

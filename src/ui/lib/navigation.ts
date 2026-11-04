@@ -348,16 +348,22 @@ export function activityName(spotId: string, activityId: string): string {
 export const STATION_MAX = 5;
 
 /** Why a worked spot is not offered as a station. */
-export type StationBlock = NonNullable<ReturnType<typeof returnBlock>> | 'undiscovered' | 'locked';
+export type StationBlock =
+  | NonNullable<ReturnType<typeof returnBlock>>
+  | 'undiscovered'
+  | 'locked'
+  | 'spent'
+  | 'empty';
 
 /**
  * Why `goal` is not offered from where the character stands, or null when one
  * click can send it there and put it to work. The knockout return's own list
  * (`returnBlock`: a forced spot, a forced last road, a festival floor, the
  * stronghold wall, a route that does not exist, an activity that cannot start)
- * plus the two the row adds (an undiscovered spot, a floor not unlocked). The
- * route is the one the button takes: the return may climb to a floor and then
- * walk, but a click is one `goAndDo`.
+ * plus four the row adds: an undiscovered spot, a floor not unlocked, and a
+ * hunt that cannot fight (`spent`: its fight budget is used up; `empty`: no
+ * encounter is eligible now). The route is the one the button takes: the
+ * return may climb to a floor and then walk, but a click is one `goAndDo`.
  */
 export function stationBlock(state: GameState, goal: ReturnSpot): StationBlock | null {
   const spot = SPOTS[goal.spot];
@@ -370,6 +376,13 @@ export function stationBlock(state: GameState, goal: ReturnSpot): StationBlock |
     if (floor && !floorUnlocked(state, floor)) return 'locked';
   }
   if (why) return why;
+  // A hunt that cannot fight is not work: walking there starts a hunt that
+  // spawns nothing. `returnBlock` does not look (the fallback pick,
+  // `usableHunt`, does), so the row does.
+  if (spotActivities(spot).find((a) => a.id === goal.activity)?.kind === 'hunt') {
+    if (spotCleared(state, spot)) return 'spent';
+    if (eligibleEncounters(state, spot).length === 0) return 'empty';
+  }
   return goal.spot === state.spot || findPath(state, state.spot, goal.spot) ? null : 'route';
 }
 
@@ -420,6 +433,16 @@ export function stations(state: GameState, travelSpeed: number, max = STATION_MA
   return out;
 }
 
+/**
+ * The label of the button that ends a knockout return. Standing still it is
+ * "Stay here". Walking, the leg under way cannot be called off, so the button
+ * stops the character where that leg ends and says where: "Stop at The
+ * Treeline" (`Game.stayHere`).
+ */
+export function stayLabel(state: GameState): string {
+  return state.travel ? `Stop at ${placeName(state, state.travel.to)}` : 'Stay here';
+}
+
 /** "9 min", "2 h", "1 h 12 min": a wait in whole minutes, rounded up. */
 function waitText(ticks: number): string {
   const total = Math.max(1, Math.ceil(ticks / (60 * TPS)));
@@ -433,6 +456,9 @@ function waitText(ticks: number): string {
  * The knockout return in flight as one line for the Stations row: what the
  * character is doing for it and what comes after. Null with no return.
  * - `return`: "Returning to The Deep Woods", with "after recovery" while knocked out.
+ *   A return ends at the first win at its target, so a character already
+ *   standing at a hunt target reads "At The Deep Woods: the return ends at the
+ *   first win."
  * - `fallback`: "Hunting The Treeline for 200 wins or 2 h, then The Deep Woods".
  *   The wins and the time are what is left. With no target (a forced spot, the
  *   wall) the hunt is where the return ends, and the line has no "then".
@@ -449,6 +475,10 @@ export function returnLine(state: GameState): string | null {
     const wins = Math.max(0, FALLBACK_WINS - p.wins);
     const left = p.until === undefined ? '' : ` or ${waitText(p.until - state.totalTicks)}`;
     return `Hunting ${placeName(state, p.fallback.spot)} for ${wins} wins${left}${target ? `, then ${target}` : ''}`;
+  }
+  if (p.phase === 'return' && p.target && state.spot === p.target.spot && SPOTS[p.target.spot]) {
+    const act = spotActivities(SPOTS[p.target.spot]).find((a) => a.id === p.target!.activity);
+    if (act?.kind === 'hunt') return `At ${target}: the return ends at the first win.`;
   }
   return `Returning to ${target ?? 'the target'}${state.recovering ? ' after recovery' : ''}`;
 }

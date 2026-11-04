@@ -1,5 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { render } from 'svelte/server';
+import { compile } from 'svelte/compiler';
 import type { Component } from 'svelte';
 import { revealMapped } from '../src/core/systems/mapped';
 import { clearFloors } from './fixtures/floors';
@@ -144,10 +146,80 @@ describe('the Stations row', () => {
     const body = html();
     expect(body).toContain('Returning to The Woods Edge');
     expect(body).not.toContain('after recovery');
-    expect(body).toContain('Stay here');
+    // The leg under way cannot be called off, so the button names where it ends.
+    expect(body).toContain('Stop at The Granary Kitchens');
+    expect(body).not.toContain('Stay here');
     expect(body).toContain('Stations open on arrival.');
     st.gs.travel = null;
     st.gs.pendingReturn = null;
+  });
+
+  it('standing at a hunt target, prints the first-win line with "Stay here"', () => {
+    afterTutorial();
+    st.gs.resumeActivity = { the_sand: 'train_dex_sand' };
+    st.gs.spot = 'f4_woods_edge';
+    st.gs.pendingReturn = {
+      target: { spot: 'f4_woods_edge', activity: 'hunt' },
+      phase: 'return',
+      wins: 0,
+      probes: 0,
+    };
+    const body = html();
+    expect(body).toContain('At The Woods Edge: the return ends at the first win.');
+    expect(body).not.toContain('Returning to');
+    expect(body).toContain('Stay here');
+    st.gs.pendingReturn = null;
+  });
+
+  it('does not take the wheel: nothing in the row listens for it or cancels it', () => {
+    const src = readFileSync(new URL('../src/ui/StationsRow.svelte', import.meta.url), 'utf8');
+    expect(src).not.toMatch(/addEventListener|onwheel|['"]wheel['"]|preventDefault|passive/i);
+  });
+
+  it('marks the newest station only while its button is enabled', () => {
+    const src = readFileSync(new URL('../src/ui/StationsRow.svelte', import.meta.url), 'utf8');
+    const { css } = compile(src, { generate: 'client', css: 'external', filename: 'StationsRow.svelte' });
+    const rules = [...css!.code.matchAll(/([^{}]+)\{([^}]*)\}/g)].filter(([, , body]) => body.includes('var(--accent)'));
+    const marks = rules.filter(([sel]) => sel.includes('.station.back'));
+    expect(marks.length).toBeGreaterThan(0);
+    for (const [sel] of marks) expect(sel).toContain(':not(:disabled)');
+  });
+
+  it('keeps the return\'s line at its width while the stations after it overflow: the cell does not shrink for them', () => {
+    const src = readFileSync(new URL('../src/ui/StationsRow.svelte', import.meta.url), 'utf8');
+    const { css } = compile(src, { generate: 'client', css: 'external', filename: 'StationsRow.svelte' });
+    const code = css!.code.replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = (name: string) => [...code.matchAll(/([^{}]+)\{([^}]*)\}/g)].find(([, sel]) => sel.trim().startsWith(`.${name}`))?.[2] ?? '';
+    // The line may shrink only inside its own cell, which is capped at the column and never squeezed by the stations.
+    expect(rule('st-return')).toMatch(/flex:\s*none/);
+    expect(rule('st-return')).toMatch(/max-width:\s*100%/);
+    // A width of its own, not the width of its text: the countdown changing never moves what follows.
+    expect(rule('st-line')).toMatch(/width:\s*34em/);
+    expect(rule('st-line')).toMatch(/flex:\s*0 1 auto/);
+    afterTutorial();
+    st.gs.resumeActivity = { the_sand: 'train_dex_sand', f4_woods_edge: 'hunt' };
+    expect(html()).not.toContain('st-return');
+    st.gs.pendingReturn = { target: { spot: 'f4_woods_edge', activity: 'hunt' }, phase: 'return', wins: 0, probes: 0 };
+    // The caption, the line and the button are one cell.
+    expect(html()).toMatch(/st-return[^>]*>\s*<span class="st-cap[^>]*>Return<\/span>\s*<span class="st-line[^>]*>[^<]*<\/span>\s*<button[^>]*st-stay/);
+    st.gs.pendingReturn = null;
+  });
+
+  it('a queued "stay" intent reads as nothing queued in the destination preview, whatever the spot remembers', async () => {
+    const DestinationPreview = (await import('../src/ui/panels/DestinationPreview.svelte')).default as Component;
+    afterTutorial();
+    st.gs.resumeActivity = { granary_kitchens: 'job_pans' };
+    st.gs.spot = 'granary_gate';
+    st.gs.travel = { from: 'granary_gate', to: 'granary_kitchens', ticksLeft: 5, total: 8 };
+    st.gs.travelPlan = [];
+    st.gs.travelIntent = null;
+    expect(render(DestinationPreview).body).toContain('resume');
+    st.gs.travelIntent = { spot: 'granary_kitchens', activity: '' };
+    const body = render(DestinationPreview).body;
+    expect(body).toContain('nothing queued');
+    expect(body).not.toContain('resume');
+    st.gs.travelIntent = null;
+    st.gs.travel = null;
   });
 
   it('never names a place that is not found', () => {

@@ -388,6 +388,7 @@ export const LOG_TEXT = {
   'knockout.blocked_retry': '{spot}: {why}. Hunting {fallback} for {wins} wins or {hours} h, then retrying.',
   'knockout.hold': 'No safer hunt known. Retrying {spot} in {minutes} min.',
   'knockout.stay': 'Return cancelled. Staying here.',
+  'knockout.stay_leg': 'Return cancelled. Stopping at {spot}.',
   'knockout.spent_fallback': '{spot}: no fights left. Hunting {fallback}.',
   'knockout.spent_hold': '{spot}: no fights left. No safer hunt known. Retrying {target} in {minutes} min.',
   'knockout.spent_idle': '{spot}: no fights left. No safer hunt known.',

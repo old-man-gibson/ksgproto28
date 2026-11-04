@@ -593,10 +593,17 @@ Built 2026-11-04 (docs/plans/navigation-alternatives.md N7). No save change.
   - the stronghold wall `f11_wall`;
   - no route;
   - an activity that cannot start now (`canStartActivity`);
-  plus two the row adds: an undiscovered spot, and a floor that is not unlocked.
-  The route is the one the button takes: `findPath` from where the character
-  stands, ride edges included (§2.6). The return may climb and then walk; a
-  click is one `goAndDo`.
+  plus four the row adds:
+  - an undiscovered spot;
+  - a floor that is not unlocked;
+  - a hunt whose fight budget is spent (`spotCleared`: every band-1 hall and the
+    other `fightLimit` spots, once cleared);
+  - a hunt with no encounter eligible now (`eligibleEncounters`).
+  `returnBlock` looks at neither of the last two (the fallback pick,
+  `usableHunt`, does), and walking to such a spot starts a hunt that fights
+  nothing. The route is the one the button takes: `findPath` from where the
+  character stands, ride edges included (§2.6). The return may climb and then
+  walk; a click is one `goAndDo`.
 - **A row** is one `GoButton` (class `station`; GoButton takes a `children`
   snippet and a `class`): "🏹 Hunt the Edge · The Woods Edge 21 s", the activity,
   the place and the route time at the current travel speed. One click is
@@ -606,7 +613,8 @@ Built 2026-11-04 (docs/plans/navigation-alternatives.md N7). No save change.
   adds ⚔️ where arriving starts a fight with no way out and ⤵ for a road with no
   way back. No station is a forced arrival today (`returnBlock` refuses them), so
   ⚔️ is GoButton's rule and not one a station meets. Nothing opens on hover.
-  The newest station has an accent border.
+  The newest station has an accent border, which a disabled button (knocked
+  out, in a forced fight) does not keep.
 - **Free outside town** (user, 2026-11-04, plan §9 Q2). A station needs no
   Wayfinding: a place the character has worked at is a go link on any floor.
   Wayfinding still sells quest go links outside town and the "Trains at" list on
@@ -619,32 +627,44 @@ Built 2026-11-04 (docs/plans/navigation-alternatives.md N7). No save change.
     down to 10 em before the "Stay here" button beside it does), so the
     countdown never moves what follows it:
     - `return`: "Returning to The Deep Woods", with " after recovery" while
-      knocked out;
+      knocked out. The `return` phase lasts until the first win at the target,
+      so a character that has arrived and hunts reads "At The Deep Woods: the
+      return ends at the first win." (a target with no fights ends the return on
+      arrival and never reads so);
     - `fallback`: "Hunting The Treeline for 187 wins or 1 h 12 min, then The
       Deep Woods", the wins and the time that are left, and no "then" when the
       return has no target (a forced spot, the wall);
     - `hold`: "Retrying The Deep Woods in 9 min";
-  - then a "Stay here" button, then the stations, headed "Stations" (the return
-    has taken the place of "Back").
+  - then a button that ends the return, then the stations, headed "Stations"
+    (the return has taken the place of "Back"). Standing still it reads "Stay
+    here". Walking it reads "Stop at The Treeline", the place the leg under way
+    ends at, because that leg cannot be called off.
   `Game.stayHere` is the button: it ends the return (`clearReturn`) and, since a
   walk the player did not start can only be the return's, drops the legs of that
-  walk not yet taken and the work queued at its end. The leg under way still
-  completes (as with "Cancel journey"), and an arrival resumes the spot's
-  `resumeActivity` as for any walk, so Stay here on the last leg of a walk back
-  ends at the target. A recovery, a hold or a fallback hunt simply run out with
+  walk not yet taken. The leg under way completes (as with "Cancel journey") and
+  its arrival starts nothing: the leg's `travelIntent` becomes `{ spot: where
+  the leg ends, activity: ARRIVE_IDLE }` (actions.ts; `''`, a value of the saved
+  string, so the save keeps its version), which `settleArrival` reads as "start
+  nothing" ahead of the spot's `resumeActivity`. That entry is not deleted: a
+  later visit resumes it as always. The destination preview reads the intent as
+  "nothing queued". A recovery, a hold or a fallback hunt simply run out with
   nothing queued behind them: this is the way to cancel a hold without starting
-  and stopping an activity. It logs "Return cancelled. Staying here." and
-  returns false, touching nothing, when no return is in flight.
+  and stopping an activity. It logs "Return cancelled. Staying here." standing
+  still, or "Return cancelled. Stopping at The Treeline." walking, and returns
+  false, touching nothing, when no return is in flight.
 - **One line, one height.** The row is 44 px with its border in every state:
   - no stations: "No stations. A place where you start work is listed here once
     you leave it.";
   - stations: "Back", then "Stations";
-  - a return in flight: its line, "Stay here", the stations;
+  - a return in flight: its line, its button, the stations;
   - walking: "Stations open on arrival." The stations are not listed on the way,
     because their times would run from the spot being left. A return's line and
-    its Stay here button stay.
-  A line longer than the column scrolls sideways inside itself (the wheel, touch
-  and keyboard focus all scroll it; a station is never cut). The scrollbar is
+    its button stay.
+  A line longer than the column scrolls sideways inside itself (the scrollbar,
+  shift+wheel, a trackpad, a swipe and keyboard focus scroll it; a station is
+  never cut). The row does not take the wheel: a vertical wheel over it scrolls
+  the page, as everywhere else (the user dislikes interactions that grab input).
+  The scrollbar is
   thin and sits in the 12 px under the buttons, which the row reserves whether
   or not it shows; the buttons are pinned to the top, so a scrollbar appearing
   moves nothing. The scroll returns to the left end when the row changes what it
@@ -661,7 +681,10 @@ Built 2026-11-04 (docs/plans/navigation-alternatives.md N7). No save change.
   tabs, the map frame's top edge and the journey line each kept one box. The map
   frame changed height between the city's plan (448 px) and a floor's (342 px,
   with its detail 106 px under it) as §3.5 describes; its top edge and
-  everything below it did not move.
+  everything below it did not move. Measured again after the fixes of the plan
+  card's fix round 1 (613 samples over 31 s, with "Stop at" pressed on the last
+  leg of the walk back): the same boxes held; the return cell and its button kept
+  their left edges.
 - **Errand** (plan §2.3: buy at The Granary Gate, then back to the floor 4 hunt),
   counted in a browser at a 1094 px window: 4 clicks, 0 scrolls, 0 stops. The
   Threshold tab, the Granary Gate pin (a first click opens its card, a second
@@ -737,7 +760,9 @@ fight, or with no open route.
   activity. The knockout return (§2.1) walks back to the interrupted work
   instead. The character idles after a knockout only when the fall cannot be
   returned to and no proven hunt is usable.
-- "Stay here" cannot stop the leg already under way (§3.6), so on the last leg
-  of a walk back the character still arrives at the target and resumes there.
+- "Stay here" cannot call off the leg already under way (§3.6): the character
+  finishes it and stops at its end, idle, so a walk back that is one short leg
+  ends at the target with nothing started. A leg that can be turned round is not
+  built.
 - The Stations row lists no station while the character walks. A "Back" that
   could be queued during the walk (a second journey after the first) is not built.

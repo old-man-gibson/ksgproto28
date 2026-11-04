@@ -1,7 +1,7 @@
 <script lang="ts">
   import { gs, game, view } from './state.svelte';
   import GoButton from './lib/GoButton.svelte';
-  import { legTime, returnLine, stations } from './lib/navigation';
+  import { legTime, returnLine, stayLabel, stations } from './lib/navigation';
   import { tutorialScreen } from './lib/tutorialFocus';
 
   /**
@@ -23,8 +23,9 @@
   const list = $derived(tutorial ? [] : stations(gs, view.stats.travelSpeed));
   const line = $derived(returnLine(gs));
 
-  // A row wider than the column scrolls sideways; the wheel scrolls it too, until
-  // it reaches an end, where the page takes the wheel back.
+  // A row wider than the column scrolls sideways (the scrollbar, shift+wheel, a
+  // trackpad, a swipe, keyboard focus). The wheel is not taken over: a vertical
+  // wheel over the row scrolls the page.
   let scroller = $state<HTMLElement | null>(null);
 
   // What the row is showing: a return, a walk, stations or nothing. When that
@@ -35,29 +36,17 @@
     void mode;
     if (scroller) scroller.scrollLeft = 0;
   });
-  $effect(() => {
-    const el = scroller;
-    if (!el) return;
-    const onWheel = (ev: WheelEvent) => {
-      const room = el.scrollWidth - el.clientWidth;
-      if (room <= 0 || Math.abs(ev.deltaY) <= Math.abs(ev.deltaX)) return;
-      const at = el.scrollLeft;
-      if ((ev.deltaY < 0 && at <= 0) || (ev.deltaY > 0 && at >= room - 1)) return;
-      el.scrollLeft = at + ev.deltaY;
-      ev.preventDefault();
-    };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  });
 </script>
 
 {#if !tutorial}
   <div class="panel stations-row" role="group" aria-label="Stations">
     <div class="st-scroll" bind:this={scroller}>
       {#if line}
-        <span class="st-cap">Return</span>
-        <span class="st-line">{line}</span>
-        <button class="small st-stay" onclick={() => game.stayHere()}>Stay here</button>
+        <div class="st-return">
+          <span class="st-cap">Return</span>
+          <span class="st-line">{line}</span>
+          <button class="small st-stay" onclick={() => game.stayHere()}>{stayLabel(gs)}</button>
+        </div>
       {/if}
       {#if gs.travel}
         <span class="st-note dim">Stations open on arrival.</span>
@@ -125,12 +114,27 @@
   }
 
   /*
+   * The return: its caption, its line and its button, as one cell. The cell
+   * never shrinks for the stations after it (it is `flex: none`, so a long row
+   * of stations scrolls instead of squeezing it); it is capped at the width of
+   * the column, and only then does its line give up width.
+   */
+  .st-return {
+    flex: none;
+    max-width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /*
    * 34 em wide, so the wins and the minutes counting down never move what
-   * follows; in a column too narrow for that it gives up width before the "Stay
-   * here" button beside it does.
+   * follows. In a column too narrow for the whole cell it gives up width, down
+   * to 10 em, before the button beside it does.
    */
   .st-line {
-    flex: 0 1 34em;
+    width: 34em;
+    flex: 0 1 auto;
     min-width: 10em;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -165,7 +169,8 @@
     line-height: 1;
   }
 
-  .st-scroll :global(.station.back) {
+  /* The newest station is marked; a disabled one (knocked out, walking) loses the mark like any disabled button. */
+  .st-scroll :global(.station.back:not(:disabled)) {
     border-color: var(--accent);
   }
 
