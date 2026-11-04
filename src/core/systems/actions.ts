@@ -363,7 +363,7 @@ export function activityFillRate(act: ActivityDef, stats: DerivedStats, state: G
 /** Per-tick action processing. Called by the game loop when not traveling. */
 export function tickAction(state: GameState, bus: EventBus): void {
   const stats = getDerivedStats(state);
-  const act = currentActivity(state);
+  let act = currentActivity(state);
   // Coming round after a knockout is resting whether you chose it or not.
   const resting = state.recovering || act?.kind === 'rest';
   // Every pool is clamped to its current ceiling and topped up in one pass.
@@ -386,9 +386,15 @@ export function tickAction(state: GameState, bus: EventBus): void {
   }
 
   // A knockout's return: walk back to the work, or to the fallback, or wait.
-  // A step may start a journey or an activity. `act` was read before it, so
-  // the rest of this tick still treats the character as idle, which it was.
-  if (state.pendingReturn) tickKnockoutReturn(state, bus);
+  // A step may start a journey or an activity, so `act` is read again after
+  // it. A character that set out has no activity part left in this tick: the
+  // stale `act` would otherwise run a hunt's encounter roll or a cycle's
+  // payout on the road.
+  if (state.pendingReturn) {
+    tickKnockoutReturn(state, bus);
+    if (state.travel) return;
+    act = currentActivity(state);
+  }
 
   // The health trickle runs for whatever you are doing, so it is applied once
   // here rather than tucked into each case — including the ones that break out

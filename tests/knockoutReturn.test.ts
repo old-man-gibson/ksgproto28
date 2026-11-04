@@ -13,6 +13,7 @@ import {
 } from '../src/core/registry';
 import { deserialize, serialize } from '../src/core/save/save';
 import { MIGRATIONS } from '../src/core/save/migrations';
+import { tickCombat } from '../src/core/systems/combat';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { festivalFloorOf } from '../src/core/systems/festivalRules';
 import { hpFraction } from '../src/core/systems/health';
@@ -36,7 +37,7 @@ import {
   tickKnockoutReturn,
 } from '../src/core/systems/knockoutReturn';
 import { STATUSES } from '../src/core/registry';
-import type { PendingReturn, SpotDef, StatusDef } from '../src/core/types';
+import type { GameState, PendingReturn, ReturnSpot, SpotDef, StatusDef } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
 /**
@@ -87,6 +88,7 @@ const KR: Record<string, SpotDef> = {
       { to: 'kr_meadow', ticks: 5 },
       { to: 'kr_hopeless', ticks: 5 },
       { to: 'kr_ring', ticks: 5 },
+      { to: 'kr_yard', ticks: 5 },
       { to: 'kr_den', ticks: 5 },
       { to: 'kr_pit', ticks: 5, forced: true },
     ],
@@ -95,6 +97,9 @@ const KR: Record<string, SpotDef> = {
   kr_meadow: pocket('kr_meadow', 'Test Meadow', { waypoint: true, activities: [hunt], encounters: rats }),
   kr_hopeless: pocket('kr_hopeless', 'Test Pit of Golems', { activities: [hunt], encounters: golem }),
   kr_ring: pocket('kr_ring', 'Test Ring', { fightLimit: 1, activities: [hunt], encounters: rats }),
+  kr_yard: pocket('kr_yard', 'Test Yard', {
+    activities: [{ id: 'drill', kind: 'train', attr: 'str', name: 'Drill', icon: '🏋️' }],
+  }),
   kr_den: pocket('kr_den', 'Test Den', {
     forced: true,
     activities: [hunt],
@@ -168,6 +173,18 @@ function win(g: Game, spot: string): void {
 }
 
 const pending = (g: Game): PendingReturn => g.state.pendingReturn!;
+
+/**
+ * A tick where the world is not moving though it should be: a fight open on
+ * the road, a fight open with no work selected (nothing ticks it), or a return
+ * pending outside its hold with nothing running, walking or recovering.
+ */
+function stalled(s: GameState): boolean {
+  if (s.combat && s.travel) return true;
+  if (s.combat && !s.activity && !s.combat.forced) return true;
+  const p = s.pendingReturn;
+  return !!p && p.phase !== 'hold' && !s.activity && !s.travel && !s.combat && !s.recovering;
+}
 
 describe('a fall: haven, 95%, walk, hunting', () => {
   it('a real lost fight at a hunt spot is followed by the walk back', () => {
@@ -606,6 +623,8 @@ describe('the hold', () => {
     const LIMIT = 80 * 60 * TPS;
     let longest = 0;
     let stretch = 0;
+    let longestStall = 0;
+    let stall = 0;
     let probes = 0;
     let lastPhase = s.pendingReturn?.phase;
     for (let i = 0; i < EIGHT_HOURS; i++) {
@@ -614,10 +633,14 @@ describe('the hold', () => {
       if (!s.activity && !s.travel && !s.combat) stretch++;
       else stretch = 0;
       if (stretch > longest) longest = stretch;
+      stall = stalled(s) ? stall + 1 : 0;
+      if (stall > longestStall) longestStall = stall;
       const phase = s.pendingReturn?.phase;
       if (phase === 'return' && lastPhase === 'hold') probes++;
       lastPhase = phase;
     }
+    // Nothing waited on a fight that no tick would ever resolve.
+    expect(longestStall).toBeLessThanOrEqual(3);
     // The hold is counted from the knockout, so the recovery inside it adds nothing;
     // a minute of slack covers the tick that starts the probe.
     expect(longest).toBeLessThanOrEqual(LIMIT + 60 * TPS);
@@ -637,6 +660,8 @@ describe('the hold', () => {
     const EIGHT_HOURS = 8 * 3600 * TPS;
     let longest = 0;
     let stretch = 0;
+    let longestStall = 0;
+    let stall = 0;
     let fallbacks = 0;
     let lastPhase = s.pendingReturn?.phase;
     for (let i = 0; i < EIGHT_HOURS; i++) {
@@ -644,10 +669,13 @@ describe('the hold', () => {
       if (!s.activity && !s.travel && !s.combat) stretch++;
       else stretch = 0;
       if (stretch > longest) longest = stretch;
+      stall = stalled(s) ? stall + 1 : 0;
+      if (stall > longestStall) longestStall = stall;
       const phase = s.pendingReturn?.phase;
       if (phase === 'fallback' && lastPhase !== 'fallback') fallbacks++;
       lastPhase = phase;
     }
+    expect(longestStall).toBeLessThanOrEqual(3);
     // Only the recovery after a knockout is idle time: seconds, never a hold.
     expect(longest).toBeLessThanOrEqual(60 * TPS);
     // The 5-knockout streak sent it to the meadow, and the retries sent it back again.
@@ -917,5 +945,101 @@ describe('across floors', () => {
         ADJACENCY.set(e.from, ADJACENCY.get(e.from)!.filter((x) => x !== e));
       }
     }
+  });
+});
+
+/** Floors 1 to 4 cleared and floor 5's gate met, the Greenwood and the Mire on the map. */
+function greenwood(seed: number): Game {
+  const g = new Game(createInitialState(seed));
+  const s = g.state;
+  clearFloors(s.stats, ['ascent_f1', 'ascent_f2', 'ascent_f3', 'ascent_f4']);
+  s.stats['gold:earned'] = 100_000;
+  s.stats['kills:tag:goblin'] = 100;
+  for (const spot of Object.values(SPOTS)) {
+    if (/^ascent_f[45]_area$/.test(spot.areaId)) s.discovered.push(spot.id);
+  }
+  s.safeSpots = { nearest: 'f4_treeline', unconditional: 'f4_treeline' };
+  return g;
+}
+
+describe('a retry that sets out rolls no fight on the road', () => {
+  /**
+   * Hunting the fallback at the Woods Edge, the 2 h cap one tick away, the
+   * respawn timer one tick from rolling an encounter: the tick the mover sets
+   * out is also the tick a stale hunt would roll one.
+   */
+  function atCap(seed: number, target: ReturnSpot): Game {
+    const g = greenwood(seed);
+    const s = g.state;
+    s.spot = 'f4_woods_edge';
+    g.selectActivity('hunt');
+    s.pendingReturn = {
+      target,
+      phase: 'fallback',
+      fallback: { spot: 'f4_woods_edge', activity: 'hunt' },
+      wins: 0,
+      until: s.totalTicks + 1,
+      probes: 0,
+    };
+    s.respawnTimer = 1;
+    return g;
+  }
+
+  /** Tick to the target's hunt, failing if a fight is ever open on the road. */
+  function walkThere(g: Game, spot: string): boolean {
+    const s = g.state;
+    let fightOnRoad = false;
+    for (let i = 0; i < 800 && !(s.spot === spot && s.activity === 'hunt' && !s.travel); i++) {
+      g.tick();
+      if (s.travel && s.combat) fightOnRoad = true;
+    }
+    return fightOnRoad;
+  }
+
+  it('on the same floor', () => {
+    const g = atCap(51, { spot: 'f4_deep_woods', activity: 'hunt' });
+    g.tick();
+    expect(pending(g).phase).toBe('return');
+    g.tick();
+    expect(g.state.travel).not.toBeNull();
+    expect(g.state.combat).toBeNull();
+    expect(walkThere(g, 'f4_deep_woods')).toBe(false);
+    expect(g.state.spot).toBe('f4_deep_woods');
+    expect(g.state.activity).toBe('hunt');
+    expect(g.state.combat).toBeNull();
+  });
+
+  it('by the ladder, when the target is on another floor', () => {
+    const g = atCap(52, { spot: 'f5_bog', activity: 'hunt' });
+    g.tick();
+    g.tick();
+    expect(g.state.travel?.to).toBe('f5_causeway'); // the climb, not a road
+    expect(g.state.combat).toBeNull();
+    expect(walkThere(g, 'f5_bog')).toBe(false);
+    expect(g.state.spot).toBe('f5_bog');
+    expect(g.state.activity).toBe('hunt');
+  });
+
+  it('a hunt asked to roll an encounter on the road refuses', () => {
+    const g = world(53, 'kr_field');
+    const s = g.state;
+    s.respawnTimer = 0;
+    s.travel = { from: 'kr_field', to: 'kr_gate', ticksLeft: 5, total: 5 };
+    tickCombat(s, g.bus, SPOTS.kr_field);
+    expect(s.combat).toBeNull();
+    s.travel = null;
+    tickCombat(s, g.bus, SPOTS.kr_field);
+    expect(s.combat).not.toBeNull(); // the same call rolls one standing still
+  });
+
+  it('a step that sets out gives the activity it leaves no tick of work', () => {
+    const g = world(54, 'kr_yard');
+    const s = g.state;
+    g.selectActivity('drill');
+    s.pendingReturn = { target: { spot: 'kr_field', activity: 'hunt' }, phase: 'return', wins: 0, probes: 0 };
+    s.activityProgress = 0;
+    g.tick();
+    expect(s.travel).not.toBeNull();
+    expect(s.activityProgress).toBe(0);
   });
 });

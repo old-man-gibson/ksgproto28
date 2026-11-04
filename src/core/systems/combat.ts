@@ -4031,6 +4031,9 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
     for (const g of (state.floatingFeed ?? []).map((f) => f.group)) {
       if (g.startsWith('telekinesis:') || g.startsWith(ABILITY_RUN)) settleFloating(state, g);
     }
+    // No encounter is rolled on the road: nothing ticks a fight begun while
+    // travelling, and arrival refuses to start work with one open.
+    if (state.travel) return;
     if (state.respawnTimer > 0) {
       state.respawnTimer -= 1;
       return;
