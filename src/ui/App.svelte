@@ -35,7 +35,7 @@
   import { tick, untrack, type Component } from 'svelte';
   import { fmt } from './lib/format';
   import { navListShown, reconcileTab, visibleNav, type MainTab } from './lib/nav';
-  import { logIsOpen } from './lib/shell';
+  import { logIsOpen, shortClock } from './lib/shell';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf } from '../core/systems/clock';
   import { CHRONOSENSE_ID, describeTimeSense } from '../core/systems/chronosense';
@@ -131,7 +131,7 @@
   // panel while folded (lib/shell.ts). The player's stored pick beats the width
   // default; floor 0 keeps the column, as it always had.
   let viewportWidth = $state(typeof window === 'undefined' ? 1440 : window.innerWidth);
-  let headerHeight = $state(0);
+  let headerEl = $state<HTMLElement>();
   const logOpen = $derived(screen ? true : logIsOpen(ui.logChoice, viewportWidth));
   $effect(() => {
     if (logOpen && ui.logDrawer) ui.logDrawer = false;
@@ -265,9 +265,8 @@
   class:paused={gs.paused}
   class:no-sidebar={screen && !screen.sidebar}
   class:log-folded={!logOpen}
-  style="--header-h: {headerHeight}px"
 >
-  <header bind:offsetHeight={headerHeight}>
+  <header bind:this={headerEl}>
     <h1>Frontier Idle</h1>
 
     <!-- Transport controls. The pause is global — the whole world stops, not
@@ -317,7 +316,7 @@
     <JobStrip showRate={!screen} />
     {#if timeSense}
       <div class="timesense" title="{timeSense} ({SKILLS[CHRONOSENSE_ID].name} {senseLevel})">
-        🕰️ {timeSense}
+        🕰️ <span class="clock-full">{timeSense}</span><span class="clock-short">{shortClock(timeSense)}</span>
       </div>
     {/if}
     {#if weather && !screen}
@@ -403,7 +402,7 @@
       />
     </aside>
   {:else if ui.logDrawer}
-    <LogDrawer onclose={() => (ui.logDrawer = false)} ondock={() => setLogChoice(true)} />
+    <LogDrawer anchor={headerEl} onclose={() => (ui.logDrawer = false)} ondock={() => setLogChoice(true)} />
   {/if}
 </div>
 
@@ -566,6 +565,30 @@
     white-space: nowrap;
     color: var(--text-dim);
     font-size: 13px;
+  }
+
+  .clock-short {
+    display: none;
+  }
+
+  /* Under 1180px the header keeps one row down to 1024px by dropping detail:
+     the clock chip shows the hour only (the title holds the whole text) and
+     takes its own width; the rate chip drops kills (JobStrip.svelte). The job
+     name is never shortened. */
+  @media (max-width: 1179px) {
+    .clock-full {
+      display: none;
+    }
+
+    .clock-short {
+      display: inline;
+    }
+
+    .timesense {
+      flex: 0 0 auto;
+      min-width: 0;
+      max-width: none;
+    }
   }
 
   .weather {

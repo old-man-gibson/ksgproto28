@@ -87,6 +87,14 @@
   text-transform: uppercase;
 }
 
+/* Under 1180px the header gives up width so one row holds (App.svelte). */
+@media (max-width: 1179px) {
+  :root[data-theme='gothic'] .layout > header h1 {
+    font-size: 16px;
+    letter-spacing: 0.08em;
+  }
+}
+
 :root[data-theme='gothic'] button {
   border-color: #5a4a36;
 }

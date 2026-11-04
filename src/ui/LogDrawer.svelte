@@ -7,17 +7,39 @@
    * working. Escape, the Log button (LogTicker.svelte) or a click outside
    * closes it. `ondock` puts the log back in its column for good.
    *
-   * Its z-index stays under the windows (Modal 20, offline report 10, the map
-   * card 9 is its equal and the drawer comes later in the page).
+   * Its z-index stays under the windows (Modal 20, offline report 10; the map
+   * card, 9, is its equal and the drawer comes later in the page).
+   *
+   * `anchor` is the header. The panel starts 12px below the header's live
+   * bottom edge, or 12px from the top of the window once the page has scrolled
+   * the header away (the narrow layout scrolls the page).
    */
-  let { onclose, ondock }: { onclose: () => void; ondock: () => void } = $props();
+  let {
+    onclose,
+    ondock,
+    anchor,
+  }: { onclose: () => void; ondock: () => void; anchor?: HTMLElement } = $props();
 
   let drawer: HTMLElement;
+  let top = $state(12);
+
+  function place() {
+    top = Math.max(12, Math.round((anchor?.getBoundingClientRect().bottom ?? 0) + 12));
+  }
+
+  $effect(place);
+
+  /**
+   * A window is up: a Modal, or the defeat, offline, prestige, dare or evolve
+   * window. It owns Escape and the presses around it. The map card carries
+   * role="dialog" too but only hovers, so it does not count.
+   */
+  function windowUp(): boolean {
+    return document.querySelector('[role="dialog"]:not(.map-card)') !== null;
+  }
 
   function onKeydown(ev: KeyboardEvent) {
-    if (ev.key !== 'Escape') return;
-    // A window on top owns Escape (Modal closes its newest window only).
-    if (document.querySelector('[aria-modal="true"]')) return;
+    if (ev.key !== 'Escape' || windowUp()) return;
     onclose();
   }
 
@@ -26,13 +48,14 @@
     if (!target || drawer.contains(target)) return;
     // The Log button toggles the drawer itself.
     if (target.closest('[data-log-toggle]')) return;
+    if (windowUp()) return;
     onclose();
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} onpointerdown={onPointerDown} />
+<svelte:window onkeydown={onKeydown} onpointerdown={onPointerDown} onscroll={place} onresize={place} />
 
-<aside class="log-drawer" bind:this={drawer} aria-label="Log">
+<aside class="log-drawer" bind:this={drawer} aria-label="Log" style="top: {top}px">
   <LogFeed
     actions={[
       { label: 'Dock', title: 'Keep the log open as a column on the right', run: ondock },
@@ -44,8 +67,6 @@
 <style>
   .log-drawer {
     position: fixed;
-    /* The layout publishes the header's height; its padding and gap add 24px. */
-    top: calc(var(--header-h, 56px) + 24px);
     right: 12px;
     bottom: 12px;
     width: min(360px, calc(100vw - 24px));
