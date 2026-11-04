@@ -1,6 +1,18 @@
-import type { BandDef, FloorDef, GameState, TowerDef } from '../../core/types';
-import { bandsOf, floorsInBand } from '../../core/registry';
-import { bandKnown, floorReached, hubStatus } from '../../core/systems/ladder';
+import type { BandDef, FloorDef, GameState, TowerDef, UnlockCondition } from '../../core/types';
+import { BANDS, bandsOf, floorsInBand, getSpot } from '../../core/registry';
+import {
+  bandCleared,
+  bandHubAt,
+  bandKnown,
+  floorCleared,
+  floorReached,
+  hubStatus,
+  rungStatus,
+} from '../../core/systems/ladder';
+import { currentFloor } from '../../core/systems/towers';
+import { festivalLadder, festivalLocked, lockoutLeft } from '../../core/systems/festivalRules';
+import { MS_PER_TICK } from '../../core/engine/loop';
+import { msToTime, termText } from './format';
 
 /**
  * The ladder panel's layout (AscentPanel.svelte), kept out of the component
@@ -21,16 +33,6 @@ export interface LadderBand {
   titleOnly: boolean;
   cards: LadderCard[];
 }
-
-/** Narrow ladders only: bands gathered under one collapsible heading. */
-export interface LadderGroup {
-  id: number;
-  label: string;
-  bands: LadderBand[];
-}
-
-/** A narrow ladder gathers this many bands, by band index, under one heading. */
-export const BANDS_PER_GROUP = 3;
 
 /** The bands shown, the highest first for an up tower so climbing reads upward. */
 export function ladderBands(state: GameState, tower: TowerDef): LadderBand[] {
@@ -56,40 +58,123 @@ export function floorRange(floors: FloorDef[]): string {
   return lo === hi ? `Floor ${lo}` : `Floors ${lo}–${hi}`;
 }
 
+// ---------- Folding ----------
+
 /**
- * The bands gathered BANDS_PER_GROUP at a time by band index (1–3, 4–6, …),
- * in the order `bands` gives, each labelled by the floors of its bands shown
- * in full (a group holding only the next band's title reads that title).
+ * The band the player stands in: the band of the floor they are on, else the
+ * band whose hub they are at. Undefined anywhere else.
  */
-export function ladderGroups(bands: LadderBand[]): LadderGroup[] {
-  const groups: LadderGroup[] = [];
-  for (const lb of bands) {
-    const id = Math.floor((lb.band.index - 1) / BANDS_PER_GROUP);
-    let group = groups.find((g) => g.id === id);
-    if (!group) groups.push((group = { id, label: '', bands: [] }));
-    group.bands.push(lb);
-  }
-  for (const group of groups) {
-    const full = group.bands.filter((b) => !b.titleOnly);
-    group.label = full.length
-      ? floorRange(full.flatMap((b) => floorsInBand(b.band.id)))
-      : group.bands.map((b) => b.band.name).join(', ');
-  }
-  return groups;
+export function standingBandId(state: GameState): string | undefined {
+  return currentFloor(state)?.bandId ?? bandHubAt(state.spot)?.id;
+}
+
+/** The floors the ladder shows for a band, and how many of them are cleared. */
+export function bandProgress(state: GameState, lb: LadderBand): { cleared: number; total: number } {
+  const floors = lb.cards.flatMap((c) => (c.kind === 'floor' ? [c.floor] : []));
+  return { cleared: floors.filter((f) => floorCleared(state, f)).length, total: floors.length };
 }
 
 /**
- * The group a narrow ladder opens: the one holding `bandId` (where the
- * player stands), else the one holding the highest band shown in full.
+ * A band may fold only when every floor in it is cleared (a pass counts) and
+ * the player is not standing in it. A band with an uncleared floor never
+ * folds, so none of its gate terms is hidden. The next band, shown by name
+ * only, has nothing to fold.
  */
-export function homeGroupId(groups: LadderGroup[], bandId: string | undefined): number | undefined {
-  const holding = groups.find((g) => g.bands.some((b) => b.band.id === bandId));
-  if (holding) return holding.id;
-  let best: { id: number; index: number } | undefined;
-  for (const g of groups) {
-    for (const b of g.bands) {
-      if (!b.titleOnly && (!best || b.band.index > best.index)) best = { id: g.id, index: b.band.index };
-    }
+export function bandFoldable(state: GameState, lb: LadderBand, standingBand: string | undefined): boolean {
+  return !lb.titleOnly && lb.band.id !== standingBand && bandCleared(state, lb.band);
+}
+
+/**
+ * Whether a band is drawn open. A band that may not fold is always open. A
+ * foldable band is folded unless the player opened it (`choice` true).
+ */
+export function bandDrawnOpen(foldable: boolean, choice: boolean | undefined): boolean {
+  return !foldable || choice === true;
+}
+
+// ---------- Terms ----------
+
+/** Which branch of the selection produced a rung's terms. */
+export type RungTermsKind = 'locked' | 'closed' | 'shut' | 'gated' | 'sealed' | 'open' | 'cleared';
+
+/** One line under a rung's name. */
+export interface RungTerm {
+  /** Leading icon, empty for none. */
+  icon: string;
+  text: string;
+  /** A hint, not a thing to do: drawn dimmed. */
+  dim: boolean;
+  /** The condition `text` was made from. Absent on fixed lines. */
+  cond?: UnlockCondition;
+}
+
+export interface RungTerms {
+  kind: RungTermsKind;
+  terms: RungTerm[];
+}
+
+const sealedTerm = (): RungTerm => ({ icon: '', text: 'The way up is not cleared.', dim: true });
+
+function condTerms(state: GameState, conds: UnlockCondition[] | undefined, icon: string): RungTerm[] {
+  return (conds ?? []).map((cond) => ({ icon, text: termText(cond, state), dim: false, cond }));
+}
+
+/**
+ * What a floor's card says about getting in, for every state. The first
+ * branch that holds wins:
+ *
+ * - `locked`: floors 15–16 after a lost festival attempt. Holds whatever the
+ *   floor's status is, so a floor that reads `gated` with no gate of its own
+ *   still names its reason.
+ * - `closed`: floor 16 is entered from floor 15's hall during an attempt,
+ *   never from the ladder. Only on a floor that reads open or cleared.
+ * - `shut`: the same climb while the dark room still fights.
+ * - `gated`: the floor's gate terms, then the band hub's name if the floor
+ *   has no gate and waits on the hub.
+ * - `sealed`: a rung below is not cleared.
+ * - `open`: the floor's clear terms.
+ * - `cleared`: no terms.
+ */
+export function rungTerms(state: GameState, floor: FloorDef): RungTerms {
+  const status = rungStatus(state, floor);
+  const verdict = festivalLadder(state, floor.id);
+  const reached = status === 'open' || status === 'cleared';
+  if (festivalLocked(state, floor)) {
+    const left = msToTime(lockoutLeft(state) * MS_PER_TICK);
+    const text = `Shut after a lost festival attempt: ${left} of play, or the next prestige.`;
+    return { kind: 'locked', terms: [{ icon: '🔒', text, dim: false }] };
   }
-  return best?.id;
+  if (reached && verdict === 'closed') {
+    // The royale has no door of its own: an attempt reaches it from floor 15's hall.
+    return {
+      kind: 'closed',
+      terms: [{ icon: '🏟️', text: 'Entered from floor 15’s hall, during a festival attempt.', dim: true }],
+    };
+  }
+  if (reached && verdict === 'shut') {
+    return { kind: 'shut', terms: [{ icon: '🚪', text: 'Opens from the hall once the dark room is empty.', dim: true }] };
+  }
+  if (status === 'gated') {
+    const terms = condTerms(state, floor.gate, '🔒');
+    const band = floor.bandId ? BANDS[floor.bandId] : undefined;
+    if (band?.hub && !floor.gate?.length) {
+      terms.push({ icon: '', text: `Opens with ${getSpot(band.hub).name}.`, dim: true });
+    }
+    return { kind: 'gated', terms };
+  }
+  if (status === 'sealed') return { kind: 'sealed', terms: [sealedTerm()] };
+  if (status === 'open') return { kind: 'open', terms: condTerms(state, floor.clear, '🎯') };
+  return { kind: 'cleared', terms: [] };
+}
+
+/**
+ * A band hub's terms. Only a gated hub has any of its own (the band's gate);
+ * a sealed hub says the way up is not cleared; an open hub is `open` with no
+ * terms, so a caller listing what is still needed skips it.
+ */
+export function hubTerms(state: GameState, band: BandDef): RungTerms {
+  const status = hubStatus(state, band);
+  if (status === 'gated') return { kind: 'gated', terms: condTerms(state, band.gate, '🔒') };
+  if (status === 'sealed') return { kind: 'sealed', terms: [sealedTerm()] };
+  return { kind: 'open', terms: [] };
 }

@@ -164,7 +164,7 @@ is not drawn at all. Autosave runs throughout.
 |---|---|---|
 | `arm`, `stance`, `spell` | `choice` — the widget on the card | steady accent outline with a widening ring (`.tutorial-glow`, app.css) |
 | `cellblock`, `field`, `gate` | `spot:<id>` — the next map pin | full-opacity pin, accent ring that widens, bobbing ▼ above |
-| `fight`, `cast` | `activity:hunt` — the button under Activities | `.tutorial-glow` |
+| `fight`, `cast` | `activity:hunt` — the button in the strip above the map | `.tutorial-glow` |
 | `fight`, `cast` once the hunt is chosen | `stage` — the battle stage | the Combat tab opens on it; no glow over a running fight |
 | `leave` | `exit:ascent_foot` — the → Threshold label | accent, bold, pulsing, ▼ above |
 
@@ -174,8 +174,11 @@ instead (the button is not on screen there).
 **Following the target.** When the target changes, `App.svelte` opens the tab it
 is drawn on (`targetTab`) and scrolls `.tutorial-target` to the middle of the
 view. It fires on a change only, so a player who clicks to another tab is not
-dragged back until the next step. At 800 × 600 the activity buttons sit below the
-map; this is what brings them up.
+dragged back until the next step. The activity buttons sit in the Location
+strip above the map (`LocationPanel.svelte`, NAVIGATION.md §3.1); the scroll
+finds them by `.tutorial-target`, wherever the strip is. The map pins and exit
+labels sit below the strip, and the scroll brings them into view at small
+window heights.
 
 **The card.** Heavier frame, tinted ground, the step number in a solid badge,
 one or two sentences. It is `position: sticky`: in the narrow layout (≤ 1100 px)
