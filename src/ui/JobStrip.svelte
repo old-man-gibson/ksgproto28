@@ -33,7 +33,9 @@
   <div class="bar job-track" class:job-none={job.pct === null}>
     <div class="fill" style="width: {(job.pct ?? 0) * 100}%; background: var(--action)"></div>
   </div>
-  <span class="job-detail">{job.detail ?? ''}</span>
+  <!-- A no-break space when empty: an empty span has no line box and sits 7px
+       lower, which would move it between a fight and the next. -->
+  <span class="job-detail">{job.detail ?? ' '}</span>
 </div>
 
 {#if showRate}
