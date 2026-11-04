@@ -50,6 +50,9 @@ per level: `⬆️ Level N: +1 to every attribute.`
 
 - Kill XP ignores `xpGain` and every other multiplier on purpose: the
   level is the one track whose pace is set only by these three numbers.
+- **Practice targets pay none (2026-11-03).** A kill of a `passive` monster
+  (training equipment) pays no level XP; the `'kill'` listener skips it.
+  docs/PRACTICE.md.
 - **Level gap (user, 2026-10-22).** A kill earns the monster's `xp` ×
   `levelGapXpMult(player level, monster level)`: all of it when the monster
   is at or above the player's level, `1 / gap` when the player is `gap`

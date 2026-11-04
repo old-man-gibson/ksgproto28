@@ -674,7 +674,13 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       // Ironyard's find (martial): a drill manual, the stand-in for a teacher.
       { id: 'spar_sand', kind: 'train', attr: 'str', name: 'Spar', icon: '⚔️', tags: ['combat'],
         drops: [{ material: 'drill_manual_riposte', chance: 0.0008 }] },
+      { id: 'hunt', kind: 'hunt', name: 'Beat the Post', icon: '🪵' },
     ],
+    // The practice post: passive, about a million HP, never dies in a
+    // session. XP from it follows the practice rule (docs/PRACTICE.md).
+    encounters: [{ monsterId: 'benchmark_dummy', weight: 100, level: [1, 1] }],
+    modifierWeights: { normal: 100 },
+    groupWeights: { 1: 100 },
     connections: [],
   },
   long_gallery: {

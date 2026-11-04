@@ -343,7 +343,9 @@ frost_wraith: {
                             // (linted); it only moves the 100% immunity line
   damageType: 'cold',       // what its attacks count as (player resistances apply)
   passive: true,            // optional: harmless — it swings, you can dodge and
-                            // brace, but nothing it does lands (training dummy)
+                            // brace, but nothing it does lands (training dummy).
+                            // Also makes it a practice target: cut XP, no level
+                            // XP (docs/PRACTICE.md)
   resistances: { cold: 0.7, piercing: 0.3, heat: -0.5 },  // -x = vulnerable
   attrs: { str: 10, dex: 12, con: 9, int: 6, wis: 4 },    // at level 1
   growth: { str: 1.2, dex: 1.4, con: 1.1 },               // per level above 1
@@ -393,13 +395,19 @@ Rough player-facing math: HP ≈ `(12 + con×7) × multipliers`, damage ≈
 target meant to survive indefinitely needs CON in the tens of thousands, not the
 hundreds.
 
-**The two practice targets.** Training Grounds hosts `training_dummy` — plated,
-`passive`, and deliberately breakable (~2.5k HP) so kills, the bestiary and drop
-plumbing can be exercised without leaving the yard. The Post
-(`benchmark_post`, one hop away) hosts `benchmark_dummy`: identical shape, CON
-143,000, past a million HP. Nothing kills it, which is the point — it is the
-fixture for measuring sustained damage. They are separate spots because a hunt
-draws from its spot's `encounters` table, so one table per kind of practice.
+**The two practice targets.** `training_dummy` — plated, `passive`, and
+deliberately breakable (~2.5k HP) so kills, the bestiary and drop plumbing can
+be exercised — stands in the player base's Training Area. `benchmark_dummy`
+has the identical shape with CON 143,000, past a million HP. Nothing kills it,
+which is the point — it is the fixture for measuring sustained damage, and the
+post on The Sand (Threshold, the Ironyard; hunt "Beat the Post"). They never
+share a spot because a hunt draws from its spot's `encounters` table, so one
+table per kind of practice. The shelved Oakrest yard had both, a hop apart.
+
+Every `passive` monster is a practice target: skill and attribute XP from a
+fight against them is cut, falls with level and is floored per second, and
+their kills pay no character-level XP. The rule and its constants are in
+docs/PRACTICE.md; a new passive monster gets it with no further authoring.
 
 ### 4a. Bestiary tags & knowledge (`bestiary.data.ts`)
 

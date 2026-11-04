@@ -111,9 +111,9 @@ export const MONSTERS_TEXT: ProseTable = {
 
   'slime_king.desc': 'Large legendary slime, unique. Bludgeoning attacks. Spawns in a group of 3 to 5 with Slime Legionary and Slime Skirmisher escorts. Takes 65% less slashing and piercing, 40% less heat and cold, 30% more bludgeoning and 30% more arcane damage. Three loot rolls; drops Slime Cores, Luminous Slime Gel, a Boss Token, the Moonlit Katana, Iron Gauntlets and Greater Rune of Might.',
 
-  'training_dummy.desc': 'Passive target at the Training Area; it never attacks. Spawns in groups of one, three or five so splash and flank behaviour can be tested. About 2,500 HP and 15% evasion. Takes 30% less slashing, piercing and bludgeoning damage; no elemental resistance. Dies and respawns; no loot.',
+  'training_dummy.desc': 'Passive target at the Training Area; it never attacks. Spawns in groups of one, three or five so splash and flank behaviour can be tested. About 2,500 HP and 15% evasion. Takes 30% less slashing, piercing and bludgeoning damage; no elemental resistance. Dies and respawns; no loot. Practice target: reduced skill and attribute XP, no level XP.',
 
-  'benchmark_dummy.desc': 'Passive post with about one million HP: it does not die within a session, so sustained damage can be read off it. No armour, 15% evasion, takes 30% less slashing, piercing and bludgeoning damage. Never attacks; no loot.',
+  'benchmark_dummy.desc': 'Passive post with about one million HP: it does not die within a session, so sustained damage can be read off it. No armour, 15% evasion, takes 30% less slashing, piercing and bludgeoning damage. Never attacks; no loot. Practice target: reduced skill and attribute XP, no level XP.',
 
   'reinforced_post.desc': 'Passive post with flat armour of exactly 100 and no resistances: every blow is reduced by 100, and a blow with less than 100 in it lands for the floor of 1. Penetration does nothing here; it answers resistances, not armour. About one million HP.',
 

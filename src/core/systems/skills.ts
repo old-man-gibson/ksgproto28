@@ -11,6 +11,7 @@ import type { EventBus } from '../engine/events';
 import { SKILLS } from '../registry';
 import { DEFAULT_PROGRESSION } from '../data/progression.data';
 import { bandedXpNeeded, settleLevels } from './progression';
+import { practiceXp } from './practice';
 import { getDerivedStats } from './derived';
 import { conditionsMet, conditionsProgress } from './conditions';
 import { hasForesight, legacyCapRaise } from './legacy';
@@ -131,7 +132,8 @@ function addSkillXp(state: GameState, bus: EventBus, id: string, amount: number)
     s.xp = 0;
     return;
   }
-  s.xp += amount;
+  // Inside a practice fight the amount is shaped (systems/practice.ts).
+  s.xp += practiceXp(state, `skill:${id}`, s.level, amount);
   let gained = settleLevels(s, skillProgression(id));
   if (s.level >= cap) {
     gained -= s.level - cap;
