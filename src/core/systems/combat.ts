@@ -1061,12 +1061,23 @@ export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | 
 }
 
 /**
- * Whether a spawn gets an "appears" line in the main log: any modifier but
- * normal (demiboss, boss, aberrant), or rare or epic rarity. A common or
- * uncommon normal spawn does not; a hunt meets one every few seconds.
+ * Whether a spawn gets an "appears" line in the main log: modifier boss or
+ * aberrant, rarity epic, or the spot's keeper by role (a `boss` or `once`
+ * encounter row of `spot`). Demiboss, rare, uncommon and common spawns do not.
+ * On a level-23 save about one encounter in three had a demiboss or a rare, and
+ * a line for each ended the hunt line after one to three kills. Their names
+ * show in the hunt line's tally when they die.
  */
-export function warrantsAppearsLine(m: Pick<MonsterInstance, 'modifier' | 'rarity'>): boolean {
-  return m.modifier !== 'normal' || m.rarity === 'rare' || m.rarity === 'epic';
+export function warrantsAppearsLine(
+  m: Pick<MonsterInstance, 'modifier' | 'rarity' | 'defId'>,
+  spot?: Pick<SpotDef, 'encounters'>,
+): boolean {
+  return (
+    m.modifier === 'boss' ||
+    m.modifier === 'aberrant' ||
+    m.rarity === 'epic' ||
+    !!spot?.encounters?.some((e) => (e.boss || e.once) && e.monsterId === m.defId)
+  );
 }
 
 function startEncounter(
@@ -1133,7 +1144,7 @@ function startEncounter(
   const lead = group[0];
   // The main log names a spawn only when it is not routine (see `warrantsAppearsLine`).
   // The fight feed below names every spawn.
-  const notable = group.find(warrantsAppearsLine);
+  const notable = group.find((m) => warrantsAppearsLine(m, spot));
   if (notable) {
     const what = group.length > 1 ? `${notable.name} and ${group.length - 1} more` : notable.name;
     bus.emit({
@@ -1773,9 +1784,11 @@ function onKill(state: GameState, bus: EventBus, index: number, gone: StatueRule
   const xp = statue ? killXp(state, monster) * statue.xp : killXp(state, monster);
   grantSkillXp(state, bus, tags, xp, monster.defId);
   if (!statue) rollDropTable(state, bus, MONSTERS[monster.defId].loot, monster);
-  bus.emit({ type: 'kill', monster, xp });
   const rocks = statue ? (gone ? statue.burst : statue.rocks) : 0;
   const how = !gone ? 'is broken' : rocks > 0 ? 'bursts' : 'crumbles away';
+  // The kill's own line goes right after its drops and before the `kill` event:
+  // a listener that logs on `kill` (bestiary, mutation, level-up) would
+  // otherwise land between a kill's drops and its label and split them.
   if (statue) {
     bus.emit({
       type: 'log',
@@ -1790,6 +1803,7 @@ function onKill(state: GameState, bus: EventBus, index: number, gone: StatueRule
       ...(gold > 0 ? [{ label: 'gold', qty: gold, style: 'amount' as const }] : []),
     ]);
   }
+  bus.emit({ type: 'kill', monster, xp });
 
   c.enemies[index] = null;
 

@@ -17,7 +17,7 @@ import {
   settleFloating,
 } from '../src/core/systems/log';
 import { abandonCombat, startForcedFight, warrantsAppearsLine } from '../src/core/systems/combat';
-import { MODIFIER_WEIGHTS, RARITY_WEIGHTS, SPOTS } from '../src/core/registry';
+import { MATERIALS, MODIFIER_WEIGHTS, MONSTERS, RARITY_WEIGHTS, SPOTS } from '../src/core/registry';
 import { deserialize, serialize } from '../src/core/save/save';
 import { applyStatus } from '../src/core/systems/statuses';
 import type { GameState, LogEntry, LogTally } from '../src/core/types';
@@ -481,43 +481,113 @@ describe('hunting in play', () => {
       expect(met).toBe(20);
     }
 
-    it('keeps a demiboss spawn line', () => {
+    const woodsGame = () => {
       const g = new Game(createInitialState(3));
       g.state.spot = 'woods_edge';
-      pinned('demiboss', 'common', () => meet(g));
-      expect(appears(g).length).toBeGreaterThan(0);
-      expect(appears(g)[0].msg).toContain('Demiboss');
-    });
+      return g;
+    };
 
-    it('drops a common normal spawn line', () => {
-      const g = new Game(createInitialState(3));
-      g.state.spot = 'woods_edge';
-      pinned('normal', 'common', () => meet(g));
+    it.each([
+      ['normal', 'common'],
+      ['normal', 'uncommon'],
+      ['normal', 'rare'],
+      ['demiboss', 'common'],
+      ['demiboss', 'rare'],
+    ])('drops the line for a %s %s spawn', (modifier, rarity) => {
+      const g = woodsGame();
+      pinned(modifier, rarity, () => meet(g));
       expect(appears(g)).toEqual([]);
     });
 
-    it('drops an uncommon normal spawn line', () => {
-      const g = new Game(createInitialState(3));
-      g.state.spot = 'woods_edge';
-      pinned('normal', 'uncommon', () => meet(g));
-      expect(appears(g)).toEqual([]);
-    });
-
-    it('keeps a rare normal spawn line', () => {
-      const g = new Game(createInitialState(3));
-      g.state.spot = 'woods_edge';
-      pinned('normal', 'rare', () => meet(g));
+    it.each([
+      ['boss', 'common'],
+      ['aberrant', 'common'],
+      ['normal', 'epic'],
+    ])('keeps the line for a %s %s spawn', (modifier, rarity) => {
+      const g = woodsGame();
+      pinned(modifier, rarity, () => meet(g));
       expect(appears(g).length).toBeGreaterThan(0);
     });
 
-    it('decides by modifier and rarity alone', () => {
-      const m = (modifier: string, rarity: string) =>
-        warrantsAppearsLine({ modifier, rarity } as Parameters<typeof warrantsAppearsLine>[0]);
+    it('keeps the line for a spot keeper that rolled nothing notable', () => {
+      // The chief's tent forces every modifier to normal. The chief rolls common
+      // and has two escorts; the line still names him.
+      const spot = SPOTS.f7_chiefs_tent;
+      const g = new Game(createInitialState(3));
+      g.state.spot = spot.id;
+      g.state.stats['band:pos:ascent_f7'] = 1;
+      const rars = RARITY_WEIGHTS.splice(0, RARITY_WEIGHTS.length, { id: 'common', weight: 1 });
+      try {
+        startForcedFight(g.state, g.bus, spot);
+      } finally {
+        RARITY_WEIGHTS.splice(0, RARITY_WEIGHTS.length, ...rars);
+      }
+      expect(g.state.combat).not.toBeNull();
+      const lines = appears(g);
+      expect(lines).toHaveLength(1);
+      expect(lines[0].msg).toContain('Bandit Chief');
+    });
+
+    it('decides by modifier, rarity and the spot keeper row', () => {
+      const m = (modifier: string, rarity: string, spot?: Parameters<typeof warrantsAppearsLine>[1]) =>
+        warrantsAppearsLine({ modifier, rarity, defId: 'x' } as Parameters<typeof warrantsAppearsLine>[0], spot);
       expect(m('normal', 'common')).toBe(false);
       expect(m('normal', 'uncommon')).toBe(false);
-      expect(m('normal', 'rare')).toBe(true);
+      expect(m('normal', 'rare')).toBe(false);
+      expect(m('demiboss', 'common')).toBe(false);
+      expect(m('demiboss', 'rare')).toBe(false);
       expect(m('normal', 'epic')).toBe(true);
-      for (const mod of ['demiboss', 'boss', 'aberrant']) expect(m(mod, 'common')).toBe(true);
+      for (const mod of ['boss', 'aberrant']) expect(m(mod, 'common')).toBe(true);
+
+      const row = (extra: object) => ({ encounters: [{ monsterId: 'x', weight: 1, level: [1, 1] as [number, number], ...extra }] });
+      expect(m('normal', 'common', row({ boss: true }))).toBe(true);
+      expect(m('normal', 'common', row({ once: true }))).toBe(true);
+      expect(m('normal', 'common', row({}))).toBe(false);
+      // A keeper row for another monster does not count.
+      expect(m('normal', 'common', { encounters: [{ monsterId: 'y', weight: 1, level: [1, 1], boss: true }] })).toBe(false);
     });
+  });
+
+  it('keeps a kill and its drop in one hunt line when a kill listener logs', () => {
+    // Every monster drops one Leather, so every kill has a drop. A listener on
+    // `kill` (the bestiary, a mutation, a level-up) logs a line of its own.
+    const defs = Object.values(MONSTERS);
+    const loot = defs.map((d) => d.loot);
+    for (const d of defs) d.loot = { rolls: 1, entries: [{ kind: 'material', id: 'leather', weight: 1 }] };
+    try {
+      const g = huntingGame();
+      const killed: string[] = [];
+      g.bus.on('kill', (ev) => {
+        killed.push(`${ev.monster.icon} ${ev.monster.name}`);
+        g.bus.emit({ type: 'log', msg: '📖 listener line', kind: 'info' });
+      });
+      for (let i = 0; i < 30000 && killed.length < 10; i++) {
+        g.tick();
+        if (!g.state.recovering && g.state.spot !== 'woods_edge') {
+          g.state.spot = 'woods_edge';
+          g.selectActivity('hunt');
+        }
+      }
+      expect(killed.length).toBe(10);
+
+      const hunts = g.state.log.filter((l) => l.group === 'hunt');
+      // The listener line follows every kill, so every kill is its own hunt line.
+      expect(hunts).toHaveLength(10);
+      const names = new Set(killed);
+      for (const h of hunts) {
+        // One kill label and that kill's Leather, in the same line.
+        const labels = (h.tally ?? []).filter((t) => names.has(t.label));
+        expect(labels.reduce((n, t) => n + t.qty, 0)).toBe(1);
+        expect((h.tally ?? []).find((t) => t.label.includes(MATERIALS.leather.name))?.qty).toBe(1);
+      }
+      // The listener's line comes after the hunt line it belongs to, before the next one.
+      const log = g.state.log;
+      hunts.forEach((h, n) => {
+        const end = n + 1 < hunts.length ? log.indexOf(hunts[n + 1]) : log.length;
+        expect(log.slice(log.indexOf(h) + 1, end).some((l) => l.msg === '📖 listener line')).toBe(true);
+      });
+    } finally {
+      defs.forEach((d, i) => (d.loot = loot[i]));
+    }
   });
 });
