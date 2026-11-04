@@ -30,9 +30,99 @@ export function mapNodes(
     .map((spot) => ({ spot, known: discovered.has(spot.id) }));
 }
 
+// ---------- The frame: map units to pixels ----------
+
+/** A point in the frame's pixel space. */
+export interface Pt {
+  x: number;
+  y: number;
+}
+
+/**
+ * The drawing's pixel space. The SVG's viewBox is `0 0 w h`, so one unit is
+ * one CSS pixel and text sizes are real sizes.
+ */
+export interface MapFrame {
+  w: number;
+  h: number;
+  /** Painted from tiles: the picture keeps its proportions and the diagram scales with it. */
+  tiled: boolean;
+  /** Pin radius, px. */
+  pinR: number;
+  /** Label size, px. */
+  font: number;
+  project: (p: { x: number; y: number }) => Pt;
+}
+
+/** A diagram region is this many px high at every width. */
+export const PLAN_HEIGHT = 340;
+/** The most a unit of map x or y may stretch, px per unit. */
+export const PLAN_CAP_X = 8.1;
+export const PLAN_CAP_Y = 5.6;
+/** Below this frame width the diagram labels only the spot underfoot and its neighbours. */
+export const FULL_LABELS_MIN_W = 560;
+/** A tiled region never draws wider than its picture's useful size. */
+export const TILE_MAX_W = 560;
+/** Used before the first measurement, and where nothing can be measured. */
+export const DEFAULT_W = 788;
+
+/**
+ * A diagram region at the column's width. The two axes scale separately, each
+ * capped, and the drawing is centred. Pins are 30 px and labels 12 px; a frame
+ * under FULL_LABELS_MIN_W takes 22 px pins and 11 px labels so the pins keep
+ * clear of each other.
+ */
+export function diagramFrame(points: { x: number; y: number }[], w: number, h = PLAN_HEIGHT): MapFrame {
+  const narrow = w < FULL_LABELS_MIN_W;
+  const pinR = narrow ? 11 : 15;
+  const font = narrow ? 11 : 12;
+  const padX = pinR + 24;
+  const padY = pinR + 22;
+  // A region with nothing on it yet draws its middle.
+  const placed = points.length ? points : [{ x: 50, y: 37.5 }];
+  const xs = placed.map((p) => p.x);
+  const ys = placed.map((p) => p.y);
+  const x0 = Math.min(...xs);
+  const x1 = Math.max(...xs);
+  const y0 = Math.min(...ys);
+  const y1 = Math.max(...ys);
+  // Never below half a pixel per unit, so a frame narrower than its padding
+  // squeezes the drawing instead of mirroring it.
+  const sx = Math.max(0.5, Math.min(PLAN_CAP_X, (w - 2 * padX) / Math.max(1, x1 - x0)));
+  const sy = Math.max(0.5, Math.min(PLAN_CAP_Y, (h - 2 * padY) / Math.max(1, y1 - y0)));
+  const ox = (w - (x1 - x0) * sx) / 2;
+  const oy = (h - (y1 - y0) * sy) / 2;
+  return {
+    w,
+    h,
+    tiled: false,
+    pinR,
+    font,
+    project: (p) => ({ x: ox + (p.x - x0) * sx, y: oy + (p.y - y0) * sy }),
+  };
+}
+
+/**
+ * A tiled region: the picture is 100 × 75 map units with six units of headroom
+ * for labels above and three below, one scale on both axes, so the tiles are
+ * never stretched. Pins and labels scale with it.
+ */
+export function tiledFrame(w: number): MapFrame {
+  const width = Math.min(w, TILE_MAX_W);
+  const s = width / 100;
+  return {
+    w: width,
+    h: Math.round(width * 0.84),
+    tiled: true,
+    pinR: Math.max(11, 3.1 * s),
+    font: Math.max(10, Math.round(2.4 * s * 10) / 10),
+    project: (p) => ({ x: p.x * s, y: (p.y + 6) * s }),
+  };
+}
+
 // ---------- Label placement ----------
 
-/** An axis-aligned box in map units. */
+/** An axis-aligned box in frame pixels. */
 export interface MapBox {
   x0: number;
   y0: number;
@@ -40,18 +130,18 @@ export interface MapBox {
   y1: number;
 }
 
-/** One pin as the label pass sees it: where it is, what it says, what it wears. */
+/** One pin as the label pass sees it: where it is, what it says, what sits on it. */
 export interface LabelPin {
   id: string;
   x: number;
   y: number;
+  /** Pin radius. */
+  r: number;
   text: string;
-  /** A feature icon above the pin (MapCard's `.feat`). */
-  badge?: boolean;
-  /** The ⚡ at its upper right (`.wp`). */
-  waypoint?: boolean;
-  /** The ⚔️ at its upper left (`.menace`). */
-  menace?: boolean;
+  /** Boxes that belong to this pin and must stay clear: its chips, ⚔️, arrow. */
+  avoid?: MapBox[];
+  /** How far chips or an arrow stand above the pin, so a name above clears them. */
+  lift?: number;
 }
 
 export interface LabelPlace {
@@ -60,16 +150,16 @@ export interface LabelPlace {
   anchor: 'start' | 'middle' | 'end';
 }
 
-/**
- * MapCard's label metrics, in map units: `.label` is 2.4 px of a 100-wide
- * viewBox. A character is measured at 1.1–1.25 wide in the default font, so
- * 1.25 errs wide; the box runs from cap height to descender.
- */
-const CHAR_W = 1.25;
-const ASCENT = 2.6;
-const DESCENT = 0.6;
-const DOT_R = 3.4;
-const VIEW: MapBox = { x0: 0, y0: -6, x1: 100, y1: 78 };
+/** Width of a character as a share of the font size; errs wide for both themes' faces. */
+const CHAR_W = 0.52;
+const ASCENT = 0.85;
+const DESCENT = 0.25;
+/** Room for the text's outline on each side. */
+const HALO = 2;
+
+export function textWidth(text: string, font: number): number {
+  return text.length * CHAR_W * font;
+}
 
 function overlap(a: MapBox, b: MapBox): number {
   const w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
@@ -77,53 +167,69 @@ function overlap(a: MapBox, b: MapBox): number {
   return w > 0 && h > 0 ? w * h : 0;
 }
 
-/** The box a line of map text covers at a place; `size` is its font size (a label's is 2.4). */
-export function labelBox(text: string, at: LabelPlace, size = 2.4): MapBox {
-  const k = size / 2.4;
-  const w = text.length * CHAR_W * k;
-  const x0 = at.anchor === 'middle' ? at.x - w / 2 : at.anchor === 'start' ? at.x : at.x - w;
-  return { x0, x1: x0 + w, y0: at.y - ASCENT * k, y1: at.y + DESCENT * k };
+/** The box a line of map text covers at a place, outline included. */
+export function labelBox(text: string, at: LabelPlace, font = 12): MapBox {
+  const w = textWidth(text, font) + 2 * HALO;
+  const x0 = at.anchor === 'middle' ? at.x - w / 2 : at.anchor === 'start' ? at.x - HALO : at.x - w + HALO;
+  return { x0, x1: x0 + w, y0: at.y - ASCENT * font, y1: at.y + DESCENT * font };
+}
+
+/** The square a pin covers. */
+export function pinBox(p: { x: number; y: number }, r: number): MapBox {
+  return { x0: p.x - r, y0: p.y - r, x1: p.x + r, y1: p.y + r };
 }
 
 /**
- * Where each pin's name goes. Under the pin unless that lands on another
- * pin, badge or name; then above, right, left, and the four diagonals. Pins
- * are taken top to bottom so the result is stable, and a name that fits
- * nowhere takes the place it overlaps least. A centred name is slid back
- * inside the viewBox rather than cut at its edge. Crowded corners still need
- * their pins spread in the data: tests/map.test.ts holds Threshold to zero
- * overlaps.
+ * Where each pin's name goes. Under the pin unless that lands on another pin,
+ * its chips or a name; then above, to either side, and the corners. Pins are
+ * taken top to bottom so the result is stable, and a name that fits nowhere
+ * takes the place it overlaps least. A centred name is slid back inside the
+ * frame rather than cut at its edge. Crowded corners still need their pins
+ * spread in the data: tests/map.test.ts holds Threshold to zero overlaps.
  */
-export function placeLabels(pins: LabelPin[], obstacles: MapBox[] = []): Map<string, LabelPlace> {
+export function placeLabels(
+  pins: LabelPin[],
+  obstacles: MapBox[] = [],
+  frame: { w: number; h: number; font?: number } = { w: DEFAULT_W, h: PLAN_HEIGHT },
+): Map<string, LabelPlace> {
+  const font = frame.font ?? 12;
+  const view: MapBox = { x0: 2, y0: 2, x1: frame.w - 2, y1: frame.h - 2 };
   const fixed: MapBox[] = [...obstacles];
   const dots = new Map<string, MapBox>();
   for (const p of pins) {
-    dots.set(p.id, { x0: p.x - DOT_R, y0: p.y - DOT_R, x1: p.x + DOT_R, y1: p.y + DOT_R });
-    if (p.badge) fixed.push({ x0: p.x - 1.8, y0: p.y - 7.8, x1: p.x + 3, y1: p.y - 4.2 });
-    if (p.waypoint) fixed.push({ x0: p.x + 2.6, y0: p.y - 5, x1: p.x + 5.4, y1: p.y - 2 });
-    if (p.menace) fixed.push({ x0: p.x - 5.2, y0: p.y - 5, x1: p.x - 2.4, y1: p.y - 2 });
+    dots.set(p.id, pinBox(p, p.r));
+    for (const box of p.avoid ?? []) fixed.push(box);
   }
   type Choice = { at: LabelPlace; box: MapBox; cost: number };
   const chosen = new Map<string, Choice>();
+  const gap = 4;
 
   const choose = (p: LabelPin): Choice => {
-    const w = p.text.length * CHAR_W;
+    const w = textWidth(p.text, font) + 2 * HALO;
+    const r = p.r;
+    const below = p.y + r + gap + ASCENT * font;
+    const above = p.y - r - gap - (p.lift ?? 0) - DESCENT * font;
+    const mid = p.y + 0.35 * font;
     const candidates: LabelPlace[] = [
-      { x: p.x, y: p.y + 6.4, anchor: 'middle' },
-      { x: p.x, y: p.y - (p.badge ? 8.6 : 4.4), anchor: 'middle' },
-      { x: p.x + 4.2, y: p.y + 0.9, anchor: 'start' },
-      { x: p.x - 4.2, y: p.y + 0.9, anchor: 'end' },
-      { x: p.x + 3.2, y: p.y + 4.6, anchor: 'start' },
-      { x: p.x - 3.2, y: p.y + 4.6, anchor: 'end' },
-      { x: p.x + 3.2, y: p.y - 2.6, anchor: 'start' },
-      { x: p.x - 3.2, y: p.y - 2.6, anchor: 'end' },
+      { x: p.x, y: below, anchor: 'middle' },
+      { x: p.x, y: above, anchor: 'middle' },
+      { x: p.x + r + gap + 2, y: mid, anchor: 'start' },
+      { x: p.x - r - gap - 2, y: mid, anchor: 'end' },
+      { x: p.x - r, y: below, anchor: 'start' },
+      { x: p.x + r, y: below, anchor: 'end' },
+      { x: p.x - r, y: above, anchor: 'start' },
+      { x: p.x + r, y: above, anchor: 'end' },
+      { x: p.x + r * 0.6, y: p.y + r * 0.85 + ASCENT * font + 1, anchor: 'start' },
+      { x: p.x - r * 0.6, y: p.y + r * 0.85 + ASCENT * font + 1, anchor: 'end' },
+      { x: p.x + r * 0.6, y: p.y - r * 0.85 - DESCENT * font - 1, anchor: 'start' },
+      { x: p.x - r * 0.6, y: p.y - r * 0.85 - DESCENT * font - 1, anchor: 'end' },
     ];
     let best: Choice | null = null;
     for (const c of candidates) {
       const at = { ...c };
-      if (at.anchor === 'middle') at.x = Math.min(Math.max(at.x, VIEW.x0 + w / 2), VIEW.x1 - w / 2);
-      const box = labelBox(p.text, at);
-      if (box.x0 < VIEW.x0 || box.x1 > VIEW.x1 || box.y0 < VIEW.y0 || box.y1 > VIEW.y1) continue;
+      if (at.anchor === 'middle') at.x = Math.min(Math.max(at.x, view.x0 + w / 2), view.x1 - w / 2);
+      const box = labelBox(p.text, at, font);
+      if (box.x0 < view.x0 || box.x1 > view.x1 || box.y0 < view.y0 || box.y1 > view.y1) continue;
       let cost = 0;
       for (const [id, dot] of dots) if (id !== p.id) cost += overlap(box, dot);
       for (const o of fixed) cost += overlap(box, o);
@@ -131,7 +237,7 @@ export function placeLabels(pins: LabelPin[], obstacles: MapBox[] = []): Map<str
       if (!best || cost < best.cost) best = { at, box, cost };
       if (cost === 0) break;
     }
-    return best ?? { at: candidates[0], box: labelBox(p.text, candidates[0]), cost: Infinity };
+    return best ?? { at: candidates[0], box: labelBox(p.text, candidates[0], font), cost: Infinity };
   };
 
   const order = [...pins].sort((a, b) => a.y - b.y || a.x - b.x);
@@ -142,4 +248,212 @@ export function placeLabels(pins: LabelPin[], obstacles: MapBox[] = []): Map<str
     for (const p of order) if (chosen.get(p.id)!.cost > 0) chosen.set(p.id, choose(p));
   }
   return new Map([...chosen].map(([id, c]) => [id, c.at]));
+}
+
+// ---------- Districts ----------
+
+/**
+ * The cell of point `i` among `pts`: the part of the frame nearer to it than
+ * to any other point, no further than `reach` from it along either axis, by
+ * half-plane clipping. The cells of one set tile the frame without overlap.
+ */
+export function voronoiCell(pts: Pt[], i: number, w: number, h: number, reach = Infinity): Pt[] {
+  const p = pts[i];
+  const x0 = Math.max(0, p.x - reach);
+  const x1 = Math.min(w, p.x + reach);
+  const y0 = Math.max(0, p.y - reach);
+  const y1 = Math.min(h, p.y + reach);
+  let poly: Pt[] = [
+    { x: x0, y: y0 },
+    { x: x1, y: y0 },
+    { x: x1, y: y1 },
+    { x: x0, y: y1 },
+  ];
+  for (let j = 0; j < pts.length && poly.length; j++) {
+    if (j === i) continue;
+    const q = pts[j];
+    const mx = (p.x + q.x) / 2;
+    const my = (p.y + q.y) / 2;
+    const nx = q.x - p.x;
+    const ny = q.y - p.y;
+    // Signed distance along the normal: negative on p's side of the bisector.
+    const side = (v: Pt) => (v.x - mx) * nx + (v.y - my) * ny;
+    const out: Pt[] = [];
+    for (let k = 0; k < poly.length; k++) {
+      const a = poly[k];
+      const b = poly[(k + 1) % poly.length];
+      const da = side(a);
+      const db = side(b);
+      if (da <= 0) out.push(a);
+      if ((da <= 0) !== (db <= 0)) {
+        const t = da / (da - db);
+        out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+      }
+    }
+    poly = out;
+  }
+  return poly;
+}
+
+/** Whether a point lies inside a polygon (even-odd). */
+export function inPolygon(pt: Pt, poly: Pt[]): boolean {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const a = poly[i];
+    const b = poly[j];
+    if ((a.y > pt.y) !== (b.y > pt.y) && pt.x < ((b.x - a.x) * (pt.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
+/** The box lies inside the union of the cells, sampled along its edges and through its middle. */
+export function boxInCells(box: MapBox, cells: Pt[][]): boolean {
+  const cols = Math.max(2, Math.ceil((box.x1 - box.x0) / 6));
+  for (const fy of [0, 0.5, 1]) {
+    const y = box.y0 + (box.y1 - box.y0) * fy;
+    for (let c = 0; c <= cols; c++) {
+      const pt = { x: box.x0 + ((box.x1 - box.x0) * c) / cols, y };
+      if (!cells.some((poly) => inPolygon(pt, poly))) return false;
+    }
+  }
+  return true;
+}
+
+/** A district's name as drawn: its lines of text, the first line's baseline point and the box. */
+export interface DistrictName {
+  text: string;
+  /** One line, or two when the name had to be split to fit its district. */
+  lines: string[];
+  x: number;
+  y: number;
+  /** Distance between baselines. */
+  leading: number;
+  box: MapBox;
+}
+
+/** The name font is this share of the label font. */
+const NAME_FONT = 0.88;
+/** Width of a district-name character (capitals, letter-spaced) as a share of its font size. */
+const NAME_CHAR_W = 0.8;
+
+export function districtFont(font: number): number {
+  return Math.round(font * NAME_FONT * 10) / 10;
+}
+
+/** A name as one line, then as two split at the space that leaves the lines most alike. */
+function nameLayouts(text: string): string[][] {
+  const out = [[text]];
+  const spaces = [...text].map((c, i) => (c === ' ' ? i : -1)).filter((i) => i >= 0);
+  if (spaces.length) {
+    const at = spaces.reduce((best, i) => (Math.abs(2 * i - text.length) < Math.abs(2 * best - text.length) ? i : best));
+    out.push([text.slice(0, at), text.slice(at + 1)]);
+  }
+  return out;
+}
+
+/**
+ * Where a district's name goes: the nearest spot to the middle of its pins,
+ * pushed away from the middle of the whole map, where every part of the name's
+ * box lies inside the district's own cells and clear of everything in `taken`.
+ * A name that finds no room on one line is tried on two. A district with no
+ * such spot gets no name. The box is added to `taken` so the next district
+ * keeps clear of it.
+ */
+export function placeDistrictName(
+  text: string,
+  pins: Pt[],
+  cells: Pt[][],
+  center: Pt,
+  taken: MapBox[],
+  frame: { w: number; h: number; font: number },
+): DistrictName | null {
+  const font = districtFont(frame.font);
+  const leading = font * 1.15;
+  const cx = pins.reduce((s, p) => s + p.x, 0) / pins.length;
+  const cy = pins.reduce((s, p) => s + p.y, 0) / pins.length;
+  const bias = Math.atan2(cy - center.y, cx - center.x);
+  const margin = 2;
+  for (const lines of nameLayouts(text)) {
+    const w = Math.max(...lines.map((l) => l.length)) * NAME_CHAR_W * font;
+    for (let rad = 0; rad <= 140; rad += 6) {
+      for (let k = 0; k < 32; k++) {
+        const a = bias + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 16);
+        const x = cx + Math.cos(a) * rad;
+        const y = cy + Math.sin(a) * rad;
+        const box: MapBox = { x0: x - w / 2, y0: y - font, x1: x + w / 2, y1: y + 3 + leading * (lines.length - 1) };
+        if (box.x0 < 4 || box.x1 > frame.w - 4 || box.y0 < 4 || box.y1 > frame.h - 4) continue;
+        const clear = !taken.some(
+          (o) => overlap(box, { x0: o.x0 - margin, y0: o.y0 - margin, x1: o.x1 + margin, y1: o.y1 + margin }) > 0,
+        );
+        if (!clear || !boxInCells(box, cells)) continue;
+        taken.push(box);
+        return { text, lines, x, y, leading, box };
+      }
+    }
+  }
+  return null;
+}
+
+// ---------- Roads ----------
+
+export type RoadClass = 'path' | 'road' | 'main';
+
+/**
+ * A road's class from the roads drawn around it: `main` leaves a hub (six or
+ * more roads), `road` joins two junctions (three or more each), anything else
+ * is a `path`. Read off the drawn edges only, so a road to an unexplored pin
+ * says nothing about what lies beyond it.
+ */
+export function roadClasses(pairs: [string, string][]): RoadClass[] {
+  const degree = new Map<string, number>();
+  for (const [a, b] of pairs) {
+    degree.set(a, (degree.get(a) ?? 0) + 1);
+    degree.set(b, (degree.get(b) ?? 0) + 1);
+  }
+  return pairs.map(([a, b]) => {
+    const da = degree.get(a)!;
+    const db = degree.get(b)!;
+    if (Math.max(da, db) >= 6) return 'main';
+    return Math.min(da, db) >= 3 ? 'road' : 'path';
+  });
+}
+
+/** Stroke width, px, of a road class. */
+export const ROAD_WIDTH: Record<RoadClass, number> = { path: 2, road: 3, main: 4 };
+
+/** The triangle that marks a road with no road back, pointing into `to` and stopping at its rim. */
+export function arrowhead(from: Pt, to: Pt, pinR: number): Pt[] {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  const tip = { x: to.x - ux * (pinR + 2), y: to.y - uy * (pinR + 2) };
+  const back = { x: tip.x - ux * 10, y: tip.y - uy * 10 };
+  return [tip, { x: back.x - uy * 5, y: back.y + ux * 5 }, { x: back.x + uy * 5, y: back.y - ux * 5 }];
+}
+
+/** A shut road: two pieces of road with a gap between them, and the bar that stands in the gap. */
+export function shutGap(
+  a: Pt,
+  b: Pt,
+): { pieces: [Pt, Pt][]; bar: [Pt, Pt] } {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const half = Math.min(9, len / 4);
+  const bar = 8;
+  return {
+    pieces: [
+      [a, { x: mid.x - ux * half, y: mid.y - uy * half }],
+      [{ x: mid.x + ux * half, y: mid.y + uy * half }, b],
+    ],
+    bar: [
+      { x: mid.x - uy * bar, y: mid.y + ux * bar },
+      { x: mid.x + uy * bar, y: mid.y - ux * bar },
+    ],
+  };
 }

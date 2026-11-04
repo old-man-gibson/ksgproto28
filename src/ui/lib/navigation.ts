@@ -1,22 +1,26 @@
 /**
- * What the map says about a place: the features standing there (icons over
+ * What the map says about a place: the features standing there (chips over
  * its node, rows in its card) and the road to it from where you stand. One
  * derivation for the map card, the destination preview and the location
  * panel, so they cannot disagree about what is where.
  */
 import type { GameState, SpotDef } from '../../core/types';
 import { DISCIPLINES } from '../../core/data/disciplines.data';
-import { SPOTS, edgesFrom, getSpot } from '../../core/registry';
+import { FLOORS, FLOOR_BY_AREA, SPOTS, edgesFrom, getSpot } from '../../core/registry';
 import { spotActivities } from '../../core/systems/actions';
-import { spotCleared } from '../../core/systems/combat';
+import { eligibleEncounters, spotCleared } from '../../core/systems/combat';
 import { conditionsMet } from '../../core/systems/conditions';
-import { findPath, hopEdge } from '../../core/systems/locations';
+import { bandHubAt, bandKnown, bandLevelStep, floorReached, hubStatus } from '../../core/systems/ladder';
+import { dynamicLevelBonus, encounterLevel } from '../../core/systems/levels';
+import { findPath, hopEdge, pathTicks, visibleEdges } from '../../core/systems/locations';
 import { availableQuests, canTurnIn, npcsAt } from '../../core/systems/quests';
 import { restActivities } from '../../core/systems/safety';
 import { visibleLines } from '../../core/systems/shops';
+import { routableStops } from '../../core/systems/towers';
 import { subsystemUnlocked } from '../../core/systems/unlocks';
 import { QUESTS } from '../../core/registry';
-import { condsText } from './format';
+import { condsText, ticksToTime } from './format';
+import { hubTerms, rungTerms } from './ladderView';
 
 /**
  * Benches you can actually see. Furniture for a system you have never heard
@@ -59,7 +63,7 @@ export interface SpotFeature {
 }
 
 /**
- * The features of a spot, in the order the icon badge cycles them: quests
+ * The features of a spot, in the order the map's chips are drawn: quests
  * ready to turn in first (the one thing a player walks back for), then new
  * quests, shops, benches, rest.
  */
@@ -159,6 +163,171 @@ export function routeInfo(state: GameState, toId: string, travelSpeed: number): 
   }
   const noExit = toId !== from && !!(lastForced || dest.forced) && !spotCleared(state, dest);
   return { path, ticks, label, oneWay, noExit, shut };
+}
+
+// ---------- Route legs (the map's route line) ----------
+
+/** One hop of a route: a road, or a ladder ride between two stops of a tower. */
+export interface RouteLeg {
+  from: string;
+  to: string;
+  /** Travel time at the given speed, as `startTravel` would charge it. */
+  ticks: number;
+  ride: boolean;
+}
+
+/** The legs of a hop path that starts at `from`. A hop with no road is a ride. */
+export function routeLegs(from: string, path: string[], travelSpeed: number): RouteLeg[] {
+  const legs: RouteLeg[] = [];
+  let at = from;
+  for (const hop of path) {
+    const ride = !edgesFrom(at).some((e) => e.to === hop);
+    legs.push({
+      from: at,
+      to: hop,
+      ticks: Math.max(1, Math.round(pathTicks(at, [hop]) / travelSpeed)),
+      ride,
+    });
+    at = hop;
+  }
+  return legs;
+}
+
+/**
+ * The spots of a journey in progress, origin first: the legs walked, the leg
+ * under way, and the legs still planned. Nothing but the leg under way and the
+ * plan is in the save, so the legs walked come from `trail`, the UI's own
+ * memory of this journey (`nextTrail`).
+ */
+export function journeySpots(trail: string[], travel: { from: string; to: string } | null, plan: string[]): string[] {
+  return travel ? [...nextTrail(trail, travel), ...plan] : [];
+}
+
+/**
+ * The trail after one more look at the journey: empty when standing still,
+ * unchanged on the same leg, longer when the next leg of the same journey has
+ * begun, and a fresh pair for a new journey (or a save loaded mid-walk, whose
+ * earlier legs are gone).
+ */
+export function nextTrail(trail: string[], travel: { from: string; to: string } | null): string[] {
+  if (!travel) return trail.length ? [] : trail;
+  const n = trail.length;
+  if (n >= 2 && trail[n - 2] === travel.from && trail[n - 1] === travel.to) return trail;
+  if (n >= 1 && trail[n - 1] === travel.from) return [...trail, travel.to];
+  return [travel.from, travel.to];
+}
+
+/** "1.2 s", "2 s", "18 s", "1m 5s": whole seconds from ten up, a tenth below. */
+export function legTime(ticks: number): string {
+  const s = ticks / 10;
+  if (s >= 60) return ticksToTime(ticks);
+  if (s >= 10) return `${Math.round(s)} s`;
+  const tenths = Math.round(s * 10) / 10;
+  return `${Number.isInteger(tenths) ? tenths : tenths.toFixed(1)} s`;
+}
+
+/** A place as the route line names it: an undiscovered place is never named. */
+function placeName(state: GameState, spotId: string): string {
+  return state.discovered.includes(spotId) ? getSpot(spotId).name : 'Unknown place';
+}
+
+/**
+ * What a ride leg arrives at: "Floor 4" for a landing the player has been to,
+ * else the stop's own name. A landing not yet discovered is "Unknown place",
+ * as everywhere else (the first ride onto a floor is a ladder click).
+ */
+function rideTarget(state: GameState, spotId: string): string {
+  const floor = state.discovered.includes(spotId) ? Object.values(FLOORS).find((f) => f.landing === spotId) : undefined;
+  return floor ? `Floor ${floor.index}` : placeName(state, spotId);
+}
+
+/** The line above the map: what it is about, then the detail. Either may be empty. */
+export interface RouteLine {
+  head: string;
+  rest: string;
+}
+
+export const NO_ROUTE_LINE: RouteLine = { head: '', rest: '' };
+
+/**
+ * The route line: "Route to The Woods Edge: 3 legs, 21 s." then "The Granary
+ * Gate → The Foot 1.2 s → ride to Floor 4 18 s → The Woods Edge 2 s". The first
+ * name is where the route starts; each leg then names where it arrives and its
+ * time. `kind` is "Journey" while the player is walking it.
+ */
+export function routeSummary(state: GameState, kind: 'Route' | 'Journey', legs: RouteLeg[]): RouteLine {
+  if (!legs.length) return NO_ROUTE_LINE;
+  const total = legs.reduce((sum, l) => sum + l.ticks, 0);
+  const end = legs[legs.length - 1].to;
+  const steps = legs.map((l) => `${l.ride ? `ride to ${rideTarget(state, l.to)}` : placeName(state, l.to)} ${legTime(l.ticks)}`);
+  return {
+    head: `${kind} to ${placeName(state, end)}: ${legs.length} ${legs.length === 1 ? 'leg' : 'legs'}, ${legTime(total)}.`,
+    rest: [placeName(state, legs[0].from), ...steps].join(' → '),
+  };
+}
+
+/**
+ * The line for a place no route reaches. Three causes leave no road to draw:
+ * a hidden road (nothing is said), an uncleared forced spot in the way (nothing
+ * is said) and a ride the ladder refuses (its terms, as the Ascent panel
+ * words them). A road shut behind terms the player can see gives them, as the
+ * click card does; a road that is not yet revealed gives nothing.
+ */
+export function noRouteSummary(state: GameState, toId: string, info: RouteInfo): RouteLine {
+  const shut = info.shut && visibleEdges(state, state.spot).some((e) => e.to === toId) ? info.shut : null;
+  return {
+    head: `No open route to ${placeName(state, toId)}.`,
+    rest: shut ? `Shut: ${shut}` : (rideRefusal(state, toId) ?? ''),
+  };
+}
+
+/**
+ * A refused ride's terms for a place on a ladder floor (or a band's hub): the
+ * words the ladder panel prints under that rung. Only a floor the ladder
+ * already names (`floorReached`), or a hub of a band it shows in full
+ * (`bandKnown`), says anything, and only while the landing or hub is not one
+ * the router may take.
+ */
+function rideRefusal(state: GameState, toId: string): string | null {
+  const dest = getSpot(toId);
+  const floor = FLOOR_BY_AREA.get(dest.areaId);
+  if (floor?.bandId !== undefined && floorReached(state, floor)) {
+    if (routableStops(state).some((s) => s.floor?.id === floor.id)) return null;
+    const t = rungTerms(state, floor);
+    if (t.kind === 'open' || t.kind === 'cleared' || !t.terms.length) return null;
+    return `Floor ${floor.index}: ${t.terms.map((x) => x.text).join(' ')}`;
+  }
+  const band = bandHubAt(toId);
+  if (band && bandKnown(state, band) && hubStatus(state, band) !== 'open') {
+    if (routableStops(state).some((s) => s.band?.id === band.id)) return null;
+    const t = hubTerms(state, band);
+    return t.terms.length ? `${getSpot(toId).name}: ${t.terms.map((x) => x.text).join(' ')}` : null;
+  }
+  return null;
+}
+
+// ---------- Threat ----------
+
+/**
+ * The level range of what a place can roll, "L7-9" or "L8", or null when it
+ * rolls nothing the player is owed a number for. Read off the lines a fight
+ * here can draw now (`eligibleEncounters`: a `once` line already slain is gone,
+ * a gated line waits for its terms), minus ambush windows, which are meant to
+ * be met. The level is the one `spawnMonster` gives: the line's rise, the
+ * band's step, then the band's dynamic levels (never on a `once` line).
+ */
+export function spotThreat(state: GameState, spot: SpotDef): string | null {
+  if (spotCleared(state, spot)) return null;
+  const lines = eligibleEncounters(state, { ...spot, encounters: (spot.encounters ?? []).filter((e) => !e.window) });
+  if (!lines.length) return null;
+  const step = bandLevelStep(state, spot);
+  const at = (e: (typeof lines)[number], rolled: number) => {
+    const stepped = encounterLevel(state, e, rolled) + step;
+    return e.once ? stepped : stepped + dynamicLevelBonus(state, spot, e.monsterId, stepped);
+  };
+  const lo = Math.min(...lines.map((e) => at(e, e.level[0])));
+  const hi = Math.max(...lines.map((e) => at(e, e.level[1])));
+  return lo === hi ? `L${lo}` : `L${lo}-${hi}`;
 }
 
 /** An activity's icon and name at a spot, for callers that hold only the id. */

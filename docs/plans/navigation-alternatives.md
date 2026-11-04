@@ -213,7 +213,7 @@ Three problems, each with its own fix:
 - **Ground** comes from `AreaDef.ground` (default from `sceneFor`) and is drawn by code. No painting.
 - **At 1094 px** (main column 818 px) the map keeps full labels. Below 560 px it labels only here and
   the neighbours.
-- **Save change:** no. The hover cards are unchanged.
+- **Save change:** no. The hover card is replaced by a click card (§9, 2026-11-04).
 
 **N4. Tower section.**
 
@@ -232,13 +232,14 @@ Three problems, each with its own fix:
 
 **N5. Route line.**
 
-- Hover or focus a pin to draw the route with each leg's time.
+- Select a pin (a click opens its card) to draw the route with each leg's time. The route follows the
+  selected pin and goes when the card closes. Hover draws nothing.
 - While travelling, done legs are solid, remaining legs dashed, and a marker sits on the current leg.
 - No route has three causes:
   - a hidden road: nothing is drawn;
   - an uncleared forced spot in the way: no terms are shown;
   - a ride the ladder refuses: its `rungTerms` are shown.
-- The hover card is unchanged.
+- The card's content is the old hover card's. It opens on a click, not on hover (§9).
 
 **N9. Painted ground plates (optional, user-painted).**
 
@@ -385,6 +386,7 @@ Marked on the decision page. Every mark matches the recommendation in §7.
 | Q3 Knockout owner | Automatic return | knockout-return K1 owns knockouts. While `pendingReturn` is set, Stations does not offer the fall spot |
 | Q4 Stretch | Approved | Diagram maps stretch to the column's width, capped at 8.1 px per unit across and 5.6 down |
 | Q5 Level ranges | Approved | Discovered pins print "L7-9" from public encounter lines (§5.2 N3) |
+| Hover card (user, 2026-11-04, during N3 + N5) | Replaced by a click card | A click on a pin selects it and opens its card; a second click on it walks; Escape, a click outside, a tab switch or folding the map closes it. Hover opens nothing. Region exit labels stay one click with no card. The route line follows the selected pin. Reverses "the user did not want the map hover cards changed" (2026-10-18, §1). The floor 0 tutorial's pin steps (`cellblock`, `field`, `gate`) take two clicks and say so |
 
 ## 10. Build order
 
