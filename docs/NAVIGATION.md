@@ -69,7 +69,12 @@ road crosses floors. The activity starts on arrival.
   festival floor. Those, and 5 knockouts in a row at one spot, fall back to the
   `proven` hunt (the last spot where 10 fights were won in a row), retried
   after 200 wins or 2 h; with no usable proven hunt the character waits at the
-  haven and probes the target after 10, 20, 40, then 80 minutes.
+  haven and probes the target after 10, 20, 40, then 80 minutes. A probe whose
+  route is shut holds again with the doubled wait.
+- A knockout with no activity running and no forced fight (an idle character
+  finished by a condition) sends the character nowhere. A forced fight lost
+  with no activity selected is the ambush the player walked into, and counts
+  as work: it falls back like any forced-spot loss.
 
 ### 2.2 Go and do (`goAndDo`, `setJourneyIntent`, locations.ts)
 

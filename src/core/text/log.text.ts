@@ -392,7 +392,6 @@ export const LOG_TEXT = {
   'knockout.why_festival': 'festival floor, not re-entered',
   'knockout.why_route': 'no known route back',
   'knockout.why_start': 'its activity cannot start',
-  'knockout.why_idle': 'no work was running',
 
   // ---------- sea (systems/sea.ts) ----------
   'sea.leg_convoy': '⛵ Leg {leg}/{legs}: threat {threat}, battery {rating}, kills {kills}. {lost} crates lost, {crates} aboard.',

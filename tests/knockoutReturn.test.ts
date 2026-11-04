@@ -144,15 +144,17 @@ const koLines = (g: Game): string[] =>
  * One knockout at `spot` doing `activity`, in the order combat.ts onDefeat
  * runs it: capture, hurt, retreat, record.
  */
-function fallAt(g: Game, spot: string, activity: string | null = 'hunt'): void {
+function fallAt(g: Game, spot: string, activity: string | null = 'hunt', forced = false): void {
   const s = g.state;
   s.spot = spot;
   s.activity = activity;
-  s.combat = null;
+  // A forced fight is open at the moment of capture, as in onDefeat.
+  s.combat = forced ? ({ forced: true } as never) : null;
   s.travel = null;
   s.travelPlan = [];
   s.travelIntent = null;
   const fall = captureFall(s);
+  s.combat = null;
   s.resources.hp = 1;
   s.recovering = true;
   retreatToSafety(s, g.bus, 'Knocked out.');
@@ -376,14 +378,68 @@ describe('what the return never walks back into', () => {
     expect(lines(g).some((m) => m.includes('festival floor, not re-entered'))).toBe(true);
   });
 
-  it('a fall with no work running falls back, or idles, and never invents a target', () => {
+  it('an idle character is sent nowhere: no return, no fallback, no hold, no line', () => {
     const g = world(13);
+    const before = lines(g).length;
     fallAt(g, 'kr_camp', null);
     expect(g.state.pendingReturn).toBeNull();
-    expect(lines(g)).toContain('Test Camp: no work was running. No safer hunt known.');
+    // Even with a proven hunt in hand.
     g.state.proven = { spot: 'kr_meadow', activity: 'hunt' };
     fallAt(g, 'kr_camp', null);
-    expect(pending(g)).toMatchObject({ phase: 'fallback', target: null });
+    expect(g.state.pendingReturn).toBeNull();
+    expect(koLines(g)).toEqual([]);
+    expect(lines(g).length).toBeGreaterThan(before); // the retreat still says where it woke
+    expect(knockoutStreak(g.state, 'kr_camp')).toBe(0);
+    expect(defeatDialogDue(g.state)).toBe(true);
+    // And it stays idle after recovering.
+    recovered(g);
+    for (let i = 0; i < 100; i++) g.tick();
+    expect(g.state.activity).toBeNull();
+    expect(g.state.travel).toBeNull();
+  });
+
+  it('a return already in flight carries on through a knockout with no work running', () => {
+    const g = world(46);
+    g.state.proven = { spot: 'kr_meadow', activity: 'hunt' };
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+    const before = JSON.parse(JSON.stringify(pending(g)));
+    expect(before.phase).toBe('fallback');
+    fallAt(g, 'kr_camp', null);
+    expect(pending(g)).toEqual(before);
+    expect(lines(g)).toContain('Returning to Test Meadow.');
+  });
+
+  it('a forced fight with no activity selected is still work walked into: it falls back', () => {
+    // Travel clears the activity, so an ambush is lost with `activity` null.
+    const g = world(47, 'kr_den');
+    g.state.proven = { spot: 'kr_meadow', activity: 'hunt' };
+    fallAt(g, 'kr_den', null, true);
+    expect(pending(g)).toMatchObject({ phase: 'fallback', target: null, fallback: { spot: 'kr_meadow' } });
+    expect(lines(g)).toContain('Test Den: forced fight, not re-entered. Hunting Test Meadow for 200 wins.');
+    // By a forced road, on a spot that is not itself forced.
+    const h = world(48, 'kr_pit');
+    h.state.proven = { spot: 'kr_meadow', activity: 'hunt' };
+    fallAt(h, 'kr_pit', null, true);
+    expect(lines(h)).toContain('Test Pit: forced road in, not re-entered. Hunting Test Meadow for 200 wins.');
+    // With nothing to fall back to, the character idles and the log says why.
+    const k = world(49, 'kr_den');
+    fallAt(k, 'kr_den', null, true);
+    expect(k.state.pendingReturn).toBeNull();
+    expect(lines(k)).toContain('Test Den: forced fight, not re-entered. No safer hunt known.');
+  });
+
+  it('a real ambush lost at a forced spot falls back to the proven hunt', () => {
+    const g = world(50, 'kr_gate');
+    const s = g.state;
+    s.proven = { spot: 'kr_meadow', activity: 'hunt' };
+    expect(g.travelTo('kr_den')).toBe(true);
+    for (let i = 0; i < 100 && s.travel; i++) g.tick();
+    expect(s.combat?.forced).toBe(true);
+    expect(s.activity).toBeNull(); // nothing was selected: the walk cleared it
+    s.resources.hp = 1;
+    for (let i = 0; i < 3000 && !s.recovering; i++) g.tick();
+    expect(s.recovering).toBe(true);
+    expect(pending(g)).toMatchObject({ phase: 'fallback', target: null, fallback: { spot: 'kr_meadow' } });
   });
 });
 

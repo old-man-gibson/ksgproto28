@@ -4,7 +4,7 @@ import { TPS } from '../engine/loop';
 import { FLOOR_BY_AREA, SPOTS, edgesFrom } from '../registry';
 import { canStartActivity, currentActivity, spotActivities, startActivity } from './actions';
 import { bumpStat, raiseStat } from './achievements';
-import { eligibleEncounters, spotCleared } from './combat';
+import { eligibleEncounters, inForcedFight, spotCleared } from './combat';
 import { festivalFloorOf } from './festivalRules';
 import { floorUnlocked, rungIndex } from './ladder';
 import { findPath, goAndDo } from './locations';
@@ -106,7 +106,7 @@ function hopsTo(state: GameState, to: string): { start: string; path: string[] }
 }
 
 /** Why the return cannot go to a spot. */
-type Why = 'forced_spot' | 'forced_road' | 'wall' | 'festival' | 'route' | 'start' | 'idle';
+type Why = 'forced_spot' | 'forced_road' | 'wall' | 'festival' | 'route' | 'start';
 
 /**
  * Why the character cannot be sent from where it stands to `goal` and put to
@@ -132,6 +132,14 @@ export function returnBlock(state: GameState, goal: ReturnSpot): Why | null {
   return null;
 }
 
+/** Why a forced fight with no activity at `spotId` is not walked back into. */
+function ambushWhy(spotId: string): Why {
+  if (NEVER_TARGET.has(spotId)) return 'wall';
+  if (SPOTS[spotId]?.forced) return 'forced_spot';
+  if (festivalFloorOf(spotId)) return 'festival';
+  return 'forced_road';
+}
+
 function whyText(why: Why): string {
   switch (why) {
     case 'forced_spot':
@@ -146,8 +154,6 @@ function whyText(why: Why): string {
       return text('knockout.why_route');
     case 'start':
       return text('knockout.why_start');
-    case 'idle':
-      return text('knockout.why_idle');
   }
 }
 
@@ -173,14 +179,20 @@ function usableHunt(state: GameState, cand: ReturnSpot | null | undefined, fallS
 
 // ---------- The knockout ----------
 
-/** What a knockout interrupted, read before the retreat clears it. */
+/**
+ * What a knockout interrupted, read before the retreat clears it. `forced`:
+ * the fight was one that could not be fled. Those start on arrival with no
+ * activity selected (travel clears it), so a forced fight is the work the
+ * player walked into even when `activity` is null.
+ */
 export interface Fall {
   spot: string;
   activity: string | null;
+  forced: boolean;
 }
 
 export function captureFall(state: GameState): Fall {
-  return { spot: state.spot, activity: state.activity };
+  return { spot: state.spot, activity: state.activity, forced: inForcedFight(state) };
 }
 
 const spotName = (id: string): string => SPOTS[id]?.name ?? id;
@@ -232,14 +244,15 @@ function returnPhase(target: ReturnSpot, probes: number, fallback?: ReturnSpot):
  */
 export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void {
   const old = state.pendingReturn ?? null;
-  // A knockout with no work running while a return is in flight (a condition
-  // finishing someone waiting at the haven): the return carries on as it was.
-  if (!fall.activity && old) {
-    announce(state, bus, old);
+  // No work was running and the fight was not a forced one: a character that
+  // was idle (waiting on purpose, banking time) is not sent anywhere. A return
+  // already in flight carries on as it was.
+  if (!fall.activity && !fall.forced) {
+    if (old) announce(state, bus, old);
     return;
   }
 
-  const n = fall.activity ? bumpKnockouts(state, bus, fall.spot) : 0;
+  const n = bumpKnockouts(state, bus, fall.spot);
 
   // A knockout at the fallback itself, in the fallback phase or right after
   // its retry (which keeps the fallback while the character still stands
@@ -269,8 +282,10 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
     return;
   }
 
+  // A forced fight with no activity is the player's walk into an ambush: no
+  // work to resume, and the way in is forced by the spot or by the road.
   const target: ReturnSpot | null = fall.activity ? { spot: fall.spot, activity: fall.activity } : null;
-  const why: Why | null = target ? returnBlock(state, target) : 'idle';
+  const why: Why | null = target ? returnBlock(state, target) : ambushWhy(fall.spot);
 
   if (target && why === null) {
     const carried = old?.target?.spot === target.spot ? old.probes : 0;
