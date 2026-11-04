@@ -6,7 +6,8 @@ import { findPath, visibleEdges } from '../src/core/systems/locations';
 import { spawnMonster, spotCleared } from '../src/core/systems/combat';
 import type { GameState, SpotDef } from '../src/core/types';
 import { boxInCells, labelBox, pinBox, roadClasses, type MapBox } from '../src/ui/lib/map';
-import { buildPlan, buildRouteDraw, groundFor, type MapPlan } from '../src/ui/lib/mapPlan';
+import { buildPlan, buildRouteDraw, groundFor, planThreats, stableThreats, type MapPlan } from '../src/ui/lib/mapPlan';
+import { Game } from '../src/core/game';
 import {
   legTime,
   nextTrail,
@@ -366,6 +367,62 @@ describe('threat text', () => {
       expect(Math.min(...seen)).toBe(lo);
       expect(Math.max(...seen)).toBe(top);
     }
+  });
+
+  it('hands the plan the same Map while no range changes: idle ticks, fight ticks and a walk', () => {
+    // `planThreats` reads the clock through `eligibleEncounters`, and builds a new Map on every call. The plan
+    // rebuilds when the Map it is given changes identity, so identity must follow the ranges and nothing else.
+    const g = new Game(opened('f4_woods_edge', BAND_ONE_TWO, ['f4_treeline', 'f4_woods_edge']));
+    g.state.level = 24;
+    let cache: ReadonlyMap<string, string> = new Map();
+    const raw = new Set<ReadonlyMap<string, string>>();
+    const seen: string[] = [];
+    let handedOut = 0;
+    let calls = 0;
+    const look = () => {
+      const now = planThreats(g.state, 'the_ascent', 'ascent_f4_area');
+      raw.add(now);
+      calls++;
+      const next = stableThreats(cache, now);
+      if (next !== cache) handedOut++;
+      cache = next;
+      seen.push([...now].map(([id, t]) => `${id}=${t}`).join(';'));
+    };
+    look();
+    for (let i = 0; i < 30; i++) {
+      g.tick();
+      look();
+    }
+    g.selectActivity('hunt');
+    for (let i = 0; i < 30; i++) {
+      g.tick();
+      look();
+    }
+    g.selectActivity(null);
+    g.travelTo('f4_treeline');
+    for (let i = 0; i < 200 && g.state.travel; i++) {
+      g.tick();
+      look();
+    }
+    expect(g.state.spot).toBe('f4_treeline');
+    expect(calls).toBeGreaterThan(60);
+    // The cause: every call returns a new Map.
+    expect(raw.size).toBe(calls);
+    // The fix: a new Map only where the text changed (the first look counts).
+    const changes = 1 + seen.slice(1).filter((text, i) => text !== seen[i]).length;
+    expect(handedOut).toBe(changes);
+    expect(handedOut).toBeLessThan(5);
+  });
+
+  it('keeps the previous Map when an equal one arrives, and takes the new one when an entry differs or goes', () => {
+    const a = new Map([['x', 'L1'], ['y', 'L2-3']]);
+    expect(stableThreats(a, new Map(a))).toBe(a);
+    const b = new Map([['x', 'L1'], ['y', 'L2-4']]);
+    expect(stableThreats(a, b)).toBe(b);
+    const c = new Map([['x', 'L1']]);
+    expect(stableThreats(a, c)).toBe(c);
+    const d = new Map([['x', 'L1'], ['z', 'L2-3']]);
+    expect(stableThreats(a, d)).toBe(d);
   });
 
   it('prints nothing for a place with nothing left to fight', () => {

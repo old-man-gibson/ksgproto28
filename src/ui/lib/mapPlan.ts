@@ -200,6 +200,20 @@ export function planThreats(state: GameState, region: string, area: string | nul
   return out;
 }
 
+/**
+ * `next`, or `prev` itself when it holds the same ranges. `planThreats` builds
+ * a new Map on every call, so identity is what tells a Svelte derived (and
+ * with it `buildPlan`) that nothing changed.
+ */
+export function stableThreats(
+  prev: ReadonlyMap<string, string>,
+  next: ReadonlyMap<string, string>,
+): ReadonlyMap<string, string> {
+  if (prev.size !== next.size) return next;
+  for (const [id, text] of next) if (prev.get(id) !== text) return next;
+  return prev;
+}
+
 /** How far a district's tint reaches from a pin of it, px, along either axis. */
 const TINT_REACH = 130;
 

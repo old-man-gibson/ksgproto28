@@ -23,7 +23,7 @@
   } from './lib/navigation';
   import { DEFAULT_W } from './lib/map';
   import { CARD_W, placeCard, selectionStep, type SelectEvent } from './lib/mapSelect';
-  import { buildPlan, buildRouteDraw, planThreats } from './lib/mapPlan';
+  import { buildPlan, buildRouteDraw, planThreats, stableThreats } from './lib/mapPlan';
   import TileMap from './lib/tilemaps/TileMap.svelte';
   import { TILEMAPS } from './lib/tilemaps';
   import { tutorialScreen } from './lib/tutorialFocus';
@@ -107,13 +107,14 @@
   let wrapW = $state(0);
   const width = $derived(wrapW || DEFAULT_W);
 
-  // Level ranges follow the clock (`daypart` lines), so they are computed on
-  // their own and handed to the plan only when the text changes.
-  const threatsNow = $derived(planThreats(gs, shownRegion, shownArea));
-  const threatsKey = $derived([...threatsNow].map(([id, t]) => `${id}=${t}`).join(';'));
+  // Level ranges read the clock (`daypart` lines), so they are worked out on
+  // every tick, and `planThreats` returns a new Map each time. The plan gets
+  // the Map it already had while the ranges are the same (`stableThreats`),
+  // so a tick that changes no range rebuilds nothing.
+  let threatCache: ReadonlyMap<string, string> = new Map();
   const threats = $derived.by(() => {
-    void threatsKey;
-    return untrack(() => threatsNow);
+    threatCache = stableThreats(threatCache, planThreats(gs, shownRegion, shownArea));
+    return threatCache;
   });
 
   const plan = $derived(
