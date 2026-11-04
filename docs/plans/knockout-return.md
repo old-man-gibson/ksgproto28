@@ -274,5 +274,6 @@ the fix:
   that loses at a boss while another limited spot still has fights left.
 - While a hold waits, the only way to cancel it is to start an activity and stop it.
   navigation-alternatives N7 shows the pending return with a "Stay here" control.
+  Closed 2026-11-04 (branch `nav-stations`): `Game.stayHere`, NAVIGATION.md §3.6.
 - The defeat-dialog gate in App.svelte has not been checked in a browser. Its deciding function,
   `defeatDialogDue`, is unit-tested.

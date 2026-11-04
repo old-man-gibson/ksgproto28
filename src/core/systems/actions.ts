@@ -116,9 +116,14 @@ export function startActivity(state: GameState, bus: EventBus, activityId: strin
   state.benchWork = null; // and steps away from any bench run
   state.performance = null; // and off any stage
   // Remember the choice for the next visit — and forget it when the player
-  // stops by hand, so a spot left idle on purpose stays idle.
-  if (activityId) state.resumeActivity[state.spot] = activityId;
-  else delete state.resumeActivity[state.spot];
+  // stops by hand, so a spot left idle on purpose stays idle. A pick re-enters
+  // its key last, so the record's key order is recency, oldest first (the
+  // Stations row reads it, ui/lib/navigation.ts). JSON keeps key order, so the
+  // save needs nothing.
+  if (activityId) {
+    delete state.resumeActivity[state.spot];
+    state.resumeActivity[state.spot] = activityId;
+  } else delete state.resumeActivity[state.spot];
 
   const act = currentActivity(state);
   if (act) bus.emit({ type: 'log', msg: text('actions.started', { name: act.name }), kind: 'action' });
@@ -143,9 +148,19 @@ export function canStartActivity(state: GameState, spotId: string, activityId: s
 }
 
 /**
+ * A `travelIntent` with this activity starts nothing on arrival, and the
+ * spot's `resumeActivity` entry stays as it was. "Stay here" sets it on the leg
+ * under way (`Game.stayHere`). It is a value of the saved string, not a new
+ * shape: no real activity has an empty id.
+ */
+export const ARRIVE_IDLE = '';
+
+/**
  * The end of a journey, peacefully reached: start what the journey was for,
  * else pick up whatever the player last did here. Called by every arrival
  * path AFTER its ambush check — a forced fight owns the arrival instead.
+ * An intent of `ARRIVE_IDLE` for this spot starts nothing and shadows the
+ * resume entry.
  */
 export function settleArrival(state: GameState, bus: EventBus): void {
   const intent = state.travelIntent;

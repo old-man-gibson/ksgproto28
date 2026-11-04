@@ -4975,7 +4975,8 @@ export type PrestigeBoonEffect =
    * their giver and `talk`/`reach` objectives stand; skills link to the
    * spots whose activities train them. Each link is the map's go-and-do
    * (systems/locations.ts `goAndDo` / `travelPlanTo`). Read by the Quests
-   * and Skills panels.
+   * and Skills panels. Places the character has worked at do not need it:
+   * the Stations row (ui/StationsRow.svelte) links them from the start.
    */
   | { kind: 'wayfinding' }
   /**
@@ -6140,13 +6141,19 @@ export interface GameState {
    * What the journey is for: on the final peaceful arrival at `spot`, start
    * `activity`. Set by "go and do" (the map's feature list, the destination
    * preview); cleared by anything that changes the plan. Wins over
-   * `resumeActivity`. See systems/actions.ts `settleArrival`.
+   * `resumeActivity`. An empty `activity` (`ARRIVE_IDLE`) starts nothing and
+   * leaves `resumeActivity` as it was ("Stay here"). See systems/actions.ts
+   * `settleArrival`.
    */
   travelIntent: { spot: string; activity: string } | null;
   /**
    * The last activity chosen at each spot, keyed by spot id. A peaceful
    * arrival with no intent restarts it; deselecting an activity by hand
-   * forgets the entry, so a spot left idle on purpose stays idle.
+   * forgets the entry, so a spot left idle on purpose stays idle. Every pick
+   * re-enters its key last, so the key order is recency, oldest first: the
+   * Stations row lists the newest (`stations`, ui/lib/navigation.ts). A save
+   * from before 2026-11-04 holds the order of first picks until each spot is
+   * picked again.
    */
   resumeActivity: Record<string, string>;
   /**

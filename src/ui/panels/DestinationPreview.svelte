@@ -3,7 +3,7 @@
   import { RECIPES, getSpot } from '../../core/registry';
   import { recipeHidden } from '../../core/systems/crafting';
   import { journeyEnd, locationBreadcrumb } from '../../core/systems/locations';
-  import { exploreProgress, spotActivities } from '../../core/systems/actions';
+  import { ARRIVE_IDLE, exploreProgress, spotActivities } from '../../core/systems/actions';
   import { npcsAt } from '../../core/systems/quests';
   import { activityName, spotFeatures } from '../lib/navigation';
 
@@ -23,10 +23,15 @@
   );
   const people = $derived(endId && known ? npcsAt(endId) : []);
 
-  /** What arrival will start: the queued intent, else the spot's resume entry. */
+  /**
+   * What arrival will start: the queued intent, else the spot's resume entry.
+   * An intent of ARRIVE_IDLE ("Stay here") starts nothing, whatever the spot remembers.
+   */
   const onArrival = $derived.by(() => {
     if (!endId) return null;
-    if (gs.travelIntent?.spot === endId) return { kind: 'queued', id: gs.travelIntent.activity };
+    if (gs.travelIntent?.spot === endId) {
+      return gs.travelIntent.activity === ARRIVE_IDLE ? null : { kind: 'queued', id: gs.travelIntent.activity };
+    }
     const resume = gs.resumeActivity[endId];
     return resume ? { kind: 'resume', id: resume } : null;
   });

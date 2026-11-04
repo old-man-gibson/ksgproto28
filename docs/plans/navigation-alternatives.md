@@ -512,3 +512,77 @@ at the start of a ride (1,094 px window). With the page scrolled past the new ma
 clamps the scroll position and the map moves on screen by the difference (10 px measured). Nothing
 above the swap changes its box. Fixing it means keeping the swapped block's height, in
 `LocationPanel.svelte`.
+
+**N7 Stations row:** branch `nav-stations` (stacked on `ui-integration` 345a321). The rules are
+docs/NAVIGATION.md §3.6. svelte-check passed with 0 errors, `vitest run` passed with 3,558 tests (2 skipped without the icon packs) and `vite build` built. (`npm run` finds no `node_modules/.bin` in this setup, so the three steps ran by path.) Antagonist-code: not yet run.
+
+Built:
+- `ui/StationsRow.svelte` (one fixed-height line between the strip and the map),
+  `stations` / `stationBlock` / `returnLine` in `ui/lib/navigation.ts`, `Game.stayHere`, and a
+  `children` snippet and `class` on `GoButton.svelte`.
+- `startActivity` (actions.ts) deletes and re-sets the `resumeActivity` key on every pick, so the
+  record's key order is recency. No save change.
+- The Wayfinding boon text and NAVIGATION.md §5.2 say what Q2 decided.
+- `tests/stations.test.ts`: the order, the cap of 5, here excluded, a resumed arrival moving a spot
+  first, the key order through a save, the route time equal to the walk, free outside town, each
+  never-offered cause (the wall, a festival floor, a floor not unlocked and an undiscovered spot in the
+  real data; a forced spot, a forced last road, no route and an activity that cannot start in a pocket
+  world), the return's target excluded, Stay here (recovering, a hold, a multi-leg walk back, a one-leg
+  walk back, no return, the next tick), the return's line in each phase, the boon text.
+  `tests/stationsrow.test.ts`: the row's markup in each state.
+
+Builder decisions kept (the brief did not cover them):
+- The target of a return is the only spot hidden. A fallback's spot stays a station: the return is
+  only driving there.
+- `Game.stayHere` also drops the return's own walk (the legs not yet taken and the queued work) and
+  logs "Return cancelled. Staying here.". The leg under way completes. (Fix round 1 below: its
+  arrival starts nothing.)
+- While the character walks the row lists no station ("Stations open on arrival."): their route times
+  would run from the spot being left. A return's line and Stay here stay.
+- A station is refused for a floor that is not unlocked and for an undiscovered spot as well as for the
+  return's own causes. The route must be one `goAndDo` can take; the return's climb-then-walk fallback
+  does not count.
+- Every row is full text and the row scrolls sideways, with a thin scrollbar in a reserved band, rather
+  than cutting names to an ellipsis: at 788 px about two and a half stations show.
+- The row is hidden while floor 0's tutorial runs.
+- GoButton's tooltip (route time and warnings) stays on station buttons.
+- The "Trains at" list still shows every discovered place when Wayfinding is held, as it did; the boon
+  text says so.
+
+Measured in a browser (1094 px, then 1440 px with the log column open):
+- Screenshots: the row with Back and stations, with a return in flight and Stay here, and while walking.
+- Boxes every 50 ms, 494 to 1,236 samples per run, through a hunt, a knockout, the recovery, the walk
+  back, hunting again with the return pending, and Stay here: the header, strip, row, route line, region
+  tabs, map frame top and journey line each kept one box.
+- The errand (buy at The Granary Gate, then back to the floor 4 hunt): 4 clicks, 0 scrolls, 0 stops.
+  The plan's 4 was counted with one-click pins and a forge stop; with §3.3's two clicks per pin the
+  forge errand is 6.
+
+**N7 fix round 1** (manager's rulings; `nav-stations`, after merging `ui-integration` 5aca9d4, which
+carries `ko-limited`: `PendingReturn.from`, save v64). Each fix has a test that fails without it.
+- **Stay here on the last leg.** `stayHere` cleared the return, the plan and the intent, but the leg
+  under way completed and `settleArrival` read `resumeActivity[target]`: the character arrived at the
+  fall spot and hunted. Now the leg's `travelIntent` becomes `{ spot: where the leg ends, activity:
+  ARRIVE_IDLE }` (`''`, actions.ts). `settleArrival` reads it as "start nothing", ahead of the resume
+  entry, which is not deleted. No saved type changes (the value `''` is a string like any other), so
+  SAVE_VERSION stays 64 and there is no migration. The destination preview reads the intent as "nothing
+  queued". The log line is "Return cancelled. Stopping at X." while walking ("Staying here." standing
+  still), and the button reads "Stop at X" while walking ("Stay here" standing still), since the leg
+  cannot be called off.
+- **A cleared hunt offered as a station.** `stationBlock` now refuses a hunt whose spot is cleared
+  (`spent`) or has no eligible encounter now (`empty`). `returnBlock` is unchanged.
+- **"Returning to X" while standing at X.** The `return` phase lasts until the first win, so
+  `returnLine` reads "At X: the return ends at the first win." for a character standing at a hunt
+  target.
+- **The wheel is not taken.** The row's wheel handler (`passive: false`) is gone; a vertical wheel over
+  the row scrolls the page. Sideways: the scrollbar, shift+wheel, a trackpad, a swipe, keyboard focus.
+- **A disabled "Back"** loses its accent border (`.station.back:not(:disabled)`).
+- Found while measuring: with stations after it, the return's line shrank to 125 px (a `flex: 0 1 34em`
+  item squeezed by overflowing siblings) and cut "At The Woods Edge:…". The return is now one
+  `flex: none` cell (`.st-return`) capped at the column, and the line has a `width` of 34 em, so it
+  neither shrinks for the stations nor takes the width of its text.
+- Measured at 1094 px, boxes every 50 ms, 613 samples over 31 s: a hunt, a knockout, the recovery, the
+  walk back, "Stop at The Woods Edge" pressed on the last leg, the arrival, idle at the target. The
+  header, strip, row, route line, region tabs, map frame and journey line each kept one box. The return
+  cell and the button kept their left edge (275 and 770.3 px); the button is 73 px wide as "Stay here"
+  and 157 px as "Stop at The Woods Edge", inside the row.
