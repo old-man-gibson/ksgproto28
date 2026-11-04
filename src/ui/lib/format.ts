@@ -31,7 +31,7 @@ import { TPS } from '../../core/engine/loop';
 import { ATTRIBUTE_LIST } from '../../core/data/attributes.data';
 import { BASE_SPEED, getDerivedStats, statBreakdown } from '../../core/systems/derived';
 import { monsterStats } from '../../core/systems/monsterStats';
-import { conditionResistance, escalationPrimed } from '../../core/systems/statuses';
+import { attrCeiling, conditionResistance, escalationPrimed } from '../../core/systems/statuses';
 import {
   attrBreakdown,
   attrName,
@@ -1077,6 +1077,12 @@ export function attrTipLines(state: GameState, attr: AttributeId): string[] {
     lines.push(
       `⚛ ${bd.fusion.name}: + effective ${partner} (${fmt(bd.fusion.partnerValue)}) → reads as ${fmt(bd.fusion.total)}`,
     );
+  }
+  // Weakest Weapon Master: the row shows the capped value; the real one is here.
+  const cap = attrCeiling(state);
+  const real = bd.fusion?.total ?? bd.effective;
+  if (cap !== null && real > cap) {
+    lines.push(`Capped: formulas read ${cap} (Weakest Weapon Master). Gates and item requirements read ${fmt(real)}.`);
   }
   return lines;
 }

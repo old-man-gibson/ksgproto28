@@ -483,10 +483,11 @@
             {#snippet tip()}{@render superTip(sup)}{/snippet}
           </Tip>
         </span>
+        <!-- Above Weakest Weapon Master's ceiling the row shows what formulas
+             read; the real value is in the hover (attrTipLines). -->
         <span class="super-value"
-          >{Math.round(attrValue(gs, sup.components[0]))}{#if ceiling !== null && attrValue(gs, sup.components[0]) > ceiling}<span
-              class="capped"> → {ceiling}</span
-            >{/if}</span
+          >{#if ceiling !== null && attrValue(gs, sup.components[0]) > ceiling}<span class="capped">{ceiling}</span
+            >{:else}{Math.round(attrValue(gs, sup.components[0]))}{/if}</span
         >
       </div>
       {#each sup.components as compId}
@@ -505,11 +506,12 @@
               </Tip>
             </span>
             <span class="dim">
-              {Math.round(eff[compId])}{#if delta !== 0}<span
-                  class="delta"
-                  class:buff={delta > 0}
-                  class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
-                >{/if}{#if ceiling !== null && eff[compId] > ceiling}<span class="capped"> → {ceiling}</span>{/if}
+              {#if ceiling !== null && eff[compId] > ceiling}<span class="capped">{ceiling}</span
+                >{:else}{Math.round(eff[compId])}{#if delta !== 0}<span
+                    class="delta"
+                    class:buff={delta > 0}
+                    class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
+                  >{/if}{/if}
             </span>
           </div>
         </div>
@@ -531,12 +533,15 @@
             {/snippet}
           </Tip>
         </span>
+        <!-- Above Weakest Weapon Master's ceiling the row shows what formulas
+             read; the real value and the bonus are in the hover (attrTipLines). -->
         <span class="dim">
-          {Math.round(eff[attr.id])}{#if delta !== 0}<span
-              class="delta"
-              class:buff={delta > 0}
-              class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
-            >{/if}{#if ceiling !== null && eff[attr.id] > ceiling}<span class="capped"> → {ceiling}</span>{/if}
+          {#if ceiling !== null && eff[attr.id] > ceiling}<span class="capped">{ceiling}</span
+            >{:else}{Math.round(eff[attr.id])}{#if delta !== 0}<span
+                class="delta"
+                class:buff={delta > 0}
+                class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
+              >{/if}{/if}
         </span>
       </div>
     </div>
@@ -882,10 +887,9 @@
     margin-left: 3px;
     font-size: 11.5px;
   }
-  /* Weakest Weapon Master: the value formulas use. */
+  /* Weakest Weapon Master: the value formulas use, held at the ceiling. */
   .capped {
-    color: var(--danger);
-    font-size: 11.5px;
+    color: var(--accent);
   }
 
   .delta.buff {
