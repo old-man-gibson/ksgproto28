@@ -27,8 +27,8 @@ walking.
 ### 2.1 Arrival (`settleArrival`, actions.ts)
 
 Called by every arrival path after its ambush check: the end of a walked
-journey (`tickTravel`, which also covers tower climbs) and the caravan
-(`fastTravelTo`). An ambushed arrival never settles; the forced fight owns it.
+journey (`tickTravel`, which also covers tower climbs and ladder ride legs) and
+the caravan (`fastTravelTo`, core only: no UI calls it since 2026-11-04). An ambushed arrival never settles; the forced fight owns it.
 An intermediate halt of a multi-leg journey never settles either.
 
 On a peaceful final arrival, in order:
@@ -96,7 +96,8 @@ road crosses floors. The activity starts on arrival.
 The map's `?` places, one visible road past known ground, are walkable.
 `findPath(..., { unknownDest: true })` lets only the final hop be
 undiscovered. Without the option `findPath` still refuses unknown
-destinations (tests/map.test.ts), which is what the caravan price uses.
+destinations (tests/map.test.ts), which is what the caravan price
+(`fastTravelCost`, core only) uses.
 Unknown names stay hidden everywhere: the card, the travel header, the
 journey line and the log say "Unknown place".
 

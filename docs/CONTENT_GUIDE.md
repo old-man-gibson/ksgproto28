@@ -462,7 +462,7 @@ frozen_hollow: {
   icon: '🥶',
   areaId: 'cragfall',                    // must exist in AREAS (which needs a REGION)
   map: { x: 30, y: 70 },                 // 0–100 × 0–75 canvas, per region
-  waypoint: false,                       // true = ⚡ fast-travel caravan stop
+  waypoint: false,                       // true only on the Foot: the "every spot can get home" lint anchors on it; no UI reads it since 2026-11-04
   desc: 'The wind stopped moving here years ago.',
   activities: [
     { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '🏹' },
@@ -1989,7 +1989,8 @@ a system — ask, or copy how `gather:` is bumped in
 - **Player damage sanity check**: `(2 + 1.2×STR + weapon) × skill mults × stance
   × (1 − monster resistance)`. A stance is ±15–50% on one axis with a real cost.
 - **Gold**: flows in from kills/jobs/selling (all ×goldGain); flows out through
-  fast travel. Price items so the *next* tier costs ~10–20 minutes of play.
+  shop purchases (fast travel has had no UI since 2026-11-04). Price items so
+  the *next* tier costs ~10–20 minutes of play.
 
 ## 7. Save compatibility
 

@@ -124,8 +124,8 @@ connection. Each fires once, at most one per tick.
 Navigation: the Location tab has a **collapsible world map** (SVG, per region) —
 click any discovered spot to auto-route a multi-leg walk (Dijkstra over discovered
 spots, honoring one-way and hidden paths); undiscovered neighbors show as "???".
-**⚡ Waypoints** (Village Square, Hamlet Square, Malgeri Base) offer instant caravan
-fast travel for gold — the game's first gold sink.
+Routes cross floors: a pin on another floor is reached by ladder rides plus roads
+(docs/NAVIGATION.md §2.6).
 
 Combat styles: **nine generic stances** (Neutral, Frenzy, Crush, Cleave, Quick,
 Evasive, Finesse, Brace, Flurry) with distinct goals, plus **weapon schools** —
