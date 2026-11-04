@@ -1151,6 +1151,104 @@ describe('a probe whose route is shut', () => {
       ADJACENCY.set('kr_camp', roads);
     }
   });
+
+  /** The road into the field shut: the field is unreachable, the meadow is not. */
+  function shutField(): () => void {
+    const roads = ADJACENCY.get('kr_gate')!;
+    ADJACENCY.set('kr_gate', roads.filter((e) => e.to !== 'kr_field'));
+    return () => ADJACENCY.set('kr_gate', roads);
+  }
+
+  /** A hold on the field, then its probe at a shut road, with the meadow proven. */
+  function probeAtShutRoad(seed: number): { g: Game; open: () => void } {
+    const g = world(seed);
+    const s = g.state;
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+    expect(pending(g).phase).toBe('hold');
+    s.proven = { spot: 'kr_meadow', activity: 'hunt' };
+    recovered(g);
+    const open = shutField();
+    s.totalTicks = pending(g).until! - 1;
+    g.tick(); // the wait is over: a probe
+    expect(pending(g).phase).toBe('return');
+    g.tick(); // no road to the field
+    return { g, open };
+  }
+
+  it('with a proven hunt it hunts there, keeps the target, and retries it after 200 wins', () => {
+    const { g, open } = probeAtShutRoad(60);
+    const s = g.state;
+    try {
+      expect(pending(g)).toMatchObject({
+        phase: 'fallback',
+        target: { spot: 'kr_field', activity: 'hunt' },
+        fallback: { spot: 'kr_meadow', activity: 'hunt' },
+        wins: 0,
+        probes: 1,
+      });
+      expect(pending(g).until).toBe(s.totalTicks + FALLBACK_TICKS);
+      expect(lines(g)).toContain('Test Field: no known route back. Hunting Test Meadow for 200 wins or 2 h, then retrying.');
+    } finally {
+      // The road opens again while the character hunts the meadow.
+      open();
+    }
+    for (let i = 0; i < 100 && !(s.spot === 'kr_meadow' && s.activity === 'hunt'); i++) g.tick();
+    expect(s.spot).toBe('kr_meadow');
+    pending(g).wins = FALLBACK_WINS - 1;
+    win(g, 'kr_meadow');
+    expect(pending(g)).toMatchObject({ phase: 'return', target: { spot: 'kr_field' }, probes: 1 });
+    for (let i = 0; i < 100 && !(s.spot === 'kr_field' && s.activity === 'hunt'); i++) g.tick();
+    expect(s.spot).toBe('kr_field');
+    expect(s.activity).toBe('hunt');
+    expect(pending(g).phase).toBe('return');
+  });
+
+  it('still shut at the retry: it falls back again, and the target is still kept', () => {
+    const { g, open } = probeAtShutRoad(61);
+    const s = g.state;
+    try {
+      for (let i = 0; i < 100 && !(s.spot === 'kr_meadow' && s.activity === 'hunt'); i++) g.tick();
+      pending(g).wins = FALLBACK_WINS - 1;
+      win(g, 'kr_meadow');
+      expect(pending(g).phase).toBe('return');
+      g.tick(); // the road is still shut
+      expect(pending(g)).toMatchObject({
+        phase: 'fallback',
+        target: { spot: 'kr_field' },
+        fallback: { spot: 'kr_meadow' },
+        wins: 0,
+        probes: 2,
+      });
+    } finally {
+      open();
+    }
+  });
+
+  it('only a spot the return never walks into loses its target', () => {
+    const g = world(62);
+    const s = g.state;
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+    s.proven = { spot: 'kr_meadow', activity: 'hunt' };
+    recovered(g);
+    SPOTS.kr_field.forced = true; // the field turned into an ambush since the hold began
+    try {
+      s.totalTicks = pending(g).until! - 1;
+      g.tick();
+      g.tick();
+      expect(pending(g)).toMatchObject({ phase: 'fallback', target: null, fallback: { spot: 'kr_meadow' } });
+      expect(lines(g)).toContain('Test Field: forced fight, not re-entered. Hunting Test Meadow for 200 wins.');
+      // And with no proven hunt there is nothing to fall back to: the return ends.
+      s.proven = null;
+      s.pendingReturn = { target: { spot: 'kr_field', activity: 'hunt' }, phase: 'return', wins: 0, probes: 0 };
+      s.spot = 'kr_camp';
+      s.activity = null;
+      g.tick();
+      expect(s.pendingReturn).toBeNull();
+      expect(lines(g)).toContain('Test Field: forced fight, not re-entered. No safer hunt known.');
+    } finally {
+      delete SPOTS.kr_field.forced;
+    }
+  });
 });
 
 describe('a knockout at the fallback right after the retry', () => {

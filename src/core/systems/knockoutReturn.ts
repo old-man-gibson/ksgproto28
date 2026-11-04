@@ -446,10 +446,12 @@ function driveTo(state: GameState, bus: EventBus, goal: ReturnSpot): Drive {
 }
 
 /**
- * The goal cannot be reached or started any more. A target falls back to the
- * proven hunt, or with none waits out a hold on itself; a fallback waits out a
- * hold on the target. Only a fallback with no target to hold on ends the
- * return.
+ * The goal cannot be reached or started any more. A target that is never
+ * walked back into (forced, the wall, a festival floor) falls back to the
+ * proven hunt with no target, or ends the return when there is none. Any other
+ * target is kept: it falls back to the proven hunt and is retried after 200
+ * wins or 2 h, or with no proven hunt waits out a hold on itself. A fallback
+ * waits out a hold on its target; with no target it ends the return.
  */
 function giveUp(state: GameState, bus: EventBus, p: PendingReturn): void {
   if (p.phase === 'fallback') {
@@ -462,34 +464,60 @@ function giveUp(state: GameState, bus: EventBus, p: PendingReturn): void {
     return;
   }
   const target = p.target;
-  const fb = target ? usableHunt(state, state.proven, target.spot) : null;
-  if (target && fb) {
-    state.pendingReturn = fallbackPhase(state, null, fb, 0);
-    say(
-      bus,
-      text('knockout.blocked_fallback', {
-        spot: spotName(target.spot),
-        why: whyText(returnBlock(state, target) ?? 'route'),
-        fallback: spotName(fb.spot),
-        wins: FALLBACK_WINS,
-      }),
-    );
-    return;
-  }
   if (!target) {
     state.pendingReturn = null;
     return;
   }
-  // No proven hunt to fall back to: wait at the haven and try the target again
-  // later, the wait doubling with each failure. A road that is shut now may be
-  // open at the next probe, so the return is not given up.
+  const block = returnBlock(state, target) ?? 'route';
+  const why = whyText(block);
+  const fb = usableHunt(state, state.proven, target.spot);
+
+  // A spot the return never walks into (a forced spot or road, the wall, a
+  // festival floor) loses its target: there is nothing to retry.
+  if (block === 'forced_spot' || block === 'forced_road' || block === 'wall' || block === 'festival') {
+    if (fb) {
+      state.pendingReturn = fallbackPhase(state, null, fb, 0);
+      say(
+        bus,
+        text('knockout.blocked_fallback', {
+          spot: spotName(target.spot),
+          why,
+          fallback: spotName(fb.spot),
+          wins: FALLBACK_WINS,
+        }),
+      );
+    } else {
+      state.pendingReturn = null;
+      say(bus, text('knockout.blocked_idle', { spot: spotName(target.spot), why }));
+    }
+    return;
+  }
+
+  // Anything else (a road shut now, an activity that cannot start now) may be
+  // open at the next try, so the target is kept and the failure counted: the
+  // proven hunt for 200 wins or 2 h, then the target again; with no proven
+  // hunt, a hold at the haven whose wait doubles with each failure.
   const probes = p.probes + 1;
+  if (fb) {
+    state.pendingReturn = fallbackPhase(state, target, fb, probes);
+    say(
+      bus,
+      text('knockout.blocked_retry', {
+        spot: spotName(target.spot),
+        why,
+        fallback: spotName(fb.spot),
+        wins: FALLBACK_WINS,
+        hours: FALLBACK_TICKS / (3600 * TPS),
+      }),
+    );
+    return;
+  }
   state.pendingReturn = holdPhase(state, target, probes);
   say(
     bus,
     text('knockout.blocked_hold', {
       spot: spotName(target.spot),
-      why: whyText(returnBlock(state, target) ?? 'route'),
+      why,
       minutes: minutes(holdTicks(probes)),
     }),
   );
