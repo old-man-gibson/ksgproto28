@@ -51,6 +51,34 @@ walk (`startTravel` unplanned, `travelPlanTo`), `selectActivity`,
 `cancelTravelPlan`, the caravan, a climb, a performance, the defeat retreat,
 an ambush and a blocked route. It is consumed on arrival. It survives a save.
 
+**Knockout return** (`systems/knockoutReturn.ts`, plan:
+`docs/plans/knockout-return.md`, 2026-11-04, save v63). The defeat retreat
+still moves the character to a haven and clears the journey and the activity.
+It is no longer where the character stops. The knockout records the work it
+interrupted (`state.pendingReturn`), recovery runs to 95% (or the hunt's rest
+target, when higher; 60% if HP cannot recover), and the tick walks back with
+`goAndDo`, or with `climbTo` to the target's floor and then `goAndDo` when no
+road crosses floors. The activity starts on arrival.
+
+- The return's arrival goes through `startActivity`, which does not clear the
+  return. `selectActivity` is the player's pick and does clear it, as do the
+  player's accepted travel, climb and caravan commands (`Game`) and a prestige.
+  A win at the target also ends it.
+- It never walks into a forced fight: not a forced spot, not a forced last
+  road, not a spot reachable only through a forced spot, not `f11_wall`, not a
+  festival floor. Those, and 5 knockouts in a row at one spot, fall back to the
+  `proven` hunt (the last spot where 10 fights were won in a row), retried
+  after 200 wins or 2 h; with no usable proven hunt the character waits at the
+  haven and probes the target after 10, 20, 40, then 80 minutes. A target whose
+  route is shut at the probe (or whose activity cannot start) is kept: the
+  character hunts the proven spot for 200 wins or 2 h and tries again, or with
+  no proven hunt holds again with the doubled wait. Only a spot the return
+  never walks into loses its target.
+- A knockout with no activity running and no forced fight (an idle character
+  finished by a condition) sends the character nowhere. A forced fight lost
+  with no activity selected is the ambush the player walked into, and counts
+  as work: it falls back like any forced-spot loss.
+
 ### 2.2 Go and do (`goAndDo`, `setJourneyIntent`, locations.ts)
 
 - `goAndDo(spot, activity)`: standing there, start it; otherwise
@@ -281,5 +309,7 @@ fight, or with no open route.
 ## 6. Open
 
 - The hover card overlaps neighbouring nodes on a narrow panel.
-- The defeat retreat does not resume the haven's activity (retreat is not an
-  arrival; the defeat rule of 2026-09-12 accepted idling there).
+- The defeat retreat is not an arrival and does not resume the haven's
+  activity. The knockout return (§2.1) walks back to the interrupted work
+  instead. The character idles after a knockout only when the fall cannot be
+  returned to and no proven hunt is usable.
