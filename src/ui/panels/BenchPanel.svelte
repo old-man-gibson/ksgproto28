@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { gs, game } from '../state.svelte';
+  import { cloneBlocked, cloneRules } from '../../core/systems/clones';
   import { MATERIALS, QUALITY_TIERS, SKILLS, STATUSES } from '../../core/registry';
   import { RUNE_PATTERNS } from '../../core/data/runes.data';
   import { PREPS, UNIFORMITY } from '../../core/data/preps.data';
@@ -827,6 +828,15 @@
           All {baseHeld > 1 ? baseHeld : ''}
         </button>
         <button class="small" disabled={!ok} onclick={() => startRun(null)}>Keep going</button>
+      {/if}
+      <!-- Shadow Clone (systems/clones.ts): a clone keeps working this layout from your stock. -->
+      {#if !carving && cloneRules(gs)}
+        <button
+          class="small"
+          disabled={!ok || !!cloneBlocked(gs)}
+          title="A clone makes this layout from your stock, at 40% of your speed"
+          onclick={() => game.sendCloneToBench(disc.id, bench, { duration })}>👥 Send a clone</button
+        >
       {/if}
       <button class="small" onclick={clear}>Clear</button>
     {/if}

@@ -162,9 +162,26 @@ export function raiseSkillCap(state: GameState, bus: EventBus, id: string, by = 
   });
 }
 
-function addSkillXp(state: GameState, bus: EventBus, id: string, amount: number): void {
+/**
+ * A share every skill XP grant is paid at, while `run` runs: a Shadow Clone's
+ * bench craft pays its own share (systems/clones.ts). Synchronous, so one slot
+ * is enough; the outer value is restored.
+ */
+let xpScale = 1;
+export function scaledSkillXp<T>(scale: number, run: () => T): T {
+  const outer = xpScale;
+  xpScale = outer * scale;
+  try {
+    return run();
+  } finally {
+    xpScale = outer;
+  }
+}
+
+function addSkillXp(state: GameState, bus: EventBus, id: string, base: number): void {
   const s = state.skills[id];
   if (!s) return;
+  const amount = base * xpScale;
   const cap = skillCap(state, id);
   // At the ceiling, XP is DISCARDED — not banked like a retuned curve's
   // leftovers. Time spent maxed buys nothing, which is what makes a cap raise

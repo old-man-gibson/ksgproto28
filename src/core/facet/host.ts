@@ -9,7 +9,7 @@ import { applyStatus, attrCeiling, findStatus, removeStatus, statueOf } from '..
 import { attrXpNeeded, effectiveAttr, setXpRouter } from '../systems/attributes';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { finalAttributes, getDerivedStats } from '../systems/derived';
-import { currentActivity } from '../systems/actions';
+import { setCloneHost, type CloneRules } from '../systems/clones';
 import { appendLog } from '../systems/log';
 import { abilityStrike, isSpotBoss } from '../systems/combat';
 import { monsterStats } from '../systems/monsterStats';
@@ -111,8 +111,9 @@ const STATUS_SCHEMA = {
     parryContest: { kind: 'meta' },
     blowCut: { kind: 'meta' },
     pureBlows: { kind: 'meta' },
-    // Shadow Clone: each clone's share of a work cycle (statuses.ts cloneMult).
-    cloneShare: { kind: 'meta' },
+    // Shadow Clone: a deployed clone's yield and skill XP shares (systems/clones.ts).
+    cloneYield: { kind: 'meta' },
+    cloneXp: { kind: 'meta' },
   },
 };
 
@@ -374,6 +375,46 @@ export function createFacetHost(getState: () => GameState): FacetHost {
 export function installFacet(): void {
   globalThis.Facet.install(createFacetHost(() => boundState() as GameState));
   setXpRouter(routeAttrXp);
+  setCloneHost({ rules: cloneRulesOf, synced: syncCloneCount });
+}
+
+// ---------- Shadow Clone: the clones are the game's (systems/clones.ts) ----------
+//
+// The document carries the numbers on one cell: its cap is the most clones out
+// at once, its status's `cloneYield` and `cloneXp` the shares a clone's work
+// pays, and its value is how many are out, which the carrier turns into the
+// max-mana reserve. The game deploys, works and recalls them.
+
+/** The held document's clone cell, with a context to evaluate it in; null without one. */
+function cloneCell(state: GameState) {
+  for (const doc of state.facets ?? []) {
+    const cell = doc.cells?.find((c) => typeof c.status?.cloneYield === 'number');
+    if (cell) return { doc, cell, ctx: { ref: PLAYER_REF, facet: doc, bindings: {} } };
+  }
+  return null;
+}
+
+function cloneRulesOf(state: GameState): CloneRules | null {
+  const F = globalThis.Facet;
+  const found = cloneCell(state);
+  if (!F?.ready() || !found) return null;
+  bindFacets(state);
+  const yieldShare = found.cell.status!.cloneYield as number;
+  const xp = found.cell.status!.cloneXp;
+  return {
+    max: Math.max(0, Math.floor(F.evalExpr(found.cell.cap, found.ctx))),
+    yieldShare,
+    xpShare: typeof xp === 'number' ? xp : yieldShare,
+  };
+}
+
+function syncCloneCount(state: GameState): void {
+  const F = globalThis.Facet;
+  const found = cloneCell(state);
+  if (!F?.ready() || !found) return;
+  bindFacets(state);
+  const out = state.clones?.length ?? 0;
+  if ((found.cell.state?.v ?? 0) !== out) F.cellStep(found.cell, 'set', out, found.ctx);
 }
 
 // ---------- Weakest Weapon Master: XP past the ceiling ----------
@@ -413,38 +454,6 @@ function routeAttrXp(state: GameState, attr: AttributeId, amount: number): boole
     if (levels !== hidden.state?.v) F.cellStep(hidden, 'set', levels, ctx);
   }
   return true;
-}
-
-// ---------- Shadow Clone: the work clones join ----------
-//
-// The `work` event names what the player is working at, as a number: a
-// bench run, or a gathering or job activity, hashed; 0 for anything else
-// (a fight, training, travel, nothing). Raised when it changes, and once
-// after each load, so a document can tell the same work from new work.
-
-const lastWork = new WeakMap<GameState, number>();
-
-/** FNV-1a over the key, never 0: 0 means no work. */
-function workHash(key: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 0x01000193) >>> 0;
-  return h || 1;
-}
-
-function workKey(state: GameState): number {
-  if (state.travel) return 0;
-  if (state.benchWork) return workHash('bench:' + state.benchWork.disciplineId);
-  const act = currentActivity(state);
-  return act && (act.kind === 'gather' || act.kind === 'job') ? workHash('act:' + act.id) : 0;
-}
-
-/** Each game tick, before the activity: tell the ability when the work changes. */
-export function tickWork(state: GameState): void {
-  if (!state.facets?.length) return;
-  const key = workKey(state);
-  if (lastWork.get(state) === key) return;
-  lastWork.set(state, key);
-  facetSignal(state, 'work', { key });
 }
 
 // ---------- A document's option (Weakest Weapon Master's stance) ----------
