@@ -7,6 +7,8 @@
   import { attrXpNeeded, effectiveAttrs } from '../../core/systems/attributes';
   import {
     REVEAL_FRACTION,
+    latentXp,
+    manifestsByXp,
     skillCap,
     skillXpNeeded,
     skillTierName,
@@ -515,8 +517,18 @@
           <span class="chev"></span>
           <span class="s-icon">❓</span>
           <span class="name dim">???</span>
-          <span class="reqs small dim">might manifest: {def.unlock.map(condText).join(', ')}</span>
+          <span class="reqs small dim">
+            might manifest: {def.unlock.map(condText).join(', ')}{#if manifestsByXp(def)}; or by use, {Math.floor(latentXp(gs, def.id))}/{skillXpNeeded(def.id, 1)} XP{/if}
+          </span>
         </div>
+        <!-- A held skill under a locked parent (Arcana under Magic). -->
+        {#if node.children.length > 0}
+          <div class="children">
+            {#each node.children as child (child.def.id)}
+              {@render skillNode(child)}
+            {/each}
+          </div>
+        {/if}
       </div>
     {/if}
   {/snippet}

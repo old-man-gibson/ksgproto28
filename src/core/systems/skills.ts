@@ -85,10 +85,51 @@ export function checkDiscovery(state: GameState, bus: EventBus, tags: string[]):
     if (isUnlocked(state, def.id)) continue;
     if (!skillTrainedBy(def, tags)) continue;
     if (!conditionsMet(state, def.unlock)) continue;
-    state.skills[def.id] = { level: 1, xp: 0 };
-    bus.emit({ type: 'skill:unlock', id: def.id });
-    bus.emit({ type: 'log', msg: text('skills.manifested', { icon: def.icon, name: def.name }), kind: 'skill' });
+    manifest(state, bus, def);
   }
+}
+
+/**
+ * Enter a skill at level 1. XP it banked while locked (`skillLatent`) pays
+ * for that first level; anything past the level's cost carries into it.
+ */
+function manifest(state: GameState, bus: EventBus, def: SkillDef): void {
+  const banked = state.skillLatent?.[def.id] ?? 0;
+  if (state.skillLatent && def.id in state.skillLatent) delete state.skillLatent[def.id];
+  state.skills[def.id] = { level: 1, xp: Math.max(0, banked - skillXpNeeded(def.id, 1)) };
+  bus.emit({ type: 'skill:unlock', id: def.id });
+  bus.emit({ type: 'log', msg: text('skills.manifested', { icon: def.icon, name: def.name }), kind: 'skill' });
+  const gained = settleLevels(state.skills[def.id], skillProgression(def.id));
+  for (let i = gained; i > 0; i--) {
+    bus.emit({ type: 'skill:levelup', id: def.id, level: state.skills[def.id].level - i + 1 });
+  }
+}
+
+// ---------- Latent XP (user, 2026-11-03) ----------
+
+/**
+ * A skill gated only by attribute thresholds (Magic, Arcana, Devotion,
+ * Psionics) also manifests by use: XP its actions would pay it while it is
+ * locked is banked, and once the bank holds its first level's worth
+ * (`skillXpNeeded(id, 1)`) it manifests, whatever the attributes say.
+ * User: "magic should show up when you hit the first magic level's worth of
+ * xp". Skills gated on another skill, a wielded weapon or a counter keep
+ * their gates: banking would let a school open before its weapon.
+ */
+export function manifestsByXp(def: SkillDef): boolean {
+  return def.unlock.length > 0 && def.unlock.every((c) => c.type === 'attr');
+}
+
+/** XP banked toward a locked skill's first level. */
+export function latentXp(state: GameState, skillId: string): number {
+  return state.skillLatent?.[skillId] ?? 0;
+}
+
+function bankLatentXp(state: GameState, bus: EventBus, def: SkillDef, amount: number): void {
+  if (!state.skillLatent) state.skillLatent = {};
+  // A locked skill counts as level 1 for the practice share.
+  state.skillLatent[def.id] = latentXp(state, def.id) + practiceXp(state, `skill:${def.id}`, 1, amount);
+  if (state.skillLatent[def.id] >= skillXpNeeded(def.id, 1)) manifest(state, bus, def);
 }
 
 /**
@@ -217,10 +258,15 @@ export function grantDiscoveryXp(
     if (spec?.domain !== domain) continue;
     addSkillXp(state, bus, id, spec.discovery * weight * mult);
   }
+  for (const def of Object.values(SKILLS)) {
+    if (def.novelty?.domain !== domain || isUnlocked(state, def.id) || !manifestsByXp(def)) continue;
+    bankLatentXp(state, bus, def, def.novelty.discovery * weight * mult);
+  }
 }
 
 /**
- * Grant XP to every unlocked skill the action trains (see `skillTrainedBy`).
+ * Grant XP to every unlocked skill the action trains (see `skillTrainedBy`),
+ * and bank it for every locked one that manifests by XP (`manifestsByXp`).
  *
  * `sourceKey` names the specific input behind the payout — a monster id, a book
  * id, whoever was talked to. Skills that learn by drill ignore it entirely;
@@ -244,11 +290,25 @@ export function grantSkillXp(
     if (!def || !skillTrainedBy(def, tags)) continue;
     addSkillXp(state, bus, id, amount * mult * consumeNovelty(state, def, sourceKey));
   }
+  // After the held skills, so one that manifests here is not paid twice.
+  for (const def of Object.values(SKILLS)) {
+    if (isUnlocked(state, def.id) || !manifestsByXp(def) || !skillTrainedBy(def, tags)) continue;
+    bankLatentXp(state, bus, def, amount * mult * consumeNovelty(state, def, sourceKey));
+  }
 }
 
-/** Grant XP to one specific skill (quest rewards); no-op if not yet unlocked. */
+/**
+ * Grant XP to one specific skill (quest rewards). A locked skill that
+ * manifests by XP banks it; any other locked skill gets nothing.
+ */
 export function grantSkillXpDirect(state: GameState, bus: EventBus, skillId: string, amount: number): void {
-  if (amount <= 0 || !state.skills[skillId]) return;
+  if (amount <= 0) return;
+  const def = SKILLS[skillId];
+  if (def && !state.skills[skillId] && manifestsByXp(def)) {
+    bankLatentXp(state, bus, def, amount * getDerivedStats(state).skillXp);
+    return;
+  }
+  if (!state.skills[skillId]) return;
   addSkillXp(state, bus, skillId, amount * getDerivedStats(state).skillXp);
 }
 
@@ -292,8 +352,16 @@ function buildNode(state: GameState, def: SkillDef): SkillTreeNode | null {
       .filter((n): n is SkillTreeNode => n !== null);
     return { def, state: 'unlocked', children };
   }
-  // Locked skills are hinted only when their parent is known and every
-  // threshold is within reach (REVEAL_FRACTION) or Foresight is bought;
+  // A held skill is always shown. Arcana opens at INT 10 and Magic, its
+  // parent, at INT 15, so a skill can be held under a locked one: the locked
+  // one then shows as hinted with the held branch beneath it.
+  const held = Object.values(SKILLS)
+    .filter((d) => d.parent === def.id)
+    .map((d) => buildNode(state, d))
+    .filter((n): n is SkillTreeNode => n !== null && heldWithin(n));
+  if (held.length > 0) return { def, state: 'hinted', children: held };
+  // Otherwise locked skills are hinted only when their parent is known and
+  // every threshold is within reach (REVEAL_FRACTION) or Foresight is bought;
   // their own subtree stays invisible (mystery preserved).
   if (skillRevealed(state, def)) {
     return { def, state: 'hinted', children: [] };
@@ -301,10 +369,14 @@ function buildNode(state: GameState, def: SkillDef): SkillTreeNode | null {
   return null;
 }
 
+function heldWithin(node: SkillTreeNode): boolean {
+  return node.state === 'unlocked' || node.children.some(heldWithin);
+}
+
 /**
  * The full skill forest, grouped by category in display order. Undiscovered
- * roots (Magic before INT 15, resistances before exposure) are absent; empty
- * categories are omitted.
+ * roots (resistances before exposure) are absent unless a skill under them
+ * is held; empty categories are omitted.
  */
 export function skillTreeByCategory(
   state: GameState,

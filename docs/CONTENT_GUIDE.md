@@ -1020,6 +1020,19 @@ herbalism: {
   Quest, equipped-tag and counter-ceiling conditions are not thresholds and
   never hide a skill on their own. The same 90% rule hides the *next milestone*
   line in the Skills panel. The Foresight prestige boon lifts both.
+- **Manifesting by XP (user, 2026-11-03).** A skill whose `unlock` is
+  attribute thresholds only (`manifestsByXp`: today Magic, Arcana, Devotion,
+  Psionics) also manifests by use. XP its actions would pay it while locked
+  is banked in `state.skillLatent`; once the bank holds its first level's
+  worth (`skillXpNeeded(id, 1)`) it manifests at level 1 whatever the
+  attributes say, and the bank past that cost carries into the level. A
+  manifest by the attribute gate also spends the bank this way. The ??? row
+  shows the bank ("or by use, 12/20 XP"). Skills gated on another skill, a
+  wielded weapon, a counter or a quest never bank: their gates stand.
+- **A held skill is always shown.** Arcana opens at INT 10 and its parent
+  Magic at INT 15, so a skill can be held under a locked parent. The locked
+  parent then shows as a ??? row with the held branch beneath it
+  (`buildNode`, skills.ts).
 - Actives: `active: { type: 'strike', damageMult: 2.2, cooldown: 80 }` or
   `{ type: 'spell', power: 3, cooldown: 100, damageType: 'heat' }` or
   `{ type: 'buff', mods: [...], duration: 30, cooldown: 120 }` — fired by the

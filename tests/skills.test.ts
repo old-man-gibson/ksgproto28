@@ -9,6 +9,8 @@ import { Game } from '../src/core/game';
 import {
   checkDiscovery,
   grantSkillXp,
+  latentXp,
+  manifestsByXp,
   noveltyRemaining,
   skillXpNeeded,
   hintedSkills,
@@ -228,6 +230,73 @@ describe('categorized skill tree', () => {
     g.state.skills.smithing = { level: 2, xp: 0 };
     const ids = skillTreeByCategory(g.state).map((s) => s.category.id);
     expect(ids).toEqual(['resistance', 'craft']);
+  });
+
+  it('a held skill under a locked parent is shown, the parent as hinted', () => {
+    // Arcana opens at INT 10, Magic at INT 15: a save can hold Arcana and a
+    // word skill with no Magic (user's save, 2026-11-03).
+    const g = newGame();
+    g.state.skills.arcana = { level: 3, xp: 0 };
+    g.state.skills.word_spark = { level: 12, xp: 0 };
+    const magic = skillTreeByCategory(g.state)
+      .find((s) => s.category.id === 'magic')!
+      .nodes.find((n) => n.def.id === 'magic')!;
+    expect(magic.state).toBe('hinted');
+    const arcana = magic.children.find((c) => c.def.id === 'arcana')!;
+    expect(arcana.state).toBe('unlocked');
+    expect(arcana.children.find((c) => c.def.id === 'word_spark')?.state).toBe('unlocked');
+    // Only the held branch: no other locked root under Magic is revealed.
+    expect(magic.children.map((c) => c.def.id)).toEqual(['arcana']);
+  });
+});
+
+describe('manifesting by XP (user, 2026-11-03)', () => {
+  it('covers the skills gated on attributes alone', () => {
+    const byXp = Object.values(SKILLS).filter(manifestsByXp).map((d) => d.id).sort();
+    expect(byXp).toEqual(['arcana', 'devotion', 'magic', 'psionics']);
+  });
+
+  it('banks XP while locked and manifests at its first level’s worth, keeping the rest', () => {
+    const g = newGame();
+    g.state.attrs.int.level = 9; // under both gates
+    const mult = getDerivedStats(g.state).skillXp;
+    const cost = skillXpNeeded('magic', 1);
+    grantSkillXp(g.state, g.bus, ['combat', 'magic', 'arcane'], (cost / mult) * 0.75);
+    expect(g.state.skills.magic).toBeUndefined();
+    expect(latentXp(g.state, 'magic')).toBeCloseTo(cost * 0.75, 6);
+    grantSkillXp(g.state, g.bus, ['combat', 'magic', 'arcane'], (cost / mult) * 0.5);
+    expect(g.state.skills.magic).toEqual({ level: 1, xp: expect.closeTo(cost * 0.25, 6) });
+    expect(latentXp(g.state, 'magic')).toBe(0);
+    expect(g.state.skillLatent.magic).toBeUndefined();
+  });
+
+  it('a manifest by the attribute gate keeps what was banked past the first level', () => {
+    const g = newGame();
+    g.state.skillLatent.magic = 5;
+    g.state.attrs.int.level = 15;
+    checkDiscovery(g.state, g.bus, ['magic']);
+    expect(g.state.skills.magic).toEqual({ level: 1, xp: 0 }); // 5 is under the first level's 20
+    expect(g.state.skillLatent.magic).toBeUndefined();
+  });
+
+  it('weapon skills and schools never bank: their gates stand', () => {
+    const g = newGame();
+    g.state.skills.fighting = { level: 1, xp: 0 };
+    for (let i = 0; i < 50; i++) grantSkillXp(g.state, g.bus, ['combat', 'sword', 'style:quick'], 100);
+    expect(g.state.skills.swordsmanship).toBeUndefined();
+    expect(g.state.skills.school_ittou_ryu).toBeUndefined();
+    expect(g.state.skillLatent).toEqual({});
+  });
+
+  it('casting Spark at INT 9 brings Magic', () => {
+    const g = newGame();
+    g.state.attrs.int.level = 9;
+    g.state.skills.arcana = { level: 3, xp: 0 };
+    for (let i = 0; i < 10 && !g.state.skills.magic; i++) {
+      grantSkillXp(g.state, g.bus, ['combat', 'magic', 'arcane'], 4); // attackCastXp
+    }
+    expect(g.state.skills.magic?.level).toBeGreaterThanOrEqual(1);
+    expect(g.state.log.some((l) => l.msg.includes('Magic'))).toBe(true);
   });
 });
 
