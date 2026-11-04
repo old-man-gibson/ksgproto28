@@ -2,7 +2,7 @@
 id: navigation-alternatives
 title: Navigation alternatives — how the player moves, and how the map looks
 kind: epic
-status: planning
+status: execution
 system: navigation
 parent: ''
 save: ''
@@ -15,8 +15,10 @@ invariants:
   - wayfinding-sells-go-links
   - tutorial-focus
 done:
-  - The user has picked a direction from §5 and answered §8
-  - Every chosen item has a builder brief with the antagonist fixes in §6 written in
+  - N1 and N2 built, attacked by antagonist-code, merged
+  - N3 and N5 built, attacked, merged, screenshots at 1094 and 1440 px
+  - N4 built, attacked, merged; the Ascent panel has no buttons above 600 px
+  - N7 built after knockout-return, attacked, merged; Wayfinding text matches §9
 ---
 
 # Navigation alternatives
@@ -363,3 +365,35 @@ Notes taken:
 4. **Stretch.** May diagram maps stretch to the column's width? x can be up to 1.9× y. The forge's
    map editor still shows 4:3.
 5. **Level ranges.** Should pins show monster level ranges ("L7-9") for discovered places?
+
+## 9. Decisions (user, 2026-11-04)
+
+Marked on the decision page. Every mark matches the recommendation in §7.
+
+| Item | Decision | Effect |
+|---|---|---|
+| N1 Ride edges | Approved | Build |
+| N2 Corrections | Approved | Build |
+| N3 Surveyed plan | Approved | Build |
+| N4 Tower section | Approved | Build |
+| N5 Route line | Approved | Build |
+| N6 Place and Exits | Rejected | Direction A: the map stays on the page |
+| N7 Stations | Approved | Build, after knockout-return |
+| N8 Errands | Hold | Not built |
+| N9 Painted plates | Hold | Not built; the user paints when time allows |
+| Q2 Stations outside town | Free | Worked places get free go links. Wayfinding keeps quest go links outside town and "Trains at" to discovered places not yet worked |
+| Q3 Knockout owner | Automatic return | knockout-return K1 owns knockouts. While `pendingReturn` is set, Stations does not offer the fall spot |
+| Q4 Stretch | Approved | Diagram maps stretch to the column's width, capped at 8.1 px per unit across and 5.6 down |
+| Q5 Level ranges | Approved | Discovered pins print "L7-9" from public encounter lines (§5.2 N3) |
+
+## 10. Build order
+
+All branches stack on `ui-integration` until that lands on main.
+
+1. **Wave 1, in parallel.**
+   - N1 + N2, one builder. Owns `locations.ts`, `towers.ts`, `festival.ts`, `src/ui/lib/navigation.ts`,
+     `MapCard.svelte`, `tutorialFocus.ts` and docs/TUTORIAL.md.
+   - knockout-return (its own card), one builder. It does not edit the files above.
+2. **Wave 2.** N3 + N5, one builder (both redraw `MapCard.svelte`).
+3. **Wave 3.** N4 (the map panel and `AscentPanel.svelte`), then N7. N7 needs N1's ride edges and
+   knockout-return's `pendingReturn`.
