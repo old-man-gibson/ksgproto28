@@ -2,11 +2,11 @@
 id: knockout-return
 title: Knockout return — go back to work after a knockout
 kind: story
-status: planning
+status: execution
 system: combat
 parent: ''
 save: ''
-updated: 2026-11-03
+updated: 2026-11-04
 invariants:
   - completability
   - no-terminal-states
@@ -173,6 +173,9 @@ Transitions:
 - Resume at the haven's own work. 63 of 71 hunt spots have no work at their haven.
 - A return allowance of tokens. It brings back the dead stop at moderate spots.
 - A "Back to work" button. That would be a go-link, which the Wayfinding boon sells.
+  Superseded 2026-11-04: navigation-alternatives N7 (Stations) gives free go links to worked
+  places, and its "Back" row is approved. K1 still owns knockouts: while `pendingReturn` is
+  set, Stations does not offer the fall spot (navigation-alternatives §9, Q3).
 
 ## 6. Questions for the user
 
@@ -189,3 +192,17 @@ Transitions:
    to 5 stacks, for 60 s. Default: not now.
 6. Add a Combat-tab setting "After a knockout: return / stay"? It is one saved field. Default: not
    now.
+
+## 7. Decisions (user, 2026-11-04)
+
+Marked on the decision page. Every mark matches the default.
+
+| Item | Decision | Effect |
+|---|---|---|
+| The plan (K1–K4) | Approved | Build as written in §2 |
+| Q1 Fallback | Approved | 5 knockouts in a row: hunt `proven`, retry after 200 wins or 2 h |
+| Q2 Forced-spot loss | Approved | After losing at a forced spot: hunt `proven` (target null), else idle |
+| Q3 Forced roads | Rejected | The return never walks a forced road; it falls back instead |
+| Q4 Stronghold wall | Rejected | `f11_wall` is not a return target; it falls back instead |
+| Q5 Shaken | Hold | Not built |
+| Q6 Setting | Hold | Not built; the return always applies |
