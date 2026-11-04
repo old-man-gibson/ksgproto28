@@ -299,23 +299,80 @@ describe('ladder fold: which bands fold', () => {
   it('a band holding an uncleared floor is never folded, whatever the player chose', () => {
     for (let n = 0; n <= 16; n++) {
       for (const owned of [false, true]) {
-        const s = fresh();
-        clearFloors(s.stats, floorsUpTo(n));
-        if (owned) s.prestige.purchases.city_key = 1;
-        for (const lb of ladderBands(s, ASCENT)) {
-          const allCleared = floorsInBand(lb.band.id).every((f) => floorCleared(s, f));
-          for (const standing of [undefined, lb.band.id]) {
-            const foldable = bandFoldable(s, lb, standing);
-            expect(foldable, `${lb.band.id} after ${n} floors, standing ${standing}`).toBe(
-              !lb.titleOnly && !standing && allCleared,
+        for (const locked of [false, true]) {
+          const s = fresh();
+          clearFloors(s.stats, floorsUpTo(n));
+          if (owned) s.prestige.purchases.city_key = 1;
+          if (locked) s.festival = { lockedUntil: s.totalTicks + 5000 };
+          for (const lb of ladderBands(s, ASCENT)) {
+            const allCleared = floorsInBand(lb.band.id).every((f) => floorCleared(s, f));
+            const liveTerm = lb.cards.some((c) =>
+              (c.kind === 'floor' ? rungTerms(s, c.floor) : hubTerms(s, c.band)).terms.some((t) => !t.dim),
             );
-            if (!allCleared) {
-              for (const choice of [undefined, true, false]) expect(bandDrawnOpen(foldable, choice)).toBe(true);
+            for (const standing of [undefined, lb.band.id]) {
+              const foldable = bandFoldable(s, lb, standing);
+              const where = `${lb.band.id} after ${n} floors, key ${owned}, lockout ${locked}, standing ${standing}`;
+              expect(foldable, where).toBe(!lb.titleOnly && !standing && allCleared && !liveTerm);
+              if (!allCleared || liveTerm) {
+                for (const choice of [undefined, true, false]) expect(bandDrawnOpen(foldable, choice), where).toBe(true);
+              }
             }
           }
         }
       }
     }
+  });
+
+  it('a foldable band carries no term that is not dim', () => {
+    for (let n = 0; n <= 16; n++) {
+      for (const owned of [false, true]) {
+        for (const locked of [false, true]) {
+          const s = fresh();
+          clearFloors(s.stats, floorsUpTo(n));
+          if (owned) s.prestige.purchases.city_key = 1;
+          if (locked) s.festival = { lockedUntil: s.totalTicks + 5000 };
+          for (const lb of ladderBands(s, ASCENT)) {
+            if (!bandFoldable(s, lb, undefined)) continue;
+            for (const c of lb.cards) {
+              const { terms } = c.kind === 'floor' ? rungTerms(s, c.floor) : hubTerms(s, c.band);
+              expect(terms.filter((t) => !t.dim), `${lb.band.id} after ${n} floors`).toEqual([]);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('a festival won once and then lost keeps its band open: the lockout term stays in view', () => {
+    const s = fresh();
+    clearFloors(s.stats, floorsUpTo(16));
+    s.prestige.purchases.city_key = 1;
+    expect(s.stats['boss:f15_dark_room']).toBeGreaterThanOrEqual(1);
+    expect(s.stats['boss:f16_arena']).toBeGreaterThanOrEqual(1);
+    expect(floorCleared(s, FLOORS.ascent_f15)).toBe(true);
+    expect(floorCleared(s, FLOORS.ascent_f16)).toBe(true);
+    const festival = ladderBands(s, ASCENT).find((lb) => lb.band.id === 'ascent_festival')!;
+    // Won and not locked: nothing live on the band, it folds.
+    expect(bandFoldable(s, festival, undefined)).toBe(true);
+    // A later attempt is lost: floors read cleared and shut at once.
+    s.festival = { lockedUntil: s.totalTicks + 5000 };
+    expect(rungTerms(s, FLOORS.ascent_f15).kind).toBe('locked');
+    expect(bandFoldable(s, festival, undefined)).toBe(false);
+    expect(bandDrawnOpen(bandFoldable(s, festival, undefined), undefined)).toBe(true);
+    // The lockout runs out: the band folds again.
+    s.festival = { lockedUntil: s.totalTicks };
+    expect(bandFoldable(s, festival, undefined)).toBe(true);
+  });
+
+  it('a band cleared while its hub is still gated does not fold', () => {
+    const s = fresh();
+    clearFloors(s.stats, floorsUpTo(10));
+    expect(hubStatus(s, BANDS.ascent_upper)).toBe('gated');
+    const city = ladderBands(s, ASCENT).find((lb) => lb.band.id === 'ascent_upper')!;
+    expect(floorsInBand('ascent_upper').every((f) => floorCleared(s, f))).toBe(true);
+    expect(bandFoldable(s, city, undefined)).toBe(false);
+    s.prestige.purchases.city_key = 1;
+    expect(bandFoldable(s, city, undefined)).toBe(true);
   });
 
   it('a foldable band is drawn folded unless the player opened it', () => {

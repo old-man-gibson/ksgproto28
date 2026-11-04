@@ -75,13 +75,19 @@ export function bandProgress(state: GameState, lb: LadderBand): { cleared: numbe
 }
 
 /**
- * A band may fold only when every floor in it is cleared (a pass counts) and
- * the player is not standing in it. A band with an uncleared floor never
- * folds, so none of its gate terms is hidden. The next band, shown by name
- * only, has nothing to fold.
+ * A band may fold only when every floor in it is cleared (a pass counts), the
+ * player is not standing in it, and none of its cards (floor or hub) carries a
+ * term that is not dim. A band with an uncleared floor never folds, so none of
+ * its gate terms is hidden. A cleared floor can still carry a live term: floors
+ * 15 and 16 read cleared under a festival lockout, and a hub can be gated
+ * while its floors are cleared. The next band, shown by name only, has nothing
+ * to fold.
  */
 export function bandFoldable(state: GameState, lb: LadderBand, standingBand: string | undefined): boolean {
-  return !lb.titleOnly && lb.band.id !== standingBand && bandCleared(state, lb.band);
+  if (lb.titleOnly || lb.band.id === standingBand || !bandCleared(state, lb.band)) return false;
+  return !lb.cards.some((c) =>
+    (c.kind === 'floor' ? rungTerms(state, c.floor) : hubTerms(state, c.band)).terms.some((t) => !t.dim),
+  );
 }
 
 /**
