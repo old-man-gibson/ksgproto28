@@ -624,10 +624,12 @@
     }
 
     /* Sized by its text here, so not a container (a container's text width
-       would count as 0). */
+       would count as 0). The slot is as wide as its widest hour ("🕰️ about
+       23:00", 91px; this face has no tabular figures), so the hour turning
+       moves nothing. */
     .timesense {
       flex: 0 0 auto;
-      min-width: 0;
+      min-width: 7.1em;
       max-width: none;
       container-type: normal;
     }

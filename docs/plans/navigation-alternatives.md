@@ -427,3 +427,32 @@ Left for later:
 - The ⚡ waypoint mark on pins no longer has a function; it goes in N3.
 - Stale caravan text in README.md, docs/CONTENT_GUIDE.md and docs/NAVIGATION.md §2.1/§2.3 is fixed
   after knockout-return merges.
+  Done: ⚡ removed in N3; caravan text fixed on `ui-integration` 395e152 and docs/FORGE.md in
+  nav-plan.
+
+**N3 + N5 + click-to-open pin card:** branch `nav-plan` 2e26d4c, nine fix commits (tip 7778379),
+merged into `ui-integration` 35f6992.
+- **Checks.** `npm run verify` on the merged tree passed with 3,454 tests.
+- **Scope added by the user (§9).** No hover card. The first click opens the pin's card; a
+  second click walks. Region exits stay one click.
+- **Antagonist-code: FIX FIRST.** All findings accepted and fixed:
+  - the threat map rebuilt the plan per tick (now a stable Map);
+  - the gate card covered the tutorial's "→ Threshold" exit (the card now keeps clear of exit
+    labels);
+  - the journey line named an undiscovered destination;
+  - label overlaps at the real column widths of 703 and 757 px (`placeLabels` reworked; the test
+    sweeps 680–1100 px and the measured widths);
+  - blue-arc district tints (now warm and neutral tokens);
+  - two older layout jumps: the journey line slot and the strip height are now fixed.
+- **Manager additions:**
+  - `routeInfo` no longer prints a time for a hidden road;
+  - Tab moves from the selected pin into its card, and Escape returns focus to the pin;
+  - docs/FORGE.md waypoint text.
+- **After the merge.** At 1094 px the header clock's hour text changed width by 7 px (this face
+  has no tabular figures). Fixed with a fixed slot (`.timesense` min-width 7.1em under 1180 px).
+- **Kept in the UI:** `AREA_GROUND` (src/ui/lib/mapPlan.ts) holds ground per area. No core
+  `AreaDef.ground` field yet.
+- **Open:**
+  - phone width (part of A3);
+  - forced-road rendering on floors 12–14 and 19–20 checked in tests only;
+  - the strip can still grow if its activity buttons wrap to a second row.
