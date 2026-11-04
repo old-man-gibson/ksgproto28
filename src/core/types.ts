@@ -5808,9 +5808,10 @@ export interface LogEntry {
 /**
  * How an encounter ended for the player.
  *
- * `dead` is a death that is a setback: knockout consequences under its own
- * title. Calorie Burn's collapse produces it (facet/host.ts `defeat`); the
- * spirit walk will too, when it lands, on this same shape.
+ * `dead` is the spirit-walk failure state and NOTHING produces it yet. The
+ * hook is here so that when it lands it is one more outcome on a shape that
+ * already exists. An ability can end a fight with it through the `defeat`
+ * effect (facet/host.ts), as a death with knockout consequences; none does.
  */
 export type FightOutcome = 'won' | 'knocked_out' | 'dead';
 

@@ -508,7 +508,7 @@ CASES['bank: Calorie Burn eats, burns once the fight is dangerous, to the cutoff
   assert(lost.length === 0, 'the fight ended early');
   maxHp.v = 10;
   F.tick('a');
-  assert(lost.length === 1 && lost[0].outcome === 'dead', 'burned >= 9 x what was left did not end the fight as a death');
+  assert(lost.length === 1 && lost[0].outcome === 'knocked_out', 'burned >= 9 x what was left did not knock out');
   F.event('fightEnd', 'a', {});
   assert(v('burning') === 0 && v('fburn') === 0 && v('danger') === 0, 'the fight cells did not reset');
 };
@@ -556,7 +556,7 @@ CASES['bank: Calorie Burn at a 0% cutoff burns max HP faster once the store runs
   assert(Math.abs(v('debt') - before - 20) < 1e-9, 'a dry store burned ' + (v('debt') - before) + ' max HP in 10 ticks, not 20');
   maxHp.v = 2;
   F.tick('a');
-  assert(lost.length === 1 && lost[0].outcome === 'dead', 'the dry burn did not end at the 10% line');
+  assert(lost.length === 1 && lost[0].outcome === 'knocked_out', 'the dry burn did not end at the 10% line');
   // An empty store at a fight's start burns nothing, so it never trips.
   const second = calorieHost(0, { v: 100 });
   F.install(second.H);

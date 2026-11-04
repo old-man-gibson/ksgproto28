@@ -15,7 +15,8 @@ import type { GameState } from '../src/core/types';
  * Calorie Burn (Facet repo core/facet.bank.js, docs/FACET.md): dishes give
  * calories from their Well Fed, a full store costs up to 10% of every
  * attribute, a fight burns the store for a bonus, a long fight burns max HP
- * and can end as a death, and a 0% cutoff can run dry into a knockout.
+ * and ends in a knockout at 90% burned, and a dry store at a 0% cutoff burns
+ * max HP faster down to that line.
  */
 
 afterEach(() => globalThis.Facet.uninstall());
@@ -76,14 +77,14 @@ describe('Calorie Burn', () => {
     expect(cell(state, 'fburn')).toBeGreaterThan(0);
   });
 
-  it('max HP burned to 90% ends the fight as a death that is a setback', () => {
+  it('max HP burned to 90% knocks you out, with the cause on the defeat window', () => {
     const { state, game } = holding();
     intoFight(state, game);
     for (const e of state.combat!.enemies) if (e) e.hp = 1e9;
     debugSetCell(state, 'debt', 1e-5);
     for (let t = 0; t < 20 && state.combat; t++) game.step();
     expect(state.combat).toBeNull();
-    expect(state.lastFight?.outcome).toBe('dead');
+    expect(state.lastFight?.outcome).toBe('knocked_out');
     expect(state.lastFight?.cause).toMatch(/max HP burned away/);
     expect(state.recovering).toBe(true);
   });
@@ -101,7 +102,7 @@ describe('Calorie Burn', () => {
     expect(state.combat).toBeTruthy();
     expect(cell(state, 'debt')).toBeGreaterThan(0);
     for (let t = 0; t < 3_000 && state.combat; t++) game.step();
-    expect(state.lastFight?.outcome).toBe('dead');
+    expect(state.lastFight?.outcome).toBe('knocked_out');
     expect(state.lastFight?.cause).toMatch(/max HP burned away/);
   });
 });

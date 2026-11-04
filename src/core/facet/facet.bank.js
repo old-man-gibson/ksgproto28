@@ -674,7 +674,8 @@ B.weakest_weapon_master = {
 // seconds have passed in a fight, essentially turning it into a danger mode that begins kicking in".
 // And: "calorie burn shouldn't knock out the player immediately at 0% but rather accelerate the max
 // hp reduction and only knock you out when you hit 10% of your total max hp". The 10% line is the
-// collapse; it stays the death that is a setback (the 2026-09-26 ruling) until the user says otherwise.
+// collapse. Asked whether it stays a death, the user answered "Make it a knockout": the collapse is
+// a knockout, which replaces the 2026-09-26 ruling that it is a death that is a setback.
 //
 // Readings taken:
 //   - The store's cap is 400 + 30 x trained CON + STR (the card's settled body).
@@ -688,7 +689,7 @@ B.weakest_weapon_master = {
 //   - The peak grows with the cap: x1.25 each time the cap doubles past 400 (the user's "increase
 //     this cap as ... the calorie capacity increases").
 //   - The full-store penalty is 0 at 70% full and the whole -10% at 100%.
-//   - After 90 s of fight time, max HP burns at 0.4 a tick, absolute. The fight ends as a death
+//   - After 90 s of fight time, max HP burns at 0.4 a tick, absolute. The fight ends in a knockout
 //     when the burned HP reaches 90% of the max it was taken from (burned >= 9 x what is left).
 //   - At a 0% cutoff, once this fight's burn has emptied the store, max HP burns 2 a tick more
 //     (5 times the long-fight rate), from then on and whatever the fight time. An empty store at a
@@ -749,7 +750,7 @@ B.calorie_burn = {
       'Burn: It speeds up the longer it runs. It stops at your cutoff.',
       'Bonus: All attributes up to +100% as one fight burns 30% to 100% of the store.',
       'Grows: The peak bonus x1.25 each time the cap doubles past 400.',
-      'Costs: After 90 s in a fight, max HP burns. At 90% burned the fight ends as a death.',
+      'Costs: After 90 s in a fight, max HP burns. At 90% burned you are knocked out.',
       'Fails: At a 0% cutoff, running dry makes max HP burn 5 times faster.',
       'Recovers: Out of a fight max HP returns, fast while the store is full.',
     ].join('\n'),
@@ -808,7 +809,7 @@ B.calorie_burn = {
       when: { all: [{ cell: 'ticks', op: 'gte', v: { seconds: 90 } }, { cell: 'debt', op: 'lt', v: CB_GONE }] },
       do: [addCell('debt', 0.4)] },
     { id: 'collapse', on: 'tick', when: { all: [CB_OWED, { cell: 'debt', op: 'gte', v: CB_GONE }] },
-      do: [{ emit: 'world', verb: 'defeat', outcome: 'dead', cause: 'Calorie Burn: your max HP burned away.' }] },
+      do: [{ emit: 'world', verb: 'defeat', outcome: 'knocked_out', cause: 'Calorie Burn: your max HP burned away.' }] },
     { id: 'dry', on: 'tick',
       when: { all: [{ cell: 'cutoff', op: 'eq', v: 2 }, { cell: 'kcal', op: 'lte', v: 0 }, { cell: 'fburn', op: 'gt', v: 0 },
         { cell: 'debt', op: 'lt', v: CB_GONE }] },

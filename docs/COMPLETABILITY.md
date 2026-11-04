@@ -93,11 +93,6 @@ a "failed action":
 > compatible with this law *only* if failure costs time and resources and never
 > removes a path. **A failure that can be re-attempted is legal.** A failed
 > breakthrough must leave the cap re-raisable. A death must be a setback.
->
-> The first producer of the `dead` outcome is Calorie Burn's collapse
-> (2026-11-03, docs/FACET.md): a knockout's consequences under the title "You
-> died", and the burned max HP returns out of fights, fast once the store is
-> eaten back to full and slowly with no food at all.
 
 ---
 

@@ -37,7 +37,8 @@ done:
 > dry at a 0% cutoff is a knockout. Later that day the burn was made a danger
 > mode: it starts only once 33% of HP is gone or 20 s of fight time pass; and
 > running dry at 0% no longer knocks out: max HP burns 5 times faster down to
-> the collapse at 10%. Not built: the earning quest, and the
+> the collapse at 10%, which is now a knockout (the user: "Make it a knockout"),
+> not a death. Not built: the earning quest, and the
 > "settle while not worn" rules (one ability per run, so it is never taken off).
 > This card stays as the design record.
 
