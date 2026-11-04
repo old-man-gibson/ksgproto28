@@ -1,5 +1,5 @@
 import type { ItemInstance, RarityId, SlotId } from '../types';
-import { SLOT_NAMES } from '../types';
+import { SIZE_LADDER, SLOT_NAMES, sizeRank } from '../types';
 import { forgeKey, itemDefOf } from './assembly';
 import { itemName, itemValue } from './equipment';
 import { maxRuneSlots, runeRefKey } from './runes';
@@ -105,9 +105,9 @@ export function isMaxRarity(item: ItemInstance): boolean {
 
 /**
  * Identity for stacking. Two items bundle only when they are the same base
- * item with the same affix, the same rune-slot count, and the same runes
- * socketed — so "Vest (2 slots)" is one stack and "Swift Dagger (1 rune)" and
- * "Swift Dagger (3 runes)" are two.
+ * item with the same affix, the same rune-slot count, the same runes
+ * socketed and the same size — so "Vest (2 slots)" is one stack and "Swift
+ * Dagger (1 rune)" and "Swift Dagger (3 runes)" are two.
  *
  * Each rune goes through runeRefKey first: a carving is an object, and joined
  * raw every carving reads "[object Object]". Refs are sorted and joined with
@@ -116,11 +116,19 @@ export function isMaxRarity(item: ItemInstance): boolean {
  * A forged item adds its `forgeKey` (its parts and its grade): two different
  * swords never stack, two identical ones do. Static items key as they always
  * did.
+ *
+ * Size is part of the identity: a large Sharp vest and a medium Sharp vest are
+ * different gear (armour fits by size, weapons trade speed and damage for it).
+ * A medium item, size absent or 'medium', adds nothing to the key, so every key
+ * that existed before size joined it is unchanged. Keys are never saved: the
+ * only stored use is the open item window's local selection.
  */
 export function stackKey(item: ItemInstance): string {
   const runes = (item.runes ?? []).map(runeRefKey).sort().join(';');
+  const rank = sizeRank(item.size);
+  const sized = rank === sizeRank('medium') ? '' : `|@${SIZE_LADDER[rank]}`;
   const forged = item.forged ? `|${forgeKey(item.forged)}` : '';
-  return `${item.defId}|${item.affix?.name ?? ''}|${item.slots ?? 0}|${runes}${forged}`;
+  return `${item.defId}|${item.affix?.name ?? ''}|${item.slots ?? 0}|${runes}${sized}${forged}`;
 }
 
 export interface ItemStack {

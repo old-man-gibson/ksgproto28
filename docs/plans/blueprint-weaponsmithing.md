@@ -276,7 +276,9 @@ Calibration (measured headless on the mockup's kernel):
   raw `ITEMS[<expr>.defId]` outside a whitelist (tests/icons.test.ts scans
   source the same way).
 - `stackKey` (inventory.ts ~112) includes `forgeKey`; two different forged
-  swords never stack.
+  swords never stack. It also includes the item's size when that is not
+  medium (2026-11-03), so a large and a medium item of one base never stack.
+  Medium items key as before.
 - `modFingerprint` (derived.ts ~621) appends `forgeKey` (and later the finish
   signature) to `e${slot}:${uid}`.
 - Rune class from cells: small ≤ 9, medium 10–17, large ≥ 18. Forged items

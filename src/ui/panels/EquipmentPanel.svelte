@@ -58,6 +58,7 @@
     type SortMode,
   } from '../../core/systems/inventory';
   import { describeMod, describeRuneEffect, fmt, pct, condsText } from '../lib/format';
+  import { compareToWorn, findSpares, isSpareStack } from '../lib/gearCompare';
   import Tip from '../lib/Tip.svelte';
   import Modal from '../lib/Modal.svelte';
   import CollectionSection, {
@@ -197,6 +198,74 @@
     })),
   ]);
   const invStacks = $derived(arrangeInventory(gs.inventory, ui.invSort, ui.invGroup));
+
+  // ---------- Spare marks (ui/lib/gearCompare.ts) ----------
+  //
+  // A stack is spare when a held or worn item of the same base and size beats
+  // it in every stat and rune slot. Spares dim or hide; "Sell spares" sells
+  // them through the same `sell` path as any other lot. The dim/hide choice is
+  // a per-browser preference, outside the save, like the theme.
+  const INV_PREFS_KEY = 'ksgproto28-inv';
+  type SpareView = 'dim' | 'hide';
+
+  function readInvPrefs(): Record<string, unknown> {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(INV_PREFS_KEY) ?? '{}');
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  let spareView = $state<SpareView>(readInvPrefs().spares === 'hide' ? 'hide' : 'dim');
+
+  function setSpareView(view: SpareView) {
+    spareView = view;
+    try {
+      localStorage.setItem(INV_PREFS_KEY, JSON.stringify({ ...readInvPrefs(), spares: view }));
+    } catch {
+      // Blocked storage: the choice still holds for this visit.
+    }
+    // Hidden stacks must not stay ticked in selection mode.
+    if (view === 'hide') {
+      picked = new Set();
+      filterCats = new Set();
+      filterRarity = null;
+    }
+  }
+
+  const spareMap = $derived(findSpares(gs, armsFrom(grants)));
+  const spareStacks = $derived(invStacks.filter((s) => isSpareStack(s, spareMap)));
+  const spareKeys = $derived(new Set(spareStacks.map((s) => s.key)));
+  const spareItems = $derived(spareStacks.flatMap((s) => s.items));
+  const spareValue = $derived(spareItems.reduce((sum, i) => sum + sellPrice(gs, i, goldGain), 0));
+  /** "63 stacks: 10 kept, 53 spare". With grouping off a tile is one item. */
+  const spareLine = $derived(
+    `${invStacks.length} ${ui.invGroup ? 'stacks' : 'items'}: ` +
+      `${invStacks.length - spareStacks.length} kept, ${spareStacks.length} spare`,
+  );
+  const shownStacks = $derived(
+    spareView === 'hide' ? invStacks.filter((s) => !spareKeys.has(s.key)) : invStacks,
+  );
+  /** Items the grid is not drawing, so select-all and the filters skip them. */
+  const hiddenUids = $derived(
+    new Set<number>(spareView === 'hide' ? spareItems.map((i) => i.uid) : []),
+  );
+
+  function sellSpares() {
+    if (spareItems.length > 0) sell([...spareItems]);
+  }
+
+  /** "2 slots", "1 slot". */
+  function slotText(item: ItemInstance): string {
+    const n = item.slots ?? 0;
+    return `${n} slot${n === 1 ? '' : 's'}`;
+  }
+
+  /** The slot an inventory piece would replace: the first slot it fits that holds something. */
+  function comparisonSlot(item: ItemInstance): SlotId | null {
+    return equipTargets(item).find((s) => !!gs.equipment[s]) ?? null;
+  }
 
   // ---------- Collection entries (runes, provisions, materials) ----------
   //
@@ -493,7 +562,7 @@
   function pickAll() {
     filterCats = new Set();
     filterRarity = null;
-    picked = new Set(gs.inventory.map((i) => i.uid));
+    picked = new Set(gs.inventory.filter((i) => !hiddenUids.has(i.uid)).map((i) => i.uid));
   }
 
   function sellPicked() {
@@ -516,6 +585,7 @@
   const filtersActive = $derived(filterCats.size > 0 || filterRarity !== null);
 
   function matchesFilters(i: ItemInstance): boolean {
+    if (hiddenUids.has(i.uid)) return false;
     if (filterCats.size && !filterCats.has(itemCategory(i).key)) return false;
     if (filterRarity && !rarityAtMost(i, filterRarity)) return false;
     return true;
@@ -551,9 +621,20 @@
   //
   // Clicking a bare slot offers what could go there. Everything that fits the
   // slot is listed; pieces whose requirements aren't met come along but can't
-  // be chosen, so you can see what you're working toward.
+  // be chosen, so you can see what you're working toward. Spare stacks sit
+  // behind a Show control, below the rest.
+  let showSpares = $state(false);
+
   function slotCandidates(slot: SlotId): ItemStack[] {
     return invStacks.filter((s) => equipTargets(s.item).includes(slot));
+  }
+
+  /** "Sturdy Leather Vest ×2 · 4 slots", with the hand-fit note when a hand is not its own. */
+  function pickLabel(stack: ItemStack, slot: SlotId): string {
+    const item = stack.item;
+    const count = stack.items.length > 1 ? ` ×${stack.items.length}` : '';
+    const sockets = runesOpen && (item.slots ?? 0) > 0 ? ` · ${slotText(item)}` : '';
+    return `${itemName(item)}${count}${sockets}${fitNote(item, slot)}`;
   }
 
   function equipInto(item: ItemInstance, slot: SlotId) {
@@ -575,10 +656,12 @@
     if (selected?.kind === 'provision' && provisionQty === 0) selected = null;
     // Forget the housekeeping threshold once the pouch is closed.
     if (selected?.kind !== 'ingredients' && keepGrade !== null) keepGrade = null;
+    // The picker opens with its spare stacks folded.
+    if (selected?.kind !== 'slotPicker' && showSpares) showSpares = false;
   });
 </script>
 
-{#snippet itemTip(item: ItemInstance, count = 1)}
+{#snippet itemTip(item: ItemInstance, count = 1, spareBy: ItemInstance | null = null)}
   {@const def = itemDefOf(item)}
   {@const context = runeContextFor(def.slot)}
   {@const empty = (item.slots ?? 0) - (item.runes?.length ?? 0)}
@@ -587,6 +670,11 @@
     {itemName(item)}{count > 1 ? ` ×${count}` : ''} — {SLOT_NAMES[def.slot]}
     {#if HAND_SLOTS.includes(def.slot)}· {WIELD_NAMES[wieldOf(def)]}{/if}
   </div>
+  {#if spareBy}
+    <div class="tip-line tip-sub">
+      Spare: {itemName(spareBy)}{runesOpen ? ` (${slotText(spareBy)})` : ''} is at least as good in every stat.
+    </div>
+  {/if}
   {#if def.desc}<div class="tip-line tip-sub">{def.desc}</div>{/if}
   {#if wieldOf(def) === 'two_handed'}
     <div class="tip-line tip-sub">Fills both hands — nothing may be held alongside it.</div>
@@ -635,6 +723,7 @@
   mark: boolean | null,
   onopen: () => void,
   ontoggle: () => void,
+  spareBy: ItemInstance | null = null,
 )}
   {@const def = itemDefOf(item)}
   {@const peak = isMaxRarity(item)}
@@ -643,6 +732,7 @@
       class="cell"
       class:locked
       class:peak
+      class:spare={spareBy !== null}
       class:marked={mark}
       aria-label="{itemName(item)}{count > 1 ? ` ×${count}` : ''}"
       aria-pressed={mark ?? undefined}
@@ -664,7 +754,7 @@
         </span>
       {/if}
     </button>
-    {#snippet tip()}{@render itemTip(item, count)}{/snippet}
+    {#snippet tip()}{@render itemTip(item, count, spareBy)}{/snippet}
   </Tip>
 {/snippet}
 
@@ -769,6 +859,57 @@
       ? ' · ★ maxed'
       : ''}
   </div>
+{/snippet}
+
+<!--
+  How a pack piece differs from the piece worn in `slot`, as the wearer would
+  feel it. Nothing is drawn when the slot is empty.
+-->
+{#snippet versusWorn(item: ItemInstance, slot: SlotId)}
+  {@const cmp = compareToWorn(gs, item, slot, runesOpen)}
+  {#if cmp}
+    <div class="win-section">
+      <div class="small dim">
+        Worn: {itemName(cmp.worn)}{runesOpen ? `, ${slotText(cmp.worn)}` : ''}
+      </div>
+      {#each cmp.lines as line}
+        <div class="small" class:better={line.better} class:worse={!line.better}>{line.text}</div>
+      {:else}
+        <div class="small dim">Stats: same as worn</div>
+      {/each}
+      {#if cmp.conditional}
+        <div class="small dim">Conditional bonuses: not compared</div>
+      {/if}
+    </div>
+  {/if}
+{/snippet}
+
+<!-- One row of the slot picker. A spare stack is dashed and dimmed, as in the grid. -->
+{#snippet pickRow(s: ItemStack, slot: SlotId, spare = false)}
+  {@const d = itemDefOf(s.item)}
+  {@const ok = canEquip(gs, s.item)}
+  {@const cmp = compareToWorn(gs, s.item, slot, runesOpen)}
+  <button class="pick" class:spare disabled={!ok} onclick={() => equipInto(s.item, slot)}>
+    <span class="icon-sm" style="color: {rarityColor(s.item)}">{d.icon}</span>
+    <span class="pick-name">{pickLabel(s, slot)}</span>
+    {#if !cmp}
+      <span class="pick-mods small dim">
+        {#each d.mods.slice(0, 2) as mod}{describeMod(mod)} {/each}
+        {#if s.item.affix}<span class="affix">✦{s.item.affix.name}</span>{/if}
+      </span>
+    {/if}
+    {#if !ok}<span class="small reqs">🔒</span>{/if}
+    {#if cmp}
+      <span class="pick-delta small">
+        {#each cmp.lines as line}
+          <span class:better={line.better} class:worse={!line.better}>{line.text}</span>
+        {:else}
+          <span class="dim">Stats: same as worn</span>
+        {/each}
+        {#if cmp.conditional}<span class="dim">Conditional bonuses: not compared</span>{/if}
+      </span>
+    {/if}
+  </button>
 {/snippet}
 
 <!-- Tooltips for the shared collection sections. -->
@@ -881,6 +1022,32 @@
         ☑ Select
       </button>
     </div>
+    <!-- Drawn only while something is spare, so a small pack shows no extra line. -->
+    {#if spareStacks.length > 0}
+      <div class="toolbar spare-bar small">
+        <span
+          title="Spare: another item of the same base and size is at least as good in every stat."
+        >
+          {spareLine}
+        </span>
+        <button
+          class="small spare-view"
+          title="Spares: dim them in the grid, or hide them."
+          onclick={() => setSpareView(spareView === 'dim' ? 'hide' : 'dim')}
+        >
+          Spares: {spareView === 'dim' ? 'dimmed' : 'hidden'}
+        </button>
+        {#if !selectMode}
+          <button
+            class="small danger"
+            title="Sell spares: every spare stack, at its normal price. Socketed runes return to the pack."
+            onclick={sellSpares}
+          >
+            Sell spares ({fmt(spareValue)} 🪙)
+          </button>
+        {/if}
+      </div>
+    {/if}
     {#if selectMode}
       <div class="toolbar select-bar small">
         <span class:dim={pickedItems.length === 0}>
@@ -928,7 +1095,7 @@
       </div>
     {/if}
     <div class="grid">
-      {#each invStacks as stack (stack.key)}
+      {#each shownStacks as stack (stack.key)}
         {@render cell(
           stack.item,
           stack.items.length,
@@ -939,6 +1106,7 @@
               ? togglePick(stack)
               : (selected = { kind: 'inventory', uid: stack.item.uid, key: stackKey(stack.item) }),
           () => equipStack(stack),
+          spareKeys.has(stack.key) ? (spareMap.get(stack.item.uid) ?? null) : null,
         )}
       {/each}
     </div>
@@ -1063,6 +1231,13 @@
     {@render itemDetail(item, slot)}
     <div class="win-buttons">
       <button onclick={() => game.unequip(slot)}>Unequip</button>
+      <button
+        disabled={slotCandidates(slot).length === 0}
+        title="Swap: pick another piece from the pack, listed with its difference from this one."
+        onclick={() => (selected = { kind: 'slotPicker', slot })}
+      >
+        Swap
+      </button>
       {#each otherHands(item, slot) as hand}
         <button onclick={() => swapHand(item, hand)}>
           Move to {hand === 'weapon' ? 'main hand' : 'off hand'}{fitNote(item, hand)}
@@ -1072,9 +1247,17 @@
   </Modal>
 {:else if selected?.kind === 'inventory' && openStack}
   {@const stack = openStack}
+  {@const versus = comparisonSlot(stack.item)}
+  {@const spareBy = spareKeys.has(stack.key) ? spareMap.get(stack.item.uid) : undefined}
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}{@render itemTitle(stack.item, stack.items.length)}{/snippet}
     {@render itemDetail(stack.item)}
+    {#if versus}{@render versusWorn(stack.item, versus)}{/if}
+    {#if spareBy}
+      <div class="small dim spare-note">
+        Spare: {itemName(spareBy)}{runesOpen ? ` (${slotText(spareBy)})` : ''} is at least as good in every stat.
+      </div>
+    {/if}
     <div class="win-buttons">
       {#each equipTargets(stack.item) as hand, i}
         <button disabled={!canEquip(gs, stack.item)} onclick={() => equipStack(stack, hand)}>
@@ -1263,32 +1446,44 @@
 {:else if selected?.kind === 'slotPicker'}
   {@const slot = selected.slot}
   {@const candidates = slotCandidates(slot)}
+  {@const keptRows = candidates.filter((s) => !spareKeys.has(s.key))}
+  {@const spareRows = candidates.filter((s) => spareKeys.has(s.key))}
+  {@const wornHere = gs.equipment[slot]}
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}
       <div class="win-title">{SLOT_ICONS[slot]} Equip — {SLOT_NAMES[slot]}</div>
       <div class="small dim">
         {candidates.length === 0 ? 'Nothing in the pack fits here' : `${candidates.length} piece${candidates.length > 1 ? 's' : ''} fit`}
       </div>
+      {#if wornHere}
+        <div class="small dim">
+          Worn: {itemName(wornHere)}{runesOpen ? `, ${slotText(wornHere)}` : ''}
+        </div>
+      {/if}
     {/snippet}
     {#if candidates.length === 0}
       <p class="small dim">Loot, buy or craft something for this slot.</p>
     {:else}
       <div class="pick-list">
-        {#each candidates as s (s.key)}
-          {@const d = itemDefOf(s.item)}
-          {@const ok = canEquip(gs, s.item)}
-          <button class="pick" disabled={!ok} onclick={() => equipInto(s.item, slot)}>
-            <span class="icon-sm" style="color: {rarityColor(s.item)}">{d.icon}</span>
-            <span class="pick-name">
-              {itemName(s.item)}{s.items.length > 1 ? ` ×${s.items.length}` : ''}{fitNote(s.item, slot)}
-            </span>
-            <span class="pick-mods small dim">
-              {#each d.mods.slice(0, 2) as mod}{describeMod(mod)} {/each}
-              {#if s.item.affix}<span class="affix">✦{s.item.affix.name}</span>{/if}
-            </span>
-            {#if !ok}<span class="small reqs">🔒</span>{/if}
-          </button>
+        {#each keptRows as s (s.key)}
+          {@render pickRow(s, slot)}
         {/each}
+        {#if spareRows.length > 0}
+          <div class="pick-fold small dim">
+            <span>
+              {spareRows.length} spare stack{spareRows.length > 1 ? 's' : ''}
+              {showSpares ? 'listed' : 'not listed'}.
+            </span>
+            <button class="small" onclick={() => (showSpares = !showSpares)}>
+              {showSpares ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          {#if showSpares}
+            {#each spareRows as s (s.key)}
+              {@render pickRow(s, slot, true)}
+            {/each}
+          {/if}
+        {/if}
       </div>
     {/if}
   </Modal>
@@ -1331,6 +1526,17 @@
 
   .cell.locked {
     opacity: 0.65;
+  }
+
+  /* A spare stack: dashed and dimmed. Not `.dim`, which app.css owns as a text colour. */
+  .cell.spare {
+    opacity: 0.42;
+    border-style: dashed;
+  }
+
+  .cell.spare:hover,
+  .cell.spare.marked {
+    opacity: 0.85;
   }
 
   .cell.marked {
@@ -1473,6 +1679,28 @@
 
   .select-bar .done {
     margin-left: auto;
+  }
+
+  .spare-bar .spare-view {
+    margin-left: auto;
+  }
+
+  .spare-bar .danger {
+    border-color: #5d3030;
+    color: var(--danger);
+  }
+
+  /* Worn-piece deltas: green when the change helps the wearer, red when it costs. */
+  .better {
+    color: var(--xp);
+  }
+
+  .worse {
+    color: var(--danger);
+  }
+
+  .spare-note {
+    margin-bottom: 10px;
   }
 
   /* ---- detail window ---- */
@@ -1667,6 +1895,7 @@
 
   .pick {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
     text-align: left;
@@ -1674,9 +1903,31 @@
     width: 100%;
   }
 
+  .pick.spare {
+    opacity: 0.6;
+    border-style: dashed;
+  }
+
   .pick-name {
     font-weight: 600;
     flex-shrink: 0;
+  }
+
+  /* Differences from the worn piece, on a line of their own under the name. */
+  .pick-delta {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 10px;
+    padding-left: 26px;
+  }
+
+  .pick-fold {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 2px 8px;
   }
 
   .pick-mods {
