@@ -16,6 +16,7 @@ import { setSkipSettling } from '../core/systems/mutagens';
 import type { SortMode } from '../core/systems/inventory';
 import { forgetLayouts } from './lib/benchLayouts';
 import { bindFacets, dropFacetStatuses, installFacet } from '../core/facet/host';
+import { initialSeen, visibleNav, writeSeen, type MainTab } from './lib/nav';
 
 /**
  * Bridge between the pure core and Svelte. The game state is a deep-reactive
@@ -58,19 +59,14 @@ if (loaded.healed) {
 }
 
 export const ui = $state({
-  tab: 'location' as
-    | 'location'
-    | 'combat'
-    | 'skills'
-    | 'ability'
-    | 'equipment'
-    | 'chromosome'
-    | 'music'
-    | 'wuxin'
-    | 'bestiary'
-    | 'quests'
-    | 'achievements'
-    | 'prestige',
+  /** The open screen. The ids are the NAV table's (lib/nav.ts). */
+  tab: 'location' as MainTab,
+  /**
+   * Screen ids the player has opened, kept in localStorage (lib/nav.ts
+   * SHELL_KEY), not in the save. An entry visible and not listed here shows
+   * "new" in the screen list.
+   */
+  navSeen: initialSeen(gs),
   offline: null as OfflineSummary | null,
   /**
    * Wall-clock ms the boot catch-up is about to simulate, while it runs. The
@@ -181,6 +177,21 @@ export function save(): void {
   saveToStorage(gs);
 }
 
+/** Record that a screen has been opened. */
+export function markNavSeen(id: string): void {
+  if (ui.navSeen.includes(id)) return;
+  ui.navSeen.push(id);
+  writeSeen(ui.navSeen);
+}
+
+/** Count every screen visible now as opened: an imported save brings screens this browser never showed. */
+function markVisibleNavSeen(): void {
+  for (const e of visibleNav(gs)) {
+    if (!ui.navSeen.includes(e.id)) ui.navSeen.push(e.id);
+  }
+  writeSeen(ui.navSeen);
+}
+
 /**
  * Keep the fight being read, or forget it if it is already kept. Eviction is
  * announced in the log rather than happening quietly — a notebook that drops
@@ -236,6 +247,7 @@ export async function importSave(file: File): Promise<void> {
     Object.assign(gs, loaded);
     game.resyncAnnouncers();
     forgetLayouts();
+    markVisibleNavSeen();
     save();
     game.bus.emit({ type: 'log', msg: '💾 Save imported.', kind: 'info' });
   } catch {
@@ -251,8 +263,9 @@ export const DEBUG_SETTLE_KEY = 'ksg-debug:skip-settling';
 // to reach it however the key got into storage.
 setSkipSettling(import.meta.env.DEV && localStorage.getItem(DEBUG_SETTLE_KEY) === '1');
 
-export function hardReset(): void {
-  if (!confirm('Wipe ALL progress and start over?')) return;
+/** Wipe the save and start over, after a confirm. False when the player declined. */
+export function hardReset(): boolean {
+  if (!confirm('Wipe ALL progress and start over?')) return false;
   clearStorage();
   Object.assign(gs, createInitialState(Date.now()));
   game.resyncAnnouncers();
@@ -261,6 +274,7 @@ export function hardReset(): void {
   ui.offline = null;
   ui.defeat = null;
   ui.defeatShown = -1;
+  return true;
 }
 
 export { isKept, NOTEBOOK_MAX };

@@ -34,6 +34,7 @@
   import { statusTipLines } from '../lib/format';
   import { RECOVERY_MULT, RESOURCES } from '../../core/data/resources.data';
   import { abilityValue, fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
+  import type { Snippet } from 'svelte';
   import Tip from '../lib/Tip.svelte';
   import DishSlots from '../lib/DishSlots.svelte';
   import Icon from '../lib/icons/Icon.svelte';
@@ -45,8 +46,12 @@
   import { startingLevel } from '../../core/systems/legacy';
   import { LEVEL_ATTR_BONUS } from '../../core/data/levels.data';
 
-  /** Off on floor 0: the tutorial shows the bars, not the stat sheet (App.svelte). */
-  let { combatStats = true }: { combatStats?: boolean } = $props();
+  /**
+   * `combatStats` is off on floor 0: the tutorial shows the bars, not the stat
+   * sheet (App.svelte). `nav` is the screen list, drawn between the resource
+   * panel and the attributes.
+   */
+  let { combatStats = true, nav }: { combatStats?: boolean; nav?: Snippet } = $props();
 
   const stats = $derived(view.stats);
 
@@ -479,81 +484,62 @@
       {/if}
     {/snippet}
   </Tip>
+</div>
 
+{@render nav?.()}
+
+<!--
+  Attributes as chips: the icon and the effective value, one per solo attribute
+  and one per fused pair. The names and breakdowns are in the tooltips.
+-->
+<div class="panel">
   <h3>Attributes</h3>
-
-  {#each fusedDefs as sup}
-    <div class="super">
-      <div class="super-head">
-        <span>
-          <Tip>
-            <Icon of={sup} size={32} /> {sup.name}
-            {#snippet tip()}{@render superTip(sup)}{/snippet}
-          </Tip>
-        </span>
-        <!-- Above Weakest Weapon Master's ceiling the row shows what formulas
-             read; the real value is in the hover (attrTipLines). -->
-        <span class="super-value"
-          >{#if ceiling !== null && attrValue(gs, sup.components[0]) > ceiling}<span class="capped">{ceiling}</span
-            >{:else}{Math.round(attrValue(gs, sup.components[0]))}{/if}</span
-        >
-      </div>
-      {#each sup.components as compId}
-        {@const attr = attrInfo(compId)}
-        {@const delta = Math.round(eff[compId]) - gs.attrs[compId].level}
-        <div class="attr component">
-          <div class="attr-head">
-            <span>
-              <Tip>
-                <Icon of={attr} size={32} /> {attr.name}
-                {#snippet tip()}
-                  {#each attrTipLines(gs, compId) as line, i}
-                    <div class="tip-line" class:tip-base={i === 0}>{line}</div>
-                  {/each}
-                {/snippet}
-              </Tip>
-            </span>
-            <span class="dim">
-              {#if ceiling !== null && eff[compId] > ceiling}<span class="capped">{ceiling}</span
-                >{:else}{Math.round(eff[compId])}{#if delta !== 0}<span
-                    class="delta"
-                    class:buff={delta > 0}
-                    class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
-                  >{/if}{/if}
-            </span>
-          </div>
+  <div class="attr-chips">
+    {#each fusedDefs as sup (sup.id)}
+      {@const capped = ceiling !== null && attrValue(gs, sup.components[0]) > ceiling}
+      <Tip block>
+        <div class="attr-chip attr-chip-fused">
+          <Icon of={sup} />
+          <span class="attr-chip-name">{sup.name}</span>
+          <!-- Above Weakest Weapon Master's ceiling the chip shows what formulas
+               read; the real value is in the hover (attrTipLines). -->
+          <span class="attr-chip-value"
+            >{#if capped}<span class="capped">{ceiling}</span>{:else}{Math.round(attrValue(gs, sup.components[0]))}{/if}</span
+          >
         </div>
-      {/each}
-    </div>
-  {/each}
+        {#snippet tip()}
+          {@render superTip(sup)}
+          {#each sup.components as compId (compId)}
+            <div class="tip-line tip-sub">{attrInfo(compId).name}:</div>
+            {#each attrTipLines(gs, compId) as line}
+              <div class="tip-line">{line}</div>
+            {/each}
+          {/each}
+        {/snippet}
+      </Tip>
+    {/each}
 
-  {#each soloAttrs as attr}
-    {@const delta = Math.round(eff[attr.id]) - gs.attrs[attr.id].level}
-    <div class="attr">
-      <div class="attr-head">
-        <span>
-          <Tip>
-            <Icon of={attr} size={32} /> {attr.name}
-            {#snippet tip()}
-              {#each attrTipLines(gs, attr.id) as line, i}
-                <div class="tip-line" class:tip-base={i === 0}>{line}</div>
-              {/each}
-            {/snippet}
-          </Tip>
-        </span>
-        <!-- Above Weakest Weapon Master's ceiling the row shows what formulas
-             read; the real value and the bonus are in the hover (attrTipLines). -->
-        <span class="dim">
-          {#if ceiling !== null && eff[attr.id] > ceiling}<span class="capped">{ceiling}</span
-            >{:else}{Math.round(eff[attr.id])}{#if delta !== 0}<span
-                class="delta"
-                class:buff={delta > 0}
-                class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
-              >{/if}{/if}
-        </span>
-      </div>
-    </div>
-  {/each}
+    {#each soloAttrs as attr (attr.id)}
+      {@const delta = Math.round(eff[attr.id]) - gs.attrs[attr.id].level}
+      {@const capped = ceiling !== null && eff[attr.id] > ceiling}
+      <Tip block>
+        <div class="attr-chip">
+          <Icon of={attr} />
+          <span class="attr-chip-name">{attr.name}</span>
+          <!-- Above Weakest Weapon Master's ceiling the chip shows what formulas
+               read; the real value and the bonus are in the hover (attrTipLines). -->
+          <span class="attr-chip-value" class:buff={!capped && delta > 0} class:debuff={!capped && delta < 0}
+            >{#if capped}<span class="capped">{ceiling}</span>{:else}{Math.round(eff[attr.id])}{/if}</span
+          >
+        </div>
+        {#snippet tip()}
+          {#each attrTipLines(gs, attr.id) as line, i}
+            <div class="tip-line" class:tip-base={i === 0}>{line}</div>
+          {/each}
+        {/snippet}
+      </Tip>
+    {/each}
+  </div>
   <div class="dim small hint">Training progress lives in the Skills tab.</div>
 </div>
 
@@ -563,7 +549,7 @@
   and every row keeps its own breakdown tooltip.
 -->
 {#if combatStats}
-<div class="panel" style="margin-top: 12px">
+<div class="panel">
   <h3>Combat Stats</h3>
   <table class="small">
     <tbody>
@@ -876,65 +862,56 @@
     transition: none; /* fills every tick; easing would lag behind the reset */
   }
 
-  .attr {
-    margin-bottom: 8px;
-  }
-
-  .attr-head {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13.5px;
-    margin-bottom: 3px;
-  }
-
   .hint {
     margin-top: 6px;
   }
 
-  .delta {
-    margin-left: 3px;
-    font-size: 11.5px;
+  /* Three to a row; six attributes make 3 x 2, a fused pair takes one cell. */
+  .attr-chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
   }
   /* Weakest Weapon Master: the value formulas use, held at the ceiling. */
   .capped {
     color: var(--accent);
   }
 
-  .delta.buff {
+  .attr-chip {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 3px 6px;
+    border: 1px solid var(--frame, var(--border));
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* A fused pair reads as one stronger attribute. */
+  .attr-chip-fused {
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* The icon carries the name for sighted players; this keeps it for screen readers. */
+  .attr-chip-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .attr-chip-value.buff {
     color: var(--xp);
   }
 
-  .delta.debuff {
+  .attr-chip-value.debuff {
     color: var(--danger);
-  }
-
-  .super {
-    margin-bottom: 10px;
-    padding: 8px;
-    border: 1px solid var(--accent);
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--accent) 7%, var(--bg-panel));
-  }
-
-  .super-head {
-    display: flex;
-    justify-content: space-between;
-    font-weight: 600;
-    color: var(--accent);
-    margin-bottom: 6px;
-  }
-
-  .super-value {
-    font-size: 16px;
-  }
-
-  .component {
-    margin-left: 10px;
-    opacity: 0.8;
-  }
-
-  .component .attr-head {
-    font-size: 12.5px;
   }
 
   table {

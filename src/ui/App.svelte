@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { gs, game, ui, save, exportSave, importSave, hardReset, stepTicks, stepEvent, toggleKeep } from './state.svelte';
+  import { gs, game, ui, stepTicks, stepEvent, toggleKeep, markNavSeen } from './state.svelte';
   import { isKept } from '../core/systems/ledger';
-  import { currentActivity } from '../core/systems/actions';
   import { TPS } from '../core/engine/loop';
   import { BONUS_CAP_TICKS } from '../core/systems/bonustime';
   import Sidebar from './panels/Sidebar.svelte';
@@ -16,7 +15,9 @@
   import ChromosomePanel from './panels/ChromosomePanel.svelte';
   import MusicPanel from './panels/MusicPanel.svelte';
   import WuxinPanel from './panels/WuxinPanel.svelte';
-  import { activeQuests, questComplete } from '../core/systems/quests';
+  import NavIndex from './NavIndex.svelte';
+  import JobStrip from './JobStrip.svelte';
+  import SystemMenu from './SystemMenu.svelte';
   import LogFeed from './LogFeed.svelte';
   import OfflineModal from './OfflineModal.svelte';
   import PrestigeModal from './PrestigeModal.svelte';
@@ -24,16 +25,14 @@
   import { pendingDare } from '../core/systems/training';
   import EvolveModal from './EvolveModal.svelte';
   import { pendingEvolution } from '../core/facet/host';
-  import { restingForFight } from '../core/systems/huntrest';
   import PrestigePanel from './panels/PrestigePanel.svelte';
-  import { prestigeVisible } from '../core/systems/prestige';
   import DefeatModal from './DefeatModal.svelte';
   import TutorialCard from './TutorialCard.svelte';
   import { tutorialActive } from '../core/systems/tutorial';
   import { targetTab, tutorialScreen } from './lib/tutorialFocus';
-  import { tick } from 'svelte';
+  import { tick, untrack, type Component } from 'svelte';
   import { fmt } from './lib/format';
-  import { applyTheme, loadTheme, nextTheme, THEME_NAMES } from './lib/theme';
+  import { navListShown, visibleNav, type MainTab } from './lib/nav';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf } from '../core/systems/clock';
   import { CHRONOSENSE_ID, describeTimeSense } from '../core/systems/chronosense';
@@ -41,7 +40,6 @@
   import { forecastFor, PROGNOSIS_TOOLTIP_AT, WEATHERSENSE_ID } from '../core/systems/weathersense';
   import Tip from './lib/Tip.svelte';
   import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from '../core/systems/exposure';
-  import { subsystemUnlocked } from '../core/systems/unlocks';
   import { AREAS, REGIONS, SKILLS, SPOTS } from '../core/registry';
   import {
     barCapacity,
@@ -62,14 +60,6 @@
    */
   const DEV = import.meta.env.DEV;
   let showDebug = $state(false);
-
-  let theme = $state(loadTheme());
-  function cycleTheme() {
-    theme = nextTheme(theme);
-    applyTheme(theme);
-  }
-
-  const activity = $derived(currentActivity(gs));
 
   // What the clock chip may say is the SKILL's business: absent until
   // Chronosense manifests, then as precise as its level allows (see
@@ -106,53 +96,44 @@
       : [],
   );
 
-  // Shuttered subsystems (systems/unlocks.ts) keep their tabs off the bar
-  // until content lifts the flag — furniture for a system you have never
-  // heard of is a spoiler, the same rule the benches follow.
-  const tabs = $derived(
-    (
-      [
-        { id: 'location', name: '🗺️ Location' },
-        { id: 'combat', name: '⚔️ Combat' },
-        { id: 'skills', name: '📜 Skills' },
-        // The run's ability (docs/FACET.md), while it holds one.
-        { id: 'ability', name: '✦ Ability' },
-        { id: 'equipment', name: '🎒 Equipment' },
-        { id: 'chromosome', name: '🧬 Chromosome' },
-        { id: 'music', name: '🎼 Music' },
-        { id: 'wuxin', name: '☯️ Wuxin' },
-        { id: 'bestiary', name: '📖 Bestiary' },
-        { id: 'quests', name: '⭐ Quests' },
-        { id: 'achievements', name: '🏆 Achievements' },
-        // Appears once the run could prestige (band 1 cleared), and stays
-        // once any run has — the pre-prestige view lives here.
-        { id: 'prestige', name: '♻️ Prestige' },
-      ] as const
-    ).filter((t) =>
-      t.id === 'ability'
-        ? gs.facets.length > 0
-        : t.id === 'chromosome'
-          ? subsystemUnlocked(gs, 'genes')
-          : t.id === 'music'
-            ? subsystemUnlocked(gs, 'music')
-            : t.id === 'wuxin'
-              ? subsystemUnlocked(gs, 'wuxin')
-              : t.id === 'prestige'
-                ? prestigeVisible(gs)
-                : true,
-    ),
-  );
-
-  const readyQuests = $derived(activeQuests(gs).filter((q) => questComplete(gs, q)).length);
+  /**
+   * The main screens, one panel each. Typed on `MainTab`, which derives from the
+   * NAV table (lib/nav.ts): a row without a panel here fails the type check.
+   */
+  const SCREENS: Record<MainTab, Component> = {
+    location: LocationPanel,
+    combat: CombatPanel,
+    skills: SkillsPanel,
+    ability: AbilityPanel,
+    equipment: EquipmentPanel,
+    chromosome: ChromosomePanel,
+    music: MusicPanel,
+    wuxin: WuxinPanel,
+    bestiary: BestiaryPanel,
+    quests: QuestsPanel,
+    achievements: AchievementsPanel,
+    prestige: PrestigePanel,
+  };
+  const Screen = $derived(SCREENS[ui.tab]);
 
   /**
    * Floor 0 trims the screen to what the current step uses (lib/tutorialFocus.ts):
-   * tabs arrive as the steps name them, the sidebar with the first fight, and
-   * the clock, weather and save buttons after the tutorial. Null outside it.
+   * screens arrive as the steps name them, the sidebar with the first fight, and
+   * the clock, weather and Menu after the tutorial. Null outside it.
    */
   const screen = $derived(tutorialScreen(gs));
-  const shownTabs = $derived(screen ? tabs.filter((t) => screen.tabs.has(t.id)) : tabs);
   const target = $derived(screen?.target ?? null);
+
+  // The screens the player may open now. The list draws with the second one.
+  const entries = $derived(visibleNav(gs, screen));
+  const showNav = $derived(navListShown(entries));
+
+  // A screen counts as opened once it is the open one, however it got there:
+  // a click, the tutorial's pointer, a map card's link.
+  $effect(() => {
+    const open = ui.tab;
+    untrack(() => markNavSeen(open));
+  });
 
   /**
    * When the step points somewhere new, open the tab it is drawn on and
@@ -221,23 +202,6 @@
       }
     }
   });
-
-  let fileInput: HTMLInputElement;
-
-  function onImportChange(ev: Event) {
-    const file = (ev.target as HTMLInputElement).files?.[0];
-    if (file) importSave(file);
-    (ev.target as HTMLInputElement).value = '';
-  }
-
-  function statusText(): string {
-    if (gs.travel) return '🥾 Traveling...';
-    if (gs.recovering) return '💫 Recovering...';
-    if (gs.performance) return '🎵 Performing...';
-    if (activity?.kind === 'hunt' && !gs.combat && restingForFight(gs)) return '🛌 Resting before the next fight';
-    if (activity) return `${activity.icon} ${activity.name}`;
-    return '💤 Idle';
-  }
 
   /**
    * Keyboard for the step controls: Space (or P) freezes and unfreezes, →
@@ -327,9 +291,10 @@
     </div>
     {/if}
 
-    <div class="status">{gs.paused ? '⏸️ Paused' : statusText()}</div>
+    <!-- What the character is doing, and gold and kills per minute. -->
+    <JobStrip showRate={!screen} />
     {#if timeSense}
-      <div class="timesense" title="{SKILLS[CHRONOSENSE_ID].name} {senseLevel}">
+      <div class="timesense" title="{timeSense} ({SKILLS[CHRONOSENSE_ID].name} {senseLevel})">
         🕰️ {timeSense}
       </div>
     {/if}
@@ -369,79 +334,38 @@
       <div class="gold">🪙 {fmt(gs.gold)}</div>
     {/if}
     <div class="actions small">
-      <!-- Autosave runs regardless. A new save offers Import on the floor 0
+      <!-- Save, Export, Import, Reset, theme and the key list are in the Menu.
+           Autosave runs regardless. A new save offers Import on the floor 0
            card instead (TutorialCard's "Played before?"). -->
       {#if !screen}
-        <button onclick={save} title="Autosaves every 30s">Save</button>
-        <button onclick={exportSave}>Export</button>
-        <button onclick={() => fileInput.click()}>Import</button>
-        <button onclick={hardReset} class="danger">Reset</button>
-        <button onclick={cycleTheme} title="Display theme. Kept in this browser, not in the save.">
-          {THEME_NAMES[theme]}
-        </button>
+        <SystemMenu />
       {/if}
       {#if DEV}
         <button onclick={() => (showDebug = !showDebug)} title="Developer tools">🐞</button>
       {/if}
-      <input
-        type="file"
-        accept="application/json"
-        bind:this={fileInput}
-        onchange={onImportChange}
-        style="display: none"
-      />
     </div>
   </header>
 
   {#if !screen || screen.sidebar}
     <aside class="sidebar">
-      <Sidebar combatStats={!screen} />
+      <Sidebar combatStats={!screen}>
+        {#snippet nav()}
+          <!-- One screen is no choice: the list appears with the second. -->
+          {#if showNav}<NavIndex {entries} />{/if}
+        {/snippet}
+      </Sidebar>
     </aside>
   {/if}
 
   <main>
-    <!-- Floor 0's card, above the tabs so it stays in view from whichever
-         tab the step opens (sticky on a narrow screen, where the page
+    <!-- Floor 0's card, above the screen so it stays in view from whichever
+         screen the step opens (sticky on a narrow screen, where the page
          scrolls). Gone for good once flag:tutorial_done is stamped. -->
     {#if tutorialActive(gs)}
       <TutorialCard target={target} />
     {/if}
-    <!-- One tab is no choice: the bar appears with the second. -->
-    {#if shownTabs.length > 1}
-      <nav class="tabs">
-        {#each shownTabs as tab}
-          <button class:selected={ui.tab === tab.id} onclick={() => (ui.tab = tab.id)}>
-            {tab.name}{tab.id === 'quests' && readyQuests > 0 ? ` (${readyQuests})` : ''}
-          </button>
-        {/each}
-      </nav>
-    {/if}
     <div class="tab-body">
-      {#if ui.tab === 'location'}
-        <LocationPanel />
-      {:else if ui.tab === 'combat'}
-        <CombatPanel />
-      {:else if ui.tab === 'skills'}
-        <SkillsPanel />
-      {:else if ui.tab === 'ability'}
-        <AbilityPanel />
-      {:else if ui.tab === 'equipment'}
-        <EquipmentPanel />
-      {:else if ui.tab === 'chromosome'}
-        <ChromosomePanel />
-      {:else if ui.tab === 'music'}
-        <MusicPanel />
-      {:else if ui.tab === 'wuxin'}
-        <WuxinPanel />
-      {:else if ui.tab === 'bestiary'}
-        <BestiaryPanel />
-      {:else if ui.tab === 'quests'}
-        <QuestsPanel />
-      {:else if ui.tab === 'achievements'}
-        <AchievementsPanel />
-      {:else if ui.tab === 'prestige'}
-        <PrestigePanel />
-      {/if}
+      {#if Screen}<Screen />{/if}
     </div>
   </main>
 
@@ -532,9 +456,11 @@
   header {
     grid-area: header;
     display: flex;
+    /* One row at the usual widths. It still wraps rather than clip when the
+       clock, weather and gold chips all show on a narrow window. */
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px 16px;
+    gap: 8px 12px;
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -588,26 +514,20 @@
     border-color: var(--accent);
   }
 
-  .layout.paused .status {
-    color: var(--accent);
-    font-weight: 600;
-  }
-
-  .status {
-    /* The stretchy one: it takes the room the HP bar used to hold, so the
-       clock, weather and gold keep right of centre. */
-    flex: 1;
-    white-space: nowrap;
-    color: var(--text-dim);
-  }
-
   .gold {
     font-weight: 600;
     color: var(--accent);
     white-space: nowrap;
   }
 
+  /* Shrinks and ends in an ellipsis before it pushes the row onto a second
+     line; the title holds the whole text. */
   .timesense {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 230px;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--text-dim);
     font-size: 13px;
@@ -651,14 +571,18 @@
     gap: 6px;
   }
 
-  .actions button.danger {
-    border-color: #5d3030;
-    color: var(--danger);
-  }
-
+  /* The left column: bars, the screen list, attributes, Combat Stats. It
+     scrolls when they do not fit (the Combat Stats groups open on a click). */
   .sidebar {
     grid-area: sidebar;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .sidebar > :global(*) {
+    flex: none;
   }
 
   main {
@@ -668,12 +592,6 @@
     gap: 10px;
     min-width: 0;
     overflow: hidden;
-  }
-
-  .tabs {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
   }
 
   .tab-body {

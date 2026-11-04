@@ -1,6 +1,7 @@
 import type { GameState } from '../../core/types';
 import { TUTORIAL_STEP_LIST } from '../../core/data/tutorial.data';
 import { tutorialStep } from '../../core/systems/tutorial';
+import type { MainTab } from './nav';
 
 /**
  * What the screen shows while floor 0's tutorial runs (docs/TUTORIAL.md §5).
@@ -9,21 +10,9 @@ import { tutorialStep } from '../../core/systems/tutorial';
  * off the save, so nothing here is stored and a reload lands on the same
  * screen. Hiding a tab or a panel changes what is drawn, never what the game
  * allows: the roads, fights and controls underneath are the same ones.
+ *
+ * The screen ids are `MainTab`, which derives from the NAV table (nav.ts).
  */
-
-export type MainTab =
-  | 'location'
-  | 'combat'
-  | 'skills'
-  | 'ability'
-  | 'equipment'
-  | 'chromosome'
-  | 'music'
-  | 'wuxin'
-  | 'bestiary'
-  | 'quests'
-  | 'achievements'
-  | 'prestige';
 
 /** What a step points at. `activity` is an activity id at the step's own spot. */
 type Pointer = 'choice' | { spot: string } | { exit: string } | { activity: string };
