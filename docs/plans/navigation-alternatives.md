@@ -397,3 +397,31 @@ All branches stack on `ui-integration` until that lands on main.
 2. **Wave 2.** N3 + N5, one builder (both redraw `MapCard.svelte`).
 3. **Wave 3.** N4 (the map panel and `AscentPanel.svelte`), then N7. N7 needs N1's ride edges and
    knockout-return's `pendingReturn`.
+
+## 11. Build log
+
+**N1 + N2:** branch `nav-ride-edges` ebd0d66, merged into `ui-integration` 6aefa44.
+`npm run verify` passed with 3,300 tests. Antagonist-code verdict: SHIP.
+
+Builder decisions kept:
+- Hub and band-hub ride edges also need the stop's spot discovered (secret content).
+- A road to a place wins over a ride to it, so the ladder does not bypass a shut road.
+- `startTravel` rides when no road leads to the target.
+- The map focuses the journey end only when that spot is discovered.
+- Region tabs always include the region on show.
+
+Finding ruled against:
+- **Finding.** Ride edges exclude the landing of the floor underfoot. From the floor-1 office
+  rooms (one-way pocket, no road back) the route to `f1_landing` goes via the Foot, 90 ticks,
+  while core `climbTo` to the own floor would ride 45.
+- **Ruling: kept.** The Ascent panel never offers the current floor's rung
+  (AscentPanel.svelte:147). An own-floor edge would add a 45-tick jump to the landing from any
+  spot on any floor.
+
+John's pacing table moved by one cell (dagger, seed 7, floor 2: 6.4 to 6.3 min). The cause is the
+intended route from `f1_reception` by the ladder. No expectation was edited.
+
+Left for later:
+- The ⚡ waypoint mark on pins no longer has a function; it goes in N3.
+- Stale caravan text in README.md, docs/CONTENT_GUIDE.md and docs/NAVIGATION.md §2.1/§2.3 is fixed
+  after knockout-return merges.
