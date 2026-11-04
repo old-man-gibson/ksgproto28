@@ -170,16 +170,19 @@ export interface PlanOptions {
 /**
  * District tints, taken in the order the region lists its areas. They are
  * theme tokens (app.css), drawn at a low opacity, so a theme restyles them.
+ * Warm and neutral only: the blue arc (--mana, --spirit, --stamina) is the
+ * resource bars' (PITFALLS §7). Warm and grey alternate, so districts that are
+ * neighbours in the order differ in more than a shade of brown.
  */
-const TINTS = [
-  'var(--mana)',
-  'var(--spirit)',
-  'var(--hp)',
-  'var(--xp)',
+export const TINTS = [
   'var(--accent)',
-  'var(--skill)',
+  'var(--mat-steel)',
+  'var(--hp)',
+  'var(--mat-iron)',
   'var(--focus)',
-  'var(--stamina)',
+  'var(--mat-metal)',
+  'var(--mat-bronze)',
+  'var(--text-dim)',
   'var(--mat-wood)',
 ];
 

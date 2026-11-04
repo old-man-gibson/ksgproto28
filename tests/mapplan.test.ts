@@ -6,7 +6,8 @@ import { findPath, visibleEdges } from '../src/core/systems/locations';
 import { spawnMonster, spotCleared } from '../src/core/systems/combat';
 import type { GameState, SpotDef } from '../src/core/types';
 import { boxInCells, labelBox, pinBox, roadClasses, type MapBox } from '../src/ui/lib/map';
-import { buildPlan, buildRouteDraw, groundFor, planThreats, stableThreats, type MapPlan } from '../src/ui/lib/mapPlan';
+import fs from 'node:fs';
+import { TINTS, buildPlan, buildRouteDraw, districtTint, groundFor, planThreats, stableThreats, type MapPlan } from '../src/ui/lib/mapPlan';
 import { Game } from '../src/core/game';
 import {
   legTime,
@@ -113,6 +114,27 @@ describe('districts', () => {
   it('draws no districts on a floor, which is one area', () => {
     const s = allKnown('f4_woods_edge');
     expect(plan(s, 'the_ascent', 'ascent_f4_area').districts).toEqual([]);
+  });
+});
+
+describe('district tints', () => {
+  const tokens = (): string[] => TINTS.map((t) => /^var\(--([a-z-]+)\)$/.exec(t)![1]);
+
+  it('are warm and neutral theme tokens, never the blue arc of the resource bars', () => {
+    for (const name of tokens()) {
+      expect(['mana', 'spirit', 'stamina', 'manaburn', 'stamina-winded', 'stamina-exhausted'], name).not.toContain(name);
+    }
+    // Each is a token app.css defines, so a theme restyles it.
+    const css = fs.readFileSync(new URL('../src/app.css', import.meta.url), 'utf8');
+    for (const name of tokens()) expect(css, `--${name} is defined in app.css`).toMatch(new RegExp(`--${name}:`));
+  });
+
+  it('give each of Threshold\'s nine districts its own tint, and no tint is shared by neighbours in the order', () => {
+    const areas = Object.values(AREAS).filter((a) => a.regionId === 'threshold');
+    expect(areas).toHaveLength(9);
+    const tints = areas.map((a) => districtTint(a.id));
+    expect(new Set(tints).size).toBe(9);
+    for (let i = 1; i < tints.length; i++) expect(tints[i]).not.toBe(tints[i - 1]);
   });
 });
 
