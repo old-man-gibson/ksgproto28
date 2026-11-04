@@ -36,7 +36,8 @@ beforeAll(async () => {
   // Past the tutorial, with Threshold known.
   st.gs.stats['flag:tutorial_done'] = 1;
   st.gs.discovered = [...new Set([...st.gs.discovered, 'ascent_foot', 'chancery_arch', 'wrights_gate'])];
-});
+  // The first import transforms the Svelte tree; under the parallel suite that passes the 10 s default.
+}, 60_000);
 
 /** The opening tag of the strip over the map. */
 const stripTag = (html: string): string | null => /<div class="panel act-strip[^>]*>/.exec(html)?.[0] ?? null;

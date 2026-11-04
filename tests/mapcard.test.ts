@@ -28,7 +28,8 @@ beforeAll(async () => {
   };
   st = await import('../src/ui/state.svelte');
   MapCard = (await import('../src/ui/MapCard.svelte')).default as Component;
-});
+  // The first import transforms the Svelte tree; under the parallel suite that passes the 10 s default.
+}, 60_000);
 
 function walk(): void {
   for (let i = 0; i < 10_000 && st.gs.travel; i++) st.game.tick();
