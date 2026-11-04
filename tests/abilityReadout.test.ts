@@ -68,6 +68,15 @@ describe('ability readout', () => {
     expect(readout(holding('bramble')).evolves).toBeNull();
   });
 
+  it('a stance cell reads as what Power does in it, not as a bare number', () => {
+    const state = holding('weakest_weapon_master');
+    state.facets[0].cells!.find((c) => c.key === 'flowing')!.state!.v = 29;
+    const cell = readout(state).cells.find((c) => c.key === 'flowing')!;
+    expect(cell.line).toBe('parries every blow up to 15');
+    expect(cell.base).toBe('Power');
+    expect(readout(state).cells.find((c) => c.key === 'ceiling')?.line).toBeNull();
+  });
+
   it('gives a document saved without a description its bank entry\'s', () => {
     const state = holding('bramble');
     delete state.facets[0].reading!.desc;

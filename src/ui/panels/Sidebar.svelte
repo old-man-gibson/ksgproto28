@@ -405,6 +405,9 @@
                 <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent)"></div>
                 <div class="label">{cell.label} {Math.floor(cell.value)} / {Math.floor(cell.cap)}</div>
               </div>
+            {:else if cell.line}
+              <!-- A line says what the number does ("parries every blow up to 14"). -->
+              <span class="ability-line">{cell.label}: {cell.line}</span>
             {:else}
               <span class="ability-line" class:ability-low={(cell.show === 'signedPct' && cell.value < 0) || (cell.show === 'minusPct' && cell.value > 0)}>{cell.label} {abilityValue(cell)}</span>
             {/if}
@@ -412,12 +415,17 @@
           {#snippet tip()}
             <div class="tip-line tip-base">{ab.icon} {cell.label === ab.name ? ab.name : `${ab.name}: ${cell.label}`}</div>
             <div class="tip-line">{cell.desc}</div>
-            {#each ab.cells.filter((c) => c.key !== cell.key) as other (other.key)}
-              <div class="tip-line">{other.icon} {other.label}: {abilityValue(other)}</div>
-            {/each}
-            {#each ab.inputs as input (input.label)}
-              <div class="tip-line">{input.label}: {input.show === 'pct' ? pct(input.value, 0) : input.value}</div>
-            {/each}
+            {#if cell.line}
+              <!-- Only the number the line was made from: the rest is not about this cell. -->
+              {#if cell.base}<div class="tip-line">{cell.base}: {Math.round(cell.value)}</div>{/if}
+            {:else}
+              {#each ab.cells.filter((c) => c.key !== cell.key) as other (other.key)}
+                <div class="tip-line">{other.icon} {other.label}: {abilityValue(other)}</div>
+              {/each}
+              {#each ab.inputs as input (input.label)}
+                <div class="tip-line">{input.label}: {input.show === 'pct' ? pct(input.value, 0) : input.value}</div>
+              {/each}
+            {/if}
             <div class="tip-line dim">More: ✦ Ability tab.</div>
           {/snippet}
         </Tip>

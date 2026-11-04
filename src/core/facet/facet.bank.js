@@ -35,7 +35,9 @@ const MAIN = { expr: 'add', a: { q: 'stat.eff.con' }, b: { q: 'stat.eff.wis' } }
 // `show` on a cell, `reading.inputs` and `reading.desc` are display hints for a game's ability
 // readout; the engine never reads them. A `reading.desc` is lines of "Label: fact" joined by '\n':
 // one fact per sentence, under 20 words, at most three numbers a line, no parentheses or semicolons.
-// A cell's `status.desc` is one such line without the label.
+// A cell's `status.desc` is one such line without the label. A cell's `line` ({ text, scale, base })
+// is what a short readout shows after the label instead of the bare number: `text` with {v} as the value x scale,
+// rounded; `base` names the bare number for a longer readout (Weakest Weapon Master's stances).
 B.solar_charge = {
   v: 1,
   reading: {
@@ -588,14 +590,21 @@ const WWM_POWER = { expr: 'add',
 const WWM_REPS = { expr: 'mul', a: 2, b: { expr: 'pow', a: 32, b: { expr: 'min', a: 1, b: { expr: 'div', a: MARTIAL, b: 600 } } } };
 // 1 when the stance in effect is k, else 0: 1 - min(1, (stance - k)^2).
 const stanceIs = (k) => ({ expr: 'sub', a: 1, b: { expr: 'min', a: 1, b: { expr: 'pow', a: { expr: 'sub', a: { cell: 'stance' }, b: k }, b: 2 } } });
+// Each stance: its number, cell key, label, icon, rule, carrier fields, and the line a short readout
+// shows (user 2026-11-03: "Flowing Stance 29" says nothing; the line says what Power does in it).
 const WWM_STANCES = [
-  [1, 'power', 'Power stance', '💪', 'Damage +Power.', { mods: [{ q: 'fighter.damage', op: 'add', value: 1 }] }],
-  [2, 'flowing', 'Flowing stance', '🌊', 'Parry chance is Power over twice the blow. A parry hits back for 60% of Power.',
-    { parryContest: { per: 2, answer: 0.6 } }],
-  [3, 'heavy', 'Heavy stance', '🪨', 'Each enemy blow is cut by Power before armour. The attacker is slowed.',
-    { blowCut: { rattle: 2 / 3 } }],
-  [4, 'empty', 'Empty stance', '⭕', 'Damage +60% of Power. Your blows cannot be dodged and skip armour and resistance.',
-    { mods: [{ q: 'fighter.damage', op: 'add', value: 0.6 }], pureBlows: true }],
+  [1, 'power', 'Power stance', '💪', 'Your blows deal +Power damage.',
+    { mods: [{ q: 'fighter.damage', op: 'add', value: 1 }] },
+    { text: '+{v} damage', scale: 1, base: 'Power' }],
+  [2, 'flowing', 'Flowing stance', '🌊', 'Every blow up to half your Power is parried. A blow as big as your Power is parried half the time. A parry hits back for 60% of Power.',
+    { parryContest: { per: 2, answer: 0.6 } },
+    { text: 'parries every blow up to {v}', scale: 0.5, base: 'Power' }],
+  [3, 'heavy', 'Heavy stance', '🪨', 'Every enemy blow loses your Power in damage before armour. A blow no bigger than your Power does nothing. The attacker is slowed until its next swing.',
+    { blowCut: { rattle: 2 / 3 } },
+    { text: 'every blow loses {v} damage', scale: 1, base: 'Power' }],
+  [4, 'empty', 'Empty stance', '⭕', 'Your blows deal +60% of Power damage. They cannot be dodged and ignore armour, resistance and weakness.',
+    { mods: [{ q: 'fighter.damage', op: 'add', value: 0.6 }], pureBlows: true },
+    { text: '+{v} damage, unblockable', scale: 0.6, base: 'Power' }],
 ];
 const wwmSync = (hook) => ({ id: 'sync_' + hook, on: hook, do: [
   setCell('reps', WWM_REPS),
@@ -617,10 +626,10 @@ B.weakest_weapon_master = {
     choice: {
       label: 'Stance', want: 'want', active: 'stance',
       options: [
-        { v: 1, name: 'Power', icon: '💪', desc: 'Damage +Power.' },
-        { v: 2, name: 'Flowing', icon: '🌊', desc: 'Parry chance is Power over twice the blow, up to 100%. A parry hits back for 60% of Power.' },
-        { v: 3, name: 'Heavy', icon: '🪨', desc: 'Each enemy blow is cut by Power before armour. A blow cut to 0 is not a hit. The attacker is slowed, to no less than 1/3 speed.' },
-        { v: 4, name: 'Empty', icon: '⭕', desc: 'Damage +60% of Power. Your blows cannot be dodged and skip armour, resistance and weakness.' },
+        { v: 1, name: 'Power', icon: '💪', desc: 'Your blows deal +Power damage.' },
+        { v: 2, name: 'Flowing', icon: '🌊', desc: 'Every blow up to half your Power is parried. A blow as big as your Power is parried half the time. A parry hits back for 60% of Power.' },
+        { v: 3, name: 'Heavy', icon: '🪨', desc: 'Every enemy blow loses your Power in damage before armour. A blow no bigger than your Power does nothing. The attacker is slowed until its next swing.' },
+        { v: 4, name: 'Empty', icon: '⭕', desc: 'Your blows deal +60% of Power damage. They cannot be dodged and ignore armour, resistance and weakness.' },
       ],
     },
   },
@@ -644,8 +653,8 @@ B.weakest_weapon_master = {
       ({ key: 'past_' + a, hold: 'none', level: 'real', tier: 'run', cap: 1e15, carrier: false })),
     { key: 'want', hold: 'none', level: 'int', tier: 'run', floor: 1, cap: 4, carrier: false },
     { key: 'stance', hold: 'none', level: 'int', tier: 'run', floor: 1, cap: 4, carrier: false },
-    ...WWM_STANCES.map(([, key, label, icon, desc, fields]) => ({
-      key, label, icon, hold: 'none', level: 'real', tier: 'run', show: 'count', cap: 1e9,
+    ...WWM_STANCES.map(([, key, label, icon, desc, fields, line]) => ({
+      key, label, icon, hold: 'none', level: 'real', tier: 'run', show: 'count', cap: 1e9, line,
       status: Object.assign({ desc }, fields),
     })),
   ],
