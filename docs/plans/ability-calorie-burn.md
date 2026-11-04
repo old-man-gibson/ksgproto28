@@ -34,7 +34,8 @@ done:
 > do the same jobs. Choices taken that day: the peak bonus is +100%, x1.25 each
 > time the store's cap doubles past 400; the full-store penalty is -10%;
 > calories come from Well Fed (400 a point, 100 for a dish with none); running
-> dry at a 0% cutoff is a knockout. Not built: the earning quest, and the
+> dry at a 0% cutoff is a knockout. Later that day the burn was made a danger
+> mode: it starts only once 33% of HP is gone or 20 s of fight time pass. Not built: the earning quest, and the
 > "settle while not worn" rules (one ability per run, so it is never taken off).
 > This card stays as the design record.
 

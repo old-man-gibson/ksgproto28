@@ -27,8 +27,8 @@
     "facet.forge.js": "9905f4c9587171374b83f394a4e57a99a4afa7358c0d46a2b75ceafa1769d028",
     "facet.oracle.js": "f6b36d39a55ece29ca3c8a0a4dc64f3a4e587aa0cda3e363c8a76d444783258e",
     "facet.compile.js": "3f633fa78264fe0c12bcb9febc668973fe4a99c012c54d8765384fbedbc19f22",
-    "facet.cases.js": "81c62def9ac27281344b40e49f6128fbbe3a256abffc3ea6421d3aab9c5b08db",
+    "facet.cases.js": "a7d4d0aed8c9804fc2fad2d92ac7844fb973d8b9de9c538db12f99a888b5b05b",
     "facet.relations.js": "2b044657252d66b8c276b7c25c6ecb314f6757f0e051114d3b4701255cb172f0",
-    "facet.bank.js": "4bd1f495ae3718f1051b10276b6c73ec07a5664d3b34cb33af75f8d99ee639f3"
+    "facet.bank.js": "2f463f32b21fa161c2022c946faf4587df708c2989eaa03c887439babe5f6329"
   }
 }

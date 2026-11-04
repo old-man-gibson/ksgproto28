@@ -190,7 +190,7 @@ game supplies calories, the trained body and the defeat.
 | Calories | consumables.ts `dishCalories`: 400 per point of Well Fed a dish grants, 100 for a dish with none, times the grade; a spoiled grade and non-food give 0. `useConsumable` raises `eat` with them, so queued eating counts too. |
 | The store | Cell `kcal`, cap 400 + 30 x `ksg.trainedBody` (trained CON + STR, no bonuses). |
 | Too full | Cell `sated` in percent points, 0 at 70% full to 10 at 100%; carrier: every attribute x(1 - 1% per point). |
-| The burn | Per combat tick while the store is above the cutoff: 0.25 + 0.015 per second of fight time, at most 4. Cell `fburn` counts this fight's burn. |
+| The burn | Only once the fight turns dangerous (user 2026-11-03): HP at 67% of max or less, or 20 s of fight time; cell `danger` holds it for the rest of the fight. Then per combat tick while the store is above the cutoff: 0.25 + 0.015 per second since the burn started (cell `bticks`), at most 4. Cell `fburn` counts this fight's burn. |
 | The bonus | Cell `burning` in percent points: 0 below 30% of the cap burned this fight, then (e^5x - 1)/(e^5 - 1) to the peak at 100%. The peak is +100% at a cap of 400, x1.25 each time the cap doubles. Carrier: every attribute x(1 + 1% per point). Resets with the fight. |
 | The cutoff | `reading.choice` (0%, 10% default, 25%), drawn on the Combat tab under the stance grid. Applies at once. |
 | Max HP | After 90 s of fight time, cell `debt` grows 0.4 a tick; carrier: max HP -1 per point. Out of a fight it returns 0.05 a game minute, 25 while the store is full; the store digests 0.5 a minute only while nothing is owed. |

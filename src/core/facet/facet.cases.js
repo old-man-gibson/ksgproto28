@@ -464,8 +464,8 @@ CASES['bank: Weakest Weapon Master sets Power on the stance in effect, picked at
 };
 
 
-// A host for Calorie Burn: a trained body, a max HP, and a defeat it records.
-function calorieHost(body, maxHp) {
+// A host for Calorie Burn: a trained body, HP and max HP, and a defeat it records.
+function calorieHost(body, maxHp, hp = maxHp) {
   const lost = [];
   const H = fakeHost({
     quantities: () => [
@@ -473,15 +473,16 @@ function calorieHost(body, maxHp) {
       { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
       { id: 'ksg.trainedBody', label: 'Trained CON + STR', kind: 'scalar' },
     ],
-    readQ: (r, q) => q === 'ksg.trainedBody' ? body : q === 'fighter.maxHpAbs' ? maxHp.v : 1,
+    readQ: (r, q) => q === 'ksg.trainedBody' ? body : q === 'fighter.maxHpAbs' ? maxHp.v : q === 'fighter.hp' ? hp.v : 1,
     defeat: (ref, outcome, cause) => { lost.push({ ref, outcome, cause }); },
   });
   return { H, lost };
 }
 
-CASES['bank: Calorie Burn eats, burns to the cutoff, pays a bonus, and burns max HP after 90 s'] = (assert) => {
+CASES['bank: Calorie Burn eats, burns once the fight is dangerous, to the cutoff, and burns max HP after 90 s'] = (assert) => {
   const maxHp = { v: 100 };
-  const { H, lost } = calorieHost(20, maxHp);
+  const hp = { v: 100 };
+  const { H, lost } = calorieHost(20, maxHp, hp);
   F.install(H);
   const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.calorie_burn)));
   F.attach('a', [doc]);
@@ -490,20 +491,47 @@ CASES['bank: Calorie Burn eats, burns to the cutoff, pays a bonus, and burns max
   // Cap 400 + 30 x 20 = 1000: full, so the whole -10%.
   assert(Math.abs(v('kcal') - 1000) < 1e-9 && Math.abs(v('sated') - 10) < 1e-6, 'a full store read ' + v('kcal') + ' and ' + v('sated'));
   F.event('fightStart', 'a', {});
-  for (let i = 0; i < 600; i++) F.tick('a');
-  // 60 s: 2.5 x 60 + 0.075 x 60^2 = 420 burned, past 30%, so the bonus has begun.
-  assert(Math.abs(v('fburn') - 420) < 1, 'burned ' + v('fburn') + ' in 60 s, not about 420');
-  assert(v('burning') > 0 && v('sated') === 0, 'no bonus at 42% burned, or the penalty held');
+  // At full HP nothing burns for the first 20 s.
+  for (let i = 0; i < 199; i++) F.tick('a');
+  assert(v('fburn') === 0 && v('danger') === 0, 'the store burned before the fight turned dangerous');
+  F.tick('a');
+  assert(v('danger') === 1 && v('fburn') > 0, 'the burn did not start at 20 s');
+  for (let i = 0; i < 700; i++) F.tick('a');
+  // 701 burn ticks at 0.25 + 0.0015 per tick of burn: 0.25 x 701 + 0.0015 x 701 x 702 / 2 = 544.33,
+  // past 30%, so the bonus has begun.
+  assert(Math.abs(v('fburn') - 544.3265) < 0.01, 'burned ' + v('fburn') + ' in 701 burn ticks, not 544.33');
+  assert(v('burning') > 0 && v('sated') === 0, 'no bonus at 54% burned, or the penalty held');
   for (let i = 0; i < 600; i++) F.tick('a');
   assert(Math.abs(v('kcal') - 100) < 5, 'the burn did not stop near the 10% cutoff: ' + v('kcal'));
-  // 0.4 a tick from tick 900 (90 s) through tick 1200: 301 ticks.
-  assert(Math.abs(v('debt') - 120.4) < 1e-6, 'max HP burned ' + v('debt') + ', not 120.4');
+  // 0.4 a tick from tick 900 (90 s of fight) through tick 1500: 601 ticks.
+  assert(Math.abs(v('debt') - 240.4) < 1e-6, 'max HP burned ' + v('debt') + ', not 240.4');
   assert(lost.length === 0, 'the fight ended early');
   maxHp.v = 10;
   F.tick('a');
   assert(lost.length === 1 && lost[0].outcome === 'dead', 'burned >= 9 x what was left did not end the fight as a death');
   F.event('fightEnd', 'a', {});
-  assert(v('burning') === 0 && v('fburn') === 0, 'the fight cells did not reset');
+  assert(v('burning') === 0 && v('fburn') === 0 && v('danger') === 0, 'the fight cells did not reset');
+};
+
+CASES['bank: Calorie Burn starts burning at once when a third of HP is gone, and keeps on'] = (assert) => {
+  const maxHp = { v: 100 };
+  const hp = { v: 100 };
+  const { H } = calorieHost(20, maxHp, hp);
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.calorie_burn)));
+  F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
+  F.event('eat', 'a', { calories: 1000 });
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 50; i++) F.tick('a');
+  assert(v('fburn') === 0, 'the store burned at full HP inside 20 s');
+  hp.v = 67;
+  F.tick('a');
+  assert(v('danger') === 1 && v('fburn') > 0, 'losing 33% of HP did not start the burn');
+  hp.v = 100;
+  const burned = v('fburn');
+  F.tick('a');
+  assert(v('fburn') > burned, 'the burn stopped when HP came back');
 };
 
 CASES['bank: Calorie Burn at a 0% cutoff knocks out when the store runs dry'] = (assert) => {

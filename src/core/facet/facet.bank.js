@@ -669,12 +669,16 @@ B.weakest_weapon_master = {
 // knockout consequences); the stop-burning cutoff defaults to 10%. 2026-11-03: the peak bonus is
 // +100% ("further numbers need tweaking. Probably increase this cap as the player levels up and
 // the calorie capacity increases"), the full-store penalty -10%, calories come from the dish's
-// Well Fed (the host's eat event), and running dry at a 0% cutoff is a knockout.
+// Well Fed (the host's eat event), and running dry at a 0% cutoff is a knockout. Later the same
+// day: "the calories don't really start burning until they lose at least 33% of their HP, or 20
+// seconds have passed in a fight, essentially turning it into a danger mode that begins kicking in".
 //
 // Readings taken:
 //   - The store's cap is 400 + 30 x trained CON + STR (the card's settled body).
-//   - The burn runs only in fights, per combat tick: 0.25 rising by 0.015 per second of fight
-//     time, at most 4 (2.5 to 40 calories a second at 10 ticks a second). It stops at the cutoff.
+//   - The burn runs only in fights, and only once the fight turns dangerous: HP at 67% of max or
+//     less, or 20 s of fight time. Once on it stays on for that fight, even if HP comes back.
+//   - Per combat tick it burns 0.25, rising by 0.015 per second since it started, at most 4 (2.5
+//     to 40 calories a second at 10 ticks a second). It stops at the cutoff.
 //   - The bonus prices calories burned THIS fight against the store's cap, so a wearer who never
 //     eats gets nothing: 0 below 30%, then exponential (k 5) to the peak at 100%. At the default
 //     10% cutoff it tops out near half the peak. It holds until the fight ends.
@@ -689,13 +693,15 @@ B.weakest_weapon_master = {
 //   kcal      the store. Fed by the eat event's calories, burned in fights.
 //   fburn     calories burned this fight; the bonus reads it against the cap.
 //   ticks     fight time in combat ticks.
+//   danger    1 once this fight has turned dangerous; the burn runs only then.
+//   bticks    combat ticks since the burn started; its rate rises with them.
 //   fighting  1 between fightStart and fightEnd, so the minute clauses can tell.
 //   burning   the bonus in percent points; carrier: every attribute x(1 + 1% per point).
 //   sated     the full-store penalty in percent points; carrier: every attribute x(1 - 1% per point).
 //   debt      max HP burned; carrier: max HP -1 per point.
 //   cutoff    the stop-burning share picked (1 = 10%, 2 = 0%, 3 = 25%); reading.choice.
 //
-// Reads: ksg.trainedBody, fighter.maxHpAbs. Events: eat (calories), fightStart, fightEnd. Needs a
+// Reads: ksg.trainedBody, fighter.hp, fighter.maxHpAbs. Events: eat (calories), fightStart, fightEnd. Needs a
 // host that calls Facet.tick per combat tick and Facet.minute per game minute, and has defeat.
 const CB_CAP = { expr: 'add', a: 400, b: { expr: 'mul', a: 30, b: { q: 'ksg.trainedBody' } } };
 const CB_SHARE = { cell: 'kcal', of: 'frac' };
@@ -703,7 +709,13 @@ const cbClamp01 = (x) => ({ expr: 'min', a: 1, b: { expr: 'max', a: 0, b: x } })
 // The share of the store the player stops burning at: 10% (1), 0% (2) or 25% (3).
 const cbCutIs = (k) => ({ expr: 'sub', a: 1, b: { expr: 'min', a: 1, b: { expr: 'pow', a: { expr: 'sub', a: { cell: 'cutoff' }, b: k }, b: 2 } } });
 const CB_CUTOFF = { expr: 'add', a: { expr: 'mul', a: 0.1, b: cbCutIs(1) }, b: { expr: 'mul', a: 0.25, b: cbCutIs(3) } };
-const CB_SECONDS = { expr: 'div', a: { cell: 'ticks' }, b: { seconds: 1 } };
+const CB_SECONDS = { expr: 'div', a: { cell: 'bticks' }, b: { seconds: 1 } };
+// Danger: a third of max HP gone, or 20 s of fight time.
+const CB_DANGER = { any: [
+  { q: 'fighter.hp', op: 'lte', v: { expr: 'mul', a: 0.67, b: { q: 'fighter.maxHpAbs' } } },
+  { cell: 'ticks', op: 'gte', v: { seconds: 20 } },
+] };
+const CB_IN_DANGER = { cell: 'danger', op: 'eq', v: 1 };
 const CB_RATE = { expr: 'min', a: 4, b: { expr: 'add', a: 0.25, b: { expr: 'mul', a: 0.015, b: CB_SECONDS } } };
 // The peak: +100% at a cap of 400, x1.25 each time the cap doubles (exponent log2 1.25).
 const CB_PEAK = { expr: 'pow', a: { expr: 'div', a: CB_CAP, b: 400 }, b: 0.3219 };
@@ -718,7 +730,7 @@ const CB_OUT = { cell: 'fighting', op: 'eq', v: 0 };
 const CB_OWED = { cell: 'debt', op: 'gt', v: 0 };
 // The collapse line: burned max HP at 90% of where it started, so burned >= 9 x what is left.
 const CB_GONE = { expr: 'mul', a: 9, b: { q: 'fighter.maxHpAbs' } };
-const cbFightReset = (fighting) => ['ticks', 'fburn', 'burning'].map((c) => setCell(c, 0)).concat([setCell('fighting', fighting)]);
+const cbFightReset = (fighting) => ['ticks', 'bticks', 'danger', 'fburn', 'burning'].map((c) => setCell(c, 0)).concat([setCell('fighting', fighting)]);
 
 B.calorie_burn = {
   v: 1,
@@ -727,7 +739,8 @@ B.calorie_burn = {
     desc: [
       'Store: Eating fills a calorie store. Cap 400 + 30 per trained CON + STR.',
       'Full: All attributes -10% at a full store. 0 at 70% and below.',
-      'Burn: In a fight the store burns, faster the longer it lasts. It stops at your cutoff.',
+      'Danger: In a fight the burn starts once you lose 33% of your HP or 20 s pass.',
+      'Burn: It speeds up the longer it runs. It stops at your cutoff.',
       'Bonus: All attributes up to +100% as one fight burns 30% to 100% of the store.',
       'Grows: The peak bonus x1.25 each time the cap doubles past 400.',
       'Costs: After 90 s in a fight, max HP burns. At 90% burned the fight ends as a death.',
@@ -755,6 +768,8 @@ B.calorie_burn = {
       status: { desc: 'The bonus starts at 30% of the cap and peaks at 100%.' },
     },
     { key: 'ticks', hold: 'none', level: 'int', tier: 'fight', cap: 1e9, carrier: false },
+    { key: 'danger', hold: 'none', level: 'int', tier: 'fight', cap: 1, carrier: false },
+    { key: 'bticks', hold: 'none', level: 'int', tier: 'fight', cap: 1e9, carrier: false },
     { key: 'fighting', hold: 'none', level: 'int', tier: 'run', cap: 1, carrier: false },
     {
       key: 'burning', label: 'Burning', icon: '🔥', hold: 'none', level: 'real', tier: 'fight', show: 'plusPct', cap: 1e6,
@@ -775,10 +790,12 @@ B.calorie_burn = {
     { id: 'eat', on: 'event:eat', do: [addCell('kcal', { frame: 'calories' }), setCell('sated', CB_SATED)] },
     { id: 'start', on: 'event:fightStart', do: cbFightReset(1) },
     { id: 'end', on: 'event:fightEnd', do: cbFightReset(0) },
-    // The fight, per combat tick, in order: time, the burn, the bonus and the penalty, the max-HP
-    // burn, and the two ways the fight can end.
+    // The fight, per combat tick, in order: time, danger, the burn, the bonus and the penalty,
+    // the max-HP burn, and the two ways the fight can end.
     { id: 'clock', on: 'tick', do: [addCell('ticks', 1)] },
-    { id: 'burn', on: 'tick', when: { cell: 'kcal', of: 'frac', op: 'gt', v: CB_CUTOFF },
+    { id: 'danger', on: 'tick', when: CB_DANGER, do: [setCell('danger', 1)] },
+    { id: 'burn_clock', on: 'tick', when: CB_IN_DANGER, do: [addCell('bticks', 1)] },
+    { id: 'burn', on: 'tick', when: { all: [CB_IN_DANGER, { cell: 'kcal', of: 'frac', op: 'gt', v: CB_CUTOFF }] },
       do: [addCell('kcal', { expr: 'mul', a: -1, b: CB_RATE }), addCell('fburn', CB_RATE)] },
     { id: 'levels', on: 'tick', do: [setCell('burning', CB_BURNING), setCell('sated', CB_SATED)] },
     { id: 'wasting', on: 'tick',

@@ -64,6 +64,18 @@ describe('Calorie Burn', () => {
     expect(effectiveAttr(state, 'str')).toBeCloseTo(before * (1 - cell(state, 'sated') / 100));
   });
 
+  it('a fight burns nothing until it turns dangerous: 33% of HP gone or 20 s', () => {
+    const { state, game } = holding();
+    debugSetCell(state, 'kcal', 1);
+    intoFight(state, game);
+    for (const e of state.combat!.enemies) if (e) e.hp = 1e9;
+    game.step();
+    expect(cell(state, 'fburn')).toBe(0);
+    for (let t = 0; t < 210 && state.combat; t++) game.step();
+    expect(cell(state, 'danger')).toBe(1);
+    expect(cell(state, 'fburn')).toBeGreaterThan(0);
+  });
+
   it('max HP burned to 90% ends the fight as a death that is a setback', () => {
     const { state, game } = holding();
     intoFight(state, game);
