@@ -99,9 +99,17 @@ accepted). §6 lists the questions for the user.
     without a forced hop, not on a higher floor than the fall, an encounter eligible now).
   - A usable `proven` spot always wins over a limited one. Among limited spots, the most recent win.
   - Its fights count toward the 200-win retry; the 2 h cap is unchanged.
+  - The "no knockout there since the last win" test holds for as long as the fallback lasts. A
+    knockout at the current limited fallback disqualifies it at once: the pick is made again.
+    (The unlimited `proven` fallback keeps §2.4: return to it, and hold after 5 in a row there.)
   - When its budget is spent, the pick is made again, with the wins and the clock carried over. With
     none left: hold on the target, or with no target (a forced-spot loss) end the return. The hunt
     at the spent spot stops, so the character idles.
+  - Every pick ceilings at the floor of the fall, not of the spot being replaced: the pending return
+    records it as `from` (save v64; an older one uses the target's spot). Floor 1 spent, floor 2
+    still qualifies for a fall on floor 3.
+  - A hold after a spent fallback waits where the character stands: the cleared spot, which spawns
+    nothing. A hold after a knockout waits at the haven, as in the Hold bullet below.
 - Fallback: go to `proven` (or the limited spot) and hunt there. Cross-floor: `climbTo` down, then walk.
 - Retry: after 200 wins at the fallback, or 2 h of game time, whichever comes first, return to the
   target.
@@ -122,6 +130,7 @@ pendingReturn?: {
   wins: number;        // wins at the fallback this phase
   until?: number;      // tick: end of a hold, or the 2 h fallback cap
   probes: number;      // failed probes, for the doubling
+  from?: string;       // the fall spot, set at every fallback (save v64): the ceiling for its picks
 } | null;
 proven?: { spot: string; activity: string } | null;
 ```

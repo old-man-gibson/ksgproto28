@@ -80,9 +80,11 @@ road crosses floors. The activity starts on arrival.
   never walks into loses its target.
 - With no usable proven hunt, a spot with a fight budget stands in as the
   fallback if it was won at, not lost at since, and has fights left (the most
-  recent win first; the proven hunt always wins over it). When its budget is
-  spent the pick is made again, then the hold, or with no target the return
-  ends.
+  recent win first; the proven hunt always wins over it). A knockout there ends
+  it at once. When it is spent or lost the pick is made again, ceilinged at the
+  floor of the fall (`PendingReturn.from`, save v64), then the hold, or with no
+  target the return ends. A hold after a spent fallback waits where the
+  character stands (the cleared spot spawns nothing), not at the haven.
 - A knockout with no activity running and no forced fight (an idle character
   finished by a condition) sends the character nowhere. A forced fight lost
   with no activity selected is the ambush the player walked into, and counts
