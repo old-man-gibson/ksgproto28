@@ -43,6 +43,7 @@ import { carveRune } from './systems/runecarving';
 import { brew, useFlask } from './systems/alchemy';
 import { cook } from './systems/cooking';
 import { startBenchWork, stopBenchWork, tickBenchWork, type BenchWorkStart } from './systems/benchwork';
+import { recallClone, recallClones, sendCloneToActivity, sendCloneToBench, tickClones } from './systems/clones';
 import {
   createComposition,
   deleteComposition,
@@ -114,7 +115,6 @@ import {
   bindFacets,
   chooseEvolution,
   chooseFacetOption,
-  tickWork,
   facetSignal,
   pendingEvolution,
   registerFacetListeners,
@@ -284,8 +284,6 @@ export class Game {
     // leading claim, which may be the one lapsing this very tick; only a hand-off
     // that runs after it moves the condition on instead of letting it expire.
     handOffMeals(this.state, clock);
-    // Before the work itself, so clones (Shadow Clone) join on the tick it starts.
-    tickWork(this.state);
     if (this.state.travel) {
       tickTravel(this.state, this.bus);
     } else {
@@ -293,6 +291,8 @@ export class Game {
       tickBenchWork(this.state, this.bus);
       tickPerformance(this.state, this.bus);
     }
+    // Shadow Clones work wherever they were sent, travel or not (systems/clones.ts).
+    tickClones(this.state, this.bus);
     // After the activity: kills made on this tick count toward the leg in
     // progress, and a leg that ends now resolves (systems/sea.ts).
     tickSea(this.state, this.bus, this.catchingUp);
@@ -690,6 +690,25 @@ export class Game {
   /** Pick option `v` of the held ability's choice: Weakest Weapon Master's stance (facet/host.ts). */
   chooseFacetOption(v: number) {
     return chooseFacetOption(this.state, v);
+  }
+
+  /** Send a Shadow Clone to a gathering or job activity here (systems/clones.ts). */
+  sendClone(activityId: string) {
+    return sendCloneToActivity(this.state, this.bus, activityId);
+  }
+
+  /** Send a Shadow Clone to run this bench layout here. */
+  sendCloneToBench(disciplineId: string, placement: Placement, opts: { duration?: number; forge?: ForgePlacement } = {}) {
+    return sendCloneToBench(this.state, this.bus, disciplineId, placement, opts);
+  }
+
+  /** Recall one Shadow Clone, or all of them. */
+  recallClone(order: number) {
+    return recallClone(this.state, this.bus, order);
+  }
+
+  recallClones() {
+    return recallClones(this.state, this.bus);
   }
 
   /** Shape a psionic working from force/reach/grip points. */

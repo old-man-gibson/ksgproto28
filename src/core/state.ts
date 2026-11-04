@@ -64,6 +64,7 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     activity: null,
     activityProgress: 0,
     benchWork: null,
+    clones: [],
     recovering: false,
     combat: null,
     combatFeed: [],

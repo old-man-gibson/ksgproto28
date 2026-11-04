@@ -1,5 +1,6 @@
 <script lang="ts">
   import { gs, game, view } from '../state.svelte';
+  import { cloneBlocked, cloneRules } from '../../core/systems/clones';
   import { MATERIALS, PART_KINDS, RECIPES, ITEM_CLASSES } from '../../core/registry';
   import { SLOT_NAMES } from '../../core/types';
   import type { ForgeSlot, PartKindDef } from '../../core/types';
@@ -250,6 +251,15 @@
               <button class="small" disabled={!preview.ok} onclick={() => game.forge(placement, null)}>
                 Until out of stock
               </button>
+            {/if}
+            <!-- Shadow Clone (systems/clones.ts): a clone forges this from your stock, at 40% of your speed. -->
+            {#if cloneRules(gs)}
+              <button
+                class="small"
+                disabled={!preview.ok || !!cloneBlocked(gs)}
+                title="A clone forges this from your stock, at 40% of your speed"
+                onclick={() => game.sendCloneToBench('forging', {}, { forge: placement })}>👥 Send a clone</button
+              >
             {/if}
             <button class="small" onclick={clear}>Clear</button>
           {/if}

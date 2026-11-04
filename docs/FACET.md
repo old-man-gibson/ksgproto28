@@ -202,19 +202,24 @@ dishes, and fight something that lasts.
 
 **Shadow Clone** is the eighth (team ability GEN-18, the user's note:
 "absolutely. no question asked. killer ability."), and the first that works
-outside a fight. Readings taken 2026-11-03 (the recommended ones; the user
-moved on without answering): no time limit, bench clone crafts use their own
-stock, clones add yield and skill XP but not attribute XP.
+outside a fight. Rebuilt the same day on the user's redesign: clones are
+deployed. Each works one task until a new clone replaces it (the oldest goes
+when every clone is out), it is recalled, the player stands more than
+max(0, floor((level - 10) / 5)) floors away (Threshold and the base are floor
+0, the ascent's first floor 1), or the player is knocked out by anything.
+Hits do not end them.
 
 | Piece | Where |
 |---|---|
-| The work | host.ts `tickWork`, each game tick before the activity: the `work` event names a bench run, a gathering or a job activity as a nonzero hash, anything else as 0. Raised when it changes and once after a load. |
-| Summoning | The document sets `clones` to 1 + 1 per 10 character levels, at most 5, when `work` names new work; the same work again summons nothing. 0 dispels them, and so does an enemy's blow (`hitTaken` with an attacker). |
-| What a clone adds | Carrier field `cloneShare` (0.4) and statuses.ts `cloneMult`: 1 + 0.4 per clone. actions.ts multiplies a gathering's yield and a job's pay, and the skill XP of both; attribute XP is unchanged. |
-| Benches | benchwork.ts: after each pass, `cloneMult - 1` times the batch more crafts, each through the bench's own craft, so each uses its own ingredients and the run still stops when they run out. The fraction carries (`BenchWork.cloneCarry`). |
-| The cost | Carrier mod `pool.mana.max` mult -0.05 per clone. |
+| The clones | The game's, not the document's: `GameState.clones` (`CloneJob`: spot, an activity or a bench layout, progress, order), worked by systems/clones.ts `tickClones` each game tick, travel included. Older saves have none (deserialize backfills it). |
+| The numbers | The document's one cell, `clones`: its cap is the most out at once (1 + 1 per 10 character levels, max 5), its status's `cloneYield` (0.4) and `cloneXp` (0.25) the shares, its value the count the game writes, which the carrier turns into max mana -5% per clone. host.ts `cloneRulesOf` and `syncCloneCount`, registered through `setCloneHost`. |
+| Jobs and gathering | `sendCloneToActivity` (a "👥 Clone: <task>" button beside each job and gathering activity). The clone keeps the player's pace (activityFillRate) and yields 40% of the materials or pay, with 25% of the skill XP and no attribute XP. |
+| Benches | `sendCloneToBench` ("👥 Send a clone" on the bench and anvil panels) copies the layout. Each pass takes the bench's time divided by 0.4 and makes whole crafts from the player's stock (benchwork.ts `cloneCraft`), at 25% skill XP (skills.ts `scaledSkillXp`). Short of stock it waits for the next pass. |
+| The end rules | `tickClones`: no ability, all go; `state.recovering` (every knockout sets it), all go; more out than the cap, the oldest go; too many floors away (`floorOfSpot`, `cloneReach`), that clone goes; an activity that no longer exists, that clone goes. |
+| Recall | The Ability tab lists the clones at work with Recall per clone and Recall all. |
 
-To try it: Grant 👥 Shadow Clone, then start gathering, a job or a bench run.
+To try it: Grant 👥 Shadow Clone, go to a job (The Alembics: Wash Out the
+Retorts) and press 👥 Clone: Wash Out the Retorts.
 
 ### Enemies as refs
 
@@ -250,7 +255,6 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `rocks` | combat.ts `throwRubble`, once per enemy the rocks hit | `target` (its ref), `amount` |
 | `barFill` | combat.ts, when the player's action bar fills, before the action | |
 | `eat` | consumables.ts `useConsumable`, for food | `calories` (`dishCalories`) |
-| `work` | host.ts `tickWork`, when what the player works at changes, and once after a load | `key` (a bench run, gathering or job, hashed; 0 for anything else) |
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it

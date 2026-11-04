@@ -6,20 +6,21 @@ import { facetSignal } from '../src/core/facet/signal';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { getDerivedStats } from '../src/core/systems/derived';
-import { grantGraded, gradesHeld, type Placement } from '../src/core/systems/disciplines';
-import { startBenchWork } from '../src/core/systems/benchwork';
-import { stockOf } from '../src/core/systems/disciplines';
-import type { GameState, QualityTier } from '../src/core/types';
+import { grantGraded, gradesHeld, stockOf, type Placement } from '../src/core/systems/disciplines';
+import { cloneReach, floorOfSpot } from '../src/core/systems/clones';
+import { deserialize, serialize } from '../src/core/save/save';
+import { FLOOR_BY_AREA, SPOTS } from '../src/core/registry';
+import type { GameState } from '../src/core/types';
 
 /**
- * Shadow Clone (Facet repo core/facet.bank.js, docs/FACET.md): gathering, a
- * job or a bench run brings clones; each adds 40% yield and skill XP, bench
- * clone crafts use their own stock, and a hit or a change of work dispels them.
+ * Shadow Clone, deployed (systems/clones.ts, docs/FACET.md): a clone sent to a
+ * job, gathering or a bench works it on its own at 40% of the yield and 25% of
+ * the skill XP; bench crafts are whole but take 2.5 times as long. Clones end
+ * when replaced, recalled, left too many floors behind, or on a knockout.
  */
 
 afterEach(() => globalThis.Facet?.uninstall());
 
-/** A game at `spot`, holding Shadow Clone when `clones` is set. */
 function at(spot: string, clones: boolean, level = 1): { state: GameState; game: Game } {
   const state = createInitialState(7);
   state.level = level;
@@ -30,89 +31,125 @@ function at(spot: string, clones: boolean, level = 1): { state: GameState; game:
   return { state, game: new Game(state) };
 }
 
-const cell = (state: GameState, key: string) => state.facets[0].cells!.find((c) => c.key === key)!.state!.v;
+const spotOnFloor = (index: number) =>
+  Object.values(SPOTS).find((s) => FLOOR_BY_AREA.get(s.areaId)?.index === index)!.id;
 
-function work(spot: string, activity: string, clones: boolean, ticks: number): GameState {
-  const { state, game } = at(spot, clones);
-  const gold = state.gold;
-  game.selectActivity(activity);
-  for (let t = 0; t < ticks; t++) game.step();
-  state.gold -= gold;
-  globalThis.Facet.uninstall();
-  return state;
-}
-
-describe('Shadow Clone', () => {
-  it('starting a job brings one clone at level 1, and pay is 40% more', () => {
-    const { state, game } = at('the_alembics', true);
-    game.selectActivity('job_retorts');
-    game.step();
-    expect(cell(state, 'clones')).toBe(1);
+describe('Shadow Clone, deployed', () => {
+  it('a clone works a job on its own for 40% of the pay', () => {
+    // The player on the job, for comparison.
+    const self = at('the_alembics', false);
+    self.game.selectActivity('job_retorts');
+    for (let t = 0; t < 2_100; t++) self.game.step();
+    const paid = self.state.gold;
     globalThis.Facet.uninstall();
-    const alone = work('the_alembics', 'job_retorts', false, 2_100);
-    const helped = work('the_alembics', 'job_retorts', true, 2_100);
-    expect(alone.gold).toBeGreaterThan(0);
-    // Pay rounds per shift: 11 x goldGain x 1.4 against 11 x goldGain.
-    expect(helped.gold / alone.gold).toBeGreaterThan(1.3);
-    expect(helped.gold / alone.gold).toBeLessThan(1.5);
+    // A clone on it while the player stands idle.
+    const { state, game } = at('the_alembics', true);
+    expect(game.sendClone('job_retorts')).toBe(true);
+    for (let t = 0; t < 2_100; t++) game.step();
+    expect(paid).toBeGreaterThan(0);
+    expect(state.gold / paid).toBeGreaterThan(0.3);
+    expect(state.gold / paid).toBeLessThan(0.5);
   });
 
-  it('gathering yields about 40% more', () => {
-    const alone = work('base_farm', 'tend_rows', false, 24_000);
-    const helped = work('base_farm', 'tend_rows', true, 24_000);
-    const got = (s: GameState) => s.stats['gather:wild_onion'] ?? 0;
-    expect(got(alone)).toBeGreaterThan(50);
-    expect(got(helped) / got(alone)).toBeGreaterThan(1.25);
-    expect(got(helped) / got(alone)).toBeLessThan(1.55);
-    // Two runs of 24,000 ticks: about 2 s alone, past the 5 s default under a full suite.
-  }, 30_000);
+  it('a craft by a clone pays 25% of the skill XP yours does', () => {
+    const board: Placement = { board: { id: 'wild_onion', quality: 'c' }, technique: { id: 'sliced', quality: 'c' } };
+    const one = (clone: boolean) => {
+      const { state, game } = at('my_home', clone);
+      grantGraded(state, 'wild_onion', 'c', 1);
+      state.skills.cooking = { level: 1, xp: 0 };
+      if (clone) game.sendCloneToBench('preparing', board);
+      else game.startBenchWork('preparing', board, { count: 1 });
+      for (let t = 0; t < 400; t++) game.step();
+      globalThis.Facet.uninstall();
+      return Number(state.skills.cooking.xp);
+    };
+    const mine = one(false);
+    expect(mine).toBeGreaterThan(0);
+    expect(one(true)).toBeCloseTo(mine * 0.25);
+  });
 
-  it('counts 1 + 1 per 10 levels, and each clone takes 5% off max mana', () => {
+  it('a new clone with every clone out replaces the oldest; recall ends one or all', () => {
+    const { state, game } = at('the_alembics', true, 25);
+    game.sendClone('job_retorts');
+    game.sendClone('job_retorts');
+    game.sendClone('job_retorts');
+    expect(state.clones.map((c) => c.order)).toEqual([1, 2, 3]);
+    game.sendClone('job_retorts');
+    expect(state.clones.map((c) => c.order)).toEqual([2, 3, 4]);
+    expect(game.recallClone(3)).toBe(true);
+    expect(state.clones.map((c) => c.order)).toEqual([2, 4]);
+    expect(game.recallClones()).toBe(2);
+    expect(state.clones).toEqual([]);
+  });
+
+  it('level 1 allows one clone, and each clone out takes 5% off max mana', () => {
     const { state, game } = at('the_alembics', true, 25);
     const mana = getDerivedStats(state).maxMana;
-    game.selectActivity('job_retorts');
-    game.step();
-    expect(cell(state, 'clones')).toBe(3);
-    // Pool maxima are whole numbers.
-    expect(Math.abs(getDerivedStats(state).maxMana - mana * 0.85)).toBeLessThan(1);
+    game.sendClone('job_retorts');
+    game.sendClone('job_retorts');
+    expect(Math.abs(getDerivedStats(state).maxMana - mana * 0.9)).toBeLessThan(1);
+    globalThis.Facet.uninstall();
+    const low = at('the_alembics', true, 1);
+    low.game.sendClone('job_retorts');
+    low.game.sendClone('job_retorts');
+    expect(low.state.clones).toHaveLength(1);
   });
 
-  it('a hit dispels them until the work changes; switching away dispels them too', () => {
-    const { state, game } = at('the_alembics', true);
-    game.selectActivity('job_retorts');
-    game.step();
-    expect(cell(state, 'clones')).toBe(1);
+  it('clones stop when the player is more floors away than (level - 10) / 5', () => {
+    expect(floorOfSpot('the_alembics')).toBe(0);
+    const one = spotOnFloor(1);
+    const three = spotOnFloor(3);
+    const near = at('the_alembics', true, 1);
+    expect(cloneReach(near.state)).toBe(0);
+    near.game.sendClone('job_retorts');
+    near.state.spot = one;
+    near.game.step();
+    expect(near.state.clones).toHaveLength(0);
+    globalThis.Facet.uninstall();
+    const far = at('the_alembics', true, 20);
+    expect(cloneReach(far.state)).toBe(2);
+    far.game.sendClone('job_retorts');
+    far.state.spot = one;
+    far.game.step();
+    expect(far.state.clones).toHaveLength(1);
+    far.state.spot = three;
+    far.game.step();
+    expect(far.state.clones).toHaveLength(0);
+  });
+
+  it('a knockout ends every clone; a hit does not', () => {
+    const { state, game } = at('the_alembics', true, 25);
+    game.sendClone('job_retorts');
     facetSignal(state, 'hitTaken', { amount: 3, attacker: 'e0' });
-    expect(cell(state, 'clones')).toBe(0);
-    for (let t = 0; t < 10; t++) game.step();
-    expect(cell(state, 'clones')).toBe(0);
-    game.selectActivity(null);
     game.step();
-    game.selectActivity('job_retorts');
+    expect(state.clones).toHaveLength(1);
+    state.recovering = true;
     game.step();
-    expect(cell(state, 'clones')).toBe(1);
-    game.selectActivity(null);
-    game.step();
-    expect(cell(state, 'clones')).toBe(0);
+    expect(state.clones).toHaveLength(0);
+    expect(game.sendClone('job_retorts')).toBe(false);
   });
 
-  it('at a bench, clone crafts use their own stock: more crafts, never more than the stock', () => {
-    const board = (q: QualityTier): Placement => ({ board: { id: 'wild_onion', quality: q }, technique: { id: 'sliced', quality: 'c' } });
+  it('at a bench a clone makes whole crafts from stock, 2.5 times slower than you', () => {
+    const board: Placement = { board: { id: 'wild_onion', quality: 'c' }, technique: { id: 'sliced', quality: 'c' } };
     const sliced = (s: GameState) => gradesHeld(s, 'wild_onion_sliced').reduce((n, e) => n + e.qty, 0);
-    const run = (clones: boolean, stock: number, ticks: number) => {
-      const { state, game } = at('my_home', clones);
-      grantGraded(state, 'wild_onion', 'c', stock);
-      state.skills.cooking = { level: 1, xp: 0 };
-      expect(startBenchWork(state, game.bus, 'preparing', board('c'), { count: null })).toBe(true);
-      for (let t = 0; t < ticks; t++) game.tick();
-      globalThis.Facet.uninstall();
-      return state;
-    };
-    const alone = run(false, 200, 300);
-    const helped = run(true, 200, 300);
-    expect(sliced(helped)).toBeGreaterThan(sliced(alone));
-    const dry = run(true, 5, 400);
-    expect(sliced(dry)).toBe(5);
-    expect(stockOf(dry, 'wild_onion', 'c')).toBe(0);
+    const { state, game } = at('my_home', true);
+    grantGraded(state, 'wild_onion', 'c', 4);
+    state.skills.cooking = { level: 1, xp: 0 };
+    expect(game.sendCloneToBench('preparing', board)).toBe(true);
+    const per = state.clones[0].bench!.ticksPer;
+    for (let t = 0; t < per * 2 + 1; t++) game.step();
+    expect(sliced(state)).toBe(2 * state.clones[0].bench!.batch);
+    for (let t = 0; t < per * 10; t++) game.step();
+    expect(sliced(state)).toBe(4);
+    expect(stockOf(state, 'wild_onion', 'c')).toBe(0);
+    expect(state.clones).toHaveLength(1);
+  });
+
+  it('clones survive a save and load', () => {
+    const { state, game } = at('the_alembics', true, 25);
+    game.sendClone('job_retorts');
+    const loaded = deserialize(serialize(state));
+    expect(loaded.clones).toHaveLength(1);
+    expect(loaded.clones[0].activity).toBe('job_retorts');
   });
 });

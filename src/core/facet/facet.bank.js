@@ -841,59 +841,51 @@ B.calorie_burn = {
 //   Grows: N is 1 + 1 per 10 character levels, max 5.
 //   Costs: Each clone reserves 5% of max mana while it exists.
 //   Fails: Clones are dispelled when you take a hit, switch activity, or after 1 hour.
-// The entry's own note: "an 8 h catch-up of crafting at x3 output is the point. The materials for
-// crafts still have to exist, so the multiplier is bounded by stock."
 //
-// Readings taken 2026-11-03 (asked; the user moved on without answering, so the recommended ones):
-//   - No time limit. "After 1 hour" and "an 8 h catch-up ... is the point" disagree, and a game
-//     hour in ksgproto28 is one real minute. Clones last until a hit or a switch of activity.
-//   - Crafting at a bench: each clone adds 40% more crafts, each using its own ingredients, so the
-//     output is bounded by stock (the host's share, ksgproto28 benchwork.ts).
-//   - Clones add yield and skill XP; attribute XP stays the player's.
-//   - A hit is an enemy's blow (hitTaken with an attacker), as for Bramble.
-//   - The 5% is taken off max mana for each clone.
+// Rebuilt 2026-11-03 on the user's redesign: "I want the shadow clones to be deployable. they work
+// one task until A) the player assigns one shadow clone and all available ones are used, then the
+// oldest clone disappears, B) the player recalls shadow clones, C) the player moves to a floor more
+// than max(0,floor((player level-10)/5)) floors away (ascent to floor 1 is distance 1), D) the
+// player is knocked out by any means". And: "tasks are at normal pace but yield 40%, if a task
+// involves creating an item, the time required instead becomes divided by shadow clone efficiency
+// (i.e. the duration is longer), it also yields 25% skill xp instead." Bench runs count as tasks;
+// hits no longer dispel clones.
 //
-//   clones  clones working now; the carrier's `cloneShare` (0.4) is what each adds, and its
-//           modifier takes 5% off max mana per clone.
-//   bound   the work the clones are on: the key the host's work event names (a number). The same
-//           key again summons nothing; a new one summons a fresh set.
+// The clones are the host's (ksgproto28 systems/clones.ts): it sends them, works them and ends them.
+// This document carries the numbers on one cell:
+//   clones  how many are out, which the host writes. Its cap is the most at once, 1 + 1 per 10
+//           character levels, max 5. Its carrier's cloneYield (0.4) is a clone's share of a
+//           gathering or job yield and the speed of its bench crafts; cloneXp (0.25) its share of
+//           the skill XP; its modifier takes 5% off max mana per clone out.
 //
-// Reads: fighter.level. Events: work (key: a nonzero number for gathering, a job or a bench run,
-// 0 for anything else; raised when it changes), hitTaken. Needs a host that knows the status field
-// cloneShare and raises work.
+// Reads: fighter.level. Needs a host that deploys clones and knows the status fields cloneYield
+// and cloneXp. A host without them shows the count and nothing works.
 const SC_COUNT = { expr: 'min', a: 5, b: { expr: 'add', a: 1, b: { expr: 'floor', a: { expr: 'div', a: { q: 'fighter.level' }, b: 10 } } } };
-const SC_WORKING = { not: { frame: 'key', op: 'eq', v: 0 } };
-const SC_IDLE = { not: { frame: 'key', op: 'ne', v: 0 } };
-const SC_NEW_WORK = { not: { frame: 'key', op: 'eq', v: { cell: 'bound' } } };
 
 B.shadow_clone = {
   v: 1,
   reading: {
     name: 'Shadow Clone', icon: '👥',
     desc: [
-      'Does: Gathering, a job or bench crafting brings clones. Each adds 40% yield and skill XP.',
-      'Count: 1 clone, +1 per 10 character levels. Max 5.',
-      'Crafting: Clone crafts use their own ingredients.',
-      'Costs: Each clone takes 5% off max mana.',
-      'Fails: Taking a hit or switching activity dispels them.',
+      'Does: Send a clone to a job, gathering or a bench. It works there on its own.',
+      'Yield: 40% of the materials or pay, and 25% of the skill XP.',
+      'Crafting: Whole crafts from your stock, at 40% of your speed.',
+      'Count: 1 clone, +1 per 10 character levels. Max 5. A new one replaces the oldest.',
+      'Costs: Each clone out takes 5% off max mana.',
+      'Ends: Recall, a knockout, or straying more floors away than (level - 10) / 5.',
     ].join('\n'),
   },
   cells: [
     {
-      key: 'clones', label: 'Shadow clones', icon: '👥', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 5,
+      key: 'clones', label: 'Shadow clones', icon: '👥', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: SC_COUNT,
       status: {
-        desc: 'Each adds 40% yield and skill XP, and takes 5% off max mana.',
-        cloneShare: 0.4,
+        desc: 'Clones at work. Each takes 5% off max mana.',
+        cloneYield: 0.4,
+        cloneXp: 0.25,
         mods: [{ q: 'pool.mana.max', op: 'mult', value: -0.05 }],
       },
     },
-    { key: 'bound', hold: 'none', level: 'real', tier: 'run', cap: 1e10, carrier: false },
   ],
-  clauses: [
-    { id: 'summon', on: 'event:work', when: { all: [SC_WORKING, SC_NEW_WORK] },
-      do: [setCell('bound', { frame: 'key' }), setCell('clones', SC_COUNT)] },
-    { id: 'idle', on: 'event:work', when: SC_IDLE, do: [setCell('bound', 0), setCell('clones', 0)] },
-    { id: 'hit', on: 'event:hitTaken', when: FROM_ENEMY, do: [setCell('clones', 0)] },
-  ],
+  clauses: [],
 };
 })();
