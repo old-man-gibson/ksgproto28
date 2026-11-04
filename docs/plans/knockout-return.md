@@ -2,7 +2,7 @@
 id: knockout-return
 title: Knockout return — go back to work after a knockout
 kind: story
-status: execution
+status: review
 system: combat
 parent: ''
 save: ''
@@ -206,3 +206,48 @@ Marked on the decision page. Every mark matches the default.
 | Q4 Stronghold wall | Rejected | `f11_wall` is not a return target; it falls back instead |
 | Q5 Shaken | Hold | Not built |
 | Q6 Setting | Hold | Not built; the return always applies |
+
+## 8. Build log
+
+**Branch and checks.**
+- Branch `ko-return`, a2767d3 plus five fix commits (tip 3ad0e1c), merged into
+  `ui-integration` ef34619.
+- Save v63: migration 62→63 sets `pendingReturn` and `proven` to null.
+- `npm run verify` on the merged tree passed with 3,365 tests. tests/john.test.ts passes unchanged.
+- The test save on port 5599 migrated with gold, kills and ticks intact.
+
+**Code.** src/core/systems/knockoutReturn.ts.
+- `selectActivity` is the player's pick and clears the return. Its body moved to `startActivity`,
+  which `settleArrival` uses, so the return's own arrival keeps it.
+- The `Game` commands clear the return on success.
+
+**Antagonist-code: FIX FIRST.** Three confirmed findings, all fixed with tests that fail without
+the fix:
+1. The stale activity read in `tickAction` spawned a fight on the road after the 2 h retry. The
+   fight was never ticked again, a permanent stall. Fix: the activity part stops on a tick that
+   sets out, and no encounter spawns while travelling.
+2. A probe whose road was shut ended the return. It now holds again with the doubled wait.
+3. A knockout at the fallback just after the retry replaced the target. The fallback is now
+   carried into the `return` phase.
+
+**Manager rulings.**
+- A knockout with no activity running, and not in a forced fight, does nothing beyond the
+  retreat: a player idling to bank bonus time stays idle.
+- Forced fights count as work. Travel clears the activity, so without this an ambush loss could
+  never fall back (Q2, Q3).
+- A target that is only temporarily unreachable (a shut road, an activity that cannot start
+  now) is kept: fall back to `proven` with the same target, or hold.
+- The target becomes null only for the permanent causes: a forced spot, a forced road, the wall,
+  a festival floor.
+
+**Simulations, 8 h each.**
+- Hopeless spot with no proven hunt: longest stall 1 tick, longest idle 80 min (the hold).
+- Hopeless spot with a proven hunt: longest idle 0.12 min (recovery), 9,239 kills.
+
+**Open.**
+- Most band-1 hunt spots have `fightLimit`, so `proven` stays empty there. A loss to a floor-1
+  gate boss ends idle under Q2's "else idle". Put to the user 2026-11-04.
+- While a hold waits, the only way to cancel it is to start an activity and stop it.
+  navigation-alternatives N7 shows the pending return with a "Stay here" control.
+- The defeat-dialog gate in App.svelte has not been checked in a browser. Its deciding function,
+  `defeatDialogDue`, is unit-tested.
