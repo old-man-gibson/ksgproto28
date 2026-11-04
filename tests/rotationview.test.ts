@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { activeRotation } from '../src/core/systems/combat';
-import { stepTarget, visibleIds } from '../src/ui/lib/rotationView';
+import { TECHNIQUES } from '../src/core/registry';
+import { rankNote, stepTarget, visibleIds } from '../src/ui/lib/rotationView';
 
 // The Active Skills move buttons (ui/lib/rotationView.ts, CombatPanel.svelte):
 // each card steps one place among the DRAWN cards through game.moveSkillTo,
@@ -44,6 +45,29 @@ describe('visibleIds: the cards the panel draws', () => {
       'grimoire:7': { enabled: false },
     };
     expect(visibleIds(order, triggers)).toEqual(['heavy_swing', 'technique:sidestep', 'grimoire:7']);
+  });
+});
+
+describe('rankNote: a rank that is not a turn', () => {
+  it('a plain, switched-on entry has a turn and no note', () => {
+    expect(rankNote(false, false)).toBeNull();
+  });
+
+  it('a counter keeps its position but is not fired in turn', () => {
+    expect(rankNote(true, false)).toBe('Order: not fired in turn. Counters fire on a trigger.');
+  });
+
+  it('a switched-off entry says so, a switched-off counter included', () => {
+    expect(rankNote(false, true)).toBe('Order: switched off.');
+    expect(rankNote(true, true)).toBe('Order: switched off.');
+  });
+
+  it('the panel reads the counter flag off the same field pickActive skips on', () => {
+    // CombatPanel marks a technique with `def.move.counter`, the field
+    // pickActive tests; these two are the counters the proposal names.
+    expect(TECHNIQUES.spell_parry.move.counter).toBeTruthy();
+    expect(TECHNIQUES.electric_cross.move.counter).toBeTruthy();
+    expect(TECHNIQUES.gather.move.counter).toBeUndefined();
   });
 });
 

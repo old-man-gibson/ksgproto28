@@ -72,7 +72,7 @@
   import EntryConfigModal from '../lib/EntryConfigModal.svelte';
   import MartialPlanner from './MartialPlanner.svelte';
   import { tutorialScreen } from '../lib/tutorialFocus';
-  import { stepTarget, visibleIds } from '../lib/rotationView';
+  import { rankNote, stepTarget, visibleIds } from '../lib/rotationView';
 
   /**
    * The rows of an affliction total worth drawing.
@@ -113,6 +113,8 @@
     cooldown?: number;
     /** Ticks left on a wind-up still being spoken, when one is (see `whenText`). */
     speaking?: number;
+    /** A counter technique or counterspell: pickActive never takes it in turn. */
+    counter?: boolean;
   }
 
   function rotationEntry(id: string): RotationEntry | null {
@@ -132,6 +134,7 @@
         mark: spec.counter ? '🪤' : (SCHOOL_MARK[spec.school] ?? '📖'),
         cost: costs.join(' '),
         cooldown: spec.cooldown,
+        counter: !!spec.counter,
       };
     }
     if (id.startsWith('technique:')) {
@@ -146,6 +149,8 @@
         mark: '🥋',
         cost: fmt(techniqueExecutions(gs, def.id)),
         cooldown: move.cooldown,
+        // The base move's field, as pickActive reads it.
+        counter: !!def.move.counter,
       };
     }
     // The body's own tool. It is not a skill, so it has no SKILLS entry to look
@@ -559,9 +564,6 @@
     Slots: {slotCap} ({MAX_DRILLED} drill + {BASE_TECHNIQUE_SLOTS} base{extra > 0 ? ` + ${extra} prestige` : ''}).
   </div>
   <div class="tip-line">Effect: only slotted techniques fire or drill.</div>
-  {#if slotsUsed >= slotCap && knownTechs.length > slotsUsed}
-    <div class="tip-line">Over the slots: extra techniques wait on the bench (Skills tab).</div>
-  {/if}
 {/snippet}
 
 <!-- The fight, drawn — first on the tab, because it is what the tab is for.
@@ -813,6 +815,9 @@
   {#if rotation.length === 0}
     <p class="dim small">No active skills learned yet — they manifest as you fight.</p>
   {:else}
+    {#if slotsUsed >= slotCap && knownTechs.length > slotsUsed}
+      <p class="small over-slots">Over the slots: extra techniques wait on the bench (Skills tab).</p>
+    {/if}
 
     <!-- Loadouts: a whole fighting identity under one name — order, bench
          switches, drills, trigger conditions, prepared spells and worn gear.
@@ -854,6 +859,7 @@
         {@const trigger = gs.skillTriggers[id]}
         {@const off = trigger?.enabled === false}
         {@const tuned = !!trigger && (trigger.conditions.length > 0 || !!trigger.event)}
+        {@const skipNote = rankNote(!!entry.counter, off)}
         <div
           class="active-skill"
           class:ready={status ? status.kind === 'primed' || status.kind === 'ready' : cd <= 0 && !off}
@@ -872,7 +878,16 @@
           <!-- The gutter: where the card fires from, and the keyboard path to
                change it (drag has none). Both buttons share the drag gate. -->
           <div class="gutter">
-            <span class="rank">{rank + 1}</span>
+            <!-- A rank that is not a turn (a counter, or a card switched off)
+                 keeps its place in the order but is drawn dimmed. -->
+            {#if skipNote}
+              <Tip>
+                <span class="rank skipped">{rank + 1}</span>
+                {#snippet tip()}<div class="tip-line">{skipNote}</div>{/snippet}
+              </Tip>
+            {:else}
+              <span class="rank">{rank + 1}</span>
+            {/if}
             {#if rotationEditable}
               <button
                 class="tiny step"
@@ -1509,6 +1524,18 @@
     margin-left: auto;
   }
 
+  /* The warning under the title while learned techniques are benched. */
+  .over-slots {
+    margin: 0 0 8px;
+    color: var(--danger);
+  }
+
+  /* A grid item with a 1fr column beside it: lets the column shrink below the
+     card minimum instead of pushing the page wider. */
+  .actives-panel {
+    min-width: 0;
+  }
+
   .loadouts {
     display: flex;
     flex-wrap: wrap;
@@ -1555,10 +1582,12 @@
   /* One card per line beats two cramped ones: below ~300px the name, pills,
      status and controls stop fitting side by side and the card grows taller
      than the two-column saving is worth. The gutter (rank and move buttons)
-     takes ~70px of that, so the minimum is 370px. */
+     takes ~70px of that, so the minimum is 370px. min() caps it at the
+     panel's own width, so a panel narrower than that shrinks instead of
+     overflowing. */
   .actives {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(370px, 100%), 1fr));
     gap: 4px;
     align-items: start;
   }
@@ -1598,10 +1627,16 @@
   }
 
   .rank {
+    display: inline-block;
     min-width: 18px;
     text-align: right;
     color: var(--text-dim);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* A position that is not a turn: a counter, or a card switched off. */
+  .rank.skipped {
+    opacity: 0.45;
   }
 
   button.step {

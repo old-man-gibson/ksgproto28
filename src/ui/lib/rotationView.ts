@@ -18,6 +18,18 @@ export function visibleIds(order: readonly string[], triggers: TriggerOverlays):
 }
 
 /**
+ * Why a card's rank number is not a turn, or null when it is one. A counter
+ * technique or counterspell is never picked in turn (`pickActive` skips it):
+ * it springs on a trigger, and its position only orders it among the other
+ * counters. An entry switched off is never picked at all, so off wins.
+ */
+export function rankNote(counter: boolean, off: boolean): string | null {
+  if (off) return 'Order: switched off.';
+  if (counter) return 'Order: not fired in turn. Counters fire on a trigger.';
+  return null;
+}
+
+/**
  * The `beforeId` for `game.moveSkillTo(id, beforeId)` that moves a card one
  * place among the drawn cards, or `undefined` when there is no move (the top
  * card up, the bottom card down, an id that is not drawn).
