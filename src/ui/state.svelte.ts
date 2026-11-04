@@ -17,6 +17,7 @@ import type { SortMode } from '../core/systems/inventory';
 import { forgetLayouts } from './lib/benchLayouts';
 import { bindFacets, dropFacetStatuses, installFacet } from '../core/facet/host';
 import { initialSeen, visibleNav, writeSeen, type MainTab } from './lib/nav';
+import { readLogChoice, writeLogChoice } from './lib/shell';
 
 /**
  * Bridge between the pure core and Svelte. The game state is a deep-reactive
@@ -67,6 +68,13 @@ export const ui = $state({
    * "new" in the screen list.
    */
   navSeen: initialSeen(gs),
+  /**
+   * The player's pick for the log column: true open, false folded, null none
+   * (the width decides, lib/shell.ts). Kept in localStorage, not in the save.
+   */
+  logChoice: readLogChoice(),
+  /** The folded log's overlay panel is showing. UI only. */
+  logDrawer: false,
   offline: null as OfflineSummary | null,
   /**
    * Wall-clock ms the boot catch-up is about to simulate, while it runs. The
@@ -175,6 +183,13 @@ export function catchUp(elapsedMs: number): OfflineSummary | null {
 
 export function save(): void {
   saveToStorage(gs);
+}
+
+/** The player opens or folds the log column. Stored, and it beats the width default. */
+export function setLogChoice(open: boolean): void {
+  ui.logChoice = open;
+  ui.logDrawer = false;
+  writeLogChoice(open);
 }
 
 /** Record that a screen has been opened. */

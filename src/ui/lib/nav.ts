@@ -140,8 +140,8 @@ export function navMark(entry: NavEntry, gs: GameState): string | null {
  * Which entries the player has opened, in localStorage under `ksgproto28-shell`
  * (a per-browser preference, like the theme: outside the save's prefix, so a
  * hard reset keeps it and no save carries it). The stored value is an object so
- * other shell preferences can share the key; a write keeps the fields it does
- * not own.
+ * other shell preferences can share the key (the log's open or folded choice,
+ * shell.ts); a write keeps the fields it does not own.
  */
 export const SHELL_KEY = 'ksgproto28-shell';
 
@@ -157,7 +157,8 @@ export function browserStore(): ShellStore | null {
   }
 }
 
-function readShell(store: ShellStore | null): Record<string, unknown> | null {
+/** The whole shell object, or null when nothing usable is stored. Other shell preferences (shell.ts) read their field from it. */
+export function readShell(store: ShellStore | null = browserStore()): Record<string, unknown> | null {
   if (!store) return null;
   try {
     const raw = store.getItem(SHELL_KEY);
@@ -169,6 +170,16 @@ function readShell(store: ShellStore | null): Record<string, unknown> | null {
   }
 }
 
+/** Merge fields into the shell object, keeping the ones not named. A failed write is ignored. */
+export function patchShell(fields: Record<string, unknown>, store: ShellStore | null = browserStore()): void {
+  if (!store) return;
+  try {
+    store.setItem(SHELL_KEY, JSON.stringify({ ...readShell(store), ...fields }));
+  } catch {
+    // Blocked or full storage.
+  }
+}
+
 /** The stored seen ids, or null when nothing usable is stored. */
 export function readSeen(store: ShellStore | null = browserStore()): string[] | null {
   const seen = readShell(store)?.seen;
@@ -177,12 +188,7 @@ export function readSeen(store: ShellStore | null = browserStore()): string[] | 
 
 /** Store the seen ids. A failed write is ignored: the marks then last this visit only. */
 export function writeSeen(ids: readonly string[], store: ShellStore | null = browserStore()): void {
-  if (!store) return;
-  try {
-    store.setItem(SHELL_KEY, JSON.stringify({ ...readShell(store), seen: [...ids] }));
-  } catch {
-    // Blocked or full storage.
-  }
+  patchShell({ seen: [...ids] }, store);
 }
 
 /**
