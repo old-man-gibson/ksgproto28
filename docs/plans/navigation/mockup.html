@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Navigation Mockups</title>
+<!--
+  Static mockups for docs/plans/navigation-alternatives.md. Not game code.
+  Pin positions, districts, roads and road lengths are the live data from
+  src/core/data/locations.data.ts (exported 2026-11-04). The discovery state is
+  the port-5599 test save: level 24, floors 1-6 cleared, standing at The Woods
+  Edge on floor 4. Grey squares stand for pixel icons; no bought art is used.
+  Gothic tokens are copied from src/themes/gothic.css.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600&family=EB+Garamond:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #110e0b; --bg-panel: #1a1511; --bg-raised: #241d16; --bg-hover: #30271d; --bg-sunken: #0b0907;
+    --border: #4a3c2c; --frame: #2c241b; --text: #ddd1b6; --text-dim: #9b8c72; --accent: #c9a45c;
+    --danger: #c8493d; --action: #d2b042; --xp: #7f9a4c;
+    --road: #6e5a40; --road-edge: #0b0907;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { background: var(--bg); }
+  body { margin: 0; padding: 16px; color: var(--text); font-family: 'EB Garamond', Georgia, serif; font-size: 16.5px;
+    line-height: 1.38; font-variant-numeric: lining-nums tabular-nums; }
+  .page { max-width: 1100px; margin: 0 auto; }
+  h1, h2, h3, .cz { font-family: 'Cinzel', Georgia, serif; font-weight: 500; letter-spacing: 0.06em; }
+  h1 { color: var(--accent); font-size: 24px; margin: 0 0 6px; }
+  h2 { font-size: 19px; margin: 40px 0 4px; color: var(--accent); }
+  h3 { font-size: 15px; margin: 18px 0 6px; color: var(--text); }
+  .lede { color: var(--text-dim); margin: 0 0 4px; max-width: 800px; }
+  .facts { margin: 6px 0 12px; padding: 0; list-style: none; color: var(--text-dim); font-size: 15px; max-width: 860px; }
+  .facts li::before { content: '· '; color: var(--border); }
+  .codes { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.08em; color: var(--text-dim); }
+  .label { font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 0.1em; color: var(--text-dim); margin: 14px 0 6px; }
+  .label b { color: var(--accent); font-weight: 600; }
+  .pn { background: var(--bg-panel); border: 1px solid var(--border);
+    box-shadow: inset 0 0 0 3px var(--bg-panel), inset 0 0 0 4px var(--frame); padding: 10px 14px; }
+  .b { display: inline-block; border: 1px solid var(--border); background: var(--bg-raised); color: var(--text);
+    padding: 3px 9px; font-size: 14px; white-space: nowrap; line-height: 1.3; }
+  .b.on { border-color: var(--accent); color: var(--accent); }
+  .b.dim { color: var(--text-dim); }
+  .ic { display: inline-block; width: 14px; height: 14px; background: var(--bg-hover); border: 1px solid var(--border);
+    vertical-align: -2px; margin-right: 5px; }
+  .dimt { color: var(--text-dim); } .acc { color: var(--accent); } .sm { font-size: 14px; } .xs { font-size: 12.5px; }
+  .danger { color: var(--danger); }
+  .col { width: 818px; max-width: 100%; }
+  .fit { position: relative; overflow: hidden; }
+  .fit > .scaler { transform-origin: 0 0; position: absolute; left: 0; top: 0; }
+  .tabs { display: flex; gap: 6px; margin: 6px 0 8px; flex-wrap: wrap; }
+  .tabs .b { font-size: 13px; }
+  svg text { font-family: 'EB Garamond', Georgia, serif; }
+  svg .district { font-family: 'Cinzel', Georgia, serif; letter-spacing: 0.12em; }
+  .note { font-size: 14px; color: var(--text-dim); margin: 6px 0 0; max-width: 860px; }
+
+  /* Tower section */
+  .planrow { display: grid; grid-template-columns: 188px 1fr; gap: 10px; }
+  .tower { border: 1px solid var(--frame); background: var(--bg-sunken); padding: 6px; font-size: 13.5px; }
+  .tower .cap { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.14em; color: var(--text-dim); margin: 4px 2px 2px; }
+  .tower .row { display: grid; grid-template-columns: 22px 1fr auto; gap: 4px; align-items: center; padding: 2px 4px;
+    border-left: 2px solid transparent; }
+  .tower .row.here { border-left-color: var(--accent); background: var(--bg-raised); color: var(--accent); }
+  .tower .mk { width: 12px; height: 12px; border: 1px solid var(--border); display: inline-block; }
+  .tower .mk.cleared { background: var(--xp); border-color: var(--xp); }
+  .tower .mk.open { border-color: var(--accent); }
+  .tower .mk.gated { background: repeating-linear-gradient(45deg, var(--border) 0 2px, transparent 2px 5px); }
+  .tower .cells { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; padding: 2px 4px 2px 30px; }
+  .tower .cells span { border: 1px solid var(--border); text-align: center; font-size: 12px; color: var(--text-dim);
+    background: repeating-linear-gradient(45deg, var(--frame) 0 2px, transparent 2px 5px); }
+  .tower .lv { color: var(--text-dim); font-size: 12px; }
+  .rowline { margin-top: 6px; font-size: 14.5px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  /* Exits */
+  .hero { height: 160px; position: relative; border: 1px solid var(--frame);
+    background: linear-gradient(180deg, #1d2a1a 0%, #2a3a22 45%, #1a1511 100%); overflow: hidden; }
+  .hero .trees { position: absolute; inset: auto 0 0 0; height: 90px;
+    background: repeating-linear-gradient(90deg, transparent 0 18px, #10180d 18px 30px, transparent 30px 44px); opacity: 0.9;
+    -webkit-mask: linear-gradient(0deg, #000 60%, transparent); mask: linear-gradient(0deg, #000 60%, transparent); }
+  .hero .t { position: absolute; left: 14px; bottom: 10px; }
+  .hero .t .crumb { font-size: 13px; color: var(--text-dim); }
+  .hero .t .nm { font-family: 'Cinzel', serif; font-size: 22px; letter-spacing: 0.06em; }
+  .hero .atlas { position: absolute; right: 12px; top: 10px; }
+  .exits { display: grid; grid-template-columns: 64px 1fr; gap: 6px 10px; align-items: start; font-size: 14.5px; }
+  .exits .k { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.1em; color: var(--text-dim); padding-top: 4px; }
+  .exits .v { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .dir { display: grid; grid-template-columns: 150px 1fr; gap: 4px 10px; font-size: 14px; }
+  .dir .k { color: var(--text-dim); font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.08em; padding-top: 3px; }
+  .strip { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .track { position: relative; height: 9px; background: var(--bg-sunken); border: 1px solid var(--frame); }
+  .track > i { position: absolute; inset: 0 auto 0 0; display: block; }
+
+  /* Verb rows */
+  .stations { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 14.5px; }
+  .stations .k { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 0.1em; color: var(--text-dim); }
+  .errands { display: grid; grid-template-columns: 72px 1fr 56px auto; gap: 4px 10px; align-items: center; font-size: 14.5px; }
+  .errands .k { font-family: 'Cinzel', serif; font-size: 11.5px; letter-spacing: 0.1em; color: var(--text-dim); }
+  .errands .t { color: var(--text-dim); text-align: right; }
+  .errands .sep { grid-column: 1 / -1; border-top: 1px solid var(--frame); height: 0; margin: 2px 0; }
+  table.cmp { border-collapse: collapse; font-size: 14.5px; margin-top: 6px; }
+  table.cmp th, table.cmp td { border: 1px solid var(--frame); padding: 4px 10px; text-align: left; }
+  table.cmp th { font-family: 'Cinzel', serif; font-weight: 500; font-size: 12.5px; letter-spacing: 0.08em; color: var(--text-dim); }
+</style>
+</head>
+<body>
+<div class="page">
+<h1>Navigation: mockups</h1>
+<p class="lede">Static drawings for docs/plans/navigation-alternatives.md. Not game code. Pins, districts, roads and road lengths are the live data. The discovery state is the test save on port 5599: level 24, floors 1 to 6 cleared, standing at The Woods Edge on floor 4. All panels are drawn at the 818 px main column of a 1094 px window.</p>
+
+<!-- ============================================================= -->
+<h2>1. Today</h2>
+<ul class="facts">
+  <li>The map frame is capped at 560 × 340 px. The drawing keeps its 100 × 84 proportions, so it fills about 405 px of a 788 px row.</li>
+  <li>Labels are about 9.7 px. Pins are 25 px across.</li>
+  <li>Floors are reached from the ladder at the bottom of the Location tab, not from the map.</li>
+  <li>Standing on floor 4, every Threshold pin reads "No open route from here".</li>
+</ul>
+<div class="label"><b>Today</b> · Threshold tab, map at its real scale</div>
+<div class="col pn">
+  <div class="sm">▾ Map: Threshold</div>
+  <div class="tabs"><span class="b">The Ascent</span><span class="b on">Threshold</span><span class="b">The Holding Level</span><span class="b">Your Hold</span></div>
+  <svg id="today" width="560" height="340" style="max-width:100%;background:var(--bg-sunken);border:1px solid var(--frame)"></svg>
+  <div class="sm dimt" style="margin-top:6px">Caravan: <span class="b dim sm">The Foot of the Ascent (1.00K)</span> <span class="xs">no other waypoint exists</span></div>
+</div>
+
+<!-- ============================================================= -->
+<h2>2. Direction A: a better map, same model</h2>
+<p class="codes">N3 surveyed plan · N4 tower section · N5 route line</p>
+<ul class="facts">
+  <li>The map takes the column's width. Labels 12 px, pins 30 px.</li>
+  <li>District areas are tinted and named. Roads are drawn by kind.</li>
+  <li>The tower gets a section beside the floor plan. The ladder moves onto the map.</li>
+  <li>Unknown places stay "???": no name, no level, no district.</li>
+</ul>
+<div class="label"><b>After</b> · Threshold</div>
+<div class="col pn">
+  <div class="sm">▾ Map: Threshold</div>
+  <div class="tabs"><span class="b">The Ascent</span><span class="b on">Threshold</span><span class="b">The Holding Level</span></div>
+  <svg id="plan" width="788" height="340" style="max-width:100%;background:var(--bg-sunken);border:1px solid var(--frame)"></svg>
+  <div class="xs dimt" style="margin-top:4px">Road width: main roads from the Foot widest, gate to gate middle, gate to room narrow. District names in capitals.</div>
+</div>
+
+<div class="label"><b>After</b> · The Ascent: tower section and floor 4</div>
+<div class="col pn">
+  <div class="sm">▾ Map: The Ascent</div>
+  <div class="tabs"><span class="b on">The Ascent</span><span class="b">Threshold</span><span class="b">The Holding Level</span></div>
+  <div class="planrow">
+    <div class="tower">
+      <div class="cap">THE HARBOR</div>
+      <div class="row dimt"><span></span><span>Floors 11–14</span><span class="lv">next</span></div>
+      <div class="cap">THE CITY · ANY ORDER</div>
+      <div class="cells"><span>7</span><span>8</span><span>9</span><span>10</span></div>
+      <div class="row"><span class="mk gated"></span><span>Castle Court</span><span class="lv">hub</span></div>
+      <div class="cap">THE WILDS</div>
+      <div class="row"><span class="mk cleared"></span><span>6 The Warren</span><span class="lv">9 s</span></div>
+      <div class="row"><span class="mk cleared"></span><span>5 The Mire</span><span class="lv">5 s</span></div>
+      <div class="row here"><span class="mk cleared"></span><span>4 The Greenwood</span><span class="lv">here</span></div>
+      <div class="cap">THE LOWER REACHES</div>
+      <div class="row"><span class="mk cleared"></span><span>3 The Descent</span><span class="lv">5 s</span></div>
+      <div class="row"><span class="mk cleared"></span><span>2 The Long Hall</span><span class="lv">9 s</span></div>
+      <div class="row"><span class="mk cleared"></span><span>1 The Flooded Offices</span><span class="lv">14 s</span></div>
+      <div class="cap">GROUND</div>
+      <div class="row"><span class="mk"></span><span>The Foot</span><span class="lv">18 s</span></div>
+    </div>
+    <div>
+      <svg id="f4" width="588" height="340" style="max-width:100%;background:var(--bg-sunken);border:1px solid var(--frame)"></svg>
+      <div class="rowline"><span class="dimt">Castle Court:</span><span>Locked. Needs the Key to the City prestige boon.</span></div>
+      <div class="rowline"><span class="dimt">Floor 5, The Mire:</span><span>Cleared.</span><span class="b sm">Climb · 5 s</span></div>
+    </div>
+  </div>
+  <p class="note">The section's rows come from the same ladder data as the Ascent panel: reached floors by name, the next band by name only, nothing above it. Times on the right are the ride from here, 45 ticks per rung. The two "???" pins are places seen but not visited: no name, no level.</p>
+</div>
+
+<div class="label"><b>After</b> · route line while hovering The Forges from the Foot (N5)</div>
+<div class="col pn">
+  <div class="sm" style="margin-bottom:6px"><span class="acc">Route to The Forges:</span> 2 legs, 2.0 s. The Foot → The Wrights' Gate 1.2 s → The Forges 0.8 s. <span class="dimt">The marker is halfway along leg 1.</span></div>
+  <svg id="route" width="788" height="340" style="max-width:100%;background:var(--bg-sunken);border:1px solid var(--frame)"></svg>
+  <p class="note">Hover shows the route and each leg's time before the click. While walking, done legs are solid, remaining legs dashed, and a marker sits on the current leg. The hover card is unchanged.</p>
+</div>
+
+<!-- ============================================================= -->
+<h2>3. Direction B: the place first, the map in a window</h2>
+<p class="codes">N6 place and exits · Atlas window</p>
+<ul class="facts">
+  <li>The page shows where you are and every way out, with times. The map and the ladder open in an Atlas window.</li>
+  <li>In the tower, Exits lists this spot's roads, then the ladder moves down and up.</li>
+  <li>In Threshold, Exits is a directory of the 27 places by district. Threshold has no fog, so all of them are listed.</li>
+</ul>
+<div class="label"><b>After</b> · standing at The Woods Edge</div>
+<div class="col pn">
+  <div class="hero"><div class="trees"></div><span class="b atlas">Atlas</span>
+    <div class="t"><div class="crumb">The Ascent › The Greenwood › The Woods Edge</div><div class="nm">The Woods Edge</div></div></div>
+  <div class="strip" style="margin:10px 0"><span class="b on">Hunt the Edge</span><span class="b">Forage</span>
+    <span class="dimt sm">Exploration</span><span class="track" style="width:200px"><i style="width:100%;background:var(--xp)"></i></span><span class="dimt sm">Found 3 of 3</span></div>
+  <div class="exits">
+    <div class="k">ROADS</div><div class="v"><span class="b">The Treeline · 2 s</span><span class="b">??? · 3 s</span><span class="b">??? · 3 s</span></div>
+    <div class="k">DOWN</div><div class="v"><span class="b">The Foot · 18 s</span><span class="b">3 The Descent · 5 s</span><span class="b">2 The Long Hall · 9 s</span><span class="b">1 The Flooded Offices · 14 s</span></div>
+    <div class="k">UP</div><div class="v"><span class="b">5 The Mire · 5 s</span><span class="b">6 The Warren · 9 s</span><span class="dimt sm">Castle Court: Locked. Needs the Key to the City prestige boon.</span></div>
+  </div>
+  <p class="sm dimt" style="margin:10px 0 0">Endless hunt: forest rats, young wolves and goblins, level 7 to 9 …</p>
+  <p class="note">The hero is the existing scene art (SceneBackdrop) at 160 px; the stripes here are a stand-in. Down and Up times are the ride from this spot, 45 ticks per rung. The two "???" roads lead to places seen but not visited.</p>
+</div>
+
+<div class="label"><b>After</b> · standing at The Foot of the Ascent</div>
+<div class="col pn">
+  <div class="dir">
+    <div class="k">SCHOLARS' QUARTER</div><div>The Lectory Steps 1 s · The Reading Hall 2 s · The Chalk Yard 2 s</div>
+    <div class="k">TEMPLE RISE</div><div>Pilgrims' Stair 1 s · The Nine Chapels 2 s · Censer Walk 2 s</div>
+    <div class="k">THE IRONYARD</div><div>The Muster Gate 1 s · The Cages 2 s · The Sand 2 s · The Long Gallery 2 s</div>
+    <div class="k">ALEMBIC ROW</div><div>The Retort Gate 1 s · The Alembics 2 s · The Vivarium 2 s</div>
+    <div class="k">THE CHANCERY</div><div>The Chancery Arch 1 s · The Rolls 2 s · The Seal Room 2 s</div>
+    <div class="k">THE ASSIZE</div><div>The Assize Gate 1 s · The High Bench 2 s · The Holding 2 s</div>
+    <div class="k">WRIGHTS' WARD</div><div>The Wrights' Gate 1 s · The Forges 2 s · The Long Bench 2 s</div>
+    <div class="k">THE GRANARIES</div><div>The Granary Gate 1 s · The Granary Kitchens 2 s · The Weighbridge 2 s · The Undercrofts 2 s</div>
+    <div class="k">UP</div><div>1 The Flooded Offices 5 s · 2 The Long Hall 9 s · 3 The Descent 14 s · 4 The Greenwood 18 s · 5 The Mire 23 s · 6 The Warren 27 s</div>
+  </div>
+  <p class="note">Each name is a button. Times are road ticks ÷ 10 at speed 1, rounded to whole seconds: gates are 12 ticks from the Foot, rooms 8 ticks past their gate. Ladder times are 45 ticks per rung.</p>
+</div>
+
+<!-- ============================================================= -->
+<h2>4. The verb: pick work, not a place</h2>
+<p class="codes">N7 stations row · N8 errands view</p>
+<ul class="facts">
+  <li>Stations: the places where you chose work and did not stop it by hand, newest first. "Back" returns to the last one.</li>
+  <li>Errands: every place grouped by what it is for, with the route time and the button that starts it.</li>
+  <li>Both route through the same rules as the map: no forced road, no gate, no unknown place.</li>
+</ul>
+<div class="label"><b>Stations row</b> · above the map, at The Granary Gate after buying</div>
+<div class="col pn">
+  <div class="stations"><span class="k">BACK</span><span class="b on">Hunt the Edge · The Woods Edge · 21 s</span>
+    <span class="k" style="margin-left:10px">STATIONS</span><span class="b">Footwork on the Sand · The Sand · 3 s</span></div>
+  <p class="note">Example stations. A spot holds one remembered activity, so each spot appears once. 21 s = Granary Gate to the Foot 1.2 s, ride to floor 4 18 s, landing to The Woods Edge 2 s.</p>
+</div>
+<div class="label"><b>Errands view</b> · Errands | Map toggle in the map panel, at The Woods Edge</div>
+<div class="col pn">
+  <div class="tabs" style="margin-top:0"><span class="b on">Errands</span><span class="b">Map</span></div>
+  <div class="errands">
+    <div class="k">SHOP</div><div>The Cart (Orrin Tallow), The Granary Gate</div><div class="t">19 s</div><div><span class="b sm">Go</span> <span class="b sm">Go &amp; return</span></div>
+    <div class="k"></div><div>The Reagent Shelf (Odri Venn), The Alembics</div><div class="t">20 s</div><div><span class="b sm">Go</span> <span class="b sm">Go &amp; return</span></div>
+    <div class="sep"></div>
+    <div class="k">BENCH</div><div>Alembic, The Alembics</div><div class="t">20 s</div><div><span class="b sm">Go &amp; open</span></div>
+    <div class="sep"></div>
+    <div class="k">REST</div><div>The Treeline <span class="dimt">· floor 4 landing</span></div><div class="t">2 s</div><div><span class="b sm">Go</span></div>
+    <div class="sep"></div>
+    <div class="k">FLOORS</div><div>5 The Mire · 6 The Warren · Castle Court: locked</div><div class="t">5 s</div><div><span class="b sm">Climb</span></div>
+  </div>
+  <p class="note">Rows list discovered places only. Shop and bench names shown here are real: The Cart is Orrin Tallow's shop at The Granary Gate; The Reagent Shelf and the Alembic stand at The Alembics.</p>
+</div>
+
+<!-- ============================================================= -->
+<h2>5. One errand, counted</h2>
+<p class="codes">N1 ride edges and each direction</p>
+<p class="lede">Buy food at The Cart, use the forge, return to the hunt at The Woods Edge. 438 ticks (43.8 s) in every column; only the clicks change.</p>
+<table class="cmp">
+  <tr><th>Design</th><th>Clicks</th><th>Scrolls to the ladder</th><th>Stops that wait for a click</th></tr>
+  <tr><td>Today</td><td>7</td><td>2</td><td>3</td></tr>
+  <tr><td>N1 ride edges (Direction A uses this)</td><td>6</td><td>0</td><td>0</td></tr>
+  <tr><td>Direction B, Exits (no N1)</td><td>6</td><td>0</td><td>3</td></tr>
+  <tr><td>N1 + N7 stations</td><td>4</td><td>0</td><td>0</td></tr>
+  <tr><td>N1 + N8 errands</td><td>3</td><td>0</td><td>0</td></tr>
+</table>
+<p class="note">Counted by hand from the code, not timed in a browser. Rules used: a pin click walks (MapCard.svelte:407); a region tab click sticks (:303); off a floor, the floor tab shows the highest discovered floor (:42-48); ladder bands of cleared floors are folded unless you stand in them. Today: scroll, Descend, Granary Gate, Forges, Foot, scroll, unfold, Climb, Woods Edge. N1: Threshold tab, Granary Gate, Forges, Ascent tab, floor 4 tab, Woods Edge. "Stops" are halts at the Foot or a landing where the next leg needs a new click.</p>
+
+<p class="note" style="margin-top:28px">Built for docs/plans/navigation-alternatives.md, 2026-11-04.</p>
+</div>
+
+<script src="nav-data.js"></script>
+<script>
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const AREA_TINT = {
+    ascent_foot_area: '#7a6640', scholars_quarter: '#4c5f74', temple_rise: '#6a5578', the_ironyard: '#6b4a3c',
+    alembic_row: '#4f6b4f', the_chancery: '#6b6340', the_assize: '#5e4650', wrights_ward: '#7a5a34', the_granaries: '#5b6a3a',
+  };
+  const el = (tag, attrs, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); parent && parent.appendChild(n); return n; };
+
+  // Projection: today's map uses one scale for both axes (viewBox 0 -6 100 84, meet).
+  function projToday(W, H) { const s = Math.min(W / 100, H / 84); const ox = (W - 100 * s) / 2; const oy = (H - 84 * s) / 2 + 6 * s; return (p) => [ox + p.x * s, oy + p.y * s]; }
+  // Projection for the plan: pixel space, separate x and y scales, capped, centred.
+  function projPlan(spots, W, H, pad, capX, capY) {
+    const xs = spots.map((s) => s.x), ys = spots.map((s) => s.y);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const sx = Math.min(capX, (W - 2 * pad) / Math.max(1, x1 - x0)), sy = Math.min(capY, (H - 2 * pad) / Math.max(1, y1 - y0));
+    const ox = (W - (x1 - x0) * sx) / 2, oy = (H - (y1 - y0) * sy) / 2;
+    return (p) => [ox + (p.x - x0) * sx, oy + (p.y - y0) * sy];
+  }
+  // Voronoi cell of point i inside the rectangle, by half-plane clipping.
+  function cell(pts, i, W, H) {
+    let poly = [[0, 0], [W, 0], [W, H], [0, H]];
+    const [px, py] = pts[i];
+    for (let j = 0; j < pts.length; j++) {
+      if (j === i) continue;
+      const [qx, qy] = pts[j]; const mx = (px + qx) / 2, my = (py + qy) / 2, nx = qx - px, ny = qy - py;
+      const inside = (v) => (v[0] - mx) * nx + (v[1] - my) * ny <= 0;
+      const out = [];
+      for (let k = 0; k < poly.length; k++) {
+        const a = poly[k], b = poly[(k + 1) % poly.length], ia = inside(a), ib = inside(b);
+        if (ia) out.push(a);
+        if (ia !== ib) { const da = (a[0] - mx) * nx + (a[1] - my) * ny, db = (b[0] - mx) * nx + (b[1] - my) * ny, t = da / (da - db);
+          out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); }
+      }
+      poly = out; if (!poly.length) break;
+    }
+    return poly;
+  }
+  function inPoly(pt, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  // Labels: below the pin, else above, right, left; skip boxes already taken.
+  function placeLabels(items, pinR, fontPx, W, H, taken) {
+    const boxes = items.map((it) => [it.x - pinR, it.y - pinR, it.x + pinR, it.y + pinR]);
+    if (taken) taken.boxes = boxes;
+    const hit = (b) => boxes.some((o) => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
+    const out = [];
+    for (const it of items) {
+      const w = it.name.length * fontPx * 0.47, h = fontPx * 1.15;
+      const cands = [
+        [it.x - w / 2, it.y + pinR + 2, 'middle'], [it.x - w / 2, it.y - pinR - 2 - h, 'middle'],
+        [it.x + pinR + 4, it.y - h / 2, 'start'], [it.x - pinR - 4 - w, it.y - h / 2, 'end'],
+        [it.x + pinR, it.y + pinR - 2, 'start'], [it.x - pinR - w, it.y + pinR - 2, 'end'],
+      ];
+      let chosen = cands[0];
+      for (const c of cands) { const b = [c[0], c[1], c[0] + w, c[1] + h]; if (b[0] >= 2 && b[2] <= W - 2 && b[1] >= 2 && b[3] <= H - 2 && !hit(b)) { chosen = c; break; } }
+      const b = [chosen[0], chosen[1], chosen[0] + w, chosen[1] + h]; boxes.push(b);
+      const tx = chosen[2] === 'middle' ? it.x : chosen[2] === 'start' ? chosen[0] : chosen[0] + w;
+      out.push({ x: tx, y: chosen[1] + fontPx * 0.9, anchor: chosen[2] });
+    }
+    return out;
+  }
+  function drawPin(svg, x, y, r, here, ghost) {
+    if (here) el('circle', { cx: x, cy: y, r: r + 5, fill: 'none', stroke: 'var(--accent)', 'stroke-width': 2 }, svg);
+    el('circle', { cx: x, cy: y, r, fill: 'var(--bg-raised)', stroke: here ? 'var(--accent)' : 'var(--border)', 'stroke-width': 1.5 }, svg);
+    if (ghost) { const t = el('text', { x, y: y + r * 0.35, 'text-anchor': 'middle', 'font-size': r * 1.0, fill: 'var(--text-dim)' }, svg); t.textContent = '?'; }
+    else el('rect', { x: x - r * 0.42, y: y - r * 0.42, width: r * 0.84, height: r * 0.84, fill: 'var(--bg-hover)', stroke: 'var(--border)' }, svg);
+  }
+  function label(svg, p, text, size, fill, extra) {
+    const t = el('text', Object.assign({ x: p.x, y: p.y, 'text-anchor': p.anchor, 'font-size': size, fill,
+      'paint-order': 'stroke', stroke: 'var(--bg-sunken)', 'stroke-width': 3, 'stroke-linejoin': 'round' }, extra || {}), svg);
+    t.textContent = text; return t;
+  }
+
+  // ---- 1. Today: Threshold at today's scale and sizes.
+  (function () {
+    const svg = document.getElementById('today'); const W = 560, H = 340; const P = projToday(W, H); const s = Math.min(W / 100, H / 84);
+    const pos = Object.fromEntries(TH.spots.map((sp) => [sp.id, P(sp)]));
+    for (const [a, b] of TH.edges) el('line', { x1: pos[a][0], y1: pos[a][1], x2: pos[b][0], y2: pos[b][1], stroke: 'var(--border)', 'stroke-width': 0.5 * s }, svg);
+    const r = 3.1 * s / 2;
+    for (const sp of TH.spots) drawPin(svg, pos[sp.id][0], pos[sp.id][1], r, false, false);
+    const items = TH.spots.map((sp) => ({ x: pos[sp.id][0], y: pos[sp.id][1], name: sp.name }));
+    placeLabels(items, r, 2.4 * s, W, H).forEach((p, i) => label(svg, p, items[i].name, 2.4 * s, 'var(--text-dim)'));
+  })();
+
+  // ---- 2a. Plan: Threshold at 788 x 340 with districts.
+  function drawThresholdPlan(svgId, route) {
+    const svg = document.getElementById(svgId); const W = 788, H = 340;
+    const P = projPlan(TH.spots, W, H, 34, 8.1, 5.6);
+    const pts = TH.spots.map((sp) => P(sp)); const pos = Object.fromEntries(TH.spots.map((sp, i) => [sp.id, pts[i]]));
+    // District fills.
+    const cells = {};
+    TH.spots.forEach((sp, i) => { const poly = cell(pts, i, W, H); (cells[sp.area] ||= []).push(poly); if (poly.length)
+      el('polygon', { points: poly.map((v) => v.join(',')).join(' '), fill: AREA_TINT[sp.area], 'fill-opacity': 0.22, stroke: AREA_TINT[sp.area], 'stroke-opacity': 0.22, 'stroke-width': 1 }, svg); });
+    // District names, set toward the outside of each district from the Foot.
+    const foot = pos.ascent_foot; const byArea = {};
+    TH.spots.forEach((sp, i) => { if (sp.area === 'ascent_foot_area') return; (byArea[sp.area] ||= []).push(pts[i]); });
+    const roads = el('g', {}, svg);
+    // Roads: width by length class (12 ticks main, 18 gate to gate, 8 gate to room).
+    const wOf = (t) => (t === 12 ? 4 : t === 18 ? 3 : 2);
+    for (const [a, b, t] of TH.edges) {
+      el('line', { x1: pos[a][0], y1: pos[a][1], x2: pos[b][0], y2: pos[b][1], stroke: 'var(--road-edge)', 'stroke-width': wOf(t) + 2, 'stroke-linecap': 'round' }, roads);
+      el('line', { x1: pos[a][0], y1: pos[a][1], x2: pos[b][0], y2: pos[b][1], stroke: 'var(--road)', 'stroke-width': wOf(t), 'stroke-linecap': 'round' }, roads);
+    }
+    if (route) {
+      const legs = route.legs;
+      legs.forEach(([a, b, t, at, side], k) => {
+        el('line', { x1: pos[a][0], y1: pos[a][1], x2: pos[b][0], y2: pos[b][1], stroke: 'var(--accent)', 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-dasharray': k === 0 ? '' : '10 7' }, svg);
+        const fx = pos[a][0] + (pos[b][0] - pos[a][0]) * at, fy = pos[a][1] + (pos[b][1] - pos[a][1]) * at;
+        const len = Math.hypot(pos[b][0] - pos[a][0], pos[b][1] - pos[a][1]) || 1;
+        const nx = (-(pos[b][1] - pos[a][1]) / len) * side, ny = ((pos[b][0] - pos[a][0]) / len) * side;
+        label(svg, { x: fx + nx * 16, y: fy + ny * 16 + 4, anchor: 'middle' }, (t / 10).toFixed(1) + ' s', 12.5, 'var(--accent)', { 'font-weight': 600 });
+      });
+      const [a, b] = legs[0]; const tx = pos[a][0] + (pos[b][0] - pos[a][0]) * 0.5, ty = pos[a][1] + (pos[b][1] - pos[a][1]) * 0.5;
+      el('rect', { x: tx - 6, y: ty - 6, width: 12, height: 12, transform: `rotate(45 ${tx} ${ty})`, fill: 'var(--accent)', stroke: 'var(--bg-sunken)', 'stroke-width': 2 }, svg);
+    }
+    const r = 15;
+    for (const sp of TH.spots) drawPin(svg, pos[sp.id][0], pos[sp.id][1], r, sp.id === (route ? 'ascent_foot' : null), false);
+    const items = TH.spots.map((sp) => ({ x: pos[sp.id][0], y: pos[sp.id][1], name: sp.name }));
+    const taken = {};
+    placeLabels(items, r, 12, W, H, taken).forEach((p, i) => label(svg, p, items[i].name, 12, route && route.dest === TH.spots[i].id ? 'var(--accent)' : 'var(--text)'));
+    // District names: nearest free spot around the district's centre, pushed away from the Foot.
+    const free = (b) => b[0] >= 4 && b[2] <= W - 4 && b[1] >= 4 && b[3] <= H - 4 &&
+      !taken.boxes.some((o) => b[0] < o[2] + 2 && b[2] > o[0] - 2 && b[1] < o[3] + 2 && b[3] > o[1] - 2);
+    for (const area in byArea) {
+      const ps = byArea[area]; const cx = ps.reduce((s, p) => s + p[0], 0) / ps.length, cy = ps.reduce((s, p) => s + p[1], 0) / ps.length;
+      const dx = cx - foot[0], dy = cy - foot[1], d = Math.hypot(dx, dy) || 1;
+      const text = TH.areas[area].toUpperCase(); const w = text.length * 8.4, h = 12;
+      let best = null;
+      for (const strict of [true, false]) {
+      if (best) break;
+      outer: for (let rad = 0; rad <= 140; rad += 6) {
+        for (let k = 0; k < 32; k++) {
+          const a = Math.atan2(dy, dx) + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * (Math.PI / 16);
+          const x = cx + Math.cos(a) * rad, y = cy + Math.sin(a) * rad; const b = [x - w / 2, y - h, x + w / 2, y + 3];
+          const probe = strict ? [[b[0], b[1]], [b[2], b[1]], [b[0], b[3]], [b[2], b[3]]] : [[x, y - h / 2]];
+          const own = probe.every((pt) => cells[area].some((poly) => inPoly(pt, poly)));
+          if (own && free(b)) { best = [x, y, b]; break outer; }
+        }
+      }
+      }
+      if (!best) continue;
+      taken.boxes.push(best[2]);
+      label(svg, { x: best[0], y: best[1], anchor: 'middle' }, text, 10.5, AREA_TINT[area], { class: 'district', 'font-weight': 600, stroke: 'var(--bg-sunken)', 'stroke-width': 4 });
+    }
+  }
+  drawThresholdPlan('plan');
+  drawThresholdPlan('route', { dest: 'the_forges', legs: [['ascent_foot', 'wrights_gate', 12, 0.72, 1], ['wrights_gate', 'the_forges', 8, 0.5, -1]] });
+
+  // ---- 2b. Floor 4 plan as this save sees it: Treeline and Woods Edge known, Deep Woods and the Hills seen as "???".
+  (function () {
+    const svg = document.getElementById('f4'); const W = 588, H = 340;
+    const known = { f4_treeline: 'landing', f4_woods_edge: 'L7-9' }; const ghost = new Set(['f4_deep_woods', 'f4_hills']);
+    const shown = F4.spots.filter((s) => known[s.id] || ghost.has(s.id));
+    const P = projPlan(shown, W, H, 60, 8.1, 5.6);
+    const defs = el('defs', {}, svg);
+    const pat = el('pattern', { id: 'grass', width: 22, height: 18, patternUnits: 'userSpaceOnUse' }, defs);
+    el('rect', { width: 22, height: 18, fill: '#141a10' }, pat);
+    el('path', { d: 'M4 14 l2 -5 M7 14 l1 -6 M10 14 l-1 -5 M15 6 l2 -4 M18 6 l1 -5', stroke: '#26331d', 'stroke-width': 1.2 }, pat);
+    el('rect', { width: W, height: H, fill: 'url(#grass)' }, svg);
+    const vg = el('radialGradient', { id: 'vig', cx: '50%', cy: '50%', r: '70%' }, defs);
+    el('stop', { offset: '60%', 'stop-color': '#000', 'stop-opacity': 0 }, vg); el('stop', { offset: '100%', 'stop-color': '#000', 'stop-opacity': 0.6 }, vg);
+    const pos = Object.fromEntries(F4.spots.map((s) => [s.id, P(s)]));
+    for (const [a, b, t] of F4.edges) {
+      if (!(known[a] || ghost.has(a)) || !(known[b] || ghost.has(b))) continue;
+      if (!(known[a] || known[b])) continue;
+      el('line', { x1: pos[a][0], y1: pos[a][1], x2: pos[b][0], y2: pos[b][1], stroke: 'var(--road-edge)', 'stroke-width': 5, 'stroke-linecap': 'round' }, svg);
+      el('line', { x1: pos[a][0], y1: pos[a][1], x2: pos[b][0], y2: pos[b][1], stroke: '#5c4a2e', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-dasharray': ghost.has(a) || ghost.has(b) ? '6 5' : '' }, svg);
+    }
+    el('rect', { width: W, height: H, fill: 'url(#vig)' }, svg);
+    for (const s of shown) {
+      const [x, y] = pos[s.id];
+      drawPin(svg, x, y, 15, s.id === 'f4_woods_edge', ghost.has(s.id));
+      if (ghost.has(s.id)) label(svg, { x, y: y + 31, anchor: 'middle' }, '???', 12, 'var(--text-dim)');
+      else { const t = label(svg, { x: x + 24, y: y + 5, anchor: 'start' }, s.name + ' ', 12, 'var(--text)');
+        const sub = document.createElementNS('http://www.w3.org/2000/svg', 'tspan'); sub.setAttribute('fill', 'var(--text-dim)'); sub.setAttribute('font-size', '11'); sub.textContent = '· ' + known[s.id]; t.appendChild(sub); }
+    }
+    label(svg, { x: 12, y: 22, anchor: 'start' }, 'FLOOR 4 · THE GREENWOOD', 11, 'var(--text-dim)', { class: 'district', 'font-weight': 600 });
+  })();
+})();
+</script>
+</body>
+</html>
