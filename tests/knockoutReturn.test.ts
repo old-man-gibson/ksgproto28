@@ -1043,3 +1043,56 @@ describe('a retry that sets out rolls no fight on the road', () => {
     expect(s.activityProgress).toBe(0);
   });
 });
+
+describe('a probe whose route is shut', () => {
+  it('holds again with the doubled wait, and walks back once the road is open', () => {
+    const g = world(55);
+    const s = g.state;
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+    expect(pending(g)).toMatchObject({ phase: 'hold', probes: 0 });
+    recovered(g);
+    const roads = ADJACENCY.get('kr_camp')!;
+    ADJACENCY.set('kr_camp', []); // nothing leaves the haven
+    try {
+      s.totalTicks = pending(g).until! - 1;
+      g.tick(); // the wait is over: a probe
+      expect(pending(g).phase).toBe('return');
+      g.tick(); // no route
+      expect(pending(g)).toMatchObject({ phase: 'hold', probes: 1, target: { spot: 'kr_field' } });
+      expect(pending(g).until).toBe(s.totalTicks + holdTicks(1));
+      expect(lines(g)).toContain('Test Field: no known route back. No safer hunt known. Retrying in 20 min.');
+      expect(s.activity).toBeNull();
+    } finally {
+      ADJACENCY.set('kr_camp', roads);
+    }
+    // Open again: the next probe walks back and resumes.
+    s.totalTicks = pending(g).until! - 1;
+    g.tick();
+    for (let i = 0; i < 100 && !(s.spot === 'kr_field' && s.activity === 'hunt'); i++) g.tick();
+    expect(s.spot).toBe('kr_field');
+    expect(s.activity).toBe('hunt');
+    expect(pending(g).phase).toBe('return');
+  });
+
+  it('a hold that keeps failing never waits longer than 80 minutes', () => {
+    const g = world(56);
+    const s = g.state;
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+    recovered(g);
+    const roads = ADJACENCY.get('kr_camp')!;
+    ADJACENCY.set('kr_camp', []);
+    try {
+      const waits: number[] = [];
+      for (let i = 0; i < 6; i++) {
+        waits.push((pending(g).until! - s.totalTicks) / (60 * TPS));
+        s.totalTicks = pending(g).until! - 1;
+        g.tick();
+        g.tick();
+        expect(pending(g).phase).toBe('hold');
+      }
+      expect(waits).toEqual([10, 20, 40, 80, 80, 80]);
+    } finally {
+      ADJACENCY.set('kr_camp', roads);
+    }
+  });
+});

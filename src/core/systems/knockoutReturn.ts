@@ -421,7 +421,9 @@ function driveTo(state: GameState, bus: EventBus, goal: ReturnSpot): Drive {
 
 /**
  * The goal cannot be reached or started any more. A target falls back to the
- * proven hunt (or idles); a fallback waits out a hold on the target.
+ * proven hunt, or with none waits out a hold on itself; a fallback waits out a
+ * hold on the target. Only a fallback with no target to hold on ends the
+ * return.
  */
 function giveUp(state: GameState, bus: EventBus, p: PendingReturn): void {
   if (p.phase === 'fallback') {
@@ -448,10 +450,23 @@ function giveUp(state: GameState, bus: EventBus, p: PendingReturn): void {
     );
     return;
   }
-  state.pendingReturn = null;
-  if (target) {
-    say(bus, text('knockout.blocked_idle', { spot: spotName(target.spot), why: whyText(returnBlock(state, target) ?? 'route') }));
+  if (!target) {
+    state.pendingReturn = null;
+    return;
   }
+  // No proven hunt to fall back to: wait at the haven and try the target again
+  // later, the wait doubling with each failure. A road that is shut now may be
+  // open at the next probe, so the return is not given up.
+  const probes = p.probes + 1;
+  state.pendingReturn = holdPhase(state, target, probes);
+  say(
+    bus,
+    text('knockout.blocked_hold', {
+      spot: spotName(target.spot),
+      why: whyText(returnBlock(state, target) ?? 'route'),
+      minutes: minutes(holdTicks(probes)),
+    }),
+  );
 }
 
 /**

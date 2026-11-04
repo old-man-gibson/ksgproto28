@@ -384,6 +384,7 @@ export const LOG_TEXT = {
   'knockout.fallback_failed': '{count} knockouts in a row at {spot}. Retrying {target} in {minutes} min.',
   'knockout.blocked_fallback': '{spot}: {why}. Hunting {fallback} for {wins} wins.',
   'knockout.blocked_idle': '{spot}: {why}. No safer hunt known.',
+  'knockout.blocked_hold': '{spot}: {why}. No safer hunt known. Retrying in {minutes} min.',
   'knockout.hold': 'No safer hunt known. Retrying {spot} in {minutes} min.',
   'knockout.why_forced_spot': 'forced fight, not re-entered',
   'knockout.why_forced_road': 'forced road in, not re-entered',
