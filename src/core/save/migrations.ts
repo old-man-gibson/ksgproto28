@@ -720,6 +720,12 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     raw.proven = raw.proven ?? null;
     raw.version = 63;
   },
+  // v63 → v64: a pending fallback records the spot the fall happened at
+  // (`PendingReturn.from`), the ceiling for its picks. An older one has none;
+  // the code reads the target's spot instead, so the field is left absent.
+  63: (raw) => {
+    raw.version = 64;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {

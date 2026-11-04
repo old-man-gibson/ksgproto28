@@ -5963,6 +5963,13 @@ export interface PendingReturn {
   until?: number;
   /** Failed probes of the target since the hold began: the hold doubles with each. */
   probes: number;
+  /**
+   * The spot the fall happened at, set at every fallback. Its floor is the
+   * ceiling for the fallback picks, including the new pick when a limited
+   * fallback is spent or lost. Absent in a pending return saved before v64: the
+   * target's spot stands in, else the spot being replaced.
+   */
+  from?: string;
 }
 
 export interface GameState {

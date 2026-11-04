@@ -90,7 +90,27 @@ accepted). §6 lists the questions for the user.
   - It is re-checked when it is used: the spot must not be cleared, an encounter must be eligible
     now, it must be reachable without a forced hop, and it must not be on a higher floor than the
     character.
-- Fallback: go to `proven` and hunt there. Cross-floor: `climbTo` down, then walk.
+- Limited fallback (user, 2026-11-04): ten wins in a row cannot happen at a `fightLimit` spot, since
+  band-1 budgets are 1 to 6. When no `proven` spot is usable, a `fightLimit` hunt spot qualifies if:
+  - it is discovered and not cleared;
+  - the character has won there (`win:n:<spot>` of 1 or more) and has not been knocked out there
+    since its last win;
+  - it passes the `proven` re-checks (not forced, not a festival floor, not `f11_wall`, reachable
+    without a forced hop, not on a higher floor than the fall, an encounter eligible now).
+  - A usable `proven` spot always wins over a limited one. Among limited spots, the most recent win.
+  - Its fights count toward the 200-win retry; the 2 h cap is unchanged.
+  - The "no knockout there since the last win" test holds for as long as the fallback lasts. A
+    knockout at the current limited fallback disqualifies it at once: the pick is made again.
+    (The unlimited `proven` fallback keeps §2.4: return to it, and hold after 5 in a row there.)
+  - When its budget is spent, the pick is made again, with the wins and the clock carried over. With
+    none left: hold on the target, or with no target (a forced-spot loss) end the return. The hunt
+    at the spent spot stops, so the character idles.
+  - Every pick ceilings at the floor of the fall, not of the spot being replaced: the pending return
+    records it as `from` (save v64; an older one uses the target's spot). Floor 1 spent, floor 2
+    still qualifies for a fall on floor 3.
+  - A hold after a spent fallback waits where the character stands: the cleared spot, which spawns
+    nothing. A hold after a knockout waits at the haven, as in the Hold bullet below.
+- Fallback: go to `proven` (or the limited spot) and hunt there. Cross-floor: `climbTo` down, then walk.
 - Retry: after 200 wins at the fallback, or 2 h of game time, whichever comes first, return to the
   target.
 - Hold: with no usable `proven` spot, stay at the haven. Banking applies, as idle does today.
@@ -110,6 +130,7 @@ pendingReturn?: {
   wins: number;        // wins at the fallback this phase
   until?: number;      // tick: end of a hold, or the 2 h fallback cap
   probes: number;      // failed probes, for the doubling
+  from?: string;       // the fall spot, set at every fallback (save v64): the ceiling for its picks
 } | null;
 proven?: { spot: string; activity: string } | null;
 ```
@@ -206,6 +227,7 @@ Marked on the decision page. Every mark matches the default.
 | Q4 Stronghold wall | Rejected | `f11_wall` is not a return target; it falls back instead |
 | Q5 Shaken | Hold | Not built |
 | Q6 Setting | Hold | Not built; the return always applies |
+| Limited fallback | Yes (asked after the build) | After a band-1 boss loss the fallback may hunt `fightLimit` spots that still have fights left (§2.3) |
 
 ## 8. Build log
 
@@ -246,7 +268,10 @@ the fix:
 
 **Open.**
 - Most band-1 hunt spots have `fightLimit`, so `proven` stays empty there. A loss to a floor-1
-  gate boss ends idle under Q2's "else idle". Put to the user 2026-11-04.
+  gate boss ended idle under Q2's "else idle". Put to the user 2026-11-04: allow limited spots
+  (§2.3). Measured on tests/john.ts (seeds 42 and 7, 29 knockouts): no knockout changes, since
+  John clears every limited spot before the boss that follows it. The rule matters to a character
+  that loses at a boss while another limited spot still has fights left.
 - While a hold waits, the only way to cancel it is to start an activity and stop it.
   navigation-alternatives N7 shows the pending return with a "Stay here" control.
 - The defeat-dialog gate in App.svelte has not been checked in a browser. Its deciding function,
