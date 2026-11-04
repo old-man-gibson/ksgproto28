@@ -494,10 +494,21 @@ button rides.
   opens on hover (no tooltip on a row or on the detail). The row of the stop
   underfoot is marked and `aria-current="location"`; the row on show is
   `aria-pressed`.
-  - The castle's hub shows its own plan (its area is a stack area). The Foot is
-    in Threshold, so its row leaves the plan as it is.
+  - The castle's hub shows its own plan once its row is picked (its area is a
+    stack area). The Foot is in Threshold, so its row leaves the plan as it is.
   - A floor with no spot found shows an empty frame: "Nothing on this floor is
     on the map yet." Its title on the map toggle is "Floor n", not its name.
+  - **Default stop** (`defaultStackArea`). Until a row is clicked the detail
+    shows the stop of the plan on show, and the detail has a stop whenever the
+    tower's tab is shown:
+    - standing on a floor: that floor;
+    - in the city, at the Foot or at a band hub: the highest floor with a place
+      found (where the old floor tabs opened), so the hub's own plan is one row
+      click away, not the default;
+    - a new run with no place found on any floor (a new game after the
+      tutorial, or after a prestige): the lowest open floor, the next climb;
+    - no floor found and none open: no stop, and the detail says to pick a floor.
+    From the city the ride is two clicks: the tower's tab, then the button.
   - The pick follows the plan on show until a row is clicked. It is dropped when
     the player arrives on another spot, and kept through a ride so the terms of
     the floor being ridden to stay up.
@@ -523,10 +534,11 @@ button rides.
   - under 600 px the section is a fold ("🗼 The Ascent · floor", closed) in every
     region, with no button in its detail; the Ascent panel keeps its buttons.
   The flag is a `matchMedia` store, so a test sets it. A server render reads
-  wide.
-- **Tab for a tower not yet climbed.** The tower's region has a tab whenever the
-  ladder answers where the player stands, before any of its floors is found, so
-  the first ride onto floor 1 starts from the section.
+  wide.- **Tab for a tower not yet climbed.** The tower's region has a tab whenever the
+  ladder answers where the player stands, before any of its floors is found. The
+  first climb from the Foot is the tab, then Climb on floor 1 (the default stop).
+  The panel's "Show in map" opens the same tab with the same default, so from the
+  panel it is "Show in map", then the button.
 - **No layout shift** (the user, 2026-11-04). The route line, the plan, the
   section and the detail have fixed heights. A ride that switches the map between
   the tower and the city moves nothing below the map: after the tutorial a region
@@ -587,8 +599,9 @@ fight, or with no open route.
 ## 6. Open
 
 - The click card overlaps neighbouring pins on a narrow panel.
-- A ride up from the city takes two clicks more than the panel's button did: the
-  tower's tab, then the floor's row. The panel's "Show in map" opens the tab.
+- A ride up from the city is two clicks, one more than the panel's button was:
+  the tower's tab, then Climb on the default stop (§3.5). From the panel it is
+  "Show in map", then Climb. A floor other than the default costs a row click.
 - A floor's plan beside the section is under 560 px at windows narrower than
   about 1075 px (511 px at 1024), where the plan labels only the place underfoot
   and its neighbours. Floors have at most a few pins; the label sweep passes.

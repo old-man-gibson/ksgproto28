@@ -479,6 +479,10 @@ Builder decisions kept (the brief did not cover them):
   the panel keeps its buttons. One set of ride buttons at every width.
 - A tab for the tower's region whenever the ladder answers where the player stands, before any floor
   is found. Without it the first ride onto floor 1 had no button at 600 px and wider.
+- A ride from the city is two clicks: the tab, then Climb on the default stop (fix round 1). The
+  default is the floor underfoot; from the city, the Foot or a band hub the highest floor with a place
+  found (the old floor tabs' choice); on a new run the lowest open floor. "Show in map" opens the
+  same tab and default.
 - A region with no section draws its plan 106 px taller after the tutorial, so a ride that switches
   the map between the city and the tower moves nothing below it (`PlanOptions.height`, a one-line
   addition to `lib/mapPlan.ts`). The pane is a grid in both layouts: the route line's margin no
@@ -487,9 +491,19 @@ Builder decisions kept (the brief did not cover them):
   floor that was cleared and not unlocked; `climbTo` refused it.
 - The ride's time is at the current travel speed (`climbTo`'s figure). The panel printed base ticks.
 - Ride buttons are disabled while a ride runs, as well as when knocked out or in a forced fight.
-- The Foot's row leaves the plan as it is (it is in Threshold); the castle's hub shows its own plan.
+- The Foot's row leaves the plan as it is (it is in Threshold); the castle's hub shows its own plan
+  when its row is picked.
 - A floor with no spot found shows an empty frame and "Floor n" on the map toggle, not its name.
 
+Fix round 1 (manager's rulings; separate commits on `nav-section`):
+- **Forfeit arm.** The arm was module state cleared only by a row click or the end of the attempt:
+  arm the hub in the hall, walk to the stores, press once, and the attempt ended. The arm now holds
+  the stop's key, the spot and the layout; it reads null when any differs or a walk is under way, and
+  an effect (`syncArm`) clears it so walking away and back does not revive it. Test: the
+  hall-stores sequence through the real `Game`.
+- **Default stop.** The detail always has a stop when the tower's tab is shown (above). The click
+  count of the ride from the city is two. Test: the default per standing place, a new game after the
+  tutorial and a run after a prestige.
 Not changed, seen while measuring: `LocationPanel.svelte` swaps the place panel and the Ascent
 panel for the destination preview while a ride runs. The page height went from 1,771 to 1,055 px
 at the start of a ride (1,094 px window). With the page scrolled past the new maximum the browser

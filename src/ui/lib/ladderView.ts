@@ -1,5 +1,5 @@
 import type { BandDef, FloorDef, GameState, TowerDef, UnlockCondition } from '../../core/types';
-import { AREAS, BANDS, FLOORS, TOWERS, bandsOf, floorsInBand, getSpot } from '../../core/registry';
+import { AREAS, BANDS, FLOORS, FLOOR_BY_AREA, SPOTS, TOWERS, bandsOf, floorsInBand, getSpot } from '../../core/registry';
 import {
   bandBaseIndex,
   bandCleared,
@@ -534,6 +534,31 @@ export function stackAreas(regionId: string): string[] {
     if (AREAS[area].regionId === regionId) areas.push({ area, at: bandBaseIndex(band) - 0.5 });
   }
   return areas.sort((a, b) => a.at - b.at).map((a) => a.area);
+}
+
+/** Whether an area is a banded floor's (a rung), not a band hub's. */
+function isFloorArea(areaId: string): boolean {
+  return FLOOR_BY_AREA.get(areaId)?.bandId !== undefined;
+}
+
+/**
+ * The area a stack region shows when the player has picked none, so the detail
+ * under the plan always has a stop (and, from the city, the ride is the tab and
+ * one click):
+ * - the floor underfoot, when the player stands on one (`focusAreaId` is the
+ *   area the map is about);
+ * - otherwise (the city, the Foot, a band hub) the highest floor with a place
+ *   found, which is where the old floor tabs opened;
+ * - with no place found on any floor (a new run at the Foot) the lowest open
+ *   floor, the next climb;
+ * - else null.
+ */
+export function defaultStackArea(state: GameState, regionId: string, focusAreaId: string): string | null {
+  const floors = stackAreas(regionId).filter(isFloorArea);
+  if (floors.includes(focusAreaId)) return focusAreaId;
+  const found = floors.filter((a) => state.discovered.some((id) => SPOTS[id]?.areaId === a));
+  if (found.length) return found[found.length - 1];
+  return floors.find((a) => rungStatus(state, FLOOR_BY_AREA.get(a)!) === 'open') ?? null;
 }
 
 /** The stop whose plan an area is: a floor id, `band:<id>` for a hub's area, else null. */

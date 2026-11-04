@@ -11,6 +11,7 @@ import { getDerivedStats } from '../src/core/systems/derived';
 import { floorReached, rungStatus } from '../src/core/systems/ladder';
 import { rideTicks } from '../src/core/systems/towers';
 import { festivalLadder, festivalRun, lockoutLeft } from '../src/core/systems/festivalRules';
+import { prestigeNow } from '../src/core/systems/prestige';
 import { ticksToTime } from '../src/ui/lib/format';
 import { buildPlan } from '../src/ui/lib/mapPlan';
 import { labelBox, pinBox, PLAN_HEIGHT, type MapBox } from '../src/ui/lib/map';
@@ -19,6 +20,7 @@ import {
   DETAIL_H,
   bandDrawnOpen,
   bandHubView,
+  defaultStackArea,
   ladderBands,
   regionOfTower,
   rideDuration,
@@ -830,5 +832,92 @@ describe('an arm belongs to the moment it was made in', () => {
     arm.pressRide(hub);
     arm.syncArm('f15_hall', true, true);
     expect(arm.armedKey()).toBeNull();
+  });
+});
+
+describe('the detail always has a stop when the tower’s tab is shown', () => {
+  /** Found places on floors 1 to n: each landing. */
+  function found(s: GameState, n: number): GameState {
+    for (const id of floorsUpTo(n)) if (!s.discovered.includes(FLOORS[id].landing!)) s.discovered.push(FLOORS[id].landing!);
+    return s;
+  }
+  const areaOf = (s: GameState) => defaultStackArea(s, 'the_ascent', SPOTS[s.spot].areaId);
+
+  it('standing on a floor: that floor', () => {
+    const s = found(stoodOn(climbed(fresh(), 6), FLOORS.ascent_f4.landing!), 6);
+    expect(areaOf(s)).toBe('ascent_f4_area');
+    expect(stopKeyOfArea(areaOf(s)!)).toBe('ascent_f4');
+  });
+
+  it('at the Foot: the highest floor with a place found, the old floor tabs’ choice', () => {
+    const s = found(climbed(fresh(), 6), 4);
+    expect(areaOf(s)).toBe('ascent_f4_area');
+    const view = stopViewOf(s, ASCENT, stopKeyOfArea(areaOf(s)!))!;
+    // One click on the tab and the ride is there.
+    expect(view.action?.verb).toBe('Climb');
+    // A higher floor found moves it up.
+    expect(areaOf(found(s, 6))).toBe('ascent_f6_area');
+  });
+
+  it('in the city: the same floor as from the Foot', () => {
+    const s = found(stoodOn(climbed(fresh(), 6), 'the_forges'), 5);
+    expect(areaOf(s)).toBe('ascent_f5_area');
+    expect(stopViewOf(s, ASCENT, 'ascent_f5')?.action).toBeNull();
+    expect(stopViewOf(s, ASCENT, 'ascent_f5')?.note).toMatch(/^Rides start at/);
+  });
+
+  it('at a band hub: the highest floor found, not the hub', () => {
+    const s = climbed(fresh(), 6);
+    s.prestige.purchases.city_key = 1;
+    found(stoodOn(s, 'castle_court'), 4);
+    expect(AREAS[SPOTS.castle_court.areaId].name).toBeTruthy();
+    expect(areaOf(s)).toBe('ascent_f4_area');
+    expect(stopViewOf(s, ASCENT, 'ascent_f4')?.action?.verb).toBe('Descend');
+  });
+
+  it('a new run at the Foot: floor 1, the next climb, with its button', () => {
+    const s = fresh();
+    expect(s.discovered).not.toContain(FLOORS.ascent_f1.landing);
+    expect(areaOf(s)).toBe('ascent_f1_area');
+    const view = stopViewOf(s, ASCENT, stopKeyOfArea(areaOf(s)!))!;
+    expect(view.key).toBe('ascent_f1');
+    expect(view.name).toBe('The Flooded Offices');
+    expect(view.action).toMatchObject({ kind: 'ride', verb: 'Climb', baseTicks: 45 });
+  });
+
+  it('a run after a prestige, with floors seen but none found: floor 1 again', () => {
+    const next = prestigeNow(climbed(fresh(), 6), 1)!;
+    expect(next).not.toBeNull();
+    expect(next.prestige.floorsSeen).toContain('ascent_f6');
+    expect(next.discovered.some((id) => FLOOR_BY_AREA.get(SPOTS[id].areaId)?.bandId !== undefined)).toBe(false);
+    expect(areaOf(next)).toBe('ascent_f1_area');
+    expect(stopViewOf(next, ASCENT, 'ascent_f1')?.action?.verb).toBe('Climb');
+  });
+
+  it('with no floor found and none open there is no default, and the detail asks for a pick', () => {
+    const s = fresh();
+    clearFloors(s.stats, Object.values(FLOORS).filter((f) => f.bandId !== undefined).map((f) => f.id));
+    expect(areaOf(s)).toBeNull();
+  });
+
+  it('a new game after the tutorial: the tab, then the button, two clicks from the Foot', () => {
+    place(0, FOOT);
+    st.gs.discovered = ['ascent_foot'];
+    st.gs.travel = null;
+    st.gs.festival = undefined;
+    st.gs.recovering = false;
+    st.gs.combat = null;
+    viewport.wide = true;
+    // Click 1: the tower's tab is there at the Foot, with no floor found.
+    const city = render(MapCard).body;
+    expect(city).toMatch(/region-switch[\s\S]*?>\s*The Ascent\s*<\/button>/);
+    // What the tab opens: floor 1, named, with its Climb button.
+    const key = stopKeyOfArea(defaultStackArea(st.gs, 'the_ascent', SPOTS[st.gs.spot].areaId)!);
+    expect(key).toBe('ascent_f1');
+    const detail = render(StopDetail, { props: { tower: ASCENT, stopKey: key } }).body;
+    expect(detail).toContain('Floor 1 · The Flooded Offices');
+    // Click 2: the button.
+    expect(detail).toMatch(/sd-ride[^>]*>\s*Climb · \d+s\s*</);
+    expect(detail).not.toContain('Pick a floor in the list');
   });
 });

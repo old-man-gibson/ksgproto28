@@ -13,6 +13,7 @@
   import {
     DETAIL_GAP,
     DETAIL_H,
+    defaultStackArea,
     regionOfTower,
     stackAreas,
     stopKeyOfArea,
@@ -93,11 +94,8 @@
   const shownArea = $derived.by((): string | null => {
     if (!stack.length) return null;
     if (areaOverride && stack.includes(areaOverride)) return areaOverride;
-    const here = getSpot(focusId).areaId;
-    if (stack.includes(here)) return here;
-    // Not on the stack: the highest area with a place the player has found.
-    const found = stack.filter((a) => gs.discovered.some((id) => SPOTS[id]?.areaId === a));
-    return found.length ? found[found.length - 1] : null;
+    // The floor underfoot; off the ladder the highest floor found, else the next climb.
+    return defaultStackArea(gs, shownRegion, getSpot(focusId).areaId);
   });
   /** The stop whose terms are on show: the row picked, else the stop of the plan on show. */
   const shownStop = $derived(picked ?? (shownArea ? stopKeyOfArea(shownArea) : null));
