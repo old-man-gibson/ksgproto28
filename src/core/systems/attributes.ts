@@ -24,6 +24,7 @@ import { ATTRIBUTE_LIST, ATTRIBUTE_TRAINING } from '../data/attributes.data';
 import { LEVEL_ATTR_BONUS } from '../data/levels.data';
 import { ATTRIBUTE_PROGRESSION } from '../data/progression.data';
 import { bandedXpNeeded, settleLevels } from './progression';
+import { practiceXp } from './practice';
 import type { EventBus } from '../engine/events';
 import { ACHIEVEMENTS, SKILLS, SUPERATTRS, TITLES } from '../registry';
 import { itemDefOf } from './assembly';
@@ -40,10 +41,13 @@ export function attrXpNeeded(level: number): number {
   return bandedXpNeeded(ATTRIBUTE_PROGRESSION, level);
 }
 
-/** Training and combat raise the TRAINED base level; bonuses never gain XP. */
+/**
+ * Training and combat raise the TRAINED base level; bonuses never gain XP.
+ * Inside a practice fight the amount is shaped (systems/practice.ts).
+ */
 export function grantAttrXp(state: GameState, bus: EventBus, attr: AttributeId, amount: number): void {
   const a = state.attrs[attr];
-  a.xp += amount;
+  a.xp += practiceXp(state, `attr:${attr}`, a.level, amount);
   const gained = settleLevels(a, ATTRIBUTE_PROGRESSION);
   for (let i = gained; i > 0; i--) {
     bus.emit({ type: 'attr:levelup', attr, level: a.level - i + 1 });

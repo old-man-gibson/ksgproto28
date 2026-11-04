@@ -5666,6 +5666,12 @@ export interface CombatState {
    * a centromere swapped mid-burst cannot rename a volley already in the air.
    */
   volley?: { left: number; acc: number; rate: number; name: string };
+  /**
+   * totalTicks of the last practice payout to each skill and attribute
+   * (`skill:<id>`, `attr:<id>`), for the per-second floor. Written only in a
+   * fight against practice targets (systems/practice.ts). Transient.
+   */
+  practiceAt?: Record<string, number>;
 }
 
 // ---------- Skill triggers ----------

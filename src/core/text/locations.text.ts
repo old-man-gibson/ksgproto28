@@ -92,7 +92,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'the_cages.desc': 'Menagerie. Step Into a Cage fights one Forest Rat, Cage-Bred Slime or Goblin at a time (levels 1 to 3), never a rolled modifier. The slimes are bred with no armour or resistances. Kills here unlock each bestiary fact exactly at its kill count. The keeper heals beginners after every win.',
 
-  'the_sand.desc': 'Footwork on the Sand trains Dexterity. Spar trains Strength and pays combat skill XP. Master Ekwe stands here.',
+  'the_sand.desc': 'Footwork on the Sand trains Dexterity. Spar trains Strength and pays combat skill XP. Beat the Post fights a wooden post that never strikes back: a tenth of the usual skill and attribute XP, less as each level rises, never under 1 XP per second for each skill and attribute it trains. Master Ekwe stands here.',
 
   'long_gallery.desc': 'Indoor archery range. Shoot the Long Butts trains Dexterity; Draw Until It Hurts trains Constitution.',
 

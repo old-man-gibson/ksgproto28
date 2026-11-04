@@ -57,6 +57,7 @@ import { PARRY_CAP, actionTicks, attackFillRate, getDerivedStats, scopedMult } f
 import { TPS } from '../engine/loop';
 import { attrValue, grantAttrXp } from './attributes';
 import { checkDiscovery, grantSkillXp, isUnlocked } from './skills';
+import { isPracticeFight, practising } from './practice';
 import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from './exposure';
 import { itemName, unequipSlot } from './equipment';
 import { itemDefOf } from './assembly';
@@ -1236,8 +1237,9 @@ export function startStagedGroup(
 
 function combatTags(state: GameState): string[] {
   // Hunts start most fights; a forced arrival rides the same tags — an ambush
-  // survived teaches the same craft as a fight sought out.
-  const tags = ['combat', 'hunt'];
+  // survived teaches the same craft as a fight sought out. A post teaches
+  // nothing about quarry, so a practice fight drops 'hunt' (docs/PRACTICE.md).
+  const tags = isPracticeFight(state.combat) ? ['combat'] : ['combat', 'hunt'];
   const weapon = state.equipment.weapon;
   if (weapon) for (const t of itemDefOf(weapon)?.tags ?? []) tags.push(t);
   else tags.push('unarmed');
@@ -3960,6 +3962,13 @@ function settleWhen(
 // ---------- Per-tick combat resolution ----------
 
 export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void {
+  // Against training equipment every skill and attribute payout of the tick
+  // is shaped by the practice rule (systems/practice.ts).
+  if (isPracticeFight(state.combat)) practising(state, () => runCombatTick(state, bus, spot));
+  else runCombatTick(state, bus, spot);
+}
+
+function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
   if (!state.combat) {
     // The fight is over however it ended, so anything still floating belongs to
     // it and settles now. Here rather than in each of the ways a fight can end

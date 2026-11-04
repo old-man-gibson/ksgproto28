@@ -7,6 +7,7 @@ import { finalAttributes } from './derived';
 import { setStat } from './achievements';
 import { bandCleared, bandClearedKey, bandPosKey, clearLapsed, clearMet, floorCleared } from './ladder';
 import { startingLevel } from './legacy';
+import { isPracticeTarget } from './practice';
 import { text } from '../text/log';
 import {
   DEFAULT_QUEST_LEVEL_XP,
@@ -263,7 +264,8 @@ export function applyStartingLevel(state: GameState): void {
 
 export function registerLevelListeners(state: GameState, bus: EventBus): void {
   bus.on('kill', (ev) => {
-    grantLevelXp(state, bus, ev.xp * KILL_LEVEL_XP_RATE);
+    // Training equipment pays no level XP (docs/PRACTICE.md).
+    if (!isPracticeTarget(ev.monster.defId)) grantLevelXp(state, bus, ev.xp * KILL_LEVEL_XP_RATE);
     checkFloorClears(state, bus);
   });
   bus.on('fight:won', () => checkFloorClears(state, bus));
