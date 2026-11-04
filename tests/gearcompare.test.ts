@@ -12,9 +12,12 @@ import {
   type SlotId,
   type StatusDef,
 } from '../src/core/types';
+import { Game } from '../src/core/game';
 import { classifyPlacement, itemDefOf, partsOf } from '../src/core/systems/assembly';
 import { harmOf } from '../src/core/systems/conditionHarm';
+import { armCost } from '../src/core/systems/equipment';
 import { groupItems, stackKey } from '../src/core/systems/inventory';
+import { bearerGrants } from '../src/core/systems/mutagens';
 import { unlockKey } from '../src/core/systems/unlocks';
 import {
   beats,
@@ -23,6 +26,9 @@ import {
   isConditional,
   isSpareStack,
   lowerIsBetter,
+  spareCount,
+  spareLot,
+  tallySpares,
 } from '../src/ui/lib/gearCompare';
 
 /**
@@ -54,7 +60,8 @@ function stateWith(
   return state;
 }
 
-const spareUids = (state: GameState, arms?: number) => [...findSpares(state, arms).keys()].sort((a, b) => a - b);
+const spareUids = (state: GameState, grants?: ReadonlySet<string>) =>
+  [...findSpares(state, grants).keys()].sort((a, b) => a - b);
 const uids = (...items: ItemInstance[]) => items.map((i) => i.uid).sort((a, b) => a - b);
 
 describe('beats: the rule', () => {
@@ -205,19 +212,38 @@ describe('items that are never compared', () => {
     expect(spareUids(run({ issued: plain.uid }))).toEqual([]);
   });
 
-  it('an item named in a saved Loadout is neither marked nor used to mark', () => {
+  const nameInLoadout = (state: GameState, ...named: ItemInstance[]) => {
+    const equipment: Partial<Record<SlotId, number>> = {};
+    named.forEach((n, i) => (equipment[i === 0 ? 'chest' : 'head'] = n.uid));
+    state.loadouts = [{ name: 'Tank', order: [], benched: [], drilling: [], equipment }];
+    return state;
+  };
+
+  it('an item named in a saved Loadout is never marked, and it beats worse copies', () => {
     const plain = vest();
     const sturdy = vest({ affix: STURDY });
-    const withLoadout = (named: ItemInstance) => {
-      const state = stateWith([plain, sturdy]);
-      state.loadouts = [{ name: 'Tank', order: [], benched: [], drilling: [], equipment: { chest: named.uid } }];
-      return state;
-    };
-    expect(spareUids(withLoadout(plain))).toEqual([]);
-    expect(spareUids(withLoadout(sturdy))).toEqual([]);
-    const other = stateWith([plain, sturdy, vest({ slots: 1 })]);
-    other.loadouts = [{ name: 'Tank', order: [], benched: [], drilling: [], equipment: { chest: plain.uid } }];
-    expect(spareUids(other)).not.toContain(plain.uid);
+    // The named plain vest is beaten but is not for sale.
+    expect(spareUids(nameInLoadout(stateWith([plain, sturdy]), plain))).toEqual([]);
+    // The named Sturdy vest beats the plain one, which is spare.
+    expect(spareUids(nameInLoadout(stateWith([plain, sturdy]), sturdy))).toEqual(uids(plain));
+    // Worn and named: it still beats a worse copy in the pack.
+    const worn = vest({ affix: STURDY });
+    expect(spareUids(nameInLoadout(stateWith([plain], { chest: worn }), worn))).toEqual(uids(plain));
+  });
+
+  it('a named dagger shares a stack with its twin: the twin is spare, the named one is not', () => {
+    // Both hands hold other bases, so K = 0 and only the Loadout protects A.
+    const hands = { weapon: item('rapier'), offhand: item('wooden_shield') };
+    const a = item('iron_dagger');
+    const b = item('iron_dagger');
+    const c = item('iron_dagger', { affix: SHARP });
+    const state = nameInLoadout(stateWith([a, b, c], hands), a);
+    expect(stackKey(a)).toBe(stackKey(b));
+    expect(spareUids(state)).toEqual(uids(b));
+    const stacks = groupItems(state.inventory);
+    const spare = findSpares(state);
+    expect(stacks.map((s) => [s.items.length, spareCount(s, spare)])).toEqual([[2, 1], [1, 0]]);
+    expect(spareLot(state, spare)).toEqual([b]);
   });
 });
 
@@ -283,7 +309,44 @@ describe('findSpares: hands', () => {
     // K = 2: the Sharp one and one plain one stay, the other plain one goes.
     expect(spareUids(state)).toEqual(uids(last));
     // A body with three arms keeps all three.
-    expect(spareUids(state, 3)).toEqual([]);
+    expect(spareUids(state, new Set(['arms:+1']))).toEqual([]);
+  });
+
+  it('a worn two-hander takes both hands: no dagger is needed', () => {
+    const greatsword = item('steel_greatsword');
+    const better = sharpDagger();
+    const worse = plainDagger();
+    // The Sharp dagger is sheathed, so it beats the pack dagger without taking a budget slot.
+    const state = stateWith([worse], { weapon: greatsword });
+    state.sheathed = better;
+    expect(spareUids(state)).toEqual(uids(worse));
+    // With a hand free the same pack dagger is kept.
+    const free = stateWith([worse], {});
+    free.sheathed = better;
+    expect(spareUids(free)).toEqual([]);
+    // A grant that lets a two-hander be held in one hand frees the other.
+    const oneHanded = stateWith([worse], { weapon: greatsword });
+    oneHanded.sheathed = better;
+    expect(spareUids(oneHanded, new Set(['onehand:*']))).toEqual([]);
+  });
+
+  it('two arms hold one greatsword: a second copy is past the budget', () => {
+    const sharp = item('steel_greatsword', { affix: SHARP });
+    const first = item('steel_greatsword');
+    const second = item('steel_greatsword');
+    const state = stateWith([sharp, first, second]);
+    expect(spareUids(state)).toEqual(uids(first, second));
+    // Four arms hold two; a grant that makes a two-hander a one-hander does too.
+    expect(spareUids(state, new Set(['arms:+2']))).toEqual(uids(second));
+    expect(spareUids(state, new Set(['onehand:greatsword']))).toEqual(uids(second));
+  });
+
+  it('a one-hander in the main hand leaves one hand for a dagger', () => {
+    const better = sharpDagger();
+    const worse = plainDagger();
+    const state = stateWith([worse], { weapon: item('iron_sword') });
+    state.sheathed = better;
+    expect(spareUids(state)).toEqual([]);
   });
 
   it('a copy that is not beaten is never spare, whatever K is', () => {
@@ -292,6 +355,56 @@ describe('findSpares: hands', () => {
     const shield = item('wooden_shield');
     const rapier = item('rapier');
     expect(spareUids(stateWith([sharp, swift], { weapon: rapier, offhand: shield }))).toEqual([]);
+  });
+});
+
+describe('spares are counted and sold by item, grouped or not', () => {
+  const build = () => {
+    const sharp = item('iron_dagger', { affix: SHARP });
+    const plain = [item('iron_dagger'), item('iron_dagger'), item('iron_dagger')];
+    const game = new Game(createInitialState(1));
+    game.state.inventory = [sharp, ...plain];
+    game.state.equipment = {};
+    game.state.stats[unlockKey('runecarving')] = 1;
+    game.state.gold = 0;
+    return { game, sharp, plain };
+  };
+
+  it('Sharp and three plain daggers, hands empty: two spare items either way', () => {
+    const { game, plain } = build();
+    const spare = findSpares(game.state);
+    // K = 2: the Sharp dagger and the oldest plain one stay.
+    expect([...spare.keys()].sort((a, b) => a - b)).toEqual(uids(plain[1], plain[2]));
+
+    const grouped = groupItems(game.state.inventory, true);
+    const loose = groupItems(game.state.inventory, false);
+    expect(grouped).toHaveLength(2);
+    expect(loose).toHaveLength(4);
+    expect(tallySpares(grouped, spare)).toEqual({ items: 2, stacks: 1, whole: 0 });
+    expect(tallySpares(loose, spare)).toEqual({ items: 2, stacks: 2, whole: 2 });
+    // The grouped plain stack keeps one copy, so it is partly spare and not dimmed whole.
+    expect(grouped.map((s) => [spareCount(s, spare), isSpareStack(s, spare)])).toEqual([
+      [0, false],
+      [2, false],
+    ]);
+  });
+
+  it('Sell spares sells exactly the spare items and nothing else', () => {
+    const { game, sharp, plain } = build();
+    const lot = spareLot(game.state, findSpares(game.state));
+    expect(lot.map((i) => i.uid)).toEqual(uids(plain[1], plain[2]));
+    game.sellMany(lot.map((i) => i.uid));
+    expect(game.state.inventory.map((i) => i.uid).sort((a, b) => a - b)).toEqual(uids(sharp, plain[0]));
+    expect(findSpares(game.state).size).toBe(0);
+  });
+
+  it('a stack that is spare whole is counted whole', () => {
+    const best = vest({ affix: STURDY });
+    const state = stateWith([best, vest(), vest(), vest()]);
+    const spare = findSpares(state);
+    const stacks = groupItems(state.inventory);
+    expect(tallySpares(stacks, spare)).toEqual({ items: 3, stacks: 1, whole: 1 });
+    expect(stacks.map((s) => isSpareStack(s, spare))).toEqual([false, true]);
   });
 });
 
@@ -366,6 +479,64 @@ describe('compareToWorn', () => {
     const hardyVest = vest({ affix: hardy });
     const cmp = compareToWorn(stateWith([hardyVest], { chest: plain }), hardyVest, 'chest', true)!;
     expect(cmp.lines).toEqual([{ text: 'Damage Taken: −10% vs worn', better: true }]);
+  });
+
+  it('counts the worn piece\'s socketed runes: two Might runes are +4 Armor it would lose', () => {
+    const MIGHT = 'minor_rune_might'; // +2 Armor each, in armor
+    const worn = vest({ slots: 2, runes: [MIGHT, MIGHT] });
+    const bare = vest({ slots: 2 });
+    const warded = vest({ slots: 2, affix: affix('Warded') }); // +3 Armor
+    const state = stateWith([bare, warded], { chest: worn });
+    expect(compareToWorn(state, bare, 'chest', true)!.lines).toEqual([
+      { text: 'Armor: −4 vs worn', better: false },
+    ]);
+    // Net of the affix and the runes: +3 − 4, not +3.
+    expect(compareToWorn(state, warded, 'chest', true)!.lines).toEqual([
+      { text: 'Armor: −1 vs worn', better: false },
+    ]);
+  });
+
+  it('counts the candidate\'s own runes, and a rune in the wrong context gives nothing', () => {
+    const MIGHT = 'minor_rune_might'; // +4 damage in a weapon, +2 Armor in armor
+    const worn = vest({ slots: 2 });
+    const socketed = vest({ slots: 2, runes: [MIGHT] });
+    const state = stateWith([socketed], { chest: worn });
+    expect(compareToWorn(state, socketed, 'chest', true)!.lines).toEqual([
+      { text: 'Armor: +2 vs worn', better: true },
+    ]);
+    const blade = item('iron_dagger', { slots: 1, runes: [MIGHT] });
+    const plainBlade = item('iron_dagger', { slots: 1 });
+    const bladeState = stateWith([blade], { weapon: plainBlade });
+    expect(compareToWorn(bladeState, blade, 'weapon', true)!.lines).toEqual([
+      { text: 'Damage: +4 vs worn', better: true },
+    ]);
+  });
+
+  it('adds the paired off-hand bonus when its partner is in the other hand', () => {
+    const dagger = item('parrying_dagger');
+    const hands = { weapon: item('rapier'), offhand: item('wooden_shield') };
+    const paired = compareToWorn(stateWith([dagger], hands), dagger, 'offhand', true)!;
+    const texts = paired.lines.map((l) => l.text);
+    // Riposte and the extra Parry come only from the rapier pairing.
+    expect(texts).toContain('Riposte: +10% vs worn');
+    expect(texts).toContain('Parry: +9% vs worn');
+    expect(texts).toContain('Crit Chance: +2% vs worn');
+    expect(texts).toContain('Armor: −4 vs worn');
+
+    const alone = compareToWorn(stateWith([dagger], { weapon: item('iron_sword'), offhand: hands.offhand }), dagger, 'offhand', true)!;
+    const aloneTexts = alone.lines.map((l) => l.text);
+    expect(aloneTexts).not.toContain('Riposte: +10% vs worn');
+    expect(aloneTexts).toContain('Parry: +4% vs worn');
+  });
+
+  it('scales the base mods by fit and leaves the hand bonus at full strength', () => {
+    // A large dagger in the off hand fits at 35%; the pipeline does not scale the bonus.
+    const large = item('parrying_dagger', { size: 'large' });
+    const hands = { weapon: item('rapier'), offhand: item('wooden_shield') };
+    const texts = compareToWorn(stateWith([large], hands), large, 'offhand', true)!.lines.map((l) => l.text);
+    expect(texts).toContain('Riposte: +10% vs worn');
+    // 0.04 × 0.35 from the dagger, plus the full 0.05 from the pairing.
+    expect(texts).toContain('Parry: +6.4% vs worn');
   });
 
   it('scales a piece that does not fit its wearer', () => {
@@ -477,7 +648,8 @@ describe('property: a slot class never loses all its stacks', () => {
   it('keeps the best K copies of a hand base', () => {
     for (let seed = 1; seed <= 300; seed++) {
       const { state, pack, worn } = trial(seed);
-      const spare = findSpares(state, 2);
+      const grants = bearerGrants(state);
+      const spare = findSpares(state, grants);
       const handBase = (i: ItemInstance) => ['weapon', 'offhand'].includes(itemDefOf(i).slot);
       const groups = new Map<string, ItemInstance[]>();
       for (const i of [...pack, ...Object.values(worn)].filter((x): x is ItemInstance => !!x && handBase(x))) {
@@ -486,8 +658,12 @@ describe('property: a slot class never loses all its stacks', () => {
       }
       for (const [key, copies] of groups) {
         const defId = copies[0].defId;
-        const otherHands = (['weapon', 'offhand'] as SlotId[]).filter((s) => state.equipment[s] && state.equipment[s]!.defId !== defId).length;
-        const budget = Math.max(0, 2 - otherHands);
+        // Arms left after the hands holding another base, over this base's grip cost.
+        const used = (['weapon', 'offhand'] as SlotId[]).reduce((n, s) => {
+          const held = state.equipment[s];
+          return held && held.defId !== defId ? n + armCost(grants, itemDefOf(held), s) : n;
+        }, 0);
+        const budget = Math.floor(Math.max(0, 2 - used) / armCost(grants, itemDefOf(copies[0])));
         const standing = copies.filter((c) => !spare.has(c.uid)).length;
         expect(standing, `seed ${seed}: ${key}`).toBeGreaterThanOrEqual(Math.min(budget, copies.length));
       }

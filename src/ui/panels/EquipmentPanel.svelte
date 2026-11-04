@@ -58,7 +58,14 @@
     type SortMode,
   } from '../../core/systems/inventory';
   import { describeMod, describeRuneEffect, fmt, pct, condsText } from '../lib/format';
-  import { compareToWorn, findSpares, isSpareStack } from '../lib/gearCompare';
+  import {
+    compareToWorn,
+    findSpares,
+    isSpareStack,
+    spareCount,
+    spareLot,
+    tallySpares,
+  } from '../lib/gearCompare';
   import Tip from '../lib/Tip.svelte';
   import Modal from '../lib/Modal.svelte';
   import CollectionSection, {
@@ -234,37 +241,53 @@
     }
   }
 
-  const spareMap = $derived(findSpares(gs, armsFrom(grants)));
-  const spareStacks = $derived(invStacks.filter((s) => isSpareStack(s, spareMap)));
-  const spareKeys = $derived(new Set(spareStacks.map((s) => s.key)));
-  const spareItems = $derived(spareStacks.flatMap((s) => s.items));
+  // Spares are counted and sold by item. A stack whose every item is spare
+  // dims or hides; a stack with some kept shows "n/m spare" on its tile.
+  const spareMap = $derived(findSpares(gs, grants));
+  const spareTally = $derived(tallySpares(invStacks, spareMap));
+  const spareItems = $derived(spareLot(gs, spareMap));
   const spareValue = $derived(spareItems.reduce((sum, i) => sum + sellPrice(gs, i, goldGain), 0));
-  /** "63 stacks: 10 kept, 53 spare". With grouping off a tile is one item. */
+  /** Stacks that are spare whole: the ones the grid dims or hides. */
+  const wholeSpare = $derived(invStacks.filter((s) => isSpareStack(s, spareMap)));
+  const wholeSpareKeys = $derived(new Set(wholeSpare.map((s) => s.key)));
+  /** "Spare: 1,553 items in 49 of 63 stacks". With grouping off a tile is one item. */
   const spareLine = $derived(
-    `${invStacks.length} ${ui.invGroup ? 'stacks' : 'items'}: ` +
-      `${invStacks.length - spareStacks.length} kept, ${spareStacks.length} spare`,
+    ui.invGroup
+      ? `Spare: ${spareTally.items.toLocaleString('en-US')} items in ${spareTally.stacks.toLocaleString('en-US')} of ${invStacks.length.toLocaleString('en-US')} stacks`
+      : `Spare: ${spareTally.items.toLocaleString('en-US')} of ${invStacks.length.toLocaleString('en-US')} items`,
   );
   const shownStacks = $derived(
-    spareView === 'hide' ? invStacks.filter((s) => !spareKeys.has(s.key)) : invStacks,
+    spareView === 'hide' ? invStacks.filter((s) => !wholeSpareKeys.has(s.key)) : invStacks,
   );
-  /** Items the grid is not drawing, so select-all and the filters skip them. */
+  /** Items the grid is not drawing, so select-all, the filters and Sell n skip them. */
   const hiddenUids = $derived(
-    new Set<number>(spareView === 'hide' ? spareItems.map((i) => i.uid) : []),
+    new Set<number>(spareView === 'hide' ? wholeSpare.flatMap((s) => s.items.map((i) => i.uid)) : []),
   );
 
   function sellSpares() {
     if (spareItems.length > 0) sell([...spareItems]);
   }
 
+  /** The item that beats some spare member of a stack, for the tooltip and the window. */
+  function spareBeater(stack: ItemStack): ItemInstance | null {
+    for (const item of stack.items) {
+      const by = spareMap.get(item.uid);
+      if (by) return by;
+    }
+    return null;
+  }
+
+  /** Why a spare is spare. The rune clauses apply while runecarving is open. */
+  function spareNote(by: ItemInstance): string {
+    return runesOpen
+      ? `Spare: ${itemName(by)} has every base stat and rune slot at least as high. Socketed runes return on sale.`
+      : `Spare: ${itemName(by)} has every base stat at least as high.`;
+  }
+
   /** "2 slots", "1 slot". */
   function slotText(item: ItemInstance): string {
     const n = item.slots ?? 0;
     return `${n} slot${n === 1 ? '' : 's'}`;
-  }
-
-  /** The slot an inventory piece would replace: the first slot it fits that holds something. */
-  function comparisonSlot(item: ItemInstance): SlotId | null {
-    return equipTargets(item).find((s) => !!gs.equipment[s]) ?? null;
   }
 
   // ---------- Collection entries (runes, provisions, materials) ----------
@@ -530,7 +553,8 @@
   let selectMode = $state(false);
   let picked = $state(new Set<number>());
 
-  const pickedItems = $derived(gs.inventory.filter((i) => picked.has(i.uid)));
+  // A ticked item whose stack the grid is hiding is not part of "Sell n".
+  const pickedItems = $derived(gs.inventory.filter((i) => picked.has(i.uid) && !hiddenUids.has(i.uid)));
   const pickedValue = $derived(pickedItems.reduce((sum, i) => sum + sellPrice(gs, i, goldGain), 0));
 
   function stackPicked(stack: ItemStack): boolean {
@@ -661,7 +685,7 @@
   });
 </script>
 
-{#snippet itemTip(item: ItemInstance, count = 1, spareBy: ItemInstance | null = null)}
+{#snippet itemTip(item: ItemInstance, count = 1, spareBy: ItemInstance | null = null, spareN = 0)}
   {@const def = itemDefOf(item)}
   {@const context = runeContextFor(def.slot)}
   {@const empty = (item.slots ?? 0) - (item.runes?.length ?? 0)}
@@ -671,9 +695,10 @@
     {#if HAND_SLOTS.includes(def.slot)}· {WIELD_NAMES[wieldOf(def)]}{/if}
   </div>
   {#if spareBy}
-    <div class="tip-line tip-sub">
-      Spare: {itemName(spareBy)}{runesOpen ? ` (${slotText(spareBy)})` : ''} is at least as good in every stat.
-    </div>
+    {#if spareN < count}
+      <div class="tip-line tip-sub">Kept: {count - spareN} of {count}, for the hands or a Loadout.</div>
+    {/if}
+    <div class="tip-line tip-sub">{spareNote(spareBy)}</div>
   {/if}
   {#if def.desc}<div class="tip-line tip-sub">{def.desc}</div>{/if}
   {#if wieldOf(def) === 'two_handed'}
@@ -724,6 +749,7 @@
   onopen: () => void,
   ontoggle: () => void,
   spareBy: ItemInstance | null = null,
+  spareN = 0,
 )}
   {@const def = itemDefOf(item)}
   {@const peak = isMaxRarity(item)}
@@ -732,7 +758,7 @@
       class="cell"
       class:locked
       class:peak
-      class:spare={spareBy !== null}
+      class:spare={spareN > 0 && spareN >= count}
       class:marked={mark}
       aria-label="{itemName(item)}{count > 1 ? ` ×${count}` : ''}"
       aria-pressed={mark ?? undefined}
@@ -746,6 +772,8 @@
       <!-- The tick takes over the lock's corner; requirements don't matter to a bulk sale. -->
       {#if mark}<span class="tick">✓</span>{:else if locked}<span class="lock">🔒</span>{/if}
       {#if count > 1}<span class="count">{count}</span>{/if}
+      <!-- Some of the stack is spare and some is kept: say how many. -->
+      {#if spareN > 0 && spareN < count}<span class="spare-part">{spareN}/{count} spare</span>{/if}
       {#if runesOpen && (item.slots ?? 0) > 0}
         <span class="pips">
           {#each { length: item.slots ?? 0 } as _, i (i)}
@@ -754,7 +782,7 @@
         </span>
       {/if}
     </button>
-    {#snippet tip()}{@render itemTip(item, count, spareBy)}{/snippet}
+    {#snippet tip()}{@render itemTip(item, count, spareBy, spareN)}{/snippet}
   </Tip>
 {/snippet}
 
@@ -863,11 +891,15 @@
 
 <!--
   How a pack piece differs from the piece worn in `slot`, as the wearer would
-  feel it. Nothing is drawn when the slot is empty.
+  feel it. An empty slot says so and lists no differences.
 -->
 {#snippet versusWorn(item: ItemInstance, slot: SlotId)}
   {@const cmp = compareToWorn(gs, item, slot, runesOpen)}
-  {#if cmp}
+  {#if !gs.equipment[slot]}
+    <div class="win-section">
+      <div class="small dim">Slot empty: equips into {SLOT_NAMES[slot]}.</div>
+    </div>
+  {:else if cmp}
     <div class="win-section">
       <div class="small dim">
         Worn: {itemName(cmp.worn)}{runesOpen ? `, ${slotText(cmp.worn)}` : ''}
@@ -1023,10 +1055,10 @@
       </button>
     </div>
     <!-- Drawn only while something is spare, so a small pack shows no extra line. -->
-    {#if spareStacks.length > 0}
+    {#if spareTally.items > 0}
       <div class="toolbar spare-bar small">
         <span
-          title="Spare: another item of the same base and size is at least as good in every stat."
+          title="Spare: an item of the same base and size has every stat and rune slot at least as high."
         >
           {spareLine}
         </span>
@@ -1040,7 +1072,7 @@
         {#if !selectMode}
           <button
             class="small danger"
-            title="Sell spares: every spare stack, at its normal price. Socketed runes return to the pack."
+            title="Sell spares: every spare item, at its normal price. Socketed runes return to the pack."
             onclick={sellSpares}
           >
             Sell spares ({fmt(spareValue)} 🪙)
@@ -1096,6 +1128,7 @@
     {/if}
     <div class="grid">
       {#each shownStacks as stack (stack.key)}
+        {@const spareN = spareCount(stack, spareMap)}
         {@render cell(
           stack.item,
           stack.items.length,
@@ -1106,7 +1139,8 @@
               ? togglePick(stack)
               : (selected = { kind: 'inventory', uid: stack.item.uid, key: stackKey(stack.item) }),
           () => equipStack(stack),
-          spareKeys.has(stack.key) ? (spareMap.get(stack.item.uid) ?? null) : null,
+          spareN > 0 ? spareBeater(stack) : null,
+          spareN,
         )}
       {/each}
     </div>
@@ -1247,16 +1281,20 @@
   </Modal>
 {:else if selected?.kind === 'inventory' && openStack}
   {@const stack = openStack}
-  {@const versus = comparisonSlot(stack.item)}
-  {@const spareBy = spareKeys.has(stack.key) ? spareMap.get(stack.item.uid) : undefined}
+  {@const spareN = spareCount(stack, spareMap)}
+  {@const spareBy = spareN > 0 ? spareBeater(stack) : null}
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}{@render itemTitle(stack.item, stack.items.length)}{/snippet}
     {@render itemDetail(stack.item)}
-    {#if versus}{@render versusWorn(stack.item, versus)}{/if}
+    <!-- What Equip replaces: the piece in the item's own slot. Per-hand comparisons are in the slot picker. -->
+    {@render versusWorn(stack.item, itemDefOf(stack.item).slot)}
     {#if spareBy}
-      <div class="small dim spare-note">
-        Spare: {itemName(spareBy)}{runesOpen ? ` (${slotText(spareBy)})` : ''} is at least as good in every stat.
-      </div>
+      {#if spareN < stack.items.length}
+        <div class="small dim spare-note">
+          Kept: {stack.items.length - spareN} of {stack.items.length}, for the hands or a Loadout.
+        </div>
+      {/if}
+      <div class="small dim spare-note">{spareNote(spareBy)}</div>
     {/if}
     <div class="win-buttons">
       {#each equipTargets(stack.item) as hand, i}
@@ -1446,8 +1484,8 @@
 {:else if selected?.kind === 'slotPicker'}
   {@const slot = selected.slot}
   {@const candidates = slotCandidates(slot)}
-  {@const keptRows = candidates.filter((s) => !spareKeys.has(s.key))}
-  {@const spareRows = candidates.filter((s) => spareKeys.has(s.key))}
+  {@const keptRows = candidates.filter((s) => !wholeSpareKeys.has(s.key))}
+  {@const spareRows = candidates.filter((s) => wholeSpareKeys.has(s.key))}
   {@const wornHere = gs.equipment[slot]}
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}
@@ -1608,6 +1646,19 @@
     border-radius: 4px;
     background: rgb(0 0 0 / 60%);
     color: var(--text);
+  }
+
+  /* "2/3 spare" on a stack that keeps some of its copies. Sits above the rune pips. */
+  .spare-part {
+    position: absolute;
+    left: 2px;
+    bottom: 12px;
+    font-size: 9px;
+    line-height: 1;
+    padding: 1px 3px;
+    border-radius: 4px;
+    background: rgb(0 0 0 / 60%);
+    color: var(--text-dim);
   }
 
   .star {

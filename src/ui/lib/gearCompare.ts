@@ -17,23 +17,30 @@
  * beats are never sold, so the best of each kind always stays.
  *
  * Never compared, on either side (`findSpares`): forged items, items with a
- * conditional modifier, the festival's issued weapon and royale finds (lent for
- * an attempt and taken back), and any item a saved Loadout names. A conditional
- * modifier is one the (stat, op) key does not describe: it applies only under
- * a tag, a style, a target tag, a level or another stat.
+ * conditional modifier, and the festival's issued weapon and royale finds
+ * (lent for an attempt and taken back). A conditional modifier is one the
+ * (stat, op) key does not describe: it applies only under a tag, a style, a
+ * target tag, a level or another stat.
+ *
+ * An item a saved Loadout names is compared as a beater and counts toward the
+ * hand budget, but is never marked spare itself. A worse copy of it is spare.
+ * Copies share a stack with it, so the stack shows as partly spare.
  *
  * Hands (`findSpares`): for a base that fits a hand, the best K copies are
- * kept, K = the body's arms minus the hands holding a different base. A second
- * copy is the off hand's weapon, so only copies past K can be spare.
+ * kept. K = the arms left after the hands holding a different base (each
+ * counted at its `armCost`), divided by this base's `armCost`, rounded down.
+ * A second dagger is the off hand's weapon; a second greatsword is not, on
+ * two arms. Only copies past K can be spare.
  *
  * While runecarving is shut, rune slots are hidden from the player, so a pair
  * that differs in slots is incomparable and neither beats the other.
  */
 import type { GameState, ItemDef, ItemInstance, ModTarget, Modifier, SlotId } from '../../core/types';
-import { sizeRank } from '../../core/types';
+import { runeContextFor, sizeRank } from '../../core/types';
 import { itemDefOf } from '../../core/systems/assembly';
 import { stackKey } from '../../core/systems/inventory';
-import { HAND_SLOTS, armsFrom, wieldScale } from '../../core/systems/equipment';
+import { HAND_SLOTS, armCost, armsFrom, wieldScale } from '../../core/systems/equipment';
+import { resolveRune } from '../../core/systems/runes';
 import { sizeFit } from '../../core/systems/wield';
 import { bearerGrants, playerSizeRank } from '../../core/systems/mutagens';
 import { subsystemUnlocked } from '../../core/systems/unlocks';
@@ -186,14 +193,26 @@ function loadoutUids(state: GameState): Set<number> {
   return named;
 }
 
-/** Hands the body has that hold something other than `defId`. */
-function handsHoldingOther(state: GameState, arms: number, defId: string): number {
-  let blocked = 0;
+/**
+ * How many copies of `def` the hands could hold at once: the arms left after
+ * the hands holding another base (each at its `armCost`), over this base's
+ * own `armCost`. Two arms hold two daggers or one greatsword.
+ */
+function handBudget(
+  state: GameState,
+  grants: ReadonlySet<string>,
+  arms: number,
+  defId: string,
+  def: ItemDef,
+): number {
+  let used = 0;
   for (const slot of HAND_SLOTS.slice(0, arms)) {
     const worn = state.equipment[slot];
-    if (worn && worn.defId !== defId) blocked += 1;
+    if (!worn || worn.defId === defId) continue;
+    const wornDef = itemDefOf(worn) as ItemDef | undefined;
+    used += wornDef ? armCost(grants, wornDef, slot) : 1;
   }
-  return blocked;
+  return Math.floor(Math.max(0, arms - used) / armCost(grants, def));
 }
 
 /** The item a beaten variant is named against: the piece in use, then the oldest. */
@@ -211,26 +230,28 @@ function representative(variant: Variant): ItemInstance {
  * K copies of a base that fits a hand, and the rules in the file header leave
  * it comparable. Worn gear is never in the map; it is only compared against.
  *
- * A display stack is spare when every item in it is (`isSpareStack`).
- * `arms` defaults to the body's arm count; a caller that already holds it
- * passes it in.
+ * The map is by item, not by stack: a display stack can be partly spare when the
+ * hand budget keeps some of its copies (`spareCount`, `isSpareStack`).
+ * `grants` defaults to the bearer's capabilities; a caller that already holds
+ * them passes them in.
  */
 export function findSpares(
   state: GameState,
-  arms: number = armsFrom(bearerGrants(state)),
+  grants: ReadonlySet<string> = bearerGrants(state),
 ): Map<number, ItemInstance> {
+  const arms = armsFrom(grants);
   const runesOpen = subsystemUnlocked(state, 'runecarving');
   const named = loadoutUids(state);
-  const groups = new Map<string, { def: ItemDef; variants: Map<string, Variant> }>();
+  const groups = new Map<string, { defId: string; def: ItemDef; variants: Map<string, Variant> }>();
 
   const take = (item: ItemInstance, place: Place) => {
-    if (!item || item.forged || named.has(item.uid) || isLent(state, item.uid)) return;
+    if (!item || item.forged || isLent(state, item.uid)) return;
     const def = itemDefOf(item) as ItemDef | undefined;
     if (!def) return;
     const groupKey = `${item.defId}|${sizeRank(item.size)}`;
     let group = groups.get(groupKey);
     if (!group) {
-      group = { def, variants: new Map() };
+      group = { defId: item.defId, def, variants: new Map() };
       groups.set(groupKey, group);
     }
     const key = stackKey(item);
@@ -252,7 +273,7 @@ export function findSpares(
   if (state.sheathed) take(state.sheathed, 'sheathed');
 
   const spare = new Map<number, ItemInstance>();
-  for (const { def, variants } of groups.values()) {
+  for (const { defId, def, variants } of groups.values()) {
     const list = [...variants.values()].filter((v) => v.profile);
     for (const a of list) {
       for (const b of list) {
@@ -267,7 +288,7 @@ export function findSpares(
     // lower, and that order never puts a beaten copy above its beater.
     let keep: Set<number> | null = null;
     if (HAND_SLOTS.includes(def.slot)) {
-      const budget = Math.max(0, arms - handsHoldingOther(state, arms, def.id));
+      const budget = handBudget(state, grants, arms, defId, def);
       const ranked = list
         .flatMap((v) => v.held.filter((h) => h.place === 'pack' || h.place === 'hand').map((h) => ({ h, v })))
         .sort(
@@ -283,7 +304,8 @@ export function findSpares(
       const best = [...v.beaters].sort((x, y) => x.beatenBy - y.beatenBy)[0];
       const by = representative(best);
       for (const h of v.held) {
-        if (h.place !== 'pack' || keep?.has(h.item.uid)) continue;
+        // A Loadout's piece beats and holds a hand, but is never itself for sale.
+        if (h.place !== 'pack' || named.has(h.item.uid) || keep?.has(h.item.uid)) continue;
         spare.set(h.item.uid, by);
       }
     }
@@ -291,9 +313,46 @@ export function findSpares(
   return spare;
 }
 
+/** How many items of a display stack are spare. */
+export function spareCount(stack: { items: ItemInstance[] }, spare: ReadonlyMap<number, ItemInstance>): number {
+  let n = 0;
+  for (const item of stack.items) if (spare.has(item.uid)) n += 1;
+  return n;
+}
+
 /** A display stack is spare when every item in it is. */
 export function isSpareStack(stack: { items: ItemInstance[] }, spare: ReadonlyMap<number, ItemInstance>): boolean {
-  return stack.items.length > 0 && stack.items.every((i) => spare.has(i.uid));
+  return stack.items.length > 0 && spareCount(stack, spare) === stack.items.length;
+}
+
+export interface SpareTally {
+  /** Spare items, which is what Sell spares sells. */
+  items: number;
+  /** Display stacks holding at least one spare item. */
+  stacks: number;
+  /** Display stacks that are spare whole. */
+  whole: number;
+}
+
+/** The toolbar's numbers. Counting by item gives the same `items` grouped or not. */
+export function tallySpares(
+  stacks: readonly { items: ItemInstance[] }[],
+  spare: ReadonlyMap<number, ItemInstance>,
+): SpareTally {
+  const tally: SpareTally = { items: 0, stacks: 0, whole: 0 };
+  for (const stack of stacks) {
+    const n = spareCount(stack, spare);
+    if (n === 0) continue;
+    tally.items += n;
+    tally.stacks += 1;
+    if (n === stack.items.length) tally.whole += 1;
+  }
+  return tally;
+}
+
+/** The spare items in the pack, in pack order: the lot Sell spares sells. */
+export function spareLot(state: GameState, spare: ReadonlyMap<number, ItemInstance>): ItemInstance[] {
+  return state.inventory.filter((item) => spare.has(item.uid));
 }
 
 // ---------- Deltas against the worn piece ----------
@@ -311,8 +370,17 @@ export interface WornComparison {
   conditional: boolean;
 }
 
-/** What an item gives in `slot` for this wearer: its terms scaled by fit. */
+/**
+ * What an item gives in `slot` for this wearer. Mirrors the equipment loop of
+ * collectBaseMods (systems/attributes.ts):
+ *  - the base and affix mods, scaled by hand fit and size fit;
+ *  - each socketed rune's mods for the item's rune context, same scale;
+ *  - the main-hand or off-hand bonus, unscaled, when its `pairedWith` tag is
+ *    in the other hand.
+ * A conditional modifier is left out and flagged.
+ */
 function effectiveTerms(
+  state: GameState,
   item: ItemInstance,
   slot: SlotId,
   wielderRank: number,
@@ -320,12 +388,23 @@ function effectiveTerms(
   const terms = new Map<string, Term>();
   const def = itemDefOf(item) as ItemDef | undefined;
   if (!def) return { terms, conditional: false };
-  // The same scale the stat pipeline applies (attributes.ts collectBaseMods).
   const fit = wieldScale(def, slot) * sizeFit(item, slot, wielderRank);
   let conditional = false;
-  for (const mod of [...def.mods, ...(item.affix?.mods ?? [])]) {
-    if (isConditional(mod)) conditional = true;
-    else addTerm(terms, mod, fit);
+  const add = (mods: readonly Modifier[], scale: number) => {
+    for (const mod of mods) {
+      if (isConditional(mod)) conditional = true;
+      else addTerm(terms, mod, scale);
+    }
+  };
+  add(def.mods, fit);
+  add(item.affix?.mods ?? [], fit);
+  const context = runeContextFor(def.slot);
+  for (const ref of item.runes ?? []) add(resolveRune(ref).effects[context]?.mods ?? [], fit);
+  const bonus = slot === 'weapon' ? def.mainHand : slot === 'offhand' ? def.offHand : undefined;
+  if (bonus) {
+    const other = state.equipment[slot === 'weapon' ? 'offhand' : 'weapon'];
+    const tags = other ? (itemDefOf(other)?.tags ?? []) : [];
+    if (!bonus.pairedWith || tags.includes(bonus.pairedWith)) add(bonus.mods, 1);
   }
   return { terms, conditional };
 }
@@ -339,9 +418,11 @@ function deltaText(term: Term, diff: number): string {
 
 /**
  * How `item` differs from the piece worn in `slot`, stat by stat, as the wearer
- * would feel it (the slot's hand scale and the item's size fit included).
- * Null when the slot is empty or already holds this item. Rune slots are
- * listed only while runecarving is open.
+ * would feel it: base and affix mods, socketed runes and the hand bonus, with
+ * the slot's hand scale and the item's size fit (`effectiveTerms`). Typed
+ * on-hit damage and technique changes are not compared. Null when the slot is
+ * empty or already holds this item. Rune slots are listed only while
+ * runecarving is open.
  */
 export function compareToWorn(
   state: GameState,
@@ -352,8 +433,8 @@ export function compareToWorn(
   const worn = state.equipment[slot];
   if (!worn || worn.uid === item.uid) return null;
   const rank = playerSizeRank(state);
-  const mine = effectiveTerms(item, slot, rank);
-  const theirs = effectiveTerms(worn, slot, rank);
+  const mine = effectiveTerms(state, item, slot, rank);
+  const theirs = effectiveTerms(state, worn, slot, rank);
 
   const lines: DeltaLine[] = [];
   const keys = new Set([...mine.terms.keys(), ...theirs.terms.keys()]);
