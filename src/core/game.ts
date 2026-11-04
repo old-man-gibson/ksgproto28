@@ -30,6 +30,7 @@ import { registerFestivalListeners, tickFestival } from './systems/festival';
 import { clearFieldTarget, moveOnField, setRoyalePlan } from './systems/royale';
 import { spendToken, takeFromStash, type TokenChoice } from './systems/stash';
 import { setHuntRest } from './systems/huntrest';
+import { clearReturn, registerKnockoutListeners } from './systems/knockoutReturn';
 import { registerMutagenListeners, syncGeneStatuses } from './systems/mutagens';
 import {
   socketRune,
@@ -180,6 +181,9 @@ export class Game {
     registerTutorialListeners(state, this.bus);
     // Training spots heal and dare off a won fight (systems/training.ts).
     registerTrainingListeners(state, this.bus);
+    // Wins end the knockout streak at a spot and move a return along
+    // (systems/knockoutReturn.ts).
+    registerKnockoutListeners(state, this.bus);
     // Before the level listeners: a mission boss's kill stamps the floor 14
     // flag that the floor-clear check after it reads (systems/sea.ts).
     registerSeaListeners(state, this.bus);
@@ -398,31 +402,44 @@ export class Game {
 
   // ---------- Commands (called by the UI) ----------
 
+  // The commands below are the player's. A knockout return in flight
+  // (systems/knockoutReturn.ts) ends when one is accepted: the character
+  // stays where the player put it. The return's own steps call the systems
+  // directly, never these.
+
   selectActivity(id: string | null): void {
     selectActivity(this.state, this.bus, id);
   }
 
   travelTo(spotId: string): boolean {
-    return startTravel(this.state, this.bus, spotId);
+    return this.handled(startTravel(this.state, this.bus, spotId));
   }
 
   /** Auto-routed multi-leg walk to any discovered spot (map clicks). */
   travelPlanTo(spotId: string): boolean {
-    return travelPlanTo(this.state, this.bus, spotId);
+    return this.handled(travelPlanTo(this.state, this.bus, spotId));
   }
 
   cancelTravelPlan(): void {
+    const walking = this.state.travelPlan.length > 0;
     cancelTravelPlan(this.state, this.bus);
+    if (walking) clearReturn(this.state);
   }
 
   /** Walk to a spot and start an activity on arrival (or now, if already there). */
   goAndDo(spotId: string, activityId: string): boolean {
-    return goAndDo(this.state, this.bus, spotId, activityId);
+    return this.handled(goAndDo(this.state, this.bus, spotId, activityId));
   }
 
   /** Set (or with null, clear) the activity the journey in progress ends in. */
   setJourneyIntent(activityId: string | null): boolean {
-    return setJourneyIntent(this.state, activityId);
+    return this.handled(setJourneyIntent(this.state, activityId));
+  }
+
+  /** A player command was accepted: it ends the knockout return. Passes `ok` through. */
+  private handled(ok: boolean): boolean {
+    if (ok) clearReturn(this.state);
+    return ok;
   }
 
   /** Spend banked idle time as double speed, or stop spending it. */
@@ -431,17 +448,17 @@ export class Game {
   }
 
   fastTravelTo(spotId: string): boolean {
-    return fastTravelTo(this.state, this.bus, spotId);
+    return this.handled(fastTravelTo(this.state, this.bus, spotId));
   }
 
   /** Ride a tower's ladder to a floor — or, with null, back down to its hub. */
   climbTo(floorId: string | null): boolean {
-    return climbTo(this.state, this.bus, floorId);
+    return this.handled(climbTo(this.state, this.bus, floorId));
   }
 
   /** Ride the ladder to a band's hub (band 3's castle). */
   climbToHub(bandId: string): boolean {
-    return climbToHub(this.state, this.bus, bandId);
+    return this.handled(climbToHub(this.state, this.bus, bandId));
   }
 
   // ---- The Vermin Festival's royale (systems/royale.ts) ----
@@ -799,7 +816,7 @@ export class Game {
 
   /** End the tutorial now: defaults for every choice not made, and the Foot. */
   skipTutorial(): boolean {
-    return skipTutorial(this.state, this.bus);
+    return this.handled(skipTutorial(this.state, this.bus));
   }
 
   // ---------- Active-skill rotation & triggers ----------

@@ -5600,8 +5600,10 @@ export interface CombatState {
   /**
    * A fight there is no walking away from (forced arrival). While set, travel
    * and activity switches are refused, and the fight ticks whatever activity
-   * is selected — it started on arrival, not from one. Losing it retreats to
-   * a haven instead of recovering in place. Transient, like the encounter.
+   * is selected — it started on arrival, not from one. Losing it is a
+   * knockout like any other: the character retreats to a haven. The knockout
+   * return never walks back into a forced fight (systems/knockoutReturn.ts).
+   * Transient, like the encounter.
    */
   forced?: boolean;
   /** Player action-bar progress in units; attacks at stats.actionBar. */
@@ -5935,6 +5937,34 @@ export interface NotebookEntry {
   ledger: FightLedger;
 }
 
+/** A place and the activity done there: a knockout's target, a fallback, a proven hunt. */
+export interface ReturnSpot {
+  spot: string;
+  activity: string;
+}
+
+/**
+ * Where the character goes after a knockout (systems/knockoutReturn.ts).
+ * `phase` says what the character is doing now:
+ * - `return`: recovering, then walking to `target` and resuming its activity.
+ * - `fallback`: hunting `fallback` until `wins` reaches the fallback limit or
+ *   the clock reaches `until`, then returning to `target`.
+ * - `hold`: waiting at the haven until the clock reaches `until`, then
+ *   probing `target` (a `return`).
+ */
+export interface PendingReturn {
+  /** Null when the knockout spot cannot be walked back to (forced, wall): nothing to retry. */
+  target: ReturnSpot | null;
+  phase: 'return' | 'fallback' | 'hold';
+  fallback?: ReturnSpot;
+  /** Wins at the fallback in this phase. */
+  wins: number;
+  /** World tick that ends a hold, or the fallback's time cap. */
+  until?: number;
+  /** Failed probes of the target since the hold began: the hold doubles with each. */
+  probes: number;
+}
+
 export interface GameState {
   version: number;
   createdAt: number;
@@ -6052,6 +6082,19 @@ export interface GameState {
   clones: CloneJob[];
   /** Knocked out — auto-resting until recovered. */
   recovering: boolean;
+  /**
+   * The work a knockout interrupted, and where it goes next (systems/
+   * knockoutReturn.ts). Set by the knockout, read by the tick, cleared by a
+   * win at the target, a player command and a prestige. Absent in older
+   * saves (save v63 backfills null).
+   */
+  pendingReturn?: PendingReturn | null;
+  /**
+   * The last hunt spot where the character won `PROVEN_STREAK` fights in a
+   * row: the fallback target of a return that cannot go back to its own spot.
+   * Run state. Absent in older saves (save v63 backfills null).
+   */
+  proven?: ReturnSpot | null;
   combat: CombatState | null;
   /** Rolling fight log that outlives individual encounters (transient, not saved). */
   combatFeed: FeedEntry[];

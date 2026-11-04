@@ -618,7 +618,16 @@ Winning frees you where you stand. Losing is a knockout that throws you to a
 haven — the `safeSpots` machinery above, which is much of the reason it
 exists. Since 2026-09-12 EVERY knockout retreats, forced fight or not: you
 come round at the last camp you stood in (each tower landing is one), never
-where you fell. The player is warned at the door: the world map draws the road red
+where you fell. Since 2026-11-04 the retreat is followed by a return
+(`systems/knockoutReturn.ts`, `docs/plans/knockout-return.md`): the character
+recovers to 95%, walks back to the work it was doing and resumes it. **The
+return never walks into a forced fight.** After a loss at a forced spot, at a
+spot reached by a forced road, or at a spot only a forced spot leads to, it
+hunts the last spot where 10 fights were won in a row instead, and idles only
+when there is none. So a forced fight is a one-shot per visit: the player
+chooses the walk in each time. Five knockouts in a row at one ordinary spot
+also send the character to that fallback (200 wins or 2 h, then one retry). The
+player is warned at the door: the world map draws the road red
 with a ⚔️ badge, and the travel button says *no retreat* (even toward an
 undiscovered `❓` destination — the danger is knowable before the first step,
 which is the point). The auto-router never paths THROUGH a forced spot,

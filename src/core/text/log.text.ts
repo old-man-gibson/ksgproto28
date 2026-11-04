@@ -375,6 +375,24 @@ export const LOG_TEXT = {
   // ---------- safety ----------
   'safety.wake': '{reason} You wake at {icon} {spot}.',
 
+  // ---------- knockout return (systems/knockoutReturn.ts) ----------
+  // One line per knockout says what happens next. The cause of the knockout
+  // and the wake-up have their own lines (combat.knocked_out, safety.wake).
+  'knockout.return': 'Returning to {spot}.',
+  'knockout.retry': 'Retrying {spot}.',
+  'knockout.streak_fallback': '{count} knockouts in a row at {spot}. Hunting {fallback} for {wins} wins.',
+  'knockout.fallback_failed': '{count} knockouts in a row at {spot}. Retrying {target} in {minutes} min.',
+  'knockout.blocked_fallback': '{spot}: {why}. Hunting {fallback} for {wins} wins.',
+  'knockout.blocked_idle': '{spot}: {why}. No safer hunt known.',
+  'knockout.hold': 'No safer hunt known. Retrying {spot} in {minutes} min.',
+  'knockout.why_forced_spot': 'forced fight, not re-entered',
+  'knockout.why_forced_road': 'forced road in, not re-entered',
+  'knockout.why_wall': 'ends the run on its last win, not re-entered',
+  'knockout.why_festival': 'festival floor, not re-entered',
+  'knockout.why_route': 'no known route back',
+  'knockout.why_start': 'its activity cannot start',
+  'knockout.why_idle': 'no work was running',
+
   // ---------- sea (systems/sea.ts) ----------
   'sea.leg_convoy': '⛵ Leg {leg}/{legs}: threat {threat}, battery {rating}, kills {kills}. {lost} crates lost, {crates} aboard.',
   'sea.leg_escort': '⛵ Leg {leg}/{legs}: monsters {monsters}, battery {rating}, kills {kills}. {lost} crates lost, {crates} aboard.',

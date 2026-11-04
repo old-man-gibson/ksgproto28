@@ -1,6 +1,7 @@
 <script lang="ts">
   import { gs, game, ui, stepTicks, stepEvent, toggleKeep, markNavSeen, setLogChoice } from './state.svelte';
   import { isKept } from '../core/systems/ledger';
+  import { defeatDialogDue } from '../core/systems/knockoutReturn';
   import { TPS } from '../core/engine/loop';
   import { BONUS_CAP_TICKS } from '../core/systems/bonustime';
   import Sidebar from './panels/Sidebar.svelte';
@@ -171,15 +172,18 @@
   });
 
   /**
-   * Open the summary when a fight ends badly. Keyed on `endedAt` rather than on
-   * identity so it fires once per knockout — and a win never raises it, though
-   * the ledger is written all the same and can be opened from the Fight Feed.
+   * Open the summary when a fight ends badly and nothing follows it. Keyed on
+   * `endedAt` rather than on identity so it fires once per knockout — and a win
+   * never raises it, though the ledger is written all the same and can be opened
+   * from the Fight Feed. A knockout that is followed by a return or a fallback
+   * (systems/knockoutReturn.ts) is marked shown without opening, so the window
+   * does not appear later when that return ends.
    */
   $effect(() => {
     const led = gs.lastFight;
     if (!led || led.outcome === 'won' || led.endedAt === ui.defeatShown) return;
     ui.defeatShown = led.endedAt;
-    ui.defeat = led;
+    if (defeatDialogDue(gs)) ui.defeat = led;
   });
 
   /**

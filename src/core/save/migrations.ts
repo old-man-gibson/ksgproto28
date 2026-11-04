@@ -713,6 +713,13 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
     fitTechniqueSlots(raw as unknown as GameState);
     raw.version = 62;
   },
+  // v62 → v63: the knockout return (systems/knockoutReturn.ts). No earlier save
+  // holds a return in flight or a proven hunt, so both start empty.
+  62: (raw) => {
+    raw.pendingReturn = raw.pendingReturn ?? null;
+    raw.proven = raw.proven ?? null;
+    raw.version = 63;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {
