@@ -50,6 +50,8 @@ import { clearFloors } from './fixtures/floors';
  *                           |- kr_meadow   (hunt, the usual fallback)
  *                           |- kr_hopeless (hunt, a level-30 golem)
  *                           |- kr_ring     (hunt, one fight in its budget)
+ *                           |- kr_lane     (hunt, three fights in its budget)
+ *                           |- kr_yard     (drill, a training activity)
  *                           |- kr_den      (FORCED spot, hunt) - kr_behind (hunt)
  *                           '- kr_pit      (hunt, reached by a FORCED road)
  *
@@ -88,6 +90,7 @@ const KR: Record<string, SpotDef> = {
       { to: 'kr_meadow', ticks: 5 },
       { to: 'kr_hopeless', ticks: 5 },
       { to: 'kr_ring', ticks: 5 },
+      { to: 'kr_lane', ticks: 5 },
       { to: 'kr_yard', ticks: 5 },
       { to: 'kr_den', ticks: 5 },
       { to: 'kr_pit', ticks: 5, forced: true },
@@ -97,6 +100,7 @@ const KR: Record<string, SpotDef> = {
   kr_meadow: pocket('kr_meadow', 'Test Meadow', { waypoint: true, activities: [hunt], encounters: rats }),
   kr_hopeless: pocket('kr_hopeless', 'Test Pit of Golems', { activities: [hunt], encounters: golem }),
   kr_ring: pocket('kr_ring', 'Test Ring', { fightLimit: 1, activities: [hunt], encounters: rats }),
+  kr_lane: pocket('kr_lane', 'Test Lane', { fightLimit: 3, activities: [hunt], encounters: rats }),
   kr_yard: pocket('kr_yard', 'Test Yard', {
     activities: [{ id: 'drill', kind: 'train', attr: 'str', name: 'Drill', icon: '🏋️' }],
   }),
@@ -1304,5 +1308,189 @@ describe('a knockout at the fallback right after the retry', () => {
     for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
     expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_field' } });
     expect(pending(g).fallback).toBeUndefined();
+  });
+});
+
+describe('a spot with a fight budget as the fallback', () => {
+  /** Five losses at the field: the fallback is needed. */
+  const streak = (g: Game): void => {
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+  };
+
+  it('is chosen when no proven hunt exists, if it was won at and has fights left', () => {
+    const g = world(70);
+    win(g, 'kr_ring');
+    expect(g.state.proven).toBeNull(); // a budget runs out before 10 wins in a row
+    streak(g);
+    expect(pending(g)).toMatchObject({
+      phase: 'fallback',
+      target: { spot: 'kr_field' },
+      fallback: { spot: 'kr_ring', activity: 'hunt' },
+    });
+    expect(lines(g)).toContain('5 knockouts in a row at Test Field. Hunting Test Ring for 200 wins.');
+  });
+
+  it('is chosen after a forced-spot loss too, with no target', () => {
+    const g = world(71, 'kr_den');
+    win(g, 'kr_ring');
+    fallAt(g, 'kr_den', null, true);
+    expect(pending(g)).toMatchObject({ phase: 'fallback', target: null, fallback: { spot: 'kr_ring' } });
+    expect(lines(g)).toContain('Test Den: forced fight, not re-entered. Hunting Test Ring for 200 wins.');
+  });
+
+  it('loses to a usable proven hunt, which never runs out, even when it was won at less recently', () => {
+    const g = world(72);
+    g.state.proven = { spot: 'kr_meadow', activity: 'hunt' };
+    win(g, 'kr_ring'); // the more recent win
+    streak(g);
+    expect(pending(g)).toMatchObject({ phase: 'fallback', fallback: { spot: 'kr_meadow' } });
+  });
+
+  it('takes the most recent win among the limited spots', () => {
+    const g = world(73);
+    win(g, 'kr_ring');
+    g.state.totalTicks += 100;
+    win(g, 'kr_lane');
+    streak(g);
+    expect(pending(g).fallback).toMatchObject({ spot: 'kr_lane' });
+
+    const h = world(74);
+    win(h, 'kr_lane');
+    h.state.totalTicks += 100;
+    win(h, 'kr_ring');
+    streak(h);
+    expect(pending(h).fallback).toMatchObject({ spot: 'kr_ring' });
+  });
+
+  it('is not used if a knockout there came after its last win; a later win makes it usable again', () => {
+    const g = world(75);
+    win(g, 'kr_ring');
+    fallAt(g, 'kr_ring');
+    expect(g.state.stats['win:n:kr_ring']).toBeUndefined();
+    streak(g);
+    expect(pending(g).phase).toBe('hold');
+
+    const h = world(76);
+    win(h, 'kr_ring');
+    fallAt(h, 'kr_ring');
+    win(h, 'kr_ring');
+    streak(h);
+    expect(pending(h)).toMatchObject({ phase: 'fallback', fallback: { spot: 'kr_ring' } });
+  });
+
+  it('is not used if it was never fought', () => {
+    const g = world(77);
+    streak(g);
+    expect(pending(g).phase).toBe('hold');
+  });
+
+  it('is not used once cleared, and never when forced, a festival floor or the wall', () => {
+    const g = world(78);
+    win(g, 'kr_ring');
+    g.state.stats['fights:kr_ring'] = 1; // the one fight is spent
+    streak(g);
+    expect(pending(g).phase).toBe('hold');
+
+    // The wall is a limited hunt spot (8 fights) that ends the run: no win there is recorded.
+    const h = world(79);
+    win(h, 'f11_wall');
+    win(h, 'kr_den'); // forced
+    expect(h.state.stats['win:n:f11_wall']).toBeUndefined();
+    expect(h.state.stats['win:n:kr_den']).toBeUndefined();
+    streak(h);
+    expect(pending(h).phase).toBe('hold');
+  });
+
+  it('counts its fights toward the retry like any fallback', () => {
+    const g = world(80);
+    win(g, 'kr_lane');
+    streak(g);
+    win(g, 'kr_lane');
+    win(g, 'kr_lane');
+    expect(pending(g)).toMatchObject({ phase: 'fallback', wins: 2 });
+  });
+
+  describe('when it is spent', () => {
+    /** Hunting the lane as the fallback, a win at the ring behind it, 7 wins in. */
+    function huntingLane(seed: number, target: boolean): Game {
+      const g = world(seed, target ? 'kr_field' : 'kr_den');
+      const s = g.state;
+      win(g, 'kr_ring');
+      g.state.totalTicks += 100;
+      win(g, 'kr_lane');
+      if (target) streak(g);
+      else fallAt(g, 'kr_den', null, true);
+      expect(pending(g).fallback).toMatchObject({ spot: 'kr_lane' });
+      recovered(g);
+      for (let i = 0; i < 100 && !(s.spot === 'kr_lane' && s.activity === 'hunt'); i++) g.tick();
+      expect(s.activity).toBe('hunt');
+      pending(g).wins = 7;
+      return g;
+    }
+
+    it('picks again, with the wins and the clock carried over', () => {
+      const g = huntingLane(81, true);
+      const until = pending(g).until;
+      g.state.stats['fights:kr_lane'] = 3; // the budget is spent
+      g.tick();
+      expect(pending(g)).toMatchObject({
+        phase: 'fallback',
+        target: { spot: 'kr_field' },
+        fallback: { spot: 'kr_ring' },
+        wins: 7,
+        until,
+      });
+      expect(lines(g)).toContain('Test Lane: no fights left. Hunting Test Ring.');
+      // And it walks there.
+      for (let i = 0; i < 100 && !(g.state.spot === 'kr_ring' && g.state.activity === 'hunt'); i++) g.tick();
+      expect(g.state.spot).toBe('kr_ring');
+    });
+
+    it('with none left and a target, holds on it and idles', () => {
+      const g = huntingLane(82, true);
+      g.state.stats['fights:kr_lane'] = 3;
+      g.state.stats['fights:kr_ring'] = 1;
+      g.tick();
+      expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_field' }, probes: 0 });
+      expect(pending(g).until).toBe(g.state.totalTicks + holdTicks(0));
+      expect(g.state.activity).toBeNull();
+      expect(lines(g)).toContain('Test Lane: no fights left. No safer hunt known. Retrying Test Field in 10 min.');
+    });
+
+    it('with none left and no target (a forced-spot loss), the return ends and the character idles', () => {
+      const g = huntingLane(83, false);
+      g.state.stats['fights:kr_lane'] = 3;
+      g.state.stats['fights:kr_ring'] = 1;
+      g.tick();
+      expect(g.state.pendingReturn).toBeNull();
+      expect(g.state.activity).toBeNull();
+      expect(lines(g)).toContain('Test Lane: no fights left. No safer hunt known.');
+    });
+  });
+
+  it('after a band-1 boss loss, falls back to the Vermin Hall it has won at', () => {
+    // Real content: the toll collector's office is a forced spot, lost with no activity selected.
+    const g = new Game(createInitialState(84));
+    const s = g.state;
+    s.discovered.push('f1_landing', 'f1_storerooms', 'f1_toll_hall');
+    s.safeSpots = { nearest: 'f1_landing', unconditional: 'f1_landing' };
+    win(g, 'f1_storerooms');
+    fallAt(g, 'f1_toll_hall', null, true);
+    expect(pending(g)).toMatchObject({
+      phase: 'fallback',
+      target: null,
+      fallback: { spot: 'f1_storerooms', activity: 'hunt' },
+    });
+    expect(lines(g)).toContain(
+      'Toll Collector’s Office: forced fight, not re-entered. Hunting The Vermin Hall for 200 wins.',
+    );
+    // With the Vermin Hall cleared, nothing is left and the character idles as before.
+    const h = new Game(createInitialState(85));
+    h.state.discovered.push('f1_landing', 'f1_storerooms', 'f1_toll_hall');
+    h.state.safeSpots = { nearest: 'f1_landing', unconditional: 'f1_landing' };
+    win(h, 'f1_storerooms');
+    h.state.stats['fights:f1_storerooms'] = 6;
+    fallAt(h, 'f1_toll_hall', null, true);
+    expect(h.state.pendingReturn).toBeNull();
   });
 });

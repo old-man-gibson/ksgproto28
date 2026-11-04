@@ -3,7 +3,7 @@ import type { FloorDef, GameState, PendingReturn, ReturnSpot } from '../types';
 import { TPS } from '../engine/loop';
 import { FLOOR_BY_AREA, SPOTS, edgesFrom } from '../registry';
 import { canStartActivity, currentActivity, spotActivities, startActivity } from './actions';
-import { bumpStat, raiseStat } from './achievements';
+import { bumpStat, raiseStat, setStat } from './achievements';
 import { eligibleEncounters, inForcedFight, spotCleared } from './combat';
 import { festivalFloorOf } from './festivalRules';
 import { floorUnlocked, rungIndex } from './ladder';
@@ -23,7 +23,9 @@ import { text } from '../text/log';
  * - `return`: back to the spot the character fell at. A win there ends it.
  * - `fallback`: after 5 knockouts in a row at one spot (or when that spot
  *   cannot be walked back to), hunt the `proven` spot until 200 wins or 2 h,
- *   then retry the target.
+ *   then retry the target. With no usable proven spot, a spot with a fight
+ *   budget that was won at before (and not lost at since) stands in, the most
+ *   recent first; when its budget is spent the pick is made again.
  * - `hold`: with no usable proven spot, wait at the haven and probe the
  *   target after 10, 20, 40, then 80 minutes. The longest wait is 80 minutes.
  *
@@ -53,6 +55,8 @@ const NEVER_TARGET: ReadonlySet<string> = new Set(NEVER_TARGET_SPOTS);
 
 const koKey = (spot: string): string => `ko:n:${spot}`;
 const winKey = (spot: string): string => `win:n:${spot}`;
+/** World tick of the last win at a spot with a fight budget: which limited fallback is the most recent. */
+const lastWinKey = (spot: string): string => `win:at:${spot}`;
 
 /** Knockouts in a row at a spot: up by 1 per knockout, deleted by a win there. */
 export function knockoutStreak(state: GameState, spot: string): number {
@@ -159,15 +163,16 @@ function whyText(why: Why): string {
 
 /**
  * A hunt spot the return may send the character to as a fallback, or null:
- * a hunt activity at a spot with no fight budget, not forced, not on a
- * festival floor, with an encounter eligible now, reachable by a walk with no
- * forced hop, and not on a higher floor than `fallSpot`'s. `fallSpot` itself
- * is never its own fallback.
+ * a hunt activity at a spot that is not forced, not on a festival floor and
+ * not the wall, not cleared, with an encounter eligible now, reachable by a
+ * walk with no forced hop, and not on a higher floor than `fallSpot`'s.
+ * `fallSpot` itself is never its own fallback. A fight budget is allowed here:
+ * whether a limited spot may be PICKED is `limitedHunt`'s.
  */
-function usableHunt(state: GameState, cand: ReturnSpot | null | undefined, fallSpot: string): ReturnSpot | null {
+function huntUsable(state: GameState, cand: ReturnSpot | null | undefined, fallSpot: string): ReturnSpot | null {
   if (!cand || cand.spot === fallSpot) return null;
   const spot = SPOTS[cand.spot];
-  if (!spot || spot.fightLimit || spot.forced || NEVER_TARGET.has(cand.spot) || festivalFloorOf(cand.spot)) return null;
+  if (!spot || spot.forced || NEVER_TARGET.has(cand.spot) || festivalFloorOf(cand.spot)) return null;
   const act = spotActivities(spot).find((a) => a.id === cand.activity);
   if (act?.kind !== 'hunt') return null;
   if (spotCleared(state, spot) || eligibleEncounters(state, spot).length === 0) return null;
@@ -175,6 +180,47 @@ function usableHunt(state: GameState, cand: ReturnSpot | null | undefined, fallS
   const there = floorOf(cand.spot);
   if (here && there && rungIndex(there) > rungIndex(here)) return null;
   return returnBlock(state, cand) === null ? cand : null;
+}
+
+/** The proven hunt, if usable. It has no fight budget, so it never runs out. */
+function usableHunt(state: GameState, cand: ReturnSpot | null | undefined, fallSpot: string): ReturnSpot | null {
+  if (cand && SPOTS[cand.spot]?.fightLimit) return null;
+  return huntUsable(state, cand, fallSpot);
+}
+
+/**
+ * A spot with a fight budget that the return may fall back to when no proven
+ * hunt is usable (user, 2026-11-04: after a band-1 boss loss, allow it). Ten
+ * wins in a row cannot happen there, since budgets are small, so the test is:
+ * discovered, fights left, a win there and no knockout there since the last
+ * one (`win:n` survives only until a knockout), plus every check of
+ * `huntUsable`. Of those, the spot won at most recently.
+ */
+function limitedHunt(state: GameState, fallSpot: string): ReturnSpot | null {
+  let best: ReturnSpot | null = null;
+  let bestAt = -1;
+  for (const id of state.discovered) {
+    const spot = SPOTS[id];
+    if (!spot?.fightLimit || (state.stats[winKey(id)] ?? 0) < 1) continue;
+    const act = spotActivities(spot).find((a) => a.kind === 'hunt');
+    if (!act) continue;
+    const at = state.stats[lastWinKey(id)] ?? 0;
+    if (at <= bestAt) continue;
+    const cand = huntUsable(state, { spot: id, activity: act.id }, fallSpot);
+    if (cand) {
+      best = cand;
+      bestAt = at;
+    }
+  }
+  return best;
+}
+
+/**
+ * Where a fallback hunts: the proven spot when it is usable, since it never
+ * runs out, else the limited spot won at most recently.
+ */
+function pickFallback(state: GameState, fallSpot: string): ReturnSpot | null {
+  return usableHunt(state, state.proven, fallSpot) ?? limitedHunt(state, fallSpot);
 }
 
 // ---------- The knockout ----------
@@ -264,7 +310,7 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
       say(bus, text('knockout.return', { spot: spotName(old.target.spot) }));
       return;
     }
-    if (old.phase === 'fallback' && n < STREAK_LIMIT && usableHunt(state, old.fallback, '')) {
+    if (old.phase === 'fallback' && n < STREAK_LIMIT && huntUsable(state, old.fallback, '')) {
       say(bus, text('knockout.return', { spot: spotName(fall.spot) }));
       return;
     }
@@ -296,7 +342,7 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
     }
     // The streak is reached. A return after that (n above the limit) is a
     // retry or a probe that failed, which doubles the hold.
-    const fb = usableHunt(state, state.proven, target.spot);
+    const fb = pickFallback(state, target.spot);
     if (fb) {
       state.pendingReturn = fallbackPhase(state, target, fb, carried);
       say(
@@ -319,9 +365,9 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
     return;
   }
 
-  // Not a spot the return walks back to: hunt the proven spot, with no target
-  // to retry, or idle when none is usable.
-  const fb = usableHunt(state, state.proven, fall.spot);
+  // Not a spot the return walks back to: hunt the proven spot (or a limited
+  // spot won at before), with no target to retry, or idle when none is usable.
+  const fb = pickFallback(state, fall.spot);
   if (fb) {
     state.pendingReturn = fallbackPhase(state, null, fb, 0);
     say(
@@ -344,6 +390,7 @@ function bumpKnockouts(state: GameState, bus: EventBus, spot: string): number {
   bumpStat(state, bus, koKey(spot));
   const n = state.stats[koKey(spot)] ?? 1;
   if (state.stats[winKey(spot)] !== undefined) delete state.stats[winKey(spot)];
+  if (state.stats[lastWinKey(spot)] !== undefined) delete state.stats[lastWinKey(spot)];
   if (n >= STREAK_LIMIT && state.proven?.spot === spot) state.proven = null;
   return n;
 }
@@ -375,14 +422,17 @@ function onWin(state: GameState, bus: EventBus, spotId: string, forced: boolean)
     !forced &&
     act?.kind === 'hunt' &&
     spot &&
-    !spot.fightLimit &&
     !spot.forced &&
     !NEVER_TARGET.has(spotId) &&
     !festivalFloorOf(spotId)
   ) {
     const n = Math.min(PROVEN_STREAK, (state.stats[winKey(spotId)] ?? 0) + 1);
     raiseStat(state, bus, winKey(spotId), n);
-    if (n >= PROVEN_STREAK && (state.proven?.spot !== spotId || state.proven.activity !== act.id)) {
+    if (spot.fightLimit) {
+      // A fight budget runs out before 10 wins in a row, so such a spot is
+      // never the proven hunt. It records when it was last won, for `limitedHunt`.
+      setStat(state, bus, lastWinKey(spotId), state.totalTicks);
+    } else if (n >= PROVEN_STREAK && (state.proven?.spot !== spotId || state.proven.activity !== act.id)) {
       state.proven = { spot: spotId, activity: act.id };
     }
   }
@@ -415,6 +465,44 @@ function retryTarget(state: GameState, bus: EventBus, p: PendingReturn): void {
   }
   state.pendingReturn = returnPhase(p.target, p.probes, p.fallback);
   say(bus, text('knockout.retry', { spot: spotName(p.target.spot) }));
+}
+
+/**
+ * The limited spot being hunted as the fallback has no fights left. Pick
+ * again, with the wins and the 2 h clock carried over. With none left, hold on
+ * the target, or with no target end the return (a forced-spot loss has nothing
+ * to retry). Either way the hunt at the spent spot stops: it would find no one,
+ * and an idle character banks bonus time.
+ */
+function fallbackSpent(state: GameState, bus: EventBus, p: PendingReturn, spent: ReturnSpot): void {
+  const fb = pickFallback(state, spent.spot);
+  if (fb) {
+    state.pendingReturn = {
+      target: p.target && copy(p.target),
+      phase: 'fallback',
+      fallback: copy(fb),
+      wins: p.wins,
+      ...(p.until !== undefined ? { until: p.until } : {}),
+      probes: p.probes,
+    };
+    say(bus, text('knockout.spent_fallback', { spot: spotName(spent.spot), fallback: spotName(fb.spot) }));
+    return;
+  }
+  startActivity(state, bus, null);
+  if (p.target) {
+    state.pendingReturn = holdPhase(state, p.target, p.probes);
+    say(
+      bus,
+      text('knockout.spent_hold', {
+        spot: spotName(spent.spot),
+        target: spotName(p.target.spot),
+        minutes: minutes(holdTicks(p.probes)),
+      }),
+    );
+    return;
+  }
+  state.pendingReturn = null;
+  say(bus, text('knockout.spent_idle', { spot: spotName(spent.spot) }));
 }
 
 type Drive = 'moving' | 'there' | 'stuck';
@@ -470,7 +558,7 @@ function giveUp(state: GameState, bus: EventBus, p: PendingReturn): void {
   }
   const block = returnBlock(state, target) ?? 'route';
   const why = whyText(block);
-  const fb = usableHunt(state, state.proven, target.spot);
+  const fb = pickFallback(state, target.spot);
 
   // A spot the return never walks into (a forced spot or road, the wall, a
   // festival floor) loses its target: there is nothing to retry.
@@ -544,6 +632,11 @@ export function tickKnockoutReturn(state: GameState, bus: EventBus): void {
   if (p.phase === 'fallback' && p.until !== undefined && state.totalTicks >= p.until) {
     // With a target left, the next tick drives to it; with none, hunting goes on here.
     retryTarget(state, bus, p);
+    return;
+  }
+  const spent = p.phase === 'fallback' ? p.fallback : undefined;
+  if (spent && SPOTS[spent.spot] && spotCleared(state, SPOTS[spent.spot])) {
+    fallbackSpent(state, bus, p, spent);
     return;
   }
 
