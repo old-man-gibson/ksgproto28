@@ -405,6 +405,9 @@
                 <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent)"></div>
                 <div class="label">{cell.label} {Math.floor(cell.value)} / {Math.floor(cell.cap)}</div>
               </div>
+            {:else if cell.line}
+              <!-- A line says what the number does ("parries every blow up to 14"). -->
+              <span class="ability-line">{cell.label}: {cell.line}</span>
             {:else}
               <span class="ability-line" class:ability-low={(cell.show === 'signedPct' && cell.value < 0) || (cell.show === 'minusPct' && cell.value > 0)}>{cell.label} {abilityValue(cell)}</span>
             {/if}
@@ -412,12 +415,17 @@
           {#snippet tip()}
             <div class="tip-line tip-base">{ab.icon} {cell.label === ab.name ? ab.name : `${ab.name}: ${cell.label}`}</div>
             <div class="tip-line">{cell.desc}</div>
-            {#each ab.cells.filter((c) => c.key !== cell.key) as other (other.key)}
-              <div class="tip-line">{other.icon} {other.label}: {abilityValue(other)}</div>
-            {/each}
-            {#each ab.inputs as input (input.label)}
-              <div class="tip-line">{input.label}: {input.show === 'pct' ? pct(input.value, 0) : input.value}</div>
-            {/each}
+            {#if cell.line}
+              <!-- Only the number the line was made from: the rest is not about this cell. -->
+              {#if cell.base}<div class="tip-line">{cell.base}: {Math.round(cell.value)}</div>{/if}
+            {:else}
+              {#each ab.cells.filter((c) => c.key !== cell.key) as other (other.key)}
+                <div class="tip-line">{other.icon} {other.label}: {abilityValue(other)}</div>
+              {/each}
+              {#each ab.inputs as input (input.label)}
+                <div class="tip-line">{input.label}: {input.show === 'pct' ? pct(input.value, 0) : input.value}</div>
+              {/each}
+            {/if}
             <div class="tip-line dim">More: ✦ Ability tab.</div>
           {/snippet}
         </Tip>
@@ -483,10 +491,11 @@
             {#snippet tip()}{@render superTip(sup)}{/snippet}
           </Tip>
         </span>
+        <!-- Above Weakest Weapon Master's ceiling the row shows what formulas
+             read; the real value is in the hover (attrTipLines). -->
         <span class="super-value"
-          >{Math.round(attrValue(gs, sup.components[0]))}{#if ceiling !== null && attrValue(gs, sup.components[0]) > ceiling}<span
-              class="capped"> → {ceiling}</span
-            >{/if}</span
+          >{#if ceiling !== null && attrValue(gs, sup.components[0]) > ceiling}<span class="capped">{ceiling}</span
+            >{:else}{Math.round(attrValue(gs, sup.components[0]))}{/if}</span
         >
       </div>
       {#each sup.components as compId}
@@ -505,11 +514,12 @@
               </Tip>
             </span>
             <span class="dim">
-              {Math.round(eff[compId])}{#if delta !== 0}<span
-                  class="delta"
-                  class:buff={delta > 0}
-                  class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
-                >{/if}{#if ceiling !== null && eff[compId] > ceiling}<span class="capped"> → {ceiling}</span>{/if}
+              {#if ceiling !== null && eff[compId] > ceiling}<span class="capped">{ceiling}</span
+                >{:else}{Math.round(eff[compId])}{#if delta !== 0}<span
+                    class="delta"
+                    class:buff={delta > 0}
+                    class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
+                  >{/if}{/if}
             </span>
           </div>
         </div>
@@ -531,12 +541,15 @@
             {/snippet}
           </Tip>
         </span>
+        <!-- Above Weakest Weapon Master's ceiling the row shows what formulas
+             read; the real value and the bonus are in the hover (attrTipLines). -->
         <span class="dim">
-          {Math.round(eff[attr.id])}{#if delta !== 0}<span
-              class="delta"
-              class:buff={delta > 0}
-              class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
-            >{/if}{#if ceiling !== null && eff[attr.id] > ceiling}<span class="capped"> → {ceiling}</span>{/if}
+          {#if ceiling !== null && eff[attr.id] > ceiling}<span class="capped">{ceiling}</span
+            >{:else}{Math.round(eff[attr.id])}{#if delta !== 0}<span
+                class="delta"
+                class:buff={delta > 0}
+                class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
+              >{/if}{/if}
         </span>
       </div>
     </div>
@@ -882,10 +895,9 @@
     margin-left: 3px;
     font-size: 11.5px;
   }
-  /* Weakest Weapon Master: the value formulas use. */
+  /* Weakest Weapon Master: the value formulas use, held at the ceiling. */
   .capped {
-    color: var(--danger);
-    font-size: 11.5px;
+    color: var(--accent);
   }
 
   .delta.buff {

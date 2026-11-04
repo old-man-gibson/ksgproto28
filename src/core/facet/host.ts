@@ -605,6 +605,10 @@ export interface CellReadout {
   desc: string;
   /** The carrier status this cell rides on, so a status list can leave it out. */
   statusId: string;
+  /** The cell's `line` hint filled in ("parries every blow up to 14"), or null. */
+  line: string | null;
+  /** What the bare number is called when a line stands in for it ("Power"), or null. */
+  base: string | null;
   /**
    * Its carrier modifies one of your numbers, so while the value is not zero
    * the cell is acting on you now. The sidebar shows only these; the Ability
@@ -727,6 +731,8 @@ export function facetReadouts(state: GameState): FacetReadout[] {
           desc: c.status?.desc ?? '',
           statusId: carrierPrefix(doc) + c.key,
           acts: c.carrier !== false && (hasMods(c.status) || ACTING_FIELDS.some((f) => c.status?.[f])),
+          line: c.line ? c.line.text.replace('{v}', String(Math.round((c.state?.v ?? 0) * (c.line.scale ?? 1)))) : null,
+          base: c.line?.base ?? null,
         })),
       inputs: (doc.reading?.inputs ?? []).map((i) => ({
         label: i.label,

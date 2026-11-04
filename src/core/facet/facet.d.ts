@@ -25,6 +25,12 @@ export interface FacetCell {
    */
   show?: string;
   status?: { desc?: string; [field: string]: unknown };
+  /**
+   * Display hint: what a short readout shows after the label instead of the
+   * bare number. `text` with {v} as the value x `scale`, rounded; `base`
+   * names the bare number for a longer readout.
+   */
+  line?: { text: string; scale?: number; base?: string };
   /** False for a counter no modifier reads: it gets no carrier status, so it never moves the stat cache. */
   carrier?: boolean;
   /** Written by the core; saved with the document. */
