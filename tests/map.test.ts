@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { EventBus } from '../src/core/engine/events';
-import { AREAS, SPOTS } from '../src/core/registry';
+import { AREAS, FLOOR_BY_AREA, REGIONS, SPOTS } from '../src/core/registry';
+import { buildPlan } from '../src/ui/lib/mapPlan';
 import { climbTo } from '../src/core/systems/towers';
 import { tickTravel, visibleEdges } from '../src/core/systems/locations';
 import {
@@ -121,6 +122,75 @@ describe('map labels', () => {
     const chips: MapBox = { x0: 380, y0: 150 - 15 - 20, x1: 420, y1: 150 - 15 - 3 };
     const box = labelBox('Somewhere', placeLabels([{ id: 'a', x: 400, y: 150, r: 15, text: 'Somewhere', avoid: [chips], lift: 20 }], [], frame).get('a')!);
     expect(overlap(box, chips)).toBe(0);
+  });
+});
+
+describe('names at the widths the layout gives', () => {
+  const overlaps = (a: MapBox, b: MapBox) => Math.min(a.x1, b.x1) > Math.max(a.x0, b.x0) && Math.min(a.y1, b.y1) > Math.max(a.y0, b.y0);
+
+  /**
+   * The widths the browser measured for `.map-wrap` (703 at a 1024 px window, 773 at 1094, 757 at 1440 with the
+   * log column open, 1237 at 1920), and every 20 px from 680 to 1300.
+   */
+  const WIDTHS = [703, 757, 773, 1237];
+  for (let w = 680; w <= 1300; w += 20) WIDTHS.push(w);
+
+  /** Every region, and every floor of a tower, as a diagram. */
+  const MAPS: { name: string; region: string; area: string | null; spot: string }[] = [];
+  for (const region of Object.values(REGIONS)) {
+    const areas = Object.values(AREAS).filter((a) => a.regionId === region.id);
+    const floors = areas.filter((a) => FLOOR_BY_AREA.has(a.id));
+    for (const area of floors.length ? floors : [null]) {
+      const spot = Object.values(SPOTS).find(
+        (s) => s.map && AREAS[s.areaId].regionId === region.id && (!area || s.areaId === area.id),
+      );
+      if (spot) MAPS.push({ name: area?.id ?? region.id, region: region.id, area: area?.id ?? null, spot: spot.id });
+    }
+  }
+
+  it('covers every region and every floor', () => {
+    expect(MAPS.length).toBe(23);
+    expect(MAPS.some((m) => m.region === 'threshold')).toBe(true);
+    expect(MAPS.filter((m) => m.region === "the_ascent").length).toBe(20);
+  });
+
+  it('touch nothing: no name on another name, a pin or a chip, and none outside the frame', () => {
+    const problems: string[] = [];
+    for (const m of MAPS) {
+      const state = createInitialState(1, m.spot);
+      state.discovered = Object.keys(SPOTS);
+      for (const width of WIDTHS) {
+        const plan = buildPlan(state, { region: m.region, area: m.area, width, tiled: false, focus: state.spot, target: null });
+        const named = plan.nodes
+          .filter((n) => n.label)
+          .map((n) => ({ id: n.id, box: labelBox(n.label!.threat ? `${n.label!.name} · ${n.label!.threat}` : n.label!.name, n.label!, plan.frame.font) }));
+        const chips = plan.nodes.flatMap((n) => [...n.chips, ...(n.more ? [n.more] : [])].map((c) => ({ id: n.id, box: { x0: c.x - 8, y0: c.y - 8, x1: c.x + 8, y1: c.y + 8 } })));
+        for (const a of named) {
+          const at = `${m.name} @${width}: ${a.id}`;
+          if (a.box.x0 < 0 || a.box.x1 > plan.frame.w || a.box.y0 < 0 || a.box.y1 > plan.frame.h) problems.push(`${at} outside the frame`);
+          for (const o of named) if (o.id > a.id && overlaps(a.box, o.box)) problems.push(`${at} on the name of ${o.id}`);
+          for (const n of plan.nodes) if (n.id !== a.id && overlaps(a.box, pinBox(n, plan.frame.pinR))) problems.push(`${at} on the ${n.id} pin`);
+          for (const c of chips) if (overlaps(a.box, c.box)) problems.push(`${at} on a chip of ${c.id}`);
+        }
+      }
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('holds Threshold to zero at the four widths the browser measured', () => {
+    // The pins themselves stay clear of each other too.
+    const state = createInitialState(1, 'ascent_foot');
+    state.discovered = Object.keys(SPOTS);
+    for (const width of [703, 757, 773, 1237]) {
+      const plan = buildPlan(state, { region: 'threshold', area: null, width, tiled: false, focus: state.spot, target: null });
+      expect(plan.nodes.length).toBeGreaterThan(20);
+      for (const a of plan.nodes) {
+        expect(a.label, `${a.id} @${width}`).not.toBeNull();
+        for (const b of plan.nodes) {
+          if (a.id < b.id) expect(Math.hypot(a.x - b.x, a.y - b.y), `${a.id} and ${b.id} @${width}`).toBeGreaterThanOrEqual(2 * plan.frame.pinR);
+        }
+      }
+    }
   });
 });
 

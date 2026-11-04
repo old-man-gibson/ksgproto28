@@ -264,10 +264,18 @@ Built 2026-11-04 (docs/plans/navigation-alternatives.md N3). No save change.
     the ground.
   - The frame's height does not depend on what is selected, walked or fought.
 - **Names** (`placeLabels`): under the pin unless that lands on another pin,
-  its chips or a name; then above, to either side and the corners. A crowded
-  corner still needs its pins spread in the data: `tests/map.test.ts` holds
-  Threshold to zero overlaps of names with pins and names at 600 to 1100 px,
-  and zero touching pins from 560 px.
+  its chips or a name; then over it, to either side, the ends of the under and
+  over rows, the corners and the rows slid sideways. The whole list is tried
+  again at 6, 14, 24 and 36 px from the pin before a name may touch anything;
+  a name that still touches slides a few pixels, then takes the free spot
+  nearest its pin on a 6 × 4 px grid. Touching its own pin costs more than
+  anything else. `tests/map.test.ts` checks every region and every floor with
+  all its places discovered, at 680 to 1300 px in 20 px steps and at 703, 757,
+  773 and 1237 px (the `.map-wrap` widths the browser gave at windows of 1024,
+  1440 with the log column open, 1094 and 1920 px): no name on another name,
+  on a pin or on a chip, and none outside the frame. It also holds Threshold's
+  pins at least a pin's width apart at those four widths. A map the data
+  crowds beyond what the search finds would still need its pins spread.
 - **Districts.** Where the known places of a region span more than one area
   (Threshold), each known pin gets a Voronoi cell, no further than 130 px from
   it, tinted by its area (`districtTint`: nine theme tokens, taken in the order

@@ -156,6 +156,15 @@ const ASCENT = 0.85;
 const DESCENT = 0.25;
 /** Room for the text's outline on each side. */
 const HALO = 2;
+/** How far past its nearest place a name is moved, px, once every nearer place touches something. */
+const RINGS = [0, 6, 14, 24, 36];
+/** The slides tried on a name that still touches something, px. */
+const NUDGE_X = [-2, 2, -4, 4, -6, 6, -9, 9, -13, 13, -18, 18, -24, 24];
+const NUDGE_Y = [0, -2, 2, -4, 4, -7, 7, -10, 10];
+/** How far from its pin the last search looks for a free spot for a name, px (plus half the name across). */
+const SEARCH_REACH = 44;
+/** What touching its own pin costs a name, against px² of overlap with anything else. */
+const OWN_PIN = 1_000_000;
 
 export function textWidth(text: string, font: number): number {
   return text.length * CHAR_W * font;
@@ -204,13 +213,20 @@ export function placeLabels(
   const chosen = new Map<string, Choice>();
   const gap = 4;
 
-  const choose = (p: LabelPin): Choice => {
-    const w = textWidth(p.text, font) + 2 * HALO;
-    const r = p.r;
+  /**
+   * Where a name may go, nearest first: under, over, to either side, the four
+   * ends of the under and over rows, the four corners, and the under and over
+   * rows slid sideways by a quarter, three eighths and half of the name. The
+   * whole list is tried again further from the pin (`RINGS`) before a name is
+   * let to touch anything.
+   */
+  const candidatesAt = (p: LabelPin, away: number): LabelPlace[] => {
+    const r = p.r + away;
     const below = p.y + r + gap + ASCENT * font;
     const above = p.y - r - gap - (p.lift ?? 0) - DESCENT * font;
     const mid = p.y + 0.35 * font;
-    const candidates: LabelPlace[] = [
+    const eighth = textWidth(p.text, font) / 8;
+    return [
       { x: p.x, y: below, anchor: 'middle' },
       { x: p.x, y: above, anchor: 'middle' },
       { x: p.x + r + gap + 2, y: mid, anchor: 'start' },
@@ -223,21 +239,72 @@ export function placeLabels(
       { x: p.x - r * 0.6, y: p.y + r * 0.85 + ASCENT * font + 1, anchor: 'end' },
       { x: p.x + r * 0.6, y: p.y - r * 0.85 - DESCENT * font - 1, anchor: 'start' },
       { x: p.x - r * 0.6, y: p.y - r * 0.85 - DESCENT * font - 1, anchor: 'end' },
+      ...[-2, 2, -3, 3, -4, 4].flatMap((k): LabelPlace[] => [
+        { x: p.x + k * eighth, y: below, anchor: 'middle' },
+        { x: p.x + k * eighth, y: above, anchor: 'middle' },
+      ]),
     ];
+  };
+
+  /**
+   * A name at a place, with what it overlaps; null when it would leave the
+   * frame. Touching the pin it names costs more than touching anything else,
+   * so a slide never puts a name on its own pin.
+   */
+  const score = (p: LabelPin, place: LabelPlace): Choice | null => {
+    const w = textWidth(p.text, font) + 2 * HALO;
+    const at = { ...place };
+    if (at.anchor === 'middle') at.x = Math.min(Math.max(at.x, view.x0 + w / 2), view.x1 - w / 2);
+    const box = labelBox(p.text, at, font);
+    if (box.x0 < view.x0 || box.x1 > view.x1 || box.y0 < view.y0 || box.y1 > view.y1) return null;
+    let cost = 0;
+    const nearX = Math.min(Math.max(p.x, box.x0), box.x1) - p.x;
+    const nearY = Math.min(Math.max(p.y, box.y0), box.y1) - p.y;
+    if (nearX * nearX + nearY * nearY < p.r * p.r) cost += OWN_PIN;
+    for (const [id, dot] of dots) if (id !== p.id) cost += overlap(box, dot);
+    for (const o of fixed) cost += overlap(box, o);
+    for (const [id, o] of chosen) if (id !== p.id) cost += overlap(box, o.box);
+    return { at, box, cost };
+  };
+
+  const choose = (p: LabelPin): Choice => {
     let best: Choice | null = null;
-    for (const c of candidates) {
-      const at = { ...c };
-      if (at.anchor === 'middle') at.x = Math.min(Math.max(at.x, view.x0 + w / 2), view.x1 - w / 2);
-      const box = labelBox(p.text, at, font);
-      if (box.x0 < view.x0 || box.x1 > view.x1 || box.y0 < view.y0 || box.y1 > view.y1) continue;
-      let cost = 0;
-      for (const [id, dot] of dots) if (id !== p.id) cost += overlap(box, dot);
-      for (const o of fixed) cost += overlap(box, o);
-      for (const [id, o] of chosen) if (id !== p.id) cost += overlap(box, o.box);
-      if (!best || cost < best.cost) best = { at, box, cost };
-      if (cost === 0) break;
+    for (const away of RINGS) {
+      for (const c of candidatesAt(p, away)) {
+        const got = score(p, c);
+        if (!got) continue;
+        if (!best || got.cost < best.cost) best = got;
+        if (got.cost === 0) return best;
+      }
     }
-    return best ?? { at: candidates[0], box: labelBox(p.text, candidates[0], font), cost: Infinity };
+    // Every place touches something: slide the best one a few pixels, which
+    // clears a name that only grazes a pin or another name.
+    if (best) {
+      const from = best.at;
+      for (const dx of NUDGE_X) {
+        for (const dy of NUDGE_Y) {
+          const got = score(p, { ...from, x: from.x + dx, y: from.y + dy });
+          if (!got) continue;
+          if (got.cost < best.cost) best = got;
+          if (got.cost === 0) return best;
+        }
+      }
+    }
+    // Still touching: the free spot nearest the pin within reach, on a grid.
+    const reach = SEARCH_REACH + textWidth(p.text, font) / 2;
+    const offsets: { dx: number; dy: number; d: number }[] = [];
+    for (let dx = -reach; dx <= reach; dx += 6) {
+      for (let dy = -SEARCH_REACH; dy <= SEARCH_REACH; dy += 4) offsets.push({ dx, dy, d: Math.hypot(dx, dy * 2) });
+    }
+    offsets.sort((u, v) => u.d - v.d);
+    for (const { dx, dy } of offsets) {
+      const got = score(p, { x: p.x + dx, y: p.y + dy, anchor: 'middle' });
+      if (!got) continue;
+      if (!best || got.cost < best.cost) best = got;
+      if (got.cost === 0) return best;
+    }
+    const home = candidatesAt(p, 0)[0];
+    return best ?? { at: home, box: labelBox(p.text, home, font), cost: Infinity };
   };
 
   const order = [...pins].sort((a, b) => a.y - b.y || a.x - b.x);
