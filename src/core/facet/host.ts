@@ -9,6 +9,7 @@ import { applyStatus, attrCeiling, findStatus, removeStatus, statueOf } from '..
 import { attrXpNeeded, effectiveAttr, setXpRouter } from '../systems/attributes';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { finalAttributes, getDerivedStats } from '../systems/derived';
+import { currentActivity } from '../systems/actions';
 import { appendLog } from '../systems/log';
 import { abilityStrike, isSpotBoss } from '../systems/combat';
 import { monsterStats } from '../systems/monsterStats';
@@ -110,6 +111,8 @@ const STATUS_SCHEMA = {
     parryContest: { kind: 'meta' },
     blowCut: { kind: 'meta' },
     pureBlows: { kind: 'meta' },
+    // Shadow Clone: each clone's share of a work cycle (statuses.ts cloneMult).
+    cloneShare: { kind: 'meta' },
   },
 };
 
@@ -410,6 +413,38 @@ function routeAttrXp(state: GameState, attr: AttributeId, amount: number): boole
     if (levels !== hidden.state?.v) F.cellStep(hidden, 'set', levels, ctx);
   }
   return true;
+}
+
+// ---------- Shadow Clone: the work clones join ----------
+//
+// The `work` event names what the player is working at, as a number: a
+// bench run, or a gathering or job activity, hashed; 0 for anything else
+// (a fight, training, travel, nothing). Raised when it changes, and once
+// after each load, so a document can tell the same work from new work.
+
+const lastWork = new WeakMap<GameState, number>();
+
+/** FNV-1a over the key, never 0: 0 means no work. */
+function workHash(key: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < key.length; i++) h = Math.imul(h ^ key.charCodeAt(i), 0x01000193) >>> 0;
+  return h || 1;
+}
+
+function workKey(state: GameState): number {
+  if (state.travel) return 0;
+  if (state.benchWork) return workHash('bench:' + state.benchWork.disciplineId);
+  const act = currentActivity(state);
+  return act && (act.kind === 'gather' || act.kind === 'job') ? workHash('act:' + act.id) : 0;
+}
+
+/** Each game tick, before the activity: tell the ability when the work changes. */
+export function tickWork(state: GameState): void {
+  if (!state.facets?.length) return;
+  const key = workKey(state);
+  if (lastWork.get(state) === key) return;
+  lastWork.set(state, key);
+  facetSignal(state, 'work', { key });
 }
 
 // ---------- A document's option (Weakest Weapon Master's stance) ----------

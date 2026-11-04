@@ -35,6 +35,7 @@ export const FOE = 'foe:';
  * | rocks | a statue's rocks hit an enemy (combat.ts throwRubble) | target (its ref), amount |
  * | barFill | the player's action bar filled, before the action (combat.ts) | |
  * | eat | the player ate a dish (consumables.ts useConsumable) | calories (dishCalories: Well Fed x 400, or 100, x grade) |
+ * | work | what the player works at changed (host.ts tickWork) | key (a bench run, gathering or job, hashed; 0 for anything else) |
  */
 export type FacetEventId =
   | 'fightStart'
@@ -54,7 +55,8 @@ export type FacetEventId =
   | 'statue'
   | 'rocks'
   | 'barFill'
-  | 'eat';
+  | 'eat'
+  | 'work';
 
 /** combat.ts's trigger stamps that are also ability events. onEncounterStart is not: fightStart carries the enemies. */
 const COMBAT_STAMPS: Record<string, FacetEventId> = {

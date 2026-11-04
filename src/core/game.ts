@@ -114,6 +114,7 @@ import {
   bindFacets,
   chooseEvolution,
   chooseFacetOption,
+  tickWork,
   facetSignal,
   pendingEvolution,
   registerFacetListeners,
@@ -283,6 +284,8 @@ export class Game {
     // leading claim, which may be the one lapsing this very tick; only a hand-off
     // that runs after it moves the condition on instead of letting it expire.
     handOffMeals(this.state, clock);
+    // Before the work itself, so clones (Shadow Clone) join on the tick it starts.
+    tickWork(this.state);
     if (this.state.travel) {
       tickTravel(this.state, this.bus);
     } else {

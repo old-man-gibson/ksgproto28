@@ -9,6 +9,7 @@ import { forgeOnce, previewForge } from './forging';
 import { clonePlacement, forgeTicks } from './assembly';
 import { placed, type Placement } from './disciplines';
 import { text } from '../text/log';
+import { cloneMult } from './statuses';
 
 /**
  * Bench work: the same layout, worked over and over, on the clock.
@@ -211,6 +212,28 @@ export function tickBenchWork(state: GameState, bus: EventBus): void {
       if (job.remaining <= 0) {
         stopBenchWork(state, bus, 'finished');
         return;
+      }
+    }
+  }
+  // Shadow Clone: each clone adds a share of this pass's crafts, each made
+  // from its own stock, so the run still ends when the ingredients do. The
+  // fraction carries to the next pass.
+  const extra = cloneMult(state) - 1;
+  if (extra > 0) {
+    job.cloneCarry = (job.cloneCarry ?? 0) + extra * job.batch;
+    while (job.cloneCarry >= 1) {
+      job.cloneCarry -= 1;
+      if (!benchCraft(state, bus, disc, job.placement, job.duration, job.forge)) {
+        stopBenchWork(state, bus, 'out of stock');
+        return;
+      }
+      job.done += 1;
+      if (job.remaining !== null) {
+        job.remaining -= 1;
+        if (job.remaining <= 0) {
+          stopBenchWork(state, bus, 'finished');
+          return;
+        }
       }
     }
   }

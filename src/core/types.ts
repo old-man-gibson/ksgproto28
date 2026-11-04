@@ -1379,6 +1379,11 @@ export interface StatusDef {
   blowCut?: { rattle: number };
   /** Empty: your weapon blows cannot be dodged and skip armour, resistance and weakness. */
   pureBlows?: true;
+  /**
+   * Shadow Clone: each clone (the intensity) adds this share of a gathering
+   * or job cycle's yield and skill XP, and this share more bench crafts.
+   */
+  cloneShare?: number;
   /** The worse condition this becomes when it is pushed far enough. */
   escalatesTo?: string;
   /** The milder condition a 'deescalate' removal drops this back to. */
@@ -2935,6 +2940,8 @@ export interface BenchWork {
   forge?: Placement;
   /** Crafts finished so far. */
   done: number;
+  /** Shadow Clone's crafts owed but not yet made: a fraction carried to the next pass (benchwork.ts). */
+  cloneCarry?: number;
 }
 
 // ---------- Alchemy ----------

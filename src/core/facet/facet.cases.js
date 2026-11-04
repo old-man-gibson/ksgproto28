@@ -568,6 +568,39 @@ CASES['bank: Calorie Burn at a 0% cutoff burns max HP faster once the store runs
   assert(second.lost.length === 0, 'an empty store knocked out at a fight start');
 };
 
+
+CASES['bank: Shadow Clone summons on new work, holds on the same, and is dispelled by a hit or idleness'] = (assert) => {
+  const level = { v: 25 };
+  F.install(fakeHost({
+    quantities: () => [
+      { id: 'fighter.hp', label: 'HP', kind: 'pool', nullifiable: false, writable: false, mortalRole: 'vitality' },
+      { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
+      { id: 'fighter.level', label: 'Level', kind: 'scalar' },
+    ],
+    readQ: (r, q) => q === 'fighter.level' ? level.v : 1,
+  }));
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.shadow_clone)));
+  F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
+  F.event('work', 'a', { key: 7 });
+  assert(v('clones') === 3, 'level 25 summoned ' + v('clones') + ' clones, not 3');
+  F.event('hitTaken', 'a', { amount: 5, attacker: 'e1' });
+  assert(v('clones') === 0, 'a hit did not dispel the clones');
+  F.event('work', 'a', { key: 7 });
+  assert(v('clones') === 0, 'the same work summoned again after a hit');
+  F.event('work', 'a', { key: 9 });
+  assert(v('clones') === 3, 'new work did not summon');
+  F.event('hitTaken', 'a', { amount: 5 });
+  assert(v('clones') === 3, 'a hit with no attacker dispelled the clones');
+  F.event('work', 'a', { key: 0 });
+  assert(v('clones') === 0 && v('bound') === 0, 'idleness did not dispel');
+  level.v = 80;
+  F.event('work', 'a', { key: 9 });
+  assert(v('clones') === 5, 'the count did not stop at 5: ' + v('clones'));
+  F.event('work', 'a', {});
+  assert(v('clones') === 5, 'a work event with no key changed the clones');
+};
+
 // A host whose enemies record damage, and where the ref 'dead' is not alive.
 function thornHost() {
   const hits = [];

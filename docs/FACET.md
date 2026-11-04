@@ -200,6 +200,22 @@ game supplies calories, the trained body and the defeat.
 The numbers are placeholders. To try it: Grant 🔥 Calorie Burn, eat a few
 dishes, and fight something that lasts.
 
+**Shadow Clone** is the eighth (team ability GEN-18, the user's note:
+"absolutely. no question asked. killer ability."), and the first that works
+outside a fight. Readings taken 2026-11-03 (the recommended ones; the user
+moved on without answering): no time limit, bench clone crafts use their own
+stock, clones add yield and skill XP but not attribute XP.
+
+| Piece | Where |
+|---|---|
+| The work | host.ts `tickWork`, each game tick before the activity: the `work` event names a bench run, a gathering or a job activity as a nonzero hash, anything else as 0. Raised when it changes and once after a load. |
+| Summoning | The document sets `clones` to 1 + 1 per 10 character levels, at most 5, when `work` names new work; the same work again summons nothing. 0 dispels them, and so does an enemy's blow (`hitTaken` with an attacker). |
+| What a clone adds | Carrier field `cloneShare` (0.4) and statuses.ts `cloneMult`: 1 + 0.4 per clone. actions.ts multiplies a gathering's yield and a job's pay, and the skill XP of both; attribute XP is unchanged. |
+| Benches | benchwork.ts: after each pass, `cloneMult - 1` times the batch more crafts, each through the bench's own craft, so each uses its own ingredients and the run still stops when they run out. The fraction carries (`BenchWork.cloneCarry`). |
+| The cost | Carrier mod `pool.mana.max` mult -0.05 per clone. |
+
+To try it: Grant 👥 Shadow Clone, then start gathering, a job or a bench run.
+
 ### Enemies as refs
 
 A document aims at enemies through scopes, and the adapter names each enemy
@@ -234,6 +250,7 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `rocks` | combat.ts `throwRubble`, once per enemy the rocks hit | `target` (its ref), `amount` |
 | `barFill` | combat.ts, when the player's action bar fills, before the action | |
 | `eat` | consumables.ts `useConsumable`, for food | `calories` (`dishCalories`) |
+| `work` | host.ts `tickWork`, when what the player works at changes, and once after a load | `key` (a bench run, gathering or job, hashed; 0 for anything else) |
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it

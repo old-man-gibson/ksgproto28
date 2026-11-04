@@ -79,7 +79,7 @@ export function statueOf(bearer: GameState | MonsterInstance): StatueRule | null
 }
 
 /** Status fields a held condition can carry for Weakest Weapon Master (types.ts StatusDef). */
-type HeldField = 'attrCeiling' | 'repMult' | 'drillsAll' | 'parryContest' | 'blowCut' | 'pureBlows';
+type HeldField = 'attrCeiling' | 'repMult' | 'drillsAll' | 'parryContest' | 'blowCut' | 'pureBlows' | 'cloneShare';
 
 /**
  * The first condition the bearer holds whose definition sets `field`, with its
@@ -96,6 +96,15 @@ export function heldWith(
     if (intensity > 0) return { def, intensity };
   }
   return null;
+}
+
+/**
+ * How much the player's clones multiply a work cycle (Shadow Clone): 1 plus
+ * each clone's share, or 1 with none.
+ */
+export function cloneMult(state: GameState): number {
+  const held = heldWith(state, 'cloneShare');
+  return held ? 1 + (held.def.cloneShare ?? 0) * held.intensity : 1;
 }
 
 /** The attribute ceiling the player holds (Weakest Weapon Master), or null. */
