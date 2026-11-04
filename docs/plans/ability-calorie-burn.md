@@ -2,11 +2,11 @@
 id: ability-calorie-burn
 title: Calorie Burn — eat, burn, and the fight that runs too long
 kind: story
-status: draft
+status: review
 system: abilities
 parent: unique-abilities
 save: ''
-updated: 2026-09-26
+updated: 2026-11-03
 invariants:
   - completability
   - no-terminal-states
@@ -27,6 +27,16 @@ done:
   - The earning quest exists with the user's captions
   - npm run verify green
 ---
+
+> **Built 2026-11-03** as a FACET document (Facet bank `calorie_burn`; how
+> it runs here: docs/FACET.md). The chassis below (gauges, latches, flows,
+> trips) never shipped; FACET cells, clauses and the new `defeat` world effect
+> do the same jobs. Choices taken that day: the peak bonus is +100%, x1.25 each
+> time the store's cap doubles past 400; the full-store penalty is -10%;
+> calories come from Well Fed (400 a point, 100 for a dish with none); running
+> dry at a 0% cutoff is a knockout. Not built: the earning quest, and the
+> "settle while not worn" rules (one ability per run, so it is never taken off).
+> This card stays as the design record.
 
 # The ability, as the user wrote it
 

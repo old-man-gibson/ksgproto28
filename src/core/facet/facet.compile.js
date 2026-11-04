@@ -290,6 +290,14 @@ function applyWorld(eff, ctx, host) {
       ctx.bindings.$paid = paid;
       return;
     }
+    // Ends the target's fight as a loss: outcome 'knocked_out', or 'dead' (a death that is a
+    // setback). `cause` is a line for the host's defeat screen. Optional on the host, like
+    // applyDamage: without defeat nothing happens. Added 2026-11-03 for Calorie Burn.
+    case 'defeat': {
+      const outcome = eff.outcome === 'dead' ? 'dead' : 'knocked_out';
+      for (const t of targets) if (host.defeat) host.defeat(t, outcome, eff.cause || '', ctx.facet.id);
+      return;
+    }
     case 'dismiss': { for (const t of targets) if (host.dismiss) host.dismiss(t); return; }
     case 'revive': {
       // Revive can never run in-encounter: the schema defines no `now` value for eff.when, so the

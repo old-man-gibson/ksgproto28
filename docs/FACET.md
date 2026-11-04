@@ -179,6 +179,27 @@ and Heavy too. Power's weights, the x2..x64 curve and the ceiling are
 placeholders. To try it: Grant 🥋 Weakest Weapon Master, then pick a stance on
 the Combat tab.
 
+**Calorie Burn** is the seventh, also the user's (2026-09-26 card,
+docs/plans/ability-calorie-burn.md; choices taken 2026-11-03: peak bonus
++100% growing with the store, full-store penalty -10%, calories from Well Fed,
+running dry at a 0% cutoff is a knockout). The document holds the rules; the
+game supplies calories, the trained body and the defeat.
+
+| Piece | Where |
+|---|---|
+| Calories | consumables.ts `dishCalories`: 400 per point of Well Fed a dish grants, 100 for a dish with none, times the grade; a spoiled grade and non-food give 0. `useConsumable` raises `eat` with them, so queued eating counts too. |
+| The store | Cell `kcal`, cap 400 + 30 x `ksg.trainedBody` (trained CON + STR, no bonuses). |
+| Too full | Cell `sated` in percent points, 0 at 70% full to 10 at 100%; carrier: every attribute x(1 - 1% per point). |
+| The burn | Per combat tick while the store is above the cutoff: 0.25 + 0.015 per second of fight time, at most 4. Cell `fburn` counts this fight's burn. |
+| The bonus | Cell `burning` in percent points: 0 below 30% of the cap burned this fight, then (e^5x - 1)/(e^5 - 1) to the peak at 100%. The peak is +100% at a cap of 400, x1.25 each time the cap doubles. Carrier: every attribute x(1 + 1% per point). Resets with the fight. |
+| The cutoff | `reading.choice` (0%, 10% default, 25%), drawn on the Combat tab under the stance grid. Applies at once. |
+| Max HP | After 90 s of fight time, cell `debt` grows 0.4 a tick; carrier: max HP -1 per point. Out of a fight it returns 0.05 a game minute, 25 while the store is full; the store digests 0.5 a minute only while nothing is owed. |
+| The collapse | When `debt` reaches 9 x the max HP left (90% burned), the document emits `defeat` with outcome `dead`. host.ts marks the fight (`CombatState.fallen`); combat.ts settles it after the ability's tick with `onDefeat(state, bus, 'dead', cause)`: a knockout's consequences, the window titled "💀 You died", and the cause on the window (`FightLedger.cause`). |
+| Running dry | At the 0% cutoff, a store emptied by this fight's burn emits `defeat` with `knocked_out`. An empty store at a fight's start burns nothing and never trips. |
+
+The numbers are placeholders. To try it: Grant 🔥 Calorie Burn, eat a few
+dishes, and fight something that lasts.
+
 ### Enemies as refs
 
 A document aims at enemies through scopes, and the adapter names each enemy
@@ -212,6 +233,7 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `statue` | host.ts `applyStatus`, when an ability's dose turns an enemy to stone | `target` (its ref), `level`, `levelShare` (its level ÷ yours), `attrShare` (its attribute total ÷ yours), `boss` |
 | `rocks` | combat.ts `throwRubble`, once per enemy the rocks hit | `target` (its ref), `amount` |
 | `barFill` | combat.ts, when the player's action bar fills, before the action | |
+| `eat` | consumables.ts `useConsumable`, for food | `calories` (`dishCalories`) |
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it
@@ -256,6 +278,7 @@ so ids are shared with InfiniteGacha wherever both games have the number:
 | `ksg.martialTotal` | the summed level of every combat skill |
 | `ksg.techniqueTotal` | reps recorded across every technique |
 | `ksg.melee` | 1 unless an item tagged `ranged` is equipped |
+| `ksg.trainedBody` | trained CON + STR levels, without bonuses (Calorie Burn's store) |
 | `fighter.level` | character level; on an enemy, its level |
 | `fighter.boss` | 0 for the player; on an enemy, 1 for the spot's boss |
 | `ksg.<stat>` | every other derived stat, by its `StatKey` |

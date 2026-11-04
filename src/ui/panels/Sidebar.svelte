@@ -406,7 +406,7 @@
                 <div class="label">{cell.label} {Math.floor(cell.value)} / {Math.floor(cell.cap)}</div>
               </div>
             {:else}
-              <span class="ability-line" class:ability-low={cell.show === 'signedPct' && cell.value < 0}>{cell.label} {abilityValue(cell)}</span>
+              <span class="ability-line" class:ability-low={(cell.show === 'signedPct' && cell.value < 0) || (cell.show === 'minusPct' && cell.value > 0)}>{cell.label} {abilityValue(cell)}</span>
             {/if}
           </div>
           {#snippet tip()}

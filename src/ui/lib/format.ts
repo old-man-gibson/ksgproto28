@@ -117,6 +117,9 @@ export function poolText(current: number, max: number): string {
  */
 export function abilityValue(c: { show: string; value: number; cap: number }): string {
   if (c.show === 'signedPct') return (c.value >= 0 ? '+' : '−') + Math.round(Math.abs(c.value) * 100) + '%';
+  // The value is in percent points, and the sign is the cell's meaning (a bonus or a penalty).
+  if (c.show === 'plusPct') return '+' + Math.round(c.value) + '%';
+  if (c.show === 'minusPct') return '−' + Math.round(c.value) + '%';
   if (c.show === 'bar' || c.cap < 1e9) return `${Math.floor(c.value)} / ${Math.floor(c.cap)}`;
   return `${Math.round(c.value)}`;
 }

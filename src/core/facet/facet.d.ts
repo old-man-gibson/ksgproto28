@@ -19,7 +19,10 @@ export interface FacetCell {
   cap?: unknown;
   floor?: number;
   tier?: string;
-  /** Display hint for a game's ability readout: 'bar' (value of cap), 'signedPct' or 'count'. */
+  /**
+   * Display hint for a game's ability readout: 'bar' (value of cap), 'signedPct',
+   * 'count', or 'plusPct' / 'minusPct' (the value is in percent points).
+   */
   show?: string;
   status?: { desc?: string; [field: string]: unknown };
   /** False for a counter no modifier reads: it gets no carrier status, so it never moves the stat cache. */

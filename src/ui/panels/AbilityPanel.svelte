@@ -23,7 +23,7 @@
         <div class="row">
           <div class="head">
             <span>{cell.icon} {cell.label}</span>
-            <b class:low={cell.show === 'signedPct' && cell.value < 0}>{abilityValue(cell)}</b>
+            <b class:low={(cell.show === 'signedPct' && cell.value < 0) || (cell.show === 'minusPct' && cell.value > 0)}>{abilityValue(cell)}</b>
           </div>
           {#if cell.show === 'bar'}
             <div class="bar">

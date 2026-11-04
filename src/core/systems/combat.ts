@@ -3,6 +3,7 @@ import type {
   ActiveSpec,
   AttributeId,
   CombatState,
+  FightOutcome,
   DamageReport,
   DamageSlice,
   DamageStep,
@@ -1860,22 +1861,29 @@ function onKill(state: GameState, bus: EventBus, index: number, gone: StatueRule
  * can put you on the floor while a goblin takes the credit — which is exactly
  * why the ledger exists and why the window reads from that instead.
  */
-function onDefeat(state: GameState, bus: EventBus): void {
+/**
+ * The player loses the fight. `outcome` 'dead' is a death that is a setback:
+ * the knockout's consequences under its own title (Calorie Burn's collapse).
+ * `cause` names what did it when an ability did, for the log and the window.
+ */
+function onDefeat(state: GameState, bus: EventBus, outcome: FightOutcome = 'knocked_out', cause = ''): void {
   const forced = state.combat!.forced;
   const monster = frontEnemy(state.combat!)!;
   bus.emit({ type: 'defeat', monster });
   bus.emit({
     type: 'log',
-    msg: forced
-      ? text('combat.knocked_out_forced', { name: monster.name })
-      : text('combat.knocked_out', { name: monster.name }),
+    msg: cause
+      ? `${outcome === 'dead' ? '💀' : '💫'} ${cause}`
+      : forced
+        ? text('combat.knocked_out_forced', { name: monster.name })
+        : text('combat.knocked_out', { name: monster.name }),
     kind: 'danger',
   });
   closeCombat(state, bus);
   setHpAfterDefeat(state);
   state.recovering = true;
   state.respawnTimer = RESPAWN_DELAY * 2;
-  endFight(state, 'knocked_out');
+  endFight(state, outcome, cause || undefined);
   // You do not come round where you fell — something dragged you clear, and
   // the havens the save has been tracking decide where (systems/safety.ts).
   // Every knockout, not only a forced fight's (user, 2026-09-12): the last
@@ -4045,6 +4053,12 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
   if (facetCombatTick(state)) {
     sweepDead(state, bus);
     if (!state.combat) return;
+    // An ability ended the fight as a loss (Calorie Burn: the store ran dry, or max HP burned away).
+    const fallen = state.combat.fallen;
+    if (fallen) {
+      onDefeat(state, bus, fallen.outcome, fallen.cause);
+      return;
+    }
   }
   if (standAside(state, bus)) return;
 

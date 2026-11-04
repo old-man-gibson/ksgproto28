@@ -67,6 +67,7 @@
           encounter — this happened outside a fight.{/if}
         · {duration(ledger.ticks)}
       </p>
+      {#if ledger.cause}<p class="cause">{ledger.cause}</p>{/if}
     </header>
 
     <div class="cols">
@@ -210,6 +211,11 @@
   header p {
     margin: 0;
     font-size: 13px;
+  }
+
+  header p.cause {
+    margin-top: 4px;
+    color: var(--danger);
   }
 
   .cols {

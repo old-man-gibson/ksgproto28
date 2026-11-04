@@ -5556,6 +5556,8 @@ export const ENCOUNTER_SLOTS = 5;
 export interface CombatState {
   /** Brief encounter introduction; neither side acts until it finishes. */
   introTicks?: number;
+  /** An ability ended the fight as a loss this tick (facet/host.ts `defeat`); combat.ts settles it. */
+  fallen?: { outcome: FightOutcome; cause: string };
   /**
    * Fixed-length formation. Only `enemies[0]` (the centre) can be attacked;
    * when it dies a random survivor swaps into slot 0 and its own slot empties.
@@ -5799,10 +5801,9 @@ export interface LogEntry {
 /**
  * How an encounter ended for the player.
  *
- * `dead` is the spirit-walk failure state and NOTHING produces it yet. The hook
- * is here so that when it lands it is one more outcome on a shape that already
- * exists, rather than a save migration and a second window that says the same
- * things in a different order.
+ * `dead` is a death that is a setback: knockout consequences under its own
+ * title. Calorie Burn's collapse produces it (facet/host.ts `defeat`); the
+ * spirit walk will too, when it lands, on this same shape.
  */
 export type FightOutcome = 'won' | 'knocked_out' | 'dead';
 
@@ -5842,6 +5843,8 @@ export interface LedgerStopped {
  */
 export interface FightLedger {
   outcome: FightOutcome;
+  /** What ended the fight, when an ability did (Calorie Burn's collapse); shown on the defeat window. */
+  cause?: string;
   /** Ticks the encounter lasted. */
   ticks: number;
   /** Absolute tick it ended on, against `totalTicks`. */

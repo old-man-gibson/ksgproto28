@@ -213,6 +213,11 @@ function build(): Map<string, Entry> {
     { id: 'ksg.techniqueTotal', label: 'Technique reps', kind: 'scalar', namespace: 'ksg', nullifiable: false, writable: false, modStat: null },
     (s) => Object.values(s.techniques ?? {}).reduce((n, t) => n + t.executions, 0),
   );
+  // Trained CON + STR, without bonuses: the body Calorie Burn's store grows with.
+  add(
+    { id: 'ksg.trainedBody', label: 'Trained CON + STR', kind: 'scalar', namespace: 'ksg', nullifiable: false, writable: false, modStat: null },
+    (s) => s.attrs.con.level + s.attrs.str.level,
+  );
   // 1 unless a ranged weapon is held (an item tagged 'ranged').
   add(
     { id: 'ksg.melee', label: 'Melee', kind: 'scalar', namespace: 'ksg', nullifiable: false, writable: false, modStat: null },

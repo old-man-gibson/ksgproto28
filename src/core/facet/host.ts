@@ -315,6 +315,13 @@ export function createFacetHost(getState: () => GameState): FacetHost {
     // A pool cost (the `spend` verb): stamina, mana, spirit or focus, never HP.
     spendPool: (ref: string, pool: string, amount: number) =>
       ref === PLAYER_REF && FACET_POOLS.includes(pool as ResourceId) ? spendResource(s(), pool as ResourceId, amount) : 0,
+    // The `defeat` verb (Calorie Burn): the player's fight ends as a loss. Marked on the
+    // fight here; combat.ts settles it after the ability's tick, with the bus it needs.
+    defeat: (ref: string, outcome: string, cause: string) => {
+      const fight = s().combat;
+      if (ref !== PLAYER_REF || !fight || fight.fallen) return;
+      fight.fallen = { outcome: outcome === 'dead' ? 'dead' : 'knocked_out', cause };
+    },
 
     // ---- damage ----
     // No stages until K2 collapses the two damage paths onto one staged runner.
