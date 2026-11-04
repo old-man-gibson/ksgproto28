@@ -1583,6 +1583,13 @@ describe('a limited fallback is picked again from the fall floor', () => {
     expect(g.state.activity).toBeNull();
   });
 
+  it('a knockout at the floor-1 fallback picks the floor-2 spot, not a hold', () => {
+    const g = floorThree(94);
+    withTarget(g);
+    fallAt(g, 'f1_storerooms');
+    expect(pending(g)).toMatchObject({ phase: 'fallback', target: { spot: 'kr_f3' }, fallback: { spot: 'f2_hall_1' } });
+  });
+
   it('a fallback without the field (a v63 save) uses the target’s floor', () => {
     const g = floorThree(95);
     withTarget(g);
@@ -1609,5 +1616,74 @@ describe('a limited fallback is picked again from the fall floor', () => {
     MIGRATIONS[63](raw);
     expect(raw).toEqual({ version: 64 });
     expect(SAVE_VERSION).toBeGreaterThanOrEqual(64);
+  });
+});
+
+describe('a knockout at a limited fallback', () => {
+  /** Wins at the ring (older) and the lane (newer), then five losses at the field: the lane is the fallback. */
+  function laneFallback(seed: number): Game {
+    const g = world(seed);
+    win(g, 'kr_ring');
+    g.state.totalTicks += 100;
+    win(g, 'kr_lane');
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+    expect(pending(g)).toMatchObject({ phase: 'fallback', fallback: { spot: 'kr_lane' } });
+    return g;
+  }
+
+  it('ends it at once: another limited spot is picked, the wins and the clock carried', () => {
+    const g = laneFallback(100);
+    pending(g).wins = 4;
+    const until = pending(g).until;
+    fallAt(g, 'kr_lane');
+    expect(g.state.stats['win:n:kr_lane']).toBeUndefined();
+    expect(pending(g)).toMatchObject({
+      phase: 'fallback',
+      target: { spot: 'kr_field' },
+      fallback: { spot: 'kr_ring' },
+      wins: 4,
+      until,
+      from: 'kr_field',
+    });
+    expect(lines(g)).toContain('Test Lane: knocked out there. Hunting Test Ring.');
+  });
+
+  it('with none left, holds on the target at the haven', () => {
+    const g = laneFallback(101);
+    fallAt(g, 'kr_lane');
+    fallAt(g, 'kr_ring');
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_field' }, probes: 0 });
+    expect(pending(g).until).toBe(g.state.totalTicks + holdTicks(0));
+    expect(g.state.spot).toBe('kr_camp');
+    expect(lines(g)).toContain('Test Ring: knocked out there. No safer hunt known. Retrying Test Field in 10 min.');
+  });
+
+  it('with none left and no target, ends the return and idles', () => {
+    const g = world(102, 'kr_den');
+    win(g, 'kr_ring');
+    g.state.totalTicks += 100;
+    win(g, 'kr_lane');
+    fallAt(g, 'kr_den', null, true);
+    expect(pending(g)).toMatchObject({ target: null, fallback: { spot: 'kr_lane' } });
+    fallAt(g, 'kr_lane');
+    expect(pending(g)).toMatchObject({ target: null, fallback: { spot: 'kr_ring' } });
+    fallAt(g, 'kr_ring');
+    expect(g.state.pendingReturn).toBeNull();
+    expect(g.state.activity).toBeNull();
+    expect(lines(g)).toContain('Test Ring: knocked out there. No safer hunt known.');
+    expect(defeatDialogDue(g.state)).toBe(true);
+  });
+
+  it('a proven fallback is still returned to, and holds only after 5 in a row', () => {
+    const g = world(103);
+    g.state.proven = { spot: 'kr_meadow', activity: 'hunt' };
+    win(g, 'kr_lane');
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+    expect(pending(g).fallback).toMatchObject({ spot: 'kr_meadow' });
+    fallAt(g, 'kr_meadow');
+    expect(pending(g)).toMatchObject({ phase: 'fallback', fallback: { spot: 'kr_meadow' }, target: { spot: 'kr_field' } });
+    expect(lines(g)).toContain('Returning to Test Meadow.');
+    for (let i = 1; i < STREAK_LIMIT; i++) fallAt(g, 'kr_meadow');
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_field' } });
   });
 });

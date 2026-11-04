@@ -377,6 +377,12 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
       say(bus, text('knockout.return', { spot: spotName(old.target.spot) }));
       return;
     }
+    // A limited fallback holds only while no knockout has come since its last
+    // win, so this one ends it at once: pick again from the fall floor.
+    if (old.phase === 'fallback' && SPOTS[fall.spot]?.fightLimit) {
+      replaceFallback(state, bus, old, old.fallback, 'lost');
+      return;
+    }
     if (old.phase === 'fallback' && n < STREAK_LIMIT && huntUsable(state, old.fallback, '')) {
       say(bus, text('knockout.return', { spot: spotName(fall.spot) }));
       return;
