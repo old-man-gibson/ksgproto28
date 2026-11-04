@@ -5928,6 +5928,13 @@ export interface GameState {
   /** Opted in to paying your style's exertion cost for its bonuses. */
   exerting: boolean;
   skills: Record<string, SkillState>;
+  /**
+   * XP banked toward a locked skill that manifests by XP (skills.ts
+   * `manifestsByXp`), by skill id. Cleared when the skill manifests. Resets
+   * with the run. Absent in saves from before 2026-11-03; deserialize
+   * backfills it from createInitialState.
+   */
+  skillLatent: Record<string, number>;
   style: string;
   /** Player-defined active-skill rotation; style priority fills in the rest. */
   skillOrder: string[];
