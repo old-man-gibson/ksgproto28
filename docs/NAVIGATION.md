@@ -4,7 +4,7 @@
 Built 2026-09-13 (save v53): `systems/locations.ts`, `systems/actions.ts`
 (`settleArrival`, `trainingSpots`), `systems/bonustime.ts`, `ui/MapCard.svelte`,
 `ui/panels/DestinationPreview.svelte`, `ui/lib/navigation.ts`,
-`ui/lib/GoButton.svelte`.*
+`ui/lib/GoButton.svelte`. Ride edges added 2026-11-04 (§2.6, `systems/towers.ts`).*
 
 ## 1. Why
 
@@ -115,6 +115,47 @@ cap), spent only while the player toggles it on.
   also costs up to twice the CPU.
 - UI: the ⏩ button in the top bar shows the bank and toggles spending.
 
+### 2.6 Ride edges (`rideEdges`, `routableStops`, `rideLeg`; towers.ts)
+
+Added 2026-11-04 (docs/plans/navigation-alternatives.md N1). No save change.
+Before this, `findPath` walked roads only: standing on a floor, every
+Threshold pin read "No open route from here", and the ladder's buttons were a
+second travel control. The router now crosses the ladder.
+
+- **Edges.** `rideEdges(state, from)` is derived on every call and never
+  stored. From any spot where `towerAtSpot` holds (the hub, a band hub, any
+  spot of a banded floor) it leads to each routable stop of that tower: the
+  hub, each opened band hub, each unlocked floor's landing. Not to the spot
+  itself, and not to the landing of the floor the spot is on (the ladder
+  offers no ride to the floor you stand on).
+- **Price.** `max(1, |rung difference|) × CLIMB_TICKS_PER_FLOOR / travelSpeed`,
+  the price `climbTo` charges. Labels: "Ladder: climb", "Ladder: descend",
+  "Ladder: cross".
+- **Routable stop** (`routableStops`): the spot is discovered, the stop's own
+  terms hold (`floorUnlocked`, `bandOpen`), and `festivalLadder` has no
+  verdict. Never routed:
+  - a landing of the Vermin Festival band (floors 15 and 16);
+  - a floor that is not unlocked;
+  - an undiscovered landing, hub or band hub, so no ride names a place the
+    player has not been and the first ride onto a floor stays a ladder click;
+  - any ride while a festival attempt is live.
+- **Readers.** `findPath`, `startTravel`, `pathTicks` and `routeInfo`
+  (`hopEdge`) read roads plus ride edges. `travelPlan` stays a list of spot
+  ids; a hop between two spots with no road is a ride. A road to a place wins
+  over a ride to it, so a shut road is not routed around through the ladder.
+  `findPath` still never routes through an unfleeable fight.
+- **Planned legs.** `rideLeg` runs a ride as one leg of a journey. It keeps
+  `travelPlan` and `travelIntent` and logs nothing; a lone ride (`climbTo`,
+  `startTravel` unplanned) clears both, as a climb always did. The leg is
+  judged by `rideEdges` at the moment it starts, so a floor that shut after
+  the plan was made stops the journey at the halt with
+  `locations.route_blocked`, like a road that shut. `climbTo` and
+  `climbToHub` reach the same terms through `rideGate`.
+- **Festival door.** `festival:door` resets to 0 when an attempt ends, won or
+  lost, as well as when one starts (festival.ts), so the dark room's road to
+  the hall is shut whenever no attempt is live. Before, a won or lost attempt
+  left it at 1 until the next attempt began.
+
 ## 3. The map (`MapCard.svelte`, `lib/navigation.ts`)
 
 The map is the one travel control. The old Travel list is gone; everything
@@ -146,6 +187,18 @@ it said moved onto the map:
   never hides the only way to travel.
 - `visibleBenches` moved from LocationPanel to `lib/navigation.ts`, so the
   room and the map hide the same locked benches.
+- **Region tabs** (2026-11-04) show only regions with a discovered spot, plus
+  the region on show and the one the player stands in (or walks to).
+- **While walking**, the map shows the region and floor where the journey ends
+  (`journeyEnd`). An undiscovered end is not shown: the map stays on the spot
+  underfoot. Setting out, retargeting and arriving clear a tab the player had
+  opened by hand.
+- **Ladder rides** are routes like roads (§2.6). The card's route line reads
+  "Ladder: descend · 18 s" for one ride, and "n legs" for a ride plus roads.
+- **The Caravan row is gone** (2026-11-04). Its only stop was the Foot, so it
+  never had a destination. `fastTravelTo` and `canFastTravel` stay in the core
+  and the Foot keeps `waypoint: true`: the "every spot can get home" lint
+  anchors on the flag. A pin still wears the ⚡ for a waypoint.
 
 ### 3.1 The Location screen, top to bottom (`LocationPanel.svelte`)
 
@@ -227,9 +280,6 @@ fight, or with no open route.
 
 ## 6. Open
 
-- Tower floors are reached by `climbTo`, not roads, so `findPath` cannot
-  route onto a floor; go links to floor spots from Threshold are disabled.
-  Routing through the ladder (hub ↔ landing as priced edges) would fix it.
 - The hover card overlaps neighbouring nodes on a narrow panel.
 - The defeat retreat does not resume the haven's activity (retreat is not an
   arrival; the defeat rule of 2026-09-12 accepted idling there).

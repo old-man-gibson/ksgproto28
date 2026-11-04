@@ -299,6 +299,24 @@ describe('the dark room', () => {
     expect(s.stats['kills']).toBe(DARK_ROOM_WAVES.flat().length);
   });
 
+  it('the door shuts when the attempt is lost, not only when the next one starts', () => {
+    const game = new Game(strong(atFourteen()));
+    const s = game.state;
+    climb(game, DARK_FLOOR);
+    tickUntil(game, () => festivalRun(s)?.phase === 'prep');
+    expect(s.stats[FESTIVAL_DOOR_KEY]).toBe(1);
+    climb(game, null); // the forfeit: a loss, with the ejection
+    expect(festivalRun(s)).toBeUndefined();
+    expect(s.stats[FESTIVAL_DOOR_KEY]).toBe(0);
+  });
+
+  it('the door shuts when the royale is won', () => {
+    const game = inHall();
+    expect(game.state.stats[FESTIVAL_DOOR_KEY]).toBe(1);
+    winFromHall(game);
+    expect(game.state.stats[FESTIVAL_DOOR_KEY]).toBe(0);
+  });
+
   it('floor 16 has no door of its own: with no attempt the ladder refuses it, though floor 15 reads cleared', () => {
     // A room emptied, then the attempt lost from the hall: the dark room's
     // latch stays, so the ladder reads floor 15 cleared and floor 16 open.

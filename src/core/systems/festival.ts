@@ -310,6 +310,8 @@ function loseFestival(state: GameState, bus: EventBus): void {
   const bumped = returnGear(state, run);
   delete fest.run;
   fest.lockedUntil = lockoutEnd(state);
+  // The door shuts with the attempt, not with the next one.
+  setStat(state, bus, FESTIVAL_DOOR_KEY, 0);
   bus.emit({ type: 'log', msg: text('festival.lost'), kind: 'danger' });
   reportBumped(bus, bumped);
 }
@@ -329,6 +331,7 @@ function winFestival(state: GameState, bus: EventBus): void {
   const swift = run.enteredAt !== undefined && run.enteredAt <= SWIFT_ENTRY_TICKS;
   const bumped = returnGear(state, run);
   delete fest.run;
+  setStat(state, bus, FESTIVAL_DOOR_KEY, 0);
   const first = (state.stats[FESTIVAL_WINS_KEY] ?? 0) === 0;
   bumpStat(state, bus, FESTIVAL_WINS_KEY);
   bus.emit({ type: 'log', msg: text('festival.won'), kind: 'quest' });

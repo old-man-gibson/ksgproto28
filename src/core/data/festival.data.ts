@@ -36,7 +36,7 @@ export const LOCKOUT_TICKS = 3 * TICKS_PER_DAY;
 /**
  * Counters the festival writes. `festival:door` is 1 while this attempt's
  * dark room door stands open (the hub's road reads it) and 0 from the start
- * of the next attempt. `festival:wins` counts royales won this run. The
+ * of an attempt and from its end, won or lost. `festival:wins` counts royales won this run. The
  * floors' clears read the two boss lines instead (`boss:f15_dark_room`,
  * `boss:f16_arena`), which only ever fall at the end of a room or a field.
  */
