@@ -195,7 +195,7 @@ game supplies calories, the trained body and the defeat.
 | The cutoff | `reading.choice` (0%, 10% default, 25%), drawn on the Combat tab under the stance grid. Applies at once. |
 | Max HP | After 90 s of fight time, cell `debt` grows 0.4 a tick; carrier: max HP -1 per point. Out of a fight it returns 0.05 a game minute, 25 while the store is full; the store digests 0.5 a minute only while nothing is owed. |
 | The collapse | When `debt` reaches 9 x the max HP left (90% burned), the document emits `defeat` with outcome `dead`. host.ts marks the fight (`CombatState.fallen`); combat.ts settles it after the ability's tick with `onDefeat(state, bus, 'dead', cause)`: a knockout's consequences, the window titled "💀 You died", and the cause on the window (`FightLedger.cause`). |
-| Running dry | At the 0% cutoff, a store emptied by this fight's burn emits `defeat` with `knocked_out`. An empty store at a fight's start burns nothing and never trips. |
+| Running dry | At the 0% cutoff, once this fight's burn has emptied the store, max HP burns 2 more a tick (5 times the long-fight rate) until the collapse (user 2026-11-03: no knockout at 0%). An empty store at a fight's start burns nothing, so it never runs dry. |
 
 The numbers are placeholders. To try it: Grant 🔥 Calorie Burn, eat a few
 dishes, and fight something that lasts.

@@ -88,14 +88,20 @@ describe('Calorie Burn', () => {
     expect(state.recovering).toBe(true);
   });
 
-  it('at a 0% cutoff, running dry mid-burn knocks you out', () => {
+  it('at a 0% cutoff, running dry burns max HP fast down to the collapse, not a knockout', () => {
     const { state, game } = holding();
     expect(chooseFacetOption(state, 2)).toBe(true);
     debugSetCell(state, 'kcal', 0.01);
     intoFight(state, game);
     for (const e of state.combat!.enemies) if (e) e.hp = 1e9;
-    for (let t = 0; t < 2_000 && state.combat; t++) game.step();
-    expect(state.lastFight?.outcome).toBe('knocked_out');
-    expect(state.lastFight?.cause).toMatch(/ran dry/);
+    // Dry well before 90 s, so any max HP burned by then is the dry burn.
+    for (let t = 0; t < 600 && cell(state, 'kcal') > 0; t++) game.step();
+    expect(cell(state, 'kcal')).toBe(0);
+    for (let t = 0; t < 20; t++) game.step();
+    expect(state.combat).toBeTruthy();
+    expect(cell(state, 'debt')).toBeGreaterThan(0);
+    for (let t = 0; t < 3_000 && state.combat; t++) game.step();
+    expect(state.lastFight?.outcome).toBe('dead');
+    expect(state.lastFight?.cause).toMatch(/max HP burned away/);
   });
 });

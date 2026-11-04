@@ -534,16 +534,29 @@ CASES['bank: Calorie Burn starts burning at once when a third of HP is gone, and
   assert(v('fburn') > burned, 'the burn stopped when HP came back');
 };
 
-CASES['bank: Calorie Burn at a 0% cutoff knocks out when the store runs dry'] = (assert) => {
-  const { H, lost } = calorieHost(0, { v: 100 });
+CASES['bank: Calorie Burn at a 0% cutoff burns max HP faster once the store runs dry'] = (assert) => {
+  const maxHp = { v: 100 };
+  const { H, lost } = calorieHost(0, maxHp);
   F.install(H);
   const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.calorie_burn)));
   F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
   F.cellStep(F.cellOf(doc, 'cutoff'), 'set', 2, { ref: 'a', facet: doc, bindings: {} });
   F.event('eat', 'a', { calories: 50 });
   F.event('fightStart', 'a', {});
-  for (let i = 0; i < 400 && !lost.length; i++) F.tick('a');
-  assert(lost.length === 1 && lost[0].outcome === 'knocked_out', 'running dry at 0% did not knock out');
+  let dryAt = -1;
+  for (let i = 0; i < 400 && dryAt < 0; i++) {
+    F.tick('a');
+    if (v('kcal') <= 0) dryAt = i;
+  }
+  assert(dryAt >= 0 && dryAt < 400, 'the store did not run dry');
+  assert(lost.length === 0, 'running dry ended the fight at once');
+  const before = v('debt');
+  for (let i = 0; i < 10; i++) F.tick('a');
+  assert(Math.abs(v('debt') - before - 20) < 1e-9, 'a dry store burned ' + (v('debt') - before) + ' max HP in 10 ticks, not 20');
+  maxHp.v = 2;
+  F.tick('a');
+  assert(lost.length === 1 && lost[0].outcome === 'dead', 'the dry burn did not end at the 10% line');
   // An empty store at a fight's start burns nothing, so it never trips.
   const second = calorieHost(0, { v: 100 });
   F.install(second.H);

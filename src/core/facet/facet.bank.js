@@ -672,6 +672,9 @@ B.weakest_weapon_master = {
 // Well Fed (the host's eat event), and running dry at a 0% cutoff is a knockout. Later the same
 // day: "the calories don't really start burning until they lose at least 33% of their HP, or 20
 // seconds have passed in a fight, essentially turning it into a danger mode that begins kicking in".
+// And: "calorie burn shouldn't knock out the player immediately at 0% but rather accelerate the max
+// hp reduction and only knock you out when you hit 10% of your total max hp". The 10% line is the
+// collapse; it stays the death that is a setback (the 2026-09-26 ruling) until the user says otherwise.
 //
 // Readings taken:
 //   - The store's cap is 400 + 30 x trained CON + STR (the card's settled body).
@@ -687,6 +690,9 @@ B.weakest_weapon_master = {
 //   - The full-store penalty is 0 at 70% full and the whole -10% at 100%.
 //   - After 90 s of fight time, max HP burns at 0.4 a tick, absolute. The fight ends as a death
 //     when the burned HP reaches 90% of the max it was taken from (burned >= 9 x what is left).
+//   - At a 0% cutoff, once this fight's burn has emptied the store, max HP burns 2 a tick more
+//     (5 times the long-fight rate), from then on and whatever the fight time. An empty store at a
+//     fight's start burns nothing, so it never runs dry.
 //   - Out of a fight, each game minute: the store digests 0.5 while no max HP is owed; owed max
 //     HP returns 0.05 a minute, and 25 a minute while the store is full.
 //
@@ -744,13 +750,13 @@ B.calorie_burn = {
       'Bonus: All attributes up to +100% as one fight burns 30% to 100% of the store.',
       'Grows: The peak bonus x1.25 each time the cap doubles past 400.',
       'Costs: After 90 s in a fight, max HP burns. At 90% burned the fight ends as a death.',
-      'Fails: At a 0% cutoff, running dry knocks you out.',
+      'Fails: At a 0% cutoff, running dry makes max HP burn 5 times faster.',
       'Recovers: Out of a fight max HP returns, fast while the store is full.',
     ].join('\n'),
     choice: {
       label: 'Stop burning at', want: 'cutoff', active: 'cutoff',
       options: [
-        { v: 2, name: '0%', icon: '⚠️', desc: 'Burn the whole store. Running dry in a fight knocks you out.' },
+        { v: 2, name: '0%', icon: '⚠️', desc: 'Burn the whole store. Running dry in a fight makes max HP burn 5 times faster.' },
         { v: 1, name: '10%', icon: '🔥', desc: 'Stop at 10% of the store. The default.' },
         { v: 3, name: '25%', icon: '🛑', desc: 'Stop at 25% of the store.' },
       ],
@@ -791,7 +797,7 @@ B.calorie_burn = {
     { id: 'start', on: 'event:fightStart', do: cbFightReset(1) },
     { id: 'end', on: 'event:fightEnd', do: cbFightReset(0) },
     // The fight, per combat tick, in order: time, danger, the burn, the bonus and the penalty,
-    // the max-HP burn, and the two ways the fight can end.
+    // the max-HP burn (faster with a dry store), and the collapse.
     { id: 'clock', on: 'tick', do: [addCell('ticks', 1)] },
     { id: 'danger', on: 'tick', when: CB_DANGER, do: [setCell('danger', 1)] },
     { id: 'burn_clock', on: 'tick', when: CB_IN_DANGER, do: [addCell('bticks', 1)] },
@@ -803,9 +809,10 @@ B.calorie_burn = {
       do: [addCell('debt', 0.4)] },
     { id: 'collapse', on: 'tick', when: { all: [CB_OWED, { cell: 'debt', op: 'gte', v: CB_GONE }] },
       do: [{ emit: 'world', verb: 'defeat', outcome: 'dead', cause: 'Calorie Burn: your max HP burned away.' }] },
-    { id: 'overrun', on: 'tick',
-      when: { all: [{ cell: 'cutoff', op: 'eq', v: 2 }, { cell: 'kcal', op: 'lte', v: 0 }, { cell: 'fburn', op: 'gt', v: 0 }] },
-      do: [{ emit: 'world', verb: 'defeat', outcome: 'knocked_out', cause: 'Calorie Burn: the store ran dry mid-burn.' }] },
+    { id: 'dry', on: 'tick',
+      when: { all: [{ cell: 'cutoff', op: 'eq', v: 2 }, { cell: 'kcal', op: 'lte', v: 0 }, { cell: 'fburn', op: 'gt', v: 0 },
+        { cell: 'debt', op: 'lt', v: CB_GONE }] },
+      do: [addCell('debt', 2)] },
     // Out of a fight, per game minute.
     { id: 'digest', on: 'minute', when: { all: [CB_OUT, { cell: 'debt', op: 'lte', v: 0 }] }, do: [addCell('kcal', -0.5)] },
     { id: 'mend_fed', on: 'minute', when: { all: [CB_OUT, CB_OWED, { cell: 'kcal', of: 'frac', op: 'gte', v: 1 }] },
