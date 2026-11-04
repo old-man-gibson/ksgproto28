@@ -685,6 +685,7 @@ import {
 import { deityRelation } from './deities';
 import { appendFeed, feedFloating, feedRepeat, floatingRun, logHunt, settleFloating } from './log';
 import { retreatToSafety } from './safety';
+import { captureFall, noteKnockout } from './knockoutReturn';
 import {
   beginFight,
   endFight,
@@ -1895,6 +1896,8 @@ function onKill(state: GameState, bus: EventBus, index: number, gone: StatueRule
 function onDefeat(state: GameState, bus: EventBus, outcome: FightOutcome = 'knocked_out', cause = ''): void {
   const forced = state.combat!.forced;
   const monster = frontEnemy(state.combat!)!;
+  // What the knockout interrupts, read before the retreat clears it.
+  const fall = captureFall(state);
   bus.emit({ type: 'defeat', monster });
   bus.emit({
     type: 'log',
@@ -1920,6 +1923,9 @@ function onDefeat(state: GameState, bus: EventBus, outcome: FightOutcome = 'knoc
     bus,
     forced ? 'There was no fleeing that fight, and you lost it.' : 'Knocked out.',
   );
+  // And since 2026-11-04 the retreat is not the end: the knockout records what
+  // it interrupted and the tick walks back to it (systems/knockoutReturn.ts).
+  noteKnockout(state, bus, fall);
 }
 
 // ---------- Active skills ----------
@@ -4025,6 +4031,9 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
     for (const g of (state.floatingFeed ?? []).map((f) => f.group)) {
       if (g.startsWith('telekinesis:') || g.startsWith(ABILITY_RUN)) settleFloating(state, g);
     }
+    // No encounter is rolled on the road: nothing ticks a fight begun while
+    // travelling, and arrival refuses to start work with one open.
+    if (state.travel) return;
     if (state.respawnTimer > 0) {
       state.respawnTimer -= 1;
       return;

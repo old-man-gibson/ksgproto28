@@ -3,7 +3,7 @@ import { STARTING_SPOT } from './data/locations.data';
 import { freshMutagenState } from './data/mutagens.data';
 import { freshPrestigeState } from './data/prestige.data';
 
-export const SAVE_VERSION = 62;
+export const SAVE_VERSION = 63;
 
 
 function freshAttrs(): Record<AttributeId, AttrState> {
@@ -66,6 +66,11 @@ export function createInitialState(now = Date.now(), spot = STARTING_SPOT): Game
     benchWork: null,
     clones: [],
     recovering: false,
+    // Present though empty, like `festival` below: a prestige, a hard reset and
+    // an import assign a fresh state INTO the live one, and a return in flight
+    // must not survive them.
+    pendingReturn: null,
+    proven: null,
     combat: null,
     combatFeed: [],
     floatingFeed: [],

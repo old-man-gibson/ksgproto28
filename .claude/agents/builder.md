@@ -26,14 +26,18 @@ not your report, so the code has to stand on its own.
 - Node may be missing from PATH. Bash: `export PATH="/c/Program Files/nodejs:$PATH"`.
   PowerShell: `$env:Path = "C:\Program Files\nodejs;" + $env:Path`.
 - Your worktree under `.claude/worktrees/` has no licensed art. Before
-  `npm run verify`, junction `src/assets/enemies` and `src/assets/packs` in
-  from `D:\ksgproto28` (`docs/ENGINEERING.md` §5). Nothing under
+  `npm run verify`, junction `src/assets/enemies` in from `D:\ksgproto28`
+  (`docs/ENGINEERING.md` §5). Never junction `src/assets/packs`: it makes
+  `tests/icons.test.ts` fail ("Denied ID"); copy icons if you need them. Nothing under
   `src/assets/enemies`, `src/assets/tilemaps` or `src/assets/packs` is ever
   committed.
 - Throwaway vite-node scripts go under `scripts/` (vite-node refuses paths
   outside the repo root). Delete them before committing.
 - Never start a dev server on port 5173 or write localStorage there. That
-  origin holds the user's real save. Use the `dev-test` config (port 5599).
+  origin holds the user's real save. The `dev-test` config (port 5599) serves
+  the main checkout, not your worktree, and the manager often holds 5599. Run
+  vite from your worktree on a free port from 5600 up with `--strictPort`, and
+  confirm the page serves your code.
 
 ## Rules with a test or a scar behind them
 
@@ -56,7 +60,7 @@ not your report, so the code has to stand on its own.
 ## Done means
 
 - `npm run verify` passes (svelte-check + vitest). Paste the summary lines.
-- UI changes: a real screenshot on port 5599 or a `document.elementFromPoint`
+- UI changes: a real screenshot on your test port or a `document.elementFromPoint`
   hit-test. Rect math and the accessibility tree do not count (PITFALLS §8).
   If you could not check visually, write "UI unverified".
 - Commit to your worktree branch in the style of `git log`, ending with

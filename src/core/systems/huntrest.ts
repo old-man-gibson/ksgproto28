@@ -1,5 +1,5 @@
 import type { EventBus } from '../engine/events';
-import type { GameState, HuntRest } from '../types';
+import type { DerivedStats, GameState, HuntRest } from '../types';
 import { getDerivedStats } from './derived';
 import { hpFraction } from './health';
 import { statusBlocksRegen } from './statuses';
@@ -83,4 +83,22 @@ export function holdNextFight(state: GameState, bus: EventBus): boolean {
 export function clearRest(state: GameState): void {
   const cfg = huntRest(state);
   if (cfg.active) state.huntRest = { ...cfg, active: false };
+}
+
+/** The HP share a knockout recovery runs to while a return is pending. */
+export const RETURN_RECOVER_HP = 0.95;
+
+/**
+ * Where a knockout recovery stops while a return is pending
+ * (systems/knockoutReturn.ts): at least 95%, or the hunt's rest target when
+ * that is set and higher. Null when no return is pending, and when HP cannot
+ * recover (regen at or below 0, or a condition blocking it): the old 60%
+ * mark applies, the same valve `holdNextFight` uses, so a character who
+ * cannot mend never waits forever to reach the higher one.
+ */
+export function returnRecoverTarget(state: GameState, stats: DerivedStats): number | null {
+  if (!state.pendingReturn) return null;
+  if (stats.hpRegen <= 0 || statusBlocksRegen(state, 'hp')) return null;
+  const cfg = huntRest(state);
+  return Math.max(RETURN_RECOVER_HP, cfg.at > 0 ? restTarget(cfg) : 0);
 }

@@ -28,7 +28,8 @@ import { IN_COMBAT_REGEN_MULT, RECOVERY_MULT } from '../data/resources.data';
 import { fieldHunger, resistBlock, statusesOf, tickStatuses } from './statuses';
 import { fastGuard, fastOf } from './mutagens';
 import { grantMaterial } from './disciplines';
-import { restingForFight } from './huntrest';
+import { restingForFight, returnRecoverTarget } from './huntrest';
+import { captureFall, clearReturn, noteKnockout, tickKnockoutReturn } from './knockoutReturn';
 import { rollActivityDrops } from './activitydrops';
 import {
   availableMax,
@@ -77,19 +78,34 @@ export function currentActivity(state: GameState): ActivityDef | null {
   return spotActivities(spot).find((a) => a.id === state.activity) ?? null;
 }
 
+/**
+ * The player picks work (or stops). A player command: it ends any knockout
+ * return in flight (systems/knockoutReturn.ts), so the character stays where
+ * the player put it. The return's own steps and arrivals use `startActivity`.
+ */
 export function selectActivity(state: GameState, bus: EventBus, activityId: string | null): void {
-  if (state.activity === activityId) return;
+  // A refused pick (a forced fight, a locked craft) changes nothing and ends nothing.
+  if (startActivity(state, bus, activityId)) clearReturn(state);
+}
+
+/**
+ * Start (or stop) an activity without ending a knockout return: what
+ * `selectActivity` does, used by the return itself and by `settleArrival`,
+ * whose arrivals include the return's. False when the pick was refused.
+ */
+export function startActivity(state: GameState, bus: EventBus, activityId: string | null): boolean {
+  if (state.activity === activityId) return true;
   // Switching work is one of the two ways out of a fight, and a forced fight
   // closes both doors (travel is the other — see locations.ts).
   if (inForcedFight(state)) {
     bus.emit({ type: 'log', msg: text('common.no_leaving_fight'), kind: 'danger' });
-    return;
+    return false;
   }
   if (activityId) {
     const act = spotActivities(getSpot(state.spot)).find((a) => a.id === activityId);
     if (act?.kind === 'craft' && !recipeUnlocked(state, RECIPES[act.recipe])) {
       bus.emit({ type: 'log', msg: text('actions.craft_locked'), kind: 'danger' });
-      return;
+      return false;
     }
   }
   if (state.combat) abandonCombat(state, bus);
@@ -106,6 +122,7 @@ export function selectActivity(state: GameState, bus: EventBus, activityId: stri
 
   const act = currentActivity(state);
   if (act) bus.emit({ type: 'log', msg: text('actions.started', { name: act.name }), kind: 'action' });
+  return true;
 }
 
 /**
@@ -136,7 +153,9 @@ export function settleArrival(state: GameState, bus: EventBus): void {
   if (state.travel || state.travelPlan.length > 0 || state.recovering || state.combat) return;
   const wanted =
     intent && intent.spot === state.spot ? intent.activity : state.resumeActivity[state.spot];
-  if (wanted && canStartActivity(state, state.spot, wanted)) selectActivity(state, bus, wanted);
+  // Not selectActivity: an arrival is not a player command, and the knockout
+  // return's own arrival must not clear the return it ends with.
+  if (wanted && canStartActivity(state, state.spot, wanted)) startActivity(state, bus, wanted);
 }
 
 const RECOVER_THRESHOLD = 0.6;
@@ -344,7 +363,7 @@ export function activityFillRate(act: ActivityDef, stats: DerivedStats, state: G
 /** Per-tick action processing. Called by the game loop when not traveling. */
 export function tickAction(state: GameState, bus: EventBus): void {
   const stats = getDerivedStats(state);
-  const act = currentActivity(state);
+  let act = currentActivity(state);
   // Coming round after a knockout is resting whether you chose it or not.
   const resting = state.recovering || act?.kind === 'rest';
   // Every pool is clamped to its current ceiling and topped up in one pass.
@@ -353,14 +372,28 @@ export function tickAction(state: GameState, bus: EventBus): void {
   // of a poison. They may also be what finally puts you down.
   if (tickPlayerStatuses(state, bus, stats)) return;
 
-  // Knocked out: force rest until recovered, then resume whatever was selected.
+  // Knocked out: force rest until recovered. The activity does not survive the
+  // retreat (systems/safety.ts); a return in flight puts the character back to
+  // work (systems/knockoutReturn.ts) and recovery then runs to its higher mark.
   if (state.recovering) {
     regen(state, stats, RECOVERY_MULT.rest, 'rest');
-    if (hpFraction(state, stats) >= RECOVER_THRESHOLD) {
+    const mark = returnRecoverTarget(state, stats);
+    if (mark === null ? hpFraction(state, stats) >= RECOVER_THRESHOLD : hpFraction(state, stats) >= mark - 0.005) {
       state.recovering = false;
       bus.emit({ type: 'log', msg: text('actions.recovered'), kind: 'action' });
     }
     return;
+  }
+
+  // A knockout's return: walk back to the work, or to the fallback, or wait.
+  // A step may start a journey or an activity, so `act` is read again after
+  // it. A character that set out has no activity part left in this tick: the
+  // stale `act` would otherwise run a hunt's encounter roll or a cycle's
+  // payout on the road.
+  if (state.pendingReturn) {
+    tickKnockoutReturn(state, bus);
+    if (state.travel) return;
+    act = currentActivity(state);
   }
 
   // The health trickle runs for whatever you are doing, so it is applied once
@@ -643,6 +676,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       // Before abandonCombat, which drops the tally on the floor — walking away
       // is not an outcome, but being finished by a condition very much is.
       const wasForced = inForcedFight(state);
+      const fall = captureFall(state);
       endFight(state, 'knocked_out');
       if (state.combat) abandonCombat(state, bus);
       state.resources.hp = 1;
@@ -653,6 +687,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       bus,
       wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
     );
+      noteKnockout(state, bus, fall);
       return true;
     }
   }
@@ -684,6 +719,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       held.ticksLeft = null;
     }
     const wasForced = inForcedFight(state);
+    const fall = captureFall(state);
     if (state.combat) abandonCombat(state, bus);
     state.resources.hp = 1;
     state.recovering = true;
@@ -693,6 +729,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       bus,
       wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
     );
+    noteKnockout(state, bus, fall);
     return true;
   }
 
@@ -724,6 +761,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       // Before abandonCombat, which drops the tally on the floor — walking away
       // is not an outcome, but being finished by a condition very much is.
       const wasForced = inForcedFight(state);
+      const fall = captureFall(state);
       endFight(state, 'knocked_out');
       if (state.combat) abandonCombat(state, bus);
       state.resources.hp = 1;
@@ -734,6 +772,7 @@ function tickPlayerStatuses(state: GameState, bus: EventBus, stats: DerivedStats
       bus,
       wasForced ? 'There was no fleeing that fight, and it finished you.' : 'Knocked out.',
     );
+      noteKnockout(state, bus, fall);
       return true;
     }
   }

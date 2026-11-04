@@ -462,7 +462,7 @@ frozen_hollow: {
   icon: '🥶',
   areaId: 'cragfall',                    // must exist in AREAS (which needs a REGION)
   map: { x: 30, y: 70 },                 // 0–100 × 0–75 canvas, per region
-  waypoint: false,                       // true = ⚡ fast-travel caravan stop
+  waypoint: false,                       // true only on the Foot: the "every spot can get home" lint anchors on it; no UI reads it since 2026-11-04
   desc: 'The wind stopped moving here years ago.',
   activities: [
     { id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '🏹' },
@@ -618,7 +618,16 @@ Winning frees you where you stand. Losing is a knockout that throws you to a
 haven — the `safeSpots` machinery above, which is much of the reason it
 exists. Since 2026-09-12 EVERY knockout retreats, forced fight or not: you
 come round at the last camp you stood in (each tower landing is one), never
-where you fell. The player is warned at the door: the world map draws the road red
+where you fell. Since 2026-11-04 the retreat is followed by a return
+(`systems/knockoutReturn.ts`, `docs/plans/knockout-return.md`): the character
+recovers to 95%, walks back to the work it was doing and resumes it. **The
+return never walks into a forced fight.** After a loss at a forced spot, at a
+spot reached by a forced road, or at a spot only a forced spot leads to, it
+hunts the last spot where 10 fights were won in a row instead, and idles only
+when there is none. So a forced fight is a one-shot per visit: the player
+chooses the walk in each time. Five knockouts in a row at one ordinary spot
+also send the character to that fallback (200 wins or 2 h, then one retry). The
+player is warned at the door: the world map draws the road red
 with a ⚔️ badge, and the travel button says *no retreat* (even toward an
 undiscovered `❓` destination — the danger is knowable before the first step,
 which is the point). The auto-router never paths THROUGH a forced spot,
@@ -1980,7 +1989,8 @@ a system — ask, or copy how `gather:` is bumped in
 - **Player damage sanity check**: `(2 + 1.2×STR + weapon) × skill mults × stance
   × (1 − monster resistance)`. A stance is ±15–50% on one axis with a real cost.
 - **Gold**: flows in from kills/jobs/selling (all ×goldGain); flows out through
-  fast travel. Price items so the *next* tier costs ~10–20 minutes of play.
+  shop purchases (fast travel has had no UI since 2026-11-04). Price items so
+  the *next* tier costs ~10–20 minutes of play.
 
 ## 7. Save compatibility
 

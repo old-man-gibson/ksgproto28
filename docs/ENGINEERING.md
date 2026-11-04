@@ -454,13 +454,17 @@ worktree under `.claude/worktrees/` has none, and shows emoji, the plain map
 diagram and missing portraits instead. Nothing breaks; tests that need a file
 either skip (icons) or fail with a clear message (bestiary art).
 
-**For tests** (`npm run verify`), link the folders in. A junction sits under an
-ignored path, so git never sees it:
+**For tests** (`npm run verify`), link the enemy portraits in. A junction sits
+under an ignored path, so git never sees it:
 
 ```powershell
 New-Item -ItemType Junction -Path "<worktree>\src\assets\enemies" -Target "D:\ksgproto28\src\assets\enemies"
-New-Item -ItemType Junction -Path "<worktree>\src\assets\packs" -Target "D:\ksgproto28\src\assets\packs"
 ```
+
+Do not junction `src/assets/packs`: Vite refuses the `?url` imports that resolve
+outside the worktree, and `tests/icons.test.ts` fails with "Denied ID" (seen by
+two agents, 2026-11-04). Leave it absent (the icon tests skip) or copy the
+manifest icons as below.
 
 **For the dev server, copy instead of linking.** Vite resolves a junction to its
 real path outside the worktree and serves the `?url` glob imports as raw files,
