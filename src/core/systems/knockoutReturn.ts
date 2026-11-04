@@ -252,11 +252,13 @@ function say(bus: EventBus, msg: string): void {
 // the previous return's target, and neither should be shared with the new one.
 const copy = (spot: ReturnSpot): ReturnSpot => ({ spot: spot.spot, activity: spot.activity });
 
+/** `from`: the spot the fall happened at, the ceiling for this fallback and any pick that replaces it. */
 function fallbackPhase(
   state: GameState,
   target: ReturnSpot | null,
   fallback: ReturnSpot,
   probes: number,
+  from: string,
 ): PendingReturn {
   return {
     target: target && copy(target),
@@ -265,7 +267,72 @@ function fallbackPhase(
     wins: 0,
     until: state.totalTicks + FALLBACK_TICKS,
     probes,
+    from,
   };
+}
+
+/** The ceiling spot for a pick that replaces `p`'s fallback: where the fall happened. */
+const fallOf = (p: PendingReturn, replaced: string): string => p.from ?? p.target?.spot ?? replaced;
+
+/**
+ * `p` with another fallback: the wins, the 2 h clock, the target and the probe
+ * count carry over, since this is the same fall and the same fallback phase.
+ */
+function repicked(p: PendingReturn, fb: ReturnSpot, from: string): PendingReturn {
+  return {
+    target: p.target && copy(p.target),
+    phase: 'fallback',
+    fallback: copy(fb),
+    wins: p.wins,
+    ...(p.until !== undefined ? { until: p.until } : {}),
+    probes: p.probes,
+    from,
+  };
+}
+
+/**
+ * A limited fallback is gone: spent, or lost at since its last win. Pick again
+ * from the fall floor. With none left, hold on the target, or with no target
+ * (a forced-spot loss) end the return. A spent fallback is hunted where the
+ * character stands, so with none left that hunt stops and the hold waits there
+ * (a cleared spot spawns nothing); a lost one follows a knockout, which has
+ * already moved the character to the haven.
+ */
+function replaceFallback(
+  state: GameState,
+  bus: EventBus,
+  p: PendingReturn,
+  gone: ReturnSpot,
+  why: 'spent' | 'lost',
+): void {
+  const from = fallOf(p, gone.spot);
+  const fb = pickFallback(state, from);
+  if (fb) {
+    state.pendingReturn = repicked(p, fb, from);
+    say(
+      bus,
+      text(why === 'spent' ? 'knockout.spent_fallback' : 'knockout.lost_fallback', {
+        spot: spotName(gone.spot),
+        fallback: spotName(fb.spot),
+      }),
+    );
+    return;
+  }
+  if (why === 'spent') startActivity(state, bus, null);
+  if (p.target) {
+    state.pendingReturn = holdPhase(state, p.target, p.probes);
+    say(
+      bus,
+      text(why === 'spent' ? 'knockout.spent_hold' : 'knockout.lost_hold', {
+        spot: spotName(gone.spot),
+        target: spotName(p.target.spot),
+        minutes: minutes(holdTicks(p.probes)),
+      }),
+    );
+    return;
+  }
+  state.pendingReturn = null;
+  say(bus, text(why === 'spent' ? 'knockout.spent_idle' : 'knockout.lost_idle', { spot: spotName(gone.spot) }));
 }
 
 function holdPhase(state: GameState, target: ReturnSpot, probes: number): PendingReturn {
@@ -344,7 +411,7 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
     // retry or a probe that failed, which doubles the hold.
     const fb = pickFallback(state, target.spot);
     if (fb) {
-      state.pendingReturn = fallbackPhase(state, target, fb, carried);
+      state.pendingReturn = fallbackPhase(state, target, fb, carried, target.spot);
       say(
         bus,
         text('knockout.streak_fallback', {
@@ -369,7 +436,7 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
   // spot won at before), with no target to retry, or idle when none is usable.
   const fb = pickFallback(state, fall.spot);
   if (fb) {
-    state.pendingReturn = fallbackPhase(state, null, fb, 0);
+    state.pendingReturn = fallbackPhase(state, null, fb, 0, fall.spot);
     say(
       bus,
       text('knockout.blocked_fallback', {
@@ -467,44 +534,6 @@ function retryTarget(state: GameState, bus: EventBus, p: PendingReturn): void {
   say(bus, text('knockout.retry', { spot: spotName(p.target.spot) }));
 }
 
-/**
- * The limited spot being hunted as the fallback has no fights left. Pick
- * again, with the wins and the 2 h clock carried over. With none left, hold on
- * the target, or with no target end the return (a forced-spot loss has nothing
- * to retry). Either way the hunt at the spent spot stops: it would find no one,
- * and an idle character banks bonus time.
- */
-function fallbackSpent(state: GameState, bus: EventBus, p: PendingReturn, spent: ReturnSpot): void {
-  const fb = pickFallback(state, spent.spot);
-  if (fb) {
-    state.pendingReturn = {
-      target: p.target && copy(p.target),
-      phase: 'fallback',
-      fallback: copy(fb),
-      wins: p.wins,
-      ...(p.until !== undefined ? { until: p.until } : {}),
-      probes: p.probes,
-    };
-    say(bus, text('knockout.spent_fallback', { spot: spotName(spent.spot), fallback: spotName(fb.spot) }));
-    return;
-  }
-  startActivity(state, bus, null);
-  if (p.target) {
-    state.pendingReturn = holdPhase(state, p.target, p.probes);
-    say(
-      bus,
-      text('knockout.spent_hold', {
-        spot: spotName(spent.spot),
-        target: spotName(p.target.spot),
-        minutes: minutes(holdTicks(p.probes)),
-      }),
-    );
-    return;
-  }
-  state.pendingReturn = null;
-  say(bus, text('knockout.spent_idle', { spot: spotName(spent.spot) }));
-}
-
 type Drive = 'moving' | 'there' | 'stuck';
 
 /**
@@ -564,7 +593,7 @@ function giveUp(state: GameState, bus: EventBus, p: PendingReturn): void {
   // festival floor) loses its target: there is nothing to retry.
   if (block === 'forced_spot' || block === 'forced_road' || block === 'wall' || block === 'festival') {
     if (fb) {
-      state.pendingReturn = fallbackPhase(state, null, fb, 0);
+      state.pendingReturn = fallbackPhase(state, null, fb, 0, target.spot);
       say(
         bus,
         text('knockout.blocked_fallback', {
@@ -587,7 +616,7 @@ function giveUp(state: GameState, bus: EventBus, p: PendingReturn): void {
   // hunt, a hold at the haven whose wait doubles with each failure.
   const probes = p.probes + 1;
   if (fb) {
-    state.pendingReturn = fallbackPhase(state, target, fb, probes);
+    state.pendingReturn = fallbackPhase(state, target, fb, probes, target.spot);
     say(
       bus,
       text('knockout.blocked_retry', {
@@ -636,7 +665,7 @@ export function tickKnockoutReturn(state: GameState, bus: EventBus): void {
   }
   const spent = p.phase === 'fallback' ? p.fallback : undefined;
   if (spent && SPOTS[spent.spot] && spotCleared(state, SPOTS[spent.spot])) {
-    fallbackSpent(state, bus, p, spent);
+    replaceFallback(state, bus, p, spent, 'spent');
     return;
   }
 

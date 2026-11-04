@@ -1494,3 +1494,120 @@ describe('a spot with a fight budget as the fallback', () => {
     expect(h.state.pendingReturn).toBeNull();
   });
 });
+
+describe('a limited fallback is picked again from the fall floor', () => {
+  // A hunt spot on floor 3, next to its landing, to fall at with a target.
+  const F3: SpotDef = pocket('kr_f3', 'Test Landing Three', {
+    areaId: 'ascent_f3_area',
+    activities: [hunt],
+    encounters: rats,
+    connections: [{ to: 'f3_stairhead', ticks: 5 }],
+  });
+  beforeAll(() => {
+    SPOTS.kr_f3 = F3;
+    ADJACENCY.get('f3_stairhead')!.push({ from: 'f3_stairhead', to: 'kr_f3', ticks: 5 });
+    ADJACENCY.set('kr_f3', [{ from: 'kr_f3', to: 'f3_stairhead', ticks: 5 }]);
+  });
+  afterAll(() => {
+    delete SPOTS.kr_f3;
+    ADJACENCY.delete('kr_f3');
+    ADJACENCY.set('f3_stairhead', ADJACENCY.get('f3_stairhead')!.filter((e) => e.to !== 'kr_f3'));
+  });
+
+  /**
+   * On floor 3 with the haven at its landing. Two limited spots won at: the
+   * Mail Carts on floor 2 (the older win) and the Vermin Hall on floor 1 (the
+   * newer one).
+   */
+  function floorThree(seed: number): Game {
+    const g = new Game(createInitialState(seed));
+    const s = g.state;
+    clearFloors(s.stats, ['ascent_f1']);
+    s.stats['gold:earned'] = 1000;
+    s.discovered.push('f1_landing', 'f1_storerooms', 'f2_stairhead', 'f2_hall_1', 'f3_stairhead', 'f3_hearing_room', 'kr_f3');
+    s.safeSpots = { nearest: 'f3_stairhead', unconditional: 'f3_stairhead' };
+    expect(floorUnlocked(s, FLOORS.ascent_f2)).toBe(true);
+    win(g, 'f2_hall_1');
+    s.totalTicks += 100;
+    win(g, 'f1_storerooms');
+    return g;
+  }
+  const withTarget = (g: Game): void => {
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_f3');
+  };
+  const spend = (g: Game, spot: string): void => {
+    g.state.stats[`fights:${spot}`] = SPOTS[spot].fightLimit!;
+    recovered(g);
+    g.tick();
+  };
+
+  it('the floor-1 spot is picked first, and records where the fall was', () => {
+    const g = floorThree(90);
+    withTarget(g);
+    expect(pending(g)).toMatchObject({
+      phase: 'fallback',
+      target: { spot: 'kr_f3' },
+      fallback: { spot: 'f1_storerooms' },
+      from: 'kr_f3',
+    });
+    const h = floorThree(91);
+    fallAt(h, 'f3_hearing_room', null, true);
+    expect(pending(h)).toMatchObject({ target: null, fallback: { spot: 'f1_storerooms' }, from: 'f3_hearing_room' });
+  });
+
+  it('when it is spent, the older floor-2 spot is still under the ceiling (a target)', () => {
+    const g = floorThree(92);
+    withTarget(g);
+    pending(g).wins = 4;
+    const until = pending(g).until;
+    spend(g, 'f1_storerooms');
+    expect(pending(g)).toMatchObject({
+      phase: 'fallback',
+      target: { spot: 'kr_f3' },
+      fallback: { spot: 'f2_hall_1' },
+      wins: 4,
+      until,
+      from: 'kr_f3',
+    });
+    spend(g, 'f2_hall_1');
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_f3' } });
+  });
+
+  it('when it is spent, the older floor-2 spot is still under the ceiling (no target)', () => {
+    const g = floorThree(93);
+    fallAt(g, 'f3_hearing_room', null, true);
+    spend(g, 'f1_storerooms');
+    expect(pending(g)).toMatchObject({ phase: 'fallback', target: null, fallback: { spot: 'f2_hall_1' }, from: 'f3_hearing_room' });
+    spend(g, 'f2_hall_1');
+    expect(g.state.pendingReturn).toBeNull();
+    expect(g.state.activity).toBeNull();
+  });
+
+  it('a fallback without the field (a v63 save) uses the target’s floor', () => {
+    const g = floorThree(95);
+    withTarget(g);
+    const old = JSON.parse(serialize(g.state));
+    expect(old.pendingReturn.from).toBe('kr_f3');
+    delete old.pendingReturn.from;
+    old.version = 63;
+    const back = deserialize(JSON.stringify(old));
+    expect(back.version).toBe(SAVE_VERSION);
+    expect(back.pendingReturn?.from).toBeUndefined();
+    expect(back.pendingReturn).toMatchObject({ phase: 'fallback', fallback: { spot: 'f1_storerooms' } });
+    const h = new Game(back);
+    spend(h, 'f1_storerooms');
+    expect(h.state.pendingReturn).toMatchObject({ phase: 'fallback', fallback: { spot: 'f2_hall_1' } });
+  });
+
+  it('survives a save with the field set; the migration only moves the version', () => {
+    const g = floorThree(96);
+    withTarget(g);
+    const back = deserialize(serialize(g.state));
+    expect(back.pendingReturn).toEqual(JSON.parse(JSON.stringify(g.state.pendingReturn)));
+    expect(back.pendingReturn?.from).toBe('kr_f3');
+    const raw: Record<string, unknown> = { version: 63 };
+    MIGRATIONS[63](raw);
+    expect(raw).toEqual({ version: 64 });
+    expect(SAVE_VERSION).toBeGreaterThanOrEqual(64);
+  });
+});
