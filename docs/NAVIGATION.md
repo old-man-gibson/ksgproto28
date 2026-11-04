@@ -534,7 +534,10 @@ button rides.
   - under 600 px the section is a fold ("🗼 The Ascent · floor", closed) in every
     region, with no button in its detail; the Ascent panel keeps its buttons.
   The flag is a `matchMedia` store, so a test sets it. A server render reads
-  wide.- **Tab for a tower not yet climbed.** The tower's region has a tab whenever the
+  wide.
+  - Narrow-width rule: the fold opens above the plan and pushes the page down.
+    The player opens it, so the move is allowed; the fold's summary line is in
+    the page in every region, so a ride that switches the map moves nothing.- **Tab for a tower not yet climbed.** The tower's region has a tab whenever the
   ladder answers where the player stands, before any of its floors is found. The
   first climb from the Foot is the tab, then Climb on floor 1 (the default stop).
   The panel's "Show in map" opens the same tab with the same default, so from the

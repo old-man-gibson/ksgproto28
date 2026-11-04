@@ -504,6 +504,8 @@ Fix round 1 (manager's rulings; separate commits on `nav-section`):
 - **Default stop.** The detail always has a stop when the tower's tab is shown (above). The click
   count of the ride from the city is two. Test: the default per standing place, a new game after the
   tutorial and a run after a prestige.
+- **Narrow width.** Under 600 px the fold opens above the plan and pushes the page down; the player
+  opens it, so it is allowed (NAVIGATION.md §3.5). Documentation only.
 Not changed, seen while measuring: `LocationPanel.svelte` swaps the place panel and the Ascent
 panel for the destination preview while a ride runs. The page height went from 1,771 to 1,055 px
 at the start of a ride (1,094 px window). With the page scrolled past the new maximum the browser
