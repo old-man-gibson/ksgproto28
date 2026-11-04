@@ -76,7 +76,8 @@ they can't happen by accident:
 
 - **a spot** — connect from here (click the target; no drag needed), add an
   exploration find (creating `exploreTicks` and an Explore activity if the spot
-  lacks them), toggle waypoint, duplicate, copy id, centre the view, delete
+  lacks them), toggle `waypoint` (the home-lint anchor, below), duplicate, copy
+  id, centre the view, delete
 - **an edge** — make one-way/two-way, hide or reveal, flip direction, fit the
   travel time to the distance you drew, delete
 - **an NPC** — edit, copy id, delete
@@ -93,7 +94,11 @@ What the drawing tells you:
   so both are editable.
 - **dashed teal ring** round a node — it has `exploreTicks`, i.e. it can be searched.
 - **amber numbered dot** — how many `finds` it has.
-- **⚡** — a fast-travel waypoint. **red rim** — the validator has an error on it.
+- **⚡** — a spot with `waypoint: true`. The flag has one use: the validator's
+  "every spot can get home" lint walks the roads back to the waypoints and
+  errors on a spot with no way back. Only the Foot carries it. The game has no
+  caravan and no UI reads the flag (since 2026-11-04); the forge still draws the
+  mark and offers the toggle. **red rim** — the validator has an error on it.
 - **→ Region Name** beside a node — a connection leaving the region you're looking at.
 
 Turn on **Ticks** to label every edge with its travel time; anything wildly out of step
