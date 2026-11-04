@@ -267,7 +267,7 @@
   class:log-folded={!logOpen}
 >
   <header bind:this={headerEl}>
-    <h1>Frontier Idle</h1>
+    <h1 class:title-yields={!screen}>Frontier Idle</h1>
 
     <!-- Transport controls. The pause is global — the whole world stops, not
          just the fight — so stepping through an exchange can't bank free time
@@ -488,9 +488,10 @@
   header {
     grid-area: header;
     display: flex;
-    /* One row at the usual widths. It still wraps rather than clip when the
-       clock, weather and gold chips all show on a narrow window. */
-    flex-wrap: wrap;
+    /* One row from 1024px up, never two: the job strip takes the room left
+       (JobStrip.svelte), so a fight starting or ending cannot change the
+       header's height. Under 1024px it wraps by design (rule below). */
+    flex-wrap: nowrap;
     align-items: center;
     gap: 8px 12px;
     background: var(--bg-panel);
@@ -523,7 +524,10 @@
     color: var(--text-dim);
   }
 
+  /* The bank counts up every second while idle: a fixed slot as wide as its
+     longest text ("⏩ 2× 7h 59m", 94px), so the chips after it stay put. */
   .clock .bonus {
+    min-width: 7.9em;
     color: var(--text-dim);
     font-variant-numeric: tabular-nums;
   }
@@ -558,23 +562,54 @@
      text. */
   .timesense {
     flex: 1 1 0;
-    min-width: 5em;
+    min-width: 6.5em;
     max-width: 230px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--text-dim);
     font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    /* Its width comes from the row, not its text, so it can be a container:
+       under 200px it shows the hour only. */
+    container-type: inline-size;
   }
 
   .clock-short {
     display: none;
   }
 
+  @container (max-width: 199px) {
+    .clock-full {
+      display: none;
+    }
+
+    .clock-short {
+      display: inline;
+    }
+  }
+
+  /* Under 1370px the title goes when the transport buttons show (the browser
+     tab keeps it): its 175px are what the job strip needs for its full 330px
+     (JobStrip.svelte). Measured with the dev-only 🐞 button showing. */
+  @media (max-width: 1369px) {
+    header h1.title-yields {
+      display: none;
+    }
+  }
+
+  /* Under 1024px: two rows. The job strip and the rate chip start the second
+     (JobStrip.svelte), so the row count depends on the window, not the job. */
+  @media (max-width: 1023px) {
+    header {
+      flex-wrap: wrap;
+    }
+  }
+
   /* Under 1180px the header keeps one row down to 1024px by dropping detail:
      the clock chip shows the hour only (the title holds the whole text) and
-     takes its own width; the rate chip drops kills (JobStrip.svelte). The job
-     name is never shortened. */
+     takes its own width. A job name longer than the strip's room ends in an
+     ellipsis. */
   @media (max-width: 1179px) {
     .clock-full {
       display: none;
@@ -584,10 +619,13 @@
       display: inline;
     }
 
+    /* Sized by its text here, so not a container (a container's text width
+       would count as 0). */
     .timesense {
       flex: 0 0 auto;
       min-width: 0;
       max-width: none;
+      container-type: normal;
     }
   }
 
