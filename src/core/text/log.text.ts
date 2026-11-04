@@ -14,6 +14,8 @@ export const LOG_TEXT = {
   'common.no_leaving_fight': '⛔ Cannot leave this fight.',
   'common.locked': '🔒 {reason}',
   'common.disengage': 'Disengaged.',
+  // The tail of a folded line that has more labels than it shows.
+  'common.more': '+{count} more',
 
   // ---------- achievements ----------
   'achievements.claimed': '🏆 Achievement: {icon} {name} {tier}!',
@@ -107,13 +109,15 @@ export const LOG_TEXT = {
   'combat.appears': '⚠️ {what} (Lv {level}) appears!',
   'combat.appear_group': '⚠️ {what} (Lv {level}) appear!',
   'combat.ambushed': '⚔️ Ambushed. No escape from this fight.',
-  'combat.scavenged_gold': '🪙 Scavenged {gold} gold.',
-  'combat.loot_material': '📦 {icon} {name}{grade} ×{qty}',
+  // The hunt line: kills, their gold and their material drops, folded into one
+  // line per 30 s of game time (systems/log.ts HUNT_WINDOW). The two labels
+  // below are the entries in its tally; the prefix leads the line.
+  'combat.hunt': '☠️ Hunt:',
+  'combat.hunt_kill': '{icon} {name}',
+  'combat.hunt_material': '{icon} {name}{grade}',
   'combat.loot_item': '📦 Loot: {icon} {item}',
   'combat.unique_slain': '🏆 {name} slain. It will not return.',
   'combat.keeper_slain': '👑 Keeper of {spot} slain.',
-  'combat.defeated': '☠️ Defeated {name} (Lv {level}): +{gold} gold',
-  'combat.defeated_no_gold': '☠️ Defeated {name} (Lv {level}).',
   'combat.spot_cleared': '🏞️ {spot} cleared. No encounters remain.',
   'combat.weapon_dropped': '⚡ Jolted below 50% health: {name} dropped.',
 

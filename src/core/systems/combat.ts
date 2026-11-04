@@ -683,7 +683,7 @@ import {
   tickStatuses,
 } from './statuses';
 import { deityRelation } from './deities';
-import { appendFeed, feedFloating, feedRepeat, floatingRun, settleFloating } from './log';
+import { appendFeed, feedFloating, feedRepeat, floatingRun, logHunt, settleFloating } from './log';
 import { retreatToSafety } from './safety';
 import {
   beginFight,
@@ -1063,6 +1063,15 @@ export function spawnGroup(state: GameState, spot: SpotDef): (MonsterInstance | 
   return slots;
 }
 
+/**
+ * Whether a spawn gets an "appears" line in the main log: any modifier but
+ * normal (demiboss, boss, aberrant), or rare or epic rarity. A common or
+ * uncommon normal spawn does not; a hunt meets one every few seconds.
+ */
+export function warrantsAppearsLine(m: Pick<MonsterInstance, 'modifier' | 'rarity'>): boolean {
+  return m.modifier !== 'normal' || m.rarity === 'rare' || m.rarity === 'epic';
+}
+
 function startEncounter(
   state: GameState,
   bus: EventBus,
@@ -1125,12 +1134,14 @@ function startEncounter(
   // The bestiary counts sightings per location — seeing is not killing.
   bus.emit({ type: 'encounter', spot: spot.id, monsterIds: group.map((m) => m.defId) });
   const lead = group[0];
-  const notable = group.some((m) => m.modifier !== 'normal' || m.rarity !== 'common');
-  if (notable || group.length > 1) {
-    const what = group.length > 1 ? `${lead.name} and ${group.length - 1} more` : lead.name;
+  // The main log names a spawn only when it is not routine (see `warrantsAppearsLine`).
+  // The fight feed below names every spawn.
+  const notable = group.find(warrantsAppearsLine);
+  if (notable) {
+    const what = group.length > 1 ? `${notable.name} and ${group.length - 1} more` : notable.name;
     bus.emit({
       type: 'log',
-      msg: text(group.length > 1 ? 'combat.appear_group' : 'combat.appears', { what, level: lead.level }),
+      msg: text(group.length > 1 ? 'combat.appear_group' : 'combat.appears', { what, level: notable.level }),
       kind: 'combat',
     });
   }
@@ -1612,7 +1623,7 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         const gold = Math.round(qty * rewardLevel(monster) * getDerivedStats(state).goldGain);
         state.gold += gold;
         bumpStat(state, bus, 'gold:earned', gold);
-        bus.emit({ type: 'log', msg: text('combat.scavenged_gold', { gold }), kind: 'loot' });
+        if (gold > 0) logHunt(bus, [{ label: 'gold', qty: gold, style: 'amount' }]);
         break;
       }
       case 'material': {
@@ -1620,11 +1631,9 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
         const got = grantMaterial(state, pick.id!, qty, luck);
         const mat = MATERIALS[pick.id!];
         const grade = got.quality ? ` (${QUALITY_TIERS[got.quality].name})` : '';
-        bus.emit({
-          type: 'log',
-          msg: text('combat.loot_material', { icon: mat?.icon ?? '', name: mat?.name ?? pick.id, grade, qty }),
-          kind: 'loot',
-        });
+        logHunt(bus, [
+          { label: text('combat.hunt_material', { icon: mat?.icon ?? '', name: mat?.name ?? pick.id, grade }).trim(), qty },
+        ]);
         break;
       }
       case 'rune': {
@@ -1780,17 +1789,20 @@ function onKill(state: GameState, bus: EventBus, index: number, gone: StatueRule
   bus.emit({ type: 'kill', monster, xp });
   const rocks = statue ? (gone ? statue.burst : statue.rocks) : 0;
   const how = !gone ? 'is broken' : rocks > 0 ? 'bursts' : 'crumbles away';
-  bus.emit({
-    type: 'log',
-    // Slimes and slime spiders carry no coin; "+0 gold" on most of the first
-    // kills a new life makes read as a fault, so a coinless kill says nothing.
-    msg: statue
-      ? `🗿 The ${monster.name} (level ${monster.level}) ${how}${gold > 0 ? `: Stone Chunks worth ${gold} gold.` : '.'}`
-      : gold > 0
-        ? text('combat.defeated', { name: monster.name, level: monster.level, gold })
-        : text('combat.defeated_no_gold', { name: monster.name, level: monster.level }),
-    kind: 'combat',
-  });
+  if (statue) {
+    bus.emit({
+      type: 'log',
+      msg: `🗿 The ${monster.name} (level ${monster.level}) ${how}${gold > 0 ? `: Stone Chunks worth ${gold} gold.` : '.'}`,
+      kind: 'combat',
+    });
+  } else {
+    // Slimes and slime spiders carry no coin; "0 gold" on most of the first
+    // kills a new life makes read as a fault, so a coinless kill adds no gold.
+    logHunt(bus, [
+      { label: text('combat.hunt_kill', { icon: monster.icon, name: monster.name }).trim(), qty: 1 },
+      ...(gold > 0 ? [{ label: 'gold', qty: gold, style: 'amount' as const }] : []),
+    ]);
+  }
 
   c.enemies[index] = null;
 

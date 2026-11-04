@@ -7,6 +7,8 @@ import type {
   LogTally,
 } from '../types';
 import type { EventBus } from '../engine/events';
+import { TPS } from '../engine/loop';
+import { text } from '../text/log';
 
 /**
  * A report of its own, sharing nothing with the one it came from.
@@ -97,9 +99,64 @@ function renderTally(t: LogTally): string {
   return qty > 1 ? `${t.label} ×${qty}` : t.label;
 }
 
-/** "🔨 Crafted 🪨 Iron Ingot ×12" or "🧺 Gathered: 🌿 Herb ×4, 🪵 Hardwood ×2". */
-export function renderLine(prefix: string, tally: LogTally[]): string {
-  return `${prefix} ${tally.map(renderTally).join(', ')}`.trim();
+/**
+ * "🔨 Crafted 🪨 Iron Ingot ×12" or "🧺 Gathered: 🌿 Herb ×4, 🪵 Hardwood ×2".
+ * With `max`, a tally longer than that shows its first `max` labels and
+ * "+N more" for the rest.
+ */
+export function renderLine(prefix: string, tally: LogTally[], max?: number): string {
+  const cut = max !== undefined && tally.length > max;
+  const parts = (cut ? tally.slice(0, max) : tally).map(renderTally);
+  if (cut) parts.push(text('common.more', { count: tally.length - max }));
+  return `${prefix} ${parts.join(', ')}`.trim();
+}
+
+/** The group of the hunt line: kills, their gold and their material drops. */
+export const HUNT_GROUP = 'hunt';
+
+/** How long a hunt line stays open: 30 s of game time, in ticks. */
+export const HUNT_WINDOW = 30 * TPS;
+
+/**
+ * Groups whose line closes after a span of game time. A group not listed here
+ * has no time limit and folds for as long as it is the newest line.
+ */
+const LOG_WINDOWS: Record<string, number> = { [HUNT_GROUP]: HUNT_WINDOW };
+
+/** Labels a time-boxed line shows before "+N more". */
+export const LOG_LABELS_MAX = 4;
+
+/**
+ * The labels a time-boxed line cuts off, as they read in the line. Empty for
+ * every other line. The log panel lists these in a tooltip.
+ */
+export function hiddenLabels(line: LogEntry): string[] {
+  if (line.window === undefined || !line.tally) return [];
+  return line.tally.slice(LOG_LABELS_MAX).map(renderTally);
+}
+
+/**
+ * Whether `line` takes events at tick `t`. A line without a window never
+ * closes; every line saved before windows existed is one. `since` is written
+ * together with `window`, so a windowed line without it is not expected; `t`
+ * stands in for it.
+ */
+function open(line: LogEntry, t: number): boolean {
+  return line.window === undefined || t - (line.since ?? line.t) < line.window;
+}
+
+/**
+ * Re-read a line from its tally. A time-boxed line sorts first (gold, then the
+ * counts from largest down), so the labels the cut keeps are the largest ones.
+ */
+function rewrite(line: LogEntry): void {
+  if (line.prefix === undefined || !line.tally) return;
+  if (line.window === undefined) {
+    line.msg = renderLine(line.prefix, line.tally);
+    return;
+  }
+  line.tally.sort((a, b) => Number(b.style === 'amount') - Number(a.style === 'amount') || b.qty - a.qty);
+  line.msg = renderLine(line.prefix, line.tally, LOG_LABELS_MAX);
 }
 
 /**
@@ -108,20 +165,40 @@ export function renderLine(prefix: string, tally: LogTally[]): string {
  * running out of materials — ends the run and starts a fresh line. Each thing
  * the run produced keeps its own count, so an activity with several outputs
  * reads as one line listing all of them.
+ *
+ * A group listed in `LOG_WINDOWS` (the hunt) also closes its line after a span
+ * of game time, so a long hunt reads as one line per span instead of one line
+ * for the whole hunt. The line records its `window` and the tick it opened on
+ * (`since`); a line opened by this call is the only place either is written.
  */
 export function appendLog(state: GameState, entry: LogEntry): void {
   const last = state.log[state.log.length - 1];
-  if (entry.group && last?.group === entry.group && last.prefix !== undefined && last.tally) {
+  if (
+    entry.group &&
+    last?.group === entry.group &&
+    last.prefix !== undefined &&
+    last.tally &&
+    open(last, entry.t)
+  ) {
     for (const add of entry.tally ?? []) {
       const seen = last.tally.find((t) => t.label === add.label);
       if (seen) seen.qty += add.qty;
       else last.tally.push({ ...add });
     }
-    last.msg = renderLine(last.prefix, last.tally);
+    rewrite(last);
     last.t = entry.t; // the line is as recent as its latest contribution
     return;
   }
-  state.log.push(entry);
+  const window = entry.window ?? (entry.group ? LOG_WINDOWS[entry.group] : undefined);
+  // The line owns its tally: later events fold into it, so it must not be an
+  // array the caller still holds.
+  const line: LogEntry = {
+    ...entry,
+    ...(entry.tally ? { tally: entry.tally.map((t) => ({ ...t })) } : {}),
+    ...(window !== undefined ? { window, since: entry.t } : {}),
+  };
+  if (window !== undefined) rewrite(line);
+  state.log.push(line);
   if (state.log.length > LOG_MAX) state.log.splice(0, state.log.length - LOG_MAX);
 }
 
@@ -141,6 +218,11 @@ export function logRepeat(
     prefix: opts.prefix,
     tally: opts.tally,
   });
+}
+
+/** One hunt event (a kill, its gold, a material drop) for the hunt line. */
+export function logHunt(bus: EventBus, tally: LogTally[]): void {
+  logRepeat(bus, { group: HUNT_GROUP, prefix: text('combat.hunt'), tally, kind: 'combat' });
 }
 
 /**

@@ -97,4 +97,10 @@ describe('log templates', () => {
     expect(text('combat.appears', { what: 'Rat' })).toBe('⚠️ Rat (Lv {level}) appears!');
     expect(text('common.no_leaving_fight')).toBe(LOG_TEXT['common.no_leaving_fight']);
   });
-});
+
+  it('writes the hunt line from its prefix and its labels', () => {
+    expect(text('combat.hunt')).toBe('☠️ Hunt:');
+    expect(text('combat.hunt_kill', { icon: '🐺', name: 'Young Wolf' })).toBe('🐺 Young Wolf');
+    expect(text('combat.hunt_material', { icon: '🥩', name: 'Raw Meat', grade: ' (Fair)' })).toBe('🥩 Raw Meat (Fair)');
+    expect(text('common.more', { count: 3 })).toBe('+3 more');
+  });});

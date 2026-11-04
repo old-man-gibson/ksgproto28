@@ -9,10 +9,16 @@ import {
   FEED_MAX,
   feedFloating,
   feedRepeat,
+  HUNT_WINDOW,
+  hiddenLabels,
+  LOG_LABELS_MAX,
   LOG_MAX,
   renderLine,
   settleFloating,
 } from '../src/core/systems/log';
+import { abandonCombat, startForcedFight, warrantsAppearsLine } from '../src/core/systems/combat';
+import { MODIFIER_WEIGHTS, RARITY_WEIGHTS, SPOTS } from '../src/core/registry';
+import { deserialize, serialize } from '../src/core/save/save';
 import { applyStatus } from '../src/core/systems/statuses';
 import type { GameState, LogEntry, LogTally } from '../src/core/types';
 
@@ -272,5 +278,246 @@ describe('activities in play', () => {
     const total = gathers.reduce((sum, l) => sum + (l.tally?.[0]?.qty ?? 0), 0);
     expect(total).toBeGreaterThan(gathers.length);
     expect(gathers[gathers.length - 1].msg).toMatch(/^🧺 Gathered: .+ ×\d+$/);
+  });
+});
+
+describe('hunt lines fold per 30 s', () => {
+  const PREFIX = '☠️ Hunt:';
+  const wolf = (): LogTally[] => [
+    { label: '🐺 Young Wolf', qty: 1 },
+    { label: 'gold', qty: 10, style: 'amount' },
+  ];
+  const hunt = (tally: LogTally[], t: number): LogEntry => ({ ...line('hunt', PREFIX, tally, t), kind: 'combat' });
+
+  it('the window is 300 ticks', () => {
+    expect(HUNT_WINDOW).toBe(300);
+  });
+
+  it('folds 20 routine events inside 300 ticks into 1 line', () => {
+    const s = createInitialState(1);
+    for (let i = 0; i < 20; i++) appendLog(s, hunt(wolf(), i * 14));
+    expect(s.log).toHaveLength(1);
+    expect(s.log[0].msg).toBe('☠️ Hunt: 200 gold, 🐺 Young Wolf ×20');
+    expect(s.log[0].since).toBe(0);
+    expect(s.log[0].window).toBe(300);
+    expect(s.log[0].t).toBe(19 * 14);
+  });
+
+  it('an equippable item line splits the run', () => {
+    const s = createInitialState(1);
+    appendLog(s, hunt(wolf(), 0));
+    appendLog(s, hunt(wolf(), 10));
+    appendLog(s, { msg: '📦 Loot: 🛡️ Leather Vest', kind: 'loot', t: 20 });
+    appendLog(s, hunt(wolf(), 30));
+    expect(msgs(s)).toEqual([
+      '☠️ Hunt: 20 gold, 🐺 Young Wolf ×2',
+      '📦 Loot: 🛡️ Leather Vest',
+      '☠️ Hunt: 10 gold, 🐺 Young Wolf',
+    ]);
+  });
+
+  it('a line older than 300 ticks does not absorb a new event', () => {
+    const s = createInitialState(1);
+    appendLog(s, hunt(wolf(), 0));
+    appendLog(s, hunt(wolf(), 299));
+    expect(s.log).toHaveLength(1);
+    appendLog(s, hunt(wolf(), 300));
+    expect(s.log).toHaveLength(2);
+    expect(s.log[1].since).toBe(300);
+  });
+
+  it('measures the window from when the line opened, not from its latest event', () => {
+    const s = createInitialState(1);
+    appendLog(s, hunt(wolf(), 0));
+    appendLog(s, hunt(wolf(), 200));
+    // 400 is within 300 of the latest event (200) and not of the first (0).
+    appendLog(s, hunt(wolf(), 400));
+    expect(s.log).toHaveLength(2);
+    expect(s.log[0].tally?.[1].qty).toBe(2);
+  });
+
+  it('reads a line that has a window and no `since` by its `t`', () => {
+    const saved = (): GameState => {
+      const s = createInitialState(1);
+      s.log.push({ msg: '☠️ Hunt: 🐺 Young Wolf', kind: 'combat', t: 1000, group: 'hunt', prefix: PREFIX, tally: [{ label: '🐺 Young Wolf', qty: 1 }], window: 300 });
+      return s;
+    };
+    const inside = saved();
+    appendLog(inside, hunt(wolf(), 1299));
+    expect(inside.log).toHaveLength(1);
+    const outside = saved();
+    appendLog(outside, hunt(wolf(), 1300));
+    expect(outside.log).toHaveLength(2);
+  });
+
+  it('still folds a saved line that has no window for as long as it is the newest', () => {
+    const s = createInitialState(1);
+    s.log.push({ msg: '🧺 Gathered: 🪨 Iron Ore', kind: 'loot', t: 0, group: 'act:mine', prefix: '🧺 Gathered:', tally: [{ label: '🪨 Iron Ore', qty: 1 }] });
+    appendLog(s, line('act:mine', '🧺 Gathered:', [{ label: '🪨 Iron Ore', qty: 1 }], 10_000_000));
+    expect(msgs(s)).toEqual(['🧺 Gathered: 🪨 Iron Ore ×2']);
+    expect(s.log[0].window).toBeUndefined();
+    expect(s.log[0].since).toBeUndefined();
+  });
+
+  it('shows four labels and counts the rest', () => {
+    const s = createInitialState(1);
+    appendLog(s, hunt([{ label: '🐺 Young Wolf', qty: 4 }, { label: 'gold', qty: 90, style: 'amount' }], 0));
+    appendLog(s, hunt([{ label: '🐀 Forest Rat', qty: 6 }, { label: 'Raw Meat (Fair)', qty: 1 }], 10));
+    appendLog(s, hunt([{ label: 'Torn Fur', qty: 2 }, { label: 'Iron Scrap', qty: 1 }], 20));
+    expect(LOG_LABELS_MAX).toBe(4);
+    // Gold first, then the counts from the largest down.
+    expect(s.log[0].msg).toBe('☠️ Hunt: 90 gold, 🐀 Forest Rat ×6, 🐺 Young Wolf ×4, Torn Fur ×2, +2 more');
+    expect(hiddenLabels(s.log[0])).toEqual(['Raw Meat (Fair)', 'Iron Scrap']);
+  });
+
+  it('shows no "+N more" for exactly four labels, and hides nothing', () => {
+    const s = createInitialState(1);
+    appendLog(s, hunt([1, 2, 3, 4].map((n) => ({ label: `L${n}`, qty: 5 - n })), 0));
+    expect(s.log[0].msg).toBe('☠️ Hunt: L1 ×4, L2 ×3, L3 ×2, L4');
+    expect(hiddenLabels(s.log[0])).toEqual([]);
+  });
+
+  it('hides nothing on a line with no window', () => {
+    const s = createInitialState(1);
+    for (let i = 0; i < 6; i++) appendLog(s, line('act:mine', '🧺 Gathered:', [{ label: `L${i}`, qty: 1 }]));
+    expect(s.log[0].msg).toBe('🧺 Gathered: L0, L1, L2, L3, L4, L5');
+    expect(hiddenLabels(s.log[0])).toEqual([]);
+  });
+
+  it('does not alias the tally it was handed', () => {
+    const s = createInitialState(1);
+    const mine = wolf();
+    appendLog(s, hunt(mine, 0));
+    appendLog(s, hunt(wolf(), 10));
+    expect(mine[0].qty).toBe(1);
+    expect(s.log[0].tally?.find((t) => t.label === '🐺 Young Wolf')?.qty).toBe(2);
+  });
+
+  it('keeps `since` and `window` through a save, and loads a save without them', () => {
+    const s = createInitialState(1);
+    appendLog(s, hunt(wolf(), 5));
+    const loaded = deserialize(serialize(s, 0));
+    expect(loaded.log[0]).toMatchObject({ since: 5, window: 300, group: 'hunt' });
+
+    // A line written before either field existed loads as it was written.
+    const old = JSON.parse(serialize(s, 0));
+    old.log = [{ msg: '🧺 Gathered: 🪨 Iron Ore ×3', kind: 'loot', t: 40, group: 'act:mine', prefix: '🧺 Gathered:', tally: [{ label: '🪨 Iron Ore', qty: 3 }] }];
+    const legacy = deserialize(JSON.stringify(old));
+    expect(legacy.log[0].since).toBeUndefined();
+    expect(legacy.log[0].window).toBeUndefined();
+    appendLog(legacy, line('act:mine', '🧺 Gathered:', [{ label: '🪨 Iron Ore', qty: 1 }], 41));
+    expect(msgs(legacy)).toEqual(['🧺 Gathered: 🪨 Iron Ore ×4']);
+  });
+});
+
+describe('hunting in play', () => {
+  function huntingGame(seed = 7) {
+    const g = new Game(createInitialState(seed));
+    g.state.spot = 'woods_edge';
+    g.equip(1);
+    g.selectActivity('hunt');
+    return g;
+  }
+
+  it('writes one line per window, not one line per kill', () => {
+    const g = huntingGame();
+    const killed: string[] = [];
+    g.bus.on('kill', (ev) => killed.push(`${ev.monster.icon} ${ev.monster.name}`));
+    for (let i = 0; i < 30000 && killed.length < 14; i++) {
+      g.tick();
+      // A knockout ends the activity and moves the character; go back to hunting.
+      if (!g.state.recovering && g.state.spot !== 'woods_edge') {
+        g.state.spot = 'woods_edge';
+        g.selectActivity('hunt');
+      }
+    }
+    expect(killed.length).toBe(14);
+
+    const hunts = g.state.log.filter((l) => l.group === 'hunt');
+    expect(hunts.length).toBeGreaterThan(0);
+    // The per-kill, per-drop lines are gone from the main log.
+    expect(g.state.log.filter((l) => /Defeated|Scavenged|^📦 [^L]/.test(l.msg))).toEqual([]);
+    // No kill is lost in the fold: the tallies add up to the kills.
+    const names = new Set(killed);
+    const tallied = hunts
+      .flatMap((l) => l.tally ?? [])
+      .filter((t) => names.has(t.label))
+      .reduce((n, t) => n + t.qty, 0);
+    expect(tallied).toBe(killed.length);
+    // So does the gold.
+    const gold = hunts
+      .flatMap((l) => l.tally ?? [])
+      .filter((t) => t.label === 'gold')
+      .reduce((n, t) => n + t.qty, 0);
+    expect(gold).toBe(g.state.stats['gold:earned'] ?? 0);
+    // Each line spans less than a window.
+    for (const l of hunts) expect(l.t - (l.since ?? l.t)).toBeLessThan(HUNT_WINDOW);
+  });
+
+  describe('"appears" lines', () => {
+    const appears = (g: Game) => g.state.log.filter((l) => /appears?!$/.test(l.msg));
+
+    /** Runs `fn` with the spawn rolls pinned to one modifier and one rarity. */
+    function pinned(modifier: string, rarity: string, fn: () => void): void {
+      const mods = MODIFIER_WEIGHTS.splice(0, MODIFIER_WEIGHTS.length, { id: modifier, weight: 1 });
+      const rars = RARITY_WEIGHTS.splice(0, RARITY_WEIGHTS.length, { id: rarity, weight: 1 });
+      try {
+        fn();
+      } finally {
+        MODIFIER_WEIGHTS.splice(0, MODIFIER_WEIGHTS.length, ...mods);
+        RARITY_WEIGHTS.splice(0, RARITY_WEIGHTS.length, ...rars);
+      }
+    }
+
+    /** Twenty encounters at the spot, each ended before the next. */
+    function meet(g: Game): void {
+      let met = 0;
+      g.bus.on('encounter', () => met++);
+      for (let i = 0; i < 20; i++) {
+        startForcedFight(g.state, g.bus, SPOTS.woods_edge);
+        abandonCombat(g.state, g.bus);
+      }
+      // A run that met nobody would pass every "no line" case below for free.
+      expect(met).toBe(20);
+    }
+
+    it('keeps a demiboss spawn line', () => {
+      const g = new Game(createInitialState(3));
+      g.state.spot = 'woods_edge';
+      pinned('demiboss', 'common', () => meet(g));
+      expect(appears(g).length).toBeGreaterThan(0);
+      expect(appears(g)[0].msg).toContain('Demiboss');
+    });
+
+    it('drops a common normal spawn line', () => {
+      const g = new Game(createInitialState(3));
+      g.state.spot = 'woods_edge';
+      pinned('normal', 'common', () => meet(g));
+      expect(appears(g)).toEqual([]);
+    });
+
+    it('drops an uncommon normal spawn line', () => {
+      const g = new Game(createInitialState(3));
+      g.state.spot = 'woods_edge';
+      pinned('normal', 'uncommon', () => meet(g));
+      expect(appears(g)).toEqual([]);
+    });
+
+    it('keeps a rare normal spawn line', () => {
+      const g = new Game(createInitialState(3));
+      g.state.spot = 'woods_edge';
+      pinned('normal', 'rare', () => meet(g));
+      expect(appears(g).length).toBeGreaterThan(0);
+    });
+
+    it('decides by modifier and rarity alone', () => {
+      const m = (modifier: string, rarity: string) =>
+        warrantsAppearsLine({ modifier, rarity } as Parameters<typeof warrantsAppearsLine>[0]);
+      expect(m('normal', 'common')).toBe(false);
+      expect(m('normal', 'uncommon')).toBe(false);
+      expect(m('normal', 'rare')).toBe(true);
+      expect(m('normal', 'epic')).toBe(true);
+      for (const mod of ['demiboss', 'boss', 'aberrant']) expect(m(mod, 'common')).toBe(true);
+    });
   });
 });
