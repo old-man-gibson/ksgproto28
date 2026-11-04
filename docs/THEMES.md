@@ -90,10 +90,20 @@ browser preference like the theme: field `logOpen` of the localStorage key
   360 px panel from the right edge, below the header, over main
   (`LogDrawer.svelte`, z-index 9, under every window). Escape, the Log button or a
   click outside closes it. Dock in the panel's header returns the log to its column.
-- **Default:** with no stored choice the log is open from 1360 px of viewport width
-  and folded below (`logOpenDefault` in `src/ui/lib/shell.ts`). A stored choice
-  beats the width. Floor 0 always shows the column and offers no Fold.
-- At 1100 px and below the page scrolls and an open log is a 220 px row under it.
+- **Default:** with no stored choice the log is open from 1420 px of viewport width
+  and folded below (`logOpenDefault` in `src/ui/lib/shell.ts`). 1420 is where an
+  open log still leaves the Combat screen 760 px, so its two panels sit side by
+  side. A stored choice beats the width. Floor 0 always shows the column and
+  offers no Fold.
+- **At 1100 px and below** the page scrolls, so the folded row is sticky to the
+  foot of the window; the overlay panel starts 12 px under the header, or 12 px
+  from the top once the header has scrolled away. An open log is a 220 px row
+  under the page.
+- The overlay ignores Escape and outside presses while a window is up (a Modal or
+  the defeat, offline, prestige, dare or evolve window).
+- **Header under 1180 px:** one row holds down to 1024 px because the rate chip
+  drops its kills figure (the title has both), the clock chip shows only the hour
+  (`shortClock`; the title has the whole text) and the Gothic title shrinks.
 
 A screen whose columns depend on room sizes them by its own width, not the
 window's, so the log's state does not break it: the Combat screen's Combat Style

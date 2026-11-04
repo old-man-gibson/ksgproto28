@@ -4,6 +4,7 @@ import {
   logIsOpen,
   logOpenDefault,
   readLogChoice,
+  shortClock,
   writeLogChoice,
 } from '../src/ui/lib/shell';
 import { SHELL_KEY, patchShell, readSeen, writeSeen, type ShellStore } from '../src/ui/lib/nav';
@@ -26,14 +27,44 @@ function fakeStore(initial: string | null = null, opts: { throwGet?: boolean; th
 }
 
 describe('the log column’s default', () => {
-  it('is open from 1360 px and folded below', () => {
-    expect(LOG_OPEN_MIN_WIDTH).toBe(1360);
-    expect(logOpenDefault(1360)).toBe(true);
-    expect(logOpenDefault(1359)).toBe(false);
+  it('is open from 1420 px and folded below', () => {
+    expect(LOG_OPEN_MIN_WIDTH).toBe(1420);
+    expect(logOpenDefault(1420)).toBe(true);
+    expect(logOpenDefault(1419)).toBe(false);
     expect(logOpenDefault(1440)).toBe(true);
     expect(logOpenDefault(1920)).toBe(true);
+    expect(logOpenDefault(1366)).toBe(false);
     expect(logOpenDefault(1094)).toBe(false);
     expect(logOpenDefault(375)).toBe(false);
+  });
+
+  it('never opens the log where the Combat panels would stack', () => {
+    // Open log: main is the viewport less 638 px of padding, gaps and the two
+    // side columns, less a 15 px scrollbar. CombatPanel stacks under 760 px.
+    const COMBAT_SIDE_BY_SIDE = 760;
+    const chrome = 638 + 15;
+    for (let width = 300; width <= 2000; width++) {
+      if (logOpenDefault(width)) {
+        expect(width - chrome, `${width} px`).toBeGreaterThanOrEqual(COMBAT_SIDE_BY_SIDE);
+      }
+    }
+  });
+});
+
+describe('the clock text in a narrow header', () => {
+  it('keeps the part with the hour', () => {
+    expect(shortClock('Fourthday, 11th of Sixth Month, Year 1 · about 05:00')).toBe('about 05:00');
+    expect(shortClock('Fifthday, 12th of Third Month, Year 1 · 09:23')).toBe('09:23');
+    expect(shortClock('Fifthday · about 09:00 · winter')).toBe('about 09:00');
+    expect(shortClock('About 09:00 · winter')).toBe('About 09:00');
+  });
+
+  it('keeps the daypart when the sense names no hour, and never adds words', () => {
+    expect(shortClock('Morning')).toBe('Morning');
+    expect(shortClock('Morning · winter')).toBe('Morning');
+    for (const text of ['Dusk · autumn · a holy day', 'Fifthday · about 09:00 · winter', 'Deep night']) {
+      expect(text).toContain(shortClock(text));
+    }
   });
 });
 

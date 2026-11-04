@@ -33,8 +33,11 @@
 </div>
 
 {#if showRate && meter.gold !== null && meter.kills !== null}
-  <div class="rate-chip" title="Rate: gold and kills per minute over the last 60 s of game time. Not saved.">
-    {fmt(meter.gold)} gold/min · {fmt(meter.kills)} kills/min
+  <div
+    class="rate-chip"
+    title="Rate: {fmt(meter.gold)} gold and {fmt(meter.kills)} kills per minute over the last 60 s of game time. Not saved."
+  >
+    {fmt(meter.gold)} gold/min<span class="rate-kills"> · {fmt(meter.kills)} kills/min</span>
   </div>
 {/if}
 
@@ -99,5 +102,13 @@
     color: var(--text-dim);
     font-size: 13px;
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Under 1180px the header keeps gold per minute only, so one row holds. The
+     title carries both figures. */
+  @media (max-width: 1179px) {
+    .rate-kills {
+      display: none;
+    }
   }
 </style>

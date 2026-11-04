@@ -34,7 +34,16 @@
 </div>
 
 <style>
+  /* Sticky to the foot of the window: at 1100px and below the page scrolls and
+     main is not a scroll container, so without this the row sits at the end of
+     the page. Above that it sits at the foot of main and sticking does
+     nothing. Solid background, so content scrolls under it unseen. Layer 3:
+     under the tutorial card (4), over the panels' own layers (2 to 3 earlier
+     in the page). */
   .log-ticker {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
     flex: none;
     display: flex;
     align-items: center;
