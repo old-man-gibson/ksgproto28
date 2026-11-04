@@ -1,19 +1,33 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
-import { BANDS, FLOORS, TOWERS } from '../src/core/registry';
-import { bandKnown, floorReached } from '../src/core/systems/towers';
+import { BANDS, FLOORS, TOWERS, floorsInBand } from '../src/core/registry';
+import { bandKnown, floorCleared, floorReached, hubStatus, rungStatus } from '../src/core/systems/towers';
 import { prestigeNow } from '../src/core/systems/prestige';
-import { homeGroupId, ladderBands, ladderGroups, type LadderBand } from '../src/ui/lib/ladderView';
+import {
+  bandDrawnOpen,
+  bandFoldable,
+  bandProgress,
+  hubTerms,
+  ladderBands,
+  rungTerms,
+  standingBandId,
+  type LadderBand,
+} from '../src/ui/lib/ladderView';
+import { bandIsOpen, resetFoldChoices, setBandOpen } from '../src/ui/lib/ladderFold.svelte';
 import { termText } from '../src/ui/lib/format';
-import type { GameState } from '../src/core/types';
+import type { FestivalRun, GameState } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
 // The ladder panel's layout (ui/lib/ladderView.ts): bands as groups, a floor
 // named once its door is reached, the next band by its name only, nothing
-// above it, and the floors reached carried through a prestige.
+// above it, and the floors reached carried through a prestige. Then what a
+// rung says about getting in (`rungTerms`, `hubTerms`) and which bands fold.
 
 const ASCENT = TOWERS.the_ascent;
 const WARDS = ['ascent_f7', 'ascent_f8', 'ascent_f9', 'ascent_f10'];
+
+/** Floors 1 to n of the Ascent, by id. */
+const floorsUpTo = (n: number): string[] => Array.from({ length: n }, (_, i) => `ascent_f${i + 1}`);
 
 const fresh = (): GameState => createInitialState(0, 'ascent_foot');
 
@@ -88,22 +102,251 @@ describe('ladder view: gate terms', () => {
   });
 });
 
-describe('ladder view: narrow groups', () => {
-  it('gathers bands three at a time by band index, labelled by the floors shown in full', () => {
+describe('rung terms: what a card says about getting in', () => {
+  /** One open line per clear condition of the floor. */
+  const clearTerms = (s: GameState, id: string) =>
+    FLOORS[id].clear!.map((cond) => ({ icon: '🎯', text: termText(cond, s), dim: false, cond }));
+
+  it('open: the floor’s clear conditions', () => {
     const s = fresh();
-    clearFloors(s.stats);
-    const groups = ladderGroups(ladderBands(s, ASCENT));
-    expect(groups.map((g) => [g.id, g.label, g.bands.map((b) => b.band.id)])).toEqual([
-      [1, 'The Harbor', ['ascent_harbor']],
-      [0, 'Floors 1–10', ['ascent_upper', 'ascent_middle', 'ascent_lower']],
-    ]);
+    expect(rungStatus(s, FLOORS.ascent_f1)).toBe('open');
+    expect(rungTerms(s, FLOORS.ascent_f1)).toEqual({ kind: 'open', terms: clearTerms(s, 'ascent_f1') });
+    expect(rungTerms(s, FLOORS.ascent_f1).terms.length).toBeGreaterThan(0);
   });
 
-  it('opens the group the player stands in, else the one with the highest band reached', () => {
+  it('cleared: no terms', () => {
     const s = fresh();
     clearFloors(s.stats);
-    const groups = ladderGroups(ladderBands(s, ASCENT));
-    expect(homeGroupId(groups, 'ascent_lower')).toBe(0);
-    expect(homeGroupId(groups, undefined)).toBe(0);
+    expect(rungStatus(s, FLOORS.ascent_f1)).toBe('cleared');
+    expect(rungTerms(s, FLOORS.ascent_f1)).toEqual({ kind: 'cleared', terms: [] });
+  });
+
+  it('sealed: the way up is not cleared', () => {
+    const s = fresh();
+    expect(rungStatus(s, FLOORS.ascent_f2)).toBe('sealed');
+    expect(rungTerms(s, FLOORS.ascent_f2)).toEqual({
+      kind: 'sealed',
+      terms: [{ icon: '', text: 'The way up is not cleared.', dim: true }],
+    });
+  });
+
+  it('gated: the floor’s gate, one line per condition, each carrying its condition', () => {
+    const s = fresh();
+    clearFloors(s.stats, floorsUpTo(4));
+    s.stats['kills:tag:goblin'] = 7;
+    expect(rungStatus(s, FLOORS.ascent_f5)).toBe('gated');
+    const { kind, terms } = rungTerms(s, FLOORS.ascent_f5);
+    expect(kind).toBe('gated');
+    expect(terms.map((t) => t.cond)).toEqual(FLOORS.ascent_f5.gate);
+    expect(terms.every((t) => t.icon === '🔒' && !t.dim)).toBe(true);
+    expect(terms.map((t) => t.text)).toContain('Kill 12 goblin monsters (7/12)');
+  });
+
+  it('gated by the band: a ward with no gate of its own names the hub that opens it', () => {
+    const s = fresh();
+    clearFloors(s.stats);
+    expect(rungStatus(s, FLOORS.ascent_f7)).toBe('gated');
+    expect(FLOORS.ascent_f7.gate).toBeUndefined();
+    expect(rungTerms(s, FLOORS.ascent_f7)).toEqual({
+      kind: 'gated',
+      terms: [{ icon: '', text: 'Opens with The Castle Court.', dim: true }],
+    });
+  });
+
+  it('floors 7 to 9 cleared with the key owned: floor 10 is the open rung and the hub is open', () => {
+    const s = fresh();
+    clearFloors(s.stats, floorsUpTo(9));
+    s.prestige.purchases.city_key = 1;
+    for (const id of ['ascent_f7', 'ascent_f8', 'ascent_f9']) expect(rungTerms(s, FLOORS[id]).kind).toBe('cleared');
+    expect(rungStatus(s, FLOORS.ascent_f10)).toBe('open');
+    expect(rungTerms(s, FLOORS.ascent_f10)).toEqual({ kind: 'open', terms: clearTerms(s, 'ascent_f10') });
+    expect(hubStatus(s, BANDS.ascent_upper)).toBe('open');
+    expect(hubTerms(s, BANDS.ascent_upper)).toEqual({ kind: 'open', terms: [] });
+  });
+
+  describe('the Vermin Festival (floors 15 and 16)', () => {
+    /** Floors 1 to 14 cleared: floor 15 is next. */
+    function atHall(): GameState {
+      const s = fresh();
+      clearFloors(s.stats, floorsUpTo(14));
+      s.prestige.purchases.city_key = 1;
+      return s;
+    }
+
+    it('lockout: floor 15 reads gated with no gate field, and the terms give the reason', () => {
+      const s = atHall();
+      s.festival = { lockedUntil: s.totalTicks + 5000 };
+      expect(rungStatus(s, FLOORS.ascent_f15)).toBe('gated');
+      expect(FLOORS.ascent_f15.gate).toBeUndefined();
+      expect(rungTerms(s, FLOORS.ascent_f15)).toEqual({
+        kind: 'locked',
+        terms: [{ icon: '🔒', text: 'Shut after a lost festival attempt: 8m of play, or the next prestige.', dim: false }],
+      });
+      // Floor 16 is sealed behind 15, and the lockout still comes first.
+      expect(rungStatus(s, FLOORS.ascent_f16)).toBe('sealed');
+      expect(rungTerms(s, FLOORS.ascent_f16).kind).toBe('locked');
+    });
+
+    it('a lockout that has run out leaves floor 15 an ordinary open rung', () => {
+      const s = atHall();
+      s.festival = { lockedUntil: s.totalTicks };
+      expect(rungTerms(s, FLOORS.ascent_f15)).toEqual({ kind: 'open', terms: clearTerms(s, 'ascent_f15') });
+    });
+
+    it('closed: floor 16 has no door of its own outside an attempt', () => {
+      const s = atHall();
+      clearFloors(s.stats, ['ascent_f15']);
+      expect(rungStatus(s, FLOORS.ascent_f16)).toBe('open');
+      expect(rungTerms(s, FLOORS.ascent_f16)).toEqual({
+        kind: 'closed',
+        terms: [{ icon: '🏟️', text: 'Entered from floor 15’s hall, during a festival attempt.', dim: true }],
+      });
+    });
+
+    it('shut: floor 16 from the hall while the dark room still fights; open once the door opens', () => {
+      const s = atHall();
+      clearFloors(s.stats, ['ascent_f15']);
+      s.spot = 'f15_dark_room';
+      s.festival = { run: { phase: 'dark' } as FestivalRun };
+      expect(rungTerms(s, FLOORS.ascent_f16)).toEqual({
+        kind: 'shut',
+        terms: [{ icon: '🚪', text: 'Opens from the hall once the dark room is empty.', dim: true }],
+      });
+      s.festival.run!.phase = 'prep';
+      expect(rungTerms(s, FLOORS.ascent_f16)).toEqual({ kind: 'open', terms: clearTerms(s, 'ascent_f16') });
+    });
+  });
+
+  describe('a band hub', () => {
+    it('sealed while the bands below are not cleared', () => {
+      expect(hubTerms(fresh(), BANDS.ascent_upper)).toEqual({
+        kind: 'sealed',
+        terms: [{ icon: '', text: 'The way up is not cleared.', dim: true }],
+      });
+    });
+
+    it('gated: the band’s gate, with its condition', () => {
+      const s = fresh();
+      clearFloors(s.stats);
+      expect(hubStatus(s, BANDS.ascent_upper)).toBe('gated');
+      expect(hubTerms(s, BANDS.ascent_upper)).toEqual({
+        kind: 'gated',
+        terms: [
+          {
+            icon: '🔒',
+            text: 'Own the Key to the City prestige boon',
+            dim: false,
+            cond: { type: 'boon', id: 'city_key' },
+          },
+        ],
+      });
+    });
+
+    it('open once the gate holds: no terms', () => {
+      const s = fresh();
+      clearFloors(s.stats);
+      s.prestige.purchases.city_key = 1;
+      expect(hubTerms(s, BANDS.ascent_upper)).toEqual({ kind: 'open', terms: [] });
+    });
+  });
+});
+
+describe('ladder fold: which bands fold', () => {
+  const byBand = (s: GameState, standing?: string) =>
+    Object.fromEntries(ladderBands(s, ASCENT).map((lb) => [lb.band.id, bandFoldable(s, lb, standing)]));
+
+  it('floors 1 to 6 cleared: the two cleared bands fold, the city and the next band do not', () => {
+    const s = fresh();
+    clearFloors(s.stats);
+    expect(byBand(s)).toEqual({
+      ascent_harbor: false,
+      ascent_upper: false,
+      ascent_middle: true,
+      ascent_lower: true,
+    });
+  });
+
+  it('a band the player stands in does not fold', () => {
+    const s = fresh();
+    clearFloors(s.stats);
+    expect(byBand(s, 'ascent_middle')).toMatchObject({ ascent_middle: false, ascent_lower: true });
+  });
+
+  it('standingBandId: the band of the floor the player is on, else the band whose hub they are at', () => {
+    const s = fresh();
+    expect(standingBandId(s)).toBeUndefined();
+    s.spot = 'castle_court';
+    expect(standingBandId(s)).toBe('ascent_upper');
+    s.spot = FLOORS.ascent_f1.landing!;
+    expect(standingBandId(s)).toBe('ascent_lower');
+  });
+
+  it('a band cleared by a pass folds', () => {
+    const s = fresh();
+    s.prestige.purchases.pass_lower = 1;
+    expect(byBand(s).ascent_lower).toBe(true);
+    const lower = ladderBands(s, ASCENT).find((lb) => lb.band.id === 'ascent_lower')!;
+    expect(bandProgress(s, lower)).toEqual({ cleared: 3, total: 3 });
+  });
+
+  it('progress counts the floors the ladder shows', () => {
+    const s = fresh();
+    clearFloors(s.stats, floorsUpTo(2));
+    const lower = ladderBands(s, ASCENT).find((lb) => lb.band.id === 'ascent_lower')!;
+    expect(bandProgress(s, lower)).toEqual({ cleared: 2, total: 3 });
+  });
+
+  it('a band holding an uncleared floor is never folded, whatever the player chose', () => {
+    for (let n = 0; n <= 16; n++) {
+      for (const owned of [false, true]) {
+        const s = fresh();
+        clearFloors(s.stats, floorsUpTo(n));
+        if (owned) s.prestige.purchases.city_key = 1;
+        for (const lb of ladderBands(s, ASCENT)) {
+          const allCleared = floorsInBand(lb.band.id).every((f) => floorCleared(s, f));
+          for (const standing of [undefined, lb.band.id]) {
+            const foldable = bandFoldable(s, lb, standing);
+            expect(foldable, `${lb.band.id} after ${n} floors, standing ${standing}`).toBe(
+              !lb.titleOnly && !standing && allCleared,
+            );
+            if (!allCleared) {
+              for (const choice of [undefined, true, false]) expect(bandDrawnOpen(foldable, choice)).toBe(true);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('a foldable band is drawn folded unless the player opened it', () => {
+    expect(bandDrawnOpen(true, undefined)).toBe(false);
+    expect(bandDrawnOpen(true, false)).toBe(false);
+    expect(bandDrawnOpen(true, true)).toBe(true);
+    expect(bandDrawnOpen(false, undefined)).toBe(true);
+  });
+});
+
+describe('ladder fold: the player’s choice', () => {
+  it('opening and folding a foldable band is remembered', () => {
+    resetFoldChoices();
+    expect(bandIsOpen('ascent_lower', true)).toBe(false);
+    setBandOpen('ascent_lower', true, true);
+    expect(bandIsOpen('ascent_lower', true)).toBe(true);
+    setBandOpen('ascent_lower', true, false);
+    expect(bandIsOpen('ascent_lower', true)).toBe(false);
+  });
+
+  it('a band that opens itself by stopping being foldable records no choice', () => {
+    resetFoldChoices();
+    // The player walks into the band: it is drawn open and the <details> reports open.
+    setBandOpen('ascent_middle', false, true);
+    // They leave: the band folds again.
+    expect(bandIsOpen('ascent_middle', true)).toBe(false);
+  });
+
+  it('a band that may not fold stays open whatever was reported', () => {
+    resetFoldChoices();
+    setBandOpen('ascent_upper', false, false);
+    expect(bandIsOpen('ascent_upper', false)).toBe(true);
   });
 });

@@ -147,13 +147,48 @@ it said moved onto the map:
 - `visibleBenches` moved from LocationPanel to `lib/navigation.ts`, so the
   room and the map hide the same locked benches.
 
+### 3.1 The Location screen, top to bottom (`LocationPanel.svelte`)
+
+Changed 2026-11-03 (UI proposal C3, docs/plans/ui-proposals.md). No save change.
+
+1. **Strip** (class `act-strip`). Standing still: the spot's activity buttons,
+   the Next bar (only while an activity with a cycle runs) and the exploration
+   bar with its find ticks and "Found n of m". Walking: the travel bar and its
+   remaining time. A spot with no activities and no exploration draws no strip.
+   The activity buttons keep `.tutorial-target` (TUTORIAL.md §5).
+2. **Map** (`MapCard.svelte`). Unchanged, hover cards included.
+3. **Festival panel**, while an attempt holds the player.
+4. **Walking:** the destination preview (§4). **Standing still:** the place
+   panel (banner, description, key items, sea panel), People and shops,
+   Workbenches, Crafting, then the ladder (`AscentPanel.svelte`) where a stack
+   is reachable.
+
+**Ladder bands** are `<details>` at every width (`lib/ladderView.ts`,
+`lib/ladderFold.svelte.ts`). A band folds only when every floor in it is
+cleared (a band pass counts) and the player is not standing in it
+(`bandFoldable`). A band with an uncleared floor stays open and its header does
+not toggle, so no gate term is hidden. A folded band is one line: name, floor
+range, "n of m cleared". The next band, shown by name only, is a plain header.
+A foldable band is folded by default; the player's choice to open or fold it
+lives in module memory and resets on reload. Opening and folding that the
+panel does itself (walking into or out of a band) is not recorded as a choice.
+
+**Rung terms.** `rungTerms(gs, floor)` and `hubTerms(gs, band)` hold the
+ladder's term selection for every state: `locked` (floors 15 and 16 after a
+lost festival attempt), `closed` (floor 16 outside an attempt), `shut` (floor
+16 while the dark room fights), `gated`, `sealed`, `open`, `cleared`. A hub has
+terms only while gated. Each term keeps the condition it was built from
+(`cond`). AscentPanel draws them; a later next-step line calls the same
+functions so the two cannot disagree.
+
 ## 4. Destination preview (`DestinationPreview.svelte`)
 
-Shown under the travel bar while walking. It shows where the journey ends: the
-breadcrumb, description, what arrival will do ("start" for an intent,
-"resume" for a resume entry, or nothing queued), every activity as an
-arrival toggle, the features with "Open on arrival" for benches, people and
-exploration. An unknown destination shows nothing but that it is unknown.
+Shown under the map while walking (the travel bar is in the strip above it).
+It shows where the journey ends: the breadcrumb, description, what arrival
+will do ("start" for an intent, "resume" for a resume entry, or nothing
+queued), every activity as an arrival toggle, the features with "Open on
+arrival" for benches, people and exploration. An unknown destination shows
+nothing but that it is unknown.
 
 ## 5. Go links outside the map
 

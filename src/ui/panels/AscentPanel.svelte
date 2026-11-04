@@ -3,11 +3,9 @@
   import {
     CLIMB_TICKS_PER_FLOOR,
     bandBaseIndex,
-    bandHubAt,
     bandLevelStep,
     climbVerb,
     currentFloor,
-    floorCleared,
     hubStatus,
     ladderFloors,
     rungIndex,
@@ -15,12 +13,21 @@
     standingIndex,
     towerAt,
   } from '../../core/systems/towers';
-  import { BANDS, floorsInBand, getSpot } from '../../core/registry';
-  import type { BandDef, FloorDef, UnlockCondition } from '../../core/types';
-  import { festivalLadder, festivalLocked, lockoutLeft } from '../../core/systems/festivalRules';
-  import { msToTime, termText, ticksToTime } from '../lib/format';
-  import { floorRange, homeGroupId, ladderBands, ladderGroups, type LadderBand } from '../lib/ladderView';
-  import { MS_PER_TICK } from '../../core/engine/loop';
+  import { floorsInBand, getSpot } from '../../core/registry';
+  import type { BandDef, FloorDef } from '../../core/types';
+  import { festivalLadder, festivalLocked } from '../../core/systems/festivalRules';
+  import { ticksToTime } from '../lib/format';
+  import {
+    bandFoldable,
+    bandProgress,
+    floorRange,
+    hubTerms,
+    ladderBands,
+    rungTerms,
+    standingBandId,
+    type LadderBand,
+  } from '../lib/ladderView';
+  import { bandIsOpen, setBandOpen } from '../lib/ladderFold.svelte';
 
   const tower = $derived(towerAt(gs));
   const here = $derived(currentFloor(gs));
@@ -33,26 +40,16 @@
   const bands = $derived(tower ? ladderBands(gs, tower) : []);
 
   /**
-   * Below NARROW_PX the band rows wrap to one or two cards each and the
-   * ladder runs long, so the bands are gathered three to a collapsible group.
-   * The group holding the player (or the highest band reached) opens by
-   * default; a group the player opens or shuts stays that way.
+   * Each band is a <details>. One folds only when every floor in it is
+   * cleared and the player is not standing in it (`bandFoldable`); a band with
+   * an uncleared floor stays open so its terms stay in view. The player's
+   * choice on a foldable band lives in lib/ladderFold.svelte.ts.
    */
-  const NARROW_PX = 600;
-  let width = $state(0);
-  const narrow = $derived(width > 0 && width < NARROW_PX);
-  const groups = $derived(narrow ? ladderGroups(bands) : []);
-  const homeGroup = $derived(homeGroupId(groups, here?.bandId ?? bandHubAt(gs.spot)?.id));
-  let groupOpen = $state<Record<number, boolean>>({});
+  const standingBand = $derived(standingBandId(gs));
 
   const atHub = $derived(!!tower && gs.spot === tower.hubSpot);
   const fromIndex = $derived(standingIndex(gs));
   const hub = $derived(tower ? getSpot(tower.hubSpot) : null);
-
-  /** A clear or gate term in words a player can act on (lib/format.ts `termText`). */
-  function termList(conds: UnlockCondition[] | undefined): string[] {
-    return (conds ?? []).map((c) => termText(c, gs));
-  }
 
   /** Base ticks the climb button will cost (speed applies on top, like roads). */
   function climbTicks(toIndex: number): number {
@@ -74,13 +71,12 @@
     return parts.join(' · ');
   }
 
-  /** "2 of 4 cleared · monsters +5 levels": what the next direction will face. */
+  /** "monsters +5 levels": what the next direction will face. */
   function stepLine(band: BandDef): string | null {
     if (!band.levelSteps?.length) return null;
     const floors = floorsInBand(band.id);
-    const cleared = floors.filter((f) => floorCleared(gs, f)).length;
     const step = bandLevelStep(gs, { areaId: floors[0]?.areaId ?? '' });
-    return `${cleared} of ${floors.length} cleared · monsters +${step} levels`;
+    return `monsters +${step} levels`;
   }
 
   /**
@@ -108,7 +104,6 @@
   {@const current = here?.id === floor.id}
   {@const locked = festivalLocked(gs, floor)}
   {@const verdict = festivalLadder(gs, floor.id)}
-  {@const band = floor.bandId ? BANDS[floor.bandId] : undefined}
   <div class="rung" class:current class:sealed={status === 'sealed'}>
     <div class="rung-name">
       <span class="rung-icon">
@@ -123,27 +118,9 @@
       </div>
     {/if}
     <!-- The terms are the teaching: a shut door always says what opens it. -->
-    {#if locked}
-      <div class="term small">🔒 Shut after a lost festival attempt: {msToTime(lockoutLeft(gs) * MS_PER_TICK)} of play, or the next prestige.</div>
-    {:else if (status === 'open' || status === 'cleared') && verdict === 'closed'}
-      <!-- The royale has no door of its own: an attempt reaches it from floor 15's hall. -->
-      <div class="term small dim">🏟️ Entered from floor 15’s hall, during a festival attempt.</div>
-    {:else if (status === 'open' || status === 'cleared') && verdict === 'shut'}
-      <div class="term small dim">🚪 Opens from the hall once the dark room is empty.</div>
-    {:else if status === 'gated'}
-      {#each termList(floor.gate) as term}
-        <div class="term small">🔒 {term}</div>
-      {/each}
-      {#if band?.hub && !floor.gate?.length}
-        <div class="term small dim">Opens with {getSpot(band.hub).name}.</div>
-      {/if}
-    {:else if status === 'sealed'}
-      <div class="term small dim">The way up is not cleared.</div>
-    {:else if status === 'open' && !floorCleared(gs, floor)}
-      {#each termList(floor.clear) as term}
-        <div class="term small">🎯 {term}</div>
-      {/each}
-    {/if}
+    {#each rungTerms(gs, floor).terms as t}
+      <div class="term small" class:dim={t.dim}>{t.icon ? `${t.icon} ` : ''}{t.text}</div>
+    {/each}
     {#if (status === 'open' || status === 'cleared') && !current && !locked && verdict !== 'shut' && verdict !== 'closed'}
       <button
         class="small"
@@ -176,13 +153,9 @@
       Hub
       {#if current}<span class="here">you are here</span>{/if}
     </div>
-    {#if status === 'gated'}
-      {#each termList(band.gate) as term}
-        <div class="term small">🔒 {term}</div>
-      {/each}
-    {:else if status === 'sealed'}
-      <div class="term small dim">The way up is not cleared.</div>
-    {/if}
+    {#each hubTerms(gs, band).terms as t}
+      <div class="term small" class:dim={t.dim}>{t.icon ? `${t.icon} ` : ''}{t.text}</div>
+    {/each}
     {#if status === 'open' && !current}
       <button
         class="small"
@@ -202,27 +175,46 @@
 
 {#snippet bandBlock(lb: LadderBand)}
   {@const band = lb.band}
-  {@const step = lb.titleOnly ? null : stepLine(band)}
-  <section class="ladder-band" class:title-only={lb.titleOnly}>
-    <div class="band-head">
-      <b>{band.name}</b>
-      {#if !lb.titleOnly}
+  {#if lb.titleOnly}
+    <!-- The next band, not reached: a name and nothing to fold. -->
+    <section class="ladder-band title-only">
+      <div class="band-head"><b>{band.name}</b></div>
+    </section>
+  {:else}
+    {@const foldable = bandFoldable(gs, lb, standingBand)}
+    {@const open = bandIsOpen(band.id, foldable)}
+    {@const progress = bandProgress(gs, lb)}
+    {@const step = stepLine(band)}
+    <details
+      class="ladder-band"
+      class:fixed={!foldable}
+      bind:open={() => open, (v) => setBandOpen(band.id, foldable, v)}
+    >
+      <!-- A band that may not fold keeps its header as a label: the click does nothing. -->
+      <summary
+        class="band-head"
+        onclick={(e) => {
+          if (!foldable) e.preventDefault();
+        }}
+      >
+        <b>{band.name}</b>
         {#if bandSub(band)}<span class="dim small">{bandSub(band)}</span>{/if}
-        {#if step}<span class="small">⚖️ {step}</span>{/if}
+        <span class="dim small">{progress.cleared} of {progress.total} cleared</span>
+        {#if step && open}<span class="small">⚖️ {step}</span>{/if}
+      </summary>
+      {#if lb.cards.length}
+        <div class="band-floors">
+          {#each lb.cards as card (card.kind === 'floor' ? card.floor.id : `hub:${card.band.id}`)}
+            {#if card.kind === 'floor'}
+              {@render floorCard(card.floor, card.named)}
+            {:else}
+              {@render hubCard(card.band)}
+            {/if}
+          {/each}
+        </div>
       {/if}
-    </div>
-    {#if lb.cards.length}
-      <div class="band-floors">
-        {#each lb.cards as card (card.kind === 'floor' ? card.floor.id : `hub:${card.band.id}`)}
-          {#if card.kind === 'floor'}
-            {@render floorCard(card.floor, card.named)}
-          {:else}
-            {@render hubCard(card.band)}
-          {/if}
-        {/each}
-      </div>
-    {/if}
-  </section>
+    </details>
+  {/if}
 {/snippet}
 
 {#if tower && rungs.length > 0}
@@ -235,33 +227,10 @@
         floors 15–16 shut for three days or until the next prestige.
       </p>
     {/if}
-    <div class="ladder" bind:clientWidth={width}>
-      {#if narrow}
-        {#each groups as group (group.id)}
-          <!-- A group holding only the next band's name has nothing to fold. -->
-          {#if group.bands.every((b) => b.titleOnly)}
-            {#each group.bands as lb (lb.band.id)}
-              {@render bandBlock(lb)}
-            {/each}
-          {:else}
-            <details
-              class="ladder-group"
-              bind:open={() => groupOpen[group.id] ?? group.id === homeGroup, (v) => (groupOpen[group.id] = v)}
-            >
-              <summary>{group.label}</summary>
-              <div class="ladder-group-body">
-                {#each group.bands as lb (lb.band.id)}
-                  {@render bandBlock(lb)}
-                {/each}
-              </div>
-            </details>
-          {/if}
-        {/each}
-      {:else}
-        {#each bands as lb (lb.band.id)}
-          {@render bandBlock(lb)}
-        {/each}
-      {/if}
+    <div class="ladder">
+      {#each bands as lb (lb.band.id)}
+        {@render bandBlock(lb)}
+      {/each}
 
       <!-- The hub is rung 0: the way back to the city, always open. -->
       {#if hub}
@@ -299,7 +268,7 @@
     gap: 10px;
   }
 
-  .ladder-band {
+  section.ladder-band {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -314,9 +283,44 @@
     border-bottom: 1px solid var(--border);
   }
 
+  /* A band's header is its fold control: a marker, then name, floors, progress. */
+  summary.band-head {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  summary.band-head::-webkit-details-marker {
+    display: none;
+  }
+
+  summary.band-head::before {
+    content: '▸';
+    flex: none;
+    width: 1em;
+    color: var(--text-dim);
+  }
+
+  details.ladder-band[open] > summary.band-head::before {
+    content: '▾';
+  }
+
+  /* A band that may not fold: no marker, no pointer. */
+  details.ladder-band.fixed > summary.band-head {
+    cursor: default;
+  }
+
+  details.ladder-band.fixed > summary.band-head::before {
+    content: '';
+  }
+
+  details.ladder-band > .band-floors {
+    margin-top: 4px;
+  }
+
   /* The next band, not reached: a name and nothing else. */
   .ladder-band.title-only .band-head {
     opacity: 0.65;
+    padding-left: calc(1em + 10px); /* lines up with the fold markers above */
   }
 
   /* Tight columns: a card per floor, as many to a row as fit. */
@@ -376,19 +380,6 @@
     color: var(--action, #7de0c3);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-  }
-
-  .ladder-group > summary {
-    cursor: pointer;
-    padding: 4px 0;
-    font-weight: bold;
-  }
-
-  .ladder-group-body {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 4px 0 6px;
   }
 
   /* A climb that forfeits the festival: the warm danger hue, never the blue arc. */

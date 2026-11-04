@@ -248,18 +248,19 @@
   {/if}
 {/snippet}
 
-<MapCard />
-
-<!-- The festival attempt on floors 15–16, while one holds the player. -->
-<FestivalPanel />
-
+<!--
+  The strip above the map: the spot's activity buttons, the Next bar and the
+  exploration bar; while walking, the travel bar. A spot with none of these
+  draws no strip. The floor 0 tutorial points at an activity button here by
+  `.tutorial-target`; App.svelte scrolls to it wherever it sits.
+-->
 {#if gs.travel}
   {@const dest = getSpot(gs.travel.to)}
-  <div class="panel" style="margin-top: 12px">
-    <h2>
+  <div class="panel act-strip">
+    <b class="act-strip-title">
       🥾 Traveling to {gs.discovered.includes(dest.id) ? `${dest.icon} ${dest.name}` : '❓ an unknown place'}
-    </h2>
-    <div class="bar" style="height: 18px">
+    </b>
+    <div class="bar act-strip-travel" style="height: 18px">
       <div
         class="fill"
         style="width: {((gs.travel.total - gs.travel.ticksLeft) / gs.travel.total) * 100}%; background: var(--mana)"
@@ -267,6 +268,69 @@
       <div class="label">{ticksToTime(gs.travel.ticksLeft)} remaining</div>
     </div>
   </div>
+{:else if spot.activities.length > 0 || spot.exploreTicks}
+  <div class="panel act-strip">
+    {#if spot.activities.length > 0}
+      <div class="act-btns">
+        {#each spot.activities as act}
+          <Tip>
+            {@render actBtn(act)}
+            {#snippet tip()}{@render activityTip(act)}{/snippet}
+          </Tip>
+        {/each}
+      </div>
+    {/if}
+
+    {#if (activeAct && actCost > 0) || spot.exploreTicks}
+      <div class="act-meters">
+        {#if activeAct && actCost > 0}
+          <div class="explore small" title="Fills at your Speed — rewards land when the bar completes">
+            <span class="dim">{activeAct.icon} Next:</span>
+            <div class="bar" style="flex: 1; height: 10px">
+              <div
+                class="fill action-fill"
+                style="width: {Math.min(100, (gs.activityProgress / actCost) * 100)}%; background: var(--action)"
+              ></div>
+            </div>
+            <span>{ticksToTime(actEta)}</span>
+          </div>
+        {/if}
+
+        {#if spot.exploreTicks}
+          <div class="explore small">
+            <span class="dim">Exploration:</span>
+            <div class="bar" style="flex: 1; height: 10px">
+              <div class="fill" style="width: {explorePct * 100}%; background: #7de0c3"></div>
+              <!--
+                Ticks for finds the spot still owes you. Claimed ones are dropped
+                rather than dimmed: a mark that never moves reads as a bug, and the
+                bar's job is to say how much further, not to keep a trophy shelf.
+              -->
+              {#each unclaimedFinds as f (f.id)}
+                <div class="find-tick" style="left: {f.at * 100}%" title="Something to find here"></div>
+              {/each}
+            </div>
+            <span>{Math.floor(explorePct * 100)}%</span>
+          </div>
+          {#if foundCount > 0 || unclaimedFinds.length > 0}
+            <div class="act-found small dim">
+              🔎 Found {foundCount} of {(spot.finds ?? []).length} here{nextFind
+                ? ` — next at ${Math.round(nextFind.at * 100)}%`
+                : ''}
+            </div>
+          {/if}
+        {/if}
+      </div>
+    {/if}
+  </div>
+{/if}
+
+<MapCard />
+
+<!-- The festival attempt on floors 15–16, while one holds the player. -->
+<FestivalPanel />
+
+{#if gs.travel}
   <!-- Where the journey ends, read ahead: plan the arrival while walking. -->
   <DestinationPreview />
 {:else}
@@ -286,53 +350,6 @@
 
     <KeyItems />
     <SeaPanel />
-    <h3>Activities</h3>
-    <div class="btn-grid">
-      {#each spot.activities as act}
-        <Tip>
-          {@render actBtn(act)}
-          {#snippet tip()}{@render activityTip(act)}{/snippet}
-        </Tip>
-      {/each}
-    </div>
-
-    {#if activeAct && actCost > 0}
-      <div class="explore small" title="Fills at your Speed — rewards land when the bar completes">
-        <span class="dim">{activeAct.icon} Next:</span>
-        <div class="bar" style="flex: 1; height: 10px">
-          <div
-            class="fill action-fill"
-            style="width: {Math.min(100, (gs.activityProgress / actCost) * 100)}%; background: var(--action)"
-          ></div>
-        </div>
-        <span>{ticksToTime(actEta)}</span>
-      </div>
-    {/if}
-
-    {#if spot.exploreTicks}
-      <div class="explore small">
-        <span class="dim">Exploration:</span>
-        <div class="bar" style="flex: 1; height: 10px">
-          <div class="fill" style="width: {explorePct * 100}%; background: #7de0c3"></div>
-          <!--
-            Ticks for finds the spot still owes you. Claimed ones are dropped
-            rather than dimmed: a mark that never moves reads as a bug, and the
-            bar's job is to say how much further, not to keep a trophy shelf.
-          -->
-          {#each unclaimedFinds as f (f.id)}
-            <div class="find-tick" style="left: {f.at * 100}%" title="Something to find here"></div>
-          {/each}
-        </div>
-        <span>{Math.floor(explorePct * 100)}%</span>
-      </div>
-      {#if foundCount > 0 || unclaimedFinds.length > 0}
-        <div class="small dim" style="margin-top: 2px">
-          🔎 Found {foundCount} of {(spot.finds ?? []).length} here{nextFind
-            ? ` — next at ${Math.round(nextFind.at * 100)}%`
-            : ''}
-        </div>
-      {/if}
-    {/if}
   </div>
 
   {#if npcs.length > 0}
@@ -775,17 +792,61 @@
     margin-bottom: 12px;
   }
 
+  /*
+    The strip above the map: the activity buttons, then the Next bar and
+    exploration, wrapping to more rows as the column narrows.
+  */
+  .act-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 18px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+
+  .act-btns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   /* Activity buttons wrapped in a Tip: let the wrapper size to the button, no text underline. */
-  .btn-grid > :global(.tip-target) {
+  .act-btns > :global(.tip-target) {
     display: inline-flex;
     border-bottom: none;
+  }
+
+  .act-meters {
+    display: flex;
+    flex: 1 1 280px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 18px;
+    min-width: 0;
+  }
+
+  .act-meters > .explore {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+
+  .act-found {
+    flex: 1 1 100%;
+  }
+
+  .act-strip-title {
+    white-space: nowrap;
+  }
+
+  .act-strip-travel {
+    flex: 1 1 200px;
   }
 
   .explore {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 6px;
   }
 
   /* A notch on the exploration bar where the spot still owes you something. */
