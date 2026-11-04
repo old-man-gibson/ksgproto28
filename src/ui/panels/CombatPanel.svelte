@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { gs, game, stepTicks, stepEvent, ui, view } from '../state.svelte';
   import { dropFight } from '../../core/systems/ledger';
   import { POSITIONS, SKILLS, STATUSES, STYLES, TECHNIQUES, TIERS, getSpot } from '../../core/registry';
@@ -70,6 +71,7 @@
   import EntryConfigModal from '../lib/EntryConfigModal.svelte';
   import MartialPlanner from './MartialPlanner.svelte';
   import { tutorialScreen } from '../lib/tutorialFocus';
+  import { stepTarget, visibleIds } from '../lib/rotationView';
 
   /**
    * The rows of an affliction total worth drawing.
@@ -330,6 +332,26 @@
     dropTarget = null;
   }
 
+  // ---- Move buttons ----
+  /** The card list, to find a card's buttons again after it has moved. */
+  let listEl = $state<HTMLElement>();
+
+  /** Move a card one place among the drawn cards (lib/rotationView.ts). */
+  async function stepCard(id: string, dir: -1 | 1) {
+    const target = stepTarget(cardIds, id, dir);
+    if (target === undefined) return;
+    game.moveSkillTo(id, target);
+    // The keyed list moves the card's element, and the browser drops focus from
+    // an element that moves. Put it back, so a keyboard user can press again;
+    // on the top or bottom card the pressed button is now disabled, so the
+    // other one takes focus.
+    await tick();
+    const own = [...(listEl?.querySelectorAll<HTMLButtonElement>('button.step') ?? [])].filter(
+      (b) => b.dataset.id === id,
+    );
+    (own.find((b) => b.dataset.dir === String(dir) && !b.disabled) ?? own.find((b) => !b.disabled))?.focus();
+  }
+
   const spot = $derived(getSpot(gs.spot));
   /** Floor 0's fight steps scroll here (lib/tutorialFocus.ts); no glow over a running fight. */
   const stageTarget = $derived(tutorialScreen(gs)?.target === 'stage');
@@ -337,21 +359,29 @@
   const rotation = $derived(activeRotation(gs));
   /**
    * The rotation as the panel actually shows it: benched techniques live under
-   * their skill in the Skills tab, so they are hidden here — and every index,
-   * arrow and drop target below works on THIS list, never on the full order.
-   * (Reordering still writes through moveSkillTo, which moves an entry
+   * their skill in the Skills tab, so they are hidden here — and every rank,
+   * move button and drop target below works on THIS list, never on the full
+   * order. (Reordering still writes through moveSkillTo, which moves an entry
    * relative to a visible neighbour and lets hidden ones travel along.)
    */
-  const visibleRotation = $derived(
-    rotation.filter((id) => {
-      const tech = techniqueOf(id);
-      return !(tech && gs.skillTriggers[id]?.enabled === false);
+  const visibleRotation = $derived(visibleIds(rotation, gs.skillTriggers));
+  /**
+   * The cards drawn, top to bottom. An entry that resolves to nothing (the
+   * body's tool before it has an ability) draws no card, so it takes no rank
+   * and is not a place for a move button to step onto.
+   */
+  const cards = $derived(
+    visibleRotation.flatMap((id) => {
+      const entry = rotationEntry(id);
+      return entry ? [{ id, entry }] : [];
     }),
   );
+  const cardIds = $derived(cards.map((c) => c.id));
   /**
-   * The rotation editor (drag to reorder, click to set triggers) is open as
-   * soon as any active is in the rotation, martial shutter or not (user,
-   * 2026-11-02): usually the tutorial's fire, spark or ice word.
+   * The rotation editor (drag or move buttons to reorder, click to set
+   * triggers) is open as soon as any active is in the rotation, martial
+   * shutter or not (user, 2026-11-02): usually the tutorial's fire, spark or
+   * ice word.
    */
   const rotationEditable = $derived(rotation.length > 0);
   // One button per stance, always in the same place. A manifested school takes
@@ -519,6 +549,18 @@
       {line.text}
     </div>
   {/each}
+{/snippet}
+
+<!-- The technique-slot facts, for the Active Skills hint and the slot count. -->
+{#snippet slotLines()}
+  {@const extra = slotCap - MAX_DRILLED - BASE_TECHNIQUE_SLOTS}
+  <div class="tip-line">
+    Slots: {slotCap} ({MAX_DRILLED} drill + {BASE_TECHNIQUE_SLOTS} base{extra > 0 ? ` + ${extra} prestige` : ''}).
+  </div>
+  <div class="tip-line">Effect: only slotted techniques fire or drill.</div>
+  {#if slotsUsed >= slotCap && knownTechs.length > slotsUsed}
+    <div class="tip-line">Over the slots: extra techniques wait on the bench (Skills tab).</div>
+  {/if}
 {/snippet}
 
 <!-- The fight, drawn — first on the tab, because it is what the tab is for.
@@ -713,37 +755,38 @@
 
 <!-- Active skills — always listed, in rotation order, each configurable. -->
 <div class="panel actives-panel">
-  <h3>Active Skills</h3>
+  <div class="actives-head">
+    <h3>Active Skills</h3>
+    {#if rotation.length > 0}
+      <Tip>
+        <span class="small dim">Fires: top to bottom. Click a card for conditions.</span>
+        {#snippet tip()}
+          <div class="tip-line">Order: drag a card, or use its up and down buttons.</div>
+          <div class="tip-line">Conditions: click a card to set when it fires.</div>
+          <div class="tip-line">Details: hover a card name for its description.</div>
+          <!-- Alpha shutter (systems/unlocks.ts, `martial`): no drilling or loadouts;
+               the order and the triggers are editable all the same. -->
+          {#if martialOpen}
+            <div class="tip-line">Drill: the 🏋️ button on a technique card. Only drilled techniques bank reps.</div>
+            <div class="tip-line">Bench: benched techniques are listed under their skill in the Skills tab.</div>
+          {/if}
+          {#if knownTechs.length > 0}{@render slotLines()}{/if}
+        {/snippet}
+      </Tip>
+      {#if knownTechs.length > 0}
+        <!-- Full is the warning state: techniques learned past the slots are benched. -->
+        <span class="slots">
+          <Tip>
+            <span class="small dim" class:slots-full={slotsUsed >= slotCap}>Slots {slotsUsed}/{slotCap}</span>
+            {#snippet tip()}{@render slotLines()}{/snippet}
+          </Tip>
+        </span>
+      {/if}
+    {/if}
+  </div>
   {#if rotation.length === 0}
     <p class="dim small">No active skills learned yet — they manifest as you fight.</p>
   {:else}
-    {#if !martialOpen}
-      <!-- Alpha shutter (systems/unlocks.ts, `martial`): no drilling or loadouts;
-           the order and the triggers are editable all the same. -->
-      <p class="dim small hint">
-        Fired top-down — drag a card to reorder. Click one to set when it fires; hover for the
-        details.
-      </p>
-    {:else}
-      <p class="dim small hint">
-        Fired top-down — drag a card to reorder. Click one to set when it fires; hover for the
-        details. 🏋️ drills a technique — {MAX_DRILLED} drill slots, and only drilled ones bank reps.
-        Benched techniques live under their skill in the Skills tab.
-      </p>
-    {/if}
-    {#if knownTechs.length > 0}
-      <p
-        class="small hint"
-        class:slots-full={slotsUsed >= slotCap}
-        title="{MAX_DRILLED} drill slots + {BASE_TECHNIQUE_SLOTS}{slotCap > MAX_DRILLED + BASE_TECHNIQUE_SLOTS
-          ? ` + ${slotCap - MAX_DRILLED - BASE_TECHNIQUE_SLOTS} from prestige`
-          : ''}. Only slotted techniques fire or drill."
-      >
-        🥋 Technique slots: {slotsUsed}/{slotCap}.{slotsUsed >= slotCap && knownTechs.length > slotsUsed
-          ? ' Techniques past the slots wait on the bench (Skills tab).'
-          : ''}
-      </p>
-    {/if}
 
     <!-- Loadouts: a whole fighting identity under one name — order, bench
          switches, drills, trigger conditions, prepared spells and worn gear.
@@ -771,16 +814,20 @@
     <!-- One line per entry. Everything else — mastery, the baked reflex, the
          trigger editor — lives behind the card's tooltip and its config
          window, so a long rotation stays readable at a glance. -->
-    <div class="actives" ondragover={(e) => e.preventDefault()} ondrop={() => onDrop(null)} role="list">
-      {#each visibleRotation as id (id)}
-        {@const entry = rotationEntry(id)}
+    <div
+      class="actives"
+      bind:this={listEl}
+      ondragover={(e) => e.preventDefault()}
+      ondrop={() => onDrop(null)}
+      role="list"
+    >
+      {#each cards as { id, entry }, rank (id)}
         {@const tech = techniqueOf(id)}
         {@const status = tech ? techniqueStatus(gs, stats, tech) : null}
         {@const cd = gs.combat?.cooldowns[id] ?? 0}
         {@const trigger = gs.skillTriggers[id]}
         {@const off = trigger?.enabled === false}
         {@const tuned = !!trigger && (trigger.conditions.length > 0 || !!trigger.event)}
-        {#if entry}
         <div
           class="active-skill"
           class:ready={status ? status.kind === 'primed' || status.kind === 'ready' : cd <= 0 && !off}
@@ -796,6 +843,31 @@
           ondragleave={() => { if (dropTarget === id) dropTarget = null; }}
           ondrop={(e) => { e.stopPropagation(); onDrop(id); }}
         >
+          <!-- The gutter: where the card fires from, and the keyboard path to
+               change it (drag has none). Both buttons share the drag gate. -->
+          <div class="gutter">
+            <span class="rank">{rank + 1}</span>
+            {#if rotationEditable}
+              <button
+                class="tiny step"
+                data-id={id}
+                data-dir="-1"
+                disabled={stepTarget(cardIds, id, -1) === undefined}
+                onclick={() => stepCard(id, -1)}
+                aria-label="Move {entry.name} up"
+                title="Move up">▲</button
+              >
+              <button
+                class="tiny step"
+                data-id={id}
+                data-dir="1"
+                disabled={stepTarget(cardIds, id, 1) === undefined}
+                onclick={() => stepCard(id, 1)}
+                aria-label="Move {entry.name} down"
+                title="Move down">▼</button
+              >
+            {/if}
+          </div>
           <!-- Line 1: what it is. Line 2: what it costs and when it comes
                round again. Techniques carry their footwork and drill switch
                on the right of line 1 — nothing else has either. -->
@@ -899,7 +971,6 @@
             </span>
           </div>
         </div>
-        {/if}
       {/each}
     </div>
   {/if}
@@ -1387,8 +1458,21 @@
     color: var(--stamina);
   }
 
-  .hint {
-    margin: 0 0 8px;
+  /* The panel title, the one-line hint and the slot count share a row. */
+  .actives-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 12px;
+    margin-bottom: 8px;
+  }
+
+  .actives-head h3 {
+    margin: 0;
+  }
+
+  .actives-head .slots {
+    margin-left: auto;
   }
 
   .loadouts {
@@ -1436,10 +1520,11 @@
      they pack tighter and more of the rotation fits on screen. */
   /* One card per line beats two cramped ones: below ~300px the name, pills,
      status and controls stop fitting side by side and the card grows taller
-     than the two-column saving is worth. */
+     than the two-column saving is worth. The gutter (rank and move buttons)
+     takes ~70px of that, so the minimum is 370px. */
   .actives {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
     gap: 4px;
     align-items: start;
   }
@@ -1458,6 +1543,36 @@
     /* A grid cell must not be widened by its content (long fork names, pills). */
     min-width: 0;
     overflow: hidden;
+    /* The gutter spans both lines on the left; line 1 and line 2 stack beside it. */
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 8px;
+    align-items: center;
+  }
+
+  .active-skill > .line1,
+  .active-skill > .line2 {
+    grid-column: 2;
+  }
+
+  /* Rank number and the two move buttons, vertically centred on the card. */
+  .gutter {
+    grid-row: 1 / span 2;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .rank {
+    min-width: 18px;
+    text-align: right;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  button.step {
+    padding: 0 5px;
+    font-size: 10px;
   }
 
   .active-skill:not(.ready) .skill-name {
@@ -1548,8 +1663,9 @@
     font-size: 10px;
   }
 
-  /* The whole card is the drag handle now that the arrows are gone, so it
-     wears the grab cursor rather than hiding the affordance in one glyph. */
+  /* The whole card is the drag handle, so it wears the grab cursor rather than
+     hiding the affordance in one glyph. The move buttons in the gutter are the
+     path for the keyboard, which cannot drag. */
   .active-skill {
     cursor: grab;
   }
