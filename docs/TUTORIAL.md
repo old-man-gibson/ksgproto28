@@ -157,6 +157,7 @@ waits.
 | the log's Fold button (floor 0 always shows the log column) | the Foot |
 | Menu (Save, Export, Import, Reset, theme, key list) | the Foot (Import is on the step 1 offer) |
 | other map regions, the map fold | the Foot |
+| the Stations row (above the map) | the Foot |
 
 A screen arrives with the step whose text first names it. The screen list
 (`NAV`, `src/ui/lib/nav.ts`) lists a screen when its own gate is open and

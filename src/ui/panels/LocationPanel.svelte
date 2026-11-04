@@ -40,6 +40,7 @@
   import { QUESTS, SKILLS, STYLES } from '../../core/registry';
   import { ticksToTime, condsText, factorLabel, attrSplitText } from '../lib/format';
   import MapCard from '../MapCard.svelte';
+  import StationsRow from '../StationsRow.svelte';
   import SceneBackdrop from '../lib/SceneBackdrop.svelte';
   import RaidTrack from '../lib/RaidTrack.svelte';
   import { sceneFor } from '../lib/scenes';
@@ -356,6 +357,9 @@
     {/if}
   </div>
 {/if}
+
+<!-- Places worked at, one click back (StationsRow.svelte). One fixed-height line. -->
+<StationsRow />
 
 <MapCard />
 

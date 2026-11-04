@@ -1,14 +1,28 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import { gs, game, view } from '../state.svelte';
   import { getSpot } from '../../core/registry';
   import { ticksToTime } from './format';
-  import { routeInfo } from './navigation';
+  import { routeInfo, type RouteInfo } from './navigation';
 
   /**
-   * A go link outside the map (the Wayfinding boon): walk to `spot`, and with
-   * `activity`, start it on arrival. The same commands the map card issues.
+   * A go link outside the map (the Wayfinding boon, the Stations row): walk to
+   * `spot`, and with `activity`, start it on arrival. The same commands the map
+   * card issues. `children` replaces the default label (the Stations row prints
+   * the activity, the place and the time in it); the tooltip, the warnings and
+   * the disabled rules stay GoButton's. `class` adds to the button's own.
    */
-  let { spot, activity }: { spot: string; activity?: string } = $props();
+  let {
+    spot,
+    activity,
+    children,
+    class: extra = '',
+  }: {
+    spot: string;
+    activity?: string;
+    children?: Snippet<[{ route: RouteInfo | null; here: boolean }]>;
+    class?: string;
+  } = $props();
 
   const here = $derived(spot === gs.spot && !gs.travel);
   const route = $derived(here ? null : routeInfo(gs, spot, view.stats.travelSpeed));
@@ -33,13 +47,17 @@
 </script>
 
 <button
-  class="small go"
+  class="small go {extra}"
   class:selected={running}
   {title}
   disabled={running || (here && !activity) || (!here && (stuck || !route?.path))}
   onclick={go}
 >
-  {here ? (activity ? '▶ Start' : '📍 Here') : activity ? '🥾 Go & start' : '🥾 Go'}{route?.noExit ? ' ⚔️' : ''}
+  {#if children}
+    {@render children({ route, here })}
+  {:else}
+    {here ? (activity ? '▶ Start' : '📍 Here') : activity ? '🥾 Go & start' : '🥾 Go'}{route?.noExit ? ' ⚔️' : ''}
+  {/if}
 </button>
 
 <style>

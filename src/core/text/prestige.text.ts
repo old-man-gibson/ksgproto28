@@ -23,7 +23,7 @@ export const PRESTIGE_BOONS_TEXT: ProseTable = {
 
   'foresight.desc': 'Locked skills and upcoming milestones are shown with their requirements at any progress. Without it they appear only at 90% of the requirement.',
 
-  'wayfinding.desc': 'Go buttons outside town: quest givers and objectives anywhere on the map, and skills link to a spot that trains them (that activity starts on arrival). Town places have Go buttons on the Quests tab without it.',
+  'wayfinding.desc': 'Go buttons outside town: quest givers and objectives anywhere on the map, and a Trains at list on each skill and attribute with a button for every discovered place that trains it (that activity starts on arrival). Without it: town places have Go buttons on the Quests tab, and places you have worked at have a station in the Stations row above the map.',
 
   'head_start.desc': 'Every run starts 1 character level higher, per rank: +1 to every attribute per level. Never lowers a level already reached.',
 

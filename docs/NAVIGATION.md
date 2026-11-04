@@ -8,7 +8,9 @@ Built 2026-09-13 (save v53): `systems/locations.ts`, `systems/actions.ts`
 Surveyed plan and route line added 2026-11-04 (§3.2, §3.3: `ui/MapPlan.svelte`,
 `ui/lib/map.ts`, `ui/lib/mapPlan.ts`). Tower section added 2026-11-04 (§3.5:
 `ui/TowerSection.svelte`, `ui/StopDetail.svelte`, `ui/lib/ladderView.ts`,
-`ui/lib/rideArm.svelte.ts`, `ui/lib/viewport.svelte.ts`).*
+`ui/lib/rideArm.svelte.ts`, `ui/lib/viewport.svelte.ts`). Stations row added
+2026-11-04 (§3.6: `ui/StationsRow.svelte`, `stations` in `ui/lib/navigation.ts`,
+`Game.stayHere`).*
 
 ## 1. Why
 
@@ -46,9 +48,12 @@ Either is skipped if the activity cannot start now (`canStartActivity`: it
 exists at the spot; a craft is unlocked and affordable; a search has a reward
 left to pay, `searchSpent`).
 
-`resumeActivity` is written by `selectActivity`: choosing an activity records
-it, and deselecting by hand deletes the entry, so a spot left idle on purpose
-stays idle.
+`resumeActivity` is written by `startActivity` (`selectActivity`, a resumed
+arrival and the knockout return's own start all end there): choosing an
+activity records it, and deselecting by hand deletes the entry, so a spot left
+idle on purpose stays idle. A pick deletes the key and sets it again, so the
+record's key order is recency, oldest first (JSON keeps key order, so the save
+needs nothing). The Stations row reads it (§3.6).
 
 `travelIntent` is cleared by everything that changes the plan: a plain
 walk (`startTravel` unplanned, `travelPlanTo`), `selectActivity`,
@@ -226,12 +231,14 @@ Changed 2026-11-03 (UI proposal C3, docs/plans/ui-proposals.md). No save change.
    (narrow column, many buttons) is taller than the minimum and keeps that
    height for the walk.
    The activity buttons keep `.tutorial-target` (TUTORIAL.md §5).
-2. **Map** (`MapCard.svelte`, §3): the route line, then the surveyed plan.
+2. **Stations row** (`StationsRow.svelte`, §3.6): one fixed-height line between
+   the strip and the map. Hidden while floor 0's tutorial runs.
+3. **Map** (`MapCard.svelte`, §3): the route line, then the surveyed plan.
    The click card (§3.3) replaced the hover card. In a tower region the tower
    section stands beside the plan and the stop's detail under it (§3.5); the
    floor tabs are gone.
-3. **Festival panel**, while an attempt holds the player.
-4. **Walking:** the destination preview (§4). **Standing still:** the place
+4. **Festival panel**, while an attempt holds the player.
+5. **Walking:** the destination preview (§4). **Standing still:** the place
    panel (banner, description, key items, sea panel), People and shops,
    Workbenches, Crafting, then the ladder (`AscentPanel.svelte`) where a stack
    is reachable: its terms, and its ride buttons only under 600 px (§3.5).
@@ -558,6 +565,103 @@ button rides.
   the page's height changes with a ride; at the foot of a scrolled page the
   browser then moves the scroll position and the map with it.
 
+### 3.6 The Stations row (N7)
+
+Built 2026-11-04 (docs/plans/navigation-alternatives.md N7). No save change.
+
+- **A station** is a spot with a `resumeActivity` key (§2.1). `stations`
+  (`ui/lib/navigation.ts`) reads the key order back to front:
+  - newest first, at most 5 (`STATION_MAX`);
+  - not the spot the character stands at;
+  - not the target of a knockout return in flight (below).
+  The first is "Back". A save from before 2026-11-04 holds the order of first
+  picks until each spot is picked again. Spot ids must not be integer-like
+  (`Object.keys` lists those first, whatever their insertion order);
+  `tests/stations.test.ts` checks the registry.
+- **Never offered** (`stationBlock`): the knockout return's own refusals
+  (`returnBlock`, docs/plans/knockout-return.md §2.1):
+  - a forced spot;
+  - a spot whose last road is forced;
+  - a festival floor;
+  - the stronghold wall `f11_wall`;
+  - no route;
+  - an activity that cannot start now (`canStartActivity`);
+  plus two the row adds: an undiscovered spot, and a floor that is not unlocked.
+  The route is the one the button takes: `findPath` from where the character
+  stands, ride edges included (§2.6). The return may climb and then walk; a
+  click is one `goAndDo`.
+- **A row** is one `GoButton` (class `station`; GoButton takes a `children`
+  snippet and a `class`): "🏹 Hunt the Edge · The Woods Edge 21 s", the activity,
+  the place and the route time at the current travel speed. One click is
+  `goAndDo` (§2.2): it walks or rides, and starts the work on arrival. GoButton's
+  rules stay: disabled while walking, knocked out, in a forced fight or with no
+  open route, and its tooltip carries the route time and warnings. The label
+  adds ⚔️ where arriving starts a fight with no way out and ⤵ for a road with no
+  way back. No station is a forced arrival today (`returnBlock` refuses them), so
+  ⚔️ is GoButton's rule and not one a station meets. Nothing opens on hover.
+  The newest station has an accent border.
+- **Free outside town** (user, 2026-11-04, plan §9 Q2). A station needs no
+  Wayfinding: a place the character has worked at is a go link on any floor.
+  Wayfinding still sells quest go links outside town and the "Trains at" list on
+  the Skills tab (§5.2).
+- **The knockout return owns knockouts** (user, 2026-11-04, plan §9 Q3). While
+  `state.pendingReturn` is set:
+  - the return's target (`pendingReturn.target.spot`) is not a station. The
+    fallback spot is, since the return only drives to it;
+  - the row starts with the return as one line, 34 em wide (it gives up width
+    down to 10 em before the "Stay here" button beside it does), so the
+    countdown never moves what follows it:
+    - `return`: "Returning to The Deep Woods", with " after recovery" while
+      knocked out;
+    - `fallback`: "Hunting The Treeline for 187 wins or 1 h 12 min, then The
+      Deep Woods", the wins and the time that are left, and no "then" when the
+      return has no target (a forced spot, the wall);
+    - `hold`: "Retrying The Deep Woods in 9 min";
+  - then a "Stay here" button, then the stations, headed "Stations" (the return
+    has taken the place of "Back").
+  `Game.stayHere` is the button: it ends the return (`clearReturn`) and, since a
+  walk the player did not start can only be the return's, drops the legs of that
+  walk not yet taken and the work queued at its end. The leg under way still
+  completes (as with "Cancel journey"), and an arrival resumes the spot's
+  `resumeActivity` as for any walk, so Stay here on the last leg of a walk back
+  ends at the target. A recovery, a hold or a fallback hunt simply run out with
+  nothing queued behind them: this is the way to cancel a hold without starting
+  and stopping an activity. It logs "Return cancelled. Staying here." and
+  returns false, touching nothing, when no return is in flight.
+- **One line, one height.** The row is 44 px with its border in every state:
+  - no stations: "No stations. A place where you start work is listed here once
+    you leave it.";
+  - stations: "Back", then "Stations";
+  - a return in flight: its line, "Stay here", the stations;
+  - walking: "Stations open on arrival." The stations are not listed on the way,
+    because their times would run from the spot being left. A return's line and
+    its Stay here button stay.
+  A line longer than the column scrolls sideways inside itself (the wheel, touch
+  and keyboard focus all scroll it; a station is never cut). The scrollbar is
+  thin and sits in the 12 px under the buttons, which the row reserves whether
+  or not it shows; the buttons are pinned to the top, so a scrollbar appearing
+  moves nothing. The scroll returns to the left end when the row changes what it
+  shows (a return, a walk, stations, nothing), so "Back" and "Stay here" are
+  where the eye expects them.
+- **Tutorial.** Hidden while floor 0's tutorial runs, as the region tabs and the
+  map fold are (TUTORIAL.md §5). The tutorial's own spots are never stations.
+- **Measured** at a 1094 px window with the row in every state, boxes read every
+  50 ms (1,236 samples over 62 s): the character hunting at floor 4 and
+  knocked out, recovering with the return line up, walking back, hunting again
+  with the return still pending, "Stay here" pressed. A second run, 690 samples
+  over 35 s: a click on "Back" from the Granary Gate, the walk, the arrival and
+  the first fights. The header, the strip, the row, the route line, the region
+  tabs, the map frame's top edge and the journey line each kept one box. The map
+  frame changed height between the city's plan (448 px) and a floor's (342 px,
+  with its detail 106 px under it) as §3.5 describes; its top edge and
+  everything below it did not move.
+- **Errand** (plan §2.3: buy at The Granary Gate, then back to the floor 4 hunt),
+  counted in a browser at a 1094 px window: 4 clicks, 0 scrolls, 0 stops. The
+  Threshold tab, the Granary Gate pin (a first click opens its card, a second
+  walks: §3.3), the buying (not counted), then "Back". The plan's table counted
+  the errand with a forge stop and one-click pins; with §3.3's two clicks per pin
+  that errand is 6.
+
 ## 4. Destination preview (`DestinationPreview.svelte`)
 
 Shown under the map while walking (the travel bar is in the strip above it).
@@ -582,18 +686,30 @@ a mapped region (`inMappedRegion`), from the first run.
 
 ### 5.2 Wayfinding (prestige boon)
 
-User's call: go links to places outside town are a prestige unlock.
-`wayfinding` (cost 2, one rank; PRESTIGE.md §4).
+User's call (2026-09-13): go links to places outside town are a prestige
+unlock. Narrowed 2026-11-04 (plan §9 Q2): a place the character has worked at
+is a free go link in the Stations row (§3.6), on any floor. `wayfinding` (cost
+2, one rank; PRESTIGE.md §4) sells the rest:
 
-- **Quests tab**: the same Go buttons for givers and objectives outside
-  mapped regions.
+- **Quests tab**: the Go buttons for givers and objectives outside mapped
+  regions (`QuestsPanel`: `wayfinding || inMappedRegion`). Town places have them
+  without the boon.
 - **Skills tab**: "Trains at" under every expanded skill and attribute, with
-  up to six known spots and Go & start (`trainingSpots`, actions.ts).
+  up to six known spots and Go & start (`trainingSpots`, actions.ts). The list
+  names every discovered place that trains it, worked at or not. A place already
+  worked at has a station without the boon; the list is what the boon adds for
+  places not yet worked.
 - `activityXpTags(act)` is the one list of tags an activity's cycle pays
   skill XP under. The tick branches and `trainingSpots` both read it, so
   "where does this train" cannot drift from what training pays. Hunting
   lists only `combat`/`hunt`: the fight adds loadout tags no spot can
   promise.
+
+The boon's description (`wayfinding.desc`, text/prestige.text.ts) says this:
+go buttons outside town for quest givers and objectives and for the Trains at
+list; without the boon, town places on the Quests tab and worked places in the
+Stations row. `tests/stations.test.ts` holds the phrases. The panels' behaviour
+did not change.
 
 `GoButton.svelte` is the shared button: its tooltip carries the route time
 and warnings, and it is disabled while travelling, knocked out, in a forced
@@ -614,3 +730,7 @@ fight, or with no open route.
   activity. The knockout return (§2.1) walks back to the interrupted work
   instead. The character idles after a knockout only when the fall cannot be
   returned to and no proven hunt is usable.
+- "Stay here" cannot stop the leg already under way (§3.6), so on the last leg
+  of a walk back the character still arrives at the target and resumes there.
+- The Stations row lists no station while the character walks. A "Back" that
+  could be queued during the walk (a second journey after the first) is not built.

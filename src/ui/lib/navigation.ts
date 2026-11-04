@@ -4,13 +4,15 @@
  * derivation for the map card, the destination preview and the location
  * panel, so they cannot disagree about what is where.
  */
-import type { GameState, SpotDef } from '../../core/types';
+import type { GameState, PendingReturn, ReturnSpot, SpotDef } from '../../core/types';
+import { TPS } from '../../core/engine/loop';
 import { DISCIPLINES } from '../../core/data/disciplines.data';
 import { FLOORS, FLOOR_BY_AREA, SPOTS, edgesFrom, getSpot } from '../../core/registry';
 import { spotActivities } from '../../core/systems/actions';
 import { eligibleEncounters, spotCleared } from '../../core/systems/combat';
 import { conditionsMet } from '../../core/systems/conditions';
-import { bandHubAt, bandKnown, bandLevelStep, floorReached, hubStatus } from '../../core/systems/ladder';
+import { FALLBACK_WINS, returnBlock } from '../../core/systems/knockoutReturn';
+import { bandHubAt, bandKnown, bandLevelStep, floorReached, floorUnlocked, hubStatus } from '../../core/systems/ladder';
 import { dynamicLevelBonus, encounterLevel } from '../../core/systems/levels';
 import { findPath, hopEdge, pathTicks, visibleEdges } from '../../core/systems/locations';
 import { availableQuests, canTurnIn, npcsAt } from '../../core/systems/quests';
@@ -338,4 +340,115 @@ export function activityName(spotId: string, activityId: string): string {
   const spot = SPOTS[spotId];
   const act = spot && spotActivities(spot).find((a) => a.id === activityId);
   return act ? `${act.icon} ${act.name}` : activityId;
+}
+
+// ---------- Stations (the row above the map) ----------
+
+/** Stations the row lists at most. */
+export const STATION_MAX = 5;
+
+/** Why a worked spot is not offered as a station. */
+export type StationBlock = NonNullable<ReturnType<typeof returnBlock>> | 'undiscovered' | 'locked';
+
+/**
+ * Why `goal` is not offered from where the character stands, or null when one
+ * click can send it there and put it to work. The knockout return's own list
+ * (`returnBlock`: a forced spot, a forced last road, a festival floor, the
+ * stronghold wall, a route that does not exist, an activity that cannot start)
+ * plus the two the row adds (an undiscovered spot, a floor not unlocked). The
+ * route is the one the button takes: the return may climb to a floor and then
+ * walk, but a click is one `goAndDo`.
+ */
+export function stationBlock(state: GameState, goal: ReturnSpot): StationBlock | null {
+  const spot = SPOTS[goal.spot];
+  if (!spot || !state.discovered.includes(goal.spot)) return 'undiscovered';
+  const why = returnBlock(state, goal);
+  // A floor not unlocked has no ride to it, so `returnBlock` reads it as no
+  // route; it is named here, and a floor the route reaches is checked too.
+  if (!why || why === 'route') {
+    const floor = FLOOR_BY_AREA.get(spot.areaId);
+    if (floor && !floorUnlocked(state, floor)) return 'locked';
+  }
+  if (why) return why;
+  return goal.spot === state.spot || findPath(state, state.spot, goal.spot) ? null : 'route';
+}
+
+/** One row of the Stations row: a worked spot, the work it remembers, and the way there. */
+export interface Station {
+  spot: string;
+  activity: string;
+  /** The place, as the map names it. Stations are discovered, so this is never "Unknown place". */
+  place: string;
+  /** The activity, "icon name". */
+  what: string;
+  /** Route time at the given travel speed, rides included. */
+  ticks: number;
+  oneWay: boolean;
+  noExit: boolean;
+}
+
+/**
+ * The spots the character can go back to work at, newest first, at most `max`.
+ * A station is a spot with a `resumeActivity` key (the key order is recency,
+ * see `startActivity`), minus:
+ * - where the character stands;
+ * - the target of a knockout return in flight (the return owns it, plan
+ *   navigation-alternatives §9 Q3);
+ * - any spot `stationBlock` refuses.
+ * The first station is "Back".
+ */
+export function stations(state: GameState, travelSpeed: number, max = STATION_MAX): Station[] {
+  const taken = state.pendingReturn?.target?.spot ?? null;
+  const spots = Object.keys(state.resumeActivity);
+  const out: Station[] = [];
+  for (let i = spots.length - 1; i >= 0 && out.length < max; i--) {
+    const spot = spots[i];
+    if (spot === state.spot || spot === taken) continue;
+    const activity = state.resumeActivity[spot];
+    if (stationBlock(state, { spot, activity })) continue;
+    const route = routeInfo(state, spot, travelSpeed);
+    out.push({
+      spot,
+      activity,
+      place: getSpot(spot).name,
+      what: activityName(spot, activity),
+      ticks: route.ticks,
+      oneWay: route.oneWay,
+      noExit: route.noExit,
+    });
+  }
+  return out;
+}
+
+/** "9 min", "2 h", "1 h 12 min": a wait in whole minutes, rounded up. */
+function waitText(ticks: number): string {
+  const total = Math.max(1, Math.ceil(ticks / (60 * TPS)));
+  if (total < 60) return `${total} min`;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return m ? `${h} h ${m} min` : `${h} h`;
+}
+
+/**
+ * The knockout return in flight as one line for the Stations row: what the
+ * character is doing for it and what comes after. Null with no return.
+ * - `return`: "Returning to The Deep Woods", with "after recovery" while knocked out.
+ * - `fallback`: "Hunting The Treeline for 200 wins or 2 h, then The Deep Woods".
+ *   The wins and the time are what is left. With no target (a forced spot, the
+ *   wall) the hunt is where the return ends, and the line has no "then".
+ * - `hold`: "Retrying The Deep Woods in 10 min".
+ */
+export function returnLine(state: GameState): string | null {
+  const p: PendingReturn | null | undefined = state.pendingReturn;
+  if (!p) return null;
+  const target = p.target ? placeName(state, p.target.spot) : null;
+  if (p.phase === 'hold') {
+    return `Retrying ${target ?? 'the target'} in ${waitText((p.until ?? 0) - state.totalTicks)}`;
+  }
+  if (p.phase === 'fallback' && p.fallback) {
+    const wins = Math.max(0, FALLBACK_WINS - p.wins);
+    const left = p.until === undefined ? '' : ` or ${waitText(p.until - state.totalTicks)}`;
+    return `Hunting ${placeName(state, p.fallback.spot)} for ${wins} wins${left}${target ? `, then ${target}` : ''}`;
+  }
+  return `Returning to ${target ?? 'the target'}${state.recovering ? ' after recovery' : ''}`;
 }

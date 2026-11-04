@@ -116,9 +116,14 @@ export function startActivity(state: GameState, bus: EventBus, activityId: strin
   state.benchWork = null; // and steps away from any bench run
   state.performance = null; // and off any stage
   // Remember the choice for the next visit — and forget it when the player
-  // stops by hand, so a spot left idle on purpose stays idle.
-  if (activityId) state.resumeActivity[state.spot] = activityId;
-  else delete state.resumeActivity[state.spot];
+  // stops by hand, so a spot left idle on purpose stays idle. A pick re-enters
+  // its key last, so the record's key order is recency, oldest first (the
+  // Stations row reads it, ui/lib/navigation.ts). JSON keeps key order, so the
+  // save needs nothing.
+  if (activityId) {
+    delete state.resumeActivity[state.spot];
+    state.resumeActivity[state.spot] = activityId;
+  } else delete state.resumeActivity[state.spot];
 
   const act = currentActivity(state);
   if (act) bus.emit({ type: 'log', msg: text('actions.started', { name: act.name }), kind: 'action' });

@@ -436,6 +436,23 @@ export class Game {
     return this.handled(setJourneyIntent(this.state, activityId));
   }
 
+  /**
+   * "Stay here" (the Stations row): end the knockout return in flight. A hold
+   * at the haven, a fallback hunt and a recovery then run out with nothing
+   * queued behind them. A walk back is the return's own (a walk the player
+   * sets out on would have ended the return), so its remaining legs and its
+   * arrival work go too; the leg under way still completes, as with Cancel
+   * journey. False, and nothing touched, when no return is in flight.
+   */
+  stayHere(): boolean {
+    if (!this.state.pendingReturn) return false;
+    clearReturn(this.state);
+    cancelTravelPlan(this.state, this.bus);
+    setJourneyIntent(this.state, null);
+    this.bus.emit({ type: 'log', msg: text('knockout.stay'), kind: 'action' });
+    return true;
+  }
+
   /** A player command was accepted: it ends the knockout return. Passes `ok` through. */
   private handled(ok: boolean): boolean {
     if (ok) clearReturn(this.state);
