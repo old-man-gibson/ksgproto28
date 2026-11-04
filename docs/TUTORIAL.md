@@ -156,7 +156,7 @@ waits.
 | gold and kills per minute (header) | the Foot |
 | the log's Fold button (floor 0 always shows the log column) | the Foot |
 | Menu (Save, Export, Import, Reset, theme, key list) | the Foot (Import is on the step 1 offer) |
-| other map regions, the Caravan row, the map fold | the Foot |
+| other map regions, the map fold | the Foot |
 
 A screen arrives with the step whose text first names it. The screen list
 (`NAV`, `src/ui/lib/nav.ts`) lists a screen when its own gate is open and

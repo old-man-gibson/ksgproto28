@@ -10,6 +10,7 @@ import { checkDiscovery, grantSkillXp } from './skills';
 import { noteTravelSkies } from './weathersense';
 import { noteSafeSpot } from './safety';
 import { revealMapped } from './mapped';
+import { rideBaseTicks, rideEdges, rideLeg, routableStops, towerAtSpot, type RideStop } from './towers';
 import { text } from '../text/log';
 
 /**
@@ -38,7 +39,9 @@ export function startTravel(state: GameState, bus: EventBus, to: string, opts: T
     return false;
   }
   const edge = visibleEdges(state, state.spot).find((e) => e.to === to);
-  if (!edge) return false;
+  // No road there: the ladder is the other way to move. A ride leg meets the
+  // same gate as a climb (systems/towers.ts rideLeg).
+  if (!edge) return rideLeg(state, bus, to, opts);
   // A shut road is visible with its terms on it (advertised-but-locked, same
   // shape as a gated floor) — the check lives here, not in visibility.
   if (edge.requires && !conditionsMet(state, edge.requires)) {
@@ -156,10 +159,33 @@ export function logMapped(state: GameState, bus: EventBus): void {
 
 // ---------- Routing ----------
 
+/** Ride stops for one search, filled the first time a tower spot is expanded. */
+interface RideCache {
+  stops?: RideStop[];
+}
+
+/**
+ * Roads plus the ladder's rides out of a spot (systems/towers.ts rideEdges).
+ * A road to a place wins over a ride to it, so a shut road is not routed
+ * around by the ladder and `startTravel` takes the same hop the search did.
+ */
+function hopEdges(state: GameState, spotId: string, cache: RideCache): Edge[] {
+  const roads = visibleEdges(state, spotId);
+  if (!towerAtSpot(spotId)) return roads;
+  if (!cache.stops) cache.stops = routableStops(state);
+  const rides = rideEdges(state, spotId, cache.stops).filter((r) => !roads.some((e) => e.to === r.to));
+  return rides.length > 0 ? [...roads, ...rides] : roads;
+}
+
+/** The edge a hop between two adjacent spots takes: the visible road, else the ladder's ride. */
+export function hopEdge(state: GameState, from: string, to: string): Edge | undefined {
+  return visibleEdges(state, from).find((e) => e.to === to) ?? rideEdges(state, from).find((e) => e.to === to);
+}
+
 /**
  * Shortest path (by ticks) from `from` to `to`, walking only DISCOVERED spots
- * through currently visible edges. Returns the hop list excluding `from`,
- * or null if unreachable.
+ * through currently visible edges and the ladder's rides. Returns the hop list
+ * excluding `from`, or null if unreachable.
  *
  * `unknownDest` lets the destination itself be undiscovered — the map's "?"
  * places, one visible road past known ground. Only the last hop may be
@@ -177,6 +203,7 @@ export function findPath(
   const dist = new Map<string, number>([[from, 0]]);
   const prev = new Map<string, string>();
   const queue = new Set<string>([from]);
+  const rides: RideCache = {};
 
   while (queue.size > 0) {
     let current: string | null = null;
@@ -190,7 +217,7 @@ export function findPath(
     }
     queue.delete(current!);
     if (current === to) break;
-    for (const edge of visibleEdges(state, current!)) {
+    for (const edge of hopEdges(state, current!, rides)) {
       if (!state.discovered.includes(edge.to) && edge.to !== to) continue;
       // A shut road neither routes through nor to: unlike a forced door,
       // clicking a locked destination is not a choice the player can make.
@@ -219,12 +246,12 @@ export function findPath(
   return path;
 }
 
-/** Total ticks along a hop path starting at `from` (base ticks, unscaled). */
+/** Total ticks along a hop path starting at `from` (base ticks, unscaled); a hop with no road is a ride. */
 export function pathTicks(from: string, path: string[]): number {
   let total = 0;
   let current = from;
   for (const hop of path) {
-    total += edgesFrom(current).find((e) => e.to === hop)?.ticks ?? 0;
+    total += edgesFrom(current).find((e) => e.to === hop)?.ticks ?? rideBaseTicks(current, hop) ?? 0;
     current = hop;
   }
   return total;

@@ -10,7 +10,7 @@ import { SPOTS, edgesFrom, getSpot } from '../../core/registry';
 import { spotActivities } from '../../core/systems/actions';
 import { spotCleared } from '../../core/systems/combat';
 import { conditionsMet } from '../../core/systems/conditions';
-import { findPath } from '../../core/systems/locations';
+import { findPath, hopEdge } from '../../core/systems/locations';
 import { availableQuests, canTurnIn, npcsAt } from '../../core/systems/quests';
 import { restActivities } from '../../core/systems/safety';
 import { visibleLines } from '../../core/systems/shops';
@@ -112,9 +112,9 @@ export function spotFeatures(state: GameState, spot: SpotDef): SpotFeature[] {
 export interface RouteInfo {
   /** Hops excluding the start; empty when standing there. Null: no open route. */
   path: string[] | null;
-  /** Walk time in ticks at the current travel speed. */
+  /** Travel time in ticks at the current travel speed, rides included. */
   ticks: number;
-  /** The last road's label, when the destination is one road away. */
+  /** The label of the road or ride, when the destination is one hop away. */
   label?: string;
   /** Some road on the route has no way back. */
   oneWay: boolean;
@@ -124,7 +124,7 @@ export interface RouteInfo {
   shut?: string;
 }
 
-/** The road from where you stand to `toId`, as the old Travel list described it. */
+/** The route from where you stand to `toId` (roads and ladder rides), as the old Travel list described it. */
 export function routeInfo(state: GameState, toId: string, travelSpeed: number): RouteInfo {
   const from = state.spot;
   const dest = getSpot(toId);
@@ -138,11 +138,14 @@ export function routeInfo(state: GameState, toId: string, travelSpeed: number): 
   if (path) {
     let at = from;
     for (const hop of path) {
-      const edge = edgesFrom(at).find((e) => e.to === hop);
+      // A hop is a road or, between ladder stops, a ride (hopEdge).
+      const edge = hopEdge(state, at, hop);
       if (edge) {
         ticks += Math.max(1, Math.round(edge.ticks / travelSpeed));
-        // A one-way edge has no mirror; the registry never builds its reverse.
-        if (!edgesFrom(hop).some((r) => r.to === at)) oneWay = true;
+        // A one-way road has no mirror; the registry never builds its reverse.
+        // A ride is not one: the ladder runs both ways, and its terms are
+        // checked where the leg starts.
+        if (!('ride' in edge) && !edgesFrom(hop).some((r) => r.to === at)) oneWay = true;
         lastForced = !!edge.forced;
         if (path.length === 1) label = edge.label;
       }

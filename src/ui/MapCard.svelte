@@ -4,11 +4,11 @@
   import { gs, game, ui, view } from './state.svelte';
   import { AREAS, FLOOR_BY_AREA, RECIPES, REGIONS, SPOTS, getSpot } from '../core/registry';
   import { recipeHidden } from '../core/systems/crafting';
-  import { visibleEdges, fastTravelCost, canFastTravel, journeyEnd } from '../core/systems/locations';
+  import { visibleEdges, journeyEnd } from '../core/systems/locations';
   import { spotActivities } from '../core/systems/actions';
   import { spotCleared } from '../core/systems/combat';
   import { conditionsMet } from '../core/systems/conditions';
-  import { condsText, fmt, ticksToTime } from './lib/format';
+  import { condsText, ticksToTime } from './lib/format';
   import { routeInfo, spotFeatures, type SpotFeature } from './lib/navigation';
   import { labelBox, mapNodes, placeLabels, type LabelPlace } from './lib/map';
   import type { SpotDef } from '../core/types';
@@ -24,10 +24,27 @@
   const target = $derived(tutorialScreen(gs)?.target ?? null);
   const mapOpen = $derived(ui.mapOpen || tutorial);
 
+  /**
+   * What the map is about: where the journey ends while the player walks, else
+   * the spot underfoot. An end the player has not discovered is not shown (its
+   * region and floor stay hidden), so the map keeps to the spot underfoot.
+   */
+  const endId = $derived(journeyEnd(gs));
+  const focusId = $derived(endId && gs.discovered.includes(endId) ? endId : gs.spot);
+
   let regionOverride = $state<string | null>(null);
-  const currentRegion = $derived(AREAS[getSpot(gs.spot).areaId].regionId);
+  const currentRegion = $derived(AREAS[getSpot(focusId).areaId].regionId);
   const shownRegion = $derived(regionOverride ?? currentRegion);
-  const regionList = Object.values(REGIONS);
+  // A tab for each region with a discovered spot, and for the regions on show
+  // and underfoot, so there is always a way back to where the player stands.
+  const foundRegions = $derived(
+    new Set(gs.discovered.filter((id) => SPOTS[id]).map((id) => AREAS[SPOTS[id].areaId]?.regionId)),
+  );
+  const regionList = $derived(
+    Object.values(REGIONS).filter(
+      (r) => r.id === shownRegion || r.id === currentRegion || foundRegions.has(r.id),
+    ),
+  );
 
   // A tower's region is a STACK, not a map: its floors are drawn one at a
   // time, with a tab per floor you have set foot on. Every other region
@@ -42,13 +59,21 @@
   const shownArea = $derived.by((): string | null => {
     if (!floorAreas.length) return null;
     if (areaOverride && floorAreas.some((a) => a.id === areaOverride)) return areaOverride;
-    const here = getSpot(gs.spot).areaId;
+    const here = getSpot(focusId).areaId;
     if (floorAreas.some((a) => a.id === here)) return here;
     return floorAreas[floorAreas.length - 1].id;
   });
   // Walking onto another floor shows that floor again.
   $effect(() => {
     void gs.spot;
+    areaOverride = null;
+  });
+  // Setting out, retargeting or arriving puts the map back on the focus:
+  // a tab the player opened before the journey does not hold the map off the
+  // destination.
+  $effect(() => {
+    void endId;
+    regionOverride = null;
     areaOverride = null;
   });
 
@@ -137,13 +162,6 @@
     }
     return `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
   });
-
-  const waypoints = $derived(
-    Object.values(SPOTS).filter(
-      (s) => s.waypoint && gs.discovered.includes(s.id) && s.id !== gs.spot,
-    ),
-  );
-  const onWaypoint = $derived(!!getSpot(gs.spot).waypoint);
 
   /** Feature icons per known node, cycled on the badge and listed in the card. */
   const features = $derived.by(() => {
@@ -448,29 +466,6 @@
         </g>
       {/each}
     </svg>
-    </div>
-    {/if}
-
-    {#if !tutorial}
-    <div class="fast small">
-      <span class="dim">⚡ Caravan:</span>
-      {#each waypoints as w (w.id)}
-        {@const menaced = !!w.forced && !spotCleared(gs, w)}
-        <button
-          class="small"
-          disabled={!canFastTravel(gs, w.id) || gs.gold < fastTravelCost(gs, w.id) || !!gs.combat?.forced}
-          title={menaced
-            ? '⚔️ Arriving here starts a fight with no way out'
-            : onWaypoint
-              ? `Instant travel for ${fastTravelCost(gs, w.id)} gold`
-              : 'Stand at a ⚡ waypoint to hire the caravan'}
-          onclick={() => game.fastTravelTo(w.id)}
-        >
-          {w.icon} {w.name} ({fmt(fastTravelCost(gs, w.id))} 🪙){menaced ? ' ⚔️' : ''}
-        </button>
-      {:else}
-        <span class="dim">no other waypoints discovered yet</span>
-      {/each}
     </div>
     {/if}
   {:else}
@@ -865,7 +860,6 @@
     animation: pulse 1.4s ease-in-out infinite;
   }
 
-  .fast,
   .roads {
     display: flex;
     align-items: center;

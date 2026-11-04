@@ -3199,8 +3199,9 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       // The last of the nine, fought alone: floor 15's clear.
       { monsterId: 'ph_room_last', weight: 1, level: [35, 35], boss: true },
     ],
-    // The door opens when the room is empty, and shuts again at the start of
-    // the next attempt (festival:door, systems/festival.ts).
+    // The door opens when the room is empty, and shuts again when the attempt
+    // ends, won or lost, and at the start of the next (festival:door,
+    // systems/festival.ts).
     connections: [
       {
         to: 'f15_hall',
