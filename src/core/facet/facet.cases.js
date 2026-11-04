@@ -405,18 +405,19 @@ CASES['bank: Little Moons strikes the front enemy and combines line-ups'] = (ass
   assert(doc.cells[0].state.v === 1, 'a boss kill and a plain kill made ' + doc.cells[0].state.v + ' boss kills');
 };
 
-CASES['bank: Little Moons goes dark when mana runs out'] = (assert) => {
-  const { H, pool, hits } = moonHost(1);
+// User 2026-11-03: the moons cost nothing, so an empty pool neither stops them nor is drawn on.
+CASES['bank: Little Moons spends no mana'] = (assert) => {
+  const { H, pool, hits } = moonHost(0);
   F.install(H);
   const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.little_moons)));
   F.attach('a', [doc]);
   F.event('fightStart', 'a', {});
-  for (let i = 0; i < 200; i++) F.tick('a');
-  assert(hits.length === 0, 'the moons struck with no mana to pay');
-  assert(pool.mana >= 0, 'the pool went negative');
-  pool.mana = 1e6;
-  for (let i = 0; i < 130; i++) F.tick('a');
-  assert(hits.length > 0, 'the moons stayed dark after the pool refilled');
+  for (let i = 0; i < 120; i++) F.tick('a');
+  assert(hits.length === 7, 'with an empty pool the moons struck ' + hits.length + ' times in 12 s, not 7');
+  assert(pool.mana === 0, 'the moons drew on the pool: ' + pool.mana);
+  pool.mana = 50;
+  for (let i = 0; i < 120; i++) F.tick('a');
+  assert(pool.mana === 50, 'the moons drew on a full pool: ' + pool.mana);
 };
 
 // A host whose enemies record damage, and where the ref 'dead' is not alive.

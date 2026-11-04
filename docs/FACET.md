@@ -82,15 +82,17 @@ and win a fight against an enemy at least 70% of your level.
 **Little Moons** is the third, and the first that acts on an enemy. Three moons
 strike the front enemy every 2.8 s, 3.7 s and 7.9 s for 30% of weapon damage
 (+5% per boss killed this run), as Light. Strikes within 0.3 s combine into one
-that deals their sum ×2 (two moons) or ×5 (three). The moons cost 2 mana per
-second and go dark for 10 s when the pool cannot pay. They run only in fights
-and start each fight from zero. The user approved it with "might need to tweak
-numbers" (team ability R3-SKY-19, 2026-11-01); the readings taken where the
-entry is silent are written above the document in the Facet bank. Its counting
+that deals their sum ×2 (two moons) or ×5 (three). They cost nothing: the
+approved entry charged 2 mana a second, and the user removed it on 2026-11-03
+("feels unfun to use"; a mana drain may come back as an evolution). They run
+only in fights and start each fight from zero. The user approved it with "might
+need to tweak numbers" (team ability R3-SKY-19, 2026-11-01); the readings taken
+where the entry is silent are written above the document in the Facet bank. Its counting
 cells say `carrier: false`, so they hold no status and never move the derived
 stat cache, which would otherwise rebuild on every combat tick. To try it:
-Grant 🌙 Little Moons and hunt with mana in the pool; the feed shows one
-running line of strikes per fight.
+Grant 🌙 Little Moons and hunt; the feed shows one running line of strikes
+per fight. A document granted before 2026-11-03 still carries the mana cost
+(a held ability is a copy of the bank entry taken at grant): grant it again.
 
 **Bramble** is the fourth, and the first that answers the enemy who hit you.
 Each enemy blow raises a thorn level by 1 (cap 10, +1 per 200 fights this run,
