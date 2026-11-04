@@ -104,3 +104,25 @@ export function placeCard(
   }
   return best;
 }
+
+// ---------- Keyboard: from the pin into the card and back ----------
+
+/**
+ * Where focus is while a card is open: on the selected pin, or on the n-th
+ * control of the card.
+ */
+export type CardFocus = 'pin' | number;
+
+/**
+ * Where Tab (or Shift+Tab) takes focus while a card is open, or null where the
+ * page's own order applies. The card is the last thing on the page, far from
+ * its pin, so Tab from the selected pin enters its first control, and Tab off
+ * its last control (or Shift+Tab off its first) returns to the pin. Escape
+ * closes the card and, if focus was in it, puts focus back on the pin.
+ */
+export function cardTab(at: CardFocus, controls: number, shift: boolean): CardFocus | null {
+  if (at === 'pin') return !shift && controls > 0 ? 0 : null;
+  if (!shift && at === controls - 1) return 'pin';
+  if (shift && at === 0) return 'pin';
+  return null;
+}

@@ -22,7 +22,7 @@
     type RouteLine,
   } from './lib/navigation';
   import { DEFAULT_W } from './lib/map';
-  import { CARD_W, placeCard, selectionStep, type Box, type SelectEvent } from './lib/mapSelect';
+  import { CARD_W, cardTab, placeCard, selectionStep, type Box, type CardFocus, type SelectEvent } from './lib/mapSelect';
   import { buildPlan, buildRouteDraw, planThreats, stableThreats } from './lib/mapPlan';
   import TileMap from './lib/tilemaps/TileMap.svelte';
   import { TILEMAPS } from './lib/tilemaps';
@@ -157,6 +157,11 @@
     cardY = at.y;
   }
 
+  /** The card's buttons that can take focus, in order. */
+  function cardControls(): HTMLElement[] {
+    return cardEl ? [...cardEl.querySelectorAll<HTMLElement>('button:not([disabled])')] : [];
+  }
+
   /**
    * The region exit labels on screen. They sit beside a pin but are not part
    * of it, and the last tutorial step is a click on one, so a card keeps clear
@@ -180,7 +185,25 @@
   $effect(() => {
     if (!selected) return;
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === 'Escape') apply({ type: 'escape' });
+      if (ev.key === 'Escape') {
+        // Focus in the card would be lost with it: hand it back to the pin.
+        const pin = anchor as HTMLElement | SVGElement | null;
+        const inCard = !!cardEl && cardEl.contains(document.activeElement);
+        apply({ type: 'escape' });
+        if (inCard) pin?.focus();
+        return;
+      }
+      if (ev.key !== 'Tab') return;
+      // The card is the last thing on the page: carry Tab from the selected
+      // pin into it and back (`cardTab`).
+      const controls = cardControls();
+      const active = document.activeElement;
+      const at: CardFocus = active === anchor ? 'pin' : controls.indexOf(active as HTMLElement);
+      if (at === -1) return;
+      const to = cardTab(at, controls.length, ev.shiftKey);
+      if (to === null) return;
+      ev.preventDefault();
+      (to === 'pin' ? (anchor as HTMLElement | SVGElement | null) : controls[to])?.focus();
     };
     const onClick = (ev: MouseEvent) => {
       const inside = ev.composedPath().some((n) => n instanceof Element && n.matches('.map-card, g.node'));

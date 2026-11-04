@@ -361,6 +361,14 @@ through `selectionStep`):
   stays beside the pin when the page scrolls, the window resizes or the travel
   strip above the map appears. A pin that is gone, covered or scrolled out of
   reach of a click closes the card.
+- **Keyboard** (`cardTab`). Enter or Space on a focused pin selects it, and
+  focus stays on the pin; Enter again walks. The card is the last element of
+  the page, so Tab on the selected pin enters the card's first button, Tab off
+  its last button (or Shift+Tab off its first) returns to the pin, and
+  Shift+Tab on the pin goes to the previous pin as the page orders them.
+  Escape closes the card and, if focus was in it, puts focus back on the pin.
+  Enter on a card button presses it. Measured with real key presses in a
+  browser (Threshold, The Forges: 13 controls).
 - **Region exit labels** are not spots and have no card: one click walks, as
   before.
 - **Tutorial.** The steps that point at a spot pin (`cellblock`, `field`,
@@ -467,7 +475,6 @@ fight, or with no open route.
 ## 6. Open
 
 - The click card overlaps neighbouring pins on a narrow panel.
-- The click card's buttons are not in the keyboard order (the card is the last element of the page); a keyboard player can select, walk and read the route line, not press the card's buttons.
 - The defeat retreat is not an arrival and does not resume the haven's
   activity. The knockout return (§2.1) walks back to the interrupted work
   instead. The character idles after a knockout only when the fall cannot be

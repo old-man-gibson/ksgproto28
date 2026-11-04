@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { render } from 'svelte/server';
 import { createInitialState } from '../src/core/state';
 import { SPOTS, TOWERS } from '../src/core/registry';
-import { CARD_GAP, CARD_W, placeCard, selectionStep, type Box, type SelectEvent } from '../src/ui/lib/mapSelect';
+import { CARD_GAP, CARD_W, cardTab, placeCard, selectionStep, type Box, type SelectEvent } from '../src/ui/lib/mapSelect';
 import { buildPlan } from '../src/ui/lib/mapPlan';
 import MapPlan from '../src/ui/MapPlan.svelte';
 
@@ -164,6 +164,51 @@ describe('where the card stands', () => {
         }
       }
     }
+  });
+});
+
+describe('keyboard: from the pin into the card and back', () => {
+  it('Tab on the selected pin enters the first control of its card', () => {
+    expect(cardTab('pin', 3, false)).toBe(0);
+    expect(cardTab('pin', 1, false)).toBe(0);
+  });
+
+  it('Tab on a pin whose card has no control, and Shift+Tab on the pin, follow the page order', () => {
+    expect(cardTab('pin', 0, false)).toBeNull();
+    expect(cardTab('pin', 3, true)).toBeNull();
+  });
+
+  it('Tab inside the card follows the page order until the last control, which returns to the pin', () => {
+    expect(cardTab(0, 3, false)).toBeNull();
+    expect(cardTab(1, 3, false)).toBeNull();
+    expect(cardTab(2, 3, false)).toBe('pin');
+    expect(cardTab(0, 1, false)).toBe('pin');
+  });
+
+  it('Shift+Tab off the first control returns to the pin; elsewhere it follows the page order', () => {
+    expect(cardTab(0, 3, true)).toBe('pin');
+    expect(cardTab(1, 3, true)).toBeNull();
+    expect(cardTab(2, 3, true)).toBeNull();
+  });
+
+  it('a full pass: Tab through three controls and back to the pin, Enter on the pin walks, Escape closes', () => {
+    // The pin was selected by a click or Enter; focus is on it.
+    let selected = selectionStep(null, pin('a')).selected;
+    expect(selected).toBe('a');
+    let at: 'pin' | number = 'pin';
+    const visited: (string | number)[] = [];
+    for (let i = 0; i < 4; i++) {
+      const to = cardTab(at, 3, false);
+      // Where the page's own order lands inside the card is the next control.
+      at = to ?? (typeof at === 'number' ? at + 1 : at);
+      visited.push(at);
+    }
+    expect(visited).toEqual([0, 1, 2, 'pin']);
+    // Enter on the selected pin is a second click on it: it walks and closes.
+    const second = selectionStep(selected, pin('a'));
+    expect(second).toEqual({ selected: null, walk: 'a' });
+    selected = selectionStep(second.selected ?? 'a', { type: 'escape' }).selected;
+    expect(selected).toBeNull();
   });
 });
 
