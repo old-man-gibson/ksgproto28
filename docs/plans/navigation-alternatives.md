@@ -458,8 +458,8 @@ merged into `ui-integration` 35f6992.
   - the strip can still grow if its activity buttons wrap to a second row.
 
 **N4 tower section:** branch `nav-section` (stacked on `ui-integration` 836da70). The rules are
-docs/NAVIGATION.md §3.5. `npm run verify` passed with 3,506 tests (2 icon tests skip without the
-packs). Antagonist-code: not yet run.
+docs/NAVIGATION.md §3.5. `npm run verify` passed with 3,519 tests after fix round 1 (3,506 before;
+2 icon tests skip without the packs). Antagonist-code: not yet run.
 
 Built:
 - `ui/TowerSection.svelte` (the column), `ui/StopDetail.svelte` (terms and button under the map),
