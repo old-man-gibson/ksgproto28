@@ -21,14 +21,16 @@
   };
 
   // Newest first. A folded line shows its first labels; the ones it cut are
-  // listed in a tooltip.
+  // listed in a tooltip. The block below is keyed by the entry object, which
+  // stays the same object while the line folds and while newer lines push it
+  // down, so a tooltip opened on a line stays on that line.
   const entries = $derived([...gs.log].reverse().map((entry) => ({ entry, rest: hiddenLabels(entry) })));
 </script>
 
 <div class="panel log">
   <h3>Log</h3>
   <div class="entries small">
-    {#each entries as { entry, rest }}
+    {#each entries as { entry, rest } (entry)}
       <div class="entry" style="color: {KIND_COLORS[entry.kind] ?? 'var(--text)'}">
         {#if rest.length > 0}
           <Tip>
