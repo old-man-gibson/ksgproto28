@@ -1096,3 +1096,59 @@ describe('a probe whose route is shut', () => {
     }
   });
 });
+
+describe('a knockout at the fallback right after the retry', () => {
+  it('keeps the target and the probe count', () => {
+    const g = world(57, 'kr_meadow');
+    const meadow = { spot: 'kr_meadow', activity: 'hunt' };
+    g.state.pendingReturn = {
+      target: { spot: 'kr_field', activity: 'hunt' },
+      phase: 'fallback',
+      fallback: meadow,
+      wins: FALLBACK_WINS - 1,
+      until: g.state.totalTicks + FALLBACK_TICKS,
+      probes: 2,
+    };
+    win(g, 'kr_meadow'); // the 200th win: the retry begins, the character still at the meadow
+    expect(pending(g)).toMatchObject({ phase: 'return', target: { spot: 'kr_field' }, fallback: meadow, probes: 2 });
+
+    fallAt(g, 'kr_meadow');
+    expect(pending(g)).toMatchObject({ phase: 'return', target: { spot: 'kr_field' }, probes: 2 });
+    expect(lines(g)).toContain('Returning to Test Field.');
+
+    // Five in a row at the fallback: a hold on the target, the wait from the kept count.
+    for (let i = 1; i < STREAK_LIMIT; i++) fallAt(g, 'kr_meadow');
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_field' }, probes: 2 });
+    expect(pending(g).until).toBe(g.state.totalTicks + holdTicks(2));
+    expect(lines(g)).toContain('5 knockouts in a row at Test Meadow. Retrying Test Field in 40 min.');
+  });
+
+  it('on the Greenwood: the target stays the Deep Woods', () => {
+    const g = greenwood(58);
+    const s = g.state;
+    s.spot = 'f4_woods_edge';
+    s.pendingReturn = {
+      target: { spot: 'f4_deep_woods', activity: 'hunt' },
+      phase: 'return',
+      fallback: { spot: 'f4_woods_edge', activity: 'hunt' },
+      wins: 0,
+      probes: 2,
+    };
+    fallAt(g, 'f4_woods_edge');
+    expect(pending(g)).toMatchObject({ phase: 'return', target: { spot: 'f4_deep_woods' }, probes: 2 });
+  });
+
+  it('a knockout at the target after the retry is still a knockout at the target', () => {
+    const g = world(59, 'kr_field');
+    g.state.pendingReturn = {
+      target: { spot: 'kr_field', activity: 'hunt' },
+      phase: 'return',
+      fallback: { spot: 'kr_meadow', activity: 'hunt' },
+      wins: 0,
+      probes: 1,
+    };
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, 'kr_field');
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_field' } });
+    expect(pending(g).fallback).toBeUndefined();
+  });
+});

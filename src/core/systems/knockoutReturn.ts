@@ -214,9 +214,13 @@ function holdPhase(state: GameState, target: ReturnSpot, probes: number): Pendin
   return { target: copy(target), phase: 'hold', wins: 0, until: state.totalTicks + holdTicks(probes), probes };
 }
 
-/** A return to `target`: a first return, a retry after a fallback, or a probe after a hold. */
-function returnPhase(target: ReturnSpot, probes: number): PendingReturn {
-  return { target: copy(target), phase: 'return', wins: 0, probes };
+/**
+ * A return to `target`: a first return, a retry after a fallback, or a probe
+ * after a hold. A retry keeps the `fallback` it leaves: the character still
+ * stands there until it sets out, and a knockout there is the fallback's.
+ */
+function returnPhase(target: ReturnSpot, probes: number, fallback?: ReturnSpot): PendingReturn {
+  return { target: copy(target), phase: 'return', ...(fallback ? { fallback: copy(fallback) } : {}), wins: 0, probes };
 }
 
 /**
@@ -237,10 +241,17 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
 
   const n = fall.activity ? bumpKnockouts(state, bus, fall.spot) : 0;
 
-  // A knockout at the fallback itself: keep the target, go back to the
-  // fallback, and after 5 in a row there wait out a hold on the target.
-  if (old?.phase === 'fallback' && old.fallback?.spot === fall.spot) {
-    if (n < STREAK_LIMIT && usableHunt(state, old.fallback, '')) {
+  // A knockout at the fallback itself, in the fallback phase or right after
+  // its retry (which keeps the fallback while the character still stands
+  // there): the target and the probe count survive. In the fallback phase the
+  // character goes back to the fallback; after the retry it carries on to the
+  // target. After 5 in a row at the fallback, wait out a hold on the target.
+  if (old?.fallback?.spot === fall.spot && (old.phase === 'fallback' || old.phase === 'return')) {
+    if (old.phase === 'return' && old.target && n < STREAK_LIMIT) {
+      say(bus, text('knockout.return', { spot: spotName(old.target.spot) }));
+      return;
+    }
+    if (old.phase === 'fallback' && n < STREAK_LIMIT && usableHunt(state, old.fallback, '')) {
       say(bus, text('knockout.return', { spot: spotName(fall.spot) }));
       return;
     }
@@ -387,7 +398,7 @@ function retryTarget(state: GameState, bus: EventBus, p: PendingReturn): void {
     state.pendingReturn = null;
     return;
   }
-  state.pendingReturn = returnPhase(p.target, p.probes);
+  state.pendingReturn = returnPhase(p.target, p.probes, p.fallback);
   say(bus, text('knockout.retry', { spot: spotName(p.target.spot) }));
 }
 
