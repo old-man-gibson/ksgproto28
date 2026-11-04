@@ -288,7 +288,19 @@ tier I   Practiced   —      10 reps     ×1.05 dmg
 tier II  Drilled     —     100 reps     ×1.12 dmg, ×0.92 cd
 tier III Honed       —   1,000 reps     ×1.20 dmg, ×0.85 cd
 tier IV  Perfected   —  10,000 reps     ×1.30 dmg, ×0.75 cd
+tier V   Beyond I    — 100,000 reps     ×2 power, ×0.9 cd on top of Perfected
+  …      Beyond N    —   10^(N+4) reps   ×2 power, ×0.9 cd per rung, to tier 15
 ```
+
+**Past Perfected** (2026-11-03): a rung at every power of ten, for every build
+(user 2026-09-26: "it just won't be feasible for most to achieve those
+thresholds"). Each doubles `damageMult` and `preventedMult`; a defensive form,
+which has neither, doubles its buff's duration. The cooldown takes x0.9 per
+rung with its floor of 10 ticks. The count stops at `MAX_MASTERY_TIER` (15,
+10^15 reps), so every number stays finite. Tiers are derived from executions,
+so a save with a technique past 100,000 reps gains rung V on load. Weakest
+Weapon Master's rep multiplier (x2 to x64 per execution, every slotted
+technique) is what makes them reachable (docs/FACET.md).
 
 Thresholds and generic bonuses live in code (`MASTERY_LADDER` etc.); data only
 **annotates** a rung — a name override (`mastery: { 3: { name: 'Instinct' } }`)

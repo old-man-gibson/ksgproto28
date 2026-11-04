@@ -33,6 +33,7 @@ export const FOE = 'foe:';
  * | miracleCast | a miracle was cast in a fight (combat.ts) | |
  * | statue | an ability's dose turned an enemy to stone (host.ts applyStatus) | target (its ref), level, levelShare (its level ÷ yours), attrShare (its attribute total ÷ yours), boss |
  * | rocks | a statue's rocks hit an enemy (combat.ts throwRubble) | target (its ref), amount |
+ * | barFill | the player's action bar filled, before the action (combat.ts) | |
  */
 export type FacetEventId =
   | 'fightStart'
@@ -50,7 +51,8 @@ export type FacetEventId =
   | 'itemUsed'
   | 'miracleCast'
   | 'statue'
-  | 'rocks';
+  | 'rocks'
+  | 'barFill';
 
 /** combat.ts's trigger stamps that are also ability events. onEncounterStart is not: fightStart carries the enemies. */
 const COMBAT_STAMPS: Record<string, FacetEventId> = {

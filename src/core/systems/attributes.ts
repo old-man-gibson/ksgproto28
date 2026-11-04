@@ -14,7 +14,7 @@ import type {
 import { runeContextFor } from '../types';
 import { sizeFit, wieldScale } from './wield';
 import { sizeRank } from '../types';
-import { fieldHunger, setPlayerAttributeReader, statusMods } from './statuses';
+import { attrCeiling, fieldHunger, setPlayerAttributeReader, statusMods } from './statuses';
 // Mutual with mutagens.ts, which reads `attrValue` from here. Safe the same way
 // derived.ts's mutual is: neither side touches the other at module-evaluation
 // time, only from inside functions.
@@ -42,12 +42,26 @@ export function attrXpNeeded(level: number): number {
 }
 
 /**
+ * Where attribute XP goes instead of the attribute, when an ability takes it
+ * (Weakest Weapon Master past its ceiling, facet/host.ts). Returns true when
+ * it took the grant. Registered by the ability host; nothing takes XP without it.
+ */
+type XpRouter = (state: GameState, attr: AttributeId, amount: number) => boolean;
+let routeXp: XpRouter = () => false;
+export function setXpRouter(router: XpRouter): void {
+  routeXp = router;
+}
+
+/**
  * Training and combat raise the TRAINED base level; bonuses never gain XP.
- * Inside a practice fight the amount is shaped (systems/practice.ts).
+ * Inside a practice fight the amount is shaped (systems/practice.ts). An
+ * ability may take the grant instead (setXpRouter).
  */
 export function grantAttrXp(state: GameState, bus: EventBus, attr: AttributeId, amount: number): void {
   const a = state.attrs[attr];
-  a.xp += practiceXp(state, `attr:${attr}`, a.level, amount);
+  const xp = practiceXp(state, `attr:${attr}`, a.level, amount);
+  if (routeXp(state, attr, xp)) return;
+  a.xp += xp;
   const gained = settleLevels(a, ATTRIBUTE_PROGRESSION);
   for (let i = gained; i > 0; i--) {
     bus.emit({ type: 'attr:levelup', attr, level: a.level - i + 1 });
@@ -400,6 +414,26 @@ export function attrValueFrom(
  */
 export function attrValue(state: GameState, attr: AttributeId): number {
   return attrValueFrom(state, effectiveAttrs(state), attr);
+}
+
+/**
+ * An attribute as a formula reads it: attrValueFrom held to the ceiling of
+ * Weakest Weapon Master while it is worn. Gates, item requirements and
+ * contests read attrValue, the real value.
+ */
+export function formulaAttrFrom(
+  state: GameState,
+  eff: Record<AttributeId, number>,
+  attr: AttributeId,
+): number {
+  const value = attrValueFrom(state, eff, attr);
+  const cap = attrCeiling(state);
+  return cap === null ? value : Math.min(value, cap);
+}
+
+/** formulaAttrFrom over the live effective attributes. */
+export function formulaAttr(state: GameState, attr: AttributeId): number {
+  return formulaAttrFrom(state, effectiveAttrs(state), attr);
 }
 
 // ---------- Tooltip breakdowns ----------

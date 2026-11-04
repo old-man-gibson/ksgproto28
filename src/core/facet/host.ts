@@ -1,14 +1,14 @@
-import type { DamageType, GameState, MonsterInstance, ResourceId, StatusApplication, StatusDef } from '../types';
+import type { AttributeId, DamageType, GameState, MonsterInstance, ResourceId, StatusApplication, StatusDef } from '../types';
 import { ELEMENTAL_TYPES, PHYSICAL_TYPES, RES_STAT_BY_TYPE } from '../types';
 import { TPS } from '../engine/loop';
 import { TICKS_PER_GAME_MINUTE } from '../data/climate.data';
 import { chance, rand } from '../engine/rng';
 import { procChance, procRate } from '../engine/mercy';
 import { STATUSES } from '../data/statuses.data';
-import { applyStatus, findStatus, removeStatus, statueOf } from '../systems/statuses';
-import { effectiveAttr } from '../systems/attributes';
+import { applyStatus, attrCeiling, findStatus, removeStatus, statueOf } from '../systems/statuses';
+import { attrXpNeeded, effectiveAttr, setXpRouter } from '../systems/attributes';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
-import { getDerivedStats } from '../systems/derived';
+import { finalAttributes, getDerivedStats } from '../systems/derived';
 import { appendLog } from '../systems/log';
 import { abilityStrike, isSpotBoss } from '../systems/combat';
 import { monsterStats } from '../systems/monsterStats';
@@ -100,6 +100,16 @@ const STATUS_SCHEMA = {
     element: { kind: 'meta' },
     contest: { kind: 'meta' },
     escalatesTo: { kind: 'meta' },
+    // Weakest Weapon Master: the attribute ceiling and where its excess goes,
+    // the rep multiplier, and the three stances that are not plain modifiers
+    // (types.ts StatusDef). The intensity is the number each one uses.
+    attrCeiling: { kind: 'meta' },
+    routeExcess: { kind: 'meta' },
+    repMult: { kind: 'meta' },
+    drillsAll: { kind: 'meta' },
+    parryContest: { kind: 'meta' },
+    blowCut: { kind: 'meta' },
+    pureBlows: { kind: 'meta' },
   },
 };
 
@@ -353,6 +363,76 @@ export function createFacetHost(getState: () => GameState): FacetHost {
  */
 export function installFacet(): void {
   globalThis.Facet.install(createFacetHost(() => boundState() as GameState));
+  setXpRouter(routeAttrXp);
+}
+
+// ---------- Weakest Weapon Master: XP past the ceiling ----------
+//
+// While the player holds a status with `attrCeiling` and `routeExcess`, XP for
+// an attribute whose real value is at or above the ceiling does not train it.
+// It goes to the holder document's `past_<attr>` cell, and the document's
+// `hidden` cell is set to the levels that XP buys on the normal attribute curve
+// from the ceiling up (attrXpNeeded). Without those cells the XP trains as usual.
+
+/** Levels `xp` buys from `ceiling` up, each priced like a real attribute level. */
+export function levelsPast(ceiling: number, xp: number): number {
+  let left = xp;
+  let n = 0;
+  while (n < 10_000) {
+    const need = attrXpNeeded(ceiling + n);
+    if (left < need) break;
+    left -= need;
+    n += 1;
+  }
+  return n;
+}
+
+function routeAttrXp(state: GameState, attr: AttributeId, amount: number): boolean {
+  const cap = attrCeiling(state);
+  if (cap === null || amount <= 0) return false;
+  const F = globalThis.Facet;
+  const doc = state.facets?.find((d) => d.cells?.some((c) => c.key === 'past_' + attr));
+  if (!F?.ready() || !doc || boundState() !== state) return false;
+  if (finalAttributes(state)[attr] < cap) return false;
+  const ctx = { ref: PLAYER_REF, facet: doc, bindings: {} };
+  const cell = (key: string) => doc.cells!.find((c) => c.key === key);
+  F.cellStep(cell('past_' + attr)!, 'add', amount, ctx);
+  const hidden = cell('hidden');
+  if (hidden) {
+    const levels = ATTRIBUTE_LIST.reduce((n, a) => n + levelsPast(cap, cell('past_' + a.id)?.state?.v ?? 0), 0);
+    if (levels !== hidden.state?.v) F.cellStep(hidden, 'set', levels, ctx);
+  }
+  return true;
+}
+
+// ---------- A document's option (Weakest Weapon Master's stance) ----------
+
+/** One option a document offers the player (`reading.choice`). */
+export interface FacetOption {
+  v: number;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
+/**
+ * Pick option `v` of the held document that offers a choice. It is written to
+ * the document's `want` cell; the document applies it at the player's next bar
+ * fill (event `barFill`). Out of a fight there is no bar, so it applies at once.
+ */
+export function chooseFacetOption(state: GameState, v: number): boolean {
+  const F = globalThis.Facet;
+  const doc = state.facets?.find((d) => d.reading?.choice);
+  const choice = doc?.reading?.choice;
+  if (!F?.ready() || !doc || !choice || !choice.options.some((o) => o.v === v)) return false;
+  bindFacets(state);
+  const ctx = { ref: PLAYER_REF, facet: doc, bindings: {} };
+  const want = doc.cells?.find((c) => c.key === choice.want);
+  const active = doc.cells?.find((c) => c.key === choice.active);
+  if (!want || !active) return false;
+  F.cellStep(want, 'set', v, ctx);
+  if (!state.combat) F.cellStep(active, 'set', v, ctx);
+  return true;
 }
 
 /**
@@ -513,9 +593,16 @@ export interface FacetReadout {
   cells: CellReadout[];
   inputs: InputReadout[];
   conditions: ConditionReadout[];
+  /** The option the document offers (Weakest Weapon Master's stance): what is picked and what is in effect. */
+  choice: { label: string; options: FacetOption[]; want: number; active: number } | null;
   /** The evolution its clauses offer: which cell triggers it, at what value, into which branches. */
   evolves: { label: string; at: number; into: EvolutionChoice[] } | null;
 }
+
+/** Carrier fields that act on a fight with no modifier (Weakest Weapon Master's stances). */
+const ACTING_FIELDS = ['parryContest', 'blowCut', 'pureBlows'];
+const hasMods = (status: { [field: string]: unknown } | undefined) =>
+  Array.isArray(status?.mods) && (status.mods as unknown[]).length > 0;
 
 type ClauseShape = { on?: string; do?: unknown[] };
 type EffectShape = {
@@ -597,7 +684,7 @@ export function facetReadouts(state: GameState): FacetReadout[] {
           show: c.show!,
           desc: c.status?.desc ?? '',
           statusId: carrierPrefix(doc) + c.key,
-          acts: c.carrier !== false && Array.isArray(c.status?.mods) && (c.status.mods as unknown[]).length > 0,
+          acts: c.carrier !== false && (hasMods(c.status) || ACTING_FIELDS.some((f) => c.status?.[f])),
         })),
       inputs: (doc.reading?.inputs ?? []).map((i) => ({
         label: i.label,
@@ -605,6 +692,14 @@ export function facetReadouts(state: GameState): FacetReadout[] {
         show: i.show ?? '',
       })),
       conditions: conditionsOf(doc),
+      choice: doc.reading?.choice
+        ? {
+            label: doc.reading.choice.label,
+            options: doc.reading.choice.options,
+            want: cell(doc.reading.choice.want)?.state?.v ?? 0,
+            active: cell(doc.reading.choice.active)?.state?.v ?? 0,
+          }
+        : null,
       evolves: trigger
         ? {
             label: trigger.label ?? trigger.key,

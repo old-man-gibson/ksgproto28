@@ -47,7 +47,23 @@ export interface FacetDoc {
    * ('strike' when unset); `desc` is what the ability does, for the Ability
    * tab and a branch's pick screen.
    */
-  reading?: { name?: string; icon?: string; inputs?: FacetInput[]; hit?: string; desc?: string };
+  reading?: {
+    name?: string;
+    icon?: string;
+    inputs?: FacetInput[];
+    hit?: string;
+    desc?: string;
+    /**
+     * An option the player picks (Weakest Weapon Master's stance): the pick is
+     * written to cell `want`, and the document copies it into cell `active`.
+     */
+    choice?: {
+      label: string;
+      want: string;
+      active: string;
+      options: { v: number; name: string; icon: string; desc: string }[];
+    };
+  };
   /** Bank keys this document may evolve into, written by the core's `evolve` effect; saved with it. */
   offer?: string[];
   [field: string]: unknown;

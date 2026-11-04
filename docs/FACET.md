@@ -155,6 +155,30 @@ none. At 100 a CON build evolves after about 100 minutes there. To try it:
 Grant 🗿 Basilisk Hide, press Statues to 99, and let an enemy near your level
 hit you until it turns to stone. The debug panel also grants each branch.
 
+**Weakest Weapon Master** is the sixth, and the user's own (2026-09-26 card,
+docs/plans/ability-weakest-weapon-master.md; choices taken 2026-11-03: all
+four stances at once, ceiling 20, XP past it priced like real levels, rungs
+past 10,000 give power and cooldown only). Most of it is game rules the
+document switches on through its carriers' status fields:
+
+| Piece | Where |
+|---|---|
+| The ceiling | Cell `ceiling` (20) carries `attrCeiling`. attributes.ts `formulaAttrFrom` holds every formula read at the ceiling: computeDerivedStats, statBreakdown, unarmed damage, telekinesis grip, the fast's hunger, bestiary insight, activity factors, mutagen scaling. Gates, item requirements, contests and dynamic monster levels read the real value (`attrValue`, `finalAttributes`). Trained-rank perks still read trained levels. The sidebar shows a capped attribute as `30 → 20`. |
+| XP past the ceiling | The ceiling also carries `routeExcess`. host.ts `routeAttrXp`, registered with attributes.ts `setXpRouter`, takes any grant for an attribute whose real value is at or above the ceiling: the XP goes to the document's `past_<attr>` cell and the attribute does not train. Cell `hidden` is set to the levels that XP buys from the ceiling up on the attribute curve (`levelsPast`). |
+| Reps | Cell `reps` carries `repMult` and `drillsAll`. martial.ts `recordExecution` adds round(reps) per execution, at least 1, for every slotted technique; the drill slots are not used. 2 x 32^min(1, combat skill levels / 600): x2 at 0, x64 at 600. Written at execution, so rungs stay when the ability goes. |
+| Rungs past 10,000 | Every build, not only this ability: martial.ts `rungThreshold`, `masteryTier` up to `MAX_MASTERY_TIER` (15, 10^15 reps). Each rung past Perfected doubles damageMult and preventedMult (a defensive form's buff duration instead) and takes the cooldown x0.9, floor 10 ticks. Named Beyond I, Beyond II and so on. |
+| Power | 0.4 x `ksg.martialTotal` + 0.0005 x `ksg.techniqueTotal` + 2 x hidden levels, set on every combat tick and game minute. |
+| Stances | `reading.choice`: the Combat tab draws a four-button row under the stance grid (CombatPanel.svelte); `chooseFacetOption` writes cell `want`, and the document copies it into `stance` at the player's next bar fill (event `barFill`), or at once out of a fight. Cells `power`, `flowing`, `heavy`, `empty` hold Power while that stance is in effect and `ksg.melee` is 1, else 0. |
+| Power stance | Carrier mod `fighter.damage` add 1 x Power. |
+| Flowing | Carrier `parryContest` { per 2, answer 0.6 }. combat.ts parry: chance max(standing parry capped at 50%, Power / (2 x the blow's weight)), up to 100%; the answer is 0.6 x Power instead of the riposte. |
+| Heavy | Carrier `blowCut` { rattle 2/3 }. combat.ts cuts each enemy hit by Power after any counter and before armour. A hit cut to 0 lands nothing; when all are, the exchange is not a hit (no hitTaken, no on-hit effects). The attacker gets `rattled` (statuses.data.ts): speed x(1 - intensity), intensity = share cut x 2/3, removed at its bar fill. |
+| Empty | Carrier mod `fighter.damage` add 0.6 x Power, and `pureBlows`. combat.ts: a weapon blow (not a spell or gene active) cannot be dodged and lands at its raw size, past armour, resistance and weakness. |
+
+Monster workings bypass parry and counters already, and they bypass Flowing
+and Heavy too. Power's weights, the x2..x64 curve and the ceiling are
+placeholders. To try it: Grant 🥋 Weakest Weapon Master, then pick a stance on
+the Combat tab.
+
 ### Enemies as refs
 
 A document aims at enemies through scopes, and the adapter names each enemy
@@ -187,6 +211,7 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `miracleCast` | combat.ts, when a miracle is cast | |
 | `statue` | host.ts `applyStatus`, when an ability's dose turns an enemy to stone | `target` (its ref), `level`, `levelShare` (its level ÷ yours), `attrShare` (its attribute total ÷ yours), `boss` |
 | `rocks` | combat.ts `throwRubble`, once per enemy the rocks hit | `target` (its ref), `amount` |
+| `barFill` | combat.ts, when the player's action bar fills, before the action | |
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it
@@ -228,6 +253,9 @@ so ids are shared with InfiniteGacha wherever both games have the number:
 | `pool.<stamina\|mana\|spirit\|focus>.cur` / `.max` | the pool and its maximum; spirit exists only here |
 | `world.sunlight` | sunlight on the player, 0..1 (exposure.ts `sunlight`); IG has none yet |
 | `world.statues` | statues in the player's fight (Stoneskin); 0 out of one |
+| `ksg.martialTotal` | the summed level of every combat skill |
+| `ksg.techniqueTotal` | reps recorded across every technique |
+| `ksg.melee` | 1 unless an item tagged `ranged` is equipped |
 | `fighter.level` | character level; on an enemy, its level |
 | `fighter.boss` | 0 for the player; on an enemy, 1 for the spot's boss |
 | `ksg.<stat>` | every other derived stat, by its `StatKey` |

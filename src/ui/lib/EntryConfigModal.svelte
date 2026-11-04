@@ -27,7 +27,7 @@
     visibleTriggerSubjects,
   } from '../../core/systems/triggers';
   import type { TriggerCondition } from '../../core/types';
-  import { geneAbilityLines, pct, specLines, targetLabel, techniqueMoveText, ticksToTime } from './format';
+  import { fmt, geneAbilityLines, pct, specLines, targetLabel, techniqueMoveText, ticksToTime } from './format';
   import Modal from './Modal.svelte';
 
   /**
@@ -135,7 +135,7 @@
     {@const slotted = techniqueSlotted(gs, tech.id)}
     <div class="drill-row">
       <span class="dim small">
-        {techniqueExecutions(gs, tech.id)} reps{tierName ? ` · ${tierName}` : ''}{techniqueForm(
+        {fmt(techniqueExecutions(gs, tech.id))} reps{tierName ? ` · ${tierName}` : ''}{techniqueForm(
           gs,
           tech.id,
         ) === 'rough'

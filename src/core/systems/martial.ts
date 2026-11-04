@@ -18,11 +18,14 @@ import {
   FORK_ARCHETYPES,
   FORK_ARCHETYPE_LIST,
   FORK_TIER,
+  BEYOND_COOLDOWN,
+  BEYOND_POWER,
   MASTERY_COOLDOWN,
   MASTERY_LADDER,
   MASTERY_NAMES,
   MASTERY_POWER,
   MAX_DRILLED,
+  MAX_MASTERY_TIER,
   NEUTRAL_POSITION,
   POSITIONS,
   ROUGH_REP_MULT,
@@ -41,6 +44,7 @@ import { NPCS, SKILLS } from '../registry';
 import { setStat } from './achievements';
 import { itemDefOf } from './assembly';
 import { legacyTechniqueSlots } from './legacy';
+import { heldWith } from './statuses';
 import { text } from '../text/log';
 
 /**
@@ -444,30 +448,38 @@ export function effectiveReps(state: GameState, id: string): number {
   return held.form === 'rough' ? held.executions * ROUGH_REP_MULT : held.executions;
 }
 
-/** The rung held (0 = none, 1–4), from the standard powers-of-ten ladder. */
+/** Reps a rung needs: the ladder's four, then one per power of ten up to MAX_MASTERY_TIER. */
+export function rungThreshold(tier: number): number {
+  return tier <= MASTERY_LADDER.length ? MASTERY_LADDER[tier - 1] : Math.pow(10, tier);
+}
+
+/** The rung held (0 = none, 1–4 the ladder, 5–MAX_MASTERY_TIER past Perfected). */
 export function masteryTier(state: GameState, def: TechniqueDef): number {
   const reps = effectiveReps(state, def.id);
   let tier = 0;
-  for (const threshold of MASTERY_LADDER) {
-    if (reps < threshold) break;
-    tier += 1;
-  }
+  while (tier < MAX_MASTERY_TIER && reps >= rungThreshold(tier + 1)) tier += 1;
   return tier;
 }
 
-/** The rung's display name: the data note's override, or the generic ladder name. */
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI'];
+
+/** The rung's display name: the data note's override, the ladder name, or "Beyond N" past Perfected. */
 export function masteryTierName(def: TechniqueDef, tier: number): string | undefined {
   if (tier < 1) return undefined;
-  return def.mastery?.[tier as 1 | 2 | 3 | 4]?.name ?? MASTERY_NAMES[tier - 1];
+  const named = def.mastery?.[tier]?.name;
+  if (named) return named;
+  return tier <= MASTERY_LADDER.length
+    ? MASTERY_NAMES[tier - 1]
+    : `Beyond ${ROMAN[tier - MASTERY_LADDER.length - 1]}`;
 }
 
-/** Raw executions still needed for the next rung, or undefined at the summit. */
+/** Raw executions still needed for the next rung, or undefined at the last one. */
 export function repsToNextTier(state: GameState, def: TechniqueDef): number | undefined {
   const tier = masteryTier(state, def);
-  if (tier >= MASTERY_LADDER.length) return undefined;
+  if (tier >= MAX_MASTERY_TIER) return undefined;
   const held = state.techniques?.[def.id];
   const mult = held?.form === 'rough' ? ROUGH_REP_MULT : 1;
-  return Math.ceil((MASTERY_LADDER[tier] - effectiveReps(state, def.id)) / mult);
+  return Math.ceil((rungThreshold(tier + 1) - effectiveReps(state, def.id)) / mult);
 }
 
 /**
@@ -504,7 +516,7 @@ export function techniqueEntries(state: GameState, def: TechniqueDef): Technique
   const tier = masteryTier(state, def);
   const opened: string[] = [];
   for (let t = 1; t <= tier; t++) {
-    const extra = def.mastery?.[t as 1 | 2 | 3 | 4]?.addFrom;
+    const extra = def.mastery?.[t]?.addFrom;
     if (extra) opened.push(...extra);
   }
   return opened.length ? [...base, { at: opened }] : base;
@@ -599,11 +611,24 @@ export function resolvedMove(state: GameState, def: TechniqueDef): TechniqueMove
   if (tier === 0 && !rough && !fork && runes.length === 0) return def.move;
   const move = { ...def.move };
   if (tier > 0) {
-    if (move.damageMult !== undefined) move.damageMult *= MASTERY_POWER[tier - 1];
+    const rung = Math.min(tier, MASTERY_LADDER.length) - 1;
+    if (move.damageMult !== undefined) move.damageMult *= MASTERY_POWER[rung];
     // Practice sharpens the signature too — a deflection you have drilled ten
     // thousand times returns more of the blow, not just a harder swing.
-    if (move.preventedMult !== undefined) move.preventedMult *= MASTERY_POWER[tier - 1];
-    move.cooldown = Math.max(10, Math.round(move.cooldown * MASTERY_COOLDOWN[tier - 1]));
+    if (move.preventedMult !== undefined) move.preventedMult *= MASTERY_POWER[rung];
+    move.cooldown = Math.max(10, Math.round(move.cooldown * MASTERY_COOLDOWN[rung]));
+  }
+  // Rungs past Perfected: power doubles and the cooldown shrinks at each. A
+  // defensive form has neither power number, so its buff lasts longer instead.
+  const beyond = Math.max(0, tier - MASTERY_LADDER.length);
+  if (beyond > 0) {
+    const power = Math.pow(BEYOND_POWER, beyond);
+    if (move.damageMult !== undefined) move.damageMult *= power;
+    if (move.preventedMult !== undefined) move.preventedMult *= power;
+    if (move.buff && move.damageMult === undefined && move.preventedMult === undefined) {
+      move.buff = { ...move.buff, duration: Math.round(move.buff.duration * power) };
+    }
+    move.cooldown = Math.max(10, Math.round(move.cooldown * Math.pow(BEYOND_COOLDOWN, beyond)));
   }
   if (fork) {
     if (fork.damageMult && move.damageMult !== undefined) move.damageMult *= fork.damageMult;
@@ -1061,20 +1086,29 @@ export function toggleDrill(state: GameState, id: string): boolean {
  * Count one execution toward mastery. Practice only counts for what is being
  * drilled; a free slot claims the technique automatically, so the roster only
  * needs managing once it is full. Returns a newly reached rung, for the feed.
+ *
+ * Weakest Weapon Master (statuses `drillsAll`, `repMult`): every slotted
+ * technique counts, drilled or not, and one execution records several reps.
+ * Written at execution time, so a rung reached stays when the ability goes.
  */
 export function recordExecution(
   state: GameState,
   def: TechniqueDef,
 ): { tier: number; name: string } | undefined {
-  const drilling = (state.drilling ??= []);
-  if (!drilling.includes(def.id)) {
-    if (drilling.length >= MAX_DRILLED || !techniqueSlotted(state, def.id)) return undefined;
-    drilling.push(def.id);
+  if (heldWith(state, 'drillsAll')) {
+    if (!techniqueSlotted(state, def.id)) return undefined;
+  } else {
+    if (!state.drilling) state.drilling = [];
+    if (!state.drilling.includes(def.id)) {
+      if (state.drilling.length >= MAX_DRILLED || !techniqueSlotted(state, def.id)) return undefined;
+      state.drilling.push(def.id);
+    }
   }
   const held = state.techniques?.[def.id];
   if (!held) return undefined; // executing implies knowing; guard regardless
   const before = masteryTier(state, def);
-  held.executions += 1;
+  const reps = heldWith(state, 'repMult');
+  held.executions += reps ? Math.max(1, Math.round(reps.intensity)) : 1;
   const after = masteryTier(state, def);
   if (after <= before) return undefined;
   return { tier: after, name: masteryTierName(def, after) ?? `tier ${after}` };

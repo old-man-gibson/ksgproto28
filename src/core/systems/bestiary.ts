@@ -11,7 +11,7 @@ import { sizeRank } from '../types';
 import { MONSTERS, MONSTER_TAGS, SPOTS, TIERS } from '../registry';
 import { BESTIARY_FACTS, BESTIARY_TUNING } from '../data/bestiary.data';
 import { attackIntervalOf, innateArmor, scaledMonsterAttrs, statsFromAttrs } from './monsterStats';
-import { attrValue } from './attributes';
+import { formulaAttr } from './attributes';
 import { grantDiscoveryXp } from './skills';
 import { bumpStat } from './achievements';
 import { dynamicLevelBonus, encounterLevel } from './levels';
@@ -150,7 +150,7 @@ function ensureEntry(state: GameState, monsterId: string): BestiaryEntry {
  */
 export function bestiaryInsight(state: GameState): number {
   const hunting = state.skills.hunting?.level ?? 0;
-  const mind = attrValue(state, 'int') + attrValue(state, 'wis');
+  const mind = formulaAttr(state, 'int') + formulaAttr(state, 'wis');
   return (
     BESTIARY_TUNING.base +
     hunting * BESTIARY_TUNING.perHuntingLevel +

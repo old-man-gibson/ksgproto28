@@ -1,8 +1,9 @@
 import type { AttributeId, DamageType, DerivedStats, GameState, StatKey } from '../types';
 import { RES_STAT_BY_TYPE } from '../types';
 import {
-  attrValue,
   attrValueFrom,
+  formulaAttr,
+  formulaAttrFrom,
   collectBaseMods,
   effectiveAttrsFrom,
   equippedTags,
@@ -382,7 +383,7 @@ export const BARE_DAMAGE_PER_STR = 1.2;
  * trickle off a number they have no way to use. "Unarmed" is meant literally.
  */
 export function unarmedDamage(state: GameState): number {
-  return BARE_DAMAGE_FLAT + attrValue(state, 'str') * BARE_DAMAGE_PER_STR;
+  return BARE_DAMAGE_FLAT + formulaAttr(state, 'str') * BARE_DAMAGE_PER_STR;
 }
 
 /** Share of the stamina pool recovered per second (see baseStats). */
@@ -465,7 +466,7 @@ export function computeDerivedStats(
   // Layer 1: effective attributes (trained base + attribute-targeted mods,
   // fusion-aware) feed the base formulas.
   const eff = effectiveAttrsFrom(state, mods);
-  const stats = baseStats((id) => attrValueFrom(state, eff, id));
+  const stats = baseStats((id) => formulaAttrFrom(state, eff, id));
   // Layer 2: stat-targeted mods — additive first, then multiplicative.
   for (const m of mods) {
     // Scoped targets are skipped on purpose: they apply only to tagged work,
@@ -719,10 +720,13 @@ export function getDerivedStats(state: GameState, vsTags?: ReadonlySet<string>):
 }
 
 /**
- * The six attributes as the stat formulas read them: trained level plus every
- * attribute modifier (character level, gear, titles, skills, conditions,
- * endowment), fused super-attributes read as their sum. Memoized with the
- * stat block, so it is as fresh as `getDerivedStats`. Treat as frozen.
+ * The six attributes at their real value: trained level plus every attribute
+ * modifier (character level, gear, titles, skills, conditions, endowment),
+ * fused super-attributes read as their sum. The stat formulas read these held
+ * to Weakest Weapon Master's ceiling (formulaAttrFrom); this map is not held,
+ * so dynamic monster levels and the ceiling's routing see the real value.
+ * Memoized with the stat block, so it is as fresh as `getDerivedStats`.
+ * Treat as frozen.
  */
 export function finalAttributes(state: GameState): Readonly<Record<AttributeId, number>> {
   const entry = statsCacheEntry(state);
@@ -849,7 +853,7 @@ export interface StatBreakdown {
 export function statBreakdown(state: GameState, key: StatKey): StatBreakdown {
   const mods = collectModifiers(state);
   const eff = effectiveAttrsFrom(state, mods);
-  const base = baseStats((id) => attrValueFrom(state, eff, id))[key];
+  const base = baseStats((id) => formulaAttrFrom(state, eff, id))[key];
   const lines = groupModLines(mods.filter((m) => m.stat === key));
   let raw = base + lines.filter((l) => l.op === 'add').reduce((s, l) => s + l.value, 0);
   for (const l of lines) if (l.op === 'mult') raw *= 1 + l.value;

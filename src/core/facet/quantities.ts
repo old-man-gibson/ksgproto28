@@ -5,6 +5,8 @@ import { effectiveAttr } from '../systems/attributes';
 import { getDerivedStats } from '../systems/derived';
 import { sunlight } from '../systems/exposure';
 import { statueOf } from '../systems/statuses';
+import { equippedTags } from '../systems/conditions';
+import { SKILLS } from '../registry';
 import type { FacetQuantity } from './facet';
 
 /**
@@ -199,6 +201,22 @@ function build(): Map<string, Entry> {
   add(
     { id: 'world.sunlight', label: 'Sunlight', kind: 'prob', namespace: 'world', nullifiable: false, writable: false, modStat: null },
     sunlight,
+  );
+  // Weakest Weapon Master's Power reads these three. Read-only.
+  // The summed level of every combat skill.
+  add(
+    { id: 'ksg.martialTotal', label: 'Combat skill levels', kind: 'scalar', namespace: 'ksg', nullifiable: false, writable: false, modStat: null },
+    (s) => Object.entries(s.skills).reduce((n, [id, k]) => n + (SKILLS[id]?.category === 'combat' ? k.level : 0), 0),
+  );
+  // Reps recorded across every technique.
+  add(
+    { id: 'ksg.techniqueTotal', label: 'Technique reps', kind: 'scalar', namespace: 'ksg', nullifiable: false, writable: false, modStat: null },
+    (s) => Object.values(s.techniques ?? {}).reduce((n, t) => n + t.executions, 0),
+  );
+  // 1 unless a ranged weapon is held (an item tagged 'ranged').
+  add(
+    { id: 'ksg.melee', label: 'Melee', kind: 'scalar', namespace: 'ksg', nullifiable: false, writable: false, modStat: null },
+    (s) => (equippedTags(s).has('ranged') ? 0 : 1),
   );
   // Statues standing in the bearer's fight (Basilisk Hide's Stoneskin), 0 out of one.
   add(

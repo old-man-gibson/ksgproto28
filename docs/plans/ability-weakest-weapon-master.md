@@ -2,11 +2,11 @@
 id: ability-weakest-weapon-master
 title: Weakest Weapon Master — four stances, a fixed ceiling, techniques past the summit
 kind: story
-status: draft
+status: review
 system: abilities
 parent: unique-abilities
 save: ''
-updated: 2026-09-26
+updated: 2026-11-03
 invariants:
   - completability
   - modFingerprint
@@ -25,6 +25,15 @@ done:
   - The earning quest exists with the user's captions
   - npm run verify green
 ---
+
+> **Built 2026-11-03** as a FACET document (Facet bank
+> `weakest_weapon_master`; how it runs here: docs/FACET.md, docs/MARTIAL.md).
+> The chassis below (gauges, latches, projections) never shipped; FACET cells
+> and carrier status fields do the same jobs. Choices taken that day: all four
+> stances at once, ceiling 20, XP past it priced like real levels, rungs past
+> 10,000 give power x2 and cooldown x0.9 each. Not built: the earning quest
+> (abilities come from the debug panel for now). This card stays as the
+> design record.
 
 # The ability, as the user wrote it
 

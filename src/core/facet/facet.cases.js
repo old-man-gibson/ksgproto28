@@ -420,6 +420,49 @@ CASES['bank: Little Moons spends no mana'] = (assert) => {
   assert(pool.mana === 50, 'the moons drew on a full pool: ' + pool.mana);
 };
 
+
+// A host that reports the three numbers Weakest Weapon Master's Power reads.
+function wwmHost(martial, reps, melee) {
+  return fakeHost({
+    quantities: () => [
+      { id: 'fighter.hp', label: 'HP', kind: 'pool', nullifiable: false, writable: false, mortalRole: 'vitality' },
+      { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
+      { id: 'fighter.damage', label: 'Weapon damage', kind: 'flat' },
+      { id: 'ksg.martialTotal', label: 'Combat skill levels', kind: 'scalar' },
+      { id: 'ksg.techniqueTotal', label: 'Technique reps', kind: 'scalar' },
+      { id: 'ksg.melee', label: 'Melee', kind: 'scalar' },
+    ],
+    readQ: (r, q) => q === 'ksg.martialTotal' ? martial.v : q === 'ksg.techniqueTotal' ? reps : q === 'ksg.melee' ? melee.v : 1,
+  });
+}
+
+CASES['bank: Weakest Weapon Master sets Power on the stance in effect, picked at a bar fill'] = (assert) => {
+  const martial = { v: 100 };
+  const melee = { v: 1 };
+  F.install(wwmHost(martial, 20000, melee));
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.weakest_weapon_master)));
+  F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
+  assert(v('ceiling') === 20 && v('stance') === 1 && v('want') === 1, 'it did not start at ceiling 20 in Power stance');
+  F.minute('a');
+  // 0.4 x 100 + 0.0005 x 20000 + 2 x 0 = 50.
+  assert(Math.abs(v('power') - 50) < 1e-9, 'Power stance read ' + v('power') + ', not 50');
+  assert(v('flowing') === 0 && v('heavy') === 0 && v('empty') === 0, 'a stance not in effect held Power');
+  assert(Math.abs(v('reps') - 2 * Math.pow(32, 100 / 600)) < 1e-9, 'reps per use read ' + v('reps'));
+  F.cellStep(F.cellOf(doc, 'want'), 'set', 4, { ref: 'a', facet: doc, bindings: {} });
+  F.minute('a');
+  assert(v('power') === 50 && v('empty') === 0, 'a pick applied before the bar filled');
+  F.event('barFill', 'a', {});
+  F.minute('a');
+  assert(v('power') === 0 && Math.abs(v('empty') - 50) < 1e-9, 'Empty did not take Power at the bar fill');
+  melee.v = 0;
+  F.minute('a');
+  assert(v('empty') === 0, 'a stance held Power with a ranged weapon');
+  martial.v = 6000;
+  F.minute('a');
+  assert(Math.abs(v('reps') - 64) < 1e-9, 'reps per use did not stop at 64: ' + v('reps'));
+};
+
 // A host whose enemies record damage, and where the ref 'dead' is not alive.
 function thornHost() {
   const hits = [];

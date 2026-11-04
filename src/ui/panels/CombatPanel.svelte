@@ -30,6 +30,7 @@
   import type { TechniqueDef } from '../../core/types';
   import { POSITION_MODS, activeRotation } from '../../core/systems/combat';
   import BattleStage from '../lib/BattleStage.svelte';
+  import { facetReadouts } from '../../core/facet/host';
   import { GENE_ACTIVE, expressedGene, geneAbility } from '../../core/systems/mutagens';
   import { monsterMind, monsterStats } from '../../core/systems/monsterStats';
   import { resourceLock } from '../../core/systems/resources';
@@ -572,6 +573,31 @@
     {/each}
   </div>
 
+  <!-- The run's ability may add a choice over the grid (Weakest Weapon Master's
+       stances, facet/host.ts chooseFacetOption). The two combine. -->
+  {#each facetReadouts(gs).filter((a) => a.choice) as ab (ab.name)}
+    {@const choice = ab.choice!}
+    <div class="small dim ability-choice-label">
+      {ab.icon} {ab.name}: {choice.label}{choice.want !== choice.active && gs.combat
+        ? '. Applies at your next swing.'
+        : ''}
+    </div>
+    <div class="stance-grid ability-choice">
+      {#each choice.options as o (o.v)}
+        <Tip>
+          <button class="stance" class:selected={choice.want === o.v} onclick={() => game.chooseFacetOption(o.v)}>
+            <span class="stance-icon">{o.icon}</span>
+            <span class="stance-name">{o.name}</span>
+          </button>
+          {#snippet tip()}
+            <div class="tip-line tip-base">{o.icon} {o.name}</div>
+            <div class="tip-line">{o.desc}</div>
+          {/snippet}
+        </Tip>
+      {/each}
+    </div>
+  {/each}
+
   {#if forcing}
     <div class="forced-note" style="--forced: {forcedColor}">
       {forcing.def.icon} {forcing.def.name} — you are locked into
@@ -812,7 +838,7 @@
                   <div class="tip-line tip-base">{tech.desc}</div>
                   <div class="tip-line">{techniqueMoveText(gs, tech)}</div>
                   <div class="tip-line tip-sub">
-                    {techniqueExecutions(gs, tech.id)} reps{tierName ? ` · ${tierName}` : ''}{techniqueForm(
+                    {fmt(techniqueExecutions(gs, tech.id))} reps{tierName ? ` · ${tierName}` : ''}{techniqueForm(
                       gs,
                       tech.id,
                     ) === 'rough'
@@ -1169,6 +1195,14 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 5px;
     margin-bottom: 8px;
+  }
+
+  .stance-grid.ability-choice {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .ability-choice-label {
+    margin-bottom: 4px;
   }
 
   .stance-grid > :global(.tip-target) {

@@ -529,4 +529,130 @@ B.basilisk_stoneskin = {
     { id: 'end', on: 'event:fightEnd', do: [setCell('standing', 0)] },
   ],
 };
+
+// ---------- Weakest Weapon Master ----------
+//
+// The user's ability (2026-09-26, ksgproto28 docs/plans/ability-weakest-weapon-master.md):
+//   "Attributes capped relatively low; technique usage grows exponentially faster; martial skills
+//    lose their caps and gain WWM-only bonuses. Four melee stances (unarmed included): Power
+//    (damage proportional to total skill level and technique usages), Flowing (parry proportional
+//    to Power against the blow, up to 100%, striking back), Heavy (damage reduced by Power against
+//    the blow, down to 0, where the blow never counts as a hit; rattles the attacker, never below
+//    1/3 speed), Empty (less damage than Power, proportional to it, ignores dodge, deflection and
+//    parry)." Additions the same day: the ceiling stays fixed and attribute XP past it routes into
+//    Power; reps are real and multiplied, every technique drilled; new technique-use rungs past
+//    10,000 at every power of ten, for every build.
+// Settled 2026-11-03: all four stances in the first build; the ceiling is 20; XP past it buys
+// hidden levels priced like real ones; each rung past 10,000 doubles power and takes the cooldown
+// x0.9 (the rungs are the host's ladder, ksgproto28 martial.ts, not this document).
+//
+// Readings taken (the text does not say):
+//   - "Empty" is pure damage (user 2026-09-26): unmissable, past armour, resistance and weakness.
+//     It deals 60% of Power on top of the blow.
+//   - Flowing parries with chance Power / (2 x the blow), up to 100%. Its answer is 60% of Power.
+//   - Heavy cuts each blow by Power before armour. The attacker is slowed until its next action by
+//     the share cut x 2/3, so never below a third of its speed.
+//   - A stance picked in a fight applies at the player's next bar fill, so it cannot be swapped
+//     between the enemy's swing and your own. Out of a fight it applies at once.
+//   - The stances hold only while no ranged weapon is held; the ceiling holds whatever is held.
+//   - The rep multiplier runs from x2 at 0 combat skill levels to x64 at 600, exponentially.
+//
+//   ceiling     the attribute ceiling. Its carrier tells the host to hold formulas there
+//               (attrCeiling) and to route XP past it to this document (routeExcess).
+//   reps        reps each technique execution records (repMult), for every slotted technique
+//               (drillsAll).
+//   past_<attr> attribute XP routed past the ceiling. The host writes these.
+//   hidden      the levels that XP buys from the ceiling up, priced on the host's attribute curve.
+//               The host writes it.
+//   want        the stance picked (1 Power, 2 Flowing, 3 Heavy, 4 Empty).
+//   stance      the stance in effect. Copied from want at each player bar fill.
+//   power flowing heavy empty
+//               Power while that stance is in effect and a melee weapon is held, else 0. Each
+//               carrier does the stance: a damage modifier, or a field the host reads.
+//
+// Power = 0.4 x combat skill levels + 0.0005 x technique reps + 2 x hidden levels. All
+// placeholders.
+//
+// Reads: ksg.martialTotal, ksg.techniqueTotal, ksg.melee. Events: barFill. Needs a host that
+// knows the status fields attrCeiling, routeExcess, repMult, drillsAll, parryContest, blowCut and
+// pureBlows, and writes past_<attr> and hidden. ksgproto28 does (facet/host.ts, combat.ts,
+// martial.ts). A host without them gets the Power and Empty damage and nothing else.
+const WWM_CEILING = 20;
+const MARTIAL = { q: 'ksg.martialTotal' };
+const WWM_POWER = { expr: 'add',
+  a: { expr: 'mul', a: 0.4, b: MARTIAL },
+  b: { expr: 'add',
+    a: { expr: 'mul', a: 0.0005, b: { q: 'ksg.techniqueTotal' } },
+    b: { expr: 'mul', a: 2, b: { cell: 'hidden' } } } };
+// x2 at 0 combat skill levels to x64 at 600: 2 x 32^min(1, levels / 600).
+const WWM_REPS = { expr: 'mul', a: 2, b: { expr: 'pow', a: 32, b: { expr: 'min', a: 1, b: { expr: 'div', a: MARTIAL, b: 600 } } } };
+// 1 when the stance in effect is k, else 0: 1 - min(1, (stance - k)^2).
+const stanceIs = (k) => ({ expr: 'sub', a: 1, b: { expr: 'min', a: 1, b: { expr: 'pow', a: { expr: 'sub', a: { cell: 'stance' }, b: k }, b: 2 } } });
+const WWM_STANCES = [
+  [1, 'power', 'Power stance', '💪', 'Damage +Power.', { mods: [{ q: 'fighter.damage', op: 'add', value: 1 }] }],
+  [2, 'flowing', 'Flowing stance', '🌊', 'Parry chance is Power over twice the blow. A parry hits back for 60% of Power.',
+    { parryContest: { per: 2, answer: 0.6 } }],
+  [3, 'heavy', 'Heavy stance', '🪨', 'Each enemy blow is cut by Power before armour. The attacker is slowed.',
+    { blowCut: { rattle: 2 / 3 } }],
+  [4, 'empty', 'Empty stance', '⭕', 'Damage +60% of Power. Your blows cannot be dodged and skip armour and resistance.',
+    { mods: [{ q: 'fighter.damage', op: 'add', value: 0.6 }], pureBlows: true }],
+];
+const wwmSync = (hook) => ({ id: 'sync_' + hook, on: hook, do: [
+  setCell('reps', WWM_REPS),
+  ...WWM_STANCES.map(([k, key]) => setCell(key,
+    { expr: 'mul', a: WWM_POWER, b: { expr: 'mul', a: stanceIs(k), b: { q: 'ksg.melee' } } })),
+] });
+
+B.weakest_weapon_master = {
+  v: 1,
+  reading: {
+    name: 'Weakest Weapon Master', icon: '🥋',
+    desc: [
+      'Ceiling: Formulas read every attribute at 20 or less. Gates read the real value.',
+      'Excess: Attribute XP past 20 buys hidden levels. Each gives 2 Power.',
+      'Reps: Each technique use counts 2 to 64 times. Every slotted technique drills.',
+      'Power: 0.4 per combat skill level. 0.0005 per technique rep.',
+      'Stances: Melee only. A change applies at your next swing.',
+    ].join('\n'),
+    choice: {
+      label: 'Stance', want: 'want', active: 'stance',
+      options: [
+        { v: 1, name: 'Power', icon: '💪', desc: 'Damage +Power.' },
+        { v: 2, name: 'Flowing', icon: '🌊', desc: 'Parry chance is Power over twice the blow, up to 100%. A parry hits back for 60% of Power.' },
+        { v: 3, name: 'Heavy', icon: '🪨', desc: 'Each enemy blow is cut by Power before armour. A blow cut to 0 is not a hit. The attacker is slowed, to no less than 1/3 speed.' },
+        { v: 4, name: 'Empty', icon: '⭕', desc: 'Damage +60% of Power. Your blows cannot be dodged and skip armour, resistance and weakness.' },
+      ],
+    },
+  },
+  cells: [
+    {
+      key: 'ceiling', label: 'Attribute ceiling', icon: '📏', hold: 'none', level: 'int', tier: 'run', show: 'count',
+      floor: WWM_CEILING, cap: 1e9,
+      status: { desc: 'Formulas read every attribute at this or less.', attrCeiling: true, routeExcess: true },
+    },
+    {
+      key: 'reps', label: 'Reps per technique use', icon: '🔁', hold: 'none', level: 'real', tier: 'run', show: 'count',
+      floor: 1, cap: 1e9,
+      status: { desc: 'Each technique use records this many reps. Every slotted technique drills.', repMult: true, drillsAll: true },
+    },
+    {
+      key: 'hidden', label: 'Hidden attribute levels', icon: '📈', hold: 'none', level: 'int', tier: 'run', show: 'count',
+      cap: 1e9, carrier: false,
+      status: { desc: 'Attribute levels past the ceiling. +2 Power each.' },
+    },
+    ...['str', 'dex', 'con', 'int', 'wis', 'cha'].map((a) =>
+      ({ key: 'past_' + a, hold: 'none', level: 'real', tier: 'run', cap: 1e15, carrier: false })),
+    { key: 'want', hold: 'none', level: 'int', tier: 'run', floor: 1, cap: 4, carrier: false },
+    { key: 'stance', hold: 'none', level: 'int', tier: 'run', floor: 1, cap: 4, carrier: false },
+    ...WWM_STANCES.map(([, key, label, icon, desc, fields]) => ({
+      key, label, icon, hold: 'none', level: 'real', tier: 'run', show: 'count', cap: 1e9,
+      status: Object.assign({ desc }, fields),
+    })),
+  ],
+  clauses: [
+    wwmSync('tick'),
+    wwmSync('minute'),
+    { id: 'apply', on: 'event:barFill', do: [setCell('stance', { cell: 'want' })] },
+  ],
+};
 })();

@@ -1355,6 +1355,30 @@ export interface StatusDef {
    * how it leaves the fight (Basilisk Hide; statuses.ts `statueOf`).
    */
   statue?: StatueRule;
+  /*
+   * Weakest Weapon Master (facet/host.ts, docs/FACET.md). Fields on the
+   * player's ability carriers; the intensity is the number each one uses.
+   */
+  /** Formulas read every attribute at no more than the intensity. Gates read the real value. */
+  attrCeiling?: true;
+  /** With attrCeiling: XP for an attribute already at the ceiling goes to the ability, not the attribute. */
+  routeExcess?: true;
+  /** Each technique execution records this many reps (the intensity, rounded, at least 1). */
+  repMult?: true;
+  /** Every slotted technique records reps, not only the drilled ones. */
+  drillsAll?: true;
+  /**
+   * Flowing: a parry chance of intensity / (per × the blow), up to 100%, on top
+   * of the capped standing parry. A parry answers with answer × intensity.
+   */
+  parryContest?: { per: number; answer: number };
+  /**
+   * Heavy: each enemy blow is cut by the intensity before armour. A blow cut
+   * to 0 is not a hit. The attacker is Rattled at rattle × the share cut.
+   */
+  blowCut?: { rattle: number };
+  /** Empty: your weapon blows cannot be dodged and skip armour, resistance and weakness. */
+  pureBlows?: true;
   /** The worse condition this becomes when it is pushed far enough. */
   escalatesTo?: string;
   /** The milder condition a 'deescalate' removal drops this back to. */
@@ -2013,7 +2037,7 @@ export interface TechniqueDef {
    */
   learn?: { self?: TechniqueSelfLearn; watch?: number };
   /** Annotations on the standard ladder, keyed by tier (1–4). */
-  mastery?: Partial<Record<1 | 2 | 3 | 4, TechniqueMasteryNote>>;
+  mastery?: Partial<Record<number, TechniqueMasteryNote>>;
   /**
    * Fork archetypes offered at the Honed choice (FORK_TIER). Absent = the
    * technique never forks. A syncretic form is offered the whole vocabulary.

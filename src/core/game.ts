@@ -113,6 +113,7 @@ import { autoPrestigeDue, buyBoon, leaveReview, prestigeNow } from './systems/pr
 import {
   bindFacets,
   chooseEvolution,
+  chooseFacetOption,
   facetSignal,
   pendingEvolution,
   registerFacetListeners,
@@ -681,6 +682,11 @@ export class Game {
   /** Take the held ability's evolution branch `key` (facet/host.ts chooseEvolution). */
   chooseEvolution(key: string) {
     return chooseEvolution(this.state, key);
+  }
+
+  /** Pick option `v` of the held ability's choice: Weakest Weapon Master's stance (facet/host.ts). */
+  chooseFacetOption(v: number) {
+    return chooseFacetOption(this.state, v);
   }
 
   /** Shape a psionic working from force/reach/grip points. */

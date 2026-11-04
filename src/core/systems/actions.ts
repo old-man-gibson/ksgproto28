@@ -16,7 +16,7 @@ import { TPS } from '../engine/loop';
 import { chance, randInt } from '../engine/rng';
 import { getSpot, ITEMS, MATERIALS, RECIPES, RUNES, SKILLS, SPOTS } from '../registry';
 import { BASE_ACTION_BAR, BASE_SPEED, getDerivedStats, scopedMult } from './derived';
-import { attrValue, grantAttrXpSplit } from './attributes';
+import { formulaAttr, grantAttrXpSplit } from './attributes';
 import { checkDiscovery, grantSkillXp, skillTrainedBy } from './skills';
 import { grantActivityExposure } from './exposure';
 import { conditionsMet } from './conditions';
@@ -232,7 +232,7 @@ function tagsOf(act: ActivityDef): ActivityCycleTags {
 
 /** A factor's source value: fusion-aware attributes, derived stats, or skill level (missing = 0). */
 function factorValue(state: GameState, stats: DerivedStats, f: ActivityFactor): number {
-  if (f.attr) return attrValue(state, f.attr);
+  if (f.attr) return formulaAttr(state, f.attr);
   if (f.stat) return stats[f.stat];
   if (f.skill) return state.skills[f.skill]?.level ?? 0;
   return 0;

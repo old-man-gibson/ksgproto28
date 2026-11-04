@@ -55,7 +55,7 @@ import { conditionsMet } from './conditions';
 import { bandLevelStep } from './ladder';
 import { PARRY_CAP, actionTicks, attackFillRate, getDerivedStats, scopedMult } from './derived';
 import { TPS } from '../engine/loop';
-import { attrValue, grantAttrXp } from './attributes';
+import { formulaAttr, grantAttrXp } from './attributes';
 import { checkDiscovery, grantSkillXp, isUnlocked } from './skills';
 import { isPracticeFight, practising } from './practice';
 import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from './exposure';
@@ -328,7 +328,7 @@ export function telekineticGrip(state: GameState): number {
   // amount of it ever buys more than the cap. The curve is the shape the
   // "incremental escalation" the game wants asks for — slow compounding that
   // stays steerable — rather than a flat rate that eventually eats the game.
-  const wis = Math.max(0, attrValue(state, 'wis'));
+  const wis = Math.max(0, formulaAttr(state, 'wis'));
   return 1 + TELEKINETIC_GRIP_CAP * (wis / (wis + TELEKINETIC_GRIP_HALF));
 }
 
@@ -674,6 +674,7 @@ import {
   statusPacifiesFlankers,
   statusRetaliation,
   statusReversesBar,
+  heldWith,
   statueOf,
   statusesOf,
   statusNegativeHeadroom,
@@ -961,7 +962,7 @@ function feedTheFast(state: GameState, actor: GameState | MonsterInstance): void
     applyStatus(
       state,
       actor,
-      { id: 'hunger_anupama', intensity: attrValue(state, 'wis') * HUNGER_PER_WISDOM },
+      { id: 'hunger_anupama', intensity: formulaAttr(state, 'wis') * HUNGER_PER_WISDOM },
       'your fast',
     );
   }
@@ -1677,6 +1678,15 @@ function standing(e: MonsterInstance | null): boolean {
  * the ability event `rocks` (Basilisk Hide's Rubble puts Stone on it). The
  * kills are left to the caller (onKill sweeps them).
  */
+/**
+ * Heavy stance's answer (Weakest Weapon Master): the attacker is Rattled,
+ * slowed until its next action by the share of its blow that Power cut.
+ */
+function rattle(state: GameState, e: MonsterInstance, intensity: number): void {
+  if (intensity <= 0 || e.hp <= 0) return;
+  applyStatus(state, e, { id: 'rattled', intensity }, 'Heavy stance');
+}
+
 function throwRubble(state: GameState, statue: MonsterInstance, index: number, mult: number, verb: string): void {
   const c = state.combat!;
   const behind = c.enemies.flatMap((e, j) => (e && j > index && e.hp > 0 && !isStatue(e) ? [j] : []));
@@ -4129,6 +4139,7 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
     if (applyBarDamage(state, bus, 'onFill')) return;
     const skipped = consumeSkippedAction(state);
     fireStatusEvent(state, state, 'barFill');
+    facetSignal(state, 'barFill');
     if (skipped || statusBlocks(state, 'attack')) {
       feed(state, `😵 A condition on you costs you this action.`);
       return;
@@ -4205,7 +4216,12 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
     // `sure`, `ignores_dodge` routed into ACTIVE (which sets `sure` on the
     // resolved gene spec), and `ignores_dodge` routed into ATTACKS — which
     // says it about your ordinary swing rather than about one ability.
+    // Empty stance (Weakest Weapon Master, statuses `pureBlows`): a weapon
+    // blow, not a spell or a gene active, that cannot be dodged and lands at
+    // its raw size, past armour, resistance and weakness (the hit loop below).
+    const empty = !active?.spec && !active?.crafted && heldWith(state, 'pureBlows') !== null;
     const sure =
+      empty ||
       active?.crafted?.sure ||
       (active?.spec?.type === 'gene' && active.spec.sure) ||
       armGrants(state, 'attacks', 'ignores_dodge');
@@ -4479,7 +4495,9 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
         hit *= 0.9 + rand(state) * 0.2;
         const rawHit = hit;
         raw += rawHit;
-        const landed = monsterSlice(monster, dmgType, hitSource, rawHit, penetration);
+        const landed: DamageSlice = empty
+          ? { type: dmgType, source: hitSource, raw: rawHit, armor: 0, resisted: 0, resistance: 0, pierced: 0, dealt: rawHit }
+          : monsterSlice(monster, dmgType, hitSource, rawHit, penetration);
         addSlice(slices, landed);
         hit = landed.dealt;
         // Weapon enchants and socketed runes add their own typed damage per hit.
@@ -4868,15 +4886,18 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
     // A fencing stance can BUY parry per incoming blow the way Evasive buys
     // dodge — the bought chance sits on top of the standing one and is held to
     // the same cap, so exertion can reach the ceiling but never past it.
-    const parryChance = Math.min(PARRY_CAP, stats.parry + guard.parry);
+    //
+    // Flowing stance (Weakest Weapon Master, statuses `parryContest`) adds a
+    // contest: Power against the blow's weight, up to certain, past the cap.
+    // Its answer is a share of Power instead of the riposte.
+    const weight = es.damage * mod.damage * positionIncomingMult(state);
+    const flowing = heldWith(state, 'parryContest');
+    const flow = flowing?.def.parryContest;
+    const contest = flowing && flow && weight > 0 ? Math.min(1, flowing.intensity / (flow.per * weight)) : 0;
+    const parryChance = Math.max(contest, Math.min(PARRY_CAP, stats.parry + guard.parry));
     if (parryChance > 0 && chance(state, parryChance)) {
-      const slice = monsterSlice(
-        e,
-        playerDamageType(state),
-        weaponSource(state),
-        stats.damage * stats.riposte,
-        stats.penetration,
-      );
+      const answer = flowing && flow ? flow.answer * flowing.intensity : stats.damage * stats.riposte;
+      const slice = monsterSlice(e, playerDamageType(state), weaponSource(state), answer, stats.penetration);
       const riposte = Math.max(1, Math.round(slice.dealt));
       e.hp -= riposte;
       e.lastHit = slice.type;
@@ -4886,17 +4907,23 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
       // weight of the swing, not a wound. Armor and resistance are left out
       // deliberately; a parry stopped ALL of it, so what you prevented is what
       // THEY put into it.
-      c.prevented = { ...c.prevented, onParry: es.damage * mod.damage * positionIncomingMult(state) };
+      c.prevented = { ...c.prevented, onParry: weight };
       markCombatEvent(state, 'onParry');
       bumpStat(state, bus, 'combat:parries');
-      noteParry(state, es.damage * mod.damage * positionIncomingMult(state), riposte);
+      noteParry(state, weight, riposte);
       feed(state, `🛡️ You parry the ${e.name} and cut back for ${riposte}`, {
         label: 'Riposte',
         target: e.name,
-        steps: [
-          { label: 'Damage', value: stats.damage },
-          { label: 'Riposte share of it', mult: stats.riposte },
-        ],
+        steps:
+          flowing && flow
+            ? [
+                { label: 'Power (Flowing)', value: flowing.intensity },
+                { label: 'Flowing answer share', mult: flow.answer },
+              ]
+            : [
+                { label: 'Damage', value: stats.damage },
+                { label: 'Riposte share of it', mult: stats.riposte },
+              ],
         slices: [slice],
         hits: 1,
         crit: false,
@@ -4982,6 +5009,12 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
     const hits = (move?.hits ?? 1) + rollExtraHits(state, es.extraSwings);
     const slices = new Map<string, DamageSlice>();
     const ranged = kit.range === 'ranged';
+    // Heavy stance (Weakest Weapon Master, statuses `blowCut`): each hit is
+    // cut by Power after any counter and before armour. A hit cut to 0 lands
+    // nothing; when every hit is, the exchange is not a hit at all.
+    const heavy = heldWith(state, 'blowCut');
+    let cutTotal = 0;
+    let cutHits = 0;
     let thrown = 0;
     let dmg = 0;
     let critted = false;
@@ -5004,7 +5037,14 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
         underdog *
         (0.9 + rand(state) * 0.2);
       thrown += one;
-      const raw = counter ? one * (1 - counter.move.counter!.reduce) : one;
+      const countered = counter ? one * (1 - counter.move.counter!.reduce) : one;
+      const cut = heavy ? Math.min(countered, heavy.intensity) : 0;
+      cutTotal += cut;
+      const raw = countered - cut;
+      if (heavy && raw <= 0) {
+        cutHits++;
+        continue;
+      }
       const slice = incomingSlice(stats, type, e.name, raw, braced, ranged);
       // Training equipment (MonsterDef.fixedDamage): the number that reaches
       // the bar is pinned, whatever the roll, the armour or the counter did.
@@ -5020,6 +5060,25 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
       }
       addSlice(slices, slice);
       dmg += Math.max(1, Math.round(slice.dealt * bite));
+    }
+    if (heavy && cutTotal > 0) rattle(state, e, heavy.def.blowCut!.rattle * Math.min(1, cutTotal / thrown));
+    if (heavy && cutHits === hits) {
+      c.prevented = { ...c.prevented, onHit: thrown };
+      noteAbsorbed(state, thrown);
+      feed(state, `🪨 You take the ${e.name}'s blow on your guard. No damage.`, {
+        label: `The ${e.name}`,
+        target: 'You',
+        steps: [
+          { label: 'Its blow', value: thrown },
+          { label: 'Heavy stance cuts it by Power', value: -Math.round(cutTotal) },
+        ],
+        slices: [],
+        hits,
+        crit: false,
+        incoming: true,
+        total: 0,
+      });
+      continue;
     }
     // A blow that LANDS still leaves a reading: what your armor, bracing,
     // resistances and any intercepting counter took off it. Same field a parry
@@ -5071,6 +5130,7 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
             ? [{ label: `${counter.def.name} intercepts`, mult: 1 - counter.move.counter!.reduce }]
             : []),
           ...(braced > 0 ? [{ label: 'Braced — extra armor', value: braced }] : []),
+          ...(cutTotal > 0 ? [{ label: 'Heavy stance cuts it by Power', value: -Math.round(cutTotal) }] : []),
         ],
         slices: [...slices.values()],
         hits,

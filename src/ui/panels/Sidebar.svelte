@@ -28,7 +28,7 @@
     STAMINA_RESERVE,
   } from '../../core/systems/stamina';
   import { availableMax, resourceLock, resourceValue, trueMax } from '../../core/systems/resources';
-  import { escalationPrimed, visibleStatuses } from '../../core/systems/statuses';
+  import { attrCeiling, escalationPrimed, visibleStatuses } from '../../core/systems/statuses';
   import { facetReadouts } from '../../core/facet/host';
   import { STATUSES } from '../../core/registry';
   import { statusTipLines } from '../lib/format';
@@ -181,6 +181,8 @@
   }
 
   const eff = $derived(effectiveAttrs(gs));
+  /** Weakest Weapon Master's ceiling: formulas read an attribute above it at the ceiling. */
+  const ceiling = $derived(attrCeiling(gs));
 
   const wornTitle = $derived(equippedTitle(gs));
   /**
@@ -481,7 +483,11 @@
             {#snippet tip()}{@render superTip(sup)}{/snippet}
           </Tip>
         </span>
-        <span class="super-value">{Math.round(attrValue(gs, sup.components[0]))}</span>
+        <span class="super-value"
+          >{Math.round(attrValue(gs, sup.components[0]))}{#if ceiling !== null && attrValue(gs, sup.components[0]) > ceiling}<span
+              class="capped"> → {ceiling}</span
+            >{/if}</span
+        >
       </div>
       {#each sup.components as compId}
         {@const attr = attrInfo(compId)}
@@ -503,7 +509,7 @@
                   class="delta"
                   class:buff={delta > 0}
                   class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
-                >{/if}
+                >{/if}{#if ceiling !== null && eff[compId] > ceiling}<span class="capped"> → {ceiling}</span>{/if}
             </span>
           </div>
         </div>
@@ -530,7 +536,7 @@
               class="delta"
               class:buff={delta > 0}
               class:debuff={delta < 0}>({delta > 0 ? '+' : ''}{delta})</span
-            >{/if}
+            >{/if}{#if ceiling !== null && eff[attr.id] > ceiling}<span class="capped"> → {ceiling}</span>{/if}
         </span>
       </div>
     </div>
@@ -874,6 +880,11 @@
 
   .delta {
     margin-left: 3px;
+    font-size: 11.5px;
+  }
+  /* Weakest Weapon Master: the value formulas use. */
+  .capped {
+    color: var(--danger);
     font-size: 11.5px;
   }
 
