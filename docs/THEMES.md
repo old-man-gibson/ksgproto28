@@ -75,7 +75,32 @@ downloaded by the browser when a rule actually uses it.
    The developer panel's **Record every creature** and **Open locked systems**
    fill a test save fast.
 
-## 4. Open
+## 4. The frame
+
+One header row, then three columns: the left column (bars, the screen list from
+`NAV` in `src/ui/lib/nav.ts`, attribute chips, Combat Stats; it scrolls), the main
+column (the open screen) and the log. The log has two states. The choice is a
+browser preference like the theme: field `logOpen` of the localStorage key
+`ksgproto28-shell`, next to the seen screen ids, outside the save.
+
+- **Open:** the log is the right grid column, 320 px. Its header has a Fold button.
+- **Folded:** the right column is removed and main takes its width. The newest log
+  line shows as one row at the foot of main, cut with an ellipsis
+  (`LogTicker.svelte`), with a Log button. The button opens the full log as a
+  360 px panel from the right edge, below the header, over main
+  (`LogDrawer.svelte`, z-index 9, under every window). Escape, the Log button or a
+  click outside closes it. Dock in the panel's header returns the log to its column.
+- **Default:** with no stored choice the log is open from 1360 px of viewport width
+  and folded below (`logOpenDefault` in `src/ui/lib/shell.ts`). A stored choice
+  beats the width. Floor 0 always shows the column and offers no Fold.
+- At 1100 px and below the page scrolls and an open log is a 220 px row under it.
+
+A screen whose columns depend on room sizes them by its own width, not the
+window's, so the log's state does not break it: the Combat screen's Combat Style
+and Active Skills panels stack when the screen is under 760 px wide (container
+query on `.loadout-box`, `CombatPanel.svelte`).
+
+## 5. Open
 
 - Pixel icons replace the emoji one group at a time, in both themes
   ([plans/pixel-icons.md](plans/pixel-icons.md)). Story 1 (2026-10-22) did the

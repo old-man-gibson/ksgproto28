@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gs, game, ui, stepTicks, stepEvent, toggleKeep, markNavSeen } from './state.svelte';
+  import { gs, game, ui, stepTicks, stepEvent, toggleKeep, markNavSeen, setLogChoice } from './state.svelte';
   import { isKept } from '../core/systems/ledger';
   import { TPS } from '../core/engine/loop';
   import { BONUS_CAP_TICKS } from '../core/systems/bonustime';
@@ -19,6 +19,8 @@
   import JobStrip from './JobStrip.svelte';
   import SystemMenu from './SystemMenu.svelte';
   import LogFeed from './LogFeed.svelte';
+  import LogTicker from './LogTicker.svelte';
+  import LogDrawer from './LogDrawer.svelte';
   import OfflineModal from './OfflineModal.svelte';
   import PrestigeModal from './PrestigeModal.svelte';
   import DareModal from './DareModal.svelte';
@@ -33,6 +35,7 @@
   import { tick, untrack, type Component } from 'svelte';
   import { fmt } from './lib/format';
   import { navListShown, reconcileTab, visibleNav, type MainTab } from './lib/nav';
+  import { logIsOpen } from './lib/shell';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf } from '../core/systems/clock';
   import { CHRONOSENSE_ID, describeTimeSense } from '../core/systems/chronosense';
@@ -123,6 +126,16 @@
    */
   const screen = $derived(tutorialScreen(gs));
   const target = $derived(screen?.target ?? null);
+
+  // The log is a right-hand column while open and a one-line row plus an overlay
+  // panel while folded (lib/shell.ts). The player's stored pick beats the width
+  // default; floor 0 keeps the column, as it always had.
+  let viewportWidth = $state(typeof window === 'undefined' ? 1440 : window.innerWidth);
+  let headerHeight = $state(0);
+  const logOpen = $derived(screen ? true : logIsOpen(ui.logChoice, viewportWidth));
+  $effect(() => {
+    if (logOpen && ui.logDrawer) ui.logDrawer = false;
+  });
 
   // The screens the player may open now. The list draws with the second one.
   const entries = $derived(visibleNav(gs, screen));
@@ -245,10 +258,16 @@
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydown={onKeydown} bind:innerWidth={viewportWidth} />
 
-<div class="layout" class:paused={gs.paused} class:no-sidebar={screen && !screen.sidebar}>
-  <header>
+<div
+  class="layout"
+  class:paused={gs.paused}
+  class:no-sidebar={screen && !screen.sidebar}
+  class:log-folded={!logOpen}
+  style="--header-h: {headerHeight}px"
+>
+  <header bind:offsetHeight={headerHeight}>
     <h1>Frontier Idle</h1>
 
     <!-- Transport controls. The pause is global — the whole world stops, not
@@ -370,11 +389,22 @@
     <div class="tab-body">
       {#if Screen}<Screen />{/if}
     </div>
+    {#if !logOpen}
+      <LogTicker open={ui.logDrawer} ontoggle={() => (ui.logDrawer = !ui.logDrawer)} />
+    {/if}
   </main>
 
-  <aside class="logside">
-    <LogFeed />
-  </aside>
+  {#if logOpen}
+    <aside class="logside">
+      <LogFeed
+        actions={screen
+          ? []
+          : [{ label: 'Fold', title: 'Fold the log into one line under the screen', run: () => setLogChoice(false) }]}
+      />
+    </aside>
+  {:else if ui.logDrawer}
+    <LogDrawer onclose={() => (ui.logDrawer = false)} ondock={() => setLogChoice(true)} />
+  {/if}
 </div>
 
 {#if DEV && showDebug}
@@ -610,6 +640,16 @@
     min-height: 0;
   }
 
+  /* The log folded: no right column. Main takes its width, with the one-line
+     row at its foot; the full log is an overlay (LogDrawer.svelte). The
+     folded state never co-occurs with .no-sidebar: floor 0 keeps the column. */
+  .layout.log-folded {
+    grid-template-columns: 270px 1fr;
+    grid-template-areas:
+      'header header'
+      'sidebar main';
+  }
+
   /* Floor 0 before the first fight: no sidebar, so main takes its column. */
   .layout.no-sidebar {
     grid-template-columns: 1fr 320px;
@@ -636,6 +676,15 @@
         'header'
         'main'
         'log';
+    }
+
+    /* Folded: the log row below the page goes away with the column. */
+    .layout.log-folded {
+      grid-template-columns: 240px 1fr;
+      grid-template-areas:
+        'header header'
+        'sidebar main';
+      grid-template-rows: auto 1fr;
     }
 
     /* The page scrolls here, not the tab body. `clip` keeps the sideways

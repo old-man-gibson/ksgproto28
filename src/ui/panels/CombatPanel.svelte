@@ -600,6 +600,10 @@
   </div>
 </div>
 
+<!-- The two columns below stack on THIS panel's width, not the window's: with the
+     log folded or the window narrow, the main column can be 450px at a viewport
+     that would otherwise leave room (container query on .loadout-box). -->
+<div class="loadout-box">
 <div class="loadout">
 <div class="panel">
   <h3>Combat Style</h3>
@@ -1025,6 +1029,7 @@
   {/if}
 </div>
 </div>
+</div>
 
 {#if configId}
   <EntryConfigModal id={configId} onclose={() => (configId = null)} />
@@ -1260,8 +1265,13 @@
     font-size: 0.72rem;
     white-space: nowrap;
   }
-  /* Styles and actives sit side by side under the stage; on a narrow
-     screen they stack, stance wheel first. */
+  /* Styles and actives sit side by side under the stage; on a narrow panel
+     they stack, stance wheel first. The wrapper is the container: a grid
+     cannot query its own width, and the wrapper is exactly the panel's. */
+  .loadout-box {
+    container-type: inline-size;
+  }
+
   .loadout {
     display: grid;
     grid-template-columns: minmax(210px, 300px) 1fr;
@@ -1269,7 +1279,7 @@
     align-items: start;
   }
 
-  @media (max-width: 720px) {
+  @container (max-width: 759px) {
     .loadout {
       grid-template-columns: 1fr;
     }

@@ -2,23 +2,17 @@
   import { gs } from './state.svelte';
   import Tip from './lib/Tip.svelte';
   import { hiddenLabels } from '../core/systems/log';
+  import { logColor } from './lib/logKinds';
 
-  // Each colour is a token with its default as the fallback, so a theme can
-  // repaint the log without touching this file (src/themes/).
-  const KIND_COLORS: Record<string, string> = {
-    combat: 'var(--log-combat, #e0a1a1)',
-    danger: 'var(--log-danger, #ff6b6b)',
-    loot: 'var(--log-loot, #e8b84b)',
-    item: 'var(--log-loot, #e8b84b)',
-    skill: 'var(--log-skill, #b58fe0)',
-    achievement: 'var(--log-achievement, #ffd700)',
-    fusion: 'var(--log-fusion, #ff9d3c)',
-    quest: 'var(--log-quest, #e0cd7d)',
-    travel: 'var(--log-travel, #7db4e0)',
-    explore: 'var(--log-explore, #7de0c3)',
-    action: 'var(--log-plain, #9aa4ad)',
-    info: 'var(--log-plain, #9aa4ad)',
-  };
+  /**
+   * The full log. It sits in the right column (App.svelte) while the log is
+   * open and inside the drawer (LogDrawer.svelte) while it is folded. `actions`
+   * are the small buttons in its header: Fold in the column, Dock and Close in
+   * the drawer. None while floor 0 runs.
+   */
+  let {
+    actions = [],
+  }: { actions?: { label: string; title: string; run: () => void }[] } = $props();
 
   // Newest first. A folded line shows its first labels; the ones it cut are
   // listed in a tooltip. The block below is keyed by the entry object, which
@@ -28,10 +22,15 @@
 </script>
 
 <div class="panel log">
-  <h3>Log</h3>
+  <div class="log-head">
+    <h3>Log</h3>
+    {#each actions as action (action.label)}
+      <button class="log-action" title={action.title} onclick={action.run}>{action.label}</button>
+    {/each}
+  </div>
   <div class="entries small">
     {#each entries as { entry, rest } (entry)}
-      <div class="entry" style="color: {KIND_COLORS[entry.kind] ?? 'var(--text)'}">
+      <div class="entry" style="color: {logColor(entry.kind)}">
         {#if rest.length > 0}
           <Tip>
             {entry.msg}
@@ -58,6 +57,24 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+  }
+
+  .log-head {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .log-head h3 {
+    flex: 1;
+    margin: 0;
+  }
+
+  .log-action {
+    padding: 1px 8px;
+    font-size: 12px;
+    color: var(--text-dim);
   }
 
   .entries {
