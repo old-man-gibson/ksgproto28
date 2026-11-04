@@ -64,7 +64,8 @@ describe('Shadow Clone', () => {
     expect(got(alone)).toBeGreaterThan(50);
     expect(got(helped) / got(alone)).toBeGreaterThan(1.25);
     expect(got(helped) / got(alone)).toBeLessThan(1.55);
-  });
+    // Two runs of 24,000 ticks: about 2 s alone, past the 5 s default under a full suite.
+  }, 30_000);
 
   it('counts 1 + 1 per 10 levels, and each clone takes 5% off max mana', () => {
     const { state, game } = at('the_alembics', true, 25);
