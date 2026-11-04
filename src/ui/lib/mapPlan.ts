@@ -158,6 +158,13 @@ export interface PlanOptions {
   area: string | null;
   /** The measured width of the column. */
   width: number;
+  /**
+   * The frame's height for a diagram, px (PLAN_HEIGHT when absent). A tiled
+   * region keeps its picture's proportions and ignores it. The map card gives a
+   * region with no tower section the height the section's detail takes in a
+   * tower region, so switching between the two moves nothing below the map.
+   */
+  height?: number;
   tiled: boolean;
   /** The spot the map is about; a frame too narrow for every name labels it and its neighbours. */
   focus: string;
@@ -224,7 +231,7 @@ export function buildPlan(state: GameState, opts: PlanOptions): MapPlan {
   const nodes = mapNodes(state, opts.region, opts.area);
   const frame = opts.tiled
     ? tiledFrame(opts.width)
-    : diagramFrame(nodes.map((n) => n.spot.map!), opts.width);
+    : diagramFrame(nodes.map((n) => n.spot.map!), opts.width, opts.height);
   const at = new Map(nodes.map((n) => [n.spot.id, frame.project(n.spot.map!)]));
   const known = new Map(nodes.map((n) => [n.spot.id, n.known]));
   const threats = opts.threats ?? planThreats(state, opts.region, opts.area);

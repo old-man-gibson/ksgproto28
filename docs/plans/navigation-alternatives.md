@@ -456,3 +456,43 @@ merged into `ui-integration` 35f6992.
   - phone width (part of A3);
   - forced-road rendering on floors 12–14 and 19–20 checked in tests only;
   - the strip can still grow if its activity buttons wrap to a second row.
+
+**N4 tower section:** branch `nav-section` (stacked on `ui-integration` 836da70). The rules are
+docs/NAVIGATION.md §3.5. `npm run verify` passed with 3,506 tests (2 icon tests skip without the
+packs). Antagonist-code: not yet run.
+
+Built:
+- `ui/TowerSection.svelte` (the column), `ui/StopDetail.svelte` (terms and button under the map),
+  `rungView` / `bandHubView` / `towerHubView` / `towerSection` in `ui/lib/ladderView.ts`,
+  `ui/lib/rideArm.svelte.ts` (the shared forfeit arming), `ui/lib/viewport.svelte.ts` (600 px).
+- The floor tabs are gone. The Ascent panel prints terms only at 600 px and wider, and keeps its
+  buttons under it.
+- `tests/towersection.test.ts`: a button is offered exactly where `climbTo` / `climbToHub` take the
+  ride, in ten states including the festival's; the price equals `travel.total`; no name for a floor
+  not reached; the 600 px rule; floor 0 draws no section.
+
+Builder decisions kept (the brief did not cover them):
+- The detail (terms and button) sits under the plan, as in the mockup, in a 100 px slot, not in the
+  184 px column. The column is 184 px so a floor's plan stays 581 px at a 1094 px window.
+- The 600 px rule: at 600 px and wider the detail has the button and the panel prints terms and a
+  "Show in map" button. Under 600 px the section is a closed fold in every region with no button, and
+  the panel keeps its buttons. One set of ride buttons at every width.
+- A tab for the tower's region whenever the ladder answers where the player stands, before any floor
+  is found. Without it the first ride onto floor 1 had no button at 600 px and wider.
+- A region with no section draws its plan 106 px taller after the tutorial, so a ride that switches
+  the map between the city and the tower moves nothing below it (`PlanOptions.height`, a one-line
+  addition to `lib/mapPlan.ts`). The pane is a grid in both layouts: the route line's margin no
+  longer collapses into the region tabs' (4 px more gap than before, in every region).
+- A button is offered only where the core's gate (`rideGate`) says so. The panel showed one on a
+  floor that was cleared and not unlocked; `climbTo` refused it.
+- The ride's time is at the current travel speed (`climbTo`'s figure). The panel printed base ticks.
+- Ride buttons are disabled while a ride runs, as well as when knocked out or in a forced fight.
+- The Foot's row leaves the plan as it is (it is in Threshold); the castle's hub shows its own plan.
+- A floor with no spot found shows an empty frame and "Floor n" on the map toggle, not its name.
+
+Not changed, seen while measuring: `LocationPanel.svelte` swaps the place panel and the Ascent
+panel for the destination preview while a ride runs. The page height went from 1,771 to 1,055 px
+at the start of a ride (1,094 px window). With the page scrolled past the new maximum the browser
+clamps the scroll position and the map moves on screen by the difference (10 px measured). Nothing
+above the swap changes its box. Fixing it means keeping the swapped block's height, in
+`LocationPanel.svelte`.
