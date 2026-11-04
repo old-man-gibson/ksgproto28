@@ -214,7 +214,14 @@ Changed 2026-11-03 (UI proposal C3, docs/plans/ui-proposals.md). No save change.
 1. **Strip** (class `act-strip`). Standing still: the spot's activity buttons,
    the Next bar (only while an activity with a cycle runs) and the exploration
    bar with its find ticks and "Found n of m". Walking: the travel bar and its
-   remaining time. A spot with no activities and no exploration draws no strip.
+   remaining time. A spot with no activities and no exploration shows one dim
+   line, "No activities here." The strip is always drawn and at least
+   `STRIP_MIN` (62 px) tall, and the travel strip is at least as tall as the
+   standing strip it replaced, so starting or ending a walk, arriving and
+   starting an activity do not move the map (2026-11-04, the user's no-shift
+   rule; `tests/locationstrip.test.ts`). A strip that wraps to a second row
+   (narrow column, many buttons) is taller than the minimum and keeps that
+   height for the walk.
    The activity buttons keep `.tutorial-target` (TUTORIAL.md §5).
 2. **Map** (`MapCard.svelte`, §3): the route line, then the surveyed plan.
    The click card (§3.3) replaced the hover card.
@@ -363,7 +370,10 @@ through `selectionStep`):
 **The route line** is one line above the map, always there at a fixed height
 (22 px), so a route appearing or changing never moves the map or the page. A
 route longer than the column is cut with an ellipsis; the tooltip holds all of
-it. With nothing selected and no journey, it is empty.
+it. With nothing selected and no journey, it is empty. The journey line under
+the map ("En route to X — 3s", Cancel journey) is a slot that is always there,
+empty while standing, at least 2.5 em tall, so a walk starting or ending does
+not move what is below the map.
 
 - **Select a pin** and the route from where the player stands is drawn over
   the map, each leg with its time, and written above it: "Route to The Woods

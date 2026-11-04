@@ -430,8 +430,10 @@
     </div>
   {/if}
 
-  {#if gs.travel}
-    <div class="journey small">
+  <!-- The slot is always there, empty while standing, so a walk starting or
+       ending does not move what is below the map. -->
+  <div class="journey small">
+    {#if gs.travel}
       🥾 En route to {gs.discovered.includes(gs.travel.to) ? getSpot(gs.travel.to).name : 'an unknown place'} — {ticksToTime(gs.travel.ticksLeft)}
       {#if gs.travelPlan.length > 0}
         <span class="dim">
@@ -442,8 +444,10 @@
         </span>
         <button class="small" onclick={() => game.cancelTravelPlan()}>Cancel journey</button>
       {/if}
-    </div>
-  {/if}
+    {:else}
+      &nbsp;
+    {/if}
+  </div>
 </div>
 
 {#if card}
