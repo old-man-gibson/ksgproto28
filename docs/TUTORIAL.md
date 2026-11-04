@@ -178,6 +178,13 @@ The dev button stays in the header on floor 0. Autosave runs throughout.
 A fight step whose player stands somewhere else points at the step's spot
 instead (the button is not on screen there).
 
+**Two clicks to a pin, one to an exit** (2026-11-04, NAVIGATION.md §3.3). A
+click on a map pin opens its card; a second click on the same pin walks there.
+The beacon stays on the pin through the first click, so the second lands on it.
+The texts of `cellblock`, `field` and `gate` say so ("Click the marked ❓ pin in
+the corridor to open its card, then click the pin again to walk there"). The
+exit label of `leave` is not a spot: one click walks, and it has no card.
+
 **Following the target.** When the target changes, `App.svelte` opens the tab it
 is drawn on (`targetTab`) and scrolls `.tutorial-target` to the middle of the
 view. It fires on a change only, so a player who clicks to another tab is not

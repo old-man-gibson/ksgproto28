@@ -79,6 +79,15 @@
 
   const spot = $derived(getSpot(gs.spot));
 
+  /**
+   * The least height, px, of the strip above the map: a row of activity
+   * buttons beside the exploration bar and its "Found" line. A strip with less
+   * in it keeps this height, so the map does not move between spots.
+   */
+  const STRIP_MIN = 62;
+  /** The height of the standing strip last drawn; the travel strip that replaces it keeps it. */
+  let standingH = $state(0);
+
   /** Floor 0's pointer (lib/tutorialFocus.ts): `activity:<id>` lights that button. */
   const tutorialTarget = $derived(tutorialScreen(gs)?.target ?? null);
 
@@ -251,13 +260,16 @@
 
 <!--
   The strip above the map: the spot's activity buttons, the Next bar and the
-  exploration bar; while walking, the travel bar. A spot with none of these
-  draws no strip. The floor 0 tutorial points at an activity button here by
-  `.tutorial-target`; App.svelte scrolls to it wherever it sits.
+  exploration bar; while walking, the travel bar; at a spot with none of
+  these, one dim line. It is always drawn and never shorter than STRIP_MIN,
+  and the travel strip keeps the height of the strip it replaced, so a walk
+  starting, ending or an activity starting does not move the map below it.
+  The floor 0 tutorial points at an activity button here by `.tutorial-target`;
+  App.svelte scrolls to it wherever it sits.
 -->
 {#if gs.travel}
   {@const dest = getSpot(gs.travel.to)}
-  <div class="panel act-strip">
+  <div class="panel act-strip" style:min-height="{Math.max(STRIP_MIN, standingH)}px">
     <b class="act-strip-title">
       🥾 Traveling to {gs.discovered.includes(dest.id) ? `${dest.icon} ${dest.name}` : '❓ an unknown place'}
     </b>
@@ -269,8 +281,11 @@
       <div class="label">{ticksToTime(gs.travel.ticksLeft)} remaining</div>
     </div>
   </div>
-{:else if spot.activities.length > 0 || spot.exploreTicks}
-  <div class="panel act-strip">
+{:else}
+  <div class="panel act-strip" style:min-height="{STRIP_MIN}px" bind:clientHeight={standingH}>
+    {#if spot.activities.length === 0 && !spot.exploreTicks}
+      <span class="dim small">No activities here.</span>
+    {/if}
     {#if spot.activities.length > 0}
       <div class="act-btns">
         {#each spot.activities as act}

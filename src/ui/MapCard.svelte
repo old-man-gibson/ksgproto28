@@ -1,17 +1,29 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import OfficeDirectory from './OfficeDirectory.svelte';
+  import MapPlan from './MapPlan.svelte';
   import { OFFICE_ROOMS } from '../core/systems/floodedFloor';
   import { gs, game, ui, view } from './state.svelte';
   import { AREAS, FLOOR_BY_AREA, RECIPES, REGIONS, SPOTS, getSpot } from '../core/registry';
   import { recipeHidden } from '../core/systems/crafting';
   import { visibleEdges, journeyEnd } from '../core/systems/locations';
   import { spotActivities } from '../core/systems/actions';
-  import { spotCleared } from '../core/systems/combat';
-  import { conditionsMet } from '../core/systems/conditions';
-  import { condsText, ticksToTime } from './lib/format';
-  import { routeInfo, spotFeatures, type SpotFeature } from './lib/navigation';
-  import { labelBox, mapNodes, placeLabels, type LabelPlace } from './lib/map';
-  import type { SpotDef } from '../core/types';
+  import { ticksToTime } from './lib/format';
+  import {
+    NO_ROUTE_LINE,
+    journeySpots,
+    legTime,
+    nextTrail,
+    noRouteSummary,
+    routeInfo,
+    routeLegs,
+    routeSummary,
+    spotFeatures,
+    type RouteLine,
+  } from './lib/navigation';
+  import { DEFAULT_W } from './lib/map';
+  import { CARD_W, cardTab, placeCard, selectionStep, type Box, type CardFocus, type SelectEvent } from './lib/mapSelect';
+  import { buildPlan, buildRouteDraw, planThreats, stableThreats } from './lib/mapPlan';
   import TileMap from './lib/tilemaps/TileMap.svelte';
   import { TILEMAPS } from './lib/tilemaps';
   import { tutorialScreen } from './lib/tutorialFocus';
@@ -77,128 +89,37 @@
     areaOverride = null;
   });
 
-  // Discovered spots plus "?" ghosts one visible edge away from a discovered spot.
-  const nodes = $derived(mapNodes(gs, shownRegion, shownArea));
-
-  const mapEdges = $derived.by(() => {
-    const rendered = new Map(nodes.map((n) => [n.spot.id, n]));
-    const seen = new Set<string>();
-    const lines: { from: SpotDef; to: SpotDef; oneWay: boolean; forced: boolean; shut: string | null }[] = [];
-    const exits: { from: SpotDef; to: string; label: string; offset: number }[] = [];
-    for (const n of nodes) {
-      if (!n.known) continue;
-      let exitCount = 0;
-      for (const e of visibleEdges(gs, n.spot.id)) {
-        if (OFFICE_ROOMS.includes(n.spot.id) && OFFICE_ROOMS.includes(e.to)) continue;
-        const target = SPOTS[e.to];
-        const targetRegion = AREAS[target.areaId].regionId;
-        if (targetRegion !== shownRegion) {
-          exits.push({ from: n.spot, to: e.to, label: REGIONS[targetRegion].name, offset: exitCount++ });
-          continue;
-        }
-        if (!rendered.has(e.to)) continue;
-        const key = [n.spot.id, e.to].sort().join('|');
-        if (seen.has(key)) continue;
-        seen.add(key);
-        const reverse = visibleEdges(gs, e.to).find((r) => r.to === n.spot.id);
-        // A road wears the warning when EITHER direction walks into a fight
-        // with no way out — an edge flag one way, or a forced spot at an end.
-        // A cleared spot no longer menaces anybody (see SpotDef.fightLimit).
-        const into = (dest: SpotDef, edgeForced?: boolean) =>
-          !!(edgeForced || dest.forced) && !spotCleared(gs, dest);
-        const forced = into(target, e.forced) || into(n.spot, reverse?.forced);
-        // Locks are directional (Connection.requires); the line shows either.
-        const shutEdge = [e, reverse].find((x) => x?.requires && !conditionsMet(gs, x.requires));
-        lines.push({
-          from: n.spot,
-          to: target,
-          oneWay: !reverse,
-          forced,
-          shut: shutEdge ? condsText(shutEdge.requires) : null,
-        });
-      }
-    }
-    return { lines, exits };
-  });
-
   /**
    * A region with a composed scene (lib/tilemaps) is painted from tiles under
    * the diagram. Regions without one — and any machine without the art packs
-   * (`tilesFailed`) — keep the plain dark ground.
+   * (`tilesFailed`) — draw as a diagram on the plain dark ground.
    */
   const tilemap = $derived(TILEMAPS[shownRegion] ?? null);
   let tilesFailed = $state(false);
   const tiled = $derived(!!tilemap && !tilesFailed);
 
   /**
-   * A floor fitted to its own spots, at the canvas's aspect, and never zoomed
-   * past 1.5× — a three-spot floor should look small, not swollen. A tiled
-   * region keeps the fixed canvas, because its tiles are pinned to it.
+   * The column's width, measured. A diagram is drawn at that width and 340 px
+   * high; a tiled region keeps its picture's proportions. Until the first
+   * measurement (and where nothing can be measured) the plan uses the width of
+   * the 1094 px layout's column.
    */
-  const viewBox = $derived.by(() => {
-    if (!shownArea || tiled || nodes.length === 0) return '0 -6 100 84';
-    const xs = nodes.map((n) => n.spot.map!.x);
-    const ys = nodes.map((n) => n.spot.map!.y);
-    let x = Math.min(...xs) - 14;
-    let y = Math.min(...ys) - 11;
-    let w = Math.max(...xs) + 14 - x;
-    let h = Math.max(...ys) + 12 - y;
-    const aspect = 100 / 84;
-    if (w / h < aspect) {
-      const nw = h * aspect;
-      x -= (nw - w) / 2;
-      w = nw;
-    } else {
-      const nh = w / aspect;
-      y -= (nh - h) / 2;
-      h = nh;
-    }
-    if (w < 66) {
-      const k = 66 / w;
-      x -= (w * k - w) / 2;
-      y -= (h * k - h) / 2;
-      w *= k;
-      h *= k;
-    }
-    return `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
+  let wrapW = $state(0);
+  const width = $derived(wrapW || DEFAULT_W);
+
+  // Level ranges read the clock (`daypart` lines), so they are worked out on
+  // every tick, and `planThreats` returns a new Map each time. The plan gets
+  // the Map it already had while the ranges are the same (`stableThreats`),
+  // so a tick that changes no range rebuilds nothing.
+  let threatCache: ReadonlyMap<string, string> = new Map();
+  const threats = $derived.by(() => {
+    threatCache = stableThreats(threatCache, planThreats(gs, shownRegion, shownArea));
+    return threatCache;
   });
 
-  /** Feature icons per known node, cycled on the badge and listed in the card. */
-  const features = $derived.by(() => {
-    const out = new Map<string, SpotFeature[]>();
-    for (const n of nodes) if (n.known) out.set(n.spot.id, spotFeatures(gs, n.spot));
-    return out;
-  });
-
-  /** A region exit's text sits right of its spot, past the ⚡ when there is one. */
-  function exitPlace(exit: { from: SpotDef; offset: number }): LabelPlace {
-    const m = exit.from.map!;
-    return { x: m.x + (exit.from.waypoint ? 6.6 : 4), y: m.y - 3 + exit.offset * 3.2, anchor: 'start' };
-  }
-
-  /** Every name placed clear of the other pins, their badges, the exits and each other. */
-  const labelAt = $derived(
-    placeLabels(
-      nodes.map((n) => ({
-        id: n.spot.id,
-        x: n.spot.map!.x,
-        y: n.spot.map!.y,
-        text: n.known ? n.spot.name : '???',
-        // The tutorial's ▼ over a pin takes the badge's place.
-        badge: (features.get(n.spot.id)?.length ?? 0) > 0 || target === `spot:${n.spot.id}`,
-        waypoint: n.known && !!n.spot.waypoint,
-        menace: !!n.spot.forced && !spotCleared(gs, n.spot),
-      })),
-      mapEdges.exits.map((e) => labelBox(`→ ${e.label}`, exitPlace(e), 2.6)),
-    ),
+  const plan = $derived(
+    buildPlan(gs, { region: shownRegion, area: shownArea, width, tiled, focus: focusId, target, threats }),
   );
-
-  // The badge shows one icon at a time and steps through the rest.
-  let beat = $state(0);
-  $effect(() => {
-    const id = setInterval(() => beat++, 1500);
-    return () => clearInterval(id);
-  });
 
   const stuck = $derived(!!gs.travel || gs.recovering || !!gs.combat?.forced);
 
@@ -207,48 +128,144 @@
     game.travelPlanTo(id);
   }
 
-  // ---------- The hover card ----------
+  // ---------- The click card ----------
 
-  let cardFor = $state<string | null>(null);
+  /**
+   * The pin whose card is open. A click on a pin selects it, a second click on
+   * it walks there, and nothing opens on hover (lib/mapSelect.ts holds the
+   * rules; `apply` runs every event through them).
+   */
+  let selected = $state<string | null>(null);
   let cardX = $state(0);
   let cardY = $state(0);
-  let closeTimer: ReturnType<typeof setTimeout> | undefined;
+  let cardEl = $state<HTMLElement | null>(null);
+  /** The selected pin's own element: the card stands beside it and follows it. */
+  let anchor: Element | null = null;
 
-  function openCard(id: string, ev: Event) {
-    clearTimeout(closeTimer);
-    const rect = (ev.currentTarget as Element).getBoundingClientRect();
-    // Right of the pin, or left of it when that would run off the window.
-    // Clamping it inward instead slid the card over the pin it describes,
-    // so a click aimed at the pin landed on the card (narrow windows).
-    const width = 290;
-    cardX =
-      rect.right + 8 + width <= window.innerWidth - 8
-        ? rect.right + 8
-        : Math.max(8, rect.left - 8 - width);
-    cardY = Math.max(8, Math.min(rect.top - 4, window.innerHeight - 360));
-    cardFor = id;
+  function apply(ev: SelectEvent) {
+    const next = selectionStep(selected, ev);
+    selected = next.selected;
+    if (!next.selected) anchor = null;
+    if (next.walk) walkTo(next.walk);
   }
 
-  function closeSoon() {
-    clearTimeout(closeTimer);
-    closeTimer = setTimeout(() => (cardFor = null), 180);
+  /** The card's corner beside a pin, for a card `cardH` px tall. */
+  function stand(pin: Element, cardH: number, exits: Box[] = exitBoxes()) {
+    const view = { w: window.innerWidth, h: window.innerHeight };
+    const at = placeCard(pin.getBoundingClientRect(), view, { w: CARD_W, h: cardH }, exits);
+    cardX = at.x;
+    cardY = at.y;
   }
 
-  function keepCard() {
-    clearTimeout(closeTimer);
+  /** The card's buttons that can take focus, in order. */
+  function cardControls(): HTMLElement[] {
+    return cardEl ? [...cardEl.querySelectorAll<HTMLElement>('button:not([disabled])')] : [];
   }
 
-  // A node that vanishes under the cursor never fires mouseleave: folding the
-  // map or switching region must close its card by hand.
+  /**
+   * The region exit labels on screen. They sit beside a pin but are not part
+   * of it, and the last tutorial step is a click on one, so a card keeps clear
+   * of them (`placeCard`).
+   */
+  function exitBoxes(): Box[] {
+    return [...document.querySelectorAll('svg.plan text.exit')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left - 4, top: r.top - 4, right: r.right + 4, bottom: r.bottom + 4 };
+    });
+  }
+
+  function pick(id: string, pin: Element) {
+    anchor = pin;
+    apply({ type: 'pin', id, here: id === gs.spot });
+    // The card's height is not known until it is drawn; `follow` below corrects it.
+    if (selected) stand(pin, 360);
+  }
+
+  // Escape, or a click outside the card and the pins, closes the card.
   $effect(() => {
-    void shownRegion;
-    if (!mapOpen) cardFor = null;
-    return () => (cardFor = null);
+    if (!selected) return;
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') {
+        // Focus in the card would be lost with it: hand it back to the pin.
+        const pin = anchor as HTMLElement | SVGElement | null;
+        const inCard = !!cardEl && cardEl.contains(document.activeElement);
+        apply({ type: 'escape' });
+        if (inCard) pin?.focus();
+        return;
+      }
+      if (ev.key !== 'Tab') return;
+      // The card is the last thing on the page: carry Tab from the selected
+      // pin into it and back (`cardTab`).
+      const controls = cardControls();
+      const active = document.activeElement;
+      const at: CardFocus = active === anchor ? 'pin' : controls.indexOf(active as HTMLElement);
+      if (at === -1) return;
+      const to = cardTab(at, controls.length, ev.shiftKey);
+      if (to === null) return;
+      ev.preventDefault();
+      (to === 'pin' ? (anchor as HTMLElement | SVGElement | null) : controls[to])?.focus();
+    };
+    const onClick = (ev: MouseEvent) => {
+      const inside = ev.composedPath().some((n) => n instanceof Element && n.matches('.map-card, g.node'));
+      if (!inside) apply({ type: 'outside' });
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('click', onClick);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('click', onClick);
+    };
   });
 
+  // The card stays beside its pin whatever moves the pin (scrolling, a resize,
+  // the travel strip above the map appearing), one frame at a time while it is
+  // open. A pin that is gone, covered or scrolled out of reach of a click
+  // closes it: a card with no pin beside it is not shown.
+  $effect(() => {
+    if (!selected) return;
+    let frame = 0;
+    let last = '';
+    const follow = () => {
+      frame = requestAnimationFrame(follow);
+      const pin = anchor;
+      if (!pin || !pin.isConnected) return apply({ type: 'view' });
+      const r = pin.getBoundingClientRect();
+      const h = cardEl?.offsetHeight ?? 360;
+      const exits = exitBoxes();
+      const key = [r.left, r.top, r.right, r.bottom, window.innerWidth, window.innerHeight, h, ...exits.map((b) => [b.left, b.top])].join();
+      if (key === last) return;
+      last = key;
+      const dot = pin.querySelector('.dot')?.getBoundingClientRect() ?? r;
+      const hit = document.elementFromPoint(dot.left + dot.width / 2, dot.top + dot.height / 2);
+      if (hit?.closest('g.node') !== pin) return apply({ type: 'view' });
+      stand(pin, h, exits);
+    };
+    frame = requestAnimationFrame(follow);
+    return () => cancelAnimationFrame(frame);
+  });
+
+  // Switching region or floor, or folding the map, closes the card; so does
+  // the selected pin leaving the map.
+  $effect(() => {
+    void shownRegion;
+    void shownArea;
+    void mapOpen;
+    untrack(() => apply({ type: 'view' }));
+  });
+  $effect(() => {
+    const ids = new Set(plan.nodes.map((n) => n.id));
+    untrack(() => apply({ type: 'present', ids }));
+  });
+
+  /** A card button that walks: the card has done its job. */
+  function cardWalk(id: string) {
+    walkTo(id);
+    apply({ type: 'done' });
+  }
+
   const card = $derived.by(() => {
-    if (!cardFor) return null;
-    const spot = getSpot(cardFor);
+    if (!selected) return null;
+    const spot = getSpot(selected);
     const known = gs.discovered.includes(spot.id);
     const here = spot.id === gs.spot && !gs.travel;
     const feats = known ? spotFeatures(gs, spot) : [];
@@ -270,15 +287,65 @@
     };
   });
 
+  // ---------- The route line ----------
+
+  /**
+   * The spots of the journey walked so far. The save keeps the leg under way
+   * and the legs still planned, never the ones behind, so the map remembers
+   * them here: a reload mid-walk draws from the leg under way.
+   */
+  let trail = $state<string[]>([]);
+  $effect(() => {
+    const travel = gs.travel ? { from: gs.travel.from, to: gs.travel.to } : null;
+    const before = untrack(() => trail);
+    const next = nextTrail(before, travel);
+    if (next !== before) trail = next;
+  });
+
+  /** The journey in progress as legs, with the one under way. */
+  const journey = $derived.by(() => {
+    if (!gs.travel) return null;
+    const travel = { from: gs.travel.from, to: gs.travel.to };
+    const spots = journeySpots(trail, travel, gs.travelPlan);
+    return {
+      legs: routeLegs(spots[0], spots.slice(1), view.stats.travelSpeed),
+      current: nextTrail(trail, travel).length - 2,
+    };
+  });
+
+  /** Selecting a place draws the way there from where the player stands. */
+  const preview = $derived.by(() => {
+    if (journey || !card || card.here) return null;
+    const path = card.route.path;
+    return path?.length ? routeLegs(gs.spot, path, view.stats.travelSpeed) : null;
+  });
+
+  const routeLine = $derived.by((): RouteLine => {
+    if (journey) return routeSummary(gs, 'Journey', journey.legs);
+    if (!card || card.here) return NO_ROUTE_LINE;
+    return preview ? routeSummary(gs, 'Route', preview) : noRouteSummary(gs, card.spot.id, card.route);
+  });
+
+  const routeDraw = $derived.by(() => {
+    if (journey) {
+      const t = gs.travel!;
+      return buildRouteDraw(plan, journey.legs, legTime, {
+        current: journey.current,
+        fraction: t.total > 0 ? 1 - t.ticksLeft / t.total : 0,
+      });
+    }
+    return preview ? buildRouteDraw(plan, preview, legTime, null) : null;
+  });
+
   function goOpenBench(spotId: string, bench: string) {
     if (spotId !== gs.spot || gs.travel) {
       if (!game.travelPlanTo(spotId)) return;
     }
     ui.benchOnArrival = { spot: spotId, bench };
     ui.tab = 'location';
-    // The bench window opens under the cursor; a card left standing would
-    // sit on top of it (the card is fixed, above modals).
-    cardFor = null;
+    // The bench window opens over the page; a card left standing would sit
+    // on top of it (the card is fixed, above modals).
+    apply({ type: 'done' });
   }
 
   /**
@@ -296,6 +363,7 @@
       return;
     }
     game.goAndDo(spotId, activity);
+    apply({ type: 'done' });
   }
 </script>
 
@@ -343,130 +411,26 @@
     {#if shownRegion === currentRegion && OFFICE_ROOMS.includes(gs.spot) && (!shownArea || shownArea === getSpot(gs.spot).areaId)}
       <OfficeDirectory />
     {:else}
-    <div class="map-wrap" class:tiled>
-    {#if tilemap}
-      {#key shownRegion}
-        <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} />
-      {/key}
-    {/if}
-    <svg {viewBox} class="map" class:tiled aria-label="Region map">
-      {#each mapEdges.lines as e}
-        <!-- A drawn map shows its roads as the doors and paths in the
-             picture; a straight line between pins would cut through its
-             walls. The lock stays, and a forced fight keeps its ⚔️ on the pin. -->
-        {#if !tiled}
-          <line
-            x1={e.from.map!.x}
-            y1={e.from.map!.y}
-            x2={e.to.map!.x}
-            y2={e.to.map!.y}
-            class="edge"
-            class:oneway={e.oneWay}
-            class:forced={e.forced}
-            class:shut={!!e.shut}
-          >
-            {#if e.forced}<title>This way leads to a fight with no way out</title>{/if}
-          </line>
+      <!-- One line, always there, so a route appearing never moves the map. -->
+      <div
+        class="route-line small"
+        role="status"
+        title={routeLine.head ? `${routeLine.head} ${routeLine.rest}` : undefined}
+      >
+        {#if routeLine.head}
+          <span class="route-head">{routeLine.head}</span> {routeLine.rest}
+        {:else}
+          &nbsp;
         {/if}
-        {#if e.shut}
-          <text
-            x={(e.from.map!.x + e.to.map!.x) / 2}
-            y={(e.from.map!.y + e.to.map!.y) / 2 + 1}
-            text-anchor="middle"
-            class="lock"
-          >
-            🔒<title>Shut: {e.shut}</title>
-          </text>
+      </div>
+      <div class="map-wrap" class:tiled bind:clientWidth={wrapW} style:height="{plan.frame.h + 2}px">
+        {#if tilemap}
+          {#key shownRegion}
+            <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} />
+          {/key}
         {/if}
-      {/each}
-      {#each mapEdges.exits as exit}
-        <text
-          x={exitPlace(exit).x}
-          y={exitPlace(exit).y}
-          class="exit"
-          class:clickable={!stuck}
-          class:tutorial-target={target === `exit:${exit.to}`}
-          class:beacon-text={target === `exit:${exit.to}`}
-          role="button"
-          tabindex="0"
-          aria-label="Travel toward {exit.label}"
-          onclick={() => walkTo(exit.to)}
-          onkeydown={(ev) => ev.key === 'Enter' && walkTo(exit.to)}
-          onmouseenter={(ev) => openCard(exit.to, ev)}
-          onmouseleave={closeSoon}
-          onfocus={(ev) => openCard(exit.to, ev)}
-          onblur={closeSoon}
-        >
-          → {exit.label}
-        </text>
-        {#if target === `exit:${exit.to}`}
-          <text
-            x={exitPlace(exit).x + 1.2}
-            y={exitPlace(exit).y - 3.6}
-            text-anchor="middle"
-            class="beacon-arrow">▼</text
-          >
-        {/if}
-      {/each}
-      {#each nodes as node (node.spot.id)}
-        {@const m = node.spot.map!}
-        {@const feats = features.get(node.spot.id) ?? []}
-        {@const at = labelAt.get(node.spot.id) ?? { x: m.x, y: m.y + 6.4, anchor: 'middle' }}
-        {@const pointed = target === `spot:${node.spot.id}`}
-        <g
-          class="node"
-          class:known={node.known}
-          class:clickable={node.spot.id !== gs.spot && !stuck}
-          class:pointed
-          class:tutorial-target={pointed}
-          role="button"
-          tabindex="0"
-          aria-label={node.known ? `Travel to ${node.spot.name}` : 'Travel to unexplored place'}
-          onclick={() => walkTo(node.spot.id)}
-          onkeydown={(ev) => ev.key === 'Enter' && walkTo(node.spot.id)}
-          onmouseenter={(ev) => openCard(node.spot.id, ev)}
-          onmouseleave={closeSoon}
-          onfocus={(ev) => openCard(node.spot.id, ev)}
-          onblur={closeSoon}
-        >
-          {#if node.spot.id === gs.spot}
-            <circle cx={m.x} cy={m.y} r="4.6" class="ring" />
-          {/if}
-          {#if pointed}
-            <circle cx={m.x} cy={m.y} r="5.4" class="beacon" />
-            <text x={m.x} y={m.y - 6.5} text-anchor="middle" class="beacon-arrow">▼</text>
-          {/if}
-          <circle cx={m.x} cy={m.y} r="3.1" class="dot" />
-          <text x={m.x} y={m.y + 1.3} text-anchor="middle" class="icon">
-            {node.known ? node.spot.icon : '❓'}
-          </text>
-          <text x={at.x} y={at.y} text-anchor={at.anchor} class="label">
-            {node.known ? node.spot.name : '???'}
-          </text>
-          {#if feats.length}
-            <!-- What stands here, one icon at a time; the card lists them all. -->
-            <text x={m.x} y={m.y - 5} text-anchor="middle" class="feat">
-              {feats[beat % feats.length].icon}
-            </text>
-            {#if feats.length > 1}
-              <text x={m.x + 2} y={m.y - 6.6} class="feat-more">+</text>
-            {/if}
-          {/if}
-          {#if node.spot.waypoint && node.known}
-            <text x={m.x + 2.6} y={m.y - 2.6} class="wp">⚡</text>
-          {/if}
-          {#if node.spot.forced && !spotCleared(gs, node.spot)}
-            <!-- Worn by unknown "?" nodes too: the ambush is knowable at the
-                 door, which is the entire point of warning at all. -->
-            <text x={m.x - 5.2} y={m.y - 2.6} class="menace">
-              ⚔️
-              <title>Entering here starts a fight with no way out</title>
-            </text>
-          {/if}
-        </g>
-      {/each}
-    </svg>
-    </div>
+        <MapPlan {plan} route={routeDraw} {stuck} {selected} onpick={pick} onexit={walkTo} />
+      </div>
     {/if}
   {:else}
     <!-- Folded map: the roads out of here stay one click away. -->
@@ -489,18 +453,24 @@
     </div>
   {/if}
 
-  {#if gs.travel}
-    <div class="journey small">
+  <!-- The slot is always there, empty while standing, so a walk starting or
+       ending does not move what is below the map. -->
+  <div class="journey small">
+    {#if gs.travel}
       🥾 En route to {gs.discovered.includes(gs.travel.to) ? getSpot(gs.travel.to).name : 'an unknown place'} — {ticksToTime(gs.travel.ticksLeft)}
       {#if gs.travelPlan.length > 0}
         <span class="dim">
           , then {gs.travelPlan.length} more leg{gs.travelPlan.length > 1 ? 's' : ''} to
-          {getSpot(gs.travelPlan[gs.travelPlan.length - 1]).name}
+          {gs.discovered.includes(gs.travelPlan[gs.travelPlan.length - 1])
+            ? getSpot(gs.travelPlan[gs.travelPlan.length - 1]).name
+            : 'an unknown place'}
         </span>
         <button class="small" onclick={() => game.cancelTravelPlan()}>Cancel journey</button>
       {/if}
-    </div>
-  {/if}
+    {:else}
+      &nbsp;
+    {/if}
+  </div>
 </div>
 
 {#if card}
@@ -512,8 +482,7 @@
     role="dialog"
     aria-label="{c.known ? c.spot.name : 'Unknown place'} details"
     tabindex="-1"
-    onmouseenter={keepCard}
-    onmouseleave={closeSoon}
+    bind:this={cardEl}
   >
     <div class="card-head">
       <b>{c.known ? `${c.spot.icon} ${c.spot.name}` : '❓ Unknown place'}</b>
@@ -538,7 +507,7 @@
       {/if}
       {#if r.shut}<div class="shut small">🔒 Shut: {r.shut}</div>{/if}
       {#if !c.journeyEnds}
-        <button class="small walk" disabled={stuck || !r.path} onclick={() => walkTo(c.spot.id)}>
+        <button class="small walk" disabled={stuck || !r.path} onclick={() => cardWalk(c.spot.id)}>
           🥾 Walk here
         </button>
       {:else}
@@ -571,7 +540,7 @@
           {:else if f.activity}
             {@render actButton(c.spot.id, f.activity, c.here, c.journeyEnds, !!r.path)}
           {:else if !c.here}
-            <button class="small" disabled={stuck || !r.path} onclick={() => walkTo(c.spot.id)}>Go</button>
+            <button class="small" disabled={stuck || !r.path} onclick={() => cardWalk(c.spot.id)}>Go</button>
           {/if}
         </div>
       {/each}
@@ -640,224 +609,53 @@
   }
 
   /*
-   * The map is a diagram, not a vista. Left to itself an SVG with a viewBox
-   * takes the full width and then forces a matching height, which on a wide
-   * screen makes it the largest thing in the game. Capping BOTH dimensions
-   * letterboxes it politely instead.
+   * The route line has one fixed height, whether it holds a route or nothing,
+   * so selecting a pin never moves the map or the page. A route longer than the
+   * column is cut with an ellipsis; the whole of it is in the tooltip.
    */
-  .map {
-    width: 100%;
-    max-width: 560px;
-    max-height: 340px;
-    background: var(--bg-sunken);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+  .route-line {
+    height: 22px;
+    line-height: 22px;
     margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .route-head {
+    color: var(--accent);
   }
 
   /*
-   * The tiles sit UNDER the same SVG, which is why the diagram keeps its
-   * viewBox (0 −6 100 84: six rows of headroom for labels above, three
-   * below): the canvas is pinned to the picture's own 100 × 75, so a spot's
-   * map coordinates land on the same tile whether or not the sheets loaded.
-   * The SVG's own ground goes transparent over tiles.
+   * The map is drawn in pixels at the column's width (MapCard measures it and
+   * MapPlan sets the viewBox to match), and its height is the plan's, so the
+   * frame is the same size whatever is selected or walked. A tiled region is
+   * capped at its picture's useful width and keeps its proportions.
    */
   .map-wrap {
     position: relative;
     width: 100%;
-    max-width: 560px;
-    margin-top: 4px;
+    background: var(--bg-sunken);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 2px;
+    overflow: hidden;
   }
 
+  /*
+   * The tiles sit UNDER the same SVG: the picture is 100 × 75 map units with
+   * six units of headroom for labels above and three below (tiledFrame in
+   * lib/map.ts), so a spot's map coordinates land on the same tile whether or
+   * not the sheets loaded. The SVG goes transparent over tiles.
+   */
   .map-wrap.tiled {
-    aspect-ratio: 100 / 84;
+    max-width: 560px;
+    background: var(--bg-sunken);
   }
 
   .map-wrap.tiled :global(.tiles) {
     top: calc(100% * 6 / 84);
     height: calc(100% * 75 / 84);
-  }
-
-  .map-wrap.tiled .map {
-    position: absolute;
-    inset: 0;
-    max-height: none;
-    height: 100%;
-    background: transparent;
-    margin-top: 0;
-  }
-
-  .map.tiled .label {
-    fill: #fff;
-    paint-order: stroke;
-    stroke: var(--bg-sunken);
-    stroke-width: 0.8;
-  }
-
-  /* An exit is the only way off a drawn region (floor 0's gate is the
-     tutorial's last step), and dim italic grey vanishes into grass tiles.
-     Same halo as the labels; the hover accent below still wins. */
-  .map.tiled .exit {
-    fill: #fff;
-    font-weight: 600;
-    paint-order: stroke;
-    stroke: var(--bg-sunken);
-    stroke-width: 0.8;
-  }
-
-  .edge {
-    stroke: var(--border);
-    stroke-width: 0.5;
-  }
-
-  .edge.oneway {
-    stroke-dasharray: 1.5 1;
-    stroke: #6b5d3f;
-  }
-
-  /* A road that ends in a fight with no exit reads as a wound on the map. */
-  .edge.forced {
-    stroke: var(--danger);
-    opacity: 0.75;
-  }
-
-  .edge.shut {
-    stroke-dasharray: 0.6 0.9;
-    opacity: 0.6;
-  }
-
-  .lock {
-    font-size: 2.4px;
-  }
-
-  .exit {
-    font-size: 2.6px;
-    fill: var(--text-dim);
-    font-style: italic;
-  }
-
-  .exit.clickable {
-    cursor: pointer;
-  }
-
-  .exit.clickable:hover {
-    fill: var(--accent);
-  }
-
-  .exit:focus {
-    outline: none;
-  }
-
-  .node .dot {
-    fill: var(--bg-raised);
-    stroke: var(--border);
-    stroke-width: 0.4;
-  }
-
-  .node:not(.known) {
-    opacity: 0.45;
-  }
-
-  .node.clickable {
-    cursor: pointer;
-  }
-
-  .node.clickable:hover .dot {
-    stroke: var(--accent);
-  }
-
-  .node:focus {
-    outline: none;
-  }
-
-  .icon {
-    font-size: 3.6px;
-    pointer-events: none;
-  }
-
-  .label {
-    font-size: 2.4px;
-    fill: var(--text-dim);
-    pointer-events: none;
-  }
-
-  .feat {
-    font-size: 2.9px;
-  }
-
-  .feat-more {
-    font-size: 2.6px;
-    font-weight: 700;
-    fill: var(--accent);
-  }
-
-  .wp {
-    font-size: 2.8px;
-  }
-
-  .menace {
-    font-size: 2.8px;
-  }
-
-  .ring {
-    fill: none;
-    stroke: var(--accent);
-    stroke-width: 0.6;
-    animation: pulse 1.6s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  /* Floor 0's pointer (lib/tutorialFocus.ts). A ❓ pin is drawn faint until
-     visited; the one the step names is drawn full, with a widening ring. */
-  .node.pointed {
-    opacity: 1;
-  }
-
-  .node.pointed .dot {
-    stroke: var(--accent);
-    stroke-width: 0.8;
-  }
-
-  .beacon {
-    fill: none;
-    stroke: var(--accent);
-    stroke-width: 0.9;
-    pointer-events: none;
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: beacon 1.4s ease-out infinite;
-  }
-
-  @keyframes beacon {
-    0% { transform: scale(0.7); opacity: 1; }
-    100% { transform: scale(1.5); opacity: 0; }
-  }
-
-  /* The ring alone matches the "you are here" ring; the arrow says which. */
-  .beacon-arrow {
-    font-size: 3.4px;
-    fill: var(--accent);
-    paint-order: stroke;
-    stroke: var(--bg-sunken);
-    stroke-width: 0.5;
-    pointer-events: none;
-    animation: beacon-bob 0.9s ease-in-out infinite alternate;
-  }
-
-  @keyframes beacon-bob {
-    from { transform: translateY(-1px); }
-    to { transform: translateY(0.6px); }
-  }
-
-  .map .exit.beacon-text {
-    fill: var(--accent);
-    font-weight: 700;
-    font-style: normal;
-    animation: pulse 1.4s ease-in-out infinite;
   }
 
   .roads {
@@ -868,12 +666,18 @@
     margin-top: 8px;
   }
 
+  /*
+   * The line keeps the height it has with the Cancel button, so the last leg
+   * of a journey (which has no plan left to cancel) does not move what is
+   * below it.
+   */
   .journey {
     margin-top: 8px;
     display: flex;
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    min-height: 2.5em;
   }
 
   .map-card {
