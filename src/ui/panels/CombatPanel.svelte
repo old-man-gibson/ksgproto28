@@ -35,6 +35,7 @@
   import { resourceLock } from '../../core/systems/resources';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
   import { huntRest } from '../../core/systems/huntrest';
+  import { soleCombatActivity } from '../../core/systems/actions';
   import { escalationPrimed, statusForcingStyle, visibleStatuses } from '../../core/systems/statuses';
   import { STAT_NAMES, type MonsterInstance } from '../../core/types';
   import { styleUnlocked, styleSlots, effectiveStyleDef, stanceIdFor } from '../../core/systems/styles';
@@ -331,6 +332,11 @@
   }
 
   const spot = $derived(getSpot(gs.spot));
+  /**
+   * The spot's one hunt, started from here as from the Location tab. None
+   * while walking: the Location tab shows no activities then either.
+   */
+  const soleHunt = $derived(gs.travel ? null : soleCombatActivity(spot));
   /** Floor 0's fight steps scroll here (lib/tutorialFocus.ts); no glow over a running fight. */
   const stageTarget = $derived(tutorialScreen(gs)?.target === 'stage');
   /** Actives in the order they'll actually be considered. */
@@ -524,10 +530,23 @@
 <!-- The fight, drawn — first on the tab, because it is what the tab is for.
      Between fights it stays up, showing the place and what it is waiting on. -->
 <div style="margin-bottom: 12px" class:tutorial-target={stageTarget}>
-  <BattleStage {spot} foeTip={enemyTip} />
+  <BattleStage {spot} foeTip={enemyTip} startBelow={soleHunt} />
   <!-- The player's own rule between fights (systems/huntrest.ts). Applies to
        hunts only: forced fights and the keeper's dare start regardless. -->
   <div class="hunt-rest small">
+    <!-- The spot's one hunt (soleCombatActivity): the Location tab's button,
+         same toggle and locks, so a fight starts without leaving this tab. -->
+    {#if soleHunt}
+      {@const running = gs.activity === soleHunt.id}
+      <button
+        class:selected={running}
+        disabled={gs.recovering || !!gs.combat?.forced}
+        title={running ? 'Running. Click to stop.' : 'Start this hunt.'}
+        onclick={() => game.selectActivity(running ? null : soleHunt.id)}
+      >
+        {soleHunt.icon} {soleHunt.name}{#if running}<span class="dim">{' · running'}</span>{/if}
+      </button>
+    {/if}
     <label>
       Rest before the next fight when HP is below
       <select

@@ -71,6 +71,18 @@ export function spotActivities(spot: SpotDef): ActivityDef[] {
   return [...spot.activities, ...crafts];
 }
 
+/**
+ * The spot's one combat activity, which the Combat tab offers a start button
+ * for: its hunt, when it has exactly one. A hunt is the only kind that runs a
+ * fight (tickAction → tickCombat); a `combat` tag on a train activity (Drill
+ * Forms, Spar) routes skill XP and starts nothing, so it does not count. No
+ * hunt, or several, is null: the Location tab is where the player picks.
+ */
+export function soleCombatActivity(spot: SpotDef): ActivityDef | null {
+  const hunts = spot.activities.filter((a) => a.kind === 'hunt');
+  return hunts.length === 1 ? hunts[0] : null;
+}
+
 export function currentActivity(state: GameState): ActivityDef | null {
   if (!state.activity) return null;
   const spot = getSpot(state.spot);
