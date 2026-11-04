@@ -111,6 +111,17 @@ export function poolText(current: number, max: number): string {
 }
 
 /**
+ * An ability cell's value (facet/host.ts CellReadout) for the sidebar and the
+ * Ability tab. A cap of 1e9 or more means "no cap" in the bank, so the count
+ * stands alone.
+ */
+export function abilityValue(c: { show: string; value: number; cap: number }): string {
+  if (c.show === 'signedPct') return (c.value >= 0 ? '+' : '−') + Math.round(Math.abs(c.value) * 100) + '%';
+  if (c.show === 'bar' || c.cap < 1e9) return `${Math.floor(c.value)} / ${Math.floor(c.cap)}`;
+  return `${Math.round(c.value)}`;
+}
+
+/**
  * One line saying what a technique's move DOES, with practice-honed numbers
  * (resolvedMove) — shared by the combat card tooltip and the skill tree row.
  */

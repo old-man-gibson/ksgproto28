@@ -309,6 +309,47 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     // The ice cannot survive being hit.
     removal: [{ on: 'damageTaken', effect: 'remove' }],
   },
+  // A statue (Basilisk Hide's Stone at 100). It does nothing and leaves when
+  // the clock runs out; combat.ts pays it in Stone Chunks either way, and a
+  // statue broken before then throws rocks at the enemies behind it
+  // (`onKill`, `throwRubble`). Arrives only by escalation, already decided.
+  petrified: {
+    id: 'petrified',
+    name: 'Petrified',
+    icon: '🗿',
+    unresistable: 'a statue: the Stone already decided it',
+    stacking: { mode: 'highest' },
+    duration: 3 * SECOND,
+    blocks: ['swing', 'spell', 'attack'],
+    mods: [{ stat: 'speed', op: 'mult', value: -1 }],
+    statue: { rocks: 1, burst: 0, chunks: 0.5, xp: 0.5 },
+  },
+  // Basilisk Hide's Rubble branch: left alone, it bursts at half strength
+  // instead of crumbling, and no statue pays Stone Chunks.
+  petrified_rubble: {
+    id: 'petrified_rubble',
+    name: 'Petrified',
+    icon: '🗿',
+    unresistable: 'a statue: the Stone already decided it',
+    stacking: { mode: 'highest' },
+    duration: 3 * SECOND,
+    blocks: ['swing', 'spell', 'attack'],
+    mods: [{ stat: 'speed', op: 'mult', value: -1 }],
+    statue: { rocks: 1, burst: 0.5, chunks: 0, xp: 0.5 },
+  },
+  // Basilisk Hide's Stoneskin branch: stays until the fight ends, out of the
+  // centre slot, and throws no rocks however it falls.
+  petrified_standing: {
+    id: 'petrified_standing',
+    name: 'Petrified',
+    icon: '🗿',
+    unresistable: 'a statue: the Stone already decided it',
+    stacking: { mode: 'highest' },
+    duration: null,
+    blocks: ['swing', 'spell', 'attack'],
+    mods: [{ stat: 'speed', op: 'mult', value: -1 }],
+    statue: { rocks: 0, burst: 0, chunks: 0.5, xp: 0.5, stands: true },
+  },
 
   // ---------- Slashing: bleeding ----------
 

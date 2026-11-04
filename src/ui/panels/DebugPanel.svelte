@@ -169,6 +169,12 @@
     say(`Charge set to ${Math.round(share * 100)}%`);
   }
 
+  /** Basilisk Hide: one statue of an enemy near your level from its evolution. */
+  function statuesTo99() {
+    debugSetCell(gs, 'statues', 0.99);
+    say('Statues set to 99 of 100');
+  }
+
   /** For abilities that read low HP (Zenkai). Outside a fight it holds until regeneration refills it. */
   function hpTo(share: number) {
     setResource(gs, 'hp', share * getDerivedStats(gs).maxHp);
@@ -568,6 +574,7 @@
         <button onclick={() => setCharge(share)}>Charge {share * 100}%</button>
       {/each}
       <button onclick={() => hpTo(0.15)}>HP to 15%</button>
+      <button onclick={statuesTo99}>Statues to 99</button>
     </div>
     <div class="dim small">The power cell follows the charge on the next game minute (one real second).</div>
   </div>

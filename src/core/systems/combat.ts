@@ -29,6 +29,7 @@ import type {
   SpotDef,
   SpotEncounter,
   StatusApplication,
+  StatueRule,
   TechniqueDef,
   TechniqueMove,
 } from '../types';
@@ -261,7 +262,14 @@ function landMonsterGraze(
     kit.range === 'ranged',
   );
   const dealt = Math.max(1, Math.round(slice.dealt));
-  damagePlayer(state, dealt, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon });
+  damagePlayer(state, dealt, type, {
+    key: `monster:${e.defId}`,
+    label: e.name,
+    icon: e.icon,
+    by: e,
+    thrown: raw,
+    boss: isSpotBoss(state, e.defId),
+  });
   return dealt;
 }
 
@@ -665,6 +673,7 @@ import {
   statusPacifiesFlankers,
   statusRetaliation,
   statusReversesBar,
+  statueOf,
   statusesOf,
   statusNegativeHeadroom,
   stripStatuses,
@@ -682,7 +691,7 @@ import {
   noteParry,
 } from './ledger';
 import { dynamicLevelBonus, encounterLevel, killXp, rewardLevel } from './levels';
-import { facetCombatStamp, facetCombatTick, facetSignal } from '../facet/signal';
+import { FOE, facetCombatStamp, facetCombatTick, facetSignal } from '../facet/signal';
 import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
@@ -1646,9 +1655,79 @@ function rollDropTable(state: GameState, bus: EventBus, table: DropTable, monste
   }
 }
 
-function onKill(state: GameState, bus: EventBus, index: number): void {
+/** The base statue condition (statuses.data.ts `petrified`); Rubble and Stoneskin have their own. */
+export const PETRIFIED = 'petrified';
+
+/** Whether this enemy is a statue: it does nothing, and leaves as its StatueRule says. */
+export function isStatue(e: MonsterInstance): boolean {
+  return statueOf(e) !== null;
+}
+
+/** A Stoneskin statue: it stays until the fight ends, out of the centre slot. */
+function standing(e: MonsterInstance | null): boolean {
+  return !!e && !!statueOf(e)?.stands;
+}
+
+/**
+ * Rocks: a statue's max HP × `mult`, thrown at the living enemies behind it
+ * (higher slots), split evenly, half Piercing and half Slashing, through each
+ * one's armour and resistance. Statues are not targets. Each enemy hit raises
+ * the ability event `rocks` (Basilisk Hide's Rubble puts Stone on it). The
+ * kills are left to the caller (onKill sweeps them).
+ */
+function throwRubble(state: GameState, statue: MonsterInstance, index: number, mult: number, verb: string): void {
+  const c = state.combat!;
+  const behind = c.enemies.flatMap((e, j) => (e && j > index && e.hp > 0 && !isStatue(e) ? [j] : []));
+  if (behind.length === 0) return;
+  const share = (monsterStats(statue).maxHp * mult) / behind.length / 2;
+  let total = 0;
+  for (const j of behind) {
+    const e = c.enemies[j]!;
+    let dealt = 0;
+    for (const type of ['piercing', 'slashing'] as const) {
+      const dmg = Math.max(1, Math.round(monsterSlice(e, type, 'Rubble', share, 0).dealt));
+      e.hp -= dmg;
+      e.lastHit = type;
+      noteOutgoing(state, dmg);
+      dealt += dmg;
+    }
+    total += dealt;
+    facetSignal(state, 'rocks', { target: FOE + j, amount: dealt });
+  }
+  feed(state, `🪨 The ${statue.name} statue ${verb}: rocks hit ${behind.length} ${behind.length === 1 ? 'enemy' : 'enemies'} behind it for ${total}.`);
+}
+
+/**
+ * A Stoneskin statue never holds the centre slot, so the player's blows pass
+ * it by: one there trades places with a random enemy still fighting. With
+ * none left the fight is won, and onKill crumbles the statues. True when the
+ * fight ended here.
+ */
+function standAside(state: GameState, bus: EventBus): boolean {
+  const c = state.combat!;
+  const front = c.enemies[0];
+  if (!front || !standing(front)) return false;
+  const fighting = c.enemies.flatMap((e, i) => (e && !standing(e) ? [i] : []));
+  if (fighting.length === 0) {
+    onKill(state, bus, 0, statueOf(front));
+    return !state.combat;
+  }
+  const pick = fighting[randInt(state, 0, fighting.length - 1)];
+  c.enemies[0] = c.enemies[pick];
+  c.enemies[pick] = front;
+  feed(state, `↔️ ${c.enemies[0]!.icon} ${c.enemies[0]!.name} steps forward!`);
+  return false;
+}
+
+/**
+ * `gone`: the rule of a statue leaving unbroken, because its condition ran
+ * out or, standing, because the fight is over. A statue that died with its
+ * condition still held was broken.
+ */
+function onKill(state: GameState, bus: EventBus, index: number, gone: StatueRule | null = null): void {
   const c = state.combat!;
   const monster = c.enemies[index]!;
+  const statue = gone ?? statueOf(monster);
   const tags = combatTags(state);
   const spot = SPOTS[state.spot];
   if (monster.defId === TOLL_GOLEM) rewardTollGolem(state, bus);
@@ -1673,23 +1752,28 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
   const kept = MONSTERS[monster.defId]?.keepsWounds;
   if (kept) delete state.stats[kept.key];
 
-  const gold = Math.round(monster.gold * getDerivedStats(state).goldGain);
+  // A statue's loot is Stone Chunks, a share of its gold, and it teaches a
+  // share of its XP (Basilisk Hide, ENM-18; StatueRule); it drops nothing else.
+  const gold = Math.round(monster.gold * getDerivedStats(state).goldGain * (statue ? statue.chunks : 1));
   state.gold += gold;
   bumpStat(state, bus, 'gold:earned', gold);
   // The species is the input a hunter learns from — the hundredth wolf teaches
   // less than the first, while a new one is worth going out of your way for.
   // The XP itself is cut by how far the fighter has outgrown the monster
   // (killXp, levels.ts); the same number pays level XP through the event.
-  const xp = killXp(state, monster);
+  const xp = statue ? killXp(state, monster) * statue.xp : killXp(state, monster);
   grantSkillXp(state, bus, tags, xp, monster.defId);
-  rollDropTable(state, bus, MONSTERS[monster.defId].loot, monster);
+  if (!statue) rollDropTable(state, bus, MONSTERS[monster.defId].loot, monster);
   bus.emit({ type: 'kill', monster, xp });
+  const rocks = statue ? (gone ? statue.burst : statue.rocks) : 0;
+  const how = !gone ? 'is broken' : rocks > 0 ? 'bursts' : 'crumbles away';
   bus.emit({
     type: 'log',
     // Slimes and slime spiders carry no coin; "+0 gold" on most of the first
     // kills a new life makes read as a fault, so a coinless kill says nothing.
-    msg:
-      gold > 0
+    msg: statue
+      ? `🗿 The ${monster.name} (level ${monster.level}) ${how}${gold > 0 ? `: Stone Chunks worth ${gold} gold.` : '.'}`
+      : gold > 0
         ? text('combat.defeated', { name: monster.name, level: monster.level, gold })
         : text('combat.defeated_no_gold', { name: monster.name, level: monster.level }),
     kind: 'combat',
@@ -1697,11 +1781,34 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
 
   c.enemies[index] = null;
 
-  // A random survivor steps into the centre; the two trade places, so the slot
-  // it came from is the one left empty.
+  // A statue's rocks can kill what stood behind it. Those deaths are swept
+  // here, before the line is read for survivors, so the last of them ends the
+  // fight rather than leaving corpses in the line.
+  if (rocks > 0) {
+    throwRubble(state, monster, index, rocks, gone ? 'bursts' : 'breaks');
+    for (let j = c.enemies.length - 1; j > index; j--) {
+      const e = c.enemies[j];
+      if (!e || e.hp > 0) continue;
+      onKill(state, bus, j);
+      if (!state.combat) return;
+    }
+  }
+
   const survivors = c.enemies
     .map((e, i) => (e ? i : -1))
     .filter((i) => i >= 0);
+  // Standing statues (Stoneskin) outlast the fighting: once only they remain
+  // the fight is won, and each crumbles as it ends. The last one closes it.
+  const fighting = survivors.filter((i) => !standing(c.enemies[i]));
+  if (survivors.length > 0 && fighting.length === 0) {
+    for (const j of survivors) {
+      const left = c.enemies[j];
+      if (!left) continue;
+      onKill(state, bus, j, statueOf(left));
+      if (!state.combat) return;
+    }
+    return;
+  }
   if (survivors.length === 0) {
     // A finite spot counts the win against its budget; the last one clears it.
     if (spot?.fightLimit) {
@@ -1722,8 +1829,10 @@ function onKill(state: GameState, bus: EventBus, index: number): void {
     if (spot) bus.emit({ type: 'fight:won', spot: spot.id, forced: forcedWin });
     return;
   }
+  // A random enemy still fighting steps into the centre; the two trade places,
+  // so the slot it came from is the one left empty.
   if (index === 0) {
-    const pick = survivors[randInt(state, 0, survivors.length - 1)];
+    const pick = fighting[randInt(state, 0, fighting.length - 1)];
     c.enemies[0] = c.enemies[pick];
     c.enemies[pick] = null;
     feed(state, `↔️ ${c.enemies[0]!.icon} ${c.enemies[0]!.name} steps forward!`);
@@ -2074,7 +2183,7 @@ function applySelfRiders(state: GameState, c: CombatState, spec: SpellSpec): voi
  * the spring that carries it, and not itself answerable — an undoing's own
  * words cannot be undone.
  */
-function castCraftedSelf(
+export function castCraftedSelf(
   state: GameState,
   bus: EventBus,
   id: string,
@@ -2128,7 +2237,7 @@ function castCraftedSelf(
       const dealt = strike.untyped
         ? Math.max(1, Math.round(raw))
         : incomingSlice(stats, strike.type, spec.name, raw).dealt;
-      damagePlayer(state, dealt, strike.type);
+      damagePlayer(state, dealt, strike.type, { key: `spell:${id}`, label: spec.name, icon: spec.icon, self: true });
       feed(state, `${spec.icon} ${spec.name} hits you for ${dealt} ${strike.untyped ? 'untyped' : strike.type}.`);
       for (const app of strike.inflicts ?? []) applyStatus(state, state, app, spec.name, stats);
       if (!isAlive(state)) {
@@ -2322,7 +2431,14 @@ function resolveMonsterWorking(
       const landed = strike.untyped
         ? Math.max(1, Math.round(raw))
         : incomingSlice(stats, strike.type, spec.name, raw).dealt;
-      damagePlayer(state, landed, strike.type);
+      damagePlayer(state, landed, strike.type, {
+        key: `monster:${e.defId}`,
+        label: e.name,
+        icon: e.icon,
+        by: e,
+        thrown: raw,
+        boss: isSpotBoss(state, e.defId),
+      });
       feed(state, `${spec.icon} ${spec.name} hits you for ${landed} ${strike.type}.`);
       if (landed > 0) applyStatuses(state, state, strike.inflicts, spec.name, stats, monsterPenetration(e));
       if (!isAlive(state)) {
@@ -3352,7 +3468,7 @@ export function abilityStrike(
   index: number,
   amount: number,
   type: DamageType,
-  by: { name: string; icon: string },
+  by: { name: string; icon: string; hit?: string },
 ): number {
   const monster = state.combat?.enemies[index];
   if (!monster || monster.hp <= 0 || !(amount > 0)) return 0;
@@ -3376,13 +3492,26 @@ export function abilityStrike(
     group: ABILITY_RUN + by.name,
     prefix: `${by.icon} ${by.name}:`,
     tally: [
-      { label: 'strike', qty: 1 },
+      { label: by.hit ?? 'strike', qty: 1 },
       { label: 'damage', qty: dmg, style: 'amount' },
     ],
     ids: [],
     damage: { label: by.name, target: monster.name, steps, slices: [...slices.values()], hits: 1, crit: false, total: dmg },
   });
   return dmg;
+}
+
+/**
+ * The run's ability can answer an enemy's blow from inside damagePlayer
+ * (Bramble's thorns, through hitTaken). An attacker the answer killed is swept
+ * at once, as a thorns ward's kill is (applyRetaliation), so a dead enemy
+ * never stays in the line for the rest of the phase. True when the phase must
+ * stop. A knocked-out player is left to the defeat check.
+ */
+function answeredToDeath(state: GameState, bus: EventBus, e: MonsterInstance): boolean {
+  if (e.hp > 0 || !isAlive(state)) return false;
+  sweepDead(state, bus);
+  return true;
 }
 
 /**
@@ -3719,6 +3848,13 @@ function tickEnemyStatuses(state: GameState, bus: EventBus, c: CombatState): voi
       pools: { mana: { current: mind.current, trueMax: mind.max } },
     });
     const detonated = burnMind(state, e, mind, result);
+    // A statue whose condition ran out leaves the fight unbroken.
+    const gone = result.expired.map((id) => STATUSES[id]?.statue).find((r) => !!r);
+    if (gone) {
+      onKill(state, bus, i, gone);
+      if (!state.combat) return;
+      continue;
+    }
     if (result.damage <= 0) {
       if (detonated && e.hp <= 0) {
         onKill(state, bus, i);
@@ -3891,6 +4027,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     sweepDead(state, bus);
     if (!state.combat) return;
   }
+  if (standAside(state, bus)) return;
 
   const front = frontEnemy(c);
   if (!front) {
@@ -4563,6 +4700,8 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
   for (let i = 0; i < c.enemies.length; i++) {
     const e = c.enemies[i];
     if (!e) continue;
+    // A statue does nothing; its bar does not even fill.
+    if (isStatue(e)) continue;
     // The terms of an honorable duel: everyone but the front can only watch.
     if (i > 0 && statusPacifiesFlankers(state)) continue;
     const mod = POSITION_MODS[i === 0 ? 'front' : 'back'][e.range];
@@ -4655,6 +4794,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       // formation under this loop — the same reason bar damage ends the phase.
       if (castMonsterWorking(state, bus, e, es, action.cast, action.index)) return;
       if (!state.combat || !isAlive(state)) return;
+      if (answeredToDeath(state, bus, e)) return;
       continue;
     }
 
@@ -4693,6 +4833,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
       markCombatEvent(state, 'onDodge');
       bumpStat(state, bus, 'combat:dodges');
       if (!isAlive(state)) return;
+      if (answeredToDeath(state, bus, e)) return;
       // Nothing landed, so nothing was resolved — what the swing was WORTH is
       // the honest measure of what the footwork saved.
       noteDodge(state, es.damage * mod.damage * positionIncomingMult(state, stats.stumbleTaken));
@@ -4883,7 +5024,14 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     // already computing here and throwing away a line later. Clamped: a bite
     // amplifying past what was thrown is extra hurt, not negative absorption.
     noteAbsorbed(state, Math.max(0, thrown - dmg));
-    damagePlayer(state, dmg, type, { key: `monster:${e.defId}`, label: e.name, icon: e.icon });
+    damagePlayer(state, dmg, type, {
+      key: `monster:${e.defId}`,
+      label: e.name,
+      icon: e.icon,
+      by: e,
+      thrown,
+      boss: isSpotBoss(state, e.defId),
+    });
     const res = stats[RES_STAT_BY_TYPE[type]];
     markCombatEvent(state, 'onHit');
     bumpStat(state, bus, 'combat:hitsTaken');
@@ -4924,6 +5072,7 @@ export function tickCombat(state: GameState, bus: EventBus, spot: SpotDef): void
     );
     // Contact cuts both ways: a shard-bound body answers whatever touched it.
     if (e.range === 'melee' && applyRetaliation(state, bus, 'onContact', i)) return;
+    if (answeredToDeath(state, bus, e)) return;
     // And the attacker's own conditions cost it for swinging.
     if (applyMonsterRetaliation(state, bus, i, 'onAttack')) return;
 

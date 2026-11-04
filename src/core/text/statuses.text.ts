@@ -36,6 +36,10 @@ export const STATUSES_TEXT: ProseTable = {
 
   'frozen.desc': 'Speed is reduced by 95% and bludgeoning resistance by 50% for 3 seconds. Any damage taken removes it.',
 
+  'petrified.desc': 'Cannot act. Lasts 3 s. Broken before then, it throws its max HP as rocks at the enemies behind it. Gives 50% of its gold as Stone Chunks and 50% XP.',
+  'petrified_rubble.desc': 'Cannot act. Lasts 3 s. Broken before then, it throws its max HP as rocks at the enemies behind it. Unbroken, it bursts for half that. Gives no gold and 50% XP.',
+  'petrified_standing.desc': 'Cannot act. Stays until the fight ends. Your attacks skip it. Throws no rocks. Gives 50% of its gold as Stone Chunks and 50% XP when the fight ends.',
+
   'bleeding.desc': 'Deals 0.08 slashing damage per tick plus 0.15% of current health, at 30% rate out of combat. No timer. Each cut is its own stack; at 5 it escalates to Lacerated. Removed only by rest, a salve, a healing spell, or a bleed cure (a Mendroot Salve).',
 
   'lacerated.desc': 'Deals 0.2% of maximum health per tick as slashing damage (30% rate out of combat) and reduces maximum health by 4% per stack, up to 30%. No timer. Rest, a salve (a Mendroot Salve included), or a healing spell reduces it to Bleeding; a second treatment closes that.',

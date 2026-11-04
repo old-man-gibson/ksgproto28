@@ -105,9 +105,14 @@ describe('unresistable conditions', () => {
     'psionic_compression',
     'psionic_read',
     'unfolded',
+    // A statue (Basilisk Hide) and its two branches: each arrives by escalation
+    // from Stone, which was the resisted part.
+    'petrified',
+    'petrified_rubble',
+    'petrified_standing',
   ];
 
-  it('exactly these ten are marked, each with a reason', () => {
+  it('exactly these thirteen are marked, each with a reason', () => {
     const marked = Object.values(STATUSES).filter((d) => d.unresistable);
     expect(marked.map((d) => d.id).sort()).toEqual([...MARKED].sort());
     for (const def of marked) expect(def.unresistable!.trim().length, def.id).toBeGreaterThan(0);

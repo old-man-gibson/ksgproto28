@@ -405,18 +405,241 @@ CASES['bank: Little Moons strikes the front enemy and combines line-ups'] = (ass
   assert(doc.cells[0].state.v === 1, 'a boss kill and a plain kill made ' + doc.cells[0].state.v + ' boss kills');
 };
 
-CASES['bank: Little Moons goes dark when mana runs out'] = (assert) => {
-  const { H, pool, hits } = moonHost(1);
+// User 2026-11-03: the moons cost nothing, so an empty pool neither stops them nor is drawn on.
+CASES['bank: Little Moons spends no mana'] = (assert) => {
+  const { H, pool, hits } = moonHost(0);
   F.install(H);
   const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.little_moons)));
   F.attach('a', [doc]);
   F.event('fightStart', 'a', {});
-  for (let i = 0; i < 200; i++) F.tick('a');
-  assert(hits.length === 0, 'the moons struck with no mana to pay');
-  assert(pool.mana >= 0, 'the pool went negative');
-  pool.mana = 1e6;
-  for (let i = 0; i < 130; i++) F.tick('a');
-  assert(hits.length > 0, 'the moons stayed dark after the pool refilled');
+  for (let i = 0; i < 120; i++) F.tick('a');
+  assert(hits.length === 7, 'with an empty pool the moons struck ' + hits.length + ' times in 12 s, not 7');
+  assert(pool.mana === 0, 'the moons drew on the pool: ' + pool.mana);
+  pool.mana = 50;
+  for (let i = 0; i < 120; i++) F.tick('a');
+  assert(pool.mana === 50, 'the moons drew on a full pool: ' + pool.mana);
+};
+
+// A host whose enemies record damage, and where the ref 'dead' is not alive.
+function thornHost() {
+  const hits = [];
+  const H = fakeHost({
+    isAlive: (r) => r !== 'dead',
+    applyDamage: (r, amount, type) => { hits.push({ r, amount, type }); return amount; },
+  });
+  return { H, hits };
+}
+
+CASES['scope: frame targets the ref an event names, and nothing when it is missing or dead'] = (assert) => {
+  const { H, hits } = thornHost();
+  F.install(H);
+  const facet = F.hydrate({ v: 1, cells: [], clauses: [
+    { id: 'c1', on: 'event:hitTaken', do: [{ emit: 'world', verb: 'damage', damageType: 'piercing', scope: { frame: 'attacker' }, value: { frame: 'amount' } }] },
+  ] });
+  F.attach('a', [facet]);
+  F.event('hitTaken', 'a', { amount: 10, attacker: 'e2' });
+  assert(hits.length === 1 && hits[0].r === 'e2' && hits[0].amount === 10, 'the attacker was not the target: ' + JSON.stringify(hits));
+  F.event('hitTaken', 'a', { amount: 10, attacker: '' });
+  F.event('hitTaken', 'a', { amount: 10 });
+  F.event('hitTaken', 'a', { amount: 10, attacker: 'dead' });
+  assert(hits.length === 1, 'an empty, missing or dead attacker was hit: ' + JSON.stringify(hits));
+};
+
+CASES['bank: Bramble grows on enemy blows, answers the attacker and burns on Heat'] = (assert) => {
+  const { H, hits } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  const thorns = () => doc.cells[0].state.v;
+  F.event('fightStart', 'a', {});
+  F.event('hitTaken', 'a', { amount: 100, type: 'slashing', attacker: 'e1' });
+  assert(thorns() === 1, 'one blow made ' + thorns() + ' thorns');
+  assert(hits.length === 1 && hits[0].r === 'e1' && hits[0].type === 'piercing' && Math.abs(hits[0].amount - 2) < 1e-9,
+    'the first blow should return 2 piercing to e1, got ' + JSON.stringify(hits));
+  // A condition ticking has no attacker: no thorn, no answer.
+  F.event('hitTaken', 'a', { amount: 100, type: 'poison', attacker: '' });
+  assert(thorns() === 1 && hits.length === 1, 'a hit with no attacker grew or answered');
+  // A host that reports neither field never grows thorns (the guards fail closed).
+  F.event('hitTaken', 'a', { amount: 100 });
+  assert(thorns() === 1, 'a hit with no attacker field grew a thorn');
+  for (let i = 0; i < 15; i++) F.event('hitTaken', 'a', { amount: 100, type: 'slashing', attacker: 'e1' });
+  assert(thorns() === 10, 'the cap of 10 did not hold: ' + thorns());
+  assert(Math.abs(hits[hits.length - 1].amount - 20) < 1e-9, 'ten levels should return 20% of the blow');
+  F.event('hitTaken', 'a', { amount: 100, type: 'heat', attacker: 'e1' });
+  assert(thorns() === 5, 'a Heat blow should burn 5 of 10, left ' + thorns());
+  assert(Math.abs(hits[hits.length - 1].amount - 10) < 1e-9, 'the thorns left after the burn should answer the Heat blow');
+  F.event('fightEnd', 'a', { won: 1 });
+  assert(thorns() === 0, 'thorns outlived the fight');
+};
+
+CASES['bank: Bramble answers the blow as thrown, before armour'] = (assert) => {
+  const { H, hits } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  F.event('fightStart', 'a', {});
+  // Armour took 90 of a 100 blow: the answer is 2% of the 100.
+  F.event('hitTaken', 'a', { amount: 10, blow: 100, type: 'slashing', attacker: 'e1' });
+  assert(hits.length === 1 && Math.abs(hits[0].amount - 2) < 1e-9, 'the answer should read the thrown blow: ' + JSON.stringify(hits));
+};
+
+CASES['bank: Bramble grows 1 + 5% of its cap each second of fight time'] = (assert) => {
+  const { H } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  const thorns = () => doc.cells[0].state.v;
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 9; i++) F.tick('a');
+  assert(thorns() === 0, 'a thorn grew before a second passed');
+  F.tick('a');
+  assert(thorns() === 1, 'cap 10: one second should add floor(1 + 0.5) = 1, got ' + thorns());
+  // 4,000 fights make the cap 30: a second adds floor(1 + 1.5) = 2.
+  for (let i = 0; i < 4000; i++) F.event('fightEnd', 'a', { won: 1 });
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 10; i++) F.tick('a');
+  assert(thorns() === 2, 'cap 30: one second should add 2, got ' + thorns());
+};
+
+CASES['bank: Bramble grows 2 + 10% of its cap on Poison you cast on yourself'] = (assert) => {
+  const { H, hits } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  const thorns = () => doc.cells[0].state.v;
+  F.event('fightStart', 'a', {});
+  F.event('hitTaken', 'a', { amount: 5, type: 'poison', attacker: '', self: 1 });
+  assert(thorns() === 3, 'cap 10: a self-Poison hit should add floor(2 + 1) = 3, got ' + thorns());
+  assert(hits.length === 0, 'a self-hit answered someone');
+  F.event('hitTaken', 'a', { amount: 5, type: 'heat', attacker: '', self: 1 });
+  F.event('hitTaken', 'a', { amount: 5, type: 'poison', attacker: '' });
+  F.event('hitTaken', 'a', { amount: 5, type: 'poison' });
+  assert(thorns() === 3, 'self-Heat, or Poison not marked self, changed the thorns: ' + thorns());
+  // An enemy's Poison blow is an ordinary hit.
+  F.event('hitTaken', 'a', { amount: 5, type: 'poison', attacker: 'e1' });
+  assert(thorns() === 4, "an enemy's Poison blow should add 1, got " + thorns());
+};
+
+CASES['bank: Basilisk Hide puts Stone on the attacker: 6 + CON / 10 a hit, 1.5 on a boss'] = (assert) => {
+  const base = fakeHost();
+  const H = fakeHost({ quantities: () => base.quantities().concat([
+    { id: 'stat.eff.con', label: 'CON', kind: 'attribute', namespace: 'stat', nullifiable: false, writable: true },
+  ]) });
+  F.install(H);
+  H._add('a', { 'stat.eff.con': 30 });
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.basilisk_hide)));
+  F.attach('a', [doc]);
+  const stone = (r) => (H._applied[r] || []).filter((x) => x.id === 'basilisk_stone');
+  F.event('hitTaken', 'a', { amount: 10, type: 'slashing', attacker: 'e1', boss: 0 });
+  assert(stone('e1').length === 1 && Math.abs(stone('e1')[0].intensity - 9) < 1e-9,
+    'CON 30 should put 9 Stone on e1, got ' + JSON.stringify(stone('e1')));
+  F.event('hitTaken', 'a', { amount: 10, type: 'slashing', attacker: 'e2', boss: 1 });
+  assert(stone('e2').length === 1 && Math.abs(stone('e2')[0].intensity - 1.5) < 1e-9, 'a boss should take 1.5 Stone');
+  // No attacker: no one to turn to stone. A host without `boss` treats the attacker as ordinary.
+  F.event('hitTaken', 'a', { amount: 10, type: 'poison', attacker: '' });
+  F.event('hitTaken', 'a', { amount: 10, type: 'slashing', attacker: 'e3' });
+  assert(stone('e3').length === 1 && Math.abs(stone('e3')[0].intensity - 9) < 1e-9, 'a host without boss should give the ordinary 9');
+  assert(Object.keys(H._applied).length === 3, 'a hit with no attacker applied Stone somewhere');
+  const def = H._statuses.basilisk_stone;
+  assert(def && def.stacking.mode === 'sum' && def.stacking.cap === 100, 'Stone should be defined to add up to 100');
+  const slow = F.bank.basilisk_hide.clauses[0].do[0].def.mods[0];
+  assert(slow.q === 'fighter.speed' && slow.value === -0.005, 'Stone should slow 0.5% a point, got ' + JSON.stringify(slow));
+};
+
+CASES['bank: Basilisk Hide counts rival statues and offers three branches at 100'] = (assert) => {
+  const offers = [];
+  const H = fakeHost({ offerEvolution: (ref, id, into) => offers.push(into) });
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.basilisk_hide)));
+  F.attach('a', [doc]);
+  const count = () => F.cellOf(doc, 'statues').state.v;
+  // Below 85% on both, or no shares sent: not counted.
+  F.event('statue', 'a', { target: 'e1', levelShare: 0.5, attrShare: 0.84 });
+  F.event('statue', 'a', { target: 'e1' });
+  assert(count() === 0, 'a weak statue, or one with no shares, was counted: ' + count());
+  F.event('statue', 'a', { target: 'e1', levelShare: 0.85, attrShare: 0.1 });
+  F.event('statue', 'a', { target: 'e1', levelShare: 0.1, attrShare: 2 });
+  assert(count() === 2, 'either share at 85% should count, got ' + count());
+  for (let i = 2; i < 99; i++) F.event('statue', 'a', { target: 'e1', levelShare: 1 });
+  assert(!doc.offer && offers.length === 0, 'offered before 100');
+  F.event('statue', 'a', { target: 'e1', levelShare: 1 });
+  F.event('statue', 'a', { target: 'e1', levelShare: 1 });
+  assert(doc.offer && doc.offer.join() === 'basilisk_gorgon,basilisk_rubble,basilisk_stoneskin', 'offer: ' + JSON.stringify(doc.offer));
+  assert(offers.length === 1, 'the host was asked ' + offers.length + ' times');
+  // The swap: only a branch on offer; the count carries; the branch offers nothing.
+  assert(F.evolve(doc, 'bramble') === null, 'evolved into an entry not on offer');
+  const next = F.evolve(doc, 'basilisk_rubble');
+  assert(next && next.reading.name === 'Rubble', 'no Rubble document');
+  assert(F.cellOf(next, 'statues').state.v === 100, 'the count did not carry: ' + F.cellOf(next, 'statues').state.v);
+  assert(!next.offer && next.id !== doc.id, 'the branch is not a fresh document');
+  assert(!F.bank.basilisk_rubble.cells[0].state, 'the swap wrote into the bank template');
+  assert(F.evolve(next, 'basilisk_gorgon') === null, 'a branch evolved again');
+  // Rubble: rocks put 15 Stone on what they hit.
+  F.detach('a');
+  F.attach('a', [next]);
+  F.event('rocks', 'a', { target: 'e2' });
+  const stone = (H._applied.e2 || []).filter((x) => x.id === 'basilisk_stone');
+  assert(stone.length === 1 && stone[0].intensity === 15, 'rocks should put 15 Stone on e2, got ' + JSON.stringify(stone));
+};
+
+CASES["bank: Gorgon's Gaze stones the front enemy each second, a quarter on a boss"] = (assert) => {
+  const base = fakeHost();
+  let front = 'e1';
+  const H = fakeHost({
+    resolve: (from, scope) => (scope.side === 'enemy' ? [front] : [from]),
+    quantities: () => base.quantities().concat([
+      { id: 'stat.eff.con', label: 'CON', kind: 'attribute', namespace: 'stat', nullifiable: false, writable: true },
+      { id: 'fighter.boss', label: 'Boss', kind: 'scalar', namespace: 'fighter', nullifiable: false, writable: false },
+    ]),
+  });
+  F.install(H);
+  H._add('a', { 'stat.eff.con': 50 });
+  H._add('e1', { 'fighter.boss': 0 }, 'enemy');
+  H._add('e2', { 'fighter.boss': 1 }, 'enemy');
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.basilisk_gorgon)));
+  F.attach('a', [doc]);
+  const doses = (r) => (H._applied[r] || []).filter((x) => x.id === 'basilisk_stone').map((x) => x.intensity);
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 9; i++) F.tick('a');
+  assert(doses('e1').length === 0, 'the gaze landed before a second passed');
+  F.tick('a');
+  assert(doses('e1').join() === '3', 'CON 50: 2 + 1 = 3 Stone a second, got ' + doses('e1'));
+  front = 'e2';
+  for (let i = 0; i < 10; i++) F.tick('a');
+  assert(doses('e2').join() === '0.75', 'a boss takes a quarter, got ' + doses('e2'));
+  // A blow adds half the base dose: (6 + 5) / 2.
+  F.event('hitTaken', 'a', { amount: 5, type: 'slashing', attacker: 'e3', boss: 0 });
+  assert(doses('e3').join() === '5.5', 'a blow should add 5.5, got ' + doses('e3'));
+  // A statue moves the gaze on: the front enemy (a boss here) takes 25, a quarter of it.
+  F.event('statue', 'a', { target: 'e3', levelShare: 1 });
+  assert(doses('e2').join() === '0.75,6.25', 'the next enemy should take 6.25, got ' + doses('e2'));
+};
+
+CASES['bank: Stoneskin counts the statues standing in the fight'] = (assert) => {
+  const base = fakeHost();
+  const H = fakeHost({ quantities: () => base.quantities().concat([
+    { id: 'world.statues', label: 'Statues', kind: 'scalar', namespace: 'world', nullifiable: false, writable: false },
+  ]) });
+  F.install(H);
+  H._add('a', { 'world.statues': 2 });
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.basilisk_stoneskin)));
+  F.attach('a', [doc]);
+  const standing = () => F.cellOf(doc, 'standing').state.v;
+  F.tick('a');
+  assert(standing() === 2, 'two statues standing should read 2, got ' + standing());
+  F.event('fightEnd', 'a', { won: 1 });
+  assert(standing() === 0, 'the count should clear when the fight ends, got ' + standing());
+};
+
+CASES['bank: Bramble raises its cap by 1 per 200 fights'] = (assert) => {
+  const { H } = thornHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.bramble)));
+  F.attach('a', [doc]);
+  for (let i = 0; i < 400; i++) F.event('fightEnd', 'a', { won: 1 });
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 20; i++) F.event('hitTaken', 'a', { amount: 1, type: 'slashing', attacker: 'e1' });
+  assert(doc.cells[0].state.v === 12, '400 fights should cap thorns at 12, got ' + doc.cells[0].state.v);
 };
 
 // ---------- the bank ----------

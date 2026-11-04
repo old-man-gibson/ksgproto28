@@ -1378,13 +1378,16 @@ describe('status conditions', () => {
       // Otherwise it is permanent with no cure — always a content mistake.
       // Paying itself off and detonating both count as ways out, and so does
       // a surplus ledger that sheds itself (the ledger IS such a condition's
-      // clock — see StatusDef.surplus.decayShare).
+      // clock — see StatusDef.surplus.decayShare). A statue (StatusDef.statue)
+      // is only ever a monster's, and it leaves when the fight ends
+      // (combat.ts onKill).
       const escapable =
         (def.removal?.length ?? 0) > 0 ||
         def.ceilingDecay !== undefined ||
         def.detonate !== undefined ||
         def.drains !== undefined ||
-        def.surplus?.decayShare !== undefined;
+        def.surplus?.decayShare !== undefined ||
+        def.statue !== undefined;
       expect(escapable, `${def.id} lasts forever with no way out`).toBe(true);
     }
   });

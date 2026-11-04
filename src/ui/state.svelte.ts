@@ -62,6 +62,7 @@ export const ui = $state({
     | 'location'
     | 'combat'
     | 'skills'
+    | 'ability'
     | 'equipment'
     | 'chromosome'
     | 'music'

@@ -15,6 +15,7 @@ export type MainTab =
   | 'location'
   | 'combat'
   | 'skills'
+  | 'ability'
   | 'equipment'
   | 'chromosome'
   | 'music'

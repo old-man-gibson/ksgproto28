@@ -8,6 +8,7 @@
   import LocationPanel from './panels/LocationPanel.svelte';
   import CombatPanel from './panels/CombatPanel.svelte';
   import SkillsPanel from './panels/SkillsPanel.svelte';
+  import AbilityPanel from './panels/AbilityPanel.svelte';
   import EquipmentPanel from './panels/EquipmentPanel.svelte';
   import QuestsPanel from './panels/QuestsPanel.svelte';
   import AchievementsPanel from './panels/AchievementsPanel.svelte';
@@ -21,6 +22,8 @@
   import PrestigeModal from './PrestigeModal.svelte';
   import DareModal from './DareModal.svelte';
   import { pendingDare } from '../core/systems/training';
+  import EvolveModal from './EvolveModal.svelte';
+  import { pendingEvolution } from '../core/facet/host';
   import { restingForFight } from '../core/systems/huntrest';
   import PrestigePanel from './panels/PrestigePanel.svelte';
   import { prestigeVisible } from '../core/systems/prestige';
@@ -112,6 +115,8 @@
         { id: 'location', name: '🗺️ Location' },
         { id: 'combat', name: '⚔️ Combat' },
         { id: 'skills', name: '📜 Skills' },
+        // The run's ability (docs/FACET.md), while it holds one.
+        { id: 'ability', name: '✦ Ability' },
         { id: 'equipment', name: '🎒 Equipment' },
         { id: 'chromosome', name: '🧬 Chromosome' },
         { id: 'music', name: '🎼 Music' },
@@ -124,15 +129,17 @@
         { id: 'prestige', name: '♻️ Prestige' },
       ] as const
     ).filter((t) =>
-      t.id === 'chromosome'
-        ? subsystemUnlocked(gs, 'genes')
-        : t.id === 'music'
-          ? subsystemUnlocked(gs, 'music')
-          : t.id === 'wuxin'
-            ? subsystemUnlocked(gs, 'wuxin')
-            : t.id === 'prestige'
-              ? prestigeVisible(gs)
-              : true,
+      t.id === 'ability'
+        ? gs.facets.length > 0
+        : t.id === 'chromosome'
+          ? subsystemUnlocked(gs, 'genes')
+          : t.id === 'music'
+            ? subsystemUnlocked(gs, 'music')
+            : t.id === 'wuxin'
+              ? subsystemUnlocked(gs, 'wuxin')
+              : t.id === 'prestige'
+                ? prestigeVisible(gs)
+                : true,
     ),
   );
 
@@ -416,6 +423,8 @@
         <CombatPanel />
       {:else if ui.tab === 'skills'}
         <SkillsPanel />
+      {:else if ui.tab === 'ability'}
+        <AbilityPanel />
       {:else if ui.tab === 'equipment'}
         <EquipmentPanel />
       {:else if ui.tab === 'chromosome'}
@@ -474,6 +483,13 @@
   <!-- Save state, not UI state: the keeper's dare holds play until answered,
        reload or no reload (systems/training.ts). -->
   <DareModal spot={pendingDare(gs)!} />
+{/if}
+
+{#if pendingEvolution(gs)}
+  {@const offer = pendingEvolution(gs)!}
+  <!-- Save state, not UI state: the offer is on the ability's saved document,
+       and play holds until a branch is picked (facet/host.ts). -->
+  <EvolveModal from={offer.from} choices={offer.choices} />
 {/if}
 
 {#if ui.defeat}

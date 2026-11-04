@@ -1,7 +1,7 @@
-import type { DamageType, DerivedStats, GameState } from '../types';
+import type { DamageType, DerivedStats, GameState, MonsterInstance } from '../types';
 import { availableMax, resourceValue, restoreResource, setResource, spendResource } from './resources';
 import { fireStatusEvent, healAllowance, noteHealed } from './statuses';
-import { facetSignal } from '../facet/signal';
+import { FOE, facetSignal } from '../facet/signal';
 
 /**
  * The damage types that stop a MONSTER knitting. Fire and acid: the two that
@@ -102,7 +102,19 @@ export function damagePlayer(
   state: GameState,
   amount: number,
   type?: DamageType,
-  source?: { key: string; label: string; icon: string } | null,
+  source?: {
+    key: string;
+    label: string;
+    icon: string;
+    /** The enemy whose blow it was. */
+    by?: MonsterInstance;
+    /** The blow as thrown, before armour, resistance and ward. */
+    thrown?: number;
+    /** Your own working landing on you (a spell you cast on yourself). */
+    self?: boolean;
+    /** The attacker is the boss of the spot you are fighting at (combat.ts isSpotBoss). */
+    boss?: boolean;
+  } | null,
 ): number {
   if (amount <= 0) return 0;
   const lost = spendResource(state, 'hp', amount);
@@ -124,7 +136,18 @@ export function damagePlayer(
   // blow was rather than how many there were (StatusRemoval.afterDamage).
   fireStatusEvent(state, state, 'damageTaken', type ? { damageType: type, amount: lost } : { amount: lost });
   // The run's ability hears every blow from the same door (facet/signal.ts).
-  facetSignal(state, 'hitTaken', { amount: lost });
+  // `by` is the enemy whose blow it was, so the ability can answer it; a
+  // condition ticking or your own backlash names none. `blow` is the blow as
+  // thrown, so an answer sized to it is not shrunk by your own armour.
+  const slot = source?.by ? (state.combat?.enemies.indexOf(source.by) ?? -1) : -1;
+  facetSignal(state, 'hitTaken', {
+    amount: lost,
+    blow: source?.thrown ?? lost,
+    type: type ?? 'none',
+    attacker: slot >= 0 ? FOE + slot : '',
+    self: source?.self ? 1 : 0,
+    boss: source?.boss ? 1 : 0,
+  });
   // A body that knits itself back together stops while it is being burned or
   // eaten — but that rule is no longer written here. It rides the `knitting`
   // condition the gene confers, whose own `removal` names the types that douse

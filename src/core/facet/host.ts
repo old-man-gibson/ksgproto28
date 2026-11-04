@@ -5,7 +5,9 @@ import { TICKS_PER_GAME_MINUTE } from '../data/climate.data';
 import { chance, rand } from '../engine/rng';
 import { procChance, procRate } from '../engine/mercy';
 import { STATUSES } from '../data/statuses.data';
-import { applyStatus, findStatus, removeStatus } from '../systems/statuses';
+import { applyStatus, findStatus, removeStatus, statueOf } from '../systems/statuses';
+import { effectiveAttr } from '../systems/attributes';
+import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { getDerivedStats } from '../systems/derived';
 import { appendLog } from '../systems/log';
 import { abilityStrike, isSpotBoss } from '../systems/combat';
@@ -14,7 +16,7 @@ import { spendResource } from '../systems/resources';
 import { FACET_POOLS, facetQuantities, readQuantity } from './quantities';
 import type { EventBus } from '../engine/events';
 import type { FacetDoc, FacetHost } from './facet';
-import { bindFacets, boundState, facetSignal, PLAYER_REF } from './signal';
+import { bindFacets, boundState, facetSignal, FOE, PLAYER_REF } from './signal';
 import './load';
 
 /**
@@ -45,6 +47,17 @@ import './load';
  * pool cost. tickCombat calls `Facet.tick` once per combat tick
  * (signal.ts `facetCombatTick`). Still player-only: anything that reads an
  * enemy's quantities (K4), and damage aimed at the player.
+ *
+ * Bramble: hitTaken names the enemy whose blow it was (`attacker`, from
+ * health.ts damagePlayer's `source.by`), and a document aims at it with the
+ * core's `{ frame: 'attacker' }` scope. combat.ts sweeps an attacker the
+ * answer killed before the enemy phase goes on (`answeredToDeath`).
+ *
+ * Basilisk Hide: a dose that turns an enemy to stone raises `statue`, rocks
+ * raise `rocks` (combat.ts `throwRubble`), statues are not targets, and an
+ * enemy answers `fighter.boss` and `fighter.level`. Its evolution is the
+ * first: the core writes the offer onto the document, play holds on
+ * `pendingEvolution`, and `chooseEvolution` swaps the branch in.
  */
 
 export { bindFacets, facetSignal, PLAYER_REF } from './signal';
@@ -82,17 +95,48 @@ const STATUS_SCHEMA = {
     stacking: { kind: 'meta' },
     desc: { kind: 'meta' },
     overrideRes: { kind: 'res', mortality: 'coverage' },
+    // Basilisk Hide's Stone: resisted by Earth and a CON contest, escalating to
+    // the game's own statue condition (statuses.data.ts `petrified`).
+    element: { kind: 'meta' },
+    contest: { kind: 'meta' },
+    escalatesTo: { kind: 'meta' },
   },
 };
 
-/**
- * An enemy's ref is its slot in `combat.enemies`. A ref lives for one call:
- * slots move when the front enemy dies, so nothing keeps one.
- */
-const FOE = 'foe:';
+// An enemy's ref is FOE plus its slot in `combat.enemies` (signal.ts, where
+// health.ts reads it for hitTaken's attacker). A ref lives for one call: slots
+// move when the front enemy dies, so nothing keeps one.
 
+/** The enemies an ability can aim at: alive and not statues (Basilisk Hide). */
 function livingFoes(state: GameState): string[] {
-  return (state.combat?.enemies ?? []).flatMap((e, i) => (e && e.hp > 0 ? [FOE + i] : []));
+  return (state.combat?.enemies ?? []).flatMap((e, i) => (e && e.hp > 0 && !statueOf(e) ? [FOE + i] : []));
+}
+
+/**
+ * An enemy's numbers a document may read (`{ q, on: 'target' }`): its level,
+ * and `fighter.boss`, 1 for the spot's boss. Everything else reads 0 until K4.
+ */
+function readFoe(state: GameState, foe: MonsterInstance, id: string): number {
+  if (id === 'fighter.boss') return isSpotBoss(state, foe.defId) ? 1 : 0;
+  if (id === 'fighter.level') return foe.level;
+  return 0;
+}
+
+/**
+ * Raise `statue` when an enemy has just turned to stone. levelShare and
+ * attrShare are its level and attribute total over the player's (Basilisk
+ * Hide counts a statue at 0.85 or more on either).
+ */
+function signalStatue(state: GameState, ref: string, foe: MonsterInstance): void {
+  const mine = ATTRIBUTE_LIST.reduce((n, a) => n + effectiveAttr(state, a.id), 0);
+  const its = ATTRIBUTE_LIST.reduce((n, a) => n + (foe.attrs[a.id] ?? 0), 0);
+  facetSignal(state, 'statue', {
+    target: ref,
+    level: foe.level,
+    levelShare: foe.level / Math.max(1, state.level),
+    attrShare: its / Math.max(1, mine),
+    boss: isSpotBoss(state, foe.defId) ? 1 : 0,
+  });
 }
 
 function foeOf(state: GameState, ref: string): MonsterInstance | null {
@@ -176,9 +220,14 @@ export function createFacetHost(getState: () => GameState): FacetHost {
 
     // ---- quantities ----
     quantities: facetQuantities,
-    // The player's numbers only. An enemy's are not quantities until K4, so a
-    // document reading one gets 0.
-    readQ: (ref: string, id: string) => (ref === PLAYER_REF ? (readQuantity(s(), id) ?? 0) : 0),
+    // The player's numbers, and the few of an enemy's `readFoe` answers. An
+    // enemy's others are not quantities until K4, so a document reading one
+    // gets 0.
+    readQ: (ref: string, id: string) => {
+      if (ref === PLAYER_REF) return readQuantity(s(), id) ?? 0;
+      const foe = foeOf(s(), ref);
+      return foe ? readFoe(s(), foe, id) : 0;
+    },
     // The core keeps overrides and applies them to its own reads; the game's
     // stat block does not see them until K3 routes them through
     // collectModifiers. Until then an override would change what an ability
@@ -205,9 +254,17 @@ export function createFacetHost(getState: () => GameState): FacetHost {
         ...def,
       } as StatusDef;
     },
+    // A dose that turns an enemy to stone raises `statue` (Basilisk Hide's
+    // count, Gorgon's Gaze moving on).
     applyStatus: (ref: string, app: StatusApplication, source?: string) => {
-      const bearer = bearerOf(s(), ref);
-      return bearer ? applyStatus(s(), bearer, app, source) : null;
+      const state = s();
+      const bearer = bearerOf(state, ref);
+      if (!bearer) return null;
+      const foe = bearer === state ? null : (bearer as MonsterInstance);
+      const was = foe ? statueOf(foe) : null;
+      const held = applyStatus(state, bearer, app, source);
+      if (foe && !was && statueOf(foe)) signalStatue(state, ref, foe);
+      return held;
     },
     removeStatus: (ref: string, id: string) => {
       const bearer = bearerOf(s(), ref);
@@ -242,6 +299,7 @@ export function createFacetHost(getState: () => GameState): FacetHost {
       return abilityStrike(state, Number(ref.slice(FOE.length)), amount, known, {
         name: doc?.reading?.name ?? 'Ability',
         icon: doc?.reading?.icon ?? '✦',
+        hit: doc?.reading?.hit,
       });
     },
     // A pool cost (the `spend` verb): stamina, mana, spirit or focus, never HP.
@@ -271,6 +329,16 @@ export function createFacetHost(getState: () => GameState): FacetHost {
     },
     log: (line: string) => {
       if (line) appendLog(s(), { msg: line, kind: 'info', t: s().totalTicks });
+    },
+    // The `evolve` effect wrote its offer onto the document; play holds on it
+    // (pendingEvolution) until the player picks. This only says so.
+    offerEvolution: (_ref: string, id: string) => {
+      const doc = s().facets.find((d) => d.id === id);
+      appendLog(s(), {
+        msg: `${doc?.reading?.icon ?? '✦'} ${doc?.reading?.name ?? 'Your ability'} can evolve: pick a branch.`,
+        kind: 'info',
+        t: s().totalTicks,
+      });
     },
   };
 }
@@ -353,6 +421,49 @@ export function grantFacet(state: GameState, id: string): boolean {
   return true;
 }
 
+/** One branch a held ability may evolve into: its bank key and what the pick screen shows. */
+export interface EvolutionChoice {
+  key: string;
+  name: string;
+  icon: string;
+  desc: string;
+}
+
+/**
+ * The held ability's evolution offer (the core's `evolve` effect writes it
+ * onto the document, so it is saved), or null. While there is one, play holds
+ * (Game.tick), as it does for the keeper's dare.
+ */
+export function pendingEvolution(state: GameState): { from: FacetDoc; choices: EvolutionChoice[] } | null {
+  const from = state.facets?.find((d) => Array.isArray(d.offer) && d.offer.length);
+  if (!from) return null;
+  return { from, choices: (from.offer as string[]).map(choiceOf) };
+}
+
+/**
+ * Take the branch `key`: the core builds it from the bank, carrying every cell
+ * the two documents share, and it replaces the held one. The old document's
+ * carrier statuses go with it. False when nothing is on offer, `key` is not
+ * on it, or the adapter is not installed.
+ */
+export function chooseEvolution(state: GameState, key: string): boolean {
+  const F = globalThis.Facet;
+  const offer = pendingEvolution(state);
+  if (!F?.ready() || !offer) return false;
+  const next = F.evolve(offer.from, key);
+  if (!next) return false;
+  const prefix = carrierPrefix(offer.from);
+  state.statuses = state.statuses.filter((s) => !s.id.startsWith(prefix));
+  state.facets = state.facets.map((d) => (d === offer.from ? next : d));
+  bindFacets(state, true);
+  appendLog(state, {
+    msg: `${offer.from.reading?.icon ?? '✦'} ${offer.from.reading?.name ?? 'Your ability'} evolves into ${next.reading?.icon ?? '✦'} ${next.reading?.name ?? key}.`,
+    kind: 'info',
+    t: state.totalTicks,
+  });
+  return true;
+}
+
 /**
  * Take every ability status off a state. For a boot where the core failed to
  * install: those statuses are saved, but their definitions are built at attach,
@@ -372,6 +483,12 @@ export interface CellReadout {
   desc: string;
   /** The carrier status this cell rides on, so a status list can leave it out. */
   statusId: string;
+  /**
+   * Its carrier modifies one of your numbers, so while the value is not zero
+   * the cell is acting on you now. The sidebar shows only these; the Ability
+   * tab shows every cell.
+   */
+  acts: boolean;
 }
 
 export interface InputReadout {
@@ -380,22 +497,95 @@ export interface InputReadout {
   show: string;
 }
 
+/** A condition an ability's clauses put on fighters, and the one it turns into at its cap. */
+export interface ConditionReadout {
+  name: string;
+  icon: string;
+  desc: string;
+  becomes: { name: string; icon: string; desc: string } | null;
+}
+
 export interface FacetReadout {
   name: string;
   icon: string;
+  /** What the ability does. Empty for a document with no description. */
+  desc: string;
   cells: CellReadout[];
   inputs: InputReadout[];
+  conditions: ConditionReadout[];
+  /** The evolution its clauses offer: which cell triggers it, at what value, into which branches. */
+  evolves: { label: string; at: number; into: EvolutionChoice[] } | null;
 }
 
-/** What the sidebar shows for the run's ability: each cell's value, and the inputs it names. */
+type ClauseShape = { on?: string; do?: unknown[] };
+type EffectShape = {
+  emit?: string;
+  into?: string[];
+  defId?: string;
+  def?: { id?: string; name?: string; icon?: string; desc?: string; escalatesTo?: string };
+};
+
+/** Every effect object in a document's clauses. */
+const effectsOf = (doc: FacetDoc): { on: string; eff: EffectShape }[] =>
+  (doc.clauses as ClauseShape[]).flatMap((c) =>
+    (c.do ?? []).filter((e): e is EffectShape => !!e && typeof e === 'object').map((eff) => ({ on: c.on ?? '', eff })),
+  );
+
+/** A bank entry as a branch the pick screen or the Ability tab lists. */
+const choiceOf = (key: string): EvolutionChoice => {
+  const reading = globalThis.Facet?.bank?.[key]?.reading;
+  return { key, name: reading?.name ?? key, icon: reading?.icon ?? '✦', desc: reading?.desc ?? '' };
+};
+
+/**
+ * A document's description. One saved before its bank entry had one falls back
+ * to the entry with the same name: a document is a copy taken at grant, so it
+ * keeps the text it was granted with.
+ */
+function descOf(doc: FacetDoc): string {
+  if (doc.reading?.desc) return doc.reading.desc;
+  const name = doc.reading?.name;
+  const twin = Object.values(globalThis.Facet?.bank ?? {}).find((b) => name && b.reading?.name === name);
+  return twin?.reading?.desc ?? '';
+}
+
+/** The conditions a document's status effects apply: inline definitions, or host statuses by id. */
+function conditionsOf(doc: FacetDoc): ConditionReadout[] {
+  const seen = new Map<string, ConditionReadout>();
+  for (const { eff } of effectsOf(doc)) {
+    if (eff.emit !== 'status') continue;
+    const id = eff.def?.id ?? eff.defId;
+    if (!id || seen.has(id)) continue;
+    const def = eff.def ?? STATUSES[id];
+    if (!def) continue;
+    const next = eff.def?.escalatesTo ? STATUSES[eff.def.escalatesTo] : undefined;
+    seen.set(id, {
+      name: def.name ?? id,
+      icon: def.icon ?? '',
+      desc: def.desc ?? '',
+      becomes: next ? { name: next.name, icon: next.icon, desc: next.desc } : null,
+    });
+  }
+  return [...seen.values()];
+}
+
+/**
+ * Every ability the run holds, read for the sidebar and the Ability tab: the
+ * cells its document marks for showing, the inputs it names, the conditions
+ * it applies, and its evolution.
+ */
 export function facetReadouts(state: GameState): FacetReadout[] {
   const F = globalThis.Facet;
   if (!F?.ready() || boundState() !== state) return [];
   return state.facets.map((doc) => {
     const ctx = { ref: PLAYER_REF, facet: doc, bindings: {} };
+    const cell = (key: string) => doc.cells?.find((c) => c.key === key);
+    const evolve = effectsOf(doc).find(({ on, eff }) => eff.emit === 'evolve' && /^cell:\w+:cap$/.test(on));
+    const trigger = evolve && cell(evolve.on.split(':')[1]);
     return {
       name: doc.reading?.name ?? 'Ability',
       icon: doc.reading?.icon ?? '✦',
+      desc: descOf(doc),
       cells: (doc.cells ?? [])
         .filter((c) => c.show)
         .map((c) => ({
@@ -407,12 +597,21 @@ export function facetReadouts(state: GameState): FacetReadout[] {
           show: c.show!,
           desc: c.status?.desc ?? '',
           statusId: carrierPrefix(doc) + c.key,
+          acts: c.carrier !== false && Array.isArray(c.status?.mods) && (c.status.mods as unknown[]).length > 0,
         })),
       inputs: (doc.reading?.inputs ?? []).map((i) => ({
         label: i.label,
         value: F.readQ(PLAYER_REF, i.q).value,
         show: i.show ?? '',
       })),
+      conditions: conditionsOf(doc),
+      evolves: trigger
+        ? {
+            label: trigger.label ?? trigger.key,
+            at: F.evalExpr(trigger.cap, ctx),
+            into: (evolve.eff.into ?? []).filter((k) => F.bank?.[k]).map(choiceOf),
+          }
+        : null,
     };
   });
 }

@@ -15,8 +15,8 @@ adapter beside it. The port plan, with every step and what each one adds, is
 **Never edit a `facet.*.js` file here.** Edit the master in the Facet repo,
 then:
 
-1. `node test/run.js` in the Facet repo (the core's own cases, 52 as of
-   Little Moons).
+1. `node test/run.js` in the Facet repo (the core's own cases, 62 as of
+   Basilisk Hide's evolution).
 2. `node tools/sync.mjs` there. It writes every game's copy listed in
    `tools/targets.json`. For a copy in a worktree of this repo, name it:
    `node tools/sync.mjs --to D:/ksgproto28/.claude/worktrees/<name>/src/core/facet`.
@@ -38,7 +38,7 @@ reports a copy that has drifted from the master.
 | `src/core/facet/signal.ts` | The fight events the ability hears, and which state the core is bound to. Imports nothing but types, so health.ts and combat.ts can call it. |
 | `src/core/facet/quantities.ts` | Every number a document may read, with its id. |
 | `tests/facet.test.ts` | The manifest check, the core's corpus run through this game's loader, and the adapter. |
-| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
+| `tests/zenkai.test.ts`, `tests/littleMoons.test.ts`, `tests/bramble.test.ts`, `tests/basiliskHide.test.ts`, `tests/basiliskEvolve.test.ts` | Each bank ability in this game: its rules, then a hunt in the real game loop. |
 
 The adapter is installed once at boot in `src/ui/state.svelte.ts`, after the
 save loads, and bound to the loaded state before anything renders.
@@ -57,9 +57,12 @@ Prestige starts a fresh state, so the ability goes with the run.
 | Its time outside a fight: one `Facet.minute` per game minute, travel and fights included | `tickFacets`, called from `Game.advance` beside `tickExposure` |
 | Its time in a fight: one `Facet.tick` per combat tick (`on: 'tick'` clauses) | `facetCombatTick` (signal.ts), called from combat.ts `tickCombat` after the enemies' conditions and before anyone swings; `sweepDead` runs right after it for whatever the ability killed |
 | Damage it deals | host.ts `applyDamage` → combat.ts `abilityStrike`: resistance, the target's conditions and the on-damage hooks, never a dodge, crit or variance. One feed line per fight per ability (`ability:<name>`), settled when the fight ends. |
+| Answering the enemy who hit you | health.ts `damagePlayer` names the attacker in `hitTaken` (`source.by`, set by combat.ts's three monster sites: the blow, the graze and an enemy's spell) and passes the blow as thrown (`source.thrown`); the document aims at it with `{ frame: 'attacker' }`. combat.ts `answeredToDeath` sweeps an attacker the answer killed before the enemy phase goes on, as a thorns ward's kill is swept. A spell you cast on yourself passes `source.self` (`castCraftedSelf`). |
 | A pool cost it pays (the `spend` verb) | host.ts `spendPool` → `spendResource`; stamina, mana, spirit or focus, never HP |
 | Which state the core writes into | `bindFacets`. Offline catch-up ticks a detached copy of the state; the binding follows whichever state advances, and `Game.resyncAnnouncers` re-attaches after the contents are replaced (catch-up landing, import, reset, prestige). |
-| What the sidebar shows | `facetReadouts`: every cell whose document gives it a `show` hint, plus the document's `reading.inputs`. Those cells' statuses are left out of the status chips. |
+| What the sidebar shows | Only what acts on you now: a cell with a `show` hint whose carrier status has modifiers (`acts` in `facetReadouts`), while its value is not zero. Sunpower always, Zenkai once earned, Thorns and Standing statues during a fight. Counters (Fights fought, Boss kills, Statues), banks (Solar Charge) and `reading.inputs` stay off it; each line's tooltip lists them. Every shown cell's status is left out of the status chips. |
+| The ✦ Ability tab | `AbilityPanel.svelte`, on the tab bar while `state.facets` holds a document. From `facetReadouts`: the document's `reading.desc`, every cell with a `show` hint and its status text, the inputs, the conditions its `status` effects apply (an inline `def`, or a host status by `defId`) with the condition each escalates into, and its evolution (a clause on `cell:<key>:cap` that emits `evolve`: the cell, its cap and the branches). A document saved before its bank entry had a `desc` takes the description of the bank entry with the same name. |
+| Evolving | The core's `evolve` effect writes the offer (bank keys) onto the document, so it is saved with it. While a document holds one, play holds as it does for the keeper's dare (`Game.tick`, `pendingEvolution` in host.ts) and the held time is banked as bonus time. `EvolveModal.svelte` shows the branches from their `reading`; `chooseEvolution` asks the core for the branch (`Facet.evolve`: a copy of the bank entry with every cell the two share carried over) and puts it in the old one's place. |
 
 **Solar Charge** is the first ability (`core/facet.bank.js` in the Facet repo,
 where its numbers and formulas are written out). It reads `world.sunlight`
@@ -79,15 +82,78 @@ and win a fight against an enemy at least 70% of your level.
 **Little Moons** is the third, and the first that acts on an enemy. Three moons
 strike the front enemy every 2.8 s, 3.7 s and 7.9 s for 30% of weapon damage
 (+5% per boss killed this run), as Light. Strikes within 0.3 s combine into one
-that deals their sum ×2 (two moons) or ×5 (three). The moons cost 2 mana per
-second and go dark for 10 s when the pool cannot pay. They run only in fights
-and start each fight from zero. The user approved it with "might need to tweak
-numbers" (team ability R3-SKY-19, 2026-11-01); the readings taken where the
-entry is silent are written above the document in the Facet bank. Its counting
+that deals their sum ×2 (two moons) or ×5 (three). They cost nothing: the
+approved entry charged 2 mana a second, and the user removed it on 2026-11-03
+("feels unfun to use"; a mana drain may come back as an evolution). They run
+only in fights and start each fight from zero. The user approved it with "might
+need to tweak numbers" (team ability R3-SKY-19, 2026-11-01); the readings taken
+where the entry is silent are written above the document in the Facet bank. Its counting
 cells say `carrier: false`, so they hold no status and never move the derived
 stat cache, which would otherwise rebuild on every combat tick. To try it:
-Grant 🌙 Little Moons and hunt with mana in the pool; the feed shows one
-running line of strikes per fight.
+Grant 🌙 Little Moons and hunt; the feed shows one running line of strikes
+per fight. A document granted before 2026-11-03 still carries the mana cost
+(a held ability is a copy of the bank entry taken at grant): grant it again.
+
+**Bramble** is the fourth, and the first that answers the enemy who hit you.
+Each enemy blow raises a thorn level by 1 (cap 10, +1 per 200 fights this run,
+at most 50), each second of fight time by floor(1 + 5% of the cap), and each
+Poison spell you cast on yourself by floor(2 + 10% of the cap). Each level
+returns 2% of the blow as thrown (before your armour) to its attacker as
+Piercing and slows the action bar (`fighter.speed`) by 0.5%. A Heat blow burns
+5 levels. Thorns clear when the fight ends. The user approved it without a
+note (team ability FLD-04) and added the second and Poison growth on
+2026-11-01; the readings are written above the document in the Facet bank. A condition ticking, a trap or your own backlash is not a blow:
+it has no attacker, so it neither grows nor burns thorns. The thorn level
+rides a status (Thorns), which is how the slow reaches the stat block. To try
+it: Grant 🌿 Bramble and hunt; the feed shows one running line of thorns per
+fight.
+
+**Basilisk Hide** is the fifth, and the first that puts a condition on an
+enemy. Each enemy blow puts Stone on its attacker: 6 + CON / 10 a hit, a
+flat 1.5 on the spot's boss. Stone is Earth, so the enemy's Earth resistance
+cuts it, and it names a CON contest (`StatusDef.contest`): an enemy with more
+CON than you takes it × yours ÷ its, never below the application floor.
+Stone slows the enemy 0.5% a point (half the approved "same percent"; the
+user halved it 2026-11-02) and at 100 escalates into `petrified`, this
+game's statue (statuses.data.ts). A statue does nothing (combat.ts
+`isStatue` skips its turn). Left alone, its Petrified runs out after 3
+seconds and it crumbles away; broken before then (killed while Petrified),
+it throws its max HP as rocks at the living enemies behind it, half
+Piercing and half Slashing (`throwRubble`), and `onKill` sweeps what the
+rocks killed before it looks for survivors. Either way it pays Stone Chunks
+worth half its gold and half its XP, and drops nothing else. The user
+approved it as team ability ENM-18 with a note (resistance, the lingering
+statue, the rocks); the readings are written above the document in the
+Facet bank.
+
+Basilisk Hide is also the first ability that **evolves**. A dose that turns
+an enemy to stone raises `statue` (host.ts `applyStatus`), and the document
+counts it when the enemy stood at 85% of your level or 85% of your attribute
+total or more. At 100 (a placeholder) play holds on a pick of three branches,
+final for the run; each keeps the count:
+
+- **Gorgon's Gaze**: each second of a fight the front enemy gains 2 + CON / 50
+  Stone, a quarter on the spot's boss (the dose reads `fighter.boss` on its
+  target). Blows add half the base dose. When an enemy turns to stone, the
+  next front enemy takes 25 (a quarter on a boss).
+- **Rubble**: rocks raise `rocks` for each enemy they hit, and the document
+  puts 15 Stone on it. Its statue is `petrified_rubble`: left alone it bursts
+  for half the rocks when it would crumble, and it pays no Stone Chunks.
+- **Stoneskin**: its statue is `petrified_standing`. It stays until the fight
+  ends and never holds the centre slot (combat.ts `standAside` trades it for a
+  fighting enemy), so your blows pass it by; it throws no rocks. When only
+  standing statues remain the fight is won and they crumble, paying Chunks.
+  Each statue in the fight (`world.statues`) raises your armour 10%.
+
+A branch picks its statue through Stone's `escalatesTo`; how each statue
+leaves is its `StatusDef.statue` rule (rocks, burst, chunks, xp, stands),
+which combat.ts `onKill` reads. Statues are not targets for abilities
+(`resolve` skips them). Measured at floor 17 over 10 minutes, every statue
+counted: standing still at attributes 30, 10; CON 60 with the other
+attributes at 5, fighting, 10; CON 60 with the rest at 10, 2; even builds,
+none. At 100 a CON build evolves after about 100 minutes there. To try it:
+Grant 🗿 Basilisk Hide, press Statues to 99, and let an enemy near your level
+hit you until it turns to stone. The debug panel also grants each branch.
 
 ### Enemies as refs
 
@@ -96,8 +162,11 @@ by its slot: `foe:0` is the front enemy, `foe:1` the next. A ref lives for one
 call, because slots move when the front enemy dies. `resolve` answers
 `side: 'enemy'` (living enemies, front first, so `n: 1` is the front enemy) and
 `side: 'arena'` (the player and every enemy). The status members reach the
-enemy a ref names, so a document can put a condition on one. An enemy's
-numbers are not quantities until K4: `readQ` on a `foe:` ref returns 0.
+enemy a ref names, so a document can put a condition on one. Statues are left
+out of `resolve`. An enemy's numbers are not quantities until K4: `readQ` on a
+`foe:` ref answers `fighter.boss` (1 for the spot's boss) and `fighter.level`,
+and 0 for anything else. A status dose is read per target, so
+`{ q: 'fighter.boss', on: 'target' }` in its intensity reads the enemy it lands on.
 
 ## Events
 
@@ -111,11 +180,13 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `kill` | bus `kill` | `level`, `boss` (1 when the enemy is a boss of the spot, combat.ts `isSpotBoss`) |
 | `fightWon` | bus `fight:won`, after the last `kill` | |
 | `fightEnd` | bus `fight:closed`, however the fight ended | `won` (0 or 1) |
-| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` |
+| `hitTaken` | health.ts `damagePlayer`, the one door every blow uses | `amount` (what reached HP), `blow` (the blow as thrown, before armour, resistance and ward; `amount` when nothing was thrown), `type` (`'none'` when untyped), `attacker` (the enemy's ref, `''` for a condition, a trap or your own backlash), `self` (1 for a spell you cast on yourself), `boss` (1 when the attacker is the spot's boss) |
 | `hit`, `crit`, `dodge`, `parry`, `graze`, `enemyCast` | combat.ts `markCombatEvent` | |
 | `flaskUsed` | `Game.useFlask` | |
 | `itemUsed` | `Game.useConsumable` | |
 | `miracleCast` | combat.ts, when a miracle is cast | |
+| `statue` | host.ts `applyStatus`, when an ability's dose turns an enemy to stone | `target` (its ref), `level`, `levelShare` (its level ÷ yours), `attrShare` (its attribute total ÷ yours), `boss` |
+| `rocks` | combat.ts `throwRubble`, once per enemy the rocks hit | `target` (its ref), `amount` |
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it
@@ -126,7 +197,15 @@ cancel it) needs the staged damage path (K2).
 A frame guard (`when: { frame: 'boss', op: 'eq', v: 1 }`) passes when the
 field is missing, so a document should not guard on a field one game might not
 send. Little Moons adds the flag instead (`value: { frame: 'boss' }`), which
-reads a missing field as 0.
+reads a missing field as 0. Bramble guards on strings through `not`, which
+fails closed: `{ not: { frame: 'attacker', op: 'eq', v: '' } }` passes only
+when an attacker is named. This game always sends `type`, `attacker`,
+`self` and `boss`.
+
+A document may define a condition (`emit: 'status'` with a `def`). The
+fields this game accepts are host.ts `STATUS_SCHEMA`: `mods`, `duration`,
+`hidden`, `stacking`, `desc`, `overrideRes`, and since Basilisk Hide
+`element`, `contest` and `escalatesTo`. Anything else is dropped at compile.
 
 **Why only bare imports.** The core files have no exports. A named import
 (`import { x } from './facet.core.js'`) passes vitest and fails `vite build`
@@ -148,6 +227,9 @@ so ids are shared with InfiniteGacha wherever both games have the number:
 | `res.<type>` | the resistance to that damage type (the same fourteen types in both games) |
 | `pool.<stamina\|mana\|spirit\|focus>.cur` / `.max` | the pool and its maximum; spirit exists only here |
 | `world.sunlight` | sunlight on the player, 0..1 (exposure.ts `sunlight`); IG has none yet |
+| `world.statues` | statues in the player's fight (Stoneskin); 0 out of one |
+| `fighter.level` | character level; on an enemy, its level |
+| `fighter.boss` | 0 for the player; on an enemy, 1 for the spot's boss |
 | `ksg.<stat>` | every other derived stat, by its `StatKey` |
 
 A document that reads a `ksg.*` id runs only in this game until InfiniteGacha
@@ -191,3 +273,11 @@ own stat name.
 - The `spend` world verb (`{ emit: 'world', verb: 'spend', pool: 'mana',
   value }`) pays from a pool through the host's `spendPool`, up to what is
   held. A quantity write cannot do this: those are overrides on a reading.
+
+## Core additions for Bramble (2026-11-01)
+
+- `{ frame: 'attacker' }` as a scope targets the ref an event names in that
+  field, and nothing when it is empty or dead (facet.compile.js
+  `resolveScope`).
+- `reading.hit`, a display hint: what the feed calls the ability's damage
+  lines (`'thorns'`; `'strike'` when unset).

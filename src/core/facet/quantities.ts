@@ -4,6 +4,7 @@ import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { effectiveAttr } from '../systems/attributes';
 import { getDerivedStats } from '../systems/derived';
 import { sunlight } from '../systems/exposure';
+import { statueOf } from '../systems/statuses';
 import type { FacetQuantity } from './facet';
 
 /**
@@ -26,6 +27,7 @@ import type { FacetQuantity } from './facet';
  *  - `pool.<id>.cur` / `.max`: resource pools. Spirit exists only here.
  *  - `world.<name>`: the world around the bearer. `world.sunlight` (0..1,
  *    exposure.ts `sunlight`) is what Solar Charge banks; IG has none yet.
+ *    `world.statues` counts the statues in the fight (Stoneskin).
  *
  * A number only this game has is `ksg.<StatKey>`. A bank entry that reads one
  * runs only here until IG supplies the same number under a shared id.
@@ -181,6 +183,12 @@ function build(): Map<string, Entry> {
     { id: 'fighter.level', label: 'Level', kind: 'scalar', namespace: 'fighter', nullifiable: false, writable: false, modStat: null },
     (s) => s.level,
   );
+  // 1 on the spot's boss. The player is never one; an enemy answers it
+  // through host.ts `readFoe` (`{ q: 'fighter.boss', on: 'target' }`).
+  add(
+    { id: 'fighter.boss', label: 'Boss', kind: 'scalar', namespace: 'fighter', nullifiable: false, writable: false, modStat: null },
+    () => 0,
+  );
   for (const p of FACET_POOLS) {
     add(
       { id: 'pool.' + p + '.cur', label: p + ' (current)', kind: 'pool', namespace: 'pool', modStat: null },
@@ -191,6 +199,11 @@ function build(): Map<string, Entry> {
   add(
     { id: 'world.sunlight', label: 'Sunlight', kind: 'prob', namespace: 'world', nullifiable: false, writable: false, modStat: null },
     sunlight,
+  );
+  // Statues standing in the bearer's fight (Basilisk Hide's Stoneskin), 0 out of one.
+  add(
+    { id: 'world.statues', label: 'Statues', kind: 'scalar', namespace: 'world', nullifiable: false, writable: false, modStat: null },
+    (s) => (s.combat?.enemies ?? []).filter((e) => e && statueOf(e)).length,
   );
   return out;
 }

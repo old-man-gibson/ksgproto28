@@ -32,22 +32,34 @@ const B = F.bank = F.bank || {};
 // Starts empty, so a fresh grant opens at -30%.
 const MAIN = { expr: 'add', a: { q: 'stat.eff.con' }, b: { q: 'stat.eff.wis' } };
 
-// `show` on a cell and `reading.inputs` are display hints for a game's ability readout; the engine
-// never reads them.
+// `show` on a cell, `reading.inputs` and `reading.desc` are display hints for a game's ability
+// readout; the engine never reads them. A `reading.desc` is lines of "Label: fact" joined by '\n':
+// one fact per sentence, under 20 words, at most three numbers a line, no parentheses or semicolons.
+// A cell's `status.desc` is one such line without the label.
 B.solar_charge = {
   v: 1,
-  reading: { name: 'Solar Charge', icon: '☀️', inputs: [{ q: 'world.sunlight', label: 'Sunlight here', show: 'pct' }] },
+  reading: {
+    name: 'Solar Charge', icon: '☀️', inputs: [{ q: 'world.sunlight', label: 'Sunlight here', show: 'pct' }],
+    desc: [
+      'Does: Damage and spell power change with your charge.',
+      'Full: +20% from half charge up.',
+      'Empty: -30% at 0 charge. The change is linear in between.',
+      'Fills: Each game minute under open sky by day. More sunlight fills faster.',
+      'Drains: Each game minute, day or night.',
+      'Grows: CON + WIS raise the cap, the fill and the drain.',
+    ].join('\n'),
+  },
   cells: [
     {
       key: 'charge', label: 'Solar Charge', icon: '☀️', hold: 'none', level: 'real', tier: 'run', show: 'bar',
       cap: { expr: 'add', a: 60, b: { expr: 'mul', a: 5, b: MAIN } },
-      status: { desc: 'Banked sunlight. Fills under open sky by day and drains a little every minute.' },
+      status: { desc: 'Stored sunlight. Cap 60 + 5 per point of CON + WIS.' },
     },
     {
       key: 'power', label: 'Sunpower', icon: '🔆', hold: 'none', level: 'real', tier: 'run', show: 'signedPct',
       floor: -0.3, cap: 0.2,
       status: {
-        desc: 'Damage and spell power follow the banked sunlight: +20% from half charge up, -30% when empty.',
+        desc: 'Damage and spell power. +20% from half charge up, -30% at 0 charge.',
         mods: [
           { q: 'fighter.damage', op: 'mult', value: 1 },
           { q: 'fighter.magicDamage', op: 'mult', value: 1 },
@@ -97,12 +109,21 @@ const hidden = { hidden: true };
 
 B.zenkai = {
   v: 1,
-  reading: { name: 'Zenkai', icon: '💥' },
+  reading: {
+    name: 'Zenkai', icon: '💥',
+    desc: [
+      'Does: Win a fight after your HP fell to 20% or less. All attributes rise for the run.',
+      'Gain: 1.5% x share of HP lost x enemy level / your level.',
+      'Limit: The level ratio counts up to 1.5. Each gain is 3% smaller than the last.',
+      'Fails: Using a flask, consumable or prayer in that fight.',
+      'Fails: An enemy under 70% of your level.',
+    ].join('\n'),
+  },
   cells: [
     {
       key: 'bonus', label: 'Zenkai', icon: '💥', hold: 'none', level: 'real', tier: 'run', show: 'signedPct', cap: 10,
       status: {
-        desc: 'All attributes, raised by every win where your HP fell to 20% or below without a flask or a prayer.',
+        desc: 'All attributes. Rises with each Zenkai win.',
         mods: ATTRS.map((a) => ({ q: 'stat.eff.' + a, op: 'mult', value: 1 })),
       },
     },
@@ -150,6 +171,10 @@ B.zenkai = {
 //   Costs: The moons use 2 mana per second. At 0 mana they go dark for 10 s.
 //   Limit: Strikes within 0.3 s combine. Two combined strikes deal x2. Three deal x5.
 //
+// User 2026-11-03 removed the cost: "little moons shouldn't drain mana, I don't know if it's part
+// of the spec but it feels unfun to use. let mana drain be a feature for an evolution, maybe." The
+// moons are free and never go dark. A mana drain is an idea for a branch, not built.
+//
 // Readings taken (the entry does not say):
 //   - "Your target" is the front enemy, and "your hit" is weapon damage (fighter.damage) before
 //     crit and variance. A strike always lands and never crits.
@@ -160,27 +185,22 @@ B.zenkai = {
 //   - The damage type is Light.
 //   - The moons run on the combat tick, so only in fights, and start each fight from zero. The
 //     first two-moon line-up comes about 11 s in.
-//   - "At 0 mana" is when the pool cannot pay this tick's share of the 2 per second. While dark
-//     the moons neither turn nor drain, and a line-up being held is lost.
-//
 //   bosses      boss kills this run; each adds 5 points to the 30% share.
 //   m1 m2 m3    ticks since each moon last came due. At its cap the moon comes due.
 //   due         moons waiting in the open window (1 to 3).
 //   win         ticks left before the window strikes; 0 when no window is open.
-//   dark        ticks left dark.
 //
 // None of the counting cells carries a status (`carrier: false`): no modifier reads them, and they
 // change every tick.
 //
-// Reads: fighter.damage, pool.mana.cur. Events: fightStart, kill (detail boss: 1 for a boss).
-// Needs a host that calls Facet.tick once per combat tick, resolves { side: 'enemy', rank: 'front' },
-// and has applyDamage and spendPool.
+// Reads: fighter.damage. Events: fightStart, kill (detail boss: 1 for a boss). Needs a host that
+// calls Facet.tick once per combat tick, resolves { side: 'enemy', rank: 'front' }, and has
+// applyDamage.
 const MOONS = [['m1', 2.8], ['m2', 3.7], ['m3', 7.9]];
 const STRIKE_SHARE = { expr: 'add', a: 0.3, b: { expr: 'mul', a: 0.05, b: { cell: 'bosses' } } };
 // due x (1, 2 or 5): 1, 4 or 15 strikes' worth.
 const DUE = { cell: 'due' };
 const COMBINED = { expr: 'mul', a: DUE, b: { expr: 'add', a: DUE, b: { expr: 'mul', a: 2, b: { expr: 'max', a: 0, b: { expr: 'sub', a: DUE, b: 2 } } } } };
-const MANA_PER_TICK = { expr: 'div', a: 2, b: { seconds: 1 } };
 // One more than the window in ticks: the countdown strikes at 1, so a moon due 0.3 s after the
 // first still joins.
 const WINDOW = { expr: 'add', a: { seconds: 0.3 }, b: 1 };
@@ -191,29 +211,32 @@ const isZero = (cell) => ({ cell, op: 'eq', v: 0 });
 
 B.little_moons = {
   v: 1,
-  reading: { name: 'Little Moons', icon: '🌙' },
+  reading: {
+    name: 'Little Moons', icon: '🌙',
+    desc: [
+      'Does: 3 moons hit the front enemy in fights. Light damage.',
+      'Timing: Every 2.8 s, 3.7 s and 7.9 s.',
+      'Damage: 30% of weapon damage per strike.',
+      'Grows: +5% per boss killed this run.',
+      'Combine: Strikes within 0.3 s merge. 2 merged deal 4 strikes of damage. 3 deal 15.',
+    ].join('\n'),
+  },
   cells: [
     {
       key: 'bosses', label: 'Boss kills', icon: '👑', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, carrier: false,
-      status: { desc: 'Each moon strike deals 30% of your weapon damage, plus 5% per boss killed this run.' },
+      status: { desc: '+5% moon strike damage per boss killed this run.' },
     },
     ...MOONS.map(([key, s]) => counter(key, { seconds: s })),
     counter('due', 3),
     counter('win', WINDOW),
-    counter('dark', { seconds: 10 }),
   ],
   clauses: [
-    { id: 'start', on: 'event:fightStart', do: ['m1', 'm2', 'm3', 'due', 'win', 'dark'].map((c) => setCell(c, 0)) },
+    { id: 'start', on: 'event:fightStart', do: ['m1', 'm2', 'm3', 'due', 'win'].map((c) => setCell(c, 0)) },
     // Adds the flag rather than guarding on it: a frame guard passes when the field is missing, so
     // a host that does not report `boss` would count every kill. A missing field adds 0.
     { id: 'boss', on: 'event:kill', do: [addCell('bosses', { frame: 'boss' })] },
-    // The tick, in order: dark counts down, the pool pays or the moons go dark, the moons turn,
-    // and an open window counts down or strikes.
-    { id: 'cool', on: 'tick', when: { cell: 'dark', op: 'gt', v: 0 }, do: [addCell('dark', -1)] },
-    { id: 'go_dark', on: 'tick', when: { all: [isZero('dark'), { q: 'pool.mana.cur', op: 'lt', v: MANA_PER_TICK }] },
-      do: [setCell('dark', { seconds: 10 }), setCell('due', 0), setCell('win', 0)] },
-    { id: 'drain', on: 'tick', when: isZero('dark'), do: [{ emit: 'world', verb: 'spend', pool: 'mana', value: MANA_PER_TICK }] },
-    { id: 'turn', on: 'tick', when: isZero('dark'), do: MOONS.map(([key]) => addCell(key, 1)) },
+    // The tick, in order: the moons turn, and an open window counts down or strikes.
+    { id: 'turn', on: 'tick', do: MOONS.map(([key]) => addCell(key, 1)) },
     // A moon at its cap comes due: back to zero, one more waiting, and a window opens if none is.
     ...MOONS.flatMap(([key]) => [
       { id: 'due_' + key, on: 'cell:' + key + ':cap', do: [setCell(key, 0), addCell('due', 1)] },
@@ -225,6 +248,285 @@ B.little_moons = {
       setCell('due', 0), setCell('win', 0),
     ] },
     { id: 'wait', on: 'tick', when: { cell: 'win', op: 'gt', v: 1 }, do: [addCell('win', -1)] },
+  ],
+};
+
+// ---------- Bramble ----------
+//
+// Approved by the user (team ability FLD-04, review page 1), no note:
+//   Does: Each hit you take raises your thorn level by 1 until the fight ends. Each level returns
+//         2% of every blow's damage to its attacker.
+//   Costs: Each level slows your actions by 0.5%.
+//   Grows: The level cap starts at 10. It rises by 1 per 200 fights fought.
+//   Fails: Fire damage you take burns away 5 levels per hit.
+//   Limit: The level cap tops out at 50. Thorns clear when the fight ends.
+// The entry predates the damage-type list: Fire is Heat.
+//
+// User additions (2026-11-01), after seeing it only grow on being hit:
+//   "an additional increase by floor(1 + 5% level cap) every second, and whenever the player hits
+//    themselves with nature damage, which makes the bramble increase by floor(2 levels + 10%
+//    bramble level cap) instead."
+//
+// Readings taken (neither text says):
+//   - A hit is a blow from an enemy. A condition ticking, a trap or your own backlash is not, so it
+//     neither grows nor burns thorns and has no attacker to answer.
+//   - The blow grows the thorn first, then the thorns answer it.
+//   - A Heat blow burns 5 levels and grows none. What is left still answers it.
+//   - The returned damage is Piercing, and "a blow's damage" is the blow as the enemy threw it,
+//     before your armour, resistance and ward. The entry's own note wants "a tank that wins by
+//     being hit"; a share of what got past a tank's armour returned 1 damage a blow at KSG floor 17.
+//   - "Every second" counts fight time: the per-second growth rides the host's combat tick.
+//   - Nature is Poison. KSG's spell word Seed is Poison and InfiniteGacha's Nature Slime hits with
+//     Poison; neither game has a Nature type.
+//   - "Hits themselves" is a blow the host marks `self: 1` (KSG: a spell you cast on yourself). A
+//     Poison one grows floor(2 + 10% of the cap) instead of 1, and answers no one. Heat you cast
+//     on yourself burns nothing.
+//   - "Fights fought" counts fights this run, won or lost.
+//
+//   thorns   the level, cleared at each fight's start and end. Its carrier slows `fighter.speed`
+//            (the action bar's fill) by 0.5% per level.
+//   sec      ticks toward the next second of fight time.
+//   fights   fights ended this run; the cap is 10 + floor(fights / 200), at most 50.
+//
+// At cap 10 the clock adds 1 a second and a self-Poison hit adds 3; at cap 50, 3 and 7.
+//
+// Events: hitTaken (detail amount, blow, type, attacker, self), fightStart, fightEnd, tick. Needs a
+// host that names the attacker's ref in hitTaken, resolves it, and has applyDamage. The guards
+// read `type`, `attacker` and `self` through `not`, so they fail closed: a host that does not
+// report a field never takes that branch, rather than taking it on every hit (a bare frame guard
+// passes when the field is missing). A host that does not report `blow` is answered on `amount`.
+const THORNS = { cell: 'thorns' };
+const THORN_CAP = { expr: 'min', a: 50, b: { expr: 'add', a: 10, b: { expr: 'floor', a: { expr: 'div', a: { cell: 'fights' }, b: 200 } } } };
+const capped = (base, share) => ({ expr: 'floor', a: { expr: 'add', a: base, b: { expr: 'mul', a: share, b: THORN_CAP } } });
+const FROM_ENEMY = { not: { frame: 'attacker', op: 'eq', v: '' } };
+const FROM_SELF = { not: { frame: 'self', op: 'ne', v: 1 } };
+const IS_HEAT = { not: { frame: 'type', op: 'ne', v: 'heat' } };
+const IS_POISON = { not: { frame: 'type', op: 'ne', v: 'poison' } };
+const BLOW = { expr: 'max', a: { frame: 'amount' }, b: { frame: 'blow' } };
+
+B.bramble = {
+  v: 1,
+  reading: {
+    name: 'Bramble', icon: '🌿', hit: 'thorns',
+    desc: [
+      'Does: Each thorn level returns 2% of every enemy blow to the attacker. Piercing damage.',
+      'Costs: Each level slows your actions 0.5%.',
+      'Grows: +1 per enemy blow. Each second: 1 + 5% of the cap.',
+      'Grows: Each Poison spell you cast on yourself: 2 + 10% of the cap.',
+      'Fails: Each Heat hit removes 5 levels. Thorns reset when the fight ends.',
+      'Limit: Cap 10. +1 per 200 fights this run. Max 50.',
+    ].join('\n'),
+  },
+  cells: [
+    {
+      key: 'thorns', label: 'Thorns', icon: '🌿', hold: 'none', level: 'int', tier: 'fight', show: 'count',
+      cap: THORN_CAP,
+      status: {
+        desc: 'Per level: 2% of each enemy blow returned, -0.5% action speed.',
+        mods: [{ q: 'fighter.speed', op: 'mult', value: -0.005 }],
+      },
+    },
+    counter('sec', { seconds: 1 }),
+    {
+      key: 'fights', label: 'Fights fought', icon: '⚔️', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, carrier: false,
+      status: { desc: 'Thorn cap +1 per 200 fights this run. Cap 10 to 50.' },
+    },
+  ],
+  clauses: [
+    { id: 'start', on: 'event:fightStart', do: [setCell('thorns', 0), setCell('sec', 0)] },
+    { id: 'end', on: 'event:fightEnd', do: [setCell('thorns', 0), addCell('fights', 1)] },
+    { id: 'clock', on: 'tick', do: [addCell('sec', 1)] },
+    { id: 'second', on: 'cell:sec:cap', do: [setCell('sec', 0), addCell('thorns', capped(1, 0.05))] },
+    { id: 'grow', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { not: IS_HEAT }] }, do: [addCell('thorns', 1)] },
+    { id: 'burn', on: 'event:hitTaken', when: { all: [FROM_ENEMY, IS_HEAT] }, do: [addCell('thorns', -5)] },
+    { id: 'self', on: 'event:hitTaken', when: { all: [FROM_SELF, IS_POISON] }, do: [addCell('thorns', capped(2, 0.1))] },
+    { id: 'answer', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { cell: 'thorns', op: 'gt', v: 0 }] }, do: [
+      { emit: 'world', verb: 'damage', damageType: 'piercing', scope: { frame: 'attacker' },
+        value: { expr: 'mul', a: BLOW, b: { expr: 'mul', a: 0.02, b: THORNS } } },
+    ] },
+  ],
+};
+
+// ---------- Basilisk Hide ----------
+//
+// Approved by the user (team ability ENM-18, review page 1):
+//   Does: Each time an enemy lands a hit on you, it gains Stone: 6% + CON / 10 per hit. Bosses
+//         gain 1.5% per hit.
+//   Grows: Stone slows its attack speed by the same percent.
+//   Fails: At 100% it becomes a statue and leaves the fight. Its loot is replaced by Stone Chunks
+//          worth 50% of the normal gold. It gives 50% XP.
+//   Costs: You have to be hit for it to work.
+// User note: "enemies will be able to resist it based on their own attributes and resistances
+//   (earth? arcane? dark? poison?). the statue doesn't leave the fight immediately but disappears
+//   after a few seconds. the player can break it to pelt remaining enemies behind the statue with
+//   rocks for piercing and slashing damage."
+//
+// Readings taken (offered to the user 2026-11-01 as defaults, not overruled):
+//   - A hit is an enemy's blow (hitTaken with an attacker), as for Bramble.
+//   - CON / 10 is percentage points: CON 25 gives 8.5 Stone a hit. A boss (hitTaken `boss`) takes
+//     a flat 1.5.
+//   - Stone is Earth, so the host resists it by the enemy's Earth resistance, and it names a CON
+//     contest (`contest: 'con'`): an enemy with more CON than you takes it × yours ÷ its.
+//   - The statue is the host's: Stone escalates at 100 into the host's `petrified` condition.
+//     ksgproto28 keeps it 3 seconds; broken before then it throws its max HP as rocks at the
+//     enemies behind it, half Piercing and half Slashing; either way it pays Stone Chunks worth
+//     half its gold and half its XP (statuses.data.ts, combat.ts onKill).
+//   - Stone slows 0.5% a point, half the approved "same percent" (user 2026-11-02: "Half the
+//     Stone %"). At 1% a point the last hits took most of the time: at KSG floor 17, standing
+//     still with attributes 30, 3 statues in 10 minutes; at 0.5%, 10.
+//
+// The evolution (user 2026-11-02, docs/ABILITY_IDEAS.md "Evolution"). A statue counts when the
+// enemy stood at 85% of your level or 85% of your attribute total or more (statue detail
+// `levelShare`, `attrShare`, read through `not`, so a host that sends neither counts nothing). The
+// count is plain, with no decay. At EVOLVE_AT the document offers its three branches (emit
+// 'evolve'); the host holds play until one is picked and swaps it in with Facet.evolve, which
+// carries every cell the two share. No branch evolves again, so the pick is final for the run.
+// EVOLVE_AT is a placeholder.
+//
+// A branch changes which statue the host makes, through Stone's `escalatesTo`:
+//   petrified           the base: lasts 3 seconds; broken, it throws rocks; pays Stone Chunks.
+//   petrified_rubble    Rubble: as the base, and left alone it bursts at half strength; no Chunks.
+//   petrified_standing  Stoneskin: stays until the fight ends, out of the way of your blows;
+//                       throws no rocks; pays its Chunks as it crumbles.
+// ksgproto28 defines all three (statuses.data.ts). A host without them makes no statues.
+//
+// Events: hitTaken (detail attacker, boss), statue (target, levelShare, attrShare), rocks
+// (target), fightStart, fightEnd, tick. The boss guard reads `boss` through `not`, so a host that
+// does not report it treats every attacker as an ordinary enemy.
+const EVOLVE_AT = 100;
+const STONE = {
+  id: 'basilisk_stone', name: 'Stone', icon: '🪨',
+  desc: 'Slows actions 0.5% per point. At 100 the bearer becomes a statue.',
+  element: 'earth', contest: 'con', escalatesTo: 'petrified', duration: null,
+  stacking: { mode: 'sum', cap: 100, onCap: 'escalate', escalateMult: 0.01 },
+  mods: [{ q: 'fighter.speed', op: 'mult', value: -0.005 }],
+};
+const stoneEnding = (escalatesTo) => Object.assign({}, STONE, { escalatesTo });
+const IS_BOSS = { not: { frame: 'boss', op: 'ne', v: 1 } };
+const ATTACKER = { frame: 'attacker' };
+const FRONT = { side: 'enemy', rank: 'front', n: 1 };
+const stoneOn = (def, scope, intensity) => ({ emit: 'status', scope, def, intensity });
+const HIT_STONE = { expr: 'add', a: 6, b: { expr: 'div', a: { q: 'stat.eff.con' }, b: 10 } };
+const RIVAL = { any: [
+  { not: { frame: 'levelShare', op: 'lt', v: 0.85 } },
+  { not: { frame: 'attrShare', op: 'lt', v: 0.85 } },
+] };
+const STATUES = {
+  key: 'statues', label: 'Statues', icon: '🗿', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: EVOLVE_AT,
+  carrier: false,
+  status: {
+    desc: 'Statues of enemies at 85% of your level or attribute total or more. At ' + EVOLVE_AT + ' the ability evolves.',
+  },
+};
+
+// Stone from enemy blows, and the statue count; every branch keeps both. `share` scales a blow's
+// dose (Gorgon's Gaze halves it).
+const fromBlows = (def, share) => {
+  const dose = (x) => share === 1 ? x : { expr: 'mul', a: share, b: x };
+  return [
+    { id: 'stone', on: 'event:hitTaken', when: { all: [FROM_ENEMY, { not: IS_BOSS }] }, do: [stoneOn(def, ATTACKER, dose(HIT_STONE))] },
+    { id: 'stone_boss', on: 'event:hitTaken', when: { all: [FROM_ENEMY, IS_BOSS] }, do: [stoneOn(def, ATTACKER, dose(1.5))] },
+    { id: 'count', on: 'event:statue', when: RIVAL, do: [addCell('statues', 1)] },
+  ];
+};
+
+B.basilisk_hide = {
+  v: 1,
+  reading: {
+    name: 'Basilisk Hide', icon: '🗿',
+    desc: [
+      'Does: Each enemy blow gives the attacker 6 + CON/10 Stone. Bosses get 1.5.',
+      'Stone: Slows the enemy 0.5% per point. At 100 it becomes a statue.',
+      'Resist: Earth resistance reduces Stone. So does enemy CON above yours.',
+      'Evolves: At 100 statues of enemies near your strength.',
+    ].join('\n'),
+  },
+  cells: [STATUES],
+  clauses: [
+    ...fromBlows(STONE, 1),
+    { id: 'evolve', on: 'cell:statues:cap', do: [{ emit: 'evolve', into: ['basilisk_gorgon', 'basilisk_rubble', 'basilisk_stoneskin'] }] },
+  ],
+};
+
+// Gorgon's Gaze (builds that are not hit). Each second of fight time the front enemy gains
+// 2 + CON / 50 Stone, a quarter of that on the place's boss: the dose is read per target, and
+// `fighter.boss` is 1 on the boss. Blows add half the base dose. When an enemy turns to stone the
+// gaze moves on: the new front enemy takes 25 Stone (a quarter on a boss), resisted like any dose.
+const BOSS_QUARTER = { expr: 'sub', a: 1, b: { expr: 'mul', a: 0.75, b: { q: 'fighter.boss', on: 'target' } } };
+const GAZE = { expr: 'mul', a: BOSS_QUARTER, b: { expr: 'add', a: 2, b: { expr: 'div', a: { q: 'stat.eff.con' }, b: 50 } } };
+
+B.basilisk_gorgon = {
+  v: 1,
+  reading: {
+    name: "Gorgon's Gaze", icon: '👁️',
+    desc: [
+      'Does: Each second in a fight, the front enemy gets 2 + CON/50 Stone.',
+      'Chain: A new statue gives the next front enemy 25 Stone.',
+      'Bosses: Get 1/4 of both.',
+      'Blows: Enemy blows give half the base Stone.',
+    ].join('\n'),
+  },
+  cells: [STATUES, counter('sec', { seconds: 1 })],
+  clauses: [
+    ...fromBlows(STONE, 0.5),
+    { id: 'start', on: 'event:fightStart', do: [setCell('sec', 0)] },
+    { id: 'clock', on: 'tick', do: [addCell('sec', 1)] },
+    { id: 'gaze', on: 'cell:sec:cap', do: [setCell('sec', 0), stoneOn(STONE, FRONT, GAZE)] },
+    { id: 'moves', on: 'event:statue', do: [stoneOn(STONE, FRONT, { expr: 'mul', a: BOSS_QUARTER, b: 25 })] },
+  ],
+};
+
+// Rubble (tanks in group fights). Rocks add 15 Stone to each enemy they hit (rocks detail
+// `target`), so one statue can turn the next. Its statue bursts at half strength when left alone,
+// and pays no Stone Chunks (petrified_rubble).
+const RUBBLE_STONE = stoneEnding('petrified_rubble');
+
+B.basilisk_rubble = {
+  v: 1,
+  reading: {
+    name: 'Rubble', icon: '🪨',
+    desc: [
+      'Rocks: Each enemy hit by statue rocks gets 15 Stone.',
+      'Burst: An unbroken statue bursts after 3 s. Its rocks deal half damage.',
+      'Costs: Statues give no Stone Chunks.',
+    ].join('\n'),
+  },
+  cells: [STATUES],
+  clauses: [
+    ...fromBlows(RUBBLE_STONE, 1),
+    { id: 'rocks', on: 'event:rocks', do: [stoneOn(RUBBLE_STONE, { frame: 'target' }, 15)] },
+  ],
+};
+
+// Stoneskin (tanks). Its statue stays until the fight ends and your blows pass it by; it throws no
+// rocks (petrified_standing). Each statue standing in the fight (`world.statues`) raises your
+// armour by 10%, a placeholder.
+const STANDING_STONE = stoneEnding('petrified_standing');
+
+B.basilisk_stoneskin = {
+  v: 1,
+  reading: {
+    name: 'Stoneskin', icon: '🛡️',
+    desc: [
+      'Statues: Stay until the fight ends. Your attacks skip them.',
+      'Armour: +10% per standing statue.',
+      'Costs: Statues throw no rocks.',
+    ].join('\n'),
+  },
+  cells: [
+    STATUES,
+    {
+      key: 'standing', label: 'Standing statues', icon: '🗿', hold: 'none', level: 'int', tier: 'fight', show: 'count', cap: 1e9,
+      status: {
+        desc: '+10% armour per statue standing in this fight.',
+        mods: [{ q: 'fighter.armor', op: 'mult', value: 0.1 }],
+      },
+    },
+  ],
+  clauses: [
+    ...fromBlows(STANDING_STONE, 1),
+    { id: 'stand', on: 'tick', do: [setCell('standing', { q: 'world.statues' })] },
+    { id: 'end', on: 'event:fightEnd', do: [setCell('standing', 0)] },
   ],
 };
 })();
