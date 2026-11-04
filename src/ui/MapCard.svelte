@@ -2,11 +2,27 @@
   import { untrack } from 'svelte';
   import OfficeDirectory from './OfficeDirectory.svelte';
   import MapPlan from './MapPlan.svelte';
+  import TowerSection from './TowerSection.svelte';
+  import StopDetail from './StopDetail.svelte';
   import { OFFICE_ROOMS } from '../core/systems/floodedFloor';
   import { gs, game, ui, view } from './state.svelte';
-  import { AREAS, FLOOR_BY_AREA, RECIPES, REGIONS, SPOTS, getSpot } from '../core/registry';
+  import { AREAS, FLOOR_BY_AREA, RECIPES, REGIONS, SPOTS, TOWERS, getSpot } from '../core/registry';
   import { recipeHidden } from '../core/systems/crafting';
+  import { towerAt } from '../core/systems/towers';
   import { visibleEdges, journeyEnd } from '../core/systems/locations';
+  import {
+    DETAIL_GAP,
+    DETAIL_H,
+    defaultStackArea,
+    regionOfTower,
+    stackAreas,
+    stopKeyOfArea,
+    towerOfRegion,
+    type StopView,
+  } from './lib/ladderView';
+  import { disarmRide } from './lib/rideArm.svelte';
+  import { viewport } from './lib/viewport.svelte';
+  import { mapRequest } from './lib/mapRequest.svelte';
   import { spotActivities } from '../core/systems/actions';
   import { ticksToTime } from './lib/format';
   import {
@@ -21,7 +37,7 @@
     spotFeatures,
     type RouteLine,
   } from './lib/navigation';
-  import { DEFAULT_W } from './lib/map';
+  import { DEFAULT_W, PLAN_HEIGHT } from './lib/map';
   import { CARD_W, cardTab, placeCard, selectionStep, type Box, type CardFocus, type SelectEvent } from './lib/mapSelect';
   import { buildPlan, buildRouteDraw, planThreats, stableThreats } from './lib/mapPlan';
   import TileMap from './lib/tilemaps/TileMap.svelte';
@@ -47,6 +63,13 @@
   let regionOverride = $state<string | null>(null);
   const currentRegion = $derived(AREAS[getSpot(focusId).areaId].regionId);
   const shownRegion = $derived(regionOverride ?? currentRegion);
+  // The tower whose ladder answers where the player stands. Its region has a
+  // tab before any floor of it is discovered: the first ride onto a new tower
+  // starts from the tower section, and the Ascent panel no longer has the button.
+  const ladderRegion = $derived.by(() => {
+    const tower = towerAt(gs);
+    return tower ? regionOfTower(tower) : null;
+  });
   // A tab for each region with a discovered spot, and for the regions on show
   // and underfoot, so there is always a way back to where the player stands.
   const foundRegions = $derived(
@@ -54,35 +77,70 @@
   );
   const regionList = $derived(
     Object.values(REGIONS).filter(
-      (r) => r.id === shownRegion || r.id === currentRegion || foundRegions.has(r.id),
+      (r) => r.id === shownRegion || r.id === currentRegion || r.id === ladderRegion || foundRegions.has(r.id),
     ),
   );
 
   // A tower's region is a STACK, not a map: its floors are drawn one at a
-  // time, with a tab per floor you have set foot on. Every other region
+  // time, picked in the tower section beside the plan. Every other region
   // draws whole, as before.
   let areaOverride = $state<string | null>(null);
-  const floorAreas = $derived(
-    Object.values(AREAS)
-      .filter((a) => a.regionId === shownRegion && FLOOR_BY_AREA.has(a.id))
-      .filter((a) => gs.discovered.some((id) => SPOTS[id]?.areaId === a.id))
-      .sort((a, b) => FLOOR_BY_AREA.get(a.id)!.index - FLOOR_BY_AREA.get(b.id)!.index),
-  );
+  /** The section row picked by hand (a stop key); null follows the plan on show. */
+  let picked = $state<string | null>(null);
+  /** The section's fold under 600 px. */
+  let foldOpen = $state(false);
+  const stackTower = $derived(tutorial ? null : towerOfRegion(shownRegion));
+  const stack = $derived(stackAreas(shownRegion));
   const shownArea = $derived.by((): string | null => {
-    if (!floorAreas.length) return null;
-    if (areaOverride && floorAreas.some((a) => a.id === areaOverride)) return areaOverride;
-    const here = getSpot(focusId).areaId;
-    if (floorAreas.some((a) => a.id === here)) return here;
-    return floorAreas[floorAreas.length - 1].id;
+    if (!stack.length) return null;
+    if (areaOverride && stack.includes(areaOverride)) return areaOverride;
+    // The floor underfoot; off the ladder the highest floor found, else the next climb.
+    return defaultStackArea(gs, shownRegion, getSpot(focusId).areaId);
   });
-  // Walking onto another floor shows that floor again.
+  /** The stop whose terms are on show: the row picked, else the stop of the plan on show. */
+  const shownStop = $derived(picked ?? (shownArea ? stopKeyOfArea(shownArea) : null));
+
+  /** What the toggle line calls the plan on show: a floor not reached by its number only. */
+  const areaTitle = $derived.by(() => {
+    if (!shownArea) return '';
+    const floor = FLOOR_BY_AREA.get(shownArea);
+    if (floor && floor.bandId !== undefined && !gs.discovered.some((id) => SPOTS[id]?.areaId === shownArea)) {
+      return `Floor ${floor.index}`;
+    }
+    return AREAS[shownArea].name;
+  });
+
+  /** A row of the tower section was clicked: show that stop's plan and terms. It never rides. */
+  function pickStop(row: StopView) {
+    disarmRide();
+    picked = row.key;
+    if (!row.areaId) return;
+    regionOverride = AREAS[row.areaId].regionId === currentRegion ? null : AREAS[row.areaId].regionId;
+    areaOverride = row.areaId;
+  }
+
+  // The Ascent panel's "Show in map": switch to the region asked for.
+  $effect(() => {
+    const region = mapRequest.region;
+    if (!region) return;
+    mapRequest.region = null;
+    ui.mapOpen = true;
+    untrack(() => {
+      picked = null;
+      areaOverride = null;
+      regionOverride = region === currentRegion ? null : region;
+    });
+  });
+
+  // Arriving on another stop shows its plan and terms again.
   $effect(() => {
     void gs.spot;
     areaOverride = null;
+    picked = null;
   });
   // Setting out, retargeting or arriving puts the map back on the focus:
   // a tab the player opened before the journey does not hold the map off the
-  // destination.
+  // destination. The row picked stays through a ride, so its terms stay up.
   $effect(() => {
     void endId;
     regionOverride = null;
@@ -117,8 +175,24 @@
     return threatCache;
   });
 
+  /**
+   * A region with no tower section draws its plan as tall as a tower region's
+   * plan and detail together (after the tutorial, when the tower is always
+   * there), so a ride between the city and the tower, which switches the map,
+   * moves nothing below it. Under 600 px the detail sits in the section's fold
+   * and nothing is reserved.
+   */
+  const planHeight = $derived(
+    viewport.wide && !tutorial && !stackTower && !tiled ? PLAN_HEIGHT + DETAIL_H + DETAIL_GAP : PLAN_HEIGHT,
+  );
+
   const plan = $derived(
-    buildPlan(gs, { region: shownRegion, area: shownArea, width, tiled, focus: focusId, target, threats }),
+    buildPlan(gs, { region: shownRegion, area: shownArea, width, height: planHeight, tiled, focus: focusId, target, threats }),
+  );
+
+  /** The tower the fold under 600 px lists: the one on show, else the one underfoot, else the first. */
+  const foldTower = $derived(
+    tutorial || viewport.wide ? null : (stackTower ?? towerAt(gs) ?? Object.values(TOWERS)[0] ?? null),
   );
 
   const stuck = $derived(!!gs.travel || gs.recovering || !!gs.combat?.forced);
@@ -372,9 +446,9 @@
     <div class="map-toggle">🗺️ Map — {REGIONS[shownRegion].name}</div>
   {:else}
     <button class="map-toggle" onclick={() => (ui.mapOpen = !ui.mapOpen)}>
-      {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {REGIONS[shownRegion].name}{shownArea &&
-      AREAS[shownArea].name !== REGIONS[shownRegion].name
-        ? `: ${AREAS[shownArea].name}`
+      {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {REGIONS[shownRegion].name}{areaTitle &&
+      areaTitle !== REGIONS[shownRegion].name
+        ? `: ${areaTitle}`
         : ''}
     </button>
   {/if}
@@ -394,43 +468,53 @@
       </div>
     {/if}
 
-    {#if floorAreas.length > 1}
-      <div class="region-switch floors">
-        {#each floorAreas as area (area.id)}
-          <button
-            class="small"
-            class:selected={shownArea === area.id}
-            onclick={() => (areaOverride = area.id)}
-          >
-            Floor {FLOOR_BY_AREA.get(area.id)!.index} · {area.name}
-          </button>
-        {/each}
-      </div>
+    {#if foldTower}
+      <!-- Under 600 px the section is a fold with no ride button: the Ascent panel keeps its buttons.
+           The fold is there in every region, so a ride that switches the map moves nothing. -->
+      <details class="tower-fold" bind:open={foldOpen}>
+        <summary>🗼 {foldTower.name}{stackTower && areaTitle ? ` · ${areaTitle}` : ''}</summary>
+        <TowerSection tower={foldTower} height={PLAN_HEIGHT + 2} shownKey={shownStop} onpick={pickStop} />
+        <StopDetail tower={foldTower} stopKey={shownStop} />
+      </details>
     {/if}
 
-    {#if shownRegion === currentRegion && OFFICE_ROOMS.includes(gs.spot) && (!shownArea || shownArea === getSpot(gs.spot).areaId)}
-      <OfficeDirectory />
-    {:else}
-      <!-- One line, always there, so a route appearing never moves the map. -->
-      <div
-        class="route-line small"
-        role="status"
-        title={routeLine.head ? `${routeLine.head} ${routeLine.rest}` : undefined}
-      >
-        {#if routeLine.head}
-          <span class="route-head">{routeLine.head}</span> {routeLine.rest}
-        {:else}
-          &nbsp;
-        {/if}
-      </div>
-      <div class="map-wrap" class:tiled bind:clientWidth={wrapW} style:height="{plan.frame.h + 2}px">
-        {#if tilemap}
-          {#key shownRegion}
-            <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} />
-          {/key}
-        {/if}
-        <MapPlan {plan} route={routeDraw} {stuck} {selected} onpick={pick} onexit={walkTo} />
-      </div>
+    <div class="stackpane" class:with-section={!!stackTower && viewport.wide}>
+      {#if shownRegion === currentRegion && OFFICE_ROOMS.includes(gs.spot) && (!shownArea || shownArea === getSpot(gs.spot).areaId)}
+        <div class="office-cell"><OfficeDirectory /></div>
+      {:else}
+        <!-- One line, always there, so a route appearing never moves the map. -->
+        <div
+          class="route-line small"
+          role="status"
+          title={routeLine.head ? `${routeLine.head} ${routeLine.rest}` : undefined}
+        >
+          {#if routeLine.head}
+            <span class="route-head">{routeLine.head}</span> {routeLine.rest}
+          {:else}
+            &nbsp;
+          {/if}
+        </div>
+        <div class="map-wrap" class:tiled bind:clientWidth={wrapW} style:height="{plan.frame.h + 2}px">
+          {#if tilemap}
+            {#key shownRegion}
+              <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} />
+            {/key}
+          {/if}
+          <MapPlan {plan} route={routeDraw} {stuck} {selected} onpick={pick} onexit={walkTo} />
+          {#if stackTower && plan.nodes.length === 0}
+            <div class="map-empty small dim">Nothing on this floor is on the map yet.</div>
+          {/if}
+        </div>
+      {/if}
+      {#if stackTower && viewport.wide}
+        <div class="section-cell">
+          <TowerSection tower={stackTower} height={plan.frame.h + 2} shownKey={shownStop} onpick={pickStop} />
+        </div>
+      {/if}
+    </div>
+
+    {#if stackTower && viewport.wide}
+      <StopDetail tower={stackTower} stopKey={shownStop} />
     {/if}
   {:else}
     <!-- Folded map: the roads out of here stay one click away. -->
@@ -599,13 +683,62 @@
     margin: 8px 0;
   }
 
-  .region-switch.floors {
-    flex-wrap: wrap;
-    margin-top: -2px;
+  /*
+   * The route line and the plan, and in a tower region the tower section beside
+   * the plan (TowerSection.svelte): two columns, the route line across the top.
+   * The pane is a grid in both cases, so the route line's margin does not
+   * collapse into the region tabs' in one and not the other: a ride that
+   * switches the map between the city and the tower moves nothing. The section
+   * is as tall as the plan.
+   */
+  .stackpane {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
   }
-  .region-switch.floors button {
-    font-size: 11.5px;
-    padding: 3px 9px;
+
+  .stackpane.with-section {
+    grid-template-columns: 184px minmax(0, 1fr);
+    column-gap: 8px;
+  }
+
+  .stackpane.with-section > .route-line {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .stackpane.with-section > .map-wrap,
+  .stackpane.with-section > .office-cell {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  .stackpane.with-section > .section-cell {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+    min-width: 0;
+  }
+
+  /* Under 600 px the section folds above the plan. */
+  .tower-fold {
+    margin: 6px 0 2px;
+  }
+
+  .tower-fold > summary {
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .map-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    text-align: center;
+    pointer-events: none;
   }
 
   /*

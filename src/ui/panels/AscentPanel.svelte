@@ -1,36 +1,30 @@
 <script lang="ts">
-  import { gs, game } from '../state.svelte';
-  import {
-    CLIMB_TICKS_PER_FLOOR,
-    bandBaseIndex,
-    bandLevelStep,
-    climbVerb,
-    currentFloor,
-    hubStatus,
-    ladderFloors,
-    rungIndex,
-    rungStatus,
-    standingIndex,
-    towerAt,
-  } from '../../core/systems/towers';
-  import { floorsInBand, getSpot } from '../../core/registry';
+  import { gs, view } from '../state.svelte';
+  import { bandLevelStep, ladderFloors, towerAt } from '../../core/systems/towers';
+  import { floorsInBand } from '../../core/registry';
   import type { BandDef, FloorDef } from '../../core/types';
-  import { festivalLadder, festivalLocked } from '../../core/systems/festivalRules';
-  import { ticksToTime } from '../lib/format';
+  import { festivalLadder } from '../../core/systems/festivalRules';
   import {
+    MARK_ICON,
     bandFoldable,
+    bandHubView,
     bandProgress,
     floorRange,
-    hubTerms,
     ladderBands,
-    rungTerms,
+    regionOfTower,
+    rideLabel,
+    rungView,
     standingBandId,
+    towerHubView,
     type LadderBand,
+    type StopView,
   } from '../lib/ladderView';
   import { bandIsOpen, setBandOpen } from '../lib/ladderFold.svelte';
+  import { armedKey, disarmRide, pressRide, rideBlocked } from '../lib/rideArm.svelte';
+  import { viewport } from '../lib/viewport.svelte';
+  import { mapRequest } from '../lib/mapRequest.svelte';
 
   const tower = $derived(towerAt(gs));
-  const here = $derived(currentFloor(gs));
   const rungs = $derived(tower ? ladderFloors(tower.id) : []);
 
   /**
@@ -47,21 +41,7 @@
    */
   const standingBand = $derived(standingBandId(gs));
 
-  const atHub = $derived(!!tower && gs.spot === tower.hubSpot);
-  const fromIndex = $derived(standingIndex(gs));
-  const hub = $derived(tower ? getSpot(tower.hubSpot) : null);
-
-  /** Base ticks the climb button will cost (speed applies on top, like roads). */
-  function climbTicks(toIndex: number): number {
-    return Math.max(1, Math.abs(toIndex - fromIndex)) * CLIMB_TICKS_PER_FLOOR;
-  }
-
-  /** The button's verb: up or down the stack, or across between rungs at one height. */
-  function moveLabel(toIndex: number): string {
-    if (!tower) return '';
-    const verb = climbVerb(tower, fromIndex, toIndex);
-    return verb === 'Crossing' ? 'Go' : verb === 'Climbing' ? 'Climb' : 'Descend';
-  }
+  const foot = $derived(tower ? towerHubView(gs, tower) : null);
 
   /** The band header's second line: its floors, unless the name already says it, and its order. */
   function bandSub(band: BandDef): string {
@@ -81,95 +61,80 @@
 
   /**
    * Inside a festival attempt every climb but the one into the royale is a
-   * forfeit (systems/festivalRules.ts), so those buttons ask twice. `armed`
-   * is the destination the first click picked: a floor id, `hub` or
-   * `band:<id>`.
+   * forfeit (systems/festivalRules.ts), so those buttons ask twice (the first
+   * press is kept in lib/rideArm.svelte.ts, shared with the map's tower
+   * section).
    */
-  let armed = $state<string | null>(null);
   const inFestival = $derived(festivalLadder(gs, null) === 'forfeit');
+  $effect(() => {
+    if (!inFestival) disarmRide();
+  });
 
-  /** Run a climb, or arm it first when it would forfeit the festival. */
-  function climbOrArm(key: string, forfeits: boolean, go: () => void) {
-    if (forfeits && armed !== key) {
-      armed = key;
-      return;
-    }
-    armed = null;
-    go();
+  /**
+   * At 600 px and wider the map's tower section carries the ride buttons and
+   * this panel prints terms only, so the page has one set of buttons
+   * (docs/NAVIGATION.md §3.5). Under 600 px the section has no button and
+   * this panel keeps its own. "Show in map" is for the player standing at the
+   * hub, where the map shows the city: it opens the tower's tab.
+   */
+  function showInMap() {
+    const region = tower ? regionOfTower(tower) : null;
+    if (!region) return;
+    mapRequest.region = region;
+    // The map is above this panel: bring its top into view.
+    queueMicrotask(() => document.querySelector('.map-toggle')?.scrollIntoView({ block: 'start' }));
   }
 </script>
 
-{#snippet floorCard(floor: FloorDef, named: boolean)}
-  {@const status = rungStatus(gs, floor)}
-  {@const current = here?.id === floor.id}
-  {@const locked = festivalLocked(gs, floor)}
-  {@const verdict = festivalLadder(gs, floor.id)}
-  <div class="rung" class:current class:sealed={status === 'sealed'}>
+{#snippet rideButton(stop: StopView)}
+  {#if stop.action && !viewport.wide}
+    <button
+      class="small"
+      class:forfeit={stop.action.kind === 'forfeit'}
+      disabled={rideBlocked(gs)}
+      onclick={() => pressRide(stop.action!)}
+    >
+      {rideLabel(stop.action, armedKey() === stop.action.key, view.stats.travelSpeed)}
+    </button>
+  {/if}
+{/snippet}
+
+{#snippet floorCard(floor: FloorDef)}
+  {@const stop = rungView(gs, floor)}
+  <div class="rung" class:current={stop.current} class:sealed={stop.status === 'sealed'}>
     <div class="rung-name">
-      <span class="rung-icon">
-        {#if locked}🔒{:else if status === 'cleared'}✅{:else if status === 'open' && (verdict === 'closed' || verdict === 'shut')}🚪{:else if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}
-      </span>
-      <b>{named ? floor.name : `Floor ${floor.index}`}</b>
+      <span class="rung-icon">{MARK_ICON[stop.mark]}</span>
+      <b>{stop.name ?? `Floor ${floor.index}`}</b>
     </div>
-    {#if named}
+    {#if stop.name}
       <div class="rung-sub dim small">
         Floor {floor.index}
-        {#if current}<span class="here">you are here</span>{/if}
+        {#if stop.current}<span class="here">you are here</span>{/if}
       </div>
     {/if}
     <!-- The terms are the teaching: a shut door always says what opens it. -->
-    {#each rungTerms(gs, floor).terms as t}
+    {#each stop.terms as t}
       <div class="term small" class:dim={t.dim}>{t.icon ? `${t.icon} ` : ''}{t.text}</div>
     {/each}
-    {#if (status === 'open' || status === 'cleared') && !current && !locked && verdict !== 'shut' && verdict !== 'closed'}
-      <button
-        class="small"
-        class:forfeit={verdict === 'forfeit'}
-        disabled={gs.recovering || !!gs.combat?.forced}
-        onclick={() => climbOrArm(floor.id, verdict === 'forfeit', () => game.climbTo(floor.id))}
-      >
-        {#if verdict === 'forfeit'}
-          {armed === floor.id ? 'Confirm: forfeit the festival' : `Forfeit · ${moveLabel(rungIndex(floor))}`}
-        {:else if verdict === 'royale'}
-          Enter the royale · {ticksToTime(climbTicks(rungIndex(floor)))}
-        {:else}
-          {moveLabel(rungIndex(floor))} · {ticksToTime(climbTicks(rungIndex(floor)))}
-        {/if}
-      </button>
-    {/if}
+    {@render rideButton(stop)}
   </div>
 {/snippet}
 
 {#snippet hubCard(band: BandDef)}
-  {@const spot = getSpot(band.hub!)}
-  {@const status = hubStatus(gs, band)}
-  {@const current = gs.spot === band.hub}
-  <div class="rung band-hub" class:current class:sealed={status === 'sealed'}>
+  {@const stop = bandHubView(gs, band)}
+  <div class="rung band-hub" class:current={stop.current} class:sealed={stop.status === 'sealed'}>
     <div class="rung-name">
-      <span class="rung-icon">{#if status === 'open'}🟢{:else if status === 'gated'}🔒{:else}⛔{/if}</span>
-      <b>{spot.icon} {spot.name}</b>
+      <span class="rung-icon">{MARK_ICON[stop.mark]}</span>
+      <b>{stop.icon} {stop.name}</b>
     </div>
     <div class="rung-sub dim small">
       Hub
-      {#if current}<span class="here">you are here</span>{/if}
+      {#if stop.current}<span class="here">you are here</span>{/if}
     </div>
-    {#each hubTerms(gs, band).terms as t}
+    {#each stop.terms as t}
       <div class="term small" class:dim={t.dim}>{t.icon ? `${t.icon} ` : ''}{t.text}</div>
     {/each}
-    {#if status === 'open' && !current}
-      <button
-        class="small"
-        class:forfeit={inFestival}
-        disabled={gs.recovering || !!gs.combat?.forced}
-        onclick={() => climbOrArm(`band:${band.id}`, inFestival, () => game.climbToHub(band.id))}
-      >
-        {#if inFestival}
-          {armed === `band:${band.id}` ? 'Confirm: forfeit the festival' : `Forfeit · ${moveLabel(bandBaseIndex(band))}`}
-        {:else}
-          {moveLabel(bandBaseIndex(band))} · {ticksToTime(climbTicks(bandBaseIndex(band)))}
-        {/if}
-      </button>
-    {/if}
+    {@render rideButton(stop)}
   </div>
 {/snippet}
 
@@ -206,7 +171,7 @@
         <div class="band-floors">
           {#each lb.cards as card (card.kind === 'floor' ? card.floor.id : `hub:${card.band.id}`)}
             {#if card.kind === 'floor'}
-              {@render floorCard(card.floor, card.named)}
+              {@render floorCard(card.floor)}
             {:else}
               {@render hubCard(card.band)}
             {/if}
@@ -221,6 +186,12 @@
   <div class="panel" style="margin-top: 12px">
     <h3>{tower.icon} {tower.name}</h3>
     {#if tower.desc}<p class="dim small">{tower.desc}</p>{/if}
+    {#if viewport.wide}
+      <p class="ride-hint dim small">
+        Rides start from the tower section of the map.
+        <button class="small" onclick={showInMap}>Show in map</button>
+      </p>
+    {/if}
     {#if inFestival}
       <p class="forfeit-note small">
         🎪 Inside the festival, every climb but the one into the royale is a forfeit: you land outside the tower and
@@ -233,27 +204,14 @@
       {/each}
 
       <!-- The hub is rung 0: the way back to the city, always open. -->
-      {#if hub}
+      {#if foot}
         <div class="band-floors">
-          <div class="rung hub" class:current={atHub}>
+          <div class="rung hub" class:current={foot.current}>
             <div class="rung-name">
-              <b>{hub.icon} {hub.name}</b>
+              <b>{foot.icon} {foot.name}</b>
             </div>
-            {#if atHub}<div class="rung-sub small"><span class="here">you are here</span></div>{/if}
-            {#if !atHub}
-              <button
-                class="small"
-                class:forfeit={inFestival}
-                disabled={gs.recovering || !!gs.combat?.forced}
-                onclick={() => climbOrArm('hub', inFestival, () => game.climbTo(null))}
-              >
-                {#if inFestival}
-                  {armed === 'hub' ? 'Confirm: forfeit the festival' : 'Forfeit · Leave the tower'}
-                {:else}
-                  {tower.direction === 'down' ? 'Climb out' : 'Descend'} · {ticksToTime(climbTicks(0))}
-                {/if}
-              </button>
-            {/if}
+            {#if foot.current}<div class="rung-sub small"><span class="here">you are here</span></div>{/if}
+            {@render rideButton(foot)}
           </div>
         </div>
       {/if}
@@ -380,6 +338,14 @@
     color: var(--action, #7de0c3);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+  }
+
+  .ride-hint {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin: 4px 0 8px;
   }
 
   /* A climb that forfeits the festival: the warm danger hue, never the blue arc. */

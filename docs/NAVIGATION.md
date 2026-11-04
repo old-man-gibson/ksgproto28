@@ -6,7 +6,9 @@ Built 2026-09-13 (save v53): `systems/locations.ts`, `systems/actions.ts`
 `ui/panels/DestinationPreview.svelte`, `ui/lib/navigation.ts`,
 `ui/lib/GoButton.svelte`. Ride edges added 2026-11-04 (§2.6, `systems/towers.ts`).
 Surveyed plan and route line added 2026-11-04 (§3.2, §3.3: `ui/MapPlan.svelte`,
-`ui/lib/map.ts`, `ui/lib/mapPlan.ts`).*
+`ui/lib/map.ts`, `ui/lib/mapPlan.ts`). Tower section added 2026-11-04 (§3.5:
+`ui/TowerSection.svelte`, `ui/StopDetail.svelte`, `ui/lib/ladderView.ts`,
+`ui/lib/rideArm.svelte.ts`, `ui/lib/viewport.svelte.ts`).*
 
 ## 1. Why
 
@@ -189,8 +191,9 @@ second travel control. The router now crosses the ladder.
 
 ## 3. The map (`MapCard.svelte`, `MapPlan.svelte`, `lib/map.ts`, `lib/mapPlan.ts`, `lib/navigation.ts`)
 
-The map is the one travel control. The old Travel list is gone; everything
-it said moved onto the map:
+The map is the one travel control, and in a tower region it carries the
+ladder's ride buttons too (§3.5). The old Travel list is gone; everything it
+said moved onto the map:
 
 | The list said | The map says it as |
 |---|---|
@@ -224,12 +227,14 @@ Changed 2026-11-03 (UI proposal C3, docs/plans/ui-proposals.md). No save change.
    height for the walk.
    The activity buttons keep `.tutorial-target` (TUTORIAL.md §5).
 2. **Map** (`MapCard.svelte`, §3): the route line, then the surveyed plan.
-   The click card (§3.3) replaced the hover card.
+   The click card (§3.3) replaced the hover card. In a tower region the tower
+   section stands beside the plan and the stop's detail under it (§3.5); the
+   floor tabs are gone.
 3. **Festival panel**, while an attempt holds the player.
 4. **Walking:** the destination preview (§4). **Standing still:** the place
    panel (banner, description, key items, sea panel), People and shops,
    Workbenches, Crafting, then the ladder (`AscentPanel.svelte`) where a stack
-   is reachable.
+   is reachable: its terms, and its ride buttons only under 600 px (§3.5).
 
 **Ladder bands** are `<details>` at every width (`lib/ladderView.ts`,
 `lib/ladderFold.svelte.ts`). A band folds only when every floor in it is
@@ -243,6 +248,8 @@ range, "n of m cleared". The next band, shown by name only, is a plain header.
 A foldable band is folded by default; the player's choice to open or fold it
 lives in module memory and resets on reload. Opening and folding that the
 panel does itself (walking into or out of a band) is not recorded as a choice.
+The map's tower section (§3.5) folds by the same functions and the same store,
+so a band folded in one place is folded in the other.
 
 **Rung terms.** `rungTerms(gs, floor)` and `hubTerms(gs, band)` hold the
 ladder's term selection for every state: `locked` (floors 15 and 16 after a
@@ -251,6 +258,16 @@ lost festival attempt), `closed` (floor 16 outside an attempt), `shut` (floor
 terms only while gated. Each term keeps the condition it was built from
 (`cond`). AscentPanel draws them; a later next-step line calls the same
 functions so the two cannot disagree.
+
+**Stop views.** `rungView(state, floor)`, `bandHubView(state, band)` and
+`towerHubView(state, tower)` (`lib/ladderView.ts`) give one stop of the ladder
+as the panel and the section both draw it: the mark, the terms (`rungTerms`,
+`hubTerms`), "you are here" and the ride. The ride is the core's own gate: it
+is offered when `rideGate` says `open`, `royale` or `forfeit`, and priced by
+`rideTicks`, the figure `climbTo` charges. `tests/towersection.test.ts` checks
+that a button is offered exactly where `climbTo` / `climbToHub` take the ride,
+in ten states including the festival's, and that the price equals the ride's
+`travel.total`.
 
 ### 3.2 The surveyed plan (N3)
 
@@ -270,6 +287,13 @@ Built 2026-11-04 (docs/plans/navigation-alternatives.md N3). No save change.
     with it. It has no districts, no ground and no road lines: the picture is
     the ground.
   - The frame's height does not depend on what is selected, walked or fought.
+    It depends on the layout only: after the tutorial, at 600 px and wider, a
+    diagram region with no tower section is 446 px high (340 plus the detail
+    slot and its gap, §3.5), so the pane is as tall in the city as in the tower.
+    A tower region's plan, beside the section, is 581 px wide at a 1094 px
+    window and 565 px at 1440 with the log open (the column less 192 px); the
+    label sweep in `tests/towersection.test.ts` covers every floor from 300 to
+    700 px.
 - **Names** (`placeLabels`): under the pin unless that lands on another pin,
   its chips or a name; then over it, to either side, the ends of the under and
   over rows, the corners and the rows slid sideways. The whole list is tried
@@ -346,9 +370,10 @@ through `selectionStep`):
   here) and closes the card. On the pin underfoot, or while walking, it only
   closes the card. A click on another pin selects that pin and walks nowhere.
 - **The card closes** on Escape, on a click outside the card and the pins, on
-  switching the region or floor tab, on folding the map, when the selected pin
-  leaves the map, and when a card button walks (Walk here, Go, Go & open,
-  Go & start). Start, Stop and On arrival leave it open.
+  switching the region or the floor shown (a row of the tower section), on
+  folding the map, when the selected pin leaves the map, and when a card button
+  walks (Walk here, Go, Go & open, Go & start). Start, Stop and On arrival leave
+  it open.
 - **Content**: route and warnings (one-way, no retreat, shut), Walk here,
   the features with Go / Go & open / Go & start, and every activity with Go &
   start. At the current spot the buttons are Start / Open / Stop. At the end of
@@ -419,7 +444,9 @@ not move what is below the map.
 - `visibleBenches` moved from LocationPanel to `lib/navigation.ts`, so the
   room and the map hide the same locked benches.
 - **Region tabs** (2026-11-04) show only regions with a discovered spot, plus
-  the region on show and the one the player stands in (or walks to).
+  the region on show and the one the player stands in (or walks to), and the
+  region of the tower whose ladder answers where the player stands (§3.5: the
+  first ride onto a new tower starts from its section).
 - **While walking**, the map shows the region and floor where the journey ends
   (`journeyEnd`). An undiscovered end is not shown: the map stays on the spot
   underfoot. Setting out, retargeting and arriving clear a tab the player had
@@ -430,6 +457,106 @@ not move what is below the map.
   never had a destination. `fastTravelTo` and `canFastTravel` stay in the core
   and the Foot keeps `waypoint: true`: the "every spot can get home" lint
   anchors on the flag. Pins no longer wear a ⚡ for it (2026-11-04, N3).
+
+### 3.5 The tower section (N4)
+
+Built 2026-11-04 (docs/plans/navigation-alternatives.md N4). No save change.
+It replaced the per-floor tabs. A click selects a floor and shows it; the
+button rides.
+
+- **Where.** In a tower region (the Ascent's floors) the pane is two columns:
+  the tower section (184 px) and the plan. The route line runs across the top,
+  and the stop's detail (`StopDetail.svelte`, 100 px) sits under both. Floor 0
+  is bandless and is not a rung: the tutorial's map has no section, no fold, no
+  detail and no region tabs, as it had no floor tabs (`tests/towersection.test.ts`
+  renders it). In Threshold, the Hold and the rest the section is not drawn.
+- **Rows** (`towerSection`, `lib/ladderView.ts`). One row per card of
+  `ladderBands`, so the section shows what the Ascent panel shows and no more:
+  - highest band first, and inside a band the highest floor first with the
+    band's hub last; the tower's hub (The Foot) closes the column;
+  - a floor not reached is its number; a floor reached is its number and name;
+  - the next band is a name and nothing else, and nothing is above it;
+  - each row has a mark (the panel's: ✅ cleared, 🟢 open, 🔒 locked or shut,
+    ⛔ sealed, 🚪 a door the festival closes), and its right cell says "here",
+    the ride's time at the current travel speed, or "forfeit";
+  - no level range: a range derived from a floor's spots would print rooms the
+    player has not entered (plan §6 row 7).
+- **Fold.** A band header folds by `bandFoldable` and the store in
+  `lib/ladderFold.svelte.ts`, the same as the panel's. The progress is
+  "cleared/total" of the floors shown. A band that may not fold is open and its
+  header does nothing.
+- **Height.** The column is exactly the plan's height (342 px with its border)
+  and scrolls inside itself. Opening a fold or a ride starting moves nothing
+  outside it. Arriving on a stop scrolls the column, not the page, to its row.
+- **Click, not hover.** A row click picks the stop (`pickStop`, MapCard): the
+  map shows its plan (`areaOverride`, and the region when it differs), the
+  detail shows its terms and ride button. A click never rides, and nothing
+  opens on hover (no tooltip on a row or on the detail). The row of the stop
+  underfoot is marked and `aria-current="location"`; the row on show is
+  `aria-pressed`.
+  - The castle's hub shows its own plan once its row is picked (its area is a
+    stack area). The Foot is in Threshold, so its row leaves the plan as it is.
+  - A floor with no spot found shows an empty frame: "Nothing on this floor is
+    on the map yet." Its title on the map toggle is "Floor n", not its name.
+  - **Default stop** (`defaultStackArea`). Until a row is clicked the detail
+    shows the stop of the plan on show, and the detail has a stop whenever the
+    tower's tab is shown:
+    - standing on a floor: that floor;
+    - in the city, at the Foot or at a band hub: the highest floor with a place
+      found (where the old floor tabs opened), so the hub's own plan is one row
+      click away, not the default;
+    - a new run with no place found on any floor (a new game after the
+      tutorial, or after a prestige): the lowest open floor, the next climb;
+    - no floor found and none open: no stop, and the detail says to pick a floor.
+    From the city the ride is two clicks: the tower's tab, then the button.
+  - The pick follows the plan on show until a row is clicked. It is dropped when
+    the player arrives on another spot, and kept through a ride so the terms of
+    the floor being ridden to stay up.
+  - A walk or ride that ends in another region puts the plan on that region
+    (§3.4), as it did.
+- **The ride** is the detail's button (`pressRide`, `lib/rideArm.svelte.ts`):
+  `climbTo(floor)`, `climbTo(null)` or `climbToHub(band)`. It is disabled while
+  knocked out, in a forced fight or already riding. The festival's forfeit asks
+  twice: the first press arms the button (its label becomes "Confirm: forfeit the
+  festival"), the second runs it. The arm is one store shared by the section
+  and the panel. It holds the stop's key, the spot the player stood on and the
+  layout (600 px) that carried the button, and is void when any of them differs
+  or a walk or ride is under way, so a press made at the hall does not forfeit
+  from the stores (`armedKey`). An effect on the spot, the travel state and the
+  width (`syncArm`) clears it, so walking away and back does not revive it. It is
+  also dropped when another stop is picked and when the attempt ends. Off the
+  ladder (standing in the city, not at the Foot or on a floor) a stop has no
+  button and its detail says where rides start.
+- **One set of ride buttons** (`lib/viewport.svelte.ts`, 600 px):
+  - at 600 px and wider the section's detail carries the button and the Ascent
+    panel prints terms only, with a "Show in map" button that opens the map on
+    the tower's tab;
+  - under 600 px the section is a fold ("🗼 The Ascent · floor", closed) in every
+    region, with no button in its detail; the Ascent panel keeps its buttons.
+  The flag is a `matchMedia` store, so a test sets it. A server render reads
+  wide.
+  - Narrow-width rule: the fold opens above the plan and pushes the page down.
+    The player opens it, so the move is allowed; the fold's summary line is in
+    the page in every region, so a ride that switches the map moves nothing.- **Tab for a tower not yet climbed.** The tower's region has a tab whenever the
+  ladder answers where the player stands, before any of its floors is found. The
+  first climb from the Foot is the tab, then Climb on floor 1 (the default stop).
+  The panel's "Show in map" opens the same tab with the same default, so from the
+  panel it is "Show in map", then the button.
+- **No layout shift** (the user, 2026-11-04). The route line, the plan, the
+  section and the detail have fixed heights. A ride that switches the map between
+  the tower and the city moves nothing below the map: after the tutorial a region
+  with no section draws its plan 106 px taller (`planHeight` in MapCard; the
+  detail's 100 px and its 6 px gap), and the pane is a grid in both layouts so
+  the route line's margin does not collapse in one. Measured at a 1094 px window
+  in 384 samples over 19 s, every 50 ms, through a hunt, nine row picks, a fold
+  opening, a climb to floor 5 with its arrival and a descent toward the Foot (the
+  map switching to Threshold): the header, activity strip, route line, region
+  tabs and journey line each kept one box; the plan kept its top edge, and the
+  plan and detail together kept the bottom edge the city's taller plan has.
+  The place panel and the Ascent panel below the map are swapped for the
+  destination preview while a ride runs (`LocationPanel.svelte`, unchanged), so
+  the page's height changes with a ride; at the foot of a scrolled page the
+  browser then moves the scroll position and the map with it.
 
 ## 4. Destination preview (`DestinationPreview.svelte`)
 
@@ -475,6 +602,14 @@ fight, or with no open route.
 ## 6. Open
 
 - The click card overlaps neighbouring pins on a narrow panel.
+- A ride up from the city is two clicks, one more than the panel's button was:
+  the tower's tab, then Climb on the default stop (§3.5). From the panel it is
+  "Show in map", then Climb. A floor other than the default costs a row click.
+- A floor's plan beside the section is under 560 px at windows narrower than
+  about 1075 px (511 px at 1024), where the plan labels only the place underfoot
+  and its neighbours. Floors have at most a few pins; the label sweep passes.
+- Under 600 px the section is a closed fold above the plan and the page keeps
+  the sidebar column (phone layout, UI proposal A3).
 - The defeat retreat is not an arrival and does not resume the haven's
   activity. The knockout return (§2.1) walks back to the interrupted work
   instead. The character idles after a knockout only when the fall cannot be
