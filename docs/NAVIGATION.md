@@ -393,7 +393,9 @@ not move what is below the map.
   leg's marker waits at its ladder mark. Selecting a pin while walking draws
   nothing more.
 - **No route.** The line says "No open route to X." and then, by cause:
-  - a hidden road: nothing more, and nothing is drawn;
+  - a hidden road: nothing more, and nothing is drawn. The card says "No open
+    route from here" with no time either: `routeInfo` reads visible roads only,
+    for the time and for a shut road's terms;
   - an uncleared forced place in the way (`findPath` never routes through
     one): nothing more;
   - a ride the ladder refuses (`routableStops` lacks the floor's landing or

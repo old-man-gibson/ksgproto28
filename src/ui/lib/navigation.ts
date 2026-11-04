@@ -132,7 +132,10 @@ export interface RouteInfo {
 export function routeInfo(state: GameState, toId: string, travelSpeed: number): RouteInfo {
   const from = state.spot;
   const dest = getSpot(toId);
-  const direct = edgesFrom(from).find((e) => e.to === toId);
+  // A road the player has not found is not there: it gives no time and no
+  // terms, however the pathfinder fares. Hidden and not-yet-revealed edges
+  // are in `edgesFrom`, so only the visible ones count.
+  const direct = visibleEdges(state, from).find((e) => e.to === toId);
   const shut = direct?.requires && !conditionsMet(state, direct.requires) ? condsText(direct.requires) : undefined;
   const path = toId === from ? [] : findPath(state, from, toId, { unknownDest: true });
   let ticks = 0;

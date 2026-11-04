@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
-import { AREAS, BANDS, FLOORS, SPOTS, TOWERS } from '../src/core/registry';
+import { AREAS, BANDS, FLOORS, SPOTS, TOWERS, edgesFrom } from '../src/core/registry';
 import { revealMapped } from '../src/core/systems/mapped';
 import { findPath, visibleEdges } from '../src/core/systems/locations';
 import { spawnMonster, spotCleared } from '../src/core/systems/combat';
@@ -517,6 +517,29 @@ describe('the route line when there is no route', () => {
     const info = routeInfo(s, 'f12_hidden_cove', 1);
     expect(info.path).toBeNull();
     expect(noRouteSummary(s, 'f12_hidden_cove', info)).toEqual({ head: 'No open route to The Hidden Cove.', rest: '' });
+  });
+
+  it('gives no time and no terms for a road the player has not found', () => {
+    // Discovered, but the only road to it is hidden until the landing is searched.
+    const s = opened('f12_landing', [], ['f12_landing', 'f12_hidden_cove']);
+    s.discovered.push(...Object.keys(SPOTS).filter((id) => id.startsWith('f12_')));
+    expect(edgesFrom('f12_landing').some((e) => e.to === 'f12_hidden_cove' && e.ticks > 0)).toBe(true);
+    const hidden = routeInfo(s, 'f12_hidden_cove', 1);
+    expect(hidden.path).toBeNull();
+    expect(hidden.ticks).toBe(0);
+    expect(hidden.shut).toBeUndefined();
+    // Not yet revealed, and shut by the same count: neither the time nor the terms.
+    const unrevealed = routeInfo(allKnown('f1_storerooms'), 'f1_bonded_deep', 1);
+    expect(unrevealed.path).toBeNull();
+    expect(unrevealed.ticks).toBe(0);
+    expect(unrevealed.shut).toBeUndefined();
+  });
+
+  it('keeps the time and the terms of a shut road the player can see', () => {
+    const shut = routeInfo(allKnown('f1_forms'), 'f1_reception', 1);
+    expect(shut.path).toBeNull();
+    expect(shut.ticks).toBeGreaterThan(0);
+    expect(shut.shut).toBeTruthy();
   });
 
   it('says nothing more for an uncleared forced place in the way', () => {
