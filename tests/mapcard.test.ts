@@ -104,3 +104,38 @@ describe('the exit at the gate on floor 0', () => {
     expect(classes(exit!)).toContain('exit');
   });
 });
+
+describe('the journey line names no place the player has not been', () => {
+  const walkTo = (to: string, plan: string[]) => {
+    st.gs.spot = 'ascent_foot';
+    st.gs.discovered = st.gs.discovered.filter((id) => id !== 'f4_treeline');
+    st.gs.discovered.push('ascent_foot', 'wrights_gate');
+    st.gs.travel = { from: 'ascent_foot', to, ticksLeft: 6, total: 12 };
+    st.gs.travelPlan = plan;
+  };
+
+  it('says "an unknown place" for the end of the plan, as it does for the leg under way', () => {
+    walkTo('wrights_gate', ['f4_treeline']);
+    const { body } = render(MapCard);
+    expect(body).toContain('En route to');
+    expect(body).toContain('The Wrights');
+    expect(body).toMatch(/then 1 more leg to\s+an unknown place/);
+    // Neither the journey line nor the route line above the map prints the name.
+    expect(body).not.toContain('The Treeline');
+    expect(body).toContain('Journey to Unknown place');
+  });
+
+  it('names the end of the plan once it is discovered', () => {
+    walkTo('wrights_gate', ['the_forges']);
+    st.gs.discovered.push('the_forges');
+    const { body } = render(MapCard);
+    expect(body).toMatch(/then 1 more leg to\s+The Forges/);
+  });
+
+  it('says "an unknown place" for a leg under way to an undiscovered place', () => {
+    walkTo('f4_treeline', []);
+    const { body } = render(MapCard);
+    expect(body).toContain('En route to an unknown place');
+    expect(body).not.toContain('The Treeline');
+  });
+});

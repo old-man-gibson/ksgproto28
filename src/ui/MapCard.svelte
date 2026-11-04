@@ -436,7 +436,9 @@
       {#if gs.travelPlan.length > 0}
         <span class="dim">
           , then {gs.travelPlan.length} more leg{gs.travelPlan.length > 1 ? 's' : ''} to
-          {getSpot(gs.travelPlan[gs.travelPlan.length - 1]).name}
+          {gs.discovered.includes(gs.travelPlan[gs.travelPlan.length - 1])
+            ? getSpot(gs.travelPlan[gs.travelPlan.length - 1]).name
+            : 'an unknown place'}
         </span>
         <button class="small" onclick={() => game.cancelTravelPlan()}>Cancel journey</button>
       {/if}
