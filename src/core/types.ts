@@ -5762,6 +5762,17 @@ export interface LogEntry {
   group?: string;
   prefix?: string;
   tally?: LogTally[];
+  /**
+   * Time-boxed lines only. The tick the line was opened on. `t` moves forward
+   * with every event folded in; `since` does not. A line older than `window`
+   * ticks (by `since`, else by `t`) takes no more events.
+   */
+  since?: number;
+  /**
+   * Time-boxed lines only: how many ticks after `since` the line stays open.
+   * Absent on every other line, which folds for as long as it is the newest.
+   */
+  window?: number;
 }
 
 // ---------- The fight ledger ----------

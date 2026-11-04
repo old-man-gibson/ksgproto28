@@ -1,5 +1,7 @@
 <script lang="ts">
   import { gs } from './state.svelte';
+  import Tip from './lib/Tip.svelte';
+  import { hiddenLabels } from '../core/systems/log';
 
   // Each colour is a token with its default as the fallback, so a theme can
   // repaint the log without touching this file (src/themes/).
@@ -18,15 +20,30 @@
     info: 'var(--log-plain, #9aa4ad)',
   };
 
-  // Newest first.
-  const entries = $derived([...gs.log].reverse());
+  // Newest first. A folded line shows its first labels; the ones it cut are
+  // listed in a tooltip.
+  const entries = $derived([...gs.log].reverse().map((entry) => ({ entry, rest: hiddenLabels(entry) })));
 </script>
 
 <div class="panel log">
   <h3>Log</h3>
   <div class="entries small">
-    {#each entries as entry}
-      <div class="entry" style="color: {KIND_COLORS[entry.kind] ?? 'var(--text)'}">{entry.msg}</div>
+    {#each entries as { entry, rest }}
+      <div class="entry" style="color: {KIND_COLORS[entry.kind] ?? 'var(--text)'}">
+        {#if rest.length > 0}
+          <Tip>
+            {entry.msg}
+            {#snippet tip()}
+              <div class="rest-head">Also in this line:</div>
+              {#each rest as label}
+                <div>{label}</div>
+              {/each}
+            {/snippet}
+          </Tip>
+        {:else}
+          {entry.msg}
+        {/if}
+      </div>
     {/each}
     {#if entries.length === 0}
       <div class="dim">No log entries yet.</div>
@@ -52,5 +69,10 @@
 
   .entry {
     line-height: 1.35;
+  }
+
+  .rest-head {
+    color: var(--text-dim);
+    margin-bottom: 2px;
   }
 </style>

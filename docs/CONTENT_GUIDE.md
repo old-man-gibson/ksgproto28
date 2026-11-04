@@ -206,6 +206,17 @@ by the system that fires them (`combat.appears`, `alchemy.reason.no_target`).
 written, so it is visible. `tests/logtext.test.ts` fails on a template nothing
 fires and on a call site that passes a parameter the template does not print.
 
+A log line emitted with `logRepeat` (`src/core/systems/log.ts`) folds into the
+newest log line when both carry the same group. Anything logged in between ends
+the run. The hunt is one group (`HUNT_GROUP`): kills, their gold and their
+material drops. Its line closes 300 ticks (30 s) after it opened, records
+`since` and `window` on the entry, shows 4 labels and `+N more`, and the log
+panel lists the rest in a tooltip. To time-box another group, add it to
+`LOG_WINDOWS`. Item, rune, skill, quest, achievement, bestiary and keeper lines
+are not grouped. The main log names a spawn (`combat.appears`) only for a
+modifier other than normal, or rare or epic rarity. The Combat tab's fight feed
+names every spawn.
+
 1. Edit a file in `src/core/data/` (numbers) or `src/core/text/` (words).
 2. `npm run verify` — fix anything red.
    - *Typecheck errors* point at the exact file:line (wrong field name, bad
