@@ -36,9 +36,9 @@ export const STATUSES_TEXT: ProseTable = {
 
   'frozen.desc': 'Speed is reduced by 95% and bludgeoning resistance by 50% for 3 seconds. Any damage taken removes it.',
 
-  'petrified.desc': 'A statue: it cannot act. Break it within 3 seconds and it throws its max HP as rocks at the enemies behind it; left alone, it crumbles away. Either way it pays Stone Chunks worth half its gold and half its XP.',
-  'petrified_rubble.desc': 'A statue: it cannot act. Break it within 3 seconds and it throws its max HP as rocks at the enemies behind it; left alone, it bursts and throws half that. It pays no Stone Chunks, and half its XP.',
-  'petrified_standing.desc': 'A statue: it cannot act, and it stays until the fight ends, out of the way of your blows. It throws no rocks. When it falls or the fight ends it pays Stone Chunks worth half its gold and half its XP.',
+  'petrified.desc': 'Cannot act. Lasts 3 s. Broken before then, it throws its max HP as rocks at the enemies behind it. Gives 50% of its gold as Stone Chunks and 50% XP.',
+  'petrified_rubble.desc': 'Cannot act. Lasts 3 s. Broken before then, it throws its max HP as rocks at the enemies behind it. Unbroken, it bursts for half that. Gives no gold and 50% XP.',
+  'petrified_standing.desc': 'Cannot act. Stays until the fight ends. Your attacks skip it. Throws no rocks. Gives 50% of its gold as Stone Chunks and 50% XP when the fight ends.',
 
   'bleeding.desc': 'Deals 0.08 slashing damage per tick plus 0.15% of current health, at 30% rate out of combat. No timer. Each cut is its own stack; at 5 it escalates to Lacerated. Removed only by rest, a salve, a healing spell, or a bleed cure (a Mendroot Salve).',
 

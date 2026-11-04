@@ -416,7 +416,7 @@
             {#each ab.inputs as input (input.label)}
               <div class="tip-line">{input.label}: {input.show === 'pct' ? pct(input.value, 0) : input.value}</div>
             {/each}
-            <div class="tip-line dim">The ✦ Ability tab has the rest.</div>
+            <div class="tip-line dim">More: ✦ Ability tab.</div>
           {/snippet}
         </Tip>
       {/each}

@@ -4,6 +4,7 @@
   import { msToTime } from './lib/format';
   import type { EvolutionChoice } from '../core/facet/host';
   import type { FacetDoc } from '../core/facet/facet';
+  import FactLines from './lib/FactLines.svelte';
 
   /**
    * The run's ability evolving (facet/host.ts `pendingEvolution`). Save state,
@@ -19,19 +20,17 @@
 <div class="overlay" role="presentation">
   <div class="modal panel" role="dialog" aria-modal="true" aria-labelledby="evolve-title">
     <h2 id="evolve-title">⏸️ {from.reading?.icon} {from.reading?.name} evolves</h2>
-    <p class="small dim">
-      Pick one branch. It keeps everything the ability has earned, and the pick is final for this run.
-    </p>
+    <p class="small dim">Pick 1 branch. Progress carries over. The pick is final for this run.</p>
 
     {#each choices as c (c.key)}
       <div class="branch">
         <div><b>{c.icon} {c.name}</b></div>
-        <div class="small">{c.desc}</div>
+        <FactLines text={c.desc} />
         <div><button onclick={() => game.chooseEvolution(c.key)}>Take {c.name}</button></div>
       </div>
     {/each}
 
-    <p class="small dim">Play is held until you pick; the time is banked as bonus time (⏩ {banked}).</p>
+    <p class="small dim">Play is paused until you pick. Paused time goes to bonus time: ⏩ {banked}.</p>
   </div>
 </div>
 

@@ -54,8 +54,8 @@ describe('ability readout', () => {
     expect(hide.conditions).toHaveLength(1);
     expect(hide.conditions[0].name).toBe('Stone');
     expect(hide.conditions[0].becomes?.name).toBe('Petrified');
-    expect(hide.conditions[0].becomes?.desc).toMatch(/crumbles away/);
-    expect(readout(holding('basilisk_stoneskin')).conditions[0].becomes?.desc).toMatch(/stays until the fight ends/);
+    expect(hide.conditions[0].becomes?.desc).toMatch(/Lasts 3 s/);
+    expect(readout(holding('basilisk_stoneskin')).conditions[0].becomes?.desc).toMatch(/Stays until the fight ends/);
     expect(readout(holding('little_moons')).conditions).toEqual([]);
   });
 

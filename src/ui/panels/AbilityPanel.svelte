@@ -2,6 +2,7 @@
   import { gs } from '../state.svelte';
   import { facetReadouts } from '../../core/facet/host';
   import { abilityValue, pct } from '../lib/format';
+  import FactLines from '../lib/FactLines.svelte';
 
   /**
    * The run's ability in full (docs/FACET.md): what it does, every cell its
@@ -15,7 +16,7 @@
 {#each abilities as ab (ab.name)}
   <div class="panel ability">
     <h2>{ab.icon} {ab.name}</h2>
-    {#if ab.desc}<p class="small">{ab.desc}</p>{/if}
+    {#if ab.desc}<div class="facts"><FactLines text={ab.desc} /></div>{/if}
 
     <div class="rows">
       {#each ab.cells as cell (cell.key)}
@@ -43,16 +44,14 @@
     </div>
 
     {#if ab.conditions.length}
-      <h3>Conditions it applies</h3>
+      <h3>Conditions</h3>
       <div class="rows">
         {#each ab.conditions as cond (cond.name)}
           <div class="row">
             <div><b>{cond.icon} {cond.name}</b></div>
             <div class="small">{cond.desc}</div>
             {#if cond.becomes}
-              <div class="small">
-                At its cap it becomes <b>{cond.becomes.icon} {cond.becomes.name}</b>: {cond.becomes.desc}
-              </div>
+              <div class="small"><b>At cap:</b> becomes {cond.becomes.icon} {cond.becomes.name}. {cond.becomes.desc}</div>
             {/if}
           </div>
         {/each}
@@ -61,15 +60,20 @@
 
     {#if ab.evolves}
       <h3>Evolution</h3>
-      <p class="small">
-        At {ab.evolves.at} {ab.evolves.label} play holds and you pick one branch. The branch keeps
-        everything the ability has earned, and the pick is final for the run.
-      </p>
+      <div class="facts">
+        <FactLines
+          text={[
+            `Trigger: ${ab.evolves.at} ${ab.evolves.label}.`,
+            'Pick: Play pauses until you pick 1 branch. The pick is final for this run.',
+            'Keeps: Progress carries over.',
+          ].join('\n')}
+        />
+      </div>
       <div class="rows">
         {#each ab.evolves.into as branch (branch.key)}
           <div class="row">
             <div><b>{branch.icon} {branch.name}</b></div>
-            {#if branch.desc}<div class="small">{branch.desc}</div>{/if}
+            {#if branch.desc}<FactLines text={branch.desc} />{/if}
           </div>
         {/each}
       </div>
@@ -91,8 +95,13 @@
     flex-direction: column;
     gap: 8px;
   }
+  .facts {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
   h2 + .rows,
-  p + .rows {
+  .facts + .rows {
     margin-top: 10px;
   }
   .row {

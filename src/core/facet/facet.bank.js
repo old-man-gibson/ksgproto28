@@ -32,27 +32,34 @@ const B = F.bank = F.bank || {};
 // Starts empty, so a fresh grant opens at -30%.
 const MAIN = { expr: 'add', a: { q: 'stat.eff.con' }, b: { q: 'stat.eff.wis' } };
 
-// `show` on a cell, `reading.inputs` and `reading.desc` (what the ability does, in a sentence or
-// four) are display hints for a game's ability readout; the engine never reads them.
+// `show` on a cell, `reading.inputs` and `reading.desc` are display hints for a game's ability
+// readout; the engine never reads them. A `reading.desc` is lines of "Label: fact" joined by '\n':
+// one fact per sentence, under 20 words, at most three numbers a line, no parentheses or semicolons.
+// A cell's `status.desc` is one such line without the label.
 B.solar_charge = {
   v: 1,
   reading: {
     name: 'Solar Charge', icon: '☀️', inputs: [{ q: 'world.sunlight', label: 'Sunlight here', show: 'pct' }],
-    desc: 'Banks sunlight under open sky by day and loses a little every minute, sun or not. Damage and spell power '
-      + 'follow the charge: +20% from half charge up, falling to -30% when empty. CON and WIS raise the cap, the fill '
-      + 'and the drain.',
+    desc: [
+      'Does: Damage and spell power change with your charge.',
+      'Full: +20% from half charge up.',
+      'Empty: -30% at 0 charge. The change is linear in between.',
+      'Fills: Each game minute under open sky by day. More sunlight fills faster.',
+      'Drains: Each game minute, day or night.',
+      'Grows: CON + WIS raise the cap, the fill and the drain.',
+    ].join('\n'),
   },
   cells: [
     {
       key: 'charge', label: 'Solar Charge', icon: '☀️', hold: 'none', level: 'real', tier: 'run', show: 'bar',
       cap: { expr: 'add', a: 60, b: { expr: 'mul', a: 5, b: MAIN } },
-      status: { desc: 'Banked sunlight. Fills under open sky by day and drains a little every minute.' },
+      status: { desc: 'Stored sunlight. Cap 60 + 5 per point of CON + WIS.' },
     },
     {
       key: 'power', label: 'Sunpower', icon: '🔆', hold: 'none', level: 'real', tier: 'run', show: 'signedPct',
       floor: -0.3, cap: 0.2,
       status: {
-        desc: 'Damage and spell power follow the banked sunlight: +20% from half charge up, -30% when empty.',
+        desc: 'Damage and spell power. +20% from half charge up, -30% at 0 charge.',
         mods: [
           { q: 'fighter.damage', op: 'mult', value: 1 },
           { q: 'fighter.magicDamage', op: 'mult', value: 1 },
@@ -104,15 +111,19 @@ B.zenkai = {
   v: 1,
   reading: {
     name: 'Zenkai', icon: '💥',
-    desc: 'Each win where your HP fell to 20% or below raises all attributes for the run by 1.5% x the depth of the fall '
-      + '(1 - your lowest HP share) x the enemy level over yours, at most 1.5. A flask, a consumable or a prayer that '
-      + 'fight cancels it, and an enemy under 70% of your level gives nothing. Each gain shrinks the next by 3%.',
+    desc: [
+      'Does: Win a fight after your HP fell to 20% or less. All attributes rise for the run.',
+      'Gain: 1.5% x share of HP lost x enemy level / your level.',
+      'Limit: The level ratio counts up to 1.5. Each gain is 3% smaller than the last.',
+      'Fails: Using a flask, consumable or prayer in that fight.',
+      'Fails: An enemy under 70% of your level.',
+    ].join('\n'),
   },
   cells: [
     {
       key: 'bonus', label: 'Zenkai', icon: '💥', hold: 'none', level: 'real', tier: 'run', show: 'signedPct', cap: 10,
       status: {
-        desc: 'All attributes, raised by every win where your HP fell to 20% or below without a flask or a prayer.',
+        desc: 'All attributes. Rises with each Zenkai win.',
         mods: ATTRS.map((a) => ({ q: 'stat.eff.' + a, op: 'mult', value: 1 })),
       },
     },
@@ -202,13 +213,18 @@ B.little_moons = {
   v: 1,
   reading: {
     name: 'Little Moons', icon: '🌙',
-    desc: 'In a fight, three moons strike the front enemy every 2.8 s, 3.7 s and 7.9 s for 30% of your weapon damage as '
-      + 'Light, plus 5% per boss killed this run. Strikes within 0.3 s combine: two deal 4 strikes\' worth, three deal 15.',
+    desc: [
+      'Does: 3 moons hit the front enemy in fights. Light damage.',
+      'Timing: Every 2.8 s, 3.7 s and 7.9 s.',
+      'Damage: 30% of weapon damage per strike.',
+      'Grows: +5% per boss killed this run.',
+      'Combine: Strikes within 0.3 s merge. 2 merged deal 4 strikes of damage. 3 deal 15.',
+    ].join('\n'),
   },
   cells: [
     {
       key: 'bosses', label: 'Boss kills', icon: '👑', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, carrier: false,
-      status: { desc: 'Each moon strike deals 30% of your weapon damage, plus 5% per boss killed this run.' },
+      status: { desc: '+5% moon strike damage per boss killed this run.' },
     },
     ...MOONS.map(([key, s]) => counter(key, { seconds: s })),
     counter('due', 3),
@@ -292,26 +308,28 @@ B.bramble = {
   v: 1,
   reading: {
     name: 'Bramble', icon: '🌿', hit: 'thorns',
-    desc: 'Thorns grow during a fight: +1 per enemy blow, +1 and 5% of the cap each second, +2 and 10% of the cap per '
-      + 'Poison spell you cast on yourself. Each level returns 2% of every enemy blow, as thrown, to its attacker as '
-      + 'Piercing, and slows your actions by 0.5%. Heat burns 5 levels a hit. The cap starts at 10 and rises by 1 per '
-      + '200 fights this run, up to 50. Thorns clear when the fight ends.',
+    desc: [
+      'Does: Each thorn level returns 2% of every enemy blow to the attacker. Piercing damage.',
+      'Costs: Each level slows your actions 0.5%.',
+      'Grows: +1 per enemy blow. Each second: 1 + 5% of the cap.',
+      'Grows: Each Poison spell you cast on yourself: 2 + 10% of the cap.',
+      'Fails: Each Heat hit removes 5 levels. Thorns reset when the fight ends.',
+      'Limit: Cap 10. +1 per 200 fights this run. Max 50.',
+    ].join('\n'),
   },
   cells: [
     {
       key: 'thorns', label: 'Thorns', icon: '🌿', hold: 'none', level: 'int', tier: 'fight', show: 'count',
       cap: THORN_CAP,
       status: {
-        desc: 'Each level returns 2% of every enemy blow, as thrown, to its attacker and slows your actions by 0.5%. '
-          + '+1 per enemy blow, +1 and 5% of the cap each second, +2 and 10% of the cap per Poison spell you cast on yourself. '
-          + 'Heat burns 5 levels a hit. Clears when the fight ends.',
+        desc: 'Per level: 2% of each enemy blow returned, -0.5% action speed.',
         mods: [{ q: 'fighter.speed', op: 'mult', value: -0.005 }],
       },
     },
     counter('sec', { seconds: 1 }),
     {
       key: 'fights', label: 'Fights fought', icon: '⚔️', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1e9, carrier: false,
-      status: { desc: 'The thorn cap starts at 10 and rises by 1 per 200 fights this run, up to 50.' },
+      status: { desc: 'Thorn cap +1 per 200 fights this run. Cap 10 to 50.' },
     },
   ],
   clauses: [
@@ -378,7 +396,7 @@ B.bramble = {
 const EVOLVE_AT = 100;
 const STONE = {
   id: 'basilisk_stone', name: 'Stone', icon: '🪨',
-  desc: 'Slows its actions by 0.5% per point. At 100 it turns to stone.',
+  desc: 'Slows actions 0.5% per point. At 100 the bearer becomes a statue.',
   element: 'earth', contest: 'con', escalatesTo: 'petrified', duration: null,
   stacking: { mode: 'sum', cap: 100, onCap: 'escalate', escalateMult: 0.01 },
   mods: [{ q: 'fighter.speed', op: 'mult', value: -0.005 }],
@@ -397,8 +415,7 @@ const STATUES = {
   key: 'statues', label: 'Statues', icon: '🗿', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: EVOLVE_AT,
   carrier: false,
   status: {
-    desc: 'Enemies turned to stone this run that stood at 85% of your level or attribute total or more. At '
-      + EVOLVE_AT + ' the ability evolves into the branch you pick.',
+    desc: 'Statues of enemies at 85% of your level or attribute total or more. At ' + EVOLVE_AT + ' the ability evolves.',
   },
 };
 
@@ -417,8 +434,12 @@ B.basilisk_hide = {
   v: 1,
   reading: {
     name: 'Basilisk Hide', icon: '🗿',
-    desc: 'Each enemy blow puts 6 + CON/10 Stone on the attacker, 1.5 on a boss. Its Earth resistance cuts the dose, and '
-      + 'so does CON above yours. Stone slows its actions by 0.5% a point; at 100 it turns to stone.',
+    desc: [
+      'Does: Each enemy blow gives the attacker 6 + CON/10 Stone. Bosses get 1.5.',
+      'Stone: Slows the enemy 0.5% per point. At 100 it becomes a statue.',
+      'Resist: Earth resistance reduces Stone. So does enemy CON above yours.',
+      'Evolves: At 100 statues of enemies near your strength.',
+    ].join('\n'),
   },
   cells: [STATUES],
   clauses: [
@@ -438,8 +459,12 @@ B.basilisk_gorgon = {
   v: 1,
   reading: {
     name: "Gorgon's Gaze", icon: '👁️',
-    desc: 'Each second of a fight the front enemy gains 2 + CON/50 Stone, a quarter of that on a boss. '
-      + 'Blows on you add half the Stone they did. When an enemy turns to stone, the next front enemy takes 25 Stone.',
+    desc: [
+      'Does: Each second in a fight, the front enemy gets 2 + CON/50 Stone.',
+      'Chain: A new statue gives the next front enemy 25 Stone.',
+      'Bosses: Get 1/4 of both.',
+      'Blows: Enemy blows give half the base Stone.',
+    ].join('\n'),
   },
   cells: [STATUES, counter('sec', { seconds: 1 })],
   clauses: [
@@ -460,8 +485,11 @@ B.basilisk_rubble = {
   v: 1,
   reading: {
     name: 'Rubble', icon: '🪨',
-    desc: 'Rocks from a statue add 15 Stone to each enemy they hit, so one statue can turn the next. '
-      + 'A statue left alone bursts when it would crumble, throwing rocks at half strength. Statues pay no Stone Chunks.',
+    desc: [
+      'Rocks: Each enemy hit by statue rocks gets 15 Stone.',
+      'Burst: An unbroken statue bursts after 3 s. Its rocks deal half damage.',
+      'Costs: Statues give no Stone Chunks.',
+    ].join('\n'),
   },
   cells: [STATUES],
   clauses: [
@@ -479,15 +507,18 @@ B.basilisk_stoneskin = {
   v: 1,
   reading: {
     name: 'Stoneskin', icon: '🛡️',
-    desc: 'Statues stay until the fight ends, and your blows pass them by. Each standing statue raises your armour by 10%. '
-      + 'Statues no longer throw rocks.',
+    desc: [
+      'Statues: Stay until the fight ends. Your attacks skip them.',
+      'Armour: +10% per standing statue.',
+      'Costs: Statues throw no rocks.',
+    ].join('\n'),
   },
   cells: [
     STATUES,
     {
       key: 'standing', label: 'Standing statues', icon: '🗿', hold: 'none', level: 'int', tier: 'fight', show: 'count', cap: 1e9,
       status: {
-        desc: 'Each statue standing in the fight raises your armour by 10%.',
+        desc: '+10% armour per statue standing in this fight.',
         mods: [{ q: 'fighter.armor', op: 'mult', value: 0.1 }],
       },
     },
