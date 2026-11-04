@@ -569,7 +569,7 @@ CASES['bank: Calorie Burn at a 0% cutoff burns max HP faster once the store runs
 };
 
 
-CASES['bank: Shadow Clone summons on new work, holds on the same, and is dispelled by a hit or idleness'] = (assert) => {
+CASES['bank: Shadow Clone carries its numbers: the cap by level, the shares, the mana reserve'] = (assert) => {
   const level = { v: 25 };
   F.install(fakeHost({
     quantities: () => [
@@ -581,24 +581,14 @@ CASES['bank: Shadow Clone summons on new work, holds on the same, and is dispell
   }));
   const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.shadow_clone)));
   F.attach('a', [doc]);
-  const v = (key) => F.cellOf(doc, key).state.v;
-  F.event('work', 'a', { key: 7 });
-  assert(v('clones') === 3, 'level 25 summoned ' + v('clones') + ' clones, not 3');
-  F.event('hitTaken', 'a', { amount: 5, attacker: 'e1' });
-  assert(v('clones') === 0, 'a hit did not dispel the clones');
-  F.event('work', 'a', { key: 7 });
-  assert(v('clones') === 0, 'the same work summoned again after a hit');
-  F.event('work', 'a', { key: 9 });
-  assert(v('clones') === 3, 'new work did not summon');
-  F.event('hitTaken', 'a', { amount: 5 });
-  assert(v('clones') === 3, 'a hit with no attacker dispelled the clones');
-  F.event('work', 'a', { key: 0 });
-  assert(v('clones') === 0 && v('bound') === 0, 'idleness did not dispel');
+  const cell = F.cellOf(doc, 'clones');
+  const ctx = { ref: 'a', facet: doc, bindings: {} };
+  assert(F.evalExpr(cell.cap, ctx) === 3, 'level 25 allowed ' + F.evalExpr(cell.cap, ctx) + ' clones, not 3');
   level.v = 80;
-  F.event('work', 'a', { key: 9 });
-  assert(v('clones') === 5, 'the count did not stop at 5: ' + v('clones'));
-  F.event('work', 'a', {});
-  assert(v('clones') === 5, 'a work event with no key changed the clones');
+  assert(F.evalExpr(cell.cap, ctx) === 5, 'the cap did not stop at 5');
+  assert(cell.status.cloneYield === 0.4 && cell.status.cloneXp === 0.25, 'the shares are not 40% and 25%');
+  F.cellStep(cell, 'set', 2, ctx);
+  assert(cell.state.v === 2, 'the host could not set the count');
 };
 
 // A host whose enemies record damage, and where the ref 'dead' is not alive.

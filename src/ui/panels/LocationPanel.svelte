@@ -2,6 +2,7 @@
   import KeyItems from '../KeyItems.svelte';
   import { gs, game, ui, view } from '../state.svelte';
   import { getSpot, MATERIALS, RECIPES } from '../../core/registry';
+  import { cloneBlocked, cloneRules, cloneTask } from '../../core/systems/clones';
   import { locationBreadcrumb } from '../../core/systems/locations';
   import {
     activityCost,
@@ -277,8 +278,24 @@
             {@render actBtn(act)}
             {#snippet tip()}{@render activityTip(act)}{/snippet}
           </Tip>
+          <!-- Shadow Clone (systems/clones.ts): a clone takes the task on by itself. -->
+          {#if cloneRules(gs) && (act.kind === 'gather' || act.kind === 'job')}
+            <Tip>
+              <button disabled={!!cloneBlocked(gs)} onclick={() => game.sendClone(act.id)}>👥 Clone: {act.name}</button>
+              {#snippet tip()}
+                <div class="tip-line tip-base">👥 Send a clone to {act.name}</div>
+                <div class="tip-line">It works here on its own: 40% of the yield, 25% of the skill XP.</div>
+                <div class="tip-line">With every clone out, the oldest one stops.</div>
+              {/snippet}
+            </Tip>
+          {/if}
         {/each}
       </div>
+      {#if gs.clones?.some((c) => c.spot === spot.id)}
+        <div class="small dim">
+          👥 Here: {gs.clones.filter((c) => c.spot === spot.id).map((c) => cloneTask(c)).join(', ')}
+        </div>
+      {/if}
     {/if}
 
     {#if (activeAct && actCost > 0) || spot.exploreTicks}

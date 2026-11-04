@@ -3,6 +3,9 @@
   import { facetReadouts } from '../../core/facet/host';
   import { abilityValue, pct } from '../lib/format';
   import FactLines from '../lib/FactLines.svelte';
+  import { game } from '../state.svelte';
+  import { SPOTS } from '../../core/registry';
+  import { cloneReach, cloneRules, cloneTask } from '../../core/systems/clones';
 
   /**
    * The run's ability in full (docs/FACET.md): what it does, every cell its
@@ -86,6 +89,36 @@
 {:else}
   <div class="panel"><p class="dim">No ability this run.</p></div>
 {/each}
+
+<!-- Shadow Clone (systems/clones.ts): who is working where, and the way back. -->
+{#if cloneRules(gs)}
+  <div class="panel ability">
+    <h3>Clones at work</h3>
+    {#if gs.clones?.length}
+      <div class="rows">
+        {#each gs.clones as c (c.order)}
+          <div class="row">
+            <div class="head">
+              <span>👥 {cloneTask(c)} · {SPOTS[c.spot]?.name ?? c.spot}</span>
+              <button class="small" onclick={() => game.recallClone(c.order)}>Recall</button>
+            </div>
+            {#if c.bench}
+              <div class="small dim">Next craft in {Math.max(0, Math.ceil(c.bench.ticksLeft / 10))} s</div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+      <div class="facts">
+        <FactLines
+          text={`Reach: They stop when you are more than ${cloneReach(gs)} floors away. Threshold is floor 0.`}
+        />
+      </div>
+      <button class="small" onclick={() => game.recallClones()}>Recall all</button>
+    {:else}
+      <p class="small dim">None out. Send one from a job, gathering or a bench.</p>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .ability + .ability {

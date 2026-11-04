@@ -25,7 +25,7 @@ import { retreatToSafety } from './safety';
 import { tickResources } from './resources';
 import { damagePlayer, heal, hpFraction, isAlive, type HealKind } from './health';
 import { IN_COMBAT_REGEN_MULT, RECOVERY_MULT } from '../data/resources.data';
-import { cloneMult, fieldHunger, resistBlock, statusesOf, tickStatuses } from './statuses';
+import { fieldHunger, resistBlock, statusesOf, tickStatuses } from './statuses';
 import { fastGuard, fastOf } from './mutagens';
 import { grantMaterial } from './disciplines';
 import { restingForFight } from './huntrest';
@@ -294,7 +294,7 @@ export function activityFactorInfo(act: ActivityDef): {
 }
 
 /** Integer yield from a (possibly fractional) expected amount: floor + probabilistic remainder. */
-function integerYield(state: GameState, expected: number): number {
+export function integerYield(state: GameState, expected: number): number {
   const whole = Math.floor(expected);
   return whole + (chance(state, expected - whole) ? 1 : 0);
 }
@@ -449,13 +449,11 @@ export function tickAction(state: GameState, bus: EventBus): void {
       const cost = activityCost(act, stats);
       if (state.activityProgress >= cost) {
         state.activityProgress -= cost;
-        // Shadow Clone: clones add yield and skill XP; attribute XP stays yours.
-        const clones = cloneMult(state);
-        grantSkillXp(state, bus, tags, 0.25 * act.ticksPer * clones);
+        grantSkillXp(state, bus, tags, 0.25 * act.ticksPer);
         grantAttrXpSplit(state, bus, attrXpWeights(act), 0.5 * act.ticksPer * stats.trainXp);
         grantActivityExposure(state, bus, tags, act.ticksPer);
         // Output factors raise the amount (fractional expectation → integer roll).
-        const amount = integerYield(state, activityOutputMult(state, stats, act) * clones);
+        const amount = integerYield(state, activityOutputMult(state, stats, act));
         // Scoped loot narrows to the KIND OF WORK: `loot:herbalism` improves
         // the grade of what a herbalist picks and nothing else.
         grantMaterial(state, act.material, amount, stats.loot * scopedMult(state, 'loot', tags));
@@ -483,14 +481,13 @@ export function tickAction(state: GameState, bus: EventBus): void {
       const cost = activityCost(act, stats);
       if (state.activityProgress >= cost) {
         state.activityProgress -= cost;
-        // Shadow Clone: clones add pay and skill XP; attribute XP stays yours.
-        const clones = cloneMult(state);
-        grantSkillXp(state, bus, tags, 0.25 * act.ticksPer * clones);
+        grantSkillXp(state, bus, tags, 0.25 * act.ticksPer);
         grantAttrXpSplit(state, bus, attrXpWeights(act), 0.6 * act.ticksPer * stats.trainXp);
         grantActivityExposure(state, bus, tags, act.ticksPer);
         // Output factors (if tagged) replace the default goldGain scaling.
-        const rewardMult =
-          (act.outputFactors?.length ? activityOutputMult(state, stats, act) : stats.goldGain) * clones;
+        const rewardMult = act.outputFactors?.length
+          ? activityOutputMult(state, stats, act)
+          : stats.goldGain;
         const pay = Math.max(1, Math.round(act.gold * rewardMult));
         state.gold += pay;
         bumpStat(state, bus, 'gold:earned', pay);

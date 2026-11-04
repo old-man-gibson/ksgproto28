@@ -1380,10 +1380,12 @@ export interface StatusDef {
   /** Empty: your weapon blows cannot be dodged and skip armour, resistance and weakness. */
   pureBlows?: true;
   /**
-   * Shadow Clone: each clone (the intensity) adds this share of a gathering
-   * or job cycle's yield and skill XP, and this share more bench crafts.
+   * Shadow Clone (systems/clones.ts): a deployed clone yields this share of a
+   * gathering or job cycle, and takes its bench crafts this share as fast.
    */
-  cloneShare?: number;
+  cloneYield?: number;
+  /** Shadow Clone: the share of the skill XP a clone's work pays. */
+  cloneXp?: number;
   /** The worse condition this becomes when it is pushed far enough. */
   escalatesTo?: string;
   /** The milder condition a 'deescalate' removal drops this back to. */
@@ -2940,8 +2942,33 @@ export interface BenchWork {
   forge?: Placement;
   /** Crafts finished so far. */
   done: number;
-  /** Shadow Clone's crafts owed but not yet made: a fraction carried to the next pass (benchwork.ts). */
-  cloneCarry?: number;
+}
+
+/**
+ * A Shadow Clone at work (systems/clones.ts): one task at one spot, until
+ * another clone replaces it, it is recalled, the player goes too many floors
+ * away, or the player is knocked out.
+ */
+export interface CloneJob {
+  /** Deployment order; the lowest is the oldest. */
+  order: number;
+  spot: string;
+  /** A gathering or job activity at `spot`… */
+  activity?: string;
+  /** …or a bench run there: its own copy of the layout, on its own clock. */
+  bench?: {
+    disciplineId: string;
+    placement: Record<string, GradedStack | undefined>;
+    duration?: number;
+    forge?: Placement;
+    /** Ticks per pass: the bench's time divided by the clone's yield share. */
+    ticksPer: number;
+    ticksLeft: number;
+    /** Crafts per pass. */
+    batch: number;
+  };
+  /** Progress toward the activity's next cycle, like the player's `activityProgress`. */
+  progress: number;
 }
 
 // ---------- Alchemy ----------
@@ -6018,6 +6045,11 @@ export interface GameState {
    * it was started at; walking away abandons it. See systems/benchwork.ts.
    */
   benchWork: BenchWork | null;
+  /**
+   * Shadow Clones at work (systems/clones.ts), oldest first. Older saves have
+   * none; deserialize backfills it from createInitialState.
+   */
+  clones: CloneJob[];
   /** Knocked out — auto-resting until recovered. */
   recovering: boolean;
   combat: CombatState | null;

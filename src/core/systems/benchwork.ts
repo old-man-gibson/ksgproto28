@@ -9,7 +9,6 @@ import { forgeOnce, previewForge } from './forging';
 import { clonePlacement, forgeTicks } from './assembly';
 import { placed, type Placement } from './disciplines';
 import { text } from '../text/log';
-import { cloneMult } from './statuses';
 
 /**
  * Bench work: the same layout, worked over and over, on the clock.
@@ -87,6 +86,24 @@ function benchPreview(
   if (disc.assembles) return previewForge(state, forge ?? {});
   if (disc.refines) return previewRefine(state, placement);
   return disc.ordered ? previewBrew(state, placement, disc) : previewCook(state, placement, disc, duration);
+}
+
+/**
+ * One craft of a layout for a Shadow Clone (systems/clones.ts): previewed
+ * first, so a clone short of stock waits quietly instead of logging a failure
+ * every pass. False when it could not be made.
+ */
+export function cloneCraft(
+  state: GameState,
+  bus: EventBus,
+  disciplineId: string,
+  placement: Placement,
+  duration?: number,
+  forge?: ForgePlacement,
+): boolean {
+  const disc = DISCIPLINES[disciplineId];
+  if (!disc || !benchPreview(state, disc, placement, duration, forge).ok) return false;
+  return !!benchCraft(state, bus, disc, placement, duration, forge);
 }
 
 /** Work it once. Null means it could not be done and the run should stop. */
@@ -212,28 +229,6 @@ export function tickBenchWork(state: GameState, bus: EventBus): void {
       if (job.remaining <= 0) {
         stopBenchWork(state, bus, 'finished');
         return;
-      }
-    }
-  }
-  // Shadow Clone: each clone adds a share of this pass's crafts, each made
-  // from its own stock, so the run still ends when the ingredients do. The
-  // fraction carries to the next pass.
-  const extra = cloneMult(state) - 1;
-  if (extra > 0) {
-    job.cloneCarry = (job.cloneCarry ?? 0) + extra * job.batch;
-    while (job.cloneCarry >= 1) {
-      job.cloneCarry -= 1;
-      if (!benchCraft(state, bus, disc, job.placement, job.duration, job.forge)) {
-        stopBenchWork(state, bus, 'out of stock');
-        return;
-      }
-      job.done += 1;
-      if (job.remaining !== null) {
-        job.remaining -= 1;
-        if (job.remaining <= 0) {
-          stopBenchWork(state, bus, 'finished');
-          return;
-        }
       }
     }
   }
