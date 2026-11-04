@@ -165,9 +165,12 @@ Changed 2026-11-03 (UI proposal C3, docs/plans/ui-proposals.md). No save change.
 
 **Ladder bands** are `<details>` at every width (`lib/ladderView.ts`,
 `lib/ladderFold.svelte.ts`). A band folds only when every floor in it is
-cleared (a band pass counts) and the player is not standing in it
-(`bandFoldable`). A band with an uncleared floor stays open and its header does
-not toggle, so no gate term is hidden. A folded band is one line: name, floor
+cleared (a band pass counts), the player is not standing in it, and no card in
+it (floor or hub) has a term that is not dim (`bandFoldable`). A cleared floor
+can still carry one: floors 15 and 16 read cleared under a festival lockout,
+and a band hub can be gated while its floors are cleared. A band that may not
+fold stays open and its header does not toggle, so no gate or lockout term is
+hidden. A folded band is one line: name, floor
 range, "n of m cleared". The next band, shown by name only, is a plain header.
 A foldable band is folded by default; the player's choice to open or fold it
 lives in module memory and resets on reload. Opening and folding that the
