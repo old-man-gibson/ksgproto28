@@ -386,6 +386,9 @@
   .stage {
     container-type: inline-size;
     position: relative;
+    /* Its children use z-index 50 to 90. Without a stacking context of its own
+       they paint above every window (Modal 20, the offline report 10). */
+    isolation: isolate;
     height: 290px;
     border-radius: 10px;
     overflow: hidden;

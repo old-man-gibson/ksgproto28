@@ -94,6 +94,16 @@ export function visibleNav(gs: GameState, screen: TutorialScreen | null = tutori
   return ROWS.filter((e) => (screen ? screen.tabs.has(e.id) : true) && (e.shown ? e.shown(gs) : true));
 }
 
+/**
+ * The screen to show: `tab` while the list holds it, else Location. A reset, an
+ * import or a prestige can close the gate behind the open screen (an Ability
+ * screen with no ability, a Prestige screen before the first prestige), and
+ * Location is in every list.
+ */
+export function reconcileTab(tab: MainTab, entries: readonly NavRow[]): MainTab {
+  return entries.some((e) => e.id === tab) ? tab : 'location';
+}
+
 /** One tab is no choice: the list appears with the second entry. */
 export function navListShown(entries: readonly NavRow[]): boolean {
   return entries.length > 1;

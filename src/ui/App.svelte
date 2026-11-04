@@ -32,7 +32,7 @@
   import { targetTab, tutorialScreen } from './lib/tutorialFocus';
   import { tick, untrack, type Component } from 'svelte';
   import { fmt } from './lib/format';
-  import { navListShown, visibleNav, type MainTab } from './lib/nav';
+  import { navListShown, reconcileTab, visibleNav, type MainTab } from './lib/nav';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf } from '../core/systems/clock';
   import { CHRONOSENSE_ID, describeTimeSense } from '../core/systems/chronosense';
@@ -128,10 +128,13 @@
   const entries = $derived(visibleNav(gs, screen));
   const showNav = $derived(navListShown(entries));
 
-  // A screen counts as opened once it is the open one, however it got there:
-  // a click, the tutorial's pointer, a map card's link.
+  // The open screen must be one the list holds: a reset, an import or a
+  // prestige can leave a closed gate behind it. Then a screen counts as opened
+  // once it is the open one, however it got there: a click, the tutorial's
+  // pointer, a map card's link.
   $effect(() => {
-    const open = ui.tab;
+    const open = reconcileTab(ui.tab, entries);
+    if (open !== ui.tab) ui.tab = open;
     untrack(() => markNavSeen(open));
   });
 
@@ -520,11 +523,13 @@
     white-space: nowrap;
   }
 
-  /* Shrinks and ends in an ellipsis before it pushes the row onto a second
-     line; the title holds the whole text. */
+  /* The clock text yields first. Its basis is 0, so a long text never pushes
+     the row onto a second line or shortens the job name; it takes the room
+     left over, up to 230px, and ends in an ellipsis. The title holds the whole
+     text. */
   .timesense {
-    flex: 0 1 auto;
-    min-width: 0;
+    flex: 1 1 0;
+    min-width: 5em;
     max-width: 230px;
     overflow: hidden;
     text-overflow: ellipsis;
