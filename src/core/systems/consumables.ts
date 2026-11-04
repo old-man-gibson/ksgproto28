@@ -24,6 +24,7 @@ import { learnTechnique, techniqueReachable } from './martial';
 import { wordUnlocked, wordUnlockKey } from './unlocks';
 import { checkTitleUnlocks } from './titles';
 import { grantFavorAll } from './divine';
+import { facetSignal } from '../facet/signal';
 
 /** Votive tokens offered so far (systems/consumables.ts, the votive card). */
 export const VOTIVE_KEY = 'votive:tokens';
@@ -456,7 +457,27 @@ export function useConsumable(
   }
   // After the eating line, so a dish pushed out reads as what eating caused.
   if (landings.length > 0) recordMeal(state, bus, id, quality, landings, victim);
+  const calories = dishCalories(id, quality);
+  if (calories > 0) facetSignal(state, 'eat', { calories });
   return result;
+}
+
+/** Calories per point of Well Fed a dish grants (Calorie Burn; user 2026-11-03: "From Well Fed"). */
+export const CALORIES_PER_WELL_FED = 400;
+/** Calories of a dish that grants no Well Fed. */
+export const CALORIES_PLAIN_DISH = 100;
+
+/**
+ * Calories a dish gives at `quality`, for an ability that counts them (Calorie
+ * Burn): 400 per point of Well Fed it grants, or 100 when it grants none, times
+ * the grade. A spoiled grade and anything that is not food give none.
+ */
+export function dishCalories(id: string, quality: QualityTier): number {
+  const spec = consumableSpec(id);
+  const scale = qualityMult(quality);
+  if (!spec?.food || scale <= 0) return 0;
+  const fed = (spec.grants ?? []).filter((g) => g.id === 'well_fed').reduce((n, g) => n + (g.intensity ?? 1), 0);
+  return (fed > 0 ? CALORIES_PER_WELL_FED * fed : CALORIES_PLAIN_DISH) * scale;
 }
 
 /**

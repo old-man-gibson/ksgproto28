@@ -195,10 +195,11 @@ export function noteOutgoing(state: GameState, amount: number, kill = false): vo
  * health is worth reading, and accumulating unconditionally is what makes the
  * whole thing testable without having to die on purpose.
  */
-export function endFight(state: GameState, outcome: FightOutcome): FightLedger | null {
+export function endFight(state: GameState, outcome: FightOutcome, cause?: string): FightLedger | null {
   const led = state.fight;
   if (!led) return null;
   led.outcome = outcome;
+  if (cause) led.cause = cause;
   led.endedAt = state.totalTicks;
   // Negated start tick → elapsed duration. Clamped because an imported save can
   // carry a live ledger stamped against a clock this one never ran.

@@ -11,6 +11,7 @@ import {
   FORK_TIER,
   MASTERY_LADDER,
   MAX_DRILLED,
+  MAX_MASTERY_TIER,
   NEUTRAL_POSITION,
   POSITIONS,
   ROUGH_STAMINA_MULT,
@@ -226,8 +227,8 @@ describe('technique content', () => {
       }
       for (const [tier, note] of Object.entries(def.mastery ?? {})) {
         expect(Number(tier)).toBeGreaterThanOrEqual(1);
-        expect(Number(tier)).toBeLessThanOrEqual(MASTERY_LADDER.length);
-        for (const p of note.addFrom ?? []) {
+        expect(Number(tier)).toBeLessThanOrEqual(MAX_MASTERY_TIER);
+        for (const p of note?.addFrom ?? []) {
           expect(POSITIONS[p], `${def.id} tier ${tier} opens ${p}`).toBeDefined();
         }
       }

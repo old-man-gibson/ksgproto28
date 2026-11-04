@@ -529,4 +529,362 @@ B.basilisk_stoneskin = {
     { id: 'end', on: 'event:fightEnd', do: [setCell('standing', 0)] },
   ],
 };
+
+// ---------- Weakest Weapon Master ----------
+//
+// The user's ability (2026-09-26, ksgproto28 docs/plans/ability-weakest-weapon-master.md):
+//   "Attributes capped relatively low; technique usage grows exponentially faster; martial skills
+//    lose their caps and gain WWM-only bonuses. Four melee stances (unarmed included): Power
+//    (damage proportional to total skill level and technique usages), Flowing (parry proportional
+//    to Power against the blow, up to 100%, striking back), Heavy (damage reduced by Power against
+//    the blow, down to 0, where the blow never counts as a hit; rattles the attacker, never below
+//    1/3 speed), Empty (less damage than Power, proportional to it, ignores dodge, deflection and
+//    parry)." Additions the same day: the ceiling stays fixed and attribute XP past it routes into
+//    Power; reps are real and multiplied, every technique drilled; new technique-use rungs past
+//    10,000 at every power of ten, for every build.
+// Settled 2026-11-03: all four stances in the first build; the ceiling is 20; XP past it buys
+// hidden levels priced like real ones; each rung past 10,000 doubles power and takes the cooldown
+// x0.9 (the rungs are the host's ladder, ksgproto28 martial.ts, not this document).
+//
+// Readings taken (the text does not say):
+//   - "Empty" is pure damage (user 2026-09-26): unmissable, past armour, resistance and weakness.
+//     It deals 60% of Power on top of the blow.
+//   - Flowing parries with chance Power / (2 x the blow), up to 100%. Its answer is 60% of Power.
+//   - Heavy cuts each blow by Power before armour. The attacker is slowed until its next action by
+//     the share cut x 2/3, so never below a third of its speed.
+//   - A stance picked in a fight applies at the player's next bar fill, so it cannot be swapped
+//     between the enemy's swing and your own. Out of a fight it applies at once.
+//   - The stances hold only while no ranged weapon is held; the ceiling holds whatever is held.
+//   - The rep multiplier runs from x2 at 0 combat skill levels to x64 at 600, exponentially.
+//
+//   ceiling     the attribute ceiling. Its carrier tells the host to hold formulas there
+//               (attrCeiling) and to route XP past it to this document (routeExcess).
+//   reps        reps each technique execution records (repMult), for every slotted technique
+//               (drillsAll).
+//   past_<attr> attribute XP routed past the ceiling. The host writes these.
+//   hidden      the levels that XP buys from the ceiling up, priced on the host's attribute curve.
+//               The host writes it.
+//   want        the stance picked (1 Power, 2 Flowing, 3 Heavy, 4 Empty).
+//   stance      the stance in effect. Copied from want at each player bar fill.
+//   power flowing heavy empty
+//               Power while that stance is in effect and a melee weapon is held, else 0. Each
+//               carrier does the stance: a damage modifier, or a field the host reads.
+//
+// Power = 0.4 x combat skill levels + 0.0005 x technique reps + 2 x hidden levels. All
+// placeholders.
+//
+// Reads: ksg.martialTotal, ksg.techniqueTotal, ksg.melee. Events: barFill. Needs a host that
+// knows the status fields attrCeiling, routeExcess, repMult, drillsAll, parryContest, blowCut and
+// pureBlows, and writes past_<attr> and hidden. ksgproto28 does (facet/host.ts, combat.ts,
+// martial.ts). A host without them gets the Power and Empty damage and nothing else.
+const WWM_CEILING = 20;
+const MARTIAL = { q: 'ksg.martialTotal' };
+const WWM_POWER = { expr: 'add',
+  a: { expr: 'mul', a: 0.4, b: MARTIAL },
+  b: { expr: 'add',
+    a: { expr: 'mul', a: 0.0005, b: { q: 'ksg.techniqueTotal' } },
+    b: { expr: 'mul', a: 2, b: { cell: 'hidden' } } } };
+// x2 at 0 combat skill levels to x64 at 600: 2 x 32^min(1, levels / 600).
+const WWM_REPS = { expr: 'mul', a: 2, b: { expr: 'pow', a: 32, b: { expr: 'min', a: 1, b: { expr: 'div', a: MARTIAL, b: 600 } } } };
+// 1 when the stance in effect is k, else 0: 1 - min(1, (stance - k)^2).
+const stanceIs = (k) => ({ expr: 'sub', a: 1, b: { expr: 'min', a: 1, b: { expr: 'pow', a: { expr: 'sub', a: { cell: 'stance' }, b: k }, b: 2 } } });
+const WWM_STANCES = [
+  [1, 'power', 'Power stance', '💪', 'Damage +Power.', { mods: [{ q: 'fighter.damage', op: 'add', value: 1 }] }],
+  [2, 'flowing', 'Flowing stance', '🌊', 'Parry chance is Power over twice the blow. A parry hits back for 60% of Power.',
+    { parryContest: { per: 2, answer: 0.6 } }],
+  [3, 'heavy', 'Heavy stance', '🪨', 'Each enemy blow is cut by Power before armour. The attacker is slowed.',
+    { blowCut: { rattle: 2 / 3 } }],
+  [4, 'empty', 'Empty stance', '⭕', 'Damage +60% of Power. Your blows cannot be dodged and skip armour and resistance.',
+    { mods: [{ q: 'fighter.damage', op: 'add', value: 0.6 }], pureBlows: true }],
+];
+const wwmSync = (hook) => ({ id: 'sync_' + hook, on: hook, do: [
+  setCell('reps', WWM_REPS),
+  ...WWM_STANCES.map(([k, key]) => setCell(key,
+    { expr: 'mul', a: WWM_POWER, b: { expr: 'mul', a: stanceIs(k), b: { q: 'ksg.melee' } } })),
+] });
+
+B.weakest_weapon_master = {
+  v: 1,
+  reading: {
+    name: 'Weakest Weapon Master', icon: '🥋',
+    desc: [
+      'Ceiling: Formulas read every attribute at 20 or less. Gates read the real value.',
+      'Excess: Attribute XP past 20 buys hidden levels. Each gives 2 Power.',
+      'Reps: Each technique use counts 2 to 64 times. Every slotted technique drills.',
+      'Power: 0.4 per combat skill level. 0.0005 per technique rep.',
+      'Stances: Melee only. A change applies at your next swing.',
+    ].join('\n'),
+    choice: {
+      label: 'Stance', want: 'want', active: 'stance',
+      options: [
+        { v: 1, name: 'Power', icon: '💪', desc: 'Damage +Power.' },
+        { v: 2, name: 'Flowing', icon: '🌊', desc: 'Parry chance is Power over twice the blow, up to 100%. A parry hits back for 60% of Power.' },
+        { v: 3, name: 'Heavy', icon: '🪨', desc: 'Each enemy blow is cut by Power before armour. A blow cut to 0 is not a hit. The attacker is slowed, to no less than 1/3 speed.' },
+        { v: 4, name: 'Empty', icon: '⭕', desc: 'Damage +60% of Power. Your blows cannot be dodged and skip armour, resistance and weakness.' },
+      ],
+    },
+  },
+  cells: [
+    {
+      key: 'ceiling', label: 'Attribute ceiling', icon: '📏', hold: 'none', level: 'int', tier: 'run', show: 'count',
+      floor: WWM_CEILING, cap: 1e9,
+      status: { desc: 'Formulas read every attribute at this or less.', attrCeiling: true, routeExcess: true },
+    },
+    {
+      key: 'reps', label: 'Reps per technique use', icon: '🔁', hold: 'none', level: 'real', tier: 'run', show: 'count',
+      floor: 1, cap: 1e9,
+      status: { desc: 'Each technique use records this many reps. Every slotted technique drills.', repMult: true, drillsAll: true },
+    },
+    {
+      key: 'hidden', label: 'Hidden attribute levels', icon: '📈', hold: 'none', level: 'int', tier: 'run', show: 'count',
+      cap: 1e9, carrier: false,
+      status: { desc: 'Attribute levels past the ceiling. +2 Power each.' },
+    },
+    ...['str', 'dex', 'con', 'int', 'wis', 'cha'].map((a) =>
+      ({ key: 'past_' + a, hold: 'none', level: 'real', tier: 'run', cap: 1e15, carrier: false })),
+    { key: 'want', hold: 'none', level: 'int', tier: 'run', floor: 1, cap: 4, carrier: false },
+    { key: 'stance', hold: 'none', level: 'int', tier: 'run', floor: 1, cap: 4, carrier: false },
+    ...WWM_STANCES.map(([, key, label, icon, desc, fields]) => ({
+      key, label, icon, hold: 'none', level: 'real', tier: 'run', show: 'count', cap: 1e9,
+      status: Object.assign({ desc }, fields),
+    })),
+  ],
+  clauses: [
+    wwmSync('tick'),
+    wwmSync('minute'),
+    { id: 'apply', on: 'event:barFill', do: [setCell('stance', { cell: 'want' })] },
+  ],
+};
+
+// ---------- Calorie Burn ----------
+//
+// The user's ability (2026-09-26, ksgproto28 docs/plans/ability-calorie-burn.md): "Eat a lot to
+// bank excess calories; higher stats store more. Full, the player takes a small penalty to all
+// stats that slowly shrinks and turns into bonuses as calories burn. The longer a fight lasts, the
+// higher the burn rate — but burn more than you can and you 'run out of control': unconscious, or
+// even dead. The power increase grows exponentially toward 100% burned. If the fight has not ended
+// after X seconds, max HP burns; below 10% of its normal total, no save, instant death. It
+// recovers over time if the player eats back to 0% burned."
+// Rulings 2026-09-26: the collapse is a death that is a setback (the host's 'dead' outcome with
+// knockout consequences); the stop-burning cutoff defaults to 10%. 2026-11-03: the peak bonus is
+// +100% ("further numbers need tweaking. Probably increase this cap as the player levels up and
+// the calorie capacity increases"), the full-store penalty -10%, calories come from the dish's
+// Well Fed (the host's eat event), and running dry at a 0% cutoff is a knockout. Later the same
+// day: "the calories don't really start burning until they lose at least 33% of their HP, or 20
+// seconds have passed in a fight, essentially turning it into a danger mode that begins kicking in".
+// And: "calorie burn shouldn't knock out the player immediately at 0% but rather accelerate the max
+// hp reduction and only knock you out when you hit 10% of your total max hp". The 10% line is the
+// collapse. Asked whether it stays a death, the user answered "Make it a knockout": the collapse is
+// a knockout, which replaces the 2026-09-26 ruling that it is a death that is a setback.
+//
+// Readings taken:
+//   - The store's cap is 400 + 30 x trained CON + STR (the card's settled body).
+//   - The burn runs only in fights, and only once the fight turns dangerous: HP at 67% of max or
+//     less, or 20 s of fight time. Once on it stays on for that fight, even if HP comes back.
+//   - Per combat tick it burns 0.25, rising by 0.015 per second since it started, at most 4 (2.5
+//     to 40 calories a second at 10 ticks a second). It stops at the cutoff.
+//   - The bonus prices calories burned THIS fight against the store's cap, so a wearer who never
+//     eats gets nothing: 0 below 30%, then exponential (k 5) to the peak at 100%. At the default
+//     10% cutoff it tops out near half the peak. It holds until the fight ends.
+//   - The peak grows with the cap: x1.25 each time the cap doubles past 400 (the user's "increase
+//     this cap as ... the calorie capacity increases").
+//   - The full-store penalty is 0 at 70% full and the whole -10% at 100%.
+//   - After 90 s of fight time, max HP burns at 0.4 a tick, absolute. The fight ends in a knockout
+//     when the burned HP reaches 90% of the max it was taken from (burned >= 9 x what is left).
+//   - At a 0% cutoff, once this fight's burn has emptied the store, max HP burns 2 a tick more
+//     (5 times the long-fight rate), from then on and whatever the fight time. An empty store at a
+//     fight's start burns nothing, so it never runs dry.
+//   - Out of a fight, each game minute: the store digests 0.5 while no max HP is owed; owed max
+//     HP returns 0.05 a minute, and 25 a minute while the store is full.
+//
+//   kcal      the store. Fed by the eat event's calories, burned in fights.
+//   fburn     calories burned this fight; the bonus reads it against the cap.
+//   ticks     fight time in combat ticks.
+//   danger    1 once this fight has turned dangerous; the burn runs only then.
+//   bticks    combat ticks since the burn started; its rate rises with them.
+//   fighting  1 between fightStart and fightEnd, so the minute clauses can tell.
+//   burning   the bonus in percent points; carrier: every attribute x(1 + 1% per point).
+//   sated     the full-store penalty in percent points; carrier: every attribute x(1 - 1% per point).
+//   debt      max HP burned; carrier: max HP -1 per point.
+//   cutoff    the stop-burning share picked (1 = 10%, 2 = 0%, 3 = 25%); reading.choice.
+//
+// Reads: ksg.trainedBody, fighter.hp, fighter.maxHpAbs. Events: eat (calories), fightStart, fightEnd. Needs a
+// host that calls Facet.tick per combat tick and Facet.minute per game minute, and has defeat.
+const CB_CAP = { expr: 'add', a: 400, b: { expr: 'mul', a: 30, b: { q: 'ksg.trainedBody' } } };
+const CB_SHARE = { cell: 'kcal', of: 'frac' };
+const cbClamp01 = (x) => ({ expr: 'min', a: 1, b: { expr: 'max', a: 0, b: x } });
+// The share of the store the player stops burning at: 10% (1), 0% (2) or 25% (3).
+const cbCutIs = (k) => ({ expr: 'sub', a: 1, b: { expr: 'min', a: 1, b: { expr: 'pow', a: { expr: 'sub', a: { cell: 'cutoff' }, b: k }, b: 2 } } });
+const CB_CUTOFF = { expr: 'add', a: { expr: 'mul', a: 0.1, b: cbCutIs(1) }, b: { expr: 'mul', a: 0.25, b: cbCutIs(3) } };
+const CB_SECONDS = { expr: 'div', a: { cell: 'bticks' }, b: { seconds: 1 } };
+// Danger: a third of max HP gone, or 20 s of fight time.
+const CB_DANGER = { any: [
+  { q: 'fighter.hp', op: 'lte', v: { expr: 'mul', a: 0.67, b: { q: 'fighter.maxHpAbs' } } },
+  { cell: 'ticks', op: 'gte', v: { seconds: 20 } },
+] };
+const CB_IN_DANGER = { cell: 'danger', op: 'eq', v: 1 };
+const CB_RATE = { expr: 'min', a: 4, b: { expr: 'add', a: 0.25, b: { expr: 'mul', a: 0.015, b: CB_SECONDS } } };
+// The peak: +100% at a cap of 400, x1.25 each time the cap doubles (exponent log2 1.25).
+const CB_PEAK = { expr: 'pow', a: { expr: 'div', a: CB_CAP, b: 400 }, b: 0.3219 };
+// Exponential from 0 at 30% burned this fight to 1 at 100%: (e^5x - 1) / (e^5 - 1).
+const CB_X = cbClamp01({ expr: 'div', a: { expr: 'sub', a: { cell: 'fburn', of: 'frac' }, b: 0.3 }, b: 0.7 });
+const CB_RAMP = { expr: 'div', a: { expr: 'sub', a: { expr: 'pow', a: 148.4132, b: CB_X }, b: 1 }, b: 147.4132 };
+const CB_BURNING = { expr: 'mul', a: 100, b: { expr: 'mul', a: CB_PEAK, b: CB_RAMP } };
+// 0 at 70% full, 10 points (-10%) at 100%.
+const CB_SATED = { expr: 'mul', a: 10, b: cbClamp01({ expr: 'add', a: -2.3333, b: { expr: 'mul', a: 3.3333, b: CB_SHARE } }) };
+const CB_ALL = (value) => ['str', 'dex', 'con', 'int', 'wis', 'cha'].map((a) => ({ q: 'stat.eff.' + a, op: 'mult', value }));
+const CB_OUT = { cell: 'fighting', op: 'eq', v: 0 };
+const CB_OWED = { cell: 'debt', op: 'gt', v: 0 };
+// The collapse line: burned max HP at 90% of where it started, so burned >= 9 x what is left.
+const CB_GONE = { expr: 'mul', a: 9, b: { q: 'fighter.maxHpAbs' } };
+const cbFightReset = (fighting) => ['ticks', 'bticks', 'danger', 'fburn', 'burning'].map((c) => setCell(c, 0)).concat([setCell('fighting', fighting)]);
+
+B.calorie_burn = {
+  v: 1,
+  reading: {
+    name: 'Calorie Burn', icon: '🔥',
+    desc: [
+      'Store: Eating fills a calorie store. Cap 400 + 30 per trained CON + STR.',
+      'Full: All attributes -10% at a full store. 0 at 70% and below.',
+      'Danger: In a fight the burn starts once you lose 33% of your HP or 20 s pass.',
+      'Burn: It speeds up the longer it runs. It stops at your cutoff.',
+      'Bonus: All attributes up to +100% as one fight burns 30% to 100% of the store.',
+      'Grows: The peak bonus x1.25 each time the cap doubles past 400.',
+      'Costs: After 90 s in a fight, max HP burns. At 90% burned you are knocked out.',
+      'Fails: At a 0% cutoff, running dry makes max HP burn 5 times faster.',
+      'Recovers: Out of a fight max HP returns, fast while the store is full.',
+    ].join('\n'),
+    choice: {
+      label: 'Stop burning at', want: 'cutoff', active: 'cutoff',
+      options: [
+        { v: 2, name: '0%', icon: '⚠️', desc: 'Burn the whole store. Running dry in a fight makes max HP burn 5 times faster.' },
+        { v: 1, name: '10%', icon: '🔥', desc: 'Stop at 10% of the store. The default.' },
+        { v: 3, name: '25%', icon: '🛑', desc: 'Stop at 25% of the store.' },
+      ],
+    },
+  },
+  cells: [
+    {
+      key: 'kcal', label: 'Calories', icon: '🍖', hold: 'none', level: 'real', tier: 'run', show: 'bar', cap: CB_CAP,
+      carrier: false,
+      status: { desc: 'Stored calories. Cap 400 + 30 per trained CON + STR.' },
+    },
+    {
+      key: 'fburn', label: 'Burned this fight', icon: '🔥', hold: 'none', level: 'real', tier: 'fight', show: 'count',
+      cap: CB_CAP, carrier: false,
+      status: { desc: 'The bonus starts at 30% of the cap and peaks at 100%.' },
+    },
+    { key: 'ticks', hold: 'none', level: 'int', tier: 'fight', cap: 1e9, carrier: false },
+    { key: 'danger', hold: 'none', level: 'int', tier: 'fight', cap: 1, carrier: false },
+    { key: 'bticks', hold: 'none', level: 'int', tier: 'fight', cap: 1e9, carrier: false },
+    { key: 'fighting', hold: 'none', level: 'int', tier: 'run', cap: 1, carrier: false },
+    {
+      key: 'burning', label: 'Burning', icon: '🔥', hold: 'none', level: 'real', tier: 'fight', show: 'plusPct', cap: 1e6,
+      status: { desc: 'All attributes. Grows with calories burned this fight.', mods: CB_ALL(0.01) },
+    },
+    {
+      key: 'sated', label: 'Too full', icon: '🍽️', hold: 'none', level: 'real', tier: 'run', show: 'minusPct', cap: 10,
+      status: { desc: 'All attributes. -10% at a full store, 0 at 70% and below.', mods: CB_ALL(-0.01) },
+    },
+    {
+      key: 'debt', label: 'Max HP burned', icon: '💔', hold: 'none', level: 'real', tier: 'run', show: 'count', cap: 1e9,
+      status: { desc: 'Max HP lost to a long burn. Returns out of fights, fast while the store is full.',
+        mods: [{ q: 'fighter.maxHpAbs', op: 'add', value: -1 }] },
+    },
+    { key: 'cutoff', hold: 'none', level: 'int', tier: 'run', floor: 1, cap: 3, carrier: false },
+  ],
+  clauses: [
+    { id: 'eat', on: 'event:eat', do: [addCell('kcal', { frame: 'calories' }), setCell('sated', CB_SATED)] },
+    { id: 'start', on: 'event:fightStart', do: cbFightReset(1) },
+    { id: 'end', on: 'event:fightEnd', do: cbFightReset(0) },
+    // The fight, per combat tick, in order: time, danger, the burn, the bonus and the penalty,
+    // the max-HP burn (faster with a dry store), and the collapse.
+    { id: 'clock', on: 'tick', do: [addCell('ticks', 1)] },
+    { id: 'danger', on: 'tick', when: CB_DANGER, do: [setCell('danger', 1)] },
+    { id: 'burn_clock', on: 'tick', when: CB_IN_DANGER, do: [addCell('bticks', 1)] },
+    { id: 'burn', on: 'tick', when: { all: [CB_IN_DANGER, { cell: 'kcal', of: 'frac', op: 'gt', v: CB_CUTOFF }] },
+      do: [addCell('kcal', { expr: 'mul', a: -1, b: CB_RATE }), addCell('fburn', CB_RATE)] },
+    { id: 'levels', on: 'tick', do: [setCell('burning', CB_BURNING), setCell('sated', CB_SATED)] },
+    { id: 'wasting', on: 'tick',
+      when: { all: [{ cell: 'ticks', op: 'gte', v: { seconds: 90 } }, { cell: 'debt', op: 'lt', v: CB_GONE }] },
+      do: [addCell('debt', 0.4)] },
+    { id: 'collapse', on: 'tick', when: { all: [CB_OWED, { cell: 'debt', op: 'gte', v: CB_GONE }] },
+      do: [{ emit: 'world', verb: 'defeat', outcome: 'knocked_out', cause: 'Calorie Burn: your max HP burned away.' }] },
+    { id: 'dry', on: 'tick',
+      when: { all: [{ cell: 'cutoff', op: 'eq', v: 2 }, { cell: 'kcal', op: 'lte', v: 0 }, { cell: 'fburn', op: 'gt', v: 0 },
+        { cell: 'debt', op: 'lt', v: CB_GONE }] },
+      do: [addCell('debt', 2)] },
+    // Out of a fight, per game minute.
+    { id: 'digest', on: 'minute', when: { all: [CB_OUT, { cell: 'debt', op: 'lte', v: 0 }] }, do: [addCell('kcal', -0.5)] },
+    { id: 'mend_fed', on: 'minute', when: { all: [CB_OUT, CB_OWED, { cell: 'kcal', of: 'frac', op: 'gte', v: 1 }] },
+      do: [addCell('debt', -25)] },
+    { id: 'mend', on: 'minute', when: { all: [CB_OUT, CB_OWED] }, do: [addCell('debt', -0.05)] },
+    { id: 'settle', on: 'minute', do: [setCell('sated', CB_SATED)] },
+  ],
+};
+
+// ---------- Shadow Clone ----------
+//
+// Approved by the user (team ability GEN-18, review page 2), with the note "absolutely. no question
+// asked. killer ability.":
+//   Does: When you start a gathering, crafting or job activity, up to N clones start the same
+//         activity. Each adds 40% of the normal yield and skill XP.
+//   Grows: N is 1 + 1 per 10 character levels, max 5.
+//   Costs: Each clone reserves 5% of max mana while it exists.
+//   Fails: Clones are dispelled when you take a hit, switch activity, or after 1 hour.
+// The entry's own note: "an 8 h catch-up of crafting at x3 output is the point. The materials for
+// crafts still have to exist, so the multiplier is bounded by stock."
+//
+// Readings taken 2026-11-03 (asked; the user moved on without answering, so the recommended ones):
+//   - No time limit. "After 1 hour" and "an 8 h catch-up ... is the point" disagree, and a game
+//     hour in ksgproto28 is one real minute. Clones last until a hit or a switch of activity.
+//   - Crafting at a bench: each clone adds 40% more crafts, each using its own ingredients, so the
+//     output is bounded by stock (the host's share, ksgproto28 benchwork.ts).
+//   - Clones add yield and skill XP; attribute XP stays the player's.
+//   - A hit is an enemy's blow (hitTaken with an attacker), as for Bramble.
+//   - The 5% is taken off max mana for each clone.
+//
+//   clones  clones working now; the carrier's `cloneShare` (0.4) is what each adds, and its
+//           modifier takes 5% off max mana per clone.
+//   bound   the work the clones are on: the key the host's work event names (a number). The same
+//           key again summons nothing; a new one summons a fresh set.
+//
+// Reads: fighter.level. Events: work (key: a nonzero number for gathering, a job or a bench run,
+// 0 for anything else; raised when it changes), hitTaken. Needs a host that knows the status field
+// cloneShare and raises work.
+const SC_COUNT = { expr: 'min', a: 5, b: { expr: 'add', a: 1, b: { expr: 'floor', a: { expr: 'div', a: { q: 'fighter.level' }, b: 10 } } } };
+const SC_WORKING = { not: { frame: 'key', op: 'eq', v: 0 } };
+const SC_IDLE = { not: { frame: 'key', op: 'ne', v: 0 } };
+const SC_NEW_WORK = { not: { frame: 'key', op: 'eq', v: { cell: 'bound' } } };
+
+B.shadow_clone = {
+  v: 1,
+  reading: {
+    name: 'Shadow Clone', icon: '👥',
+    desc: [
+      'Does: Gathering, a job or bench crafting brings clones. Each adds 40% yield and skill XP.',
+      'Count: 1 clone, +1 per 10 character levels. Max 5.',
+      'Crafting: Clone crafts use their own ingredients.',
+      'Costs: Each clone takes 5% off max mana.',
+      'Fails: Taking a hit or switching activity dispels them.',
+    ].join('\n'),
+  },
+  cells: [
+    {
+      key: 'clones', label: 'Shadow clones', icon: '👥', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 5,
+      status: {
+        desc: 'Each adds 40% yield and skill XP, and takes 5% off max mana.',
+        cloneShare: 0.4,
+        mods: [{ q: 'pool.mana.max', op: 'mult', value: -0.05 }],
+      },
+    },
+    { key: 'bound', hold: 'none', level: 'real', tier: 'run', cap: 1e10, carrier: false },
+  ],
+  clauses: [
+    { id: 'summon', on: 'event:work', when: { all: [SC_WORKING, SC_NEW_WORK] },
+      do: [setCell('bound', { frame: 'key' }), setCell('clones', SC_COUNT)] },
+    { id: 'idle', on: 'event:work', when: SC_IDLE, do: [setCell('bound', 0), setCell('clones', 0)] },
+    { id: 'hit', on: 'event:hitTaken', when: FROM_ENEMY, do: [setCell('clones', 0)] },
+  ],
+};
 })();

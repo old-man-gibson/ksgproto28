@@ -32,7 +32,7 @@ import { QUALITY_ORDER, QUALITY_TIERS, qualityRank } from '../data/quality.data'
 import { STATUSES } from '../data/statuses.data';
 import { ARCANE_WORDS } from '../data/spellcraft.data';
 import { MAX_STACK } from './arcane';
-import { attrName, attrValue } from './attributes';
+import { attrName, formulaAttr } from './attributes';
 import {
   applyStatus,
   fieldHunger,
@@ -474,7 +474,7 @@ export function priceGeneAbility(
     spec.fromStat !== undefined
       ? { label: STAT_NAMES[spec.fromStat], value: stats[spec.fromStat] }
       : spec.fromAttr !== undefined
-        ? { label: attrName(spec.fromAttr), value: attrValue(state, spec.fromAttr) }
+        ? { label: attrName(spec.fromAttr), value: formulaAttr(state, spec.fromAttr) }
         : null;
   if (spec.power !== undefined && priced) {
     damage += spec.power * priced.value;

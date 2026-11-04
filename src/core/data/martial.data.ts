@@ -125,6 +125,17 @@ export const MASTERY_POWER = [1.05, 1.12, 1.2, 1.3] as const;
 /** Generic per-tier cooldown multiplier (tier 1–4). */
 export const MASTERY_COOLDOWN = [1, 0.92, 0.85, 0.75] as const;
 
+// Past Perfected, one rung per power of ten for every build (user 2026-09-26;
+// bonuses chosen 2026-11-03: power and cooldown only). Rung 5 is 100,000 reps,
+// rung MAX_MASTERY_TIER is 10^MAX_MASTERY_TIER. Weakest Weapon Master's rep
+// multiplier is what makes these reachable; nothing gates them on it.
+/** Highest rung. 15 is 10^15 reps; the bound keeps every number finite. */
+export const MAX_MASTERY_TIER = 15;
+/** Each rung past Perfected multiplies power (damageMult, preventedMult, a form's duration) by this. */
+export const BEYOND_POWER = 2;
+/** Each rung past Perfected multiplies the cooldown by this, floor 10 ticks. */
+export const BEYOND_COOLDOWN = 0.9;
+
 // ---------- Forms ----------
 /** Rough mechanics are all arm, no hips: stamina surcharge until Perfected. */
 export const ROUGH_STAMINA_MULT = 1.25;

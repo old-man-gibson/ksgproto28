@@ -36,6 +36,7 @@ export const STATUSES_TEXT: ProseTable = {
 
   'frozen.desc': 'Speed is reduced by 95% and bludgeoning resistance by 50% for 3 seconds. Any damage taken removes it.',
 
+  'rattled.desc': 'Slowed until its next action. Lost speed is the share of its blow that Heavy stance cut, times 2/3.',
   'petrified.desc': 'Cannot act. Lasts 3 s. Broken before then, it throws its max HP as rocks at the enemies behind it. Gives 50% of its gold as Stone Chunks and 50% XP.',
   'petrified_rubble.desc': 'Cannot act. Lasts 3 s. Broken before then, it throws its max HP as rocks at the enemies behind it. Unbroken, it bursts for half that. Gives no gold and 50% XP.',
   'petrified_standing.desc': 'Cannot act. Stays until the fight ends. Your attacks skip it. Throws no rocks. Gives 50% of its gold as Stone Chunks and 50% XP when the fight ends.',

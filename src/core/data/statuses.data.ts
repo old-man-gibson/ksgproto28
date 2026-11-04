@@ -309,6 +309,22 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     // The ice cannot survive being hit.
     removal: [{ on: 'damageTaken', effect: 'remove' }],
   },
+  // Weakest Weapon Master's Heavy stance (combat.ts `rattle`): an attacker whose
+  // blow was cut by Power is slowed until its next action. The intensity is the
+  // share cut times the stance's rattle (2/3), so speed never drops below a third.
+  rattled: {
+    id: 'rattled',
+    name: 'Rattled',
+    icon: '🫨',
+    element: 'bludgeoning',
+    stacking: { mode: 'highest' },
+    duration: null,
+    mods: [{ stat: 'speed', op: 'mult', value: -1 }],
+    removal: [
+      { on: 'barFill', effect: 'remove' },
+      { on: 'combatEnd', effect: 'remove' },
+    ],
+  },
   // A statue (Basilisk Hide's Stone at 100). It does nothing and leaves when
   // the clock runs out; combat.ts pays it in Stone Chunks either way, and a
   // statue broken before then throws rocks at the enemies behind it

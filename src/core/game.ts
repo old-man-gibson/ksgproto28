@@ -113,6 +113,8 @@ import { autoPrestigeDue, buyBoon, leaveReview, prestigeNow } from './systems/pr
 import {
   bindFacets,
   chooseEvolution,
+  chooseFacetOption,
+  tickWork,
   facetSignal,
   pendingEvolution,
   registerFacetListeners,
@@ -282,6 +284,8 @@ export class Game {
     // leading claim, which may be the one lapsing this very tick; only a hand-off
     // that runs after it moves the condition on instead of letting it expire.
     handOffMeals(this.state, clock);
+    // Before the work itself, so clones (Shadow Clone) join on the tick it starts.
+    tickWork(this.state);
     if (this.state.travel) {
       tickTravel(this.state, this.bus);
     } else {
@@ -681,6 +685,11 @@ export class Game {
   /** Take the held ability's evolution branch `key` (facet/host.ts chooseEvolution). */
   chooseEvolution(key: string) {
     return chooseEvolution(this.state, key);
+  }
+
+  /** Pick option `v` of the held ability's choice: Weakest Weapon Master's stance (facet/host.ts). */
+  chooseFacetOption(v: number) {
+    return chooseFacetOption(this.state, v);
   }
 
   /** Shape a psionic working from force/reach/grip points. */

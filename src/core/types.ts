@@ -1355,6 +1355,35 @@ export interface StatusDef {
    * how it leaves the fight (Basilisk Hide; statuses.ts `statueOf`).
    */
   statue?: StatueRule;
+  /*
+   * Weakest Weapon Master (facet/host.ts, docs/FACET.md). Fields on the
+   * player's ability carriers; the intensity is the number each one uses.
+   */
+  /** Formulas read every attribute at no more than the intensity. Gates read the real value. */
+  attrCeiling?: true;
+  /** With attrCeiling: XP for an attribute already at the ceiling goes to the ability, not the attribute. */
+  routeExcess?: true;
+  /** Each technique execution records this many reps (the intensity, rounded, at least 1). */
+  repMult?: true;
+  /** Every slotted technique records reps, not only the drilled ones. */
+  drillsAll?: true;
+  /**
+   * Flowing: a parry chance of intensity / (per × the blow), up to 100%, on top
+   * of the capped standing parry. A parry answers with answer × intensity.
+   */
+  parryContest?: { per: number; answer: number };
+  /**
+   * Heavy: each enemy blow is cut by the intensity before armour. A blow cut
+   * to 0 is not a hit. The attacker is Rattled at rattle × the share cut.
+   */
+  blowCut?: { rattle: number };
+  /** Empty: your weapon blows cannot be dodged and skip armour, resistance and weakness. */
+  pureBlows?: true;
+  /**
+   * Shadow Clone: each clone (the intensity) adds this share of a gathering
+   * or job cycle's yield and skill XP, and this share more bench crafts.
+   */
+  cloneShare?: number;
   /** The worse condition this becomes when it is pushed far enough. */
   escalatesTo?: string;
   /** The milder condition a 'deescalate' removal drops this back to. */
@@ -2013,7 +2042,7 @@ export interface TechniqueDef {
    */
   learn?: { self?: TechniqueSelfLearn; watch?: number };
   /** Annotations on the standard ladder, keyed by tier (1–4). */
-  mastery?: Partial<Record<1 | 2 | 3 | 4, TechniqueMasteryNote>>;
+  mastery?: Partial<Record<number, TechniqueMasteryNote>>;
   /**
    * Fork archetypes offered at the Honed choice (FORK_TIER). Absent = the
    * technique never forks. A syncretic form is offered the whole vocabulary.
@@ -2911,6 +2940,8 @@ export interface BenchWork {
   forge?: Placement;
   /** Crafts finished so far. */
   done: number;
+  /** Shadow Clone's crafts owed but not yet made: a fraction carried to the next pass (benchwork.ts). */
+  cloneCarry?: number;
 }
 
 // ---------- Alchemy ----------
@@ -5532,6 +5563,8 @@ export const ENCOUNTER_SLOTS = 5;
 export interface CombatState {
   /** Brief encounter introduction; neither side acts until it finishes. */
   introTicks?: number;
+  /** An ability ended the fight as a loss this tick (facet/host.ts `defeat`); combat.ts settles it. */
+  fallen?: { outcome: FightOutcome; cause: string };
   /**
    * Fixed-length formation. Only `enemies[0]` (the centre) can be attacked;
    * when it dies a random survivor swaps into slot 0 and its own slot empties.
@@ -5775,10 +5808,10 @@ export interface LogEntry {
 /**
  * How an encounter ended for the player.
  *
- * `dead` is the spirit-walk failure state and NOTHING produces it yet. The hook
- * is here so that when it lands it is one more outcome on a shape that already
- * exists, rather than a save migration and a second window that says the same
- * things in a different order.
+ * `dead` is the spirit-walk failure state and NOTHING produces it yet. The
+ * hook is here so that when it lands it is one more outcome on a shape that
+ * already exists. An ability can end a fight with it through the `defeat`
+ * effect (facet/host.ts), as a death with knockout consequences; none does.
  */
 export type FightOutcome = 'won' | 'knocked_out' | 'dead';
 
@@ -5818,6 +5851,8 @@ export interface LedgerStopped {
  */
 export interface FightLedger {
   outcome: FightOutcome;
+  /** What ended the fight, when an ability did (Calorie Burn's collapse); shown on the defeat window. */
+  cause?: string;
   /** Ticks the encounter lasted. */
   ticks: number;
   /** Absolute tick it ended on, against `totalTicks`. */

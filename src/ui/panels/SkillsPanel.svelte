@@ -36,7 +36,7 @@
   import type { ForkArchetypeDef, TechniqueForm } from '../../core/types';
   import { POSITIONS, SPOTS } from '../../core/registry';
   import { TRIGGER_EVENTS } from '../../core/systems/triggers';
-  import { describeMod, condText, modCondition, techniqueMoveText, ticksToTime, sumMods } from '../lib/format';
+  import { describeMod, condText, fmt, modCondition, techniqueMoveText, ticksToTime, sumMods } from '../lib/format';
   import { endowmentBonus, hasForesight, hasWayfinding, talentBonus } from '../../core/systems/legacy';
   import { trainingSpots } from '../../core/systems/actions';
   import { activityName } from '../lib/navigation';
@@ -419,7 +419,7 @@
                 {/if}
               </button>
               <span class="tech-reps small dim">
-                {techniqueExecutions(gs, t.id)} reps{tierName ? ` · ${tierName}` : ''}{rough
+                {fmt(techniqueExecutions(gs, t.id))} reps{tierName ? ` · ${tierName}` : ''}{rough
                   ? ' · rough'
                   : ''}
               </span>

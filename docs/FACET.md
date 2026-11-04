@@ -155,6 +155,67 @@ none. At 100 a CON build evolves after about 100 minutes there. To try it:
 Grant 🗿 Basilisk Hide, press Statues to 99, and let an enemy near your level
 hit you until it turns to stone. The debug panel also grants each branch.
 
+**Weakest Weapon Master** is the sixth, and the user's own (2026-09-26 card,
+docs/plans/ability-weakest-weapon-master.md; choices taken 2026-11-03: all
+four stances at once, ceiling 20, XP past it priced like real levels, rungs
+past 10,000 give power and cooldown only). Most of it is game rules the
+document switches on through its carriers' status fields:
+
+| Piece | Where |
+|---|---|
+| The ceiling | Cell `ceiling` (20) carries `attrCeiling`. attributes.ts `formulaAttrFrom` holds every formula read at the ceiling: computeDerivedStats, statBreakdown, unarmed damage, telekinesis grip, the fast's hunger, bestiary insight, activity factors, mutagen scaling. Gates, item requirements, contests and dynamic monster levels read the real value (`attrValue`, `finalAttributes`). Trained-rank perks still read trained levels. The sidebar shows a capped attribute as `30 → 20`. |
+| XP past the ceiling | The ceiling also carries `routeExcess`. host.ts `routeAttrXp`, registered with attributes.ts `setXpRouter`, takes any grant for an attribute whose real value is at or above the ceiling: the XP goes to the document's `past_<attr>` cell and the attribute does not train. Cell `hidden` is set to the levels that XP buys from the ceiling up on the attribute curve (`levelsPast`). |
+| Reps | Cell `reps` carries `repMult` and `drillsAll`. martial.ts `recordExecution` adds round(reps) per execution, at least 1, for every slotted technique; the drill slots are not used. 2 x 32^min(1, combat skill levels / 600): x2 at 0, x64 at 600. Written at execution, so rungs stay when the ability goes. |
+| Rungs past 10,000 | Every build, not only this ability: martial.ts `rungThreshold`, `masteryTier` up to `MAX_MASTERY_TIER` (15, 10^15 reps). Each rung past Perfected doubles damageMult and preventedMult (a defensive form's buff duration instead) and takes the cooldown x0.9, floor 10 ticks. Named Beyond I, Beyond II and so on. |
+| Power | 0.4 x `ksg.martialTotal` + 0.0005 x `ksg.techniqueTotal` + 2 x hidden levels, set on every combat tick and game minute. |
+| Stances | `reading.choice`: the Combat tab draws a four-button row under the stance grid (CombatPanel.svelte); `chooseFacetOption` writes cell `want`, and the document copies it into `stance` at the player's next bar fill (event `barFill`), or at once out of a fight. Cells `power`, `flowing`, `heavy`, `empty` hold Power while that stance is in effect and `ksg.melee` is 1, else 0. |
+| Power stance | Carrier mod `fighter.damage` add 1 x Power. |
+| Flowing | Carrier `parryContest` { per 2, answer 0.6 }. combat.ts parry: chance max(standing parry capped at 50%, Power / (2 x the blow's weight)), up to 100%; the answer is 0.6 x Power instead of the riposte. |
+| Heavy | Carrier `blowCut` { rattle 2/3 }. combat.ts cuts each enemy hit by Power after any counter and before armour. A hit cut to 0 lands nothing; when all are, the exchange is not a hit (no hitTaken, no on-hit effects). The attacker gets `rattled` (statuses.data.ts): speed x(1 - intensity), intensity = share cut x 2/3, removed at its bar fill. |
+| Empty | Carrier mod `fighter.damage` add 0.6 x Power, and `pureBlows`. combat.ts: a weapon blow (not a spell or gene active) cannot be dodged and lands at its raw size, past armour, resistance and weakness. |
+
+Monster workings bypass parry and counters already, and they bypass Flowing
+and Heavy too. Power's weights, the x2..x64 curve and the ceiling are
+placeholders. To try it: Grant 🥋 Weakest Weapon Master, then pick a stance on
+the Combat tab.
+
+**Calorie Burn** is the seventh, also the user's (2026-09-26 card,
+docs/plans/ability-calorie-burn.md; choices taken 2026-11-03: peak bonus
++100% growing with the store, full-store penalty -10%, calories from Well Fed,
+running dry at a 0% cutoff is a knockout). The document holds the rules; the
+game supplies calories, the trained body and the defeat.
+
+| Piece | Where |
+|---|---|
+| Calories | consumables.ts `dishCalories`: 400 per point of Well Fed a dish grants, 100 for a dish with none, times the grade; a spoiled grade and non-food give 0. `useConsumable` raises `eat` with them, so queued eating counts too. |
+| The store | Cell `kcal`, cap 400 + 30 x `ksg.trainedBody` (trained CON + STR, no bonuses). |
+| Too full | Cell `sated` in percent points, 0 at 70% full to 10 at 100%; carrier: every attribute x(1 - 1% per point). |
+| The burn | Only once the fight turns dangerous (user 2026-11-03): HP at 67% of max or less, or 20 s of fight time; cell `danger` holds it for the rest of the fight. Then per combat tick while the store is above the cutoff: 0.25 + 0.015 per second since the burn started (cell `bticks`), at most 4. Cell `fburn` counts this fight's burn. |
+| The bonus | Cell `burning` in percent points: 0 below 30% of the cap burned this fight, then (e^5x - 1)/(e^5 - 1) to the peak at 100%. The peak is +100% at a cap of 400, x1.25 each time the cap doubles. Carrier: every attribute x(1 + 1% per point). Resets with the fight. |
+| The cutoff | `reading.choice` (0%, 10% default, 25%), drawn on the Combat tab under the stance grid. Applies at once. |
+| Max HP | After 90 s of fight time, cell `debt` grows 0.4 a tick; carrier: max HP -1 per point. Out of a fight it returns 0.05 a game minute, 25 while the store is full; the store digests 0.5 a minute only while nothing is owed. |
+| The collapse | When `debt` reaches 9 x the max HP left (90% burned), the document emits `defeat` with outcome `knocked_out` (user 2026-11-03: "Make it a knockout"; it had been a death). host.ts marks the fight (`CombatState.fallen`); combat.ts settles it after the ability's tick with `onDefeat(state, bus, outcome, cause)`, and the defeat window shows the cause (`FightLedger.cause`). `defeat` can also end a fight as `dead`, a death with knockout consequences; nothing uses that yet. |
+| Running dry | At the 0% cutoff, once this fight's burn has emptied the store, max HP burns 2 more a tick (5 times the long-fight rate) until the collapse (user 2026-11-03: no knockout at 0%). An empty store at a fight's start burns nothing, so it never runs dry. |
+
+The numbers are placeholders. To try it: Grant 🔥 Calorie Burn, eat a few
+dishes, and fight something that lasts.
+
+**Shadow Clone** is the eighth (team ability GEN-18, the user's note:
+"absolutely. no question asked. killer ability."), and the first that works
+outside a fight. Readings taken 2026-11-03 (the recommended ones; the user
+moved on without answering): no time limit, bench clone crafts use their own
+stock, clones add yield and skill XP but not attribute XP.
+
+| Piece | Where |
+|---|---|
+| The work | host.ts `tickWork`, each game tick before the activity: the `work` event names a bench run, a gathering or a job activity as a nonzero hash, anything else as 0. Raised when it changes and once after a load. |
+| Summoning | The document sets `clones` to 1 + 1 per 10 character levels, at most 5, when `work` names new work; the same work again summons nothing. 0 dispels them, and so does an enemy's blow (`hitTaken` with an attacker). |
+| What a clone adds | Carrier field `cloneShare` (0.4) and statuses.ts `cloneMult`: 1 + 0.4 per clone. actions.ts multiplies a gathering's yield and a job's pay, and the skill XP of both; attribute XP is unchanged. |
+| Benches | benchwork.ts: after each pass, `cloneMult - 1` times the batch more crafts, each through the bench's own craft, so each uses its own ingredients and the run still stops when they run out. The fraction carries (`BenchWork.cloneCarry`). |
+| The cost | Carrier mod `pool.mana.max` mult -0.05 per clone. |
+
+To try it: Grant 👥 Shadow Clone, then start gathering, a job or a bench run.
+
 ### Enemies as refs
 
 A document aims at enemies through scopes, and the adapter names each enemy
@@ -187,6 +248,9 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `miracleCast` | combat.ts, when a miracle is cast | |
 | `statue` | host.ts `applyStatus`, when an ability's dose turns an enemy to stone | `target` (its ref), `level`, `levelShare` (its level ÷ yours), `attrShare` (its attribute total ÷ yours), `boss` |
 | `rocks` | combat.ts `throwRubble`, once per enemy the rocks hit | `target` (its ref), `amount` |
+| `barFill` | combat.ts, when the player's action bar fills, before the action | |
+| `eat` | consumables.ts `useConsumable`, for food | `calories` (`dishCalories`) |
+| `work` | host.ts `tickWork`, when what the player works at changes, and once after a load | `key` (a bench run, gathering or job, hashed; 0 for anything else) |
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it
@@ -228,6 +292,10 @@ so ids are shared with InfiniteGacha wherever both games have the number:
 | `pool.<stamina\|mana\|spirit\|focus>.cur` / `.max` | the pool and its maximum; spirit exists only here |
 | `world.sunlight` | sunlight on the player, 0..1 (exposure.ts `sunlight`); IG has none yet |
 | `world.statues` | statues in the player's fight (Stoneskin); 0 out of one |
+| `ksg.martialTotal` | the summed level of every combat skill |
+| `ksg.techniqueTotal` | reps recorded across every technique |
+| `ksg.melee` | 1 unless an item tagged `ranged` is equipped |
+| `ksg.trainedBody` | trained CON + STR levels, without bonuses (Calorie Burn's store) |
 | `fighter.level` | character level; on an enemy, its level |
 | `fighter.boss` | 0 for the player; on an enemy, 1 for the spot's boss |
 | `ksg.<stat>` | every other derived stat, by its `StatKey` |

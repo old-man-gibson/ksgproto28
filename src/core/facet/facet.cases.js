@@ -420,6 +420,187 @@ CASES['bank: Little Moons spends no mana'] = (assert) => {
   assert(pool.mana === 50, 'the moons drew on a full pool: ' + pool.mana);
 };
 
+
+// A host that reports the three numbers Weakest Weapon Master's Power reads.
+function wwmHost(martial, reps, melee) {
+  return fakeHost({
+    quantities: () => [
+      { id: 'fighter.hp', label: 'HP', kind: 'pool', nullifiable: false, writable: false, mortalRole: 'vitality' },
+      { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
+      { id: 'fighter.damage', label: 'Weapon damage', kind: 'flat' },
+      { id: 'ksg.martialTotal', label: 'Combat skill levels', kind: 'scalar' },
+      { id: 'ksg.techniqueTotal', label: 'Technique reps', kind: 'scalar' },
+      { id: 'ksg.melee', label: 'Melee', kind: 'scalar' },
+    ],
+    readQ: (r, q) => q === 'ksg.martialTotal' ? martial.v : q === 'ksg.techniqueTotal' ? reps : q === 'ksg.melee' ? melee.v : 1,
+  });
+}
+
+CASES['bank: Weakest Weapon Master sets Power on the stance in effect, picked at a bar fill'] = (assert) => {
+  const martial = { v: 100 };
+  const melee = { v: 1 };
+  F.install(wwmHost(martial, 20000, melee));
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.weakest_weapon_master)));
+  F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
+  assert(v('ceiling') === 20 && v('stance') === 1 && v('want') === 1, 'it did not start at ceiling 20 in Power stance');
+  F.minute('a');
+  // 0.4 x 100 + 0.0005 x 20000 + 2 x 0 = 50.
+  assert(Math.abs(v('power') - 50) < 1e-9, 'Power stance read ' + v('power') + ', not 50');
+  assert(v('flowing') === 0 && v('heavy') === 0 && v('empty') === 0, 'a stance not in effect held Power');
+  assert(Math.abs(v('reps') - 2 * Math.pow(32, 100 / 600)) < 1e-9, 'reps per use read ' + v('reps'));
+  F.cellStep(F.cellOf(doc, 'want'), 'set', 4, { ref: 'a', facet: doc, bindings: {} });
+  F.minute('a');
+  assert(v('power') === 50 && v('empty') === 0, 'a pick applied before the bar filled');
+  F.event('barFill', 'a', {});
+  F.minute('a');
+  assert(v('power') === 0 && Math.abs(v('empty') - 50) < 1e-9, 'Empty did not take Power at the bar fill');
+  melee.v = 0;
+  F.minute('a');
+  assert(v('empty') === 0, 'a stance held Power with a ranged weapon');
+  martial.v = 6000;
+  F.minute('a');
+  assert(Math.abs(v('reps') - 64) < 1e-9, 'reps per use did not stop at 64: ' + v('reps'));
+};
+
+
+// A host for Calorie Burn: a trained body, HP and max HP, and a defeat it records.
+function calorieHost(body, maxHp, hp = maxHp) {
+  const lost = [];
+  const H = fakeHost({
+    quantities: () => [
+      { id: 'fighter.hp', label: 'HP', kind: 'pool', nullifiable: false, writable: false, mortalRole: 'vitality' },
+      { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
+      { id: 'ksg.trainedBody', label: 'Trained CON + STR', kind: 'scalar' },
+    ],
+    readQ: (r, q) => q === 'ksg.trainedBody' ? body : q === 'fighter.maxHpAbs' ? maxHp.v : q === 'fighter.hp' ? hp.v : 1,
+    defeat: (ref, outcome, cause) => { lost.push({ ref, outcome, cause }); },
+  });
+  return { H, lost };
+}
+
+CASES['bank: Calorie Burn eats, burns once the fight is dangerous, to the cutoff, and burns max HP after 90 s'] = (assert) => {
+  const maxHp = { v: 100 };
+  const hp = { v: 100 };
+  const { H, lost } = calorieHost(20, maxHp, hp);
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.calorie_burn)));
+  F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
+  F.event('eat', 'a', { calories: 1000 });
+  // Cap 400 + 30 x 20 = 1000: full, so the whole -10%.
+  assert(Math.abs(v('kcal') - 1000) < 1e-9 && Math.abs(v('sated') - 10) < 1e-6, 'a full store read ' + v('kcal') + ' and ' + v('sated'));
+  F.event('fightStart', 'a', {});
+  // At full HP nothing burns for the first 20 s.
+  for (let i = 0; i < 199; i++) F.tick('a');
+  assert(v('fburn') === 0 && v('danger') === 0, 'the store burned before the fight turned dangerous');
+  F.tick('a');
+  assert(v('danger') === 1 && v('fburn') > 0, 'the burn did not start at 20 s');
+  for (let i = 0; i < 700; i++) F.tick('a');
+  // 701 burn ticks at 0.25 + 0.0015 per tick of burn: 0.25 x 701 + 0.0015 x 701 x 702 / 2 = 544.33,
+  // past 30%, so the bonus has begun.
+  assert(Math.abs(v('fburn') - 544.3265) < 0.01, 'burned ' + v('fburn') + ' in 701 burn ticks, not 544.33');
+  assert(v('burning') > 0 && v('sated') === 0, 'no bonus at 54% burned, or the penalty held');
+  for (let i = 0; i < 600; i++) F.tick('a');
+  assert(Math.abs(v('kcal') - 100) < 5, 'the burn did not stop near the 10% cutoff: ' + v('kcal'));
+  // 0.4 a tick from tick 900 (90 s of fight) through tick 1500: 601 ticks.
+  assert(Math.abs(v('debt') - 240.4) < 1e-6, 'max HP burned ' + v('debt') + ', not 240.4');
+  assert(lost.length === 0, 'the fight ended early');
+  maxHp.v = 10;
+  F.tick('a');
+  assert(lost.length === 1 && lost[0].outcome === 'knocked_out', 'burned >= 9 x what was left did not knock out');
+  F.event('fightEnd', 'a', {});
+  assert(v('burning') === 0 && v('fburn') === 0 && v('danger') === 0, 'the fight cells did not reset');
+};
+
+CASES['bank: Calorie Burn starts burning at once when a third of HP is gone, and keeps on'] = (assert) => {
+  const maxHp = { v: 100 };
+  const hp = { v: 100 };
+  const { H } = calorieHost(20, maxHp, hp);
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.calorie_burn)));
+  F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
+  F.event('eat', 'a', { calories: 1000 });
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 50; i++) F.tick('a');
+  assert(v('fburn') === 0, 'the store burned at full HP inside 20 s');
+  hp.v = 67;
+  F.tick('a');
+  assert(v('danger') === 1 && v('fburn') > 0, 'losing 33% of HP did not start the burn');
+  hp.v = 100;
+  const burned = v('fburn');
+  F.tick('a');
+  assert(v('fburn') > burned, 'the burn stopped when HP came back');
+};
+
+CASES['bank: Calorie Burn at a 0% cutoff burns max HP faster once the store runs dry'] = (assert) => {
+  const maxHp = { v: 100 };
+  const { H, lost } = calorieHost(0, maxHp);
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.calorie_burn)));
+  F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
+  F.cellStep(F.cellOf(doc, 'cutoff'), 'set', 2, { ref: 'a', facet: doc, bindings: {} });
+  F.event('eat', 'a', { calories: 50 });
+  F.event('fightStart', 'a', {});
+  let dryAt = -1;
+  for (let i = 0; i < 400 && dryAt < 0; i++) {
+    F.tick('a');
+    if (v('kcal') <= 0) dryAt = i;
+  }
+  assert(dryAt >= 0 && dryAt < 400, 'the store did not run dry');
+  assert(lost.length === 0, 'running dry ended the fight at once');
+  const before = v('debt');
+  for (let i = 0; i < 10; i++) F.tick('a');
+  assert(Math.abs(v('debt') - before - 20) < 1e-9, 'a dry store burned ' + (v('debt') - before) + ' max HP in 10 ticks, not 20');
+  maxHp.v = 2;
+  F.tick('a');
+  assert(lost.length === 1 && lost[0].outcome === 'knocked_out', 'the dry burn did not end at the 10% line');
+  // An empty store at a fight's start burns nothing, so it never trips.
+  const second = calorieHost(0, { v: 100 });
+  F.install(second.H);
+  const fresh = F.hydrate(JSON.parse(JSON.stringify(F.bank.calorie_burn)));
+  F.attach('a', [fresh]);
+  F.cellStep(F.cellOf(fresh, 'cutoff'), 'set', 2, { ref: 'a', facet: fresh, bindings: {} });
+  F.event('fightStart', 'a', {});
+  for (let i = 0; i < 100; i++) F.tick('a');
+  assert(second.lost.length === 0, 'an empty store knocked out at a fight start');
+};
+
+
+CASES['bank: Shadow Clone summons on new work, holds on the same, and is dispelled by a hit or idleness'] = (assert) => {
+  const level = { v: 25 };
+  F.install(fakeHost({
+    quantities: () => [
+      { id: 'fighter.hp', label: 'HP', kind: 'pool', nullifiable: false, writable: false, mortalRole: 'vitality' },
+      { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
+      { id: 'fighter.level', label: 'Level', kind: 'scalar' },
+    ],
+    readQ: (r, q) => q === 'fighter.level' ? level.v : 1,
+  }));
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.shadow_clone)));
+  F.attach('a', [doc]);
+  const v = (key) => F.cellOf(doc, key).state.v;
+  F.event('work', 'a', { key: 7 });
+  assert(v('clones') === 3, 'level 25 summoned ' + v('clones') + ' clones, not 3');
+  F.event('hitTaken', 'a', { amount: 5, attacker: 'e1' });
+  assert(v('clones') === 0, 'a hit did not dispel the clones');
+  F.event('work', 'a', { key: 7 });
+  assert(v('clones') === 0, 'the same work summoned again after a hit');
+  F.event('work', 'a', { key: 9 });
+  assert(v('clones') === 3, 'new work did not summon');
+  F.event('hitTaken', 'a', { amount: 5 });
+  assert(v('clones') === 3, 'a hit with no attacker dispelled the clones');
+  F.event('work', 'a', { key: 0 });
+  assert(v('clones') === 0 && v('bound') === 0, 'idleness did not dispel');
+  level.v = 80;
+  F.event('work', 'a', { key: 9 });
+  assert(v('clones') === 5, 'the count did not stop at 5: ' + v('clones'));
+  F.event('work', 'a', {});
+  assert(v('clones') === 5, 'a work event with no key changed the clones');
+};
+
 // A host whose enemies record damage, and where the ref 'dead' is not alive.
 function thornHost() {
   const hits = [];
