@@ -41,8 +41,10 @@
 <style>
   .job-strip {
     /* The stretchy one: it takes the room the status text took, so the clock,
-       weather and gold keep right of centre. */
-    flex: 1 1 140px;
+       weather and gold keep right of centre. Its basis is its content, so the
+       header wraps before the job name loses a letter; inside it the bar gives
+       way first (.job-track). */
+    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     align-items: center;
@@ -54,9 +56,10 @@
     flex: none;
   }
 
+  /* Never shorter than its text, unless the strip itself is. */
   .job-name {
-    flex: 0 1 auto;
-    min-width: 0;
+    flex: none;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -71,8 +74,11 @@
   /* The bar is global `.bar` / `.fill` on purpose, so a theme frames it like
      every other bar. Only the size and the easing are set here. */
   .job-track {
-    flex: 0 1 110px;
-    min-width: 40px;
+    /* Small by basis so the header does not wrap on its account, wider when the
+       row has room, and the first thing to shrink (weight 4) when it does not. */
+    flex: 1 4 60px;
+    min-width: 0;
+    max-width: 160px;
     height: 9px;
   }
 

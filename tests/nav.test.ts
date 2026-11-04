@@ -16,6 +16,7 @@ import {
   navMark,
   navSections,
   readSeen,
+  reconcileTab,
   visibleNav,
   writeSeen,
   type NavRow,
@@ -163,6 +164,55 @@ describe('the list in the left column', () => {
       ['skills', 'equipment'],
       ['bestiary', 'quests', 'achievements'],
     ]);
+  });
+});
+
+describe('the open screen and the list', () => {
+  it('keeps a listed screen and falls back to Location for one that is not', () => {
+    const s = postTutorial();
+    const rows = visibleNav(s);
+    for (const id of NAV_IDS) {
+      const listed = ids(rows).includes(id);
+      expect(reconcileTab(id, rows), id).toBe(listed ? id : 'location');
+    }
+  });
+
+  it('moves off a screen whose gate closes behind it', () => {
+    const s = postTutorial();
+    s.facets = [{} as GameState['facets'][number]];
+    s.prestige.count = 1;
+    expect(reconcileTab('ability', visibleNav(s))).toBe('ability');
+    expect(reconcileTab('prestige', visibleNav(s))).toBe('prestige');
+    // A reset or an import swaps in a save with no ability and no prestige.
+    s.facets = [];
+    s.prestige.count = 0;
+    expect(reconcileTab('ability', visibleNav(s))).toBe('location');
+    expect(reconcileTab('prestige', visibleNav(s))).toBe('location');
+    // A shuttered system shut again.
+    s.stats[unlockKey('music')] = 1;
+    expect(reconcileTab('music', visibleNav(s))).toBe('music');
+    s.stats[unlockKey('music')] = 0;
+    expect(reconcileTab('music', visibleNav(s))).toBe('location');
+  });
+
+  it('never returns a screen the list does not hold, in any state of the save', () => {
+    const states: GameState[] = [];
+    for (const gates of [0, 1]) {
+      const s = postTutorial();
+      if (gates) {
+        s.facets = [{} as GameState['facets'][number]];
+        s.prestige.count = 1;
+        for (const sys of ['genes', 'music', 'wuxin'] as const) s.stats[unlockKey(sys)] = 1;
+      }
+      states.push(s);
+    }
+    states.push(createInitialState(31)); // floor 0, step 1
+    for (const s of states) {
+      const rows = visibleNav(s);
+      for (const id of NAV_IDS) expect(ids(rows)).toContain(reconcileTab(id, rows));
+    }
+    // Floor 0 lists Location only, so every other screen falls back to it.
+    expect(reconcileTab('skills', visibleNav(createInitialState(32)))).toBe('location');
   });
 });
 
