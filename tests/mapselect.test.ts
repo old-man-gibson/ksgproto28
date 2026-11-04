@@ -109,6 +109,49 @@ describe('where the card stands', () => {
     expect(high.y).toBeGreaterThanOrEqual(CARD_GAP);
   });
 
+  it('keeps clear of an exit label that sits beside the pin outside its group (the floor 0 gate)', () => {
+    // The gate pin, and the "→ Threshold" label right of it that the last tutorial step points at.
+    const gate = pinAt(500, 400, 80, 60);
+    const label: Box = { left: gate.right + 4, top: 420, right: gate.right + 4 + 80, bottom: 440 };
+    const without = placeCard(gate, view, { w: CARD_W, h: 300 });
+    // Without the label the card goes right of the pin, over the label: the defect.
+    expect(overlaps(cardBox(without, 300), label)).toBe(true);
+    const at = placeCard(gate, view, { w: CARD_W, h: 300 }, [label]);
+    expect(overlaps(cardBox(at, 300), label)).toBe(false);
+    expect(overlaps(cardBox(at, 300), gate)).toBe(false);
+    // Left of the pin, as the right side was taken.
+    expect(at.x + CARD_W).toBeLessThanOrEqual(gate.left);
+  });
+
+  it('keeps clear of exit labels across windows, pin places and label sides', () => {
+    for (const w of [1024, 1094, 1440]) {
+      for (let left = 60; left + 80 <= w - 60; left += 53) {
+        for (let top = 40; top + 60 <= 760; top += 70) {
+          const p = pinAt(left, top);
+          for (const side of ['right', 'left'] as const) {
+            const label: Box = side === 'right'
+              ? { left: p.right + 4, top: top + 20, right: p.right + 84, bottom: top + 40 }
+              : { left: p.left - 84, top: top + 20, right: p.left - 4, bottom: top + 40 };
+            const at = placeCard(p, { w, h: 800 }, { w: CARD_W, h: 320 }, [label]);
+            const c = cardBox(at, 320);
+            expect(overlaps(c, p), `${w} pin ${left},${top} label ${side}`).toBe(false);
+            expect(overlaps(c, label), `${w} pin ${left},${top} label ${side}`).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it('takes the place that covers least when every place covers an avoided box', () => {
+    const p = pinAt(500, 400);
+    const all: Box = { left: 0, top: 0, right: 1094, bottom: 900 };
+    const small: Box = { left: p.right + 8, top: 380, right: p.right + 40, bottom: 420 };
+    const at = placeCard(p, view, { w: CARD_W, h: 300 }, [small]);
+    expect(overlaps(cardBox(at, 300), small)).toBe(false);
+    // A box covering the whole window: the first place (right of the pin) stays.
+    expect(placeCard(p, view, { w: CARD_W, h: 300 }, [all])).toEqual(placeCard(p, view, { w: CARD_W, h: 300 }));
+  });
+
   it('never covers the pin, across every place on a window the card fits beside or under', () => {
     for (const w of [420, 700, 1094, 1440]) {
       for (let left = 0; left + 80 <= w; left += 37) {

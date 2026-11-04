@@ -22,7 +22,7 @@
     type RouteLine,
   } from './lib/navigation';
   import { DEFAULT_W } from './lib/map';
-  import { CARD_W, placeCard, selectionStep, type SelectEvent } from './lib/mapSelect';
+  import { CARD_W, placeCard, selectionStep, type Box, type SelectEvent } from './lib/mapSelect';
   import { buildPlan, buildRouteDraw, planThreats, stableThreats } from './lib/mapPlan';
   import TileMap from './lib/tilemaps/TileMap.svelte';
   import { TILEMAPS } from './lib/tilemaps';
@@ -150,10 +150,23 @@
   }
 
   /** The card's corner beside a pin, for a card `cardH` px tall. */
-  function stand(pin: Element, cardH: number) {
-    const at = placeCard(pin.getBoundingClientRect(), { w: window.innerWidth, h: window.innerHeight }, { w: CARD_W, h: cardH });
+  function stand(pin: Element, cardH: number, exits: Box[] = exitBoxes()) {
+    const view = { w: window.innerWidth, h: window.innerHeight };
+    const at = placeCard(pin.getBoundingClientRect(), view, { w: CARD_W, h: cardH }, exits);
     cardX = at.x;
     cardY = at.y;
+  }
+
+  /**
+   * The region exit labels on screen. They sit beside a pin but are not part
+   * of it, and the last tutorial step is a click on one, so a card keeps clear
+   * of them (`placeCard`).
+   */
+  function exitBoxes(): Box[] {
+    return [...document.querySelectorAll('svg.plan text.exit')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left - 4, top: r.top - 4, right: r.right + 4, bottom: r.bottom + 4 };
+    });
   }
 
   function pick(id: string, pin: Element) {
@@ -195,13 +208,14 @@
       if (!pin || !pin.isConnected) return apply({ type: 'view' });
       const r = pin.getBoundingClientRect();
       const h = cardEl?.offsetHeight ?? 360;
-      const key = [r.left, r.top, r.right, r.bottom, window.innerWidth, window.innerHeight, h].join();
+      const exits = exitBoxes();
+      const key = [r.left, r.top, r.right, r.bottom, window.innerWidth, window.innerHeight, h, ...exits.map((b) => [b.left, b.top])].join();
       if (key === last) return;
       last = key;
       const dot = pin.querySelector('.dot')?.getBoundingClientRect() ?? r;
       const hit = document.elementFromPoint(dot.left + dot.width / 2, dot.top + dot.height / 2);
       if (hit?.closest('g.node') !== pin) return apply({ type: 'view' });
-      stand(pin, h);
+      stand(pin, h, exits);
     };
     frame = requestAnimationFrame(follow);
     return () => cancelAnimationFrame(frame);

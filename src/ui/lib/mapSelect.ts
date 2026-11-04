@@ -64,20 +64,43 @@ export const CARD_GAP = 8;
 /**
  * The card's top left corner, so that it never covers the pin it describes:
  * the second click has to land on the pin. Right of the pin, else left of it,
- * else (a window too narrow for either) under it, else over it. Beside the pin
- * the card lines up with the pin's top and is kept inside the window.
+ * else (a window too narrow for either) under it, else over it, taking the
+ * first of those that also keeps clear of every box in `avoid` (the region
+ * exit labels, which sit beside a pin but are not part of it). When every
+ * place covers something, the one that covers least. Beside the pin the card lines up with the pin's top and is
+ * kept inside the window.
  */
 export function placeCard(
   pin: Box,
   view: { w: number; h: number },
   card: { w: number; h: number },
+  avoid: Box[] = [],
 ): { x: number; y: number } {
   const gap = CARD_GAP;
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, Math.max(lo, hi)));
   const beside = clamp(pin.top - 4, gap, view.h - card.h - gap);
-  if (pin.right + gap + card.w <= view.w - gap) return { x: pin.right + gap, y: beside };
-  if (pin.left - gap - card.w >= gap) return { x: pin.left - gap - card.w, y: beside };
   const x = clamp(pin.left, gap, view.w - card.w - gap);
-  if (pin.bottom + gap + card.h <= view.h - gap) return { x, y: pin.bottom + gap };
-  return { x, y: Math.max(gap, pin.top - gap - card.h) };
+  const places: { x: number; y: number }[] = [];
+  if (pin.right + gap + card.w <= view.w - gap) places.push({ x: pin.right + gap, y: beside });
+  if (pin.left - gap - card.w >= gap) places.push({ x: pin.left - gap - card.w, y: beside });
+  if (pin.bottom + gap + card.h <= view.h - gap) places.push({ x, y: pin.bottom + gap });
+  if (pin.top - gap - card.h >= gap) places.push({ x, y: pin.top - gap - card.h });
+  places.push({ x, y: Math.max(gap, pin.top - gap - card.h) });
+  const covered = (at: { x: number; y: number }) =>
+    avoid.reduce((sum, b) => {
+      const w = Math.min(at.x + card.w, b.right) - Math.max(at.x, b.left);
+      const h = Math.min(at.y + card.h, b.bottom) - Math.max(at.y, b.top);
+      return sum + (w > 0 && h > 0 ? w * h : 0);
+    }, 0);
+  let best = places[0];
+  let least = covered(best);
+  for (const at of places.slice(1)) {
+    if (least === 0) break;
+    const c = covered(at);
+    if (c < least) {
+      best = at;
+      least = c;
+    }
+  }
+  return best;
 }
