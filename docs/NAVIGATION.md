@@ -507,10 +507,15 @@ button rides.
   `climbTo(floor)`, `climbTo(null)` or `climbToHub(band)`. It is disabled while
   knocked out, in a forced fight or already riding. The festival's forfeit asks
   twice: the first press arms the button (its label becomes "Confirm: forfeit the
-  festival"), the second runs it. The armed key is one store shared by the section
-  and the panel, and is dropped when another stop is picked and when the attempt
-  ends. Off the ladder (standing in the city, not at the Foot or on a floor) a
-  stop has no button and its detail says where rides start.
+  festival"), the second runs it. The arm is one store shared by the section
+  and the panel. It holds the stop's key, the spot the player stood on and the
+  layout (600 px) that carried the button, and is void when any of them differs
+  or a walk or ride is under way, so a press made at the hall does not forfeit
+  from the stores (`armedKey`). An effect on the spot, the travel state and the
+  width (`syncArm`) clears it, so walking away and back does not revive it. It is
+  also dropped when another stop is picked and when the attempt ends. Off the
+  ladder (standing in the city, not at the Foot or on a floor) a stop has no
+  button and its detail says where rides start.
 - **One set of ride buttons** (`lib/viewport.svelte.ts`, 600 px):
   - at 600 px and wider the section's detail carries the button and the Ascent
     panel prints terms only, with a "Show in map" button that opens the map on

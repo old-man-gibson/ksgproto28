@@ -10,7 +10,7 @@ import { TUTORIAL_DONE_KEY } from '../src/core/data/tutorial.data';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { floorReached, rungStatus } from '../src/core/systems/ladder';
 import { rideTicks } from '../src/core/systems/towers';
-import { festivalLadder, festivalRun } from '../src/core/systems/festivalRules';
+import { festivalLadder, festivalRun, lockoutLeft } from '../src/core/systems/festivalRules';
 import { ticksToTime } from '../src/ui/lib/format';
 import { buildPlan } from '../src/ui/lib/mapPlan';
 import { labelBox, pinBox, PLAN_HEIGHT, type MapBox } from '../src/ui/lib/map';
@@ -707,5 +707,128 @@ describe('the forfeit asks twice, from either place', () => {
     expect(arm.armedKey()).toBeNull();
     // `travel` was set to null above, so the checker narrows it; the ride sets it.
     expect((st.gs as GameState).travel?.to).toBe(FLOORS.ascent_f1.landing);
+  });
+});
+
+describe('an arm belongs to the moment it was made in', () => {
+  const BELOW = Object.values(FLOORS).filter((f) => f.bandId !== undefined && f.index < 15).map((f) => f.id);
+
+  /** An attempt in its hall with the dark room emptied: where the arm, walk, press sequence starts. */
+  function inHall(): void {
+    st.gs.festival = undefined;
+    st.gs.travel = null;
+    st.gs.travelPlan = [];
+    st.gs.recovering = false;
+    st.gs.combat = null;
+    st.gs.stats[TUTORIAL_DONE_KEY] = 1;
+    clearFloors(st.gs.stats, BELOW);
+    st.gs.prestige.purchases.city_key = 1;
+    st.gs.spot = FLOORS.ascent_f14.landing!;
+    for (const a of ATTRIBUTE_LIST) st.gs.attrs[a.id].level = 400;
+    expect(st.game.climbTo(DARK_FLOOR)).toBe(true);
+    for (let i = 0; i < 2000 && st.gs.travel; i++) st.game.tick();
+    expect(st.gs.spot).toBe(DARK_ROOM);
+    // The dark room emptied: the clear that opens the hall, and the attempt's phase.
+    clearFloors(st.gs.stats, ['ascent_f15']);
+    festivalRun(st.gs)!.phase = 'prep';
+    st.gs.combat = null;
+    st.gs.spot = 'f15_hall';
+    if (!st.gs.discovered.includes('f15_hall')) st.gs.discovered.push('f15_hall');
+    if (!st.gs.discovered.includes('f15_stores')) st.gs.discovered.push('f15_stores');
+    arm.disarmRide();
+    viewport.wide = true;
+  }
+
+  const walk = () => {
+    for (let i = 0; i < 2000 && st.gs.travel; i++) st.game.tick();
+    expect(st.gs.travel).toBeNull();
+  };
+
+  it('arm in the hall, walk to the stores, press once: the attempt is still on', () => {
+    inHall();
+    const hub = towerHubView(st.gs, ASCENT).action!;
+    expect(hub.kind).toBe('forfeit');
+    arm.pressRide(hub);
+    expect(arm.armedKey()).toBe('hub');
+
+    st.game.travelTo('f15_stores');
+    expect(st.gs.travel).not.toBeNull();
+    walk();
+    expect(st.gs.spot).toBe('f15_stores');
+    // The press was made at the hall: here it reads unarmed, in the button and in the store.
+    expect(arm.armedKey()).toBeNull();
+    const here = towerHubView(st.gs, ASCENT).action!;
+    expect(render(StopDetail, { props: { tower: ASCENT, stopKey: 'hub' } }).body).toContain('Forfeit · Leave the tower');
+
+    // One press at the stores arms; it does not forfeit.
+    arm.pressRide(here);
+    expect(festivalRun(st.gs)).toBeDefined();
+    expect(lockoutLeft(st.gs)).toBe(0);
+    expect(st.gs.spot).toBe('f15_stores');
+    expect(arm.armedKey()).toBe('hub');
+  });
+
+  it('walking away and back does not bring the arm back', () => {
+    inHall();
+    arm.pressRide(towerHubView(st.gs, ASCENT).action!);
+    expect(arm.armedKey()).toBe('hub');
+
+    // The effect on the spot and the travel state runs as the walk begins (a server render runs no effects).
+    st.game.travelTo('f15_stores');
+    arm.syncArm(st.gs.spot, !!st.gs.travel, viewport.wide);
+    walk();
+    st.game.travelTo('f15_hall');
+    walk();
+    expect(st.gs.spot).toBe('f15_hall');
+    expect(arm.armedKey()).toBeNull();
+
+    arm.pressRide(towerHubView(st.gs, ASCENT).action!);
+    expect(festivalRun(st.gs)).toBeDefined();
+    expect(st.gs.spot).toBe('f15_hall');
+  });
+
+  it('no press counts while a walk is under way', () => {
+    inHall();
+    arm.pressRide(towerHubView(st.gs, ASCENT).action!);
+    st.game.travelTo('f15_stores');
+    expect(st.gs.travel).not.toBeNull();
+    expect(arm.armedKey()).toBeNull();
+    walk();
+  });
+
+  it('crossing 600 px voids it, as the button moves between the detail and the panel', () => {
+    inHall();
+    const hub = towerHubView(st.gs, ASCENT).action!;
+    arm.pressRide(hub);
+    expect(arm.armedKey()).toBe('hub');
+
+    viewport.wide = false;
+    expect(arm.armedKey()).toBeNull();
+    arm.syncArm(st.gs.spot, !!st.gs.travel, viewport.wide);
+    viewport.wide = true;
+    // Back at the first width the old press is not revived.
+    expect(arm.armedKey()).toBeNull();
+    arm.pressRide(hub);
+    expect(festivalRun(st.gs)).toBeDefined();
+    expect(arm.armedKey()).toBe('hub');
+
+    // The same press made under 600 px stands there.
+    viewport.wide = false;
+    arm.pressRide(hub);
+    expect(arm.armedKey()).toBe('hub');
+    viewport.wide = true;
+  });
+
+  it('syncArm clears an arm made under other conditions and keeps one made under these', () => {
+    inHall();
+    const hub = towerHubView(st.gs, ASCENT).action!;
+    arm.pressRide(hub);
+    arm.syncArm('f15_hall', false, true);
+    expect(arm.armedKey()).toBe('hub');
+    arm.syncArm('f15_stores', false, true);
+    expect(arm.armedKey()).toBeNull();
+    arm.pressRide(hub);
+    arm.syncArm('f15_hall', true, true);
+    expect(arm.armedKey()).toBeNull();
   });
 });
