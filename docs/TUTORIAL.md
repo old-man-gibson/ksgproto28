@@ -12,7 +12,7 @@ Files:
 - `src/core/data/locations.data.ts` — region `holding_level`, area `ascent_f0_area`, spots `f0_*`
 - `src/core/data/towers.data.ts` — floor `ascent_f0` (bandless, index 0)
 - `src/core/data/monsters.data.ts` — `slime_cell`; `MonsterDef.fixedDamage`
-- `src/ui/TutorialCard.svelte` — the card above the tabs; `QuestsPanel` holds the Guide
+- `src/ui/TutorialCard.svelte` — the card above the open screen; `QuestsPanel` holds the Guide
 - `src/ui/lib/tutorialFocus.ts` — what each step shows, hides and points at (§5)
 - `src/ui/lib/tilemaps/holding_level.map.json` — the drawn map (docs/TILEMAPS.md)
 - `tests/tutorial.test.ts`, `tests/tutorialfocus.test.ts`
@@ -26,7 +26,7 @@ line, each road 2–3 s: cell → cellblock → field → gate. The gate's road 
 Threshold is **one-way** and lands at the Foot of the Ascent, where the game used
 to open; floor 0 closes behind the player and the Foot never lists a road back.
 
-A card above the tabs walks nine steps, and the screen around it shows only what
+A card above the open screen walks nine steps, and the screen around it shows only what
 the current step uses (§5):
 
 | # | id | done when | choice |
@@ -138,25 +138,31 @@ ignored since it's at the top of the screen". The tutorial now drives the screen
 instead of sitting above it. All of it is presentation: `tutorialScreen(state)`
 in `src/ui/lib/tutorialFocus.ts` reads the current step (itself read off the
 save) and returns what to draw. Nothing is stored, a reload lands on the same
-screen, and nothing the player can do is removed — a hidden tab or button only
+screen, and nothing the player can do is removed — a hidden screen or button only
 waits.
 
 **What the screen hides until the tutorial ends**
 
 | | arrives |
 |---|---|
-| Combat tab | step 4 (`fight`) |
-| Equipment tab | step 5 (`field`) |
-| every other tab | the Foot |
+| Combat screen | step 4 (`fight`) |
+| Equipment screen | step 5 (`field`) |
+| every other screen | the Foot |
 | the sidebar (bars, level, attributes) | step 4 |
+| the screen list (in the sidebar) | step 4, with the second screen |
 | Combat Stats (sidebar) | the Foot |
 | gold readout | step 5 |
 | pause / step / bonus-time buttons, weather | the Foot (Space, P, →, N still work) |
-| Save / Export / Import / Reset | the Foot (Import is on the step 1 offer) |
+| gold and kills per minute (header) | the Foot |
+| Menu (Save, Export, Import, Reset, theme, key list) | the Foot (Import is on the step 1 offer) |
 | other map regions, the Caravan row, the map fold | the Foot |
 
-A tab arrives with the step whose text first names it. With one tab the tab bar
-is not drawn at all. Autosave runs throughout.
+A screen arrives with the step whose text first names it. The screen list
+(`NAV`, `src/ui/lib/nav.ts`) lists a screen when its own gate is open and
+`tutorialScreen(state).tabs` holds its id. With one screen the list is not drawn.
+The list sits in the sidebar, and the second screen arrives with the sidebar at
+step 4; `tests/nav.test.ts` fails if a step would list two screens without it.
+The dev button stays in the header on floor 0. Autosave runs throughout.
 
 **What each step points at**
 

@@ -84,7 +84,8 @@ window.addEventListener('beforeunload', () => save());
 // before the frame is painted, the timeout fires after it.
 const away = timeAway();
 if (away >= OFFLINE_MIN_MS && !game.state.paused) ui.catchingUp = away;
-// Before mount, so the first paint is already in the stored theme.
+// Before mount, so the first paint is already in the player's theme: the stored
+// pick, else Gothic. Applying stores nothing (ui/lib/theme.ts).
 applyTheme(loadTheme());
 mount(App, { target: document.getElementById('app')! });
 if (ui.catchingUp !== null) {

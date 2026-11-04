@@ -43,6 +43,10 @@
   --log-explore: #8fbfa8;
   --log-plain: #9b8c72;
 
+  /* Letter-spaced capitals: the screen list's group captions read it as
+     var(--font-caps, inherit), so the default theme needs no entry. */
+  --font-caps: 'Cinzel', serif;
+
   font-family: 'EB Garamond', Georgia, serif;
   font-size: 16.5px;
   /* Garamond's default figures are old-style; stats need to line up. */
@@ -97,7 +101,7 @@
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 
-/* The main tab row reads as engraved labels, not pills. */
+/* Tab rows inside panels (the spellcraft tabs) read as engraved labels, not pills. */
 :root[data-theme='gothic'] .tabs > button {
   font-family: 'Cinzel', serif;
   font-size: 13px;
