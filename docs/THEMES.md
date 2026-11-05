@@ -325,8 +325,13 @@ hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for every
   xp `#96c671`, action `#ecdd31`. No exceptions in `VISION_EXCEPTIONS`.
 - **Selection:** `--sel-bg` is a dark manila tint, darker than raised (manila 11% over sunken), and `button.selected` adds a 4 px
   manila bar on its left edge. Solid manila with dark ink is used only where no authored colour can sit inside: the open entry
-  of the screen list, the tab rows (`.tabs`, `.region-switch`) and a selected button with no element carrying an inline
-  `style`. Rarity and grade colours would fall under 4.5:1 on manila (plan ruling 3), so those keep the dark fill.
+  of the screen list (kept under the pointer), the tab rows (`.tabs`, `.region-switch`) and a selected button that is not
+  disabled, has no inline `style` on it and has no child whose inline style holds a colour (`oklch`, a hex, a custom
+  property, `color`, `background`). Rarity and grade colours would fall under 4.5:1 on manila (plan ruling 3), so those keep
+  the dark fill: a rarity chip and a forced stance carry the style on the button itself (the four buttons of that kind are
+  CollectionSection.svelte:205, EquipmentPanel.svelte:1119 and :1431, CombatPanel.svelte:466). The Icon component's own
+  style (width, font-size) is not a colour and exists only while the pixel art is missing, so it does not count. A selected
+  and disabled button keeps the disabled look (dashed, no fill, `--text-off`).
 - **Decorations (CSS only):** square corners; h2 and h3 in mono capitals with a rule to the right edge; a 4 px spine on the
   left of every top-level panel; a dotted tear-off line under the header; field boxes with a heavier bottom line; bars with
   quarter marks in the empty part; a graph-paper map ground; the outer you-are-here ring dashed; the pin card's warnings as
@@ -334,8 +339,13 @@ hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for every
 - **Limits:**
   - A long h3 (for example the Skills screen's attribute heading) prints in full capitals.
   - The solid manila rules use `:has()`. A browser without it shows the dark selected fill and the manila bar.
-  - The clock chip's text is cut with an ellipsis at 1180 px, as it is in Default; the title is 15 px mono and fits at every
-    width where it shows.
+  - Header chips (rate, clock, weather) are 12.5px. The clock chip's slot is `7.4em` (93 px, its text is 89 px) and the bonus
+    chip's slot is `8.2em` (98.4 px); its widest text, "⏩ 2× 1h 10m", is 96.3 px and the component's `7.9em` is 94.8 px. Clock
+    text cut at 1370 to 1470 px: 0 px (Default 0 px); at 1920 px (full date text, slot capped at 230 px): 91 px (Default 98 px).
+  - The tower column (184 px) is 12.5px for rows and 11px for band captions. Rows are cut by 3, 14 and 5 px (Default 6, 17, 8).
+  - A heading with a control on its right (`.fold-all`) keeps the control on the right edge: the trailing rule is `order: 0`
+    and the control `order: 1`.
+  - The enemy name plate is 11px (132 px wide): "Aberrant Forest Rat Lv 15" is 129 px (Default 130 px).
 
 ### Enamel
 
@@ -356,9 +366,12 @@ hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for every
   exceptions in `VISION_EXCEPTIONS`.
 - **Selection:** `--sel-bg` is dark (`#0a2a1d`), so a marked inventory cell is a dark cell with the component's amber border,
   and a wall of marked cells does not glare. A cream plate with dark ink is used only where no authored colour can sit inside:
-  the open entry of the screen list, the tab rows, the stop underfoot in the tower list, the pin card's title strip and a
-  selected button with no inline-styled child. Every other selected button gets the dark fill and a cream inset rim. At most
-  four cream plates show together on the Location screen at 1440 px.
+  the open entry of the screen list (kept under the pointer), the tab rows, the stop underfoot in the tower list, the pin
+  card's title strip and a selected button that is not disabled, has no inline `style` on it and has no child whose inline
+  style holds a colour (the Icon component's width and font-size style does not count). Every other selected button (a
+  rarity chip, a forced stance) gets the dark fill and a cream inset rim. A selected and disabled button keeps the disabled
+  look. The focus ring on the cream stop row is the plate's ink (14:1), because the component draws that ring inside the row.
+  At most four cream plates show together on the Location screen at 1440 px.
 - **Decorations (CSS only):** 2px rims on panels, buttons and fields (a button with `border: 0` stays borderless, because only
   `border-width` is set); a rivet in each corner of a top-level panel and of the header (a cream head in a dark ring); a cream
   header rim, amber while the world is paused; a cream-rimmed pin card with a cream title strip; a red and cream stripe at the
@@ -395,9 +408,15 @@ hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for every
   marked in quarters like a gauge; a neatline inside the map frame; a double rule round the pin card; a bar on the left of
   each warning in the warning's own colour.
 - **Limits:**
-  - Header budgets, measured against Default at 1024, 1094, 1180 and 1440 px: the job name slot is 165, 147, 141 and 227 px
+  - Header budgets, measured against Default at 1024, 1094, 1180 and 1440 px: the job name slot is 159, 141, 135 and 224 px
     (Default 169, 151, 153 and 240). The clock chip shows its whole hour at every width; its slot is `7.6em` of 12px (the
-    component's `6.5em` is too narrow for Caslon).
-  - A skill row (`.skill-block .row`) is 12.5px, not 13.5px; at 13.5px its bar overran the row.
+    component's `6.5em` is too narrow for Caslon). The bonus chip's slot is `8.4em` (100.8 px); its widest text, "⏩ 2× 1h 10m",
+    is 98.6 px and the component's `7.9em` is 94.8 px. Clock text cut at 1370 to 1470 px: 0 px; at 1920 px: 98 px (Default 98 px).
+  - A skill row (`.skill-block .row`) is 12px with a 5px gap; at 13.5px and the 7px gap its bar overran the row. After the
+    change no row runs past its content box at 1440 px (log open) or 1094 px.
+  - The tower column (184 px): rows are 12px with -0.02em tracking and a narrower number column; band captions are italic, mixed
+    case, 12px, no tracking. Rows are cut by 5, 9 and 2 px (Default 6, 17, 8) and no band caption is cut.
+  - The enemy name plate is 10.5px regular weight (132 px wide): "Aberrant Forest Rat Lv 15" is 128 px (Default 130 px).
+    At 11.5px and bold it is 151 px.
   - The rope is a background image on the panel, so a panel with its own `background-image` would lose it. None was found on
     the 12 screens of the screen list at 1440 px (Default theme).

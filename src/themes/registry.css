@@ -135,35 +135,58 @@
   }
 }
 
+/* Plex Sans is wider than Default's face. The chips sit at 12.5px; the clock chip's slot holds its text
+   ("🕰️ about 23:00") and the bonus chip's slot holds its widest text ("⏩ 2× 1h 10m", 96.3px; the
+   component's 7.9em is 94.8px), so neither chip changes width as its text changes. */
+:root[data-theme='registry'] .layout > header :is(.rate-chip, .timesense, .weather) {
+  font-size: 12.5px;
+}
+
+:root[data-theme='registry'] .layout > header .timesense {
+  min-width: 7.4em;
+}
+
+:root[data-theme='registry'] .layout > header .clock .bonus {
+  min-width: 8.2em;
+}
+
 /* Hover underlines the label; the background step comes from the global rule. */
 :root[data-theme='registry'] button:hover:not(:disabled) {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-/* Selected: the global fill and manila border, plus a manila bar on the left edge. */
-:root[data-theme='registry'] button.selected {
+/* Selected: the global fill and manila border, plus a manila bar on the left edge. A selected button that is
+   also disabled keeps the plain disabled look (dashed, no fill): the :not(:disabled) leaves it to cues.css. */
+:root[data-theme='registry'] button.selected:not(:disabled) {
   box-shadow: inset 4px 0 0 var(--accent);
 }
 
-/* Solid manila, ink on top. Only buttons with no authored colour inside (those carry an inline style). */
-:root[data-theme='registry'] :is(.tabs > button.selected, .region-switch > button.selected),
-:root[data-theme='registry'] button.selected:not(:has([style])) {
+/* Solid manila, ink on top. Only buttons that are not disabled and have no authored colour on them or in them:
+   a rarity chip and a forced stance carry an inline style on the button itself; a child that carries an
+   authored colour has an inline style holding oklch, a hex, a custom property, color or background. The
+   Icon component's own style (width, font-size) is none of these: it exists only while the pixel art is
+   missing, so keying on any style would make the plate depend on whether the art packs are installed.
+   Buttons that are excluded keep the dark fill and the bar above. */
+:root[data-theme='registry'] :is(.tabs > button.selected, .region-switch > button.selected):not(:disabled),
+:root[data-theme='registry'] button.selected:not(:disabled, [style], :has([style*='oklch'], [style*='#'], [style*='--'], [style*='color'], [style*='background'])) {
   background: var(--accent);
   color: var(--ink-on-accent);
   box-shadow: none;
 }
 
-:root[data-theme='registry'] :is(.tabs > button.selected, .region-switch > button.selected, button.selected:not(:has([style]))) * {
+:root[data-theme='registry'] :is(.tabs > button.selected, .region-switch > button.selected, button.selected:not([style], :has([style*='oklch'], [style*='#'], [style*='--'], [style*='color'], [style*='background']))):not(:disabled) * {
   color: inherit;
 }
 
-/* The screen list: the open screen is a manila block. */
+/* The screen list: the open screen is a manila block, and it stays one under the pointer (the component's
+   hover rule has the same specificity as the plain rule, so the hover variant is named). */
 :root[data-theme='registry'] .nav-caption {
   font-weight: 600;
 }
 
-:root[data-theme='registry'] .nav-list .nav-entry.nav-on {
+:root[data-theme='registry'] .nav-list .nav-entry.nav-on,
+:root[data-theme='registry'] .nav-list .nav-entry.nav-on:hover:not(:disabled) {
   background: var(--accent);
   color: var(--ink-on-accent);
   border-left-color: var(--text);
@@ -215,9 +238,23 @@
   stroke-dasharray: 5 3;
 }
 
+/* The tower column is 184px wide: mono capitals and Plex Sans run wider than Default's face, so both sit
+   smaller than the component's 11.5px and 13px. */
 :root[data-theme='registry'] .ts-band {
   font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-weight: 600;
+  font-size: 11px;
+}
+
+:root[data-theme='registry'] .ts-row {
+  font-size: 12.5px;
+}
+
+/* A heading with a control on its right (Skills: Expand all, Collapse all): the rule fills the gap and the
+   control stays on the right edge, where Default puts it. */
+:root[data-theme='registry'] :is(h2, h3) > .fold-all {
+  order: 1;
+  margin-left: 0;
 }
 
 /* The pin card: a filed card with a heavier border. */
@@ -236,4 +273,10 @@
   font-size: 11.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+/* The enemy name plate on the battle stage is 132px wide (BattleStage.svelte): Plex Sans at 11.5px cut
+   "Aberrant Forest Rat Lv 15" (135px) where Default's face fits it (130px). */
+:root[data-theme='registry'] .stage .name {
+  font-size: 11px;
 }

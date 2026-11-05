@@ -126,21 +126,27 @@
   font-weight: 600;
 }
 
-/* Selected, dark case: the global fill and amber border, plus a cream inset rim. */
-:root[data-theme='enamel'] button.selected {
+/* Selected, dark case: the global fill and amber border, plus a cream inset rim. A selected button that is
+   also disabled keeps the plain disabled look (dashed, no fill): :not(:disabled) leaves it to cues.css. */
+:root[data-theme='enamel'] button.selected:not(:disabled) {
   box-shadow: inset 0 0 0 2px var(--rim);
 }
 
-/* Selected, cream plate. Only buttons with no authored colour inside (those carry an inline style). */
-:root[data-theme='enamel'] :is(.tabs > button.selected, .region-switch > button.selected),
-:root[data-theme='enamel'] button.selected:not(:has([style])) {
+/* Selected, cream plate. Only buttons that are not disabled and have no authored colour on them or in them:
+   a rarity chip and a forced stance carry an inline style on the button itself; a child that carries an
+   authored colour has an inline style holding oklch, a hex, a custom property, color or background. The
+   Icon component's own style (width, font-size) is none of these: it exists only while the pixel art is
+   missing, so keying on any style would make the plate depend on whether the art packs are installed.
+   Buttons that are excluded keep the dark fill and the rim above. */
+:root[data-theme='enamel'] :is(.tabs > button.selected, .region-switch > button.selected):not(:disabled),
+:root[data-theme='enamel'] button.selected:not(:disabled, [style], :has([style*='oklch'], [style*='#'], [style*='--'], [style*='color'], [style*='background'])) {
   background: var(--plate);
   border-color: var(--plate);
   color: var(--plate-ink);
   box-shadow: none;
 }
 
-:root[data-theme='enamel'] :is(.tabs > button.selected, .region-switch > button.selected, button.selected:not(:has([style]))) * {
+:root[data-theme='enamel'] :is(.tabs > button.selected, .region-switch > button.selected, button.selected:not([style], :has([style*='oklch'], [style*='#'], [style*='--'], [style*='color'], [style*='background']))):not(:disabled) * {
   color: inherit;
 }
 
@@ -178,7 +184,10 @@
   border-bottom: 2px solid var(--border);
 }
 
-:root[data-theme='enamel'] .nav-list .nav-entry.nav-on {
+/* The open screen stays a plate under the pointer (the component's hover rule ties with the plain rule, so
+   the hover variant is named). */
+:root[data-theme='enamel'] .nav-list .nav-entry.nav-on,
+:root[data-theme='enamel'] .nav-list .nav-entry.nav-on:hover:not(:disabled) {
   background: var(--plate);
   border-left-color: var(--plate-ink);
   color: var(--plate-ink);
@@ -197,14 +206,20 @@
   box-shadow: inset 0 0 0 2px var(--edge);
 }
 
-:root[data-theme='enamel'] .ts-row.here {
+:root[data-theme='enamel'] .ts-row.here:not(:disabled) {
   background: var(--plate);
   box-shadow: none;
   color: var(--plate-ink);
 }
 
-:root[data-theme='enamel'] .ts-row.here :is(.ts-num, .ts-side) {
+:root[data-theme='enamel'] .ts-row.here:not(:disabled) :is(.ts-num, .ts-side) {
   color: var(--plate-ink);
+}
+
+/* The row's focus ring is drawn inside it (TowerSection.svelte: the column clips), so on the cream plate it
+   reads the plate's ink; the cream-white ring is 1.3:1 on cream. */
+:root[data-theme='enamel'] .ts-row.here:not(:disabled):focus-visible {
+  outline-color: var(--plate-ink);
 }
 
 :root[data-theme='enamel'] .ts-band.title-only {
@@ -241,7 +256,8 @@
   text-underline-offset: 3px;
 }
 
-:root[data-theme='enamel'] .entries > .entry {
+/* The log's lines only: `.entries` and `.entry` are also class names in other panels. */
+:root[data-theme='enamel'] .log-head + .entries > .entry {
   border-bottom: 1px solid var(--frame);
   padding-bottom: 2px;
 }
