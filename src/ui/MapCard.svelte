@@ -42,6 +42,7 @@
   import { buildPlan, buildRouteDraw, planThreats, stableThreats } from './lib/mapPlan';
   import TileMap from './lib/tilemaps/TileMap.svelte';
   import { TILEMAPS } from './lib/tilemaps';
+  import { expectsNoSheets } from './lib/tilemaps/tileArt';
   import { tutorialScreen } from './lib/tutorialFocus';
 
   /**
@@ -151,9 +152,17 @@
    * A region with a composed scene (lib/tilemaps) is painted from tiles under
    * the diagram. Regions without one — and any machine without the art packs
    * (`tilesFailed`) — draw as a diagram on the plain dark ground.
+   *
+   * The layout differs between the two (a tiled frame is capped at 560 px and
+   * a diagram frame is taller), and TileMap only learns which one applies when
+   * its draw ends, after the sheets and the art pack have been looked up. Until
+   * it reports, `expectsNoSheets` guesses from what is known at once (the sheets
+   * the build bundles, the art pack hint), so the first paint has the layout
+   * the draw will confirm. The report replaces the guess.
    */
   const tilemap = $derived(TILEMAPS[shownRegion] ?? null);
-  let tilesFailed = $state(false);
+  let drawFailed = $state<Record<string, boolean>>({});
+  const tilesFailed = $derived(tilemap ? (drawFailed[shownRegion] ?? expectsNoSheets(tilemap)) : false);
   const tiled = $derived(!!tilemap && !tilesFailed);
 
   /**
@@ -497,7 +506,12 @@
         <div class="map-wrap" class:tiled bind:clientWidth={wrapW} style:height="{plan.frame.h + 2}px">
           {#if tilemap}
             {#key shownRegion}
-              <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} onready={() => (tilesFailed = false)} />
+              {@const region = shownRegion}
+              <TileMap
+                map={tilemap}
+                onfallback={() => (drawFailed[region] = true)}
+                onready={() => (drawFailed[region] = false)}
+              />
             {/key}
           {/if}
           <MapPlan {plan} route={routeDraw} {stuck} {selected} onpick={pick} onexit={walkTo} />

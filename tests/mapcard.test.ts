@@ -3,6 +3,7 @@ import { render } from 'svelte/server';
 import type { Component } from 'svelte';
 import { TUTORIAL_EXIT } from '../src/core/data/tutorial.data';
 import { tutorialScreen } from '../src/ui/lib/tutorialFocus';
+import { SHEETS } from '../src/ui/lib/tilemaps/sheets.gen';
 
 /**
  * MapCard rendered to HTML on the server, with the real game state behind it
@@ -15,6 +16,7 @@ import { tutorialScreen } from '../src/ui/lib/tutorialFocus';
 type State = typeof import('../src/ui/state.svelte');
 let st: State;
 let MapCard: Component;
+let artPack: typeof import('../src/ui/lib/artPack/artPack.svelte').artPack;
 
 beforeAll(async () => {
   const store: Record<string, string> = {};
@@ -28,6 +30,12 @@ beforeAll(async () => {
   };
   st = await import('../src/ui/state.svelte');
   MapCard = (await import('../src/ui/MapCard.svelte')).default as Component;
+  // A tiled region is the first paint when the build bundles its sheets or the art pack hint says a
+  // pack is stored (tilemaps/tileArt.ts expectsNoSheets). A checkout without the art has neither, so
+  // the hint is set: these tests judge the tiled frame. The read of the (absent) store has finished.
+  artPack = (await import('../src/ui/lib/artPack/artPack.svelte')).artPack;
+  await artPack.ready;
+  artPack.hinted = true;
   // The first import transforms the Svelte tree; under the parallel suite that passes the 10 s default.
 }, 60_000);
 
@@ -103,6 +111,24 @@ describe('the exit at the gate on floor 0', () => {
     const exit = tagWith(body, 'text', 'aria-label="Travel toward Threshold"');
     expect(exit).not.toBeNull();
     expect(classes(exit!)).toContain('exit');
+  });
+});
+
+describe('the first paint of a drawn map', () => {
+  // The layout is chosen before TileMap's draw can report (it waits for the sheets and the art pack):
+  // tiled when the build bundles a sheet of the map or the hint says a pack is stored, else the diagram.
+  const bundled = Object.keys(SHEETS).length > 0;
+  const tiled = (body: string) => /class="map-wrap[^"]*\btiled\b/.test(body);
+
+  it('is the diagram only when no sheet is bundled and no pack is hinted', () => {
+    st.gs.spot = 'f0_gate';
+    artPack.hinted = false;
+    try {
+      expect(tiled(render(MapCard).body)).toBe(bundled);
+    } finally {
+      artPack.hinted = true;
+    }
+    expect(tiled(render(MapCard).body)).toBe(true);
   });
 });
 

@@ -1,4 +1,5 @@
 import { mimeOf, readPack, type PackManifest } from './format';
+import { browserHintStore, readPackHint, writePackHint, type HintStore } from './hint';
 import { idbStore, type PackStore } from './store';
 
 /**
@@ -15,6 +16,9 @@ import { idbStore, type PackStore } from './store';
  * re-render then. A lookup never writes state itself (it can run inside a
  * template or a `$derived`): state is written only when a read completes.
  * With no IndexedDB, no pack or a storage error, every lookup returns null.
+ *
+ * `hinted` answers synchronously whether a pack is stored (hint.ts), for the
+ * layout that is chosen before the manifest can be read.
  */
 
 export type ImportResult =
@@ -44,13 +48,22 @@ export class ArtPack {
   epoch = $state(0);
   /** Resolves when the startup read has finished. */
   readonly ready: Promise<void>;
+  /**
+   * Whether the hint says a pack is stored: read from localStorage when this
+   * object is made, then kept in step with the manifest. A guess until
+   * `loaded`; the manifest is the truth.
+   */
+  hinted: boolean;
 
   private store: PackStore | null;
+  private hint: HintStore | null;
   private generation = 0;
   private reads = new Map<string, Promise<string | null>>();
 
-  constructor(store: PackStore | null) {
+  constructor(store: PackStore | null, hint: HintStore | null = null) {
     this.store = store;
+    this.hint = hint;
+    this.hinted = readPackHint(hint);
     this.ready = this.start();
   }
 
@@ -63,6 +76,8 @@ export class ArtPack {
    * Read the manifest. A broken database behaves as no pack. A database that
    * never answers (some browsers hang on a first `indexedDB.open`) is waited
    * for `STARTUP_WAIT_MS`; a manifest that arrives later still takes effect.
+   * A read that succeeds, with or without a manifest, sets the hint to match;
+   * a read that fails or has not answered leaves it as it was.
    */
   private async start(): Promise<void> {
     const generation = this.generation;
@@ -70,6 +85,7 @@ export class ArtPack {
       (manifest) => {
         if (generation !== this.generation) return;
         this.setCurrent(manifest);
+        this.setHint(manifest !== null);
         // Past the wait, tile sheets already resolved to null: have them asked again.
         if (this.loaded && manifest) this.bump();
       },
@@ -83,6 +99,13 @@ export class ArtPack {
 
   private setCurrent(manifest: PackManifest | null) {
     this.current = manifest ? { manifest, keys: new Set(manifest.files.map((f) => f.key)) } : null;
+  }
+
+  /** Make the hint say whether a pack is stored; storage is touched only when that changes it. */
+  private setHint(stored: boolean) {
+    if (stored === this.hinted) return;
+    this.hinted = stored;
+    writePackHint(this.hint, stored);
   }
 
   /**
@@ -179,6 +202,7 @@ export class ArtPack {
     this.urls = {};
     this.reads.clear();
     this.setCurrent(manifest);
+    this.setHint(manifest !== null);
     this.bump();
   }
 
@@ -199,7 +223,7 @@ function keepStorage() {
 }
 
 /** The pack of this page, backed by IndexedDB (none where the page has none). */
-export const artPack = new ArtPack(idbStore());
+export const artPack = new ArtPack(idbStore(), browserHintStore());
 
 /** The one resolver: the bundled URL, else the pack's URL, else null. */
 export function resolveArt(key: string, bundled: string | null | undefined): string | null {

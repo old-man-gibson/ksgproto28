@@ -15,8 +15,13 @@ import {
   readPack,
   type PackManifest,
 } from '../src/ui/lib/artPack/format';
-import { ArtPack } from '../src/ui/lib/artPack/artPack.svelte';
+import { ArtPack, artPack } from '../src/ui/lib/artPack/artPack.svelte';
+import { PACK_HINT_KEY, readPackHint, writePackHint, type HintStore } from '../src/ui/lib/artPack/hint';
 import type { PackStore } from '../src/ui/lib/artPack/store';
+import { PACKS, SHEETS } from '../src/ui/lib/tilemaps/sheets.gen';
+import { expectsNoSheets } from '../src/ui/lib/tilemaps/tileArt';
+import type { TileMapDef } from '../src/ui/lib/tilemaps/types';
+import { SAVE_KEY, clearStorage, loadFromStorage } from '../src/core/save/save';
 // @ts-expect-error — a plain .mjs script with no type declarations
 import { collect, globKeys, wantedKeys } from '../scripts/artPack.mjs';
 
@@ -343,5 +348,195 @@ describe('art pack resolver', () => {
     release();
     expect(await pending).toBeNull();
     expect(pack.resolve(KEY, undefined)).toBeNull();
+  });
+});
+
+/** A localStorage stand-in that keeps what it is given. */
+function memoryStorage(initial: Record<string, string> = {}) {
+  const data = new Map(Object.entries(initial));
+  return {
+    data,
+    get length() {
+      return data.size;
+    },
+    key: (i: number) => [...data.keys()][i] ?? null,
+    getItem: (k: string) => data.get(k) ?? null,
+    setItem: (k: string, v: string) => void data.set(k, String(v)),
+    removeItem: (k: string) => void data.delete(k),
+  };
+}
+
+/** A storage that refuses every call, as a blocked or full localStorage does. */
+const throwingStorage: HintStore = {
+  getItem: () => {
+    throw new Error('blocked');
+  },
+  setItem: () => {
+    throw new Error('full');
+  },
+  removeItem: () => {
+    throw new Error('blocked');
+  },
+};
+
+describe('art pack hint', () => {
+  it('reads "1" as a stored pack and anything else, or no storage, as none', () => {
+    expect(readPackHint(memoryStorage({ [PACK_HINT_KEY]: '1' }))).toBe(true);
+    expect(readPackHint(memoryStorage({ [PACK_HINT_KEY]: '0' }))).toBe(false);
+    expect(readPackHint(memoryStorage())).toBe(false);
+    expect(readPackHint(null)).toBe(false);
+    expect(readPackHint(throwingStorage)).toBe(false);
+  });
+
+  it('sets and removes the key, and ignores a storage that throws', () => {
+    const store = memoryStorage();
+    writePackHint(store, true);
+    expect(store.getItem(PACK_HINT_KEY)).toBe('1');
+    writePackHint(store, false);
+    expect(store.getItem(PACK_HINT_KEY)).toBeNull();
+    expect(() => writePackHint(throwingStorage, true)).not.toThrow();
+    expect(() => writePackHint(throwingStorage, false)).not.toThrow();
+    expect(() => writePackHint(null, true)).not.toThrow();
+  });
+
+  it('sits outside the save: no save prefix matches it, a hard reset and a load leave it', () => {
+    expect(PACK_HINT_KEY.startsWith('ksgproto28')).toBe(false);
+    const store = memoryStorage({
+      [SAVE_KEY]: '{',
+      [`${SAVE_KEY}:backup-v3`]: 'x',
+      [`${SAVE_KEY}:recovery-1`]: 'x',
+      [PACK_HINT_KEY]: '1',
+    });
+    clearStorage(store as unknown as Storage);
+    expect([...store.data.keys()]).toEqual([PACK_HINT_KEY]);
+    expect(loadFromStorage(store as unknown as Storage)).toEqual({ state: null, corrupted: false });
+    expect(store.getItem(PACK_HINT_KEY)).toBe('1');
+  });
+
+  it('starts from the hint and is corrected by the manifest', async () => {
+    // Hint set, nothing stored: believed at once, removed after the read.
+    const stale = memoryStorage({ [PACK_HINT_KEY]: '1' });
+    const none = new ArtPack(memoryStore(), stale);
+    expect(none.hinted).toBe(true);
+    await none.ready;
+    expect(none.hinted).toBe(false);
+    expect(stale.getItem(PACK_HINT_KEY)).toBeNull();
+
+    // Pack stored, no hint: not believed at once, written after the read.
+    const missing = memoryStorage();
+    const stored = new ArtPack(onePack(), missing);
+    expect(stored.hinted).toBe(false);
+    await stored.ready;
+    expect(stored.hinted).toBe(true);
+    expect(missing.getItem(PACK_HINT_KEY)).toBe('1');
+  });
+
+  it('writes nothing when the hint already agrees', async () => {
+    const store = memoryStorage({ [PACK_HINT_KEY]: '1' });
+    const writes = vi.spyOn(store, 'setItem');
+    const removes = vi.spyOn(store, 'removeItem');
+    await new ArtPack(onePack(), store).ready;
+    await new ArtPack(memoryStore(), memoryStorage()).ready;
+    expect(writes).not.toHaveBeenCalled();
+    expect(removes).not.toHaveBeenCalled();
+  });
+
+  it('leaves the hint as it was when the manifest cannot be read', async () => {
+    const store = memoryStorage({ [PACK_HINT_KEY]: '1' });
+    const broken = new ArtPack({ ...memoryStore(), readManifest: () => Promise.reject(new Error('locked')) }, store);
+    await broken.ready;
+    expect(broken.hinted).toBe(true);
+    expect(store.getItem(PACK_HINT_KEY)).toBe('1');
+  });
+
+  it('removes the hint on a page with no IndexedDB, where no pack can be reached', async () => {
+    const store = memoryStorage({ [PACK_HINT_KEY]: '1' });
+    const noStore = new ArtPack(null, store);
+    await noStore.ready;
+    expect(noStore.hinted).toBe(false);
+    expect(store.getItem(PACK_HINT_KEY)).toBeNull();
+  });
+
+  it('is set by an import, removed by a removal and kept by a failed import', async () => {
+    const store = memoryStorage();
+    const mem = memoryStore();
+    const pack = new ArtPack(mem, store);
+    await pack.ready;
+    expect(pack.hinted).toBe(false);
+
+    expect(await pack.importFile(new Blob(['plain text']))).toEqual({ ok: false, reason: 'not-a-pack' });
+    expect(store.getItem(PACK_HINT_KEY)).toBeNull();
+    mem.failReplace = true;
+    const good = packZip([{ key: KEY, data: bytes(1) }]);
+    expect(await pack.importFile(blobOf(good))).toEqual({ ok: false, reason: 'storage' });
+    expect(pack.hinted).toBe(false);
+    expect(store.getItem(PACK_HINT_KEY)).toBeNull();
+
+    mem.failReplace = false;
+    expect((await pack.importFile(blobOf(good))).ok).toBe(true);
+    expect(pack.hinted).toBe(true);
+    expect(store.getItem(PACK_HINT_KEY)).toBe('1');
+
+    // A removal the storage refused keeps the pack, so it keeps the hint.
+    const refusing = new ArtPack({ ...onePack(), clear: () => Promise.reject(new Error('locked')) }, store);
+    await refusing.ready;
+    expect(await refusing.remove()).toBe(false);
+    expect(store.getItem(PACK_HINT_KEY)).toBe('1');
+
+    expect(await pack.remove()).toBe(true);
+    expect(pack.hinted).toBe(false);
+    expect(store.getItem(PACK_HINT_KEY)).toBeNull();
+  });
+
+  it('does not stop an import or a removal when localStorage throws', async () => {
+    const pack = new ArtPack(memoryStore(), throwingStorage);
+    await pack.ready;
+    expect((await pack.importFile(blobOf(packZip([{ key: KEY, data: bytes(1) }])))).ok).toBe(true);
+    expect(pack.manifest?.files.length).toBe(1);
+    expect(await pack.remove()).toBe(true);
+    expect(pack.manifest).toBeNull();
+  });
+});
+
+describe('map layout guess', () => {
+  const mapOf = (...keys: string[]): TileMapDef => ({
+    width: 1,
+    height: 1,
+    tile: 16,
+    tilesets: keys.map((key, i) => ({ key, columns: 1, firstgid: i + 1, tilecount: 1 })),
+    layers: [],
+  });
+
+  /** A hint set for the duration of `body`. */
+  function withHint(hinted: boolean, body: () => void) {
+    const before = artPack.hinted;
+    artPack.hinted = hinted;
+    try {
+      body();
+    } finally {
+      artPack.hinted = before;
+    }
+  }
+
+  it('expects no sheets when the build bundles none and the hint says no pack', () => {
+    withHint(false, () => {
+      expect(expectsNoSheets(mapOf('no_such_pack/a.png'))).toBe(true);
+      expect(expectsNoSheets(mapOf())).toBe(true);
+    });
+  });
+
+  it('expects the pack to supply them when the hint says one is stored', () => {
+    withHint(true, () => expect(expectsNoSheets(mapOf('no_such_pack/a.png'))).toBe(false));
+  });
+
+  it('expects a draw when any sheet of the map is bundled', () => {
+    const bundled = Object.keys(SHEETS)[0];
+    if (!bundled) return; // A checkout without the tile packs bundles nothing.
+    const [packKey, prefix] = Object.entries(PACKS).find(([, p]) => bundled.startsWith(p))!;
+    const key = `${packKey}/${bundled.slice(prefix.length)}`;
+    withHint(false, () => {
+      expect(expectsNoSheets(mapOf(key))).toBe(false);
+      expect(expectsNoSheets(mapOf('no_such_pack/a.png', key))).toBe(false);
+    });
   });
 });

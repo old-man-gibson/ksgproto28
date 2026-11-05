@@ -14,16 +14,40 @@
  */
 import { PACKS, SHEETS } from './sheets.gen';
 import { artPack, resolveArtAsync } from '../artPack/artPack.svelte';
+import type { TileMapDef } from './types';
 
 /** Where the glob paths in sheets.gen.ts start; the rest is the art pack's key. */
 const GLOB_ROOT = '../../../assets/';
 
-/** The URL of a sheet (bundled, else the art pack), or null when neither has it. */
-export async function tilesetUrl(key: string): Promise<string | null> {
+/** The glob path of a sheet key (`<packKey>/<path inside the pack>`), or null for an unknown pack. */
+function sheetPath(key: string): string | null {
   const slash = key.indexOf('/');
   const pack = PACKS[key.slice(0, slash)];
-  if (!pack) return null;
-  const path = pack + key.slice(slash + 1);
+  return pack ? pack + key.slice(slash + 1) : null;
+}
+
+/**
+ * True when drawing `map` is expected to find no sheet at all, so MapCard can
+ * start in the diagram layout instead of switching to it after the first
+ * paint: the build bundles none of the map's sheets and the art pack hint says
+ * no pack is stored (artPack.hinted, known synchronously). A map with some
+ * sheet bundled draws, partly if need be (drawTileMap), so it is not expected
+ * to fall back. The expectation can be wrong when the hint is (artPack
+ * rewrites it once the manifest is read); the draw result then corrects the
+ * layout, as it always has.
+ */
+export function expectsNoSheets(map: TileMapDef): boolean {
+  if (artPack.hinted) return false;
+  return !map.tilesets.some((t) => {
+    const path = sheetPath(t.key);
+    return path !== null && SHEETS[path] !== undefined;
+  });
+}
+
+/** The URL of a sheet (bundled, else the art pack), or null when neither has it. */
+export async function tilesetUrl(key: string): Promise<string | null> {
+  const path = sheetPath(key);
+  if (!path) return null;
   const loader = SHEETS[path];
   let bundled: string | null = null;
   if (loader) {

@@ -15,6 +15,7 @@
   import type { TutorialWeapon } from '../core/types';
   import { describeMod, exertionLines, ticksToTime } from './lib/format';
   import Tip from './lib/Tip.svelte';
+  import ArtPackControl from './ArtPackControl.svelte';
 
   /**
    * The tutorial's one panel: the first step the world says is not done, its
@@ -79,8 +80,8 @@
    * The offer to a returning player: on the first step only, so it is seen
    * once, on a new save, and gone with the first pick from the rack. Derived
    * from the step like everything else here — nothing is stored. Skipping is
-   * two clicks; the second one is the real button. Import sits beside it
-   * because the top bar's save buttons wait for the end of the tutorial.
+   * two clicks; the second one is the real button. Import and Import art pack
+   * sit beside it because the Menu waits for the end of the tutorial.
    */
   const offer = $derived(step?.id === TUTORIAL_STEP_LIST[0].id);
   let confirmingSkip = $state(false);
@@ -173,6 +174,10 @@
           <button class="small" onclick={() => fileInput?.click()}>Import a save</button>
         {/if}
         <input type="file" accept="application/json" bind:this={fileInput} onchange={onImportChange} hidden />
+        <!-- Outside the skip toggle: one instance, one reserved status line.
+             Floor 0 draws the Old Prison map and the Cell Slime, art a build
+             from git lacks, and the Menu is hidden until the tutorial ends. -->
+        <ArtPackControl compact />
       </div>
     {/if}
   </section>

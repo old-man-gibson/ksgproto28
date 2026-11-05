@@ -505,6 +505,12 @@ beforeAll(async () => {
   st = await import('../src/ui/state.svelte');
   arm = await import('../src/ui/lib/rideArm.svelte');
   MapCard = (await import('../src/ui/MapCard.svelte')).default as Component;
+  // A tiled region is the first paint when the build bundles its sheets or the art pack hint says a
+  // pack is stored (tilemaps/tileArt.ts expectsNoSheets). A checkout without the art has neither, so
+  // the hint is set: the floor 0 test below judges the tiled frame. The read of the (absent) store has finished.
+  const { artPack } = await import('../src/ui/lib/artPack/artPack.svelte');
+  await artPack.ready;
+  artPack.hinted = true;
   AscentPanel = (await import('../src/ui/panels/AscentPanel.svelte')).default as Component;
   StopDetail = (await import('../src/ui/StopDetail.svelte')).default as typeof StopDetail;
   TowerSection = (await import('../src/ui/TowerSection.svelte')).default as typeof TowerSection;
