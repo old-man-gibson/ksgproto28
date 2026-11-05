@@ -41,19 +41,8 @@
   import { trainingSpots } from '../../core/systems/actions';
   import { activityName } from '../lib/navigation';
   import GoButton from '../lib/GoButton.svelte';
+  import { talentBar } from '../lib/talentBar';
 
-  /**
-   * Talent's bar under the XP bar (PRESTIGE.md §4). One lap of the bar is
-   * 100% of bonus; each lap wears the next colour, starting yellow, so the
-   * fill reads as "how far into this hundred" and the colour as "which
-   * hundred". Wraps around the palette past the last colour.
-   */
-  const TALENT_LAP_COLORS = ['#e6c84a', '#f0883e', '#e5534b', '#d65db1', '#9b6ef3', '#4c8ff0', '#3fc9d6', '#57c46b', '#f2f2f2'];
-  function talentBar(bonus: number): { width: number; color: string } {
-    const pct = bonus * 100;
-    const lap = Math.max(0, Math.ceil(pct / 100) - 1);
-    return { width: pct - lap * 100, color: TALENT_LAP_COLORS[lap % TALENT_LAP_COLORS.length] };
-  }
   function talentPct(bonus: number): string {
     const pct = bonus * 100;
     return pct < 1 ? pct.toFixed(2) : pct < 100 ? pct.toFixed(1) : pct.toFixed(0);
