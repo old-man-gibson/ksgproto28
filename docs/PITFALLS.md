@@ -240,8 +240,11 @@ accessibility reads prove structure, never visibility.
 
 ## 9. Environment notes (this machine, this setup)
 
-- **Not a git repository** — the content forge backs up to
-  `.forge-backups/` instead; that and the save rails are the only undo.
+- **Git since 2026-10-23** (`old-man-gibson/ksgproto28`, main checkout
+  `D:\ksgproto28`, agent worktrees under `.claude/worktrees/`). Before that
+  there was no git, which is why older docs and plans say so. The content
+  forge still backs up to `.forge-backups/` and the save rails still guard
+  the live save: git does not replace either.
 - **Node was installed via winget** and tool-spawned shells may lack it on
   PATH: prefix with `$env:Path = "C:\Program Files\nodejs;" + $env:Path;`
   (the launch config already uses the full node path for the same reason).

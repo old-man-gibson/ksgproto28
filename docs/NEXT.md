@@ -953,8 +953,9 @@ so nothing is ever fully immune to *being* afflicted, only to the consequences.
 - **Writes are AST-surgical.** Never reprint a file or an untouched entry —
   hand-written comments in the data files are load-bearing documentation.
   `tests/forge.test.ts` asserts comments survive every edit.
-- **No git in this repo.** The forge backs up to `.forge-backups/` and always
-  shows a diff before writing. Don't remove that gate.
+- **The forge's diff gate stays.** The repo has been in git since 2026-10-23,
+  but the forge still backs up to `.forge-backups/` and always shows a diff
+  before writing. Don't remove that gate.
 - **Two validation layers.** A rule added to `tests/content.test.ts` should be
   mirrored in `forge/lib/validate.ts` for live feedback. The test suite is the
   authority.
