@@ -670,12 +670,12 @@
   }
 
   .chip.deg {
-    color: var(--skill);
+    color: var(--skill-ink);
     border-color: color-mix(in srgb, var(--skill) 55%, var(--border));
   }
 
   .chip.new {
-    color: var(--xp);
+    color: var(--xp-ink);
     border-color: color-mix(in srgb, var(--xp) 55%, var(--border));
   }
 
@@ -906,7 +906,7 @@
   }
 
   .kind-delta.better {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .kind-delta.worse {

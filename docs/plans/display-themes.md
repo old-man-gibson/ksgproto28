@@ -6,7 +6,7 @@ status: building
 system: ui
 parent: ''
 save: ''
-updated: 2026-11-05
+updated: 2026-11-04
 invariants:
   - no-layout-shift
   - click-not-hover
@@ -215,7 +215,7 @@ is a cheaper light representative than Castle: lower colour-vision risk, no stag
 
 ## 8. Build log
 
-- 2026-11-05, branch `theme-foundation`: F1–F6 and Gothic+ built with the rulings of §7 applied. The user approved the
+- 2026-11-04, branch `theme-foundation`: F1–F6 and Gothic+ built with the rulings of §7 applied. The user approved the
   foundation and Gothic+ (Gothic's colours are replaced; no separate entry; the default stays Gothic). The contract, the
   cue table, `ink()` and the test are written up in [../THEMES.md](../THEMES.md). Candidates T1–T10 are not built.
   - Test first: `tests/themes.test.ts` failed 35 of 41 assertions on the old tree. The source lints found 62 colour
@@ -226,7 +226,19 @@ is a cheaper light representative than Castle: lower colour-vision risk, no stag
   - The selected-scope remap (ruling 3) is set on `button.selected` and on the marked cells of CollectionSection and
     EquipmentPanel. A search of every selected-like rule found no other state that holds authored colours; the plan's count
     of 9 is not reproduced.
-  - Default keeps `--ink-lmin` 0 (render unchanged). 22 of its 49 authored colours are under 4.5:1; the count is pinned in
-    the test. Default's colour-vision exceptions are mana/spirit, stamina/xp, hp/stamina and hp/focus, Gothic's are
-    mana/spirit and stamina/focus (THEMES.md §7).
+  - Default colour-vision exceptions are mana/spirit, stamina/xp, hp/stamina and hp/focus, Gothic's are mana/spirit and
+    stamina/focus (THEMES.md §7).
   - Default `--text-dim` and `--danger` moved by about 1% (4.13 and 4.46 on `--bg-hover`, now 4.51 and 4.60).
+  - Marked cells (CollectionSection, EquipmentPanel) fill `--sel-bg`, which is the accent at 12% over raised in Default; they
+    were 18%. The test checks authored colours against `--sel-bg`, so the cells must use it.
+- 2026-11-04, fix round 1 (same branch):
+  - Default lifts authored colours like every theme: `--ink-lmin` 0.48, `--sel-ink-lmin` 0.58 (the smallest that pass; 0.42 and
+    0.48 do not on Default's lighter surfaces). The pinned exception is gone; the family spacing floor is 40% of Default's
+    unlifted minimum, because Default's selected floor compresses more than Gothic's.
+  - A bar token used as text reads `--<bar>-ink` (11 tokens, the fill through the same remap under `@supports`). 42 `color:`
+    reads moved. The test finds text reads from source and checks them in every theme. Worst text read before: 2.42
+    (`--stamina-winded`, Default) and 2.38 (`--hp`, Gothic); after: 5.60 and 5.46.
+  - The map focus ring has its own radius (+15) outside the here rings (+6, +10) and is painted after them. `--road` is read
+    by `.road` and `.head`.
+  - The global disabled rule adds `filter: grayscale(1)`, so an emoji or a coloured delta inside a disabled button reads as
+    disabled without opacity.

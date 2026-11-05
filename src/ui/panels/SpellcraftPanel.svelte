@@ -1374,7 +1374,7 @@
   }
 
   .rel-good {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .rel-bad {
@@ -1405,7 +1405,7 @@
   }
 
   .owned-note {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   /* ----- psionic: the wheel ----- */
@@ -1596,7 +1596,7 @@
 
   /* Not a lock — the shape is legal. It just has nowhere to be cast from. */
   .too-wide {
-    color: var(--focus);
+    color: var(--focus-ink);
   }
 
   button.tiny {

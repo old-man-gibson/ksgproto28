@@ -120,7 +120,7 @@
   }
 
   .nav-new {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .nav-mark {

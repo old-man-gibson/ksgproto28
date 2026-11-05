@@ -228,7 +228,7 @@
   }
 
   td button.degenerate {
-    color: var(--skill);
+    color: var(--skill-ink);
   }
 
   /* The cell that matches the piece on the anvil now. */

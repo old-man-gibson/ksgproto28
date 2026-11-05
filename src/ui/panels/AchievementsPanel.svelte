@@ -139,6 +139,6 @@
   }
 
   .bonus.earned {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 </style>

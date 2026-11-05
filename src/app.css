@@ -76,12 +76,31 @@
 
   /* Authored colours (rarity, grade, status, school, position, talent lap) are
      drawn through ink() (ui/lib/ink.ts): OKLCH lightness l becomes
-     lmin + l * (lmax - lmin). Identity here. A selected thing re-inks its
-     children against --sel-bg with the --sel-ink-* pair. */
-  --ink-lmin: 0;
+     lmin + l * (lmax - lmin). A selected thing re-inks its children against
+     --sel-bg with the --sel-ink-* pair. Default lifts the dark ones to 4.5:1;
+     its --sel-bg is lighter than a panel, so its selected floor is higher. */
+  --ink-lmin: 0.48;
   --ink-lmax: 1;
-  --sel-ink-lmin: 0;
+  --sel-ink-lmin: 0.58;
   --sel-ink-lmax: 1;
+
+  /* A bar fill used as TEXT (color: ...) reads its -ink token, never the fill:
+     the fill only has to hold 3:1 on the bar track, the text needs 4.5:1. The
+     -ink tokens are the fills through the same lightness remap (the @supports
+     block at the foot of this file); this is the fallback for a browser without
+     relative colour. A theme may declare any of them. tests/themes.test.ts finds
+     every text read of a bar token in the source. */
+  --hp-ink: var(--hp);
+  --xp-ink: var(--xp);
+  --skill-ink: var(--skill);
+  --stamina-ink: var(--stamina);
+  --stamina-winded-ink: var(--stamina-winded);
+  --stamina-exhausted-ink: var(--stamina-exhausted);
+  --mana-ink: var(--mana);
+  --manaburn-ink: var(--manaburn);
+  --spirit-ink: var(--spirit);
+  --focus-ink: var(--focus);
+  --action-ink: var(--action);
 
   /* Map: roads and the nine district tints (ui/lib/mapPlan.ts). Warm and
      neutral only; the blue arc belongs to the resource bars. */
@@ -216,4 +235,22 @@ h1, h2, h3, h4 {
 @keyframes tutorial-glow {
   0% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 70%, transparent); }
   100% { box-shadow: 0 0 0 12px transparent; }
+}
+
+/* The -ink tokens: each bar fill through the ink() lightness remap. Declared on
+   :root, so they resolve with the theme's fill and bounds. */
+@supports (color: oklch(from red l c h)) {
+  :root {
+    --hp-ink: oklch(from var(--hp) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --xp-ink: oklch(from var(--xp) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --skill-ink: oklch(from var(--skill) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --stamina-ink: oklch(from var(--stamina) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --stamina-winded-ink: oklch(from var(--stamina-winded) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --stamina-exhausted-ink: oklch(from var(--stamina-exhausted) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --mana-ink: oklch(from var(--mana) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --manaburn-ink: oklch(from var(--manaburn) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --spirit-ink: oklch(from var(--spirit) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --focus-ink: oklch(from var(--focus) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --action-ink: oklch(from var(--action) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+  }
 }

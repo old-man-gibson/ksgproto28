@@ -264,7 +264,7 @@
   }
 
   .baked {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .flow {

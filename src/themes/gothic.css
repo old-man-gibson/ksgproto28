@@ -7,7 +7,7 @@
  * colour a token in app.css and override the token here, rather than adding a
  * per-component rule. docs/THEMES.md lists every token.
  *
- * Changed from the first Gothic (2026-11-05): --text-dim, --danger, --xp (it was
+ * Changed from the first Gothic (2026-11-04): --text-dim, --danger, --xp (it was
  * the stamina hue) and the log colours are raised or re-spaced so they pass
  * tests/themes.test.ts. The bar fills, surfaces and accent are unchanged.
  */

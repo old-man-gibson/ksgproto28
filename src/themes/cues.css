@@ -19,7 +19,9 @@
    dimming alone fails contrast. A reason, where one exists, is printed as text
    next to the button. The :root prefix lifts the rule over a component's own
    single-class button colours (`.danger`, `.walk`), which would otherwise keep a
-   disabled button looking live. */
+   disabled button looking live. The grayscale filter takes the colour out of
+   what the button holds (an emoji, a rarity icon, a green or red delta) without
+   changing its luminance, so grey text keeps its contrast and nothing moves. */
 :root button:disabled {
   opacity: 1;
   background: transparent;
@@ -27,4 +29,5 @@
   border-style: dashed;
   border-color: var(--text-off);
   cursor: not-allowed;
+  filter: grayscale(1);
 }
