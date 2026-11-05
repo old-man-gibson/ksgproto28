@@ -79,7 +79,7 @@ export function statueOf(bearer: GameState | MonsterInstance): StatueRule | null
 }
 
 /** Status fields a held condition can carry for Weakest Weapon Master (types.ts StatusDef). */
-type HeldField = 'attrCeiling' | 'repMult' | 'drillsAll' | 'parryContest' | 'blowCut' | 'pureBlows';
+type HeldField = 'attrCeiling' | 'repMult' | 'drillsAll' | 'parryContest' | 'blowCut' | 'pureBlows' | 'unarmedRider';
 
 /**
  * The first condition the bearer holds whose definition sets `field`, with its

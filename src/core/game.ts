@@ -117,6 +117,7 @@ import {
   chooseFacetOption,
   facetSignal,
   pendingEvolution,
+  queueFacetAction,
   registerFacetListeners,
   tickFacets,
 } from './facet/host';
@@ -690,6 +691,11 @@ export class Game {
   /** Pick option `v` of the held ability's choice: Weakest Weapon Master's stance (facet/host.ts). */
   chooseFacetOption(v: number) {
     return chooseFacetOption(this.state, v);
+  }
+
+  /** Press the held ability's action `key` for the next bar fill, or take it back: Sun Blast (facet/host.ts). */
+  queueFacetAction(key: string) {
+    return queueFacetAction(this.state, key);
   }
 
   /** Send a Shadow Clone to a gathering or job activity here (systems/clones.ts). */

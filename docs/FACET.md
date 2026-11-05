@@ -68,9 +68,35 @@ Prestige starts a fresh state, so the ability goes with the run.
 where its numbers and formulas are written out). It reads `world.sunlight`
 (exposure.ts `sunlight`, see WEATHER.md), `stat.eff.con` and `stat.eff.wis`.
 Its power cell is a status whose two modifiers name `fighter.damage` and
-`fighter.magicDamage`; this game turns those into `damage` and `spellPower`.
+`fighter.magicDamage`; this game turns those into `damage` and `spellPower`:
++20% from half charge up, -15% at empty (user 2026-11-04; it was -30%).
+
+Tiers by charge share (user 2026-11-04, "solar charge can in general be
+buffed"); each stays on above its share. The numbers not quoted in the Facet
+bank are placeholders.
+
+| Share | What | Where |
+|---|---|---|
+| 20% | Cold and Poison resistance +10% | cell `warmth`, carrier mods `res.cold`, `res.poison` |
+| 40% | Each unarmed blow adds 25% of itself as Heat | cell `infuse`, carrier `unarmedRider: 'heat'` (StatusDef; the intensity is the share). combat.ts adds the slice in the weapon-hit loop when no weapon is held. |
+| 60% | Each game minute, heals 5% of missing HP. Each HP costs CON / 40 charge (the user's "0.1 charge per 1 hp x 1/4 con") | the document's `heal` world verb; host.ts `applyHeal` → health.ts `heal`, kind `other`, so it closes no wound |
+| 80% | Sun Blast: every living enemy takes level + CON + 25% of the charge, half Heat and half Light; costs 5% of the cap | `reading.actions`, below |
+
+**Ability actions** (`reading.actions`, Sun Blast the first): something the
+player uses. Each is a rotation entry `facet:<key>` (combat.ts
+`activeRotation`, last unless the player orders it), so it is ordered,
+triggered and switched off like a spell or a technique; `pickActive` offers it
+at a bar fill while its `ready` Expr is above 0. The Ability tab draws its
+button under the cell its `under` names; a press (host.ts `queueFacetAction`,
+`CombatState.queuedAct`) takes the next bar fill before the rotation is read,
+and a second press takes it back. Either way combat.ts `useFacetAction` raises
+`act` with the action's key (signal.ts `fireFacetAction`), the document deals
+the damage, and the kills are swept. No cooldown: Sun Blast's cost is its
+limit, so from full it fires five times before the charge falls under 80%.
+
 To try it: open the debug panel (🐞), Grant ☀️ Solar Charge, then stand under
 open sky by day. The Charge buttons there set the bank to a share of its cap.
+A document granted before 2026-11-04 has no tiers: grant it again.
 
 **Zenkai** is the second, and the first that listens to fight events: after a
 win where HP fell to 20% or below, with no flask, consumable or miracle used,
@@ -255,6 +281,7 @@ ids. Where this game raises each one (`signal.ts` has the same table):
 | `rocks` | combat.ts `throwRubble`, once per enemy the rocks hit | `target` (its ref), `amount` |
 | `barFill` | combat.ts, when the player's action bar fills, before the action | |
 | `eat` | consumables.ts `useConsumable`, for food | `calories` (`dishCalories`) |
+| `act` | combat.ts `useFacetAction`, when an ability action takes a bar fill (the rotation's `facet:<key>` or the Ability tab's press) | `action` (its key) |
 
 A signal costs nothing when no ability is held: `facetSignal` returns before
 anything else. Adding an event is a line in `signal.ts` and a call where it
@@ -272,8 +299,10 @@ when an attacker is named. This game always sends `type`, `attacker`,
 
 A document may define a condition (`emit: 'status'` with a `def`). The
 fields this game accepts are host.ts `STATUS_SCHEMA`: `mods`, `duration`,
-`hidden`, `stacking`, `desc`, `overrideRes`, and since Basilisk Hide
-`element`, `contest` and `escalatesTo`. Anything else is dropped at compile.
+`hidden`, `stacking`, `desc`, `overrideRes`, since Basilisk Hide
+`element`, `contest` and `escalatesTo`, and the carrier fields of Weakest
+Weapon Master, Shadow Clone and Solar Charge (`unarmedRider`). Anything else
+is dropped at compile.
 
 **Why only bare imports.** The core files have no exports. A named import
 (`import { x } from './facet.core.js'`) passes vitest and fails `vite build`

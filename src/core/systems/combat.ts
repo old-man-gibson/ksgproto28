@@ -694,7 +694,15 @@ import {
   noteParry,
 } from './ledger';
 import { dynamicLevelBonus, encounterLevel, killXp, rewardLevel } from './levels';
-import { FOE, facetCombatStamp, facetCombatTick, facetSignal } from '../facet/signal';
+import {
+  FACET_ACTION,
+  FOE,
+  facetActions,
+  facetCombatStamp,
+  facetCombatTick,
+  facetSignal,
+  fireFacetAction,
+} from '../facet/signal';
 import { text } from '../text/log';
 
 const RESPAWN_DELAY = 15;
@@ -1907,14 +1915,20 @@ function onDefeat(state: GameState, bus: EventBus, outcome: FightOutcome = 'knoc
  * Prepared spells (`grimoire:<uid>`) and techniques (`technique:<id>`) ride
  * the SAME list as skills, so the rotation UI can order them, gate them on
  * triggers, and switch them off exactly like a skill — no separate black box
- * that fires on cooldown.
+ * that fires on cooldown. So do the run's ability actions (`facet:<key>`,
+ * Solar Charge's Sun Blast), last unless the player orders them.
  */
 export function activeRotation(state: GameState): string[] {
   const out: string[] = [];
   const prepared = new Set(preparedSpells(state).map((s) => `grimoire:${s.uid}`));
   const known = new Set(knownTechniques(state).map((t) => `technique:${t.id}`));
+  const offered = new Set(facetActions(state).map((a) => a.id));
   const add = (id: string) => {
     if (out.includes(id)) return;
+    if (id.startsWith(FACET_ACTION)) {
+      if (offered.has(id)) out.push(id);
+      return;
+    }
     if (id.startsWith('grimoire:')) {
       // Only spells still prepared count; stale uids in skillOrder are inert.
       if (prepared.has(id)) out.push(id);
@@ -1941,14 +1955,16 @@ export function activeRotation(state: GameState): string[] {
   for (const id of Object.keys(SKILLS)) add(id);
   for (const id of known) add(id);
   for (const id of prepared) add(id);
+  for (const id of offered) add(id);
   return out;
 }
 
-/** What the rotation offered: a skill's active, a technique, or a crafted spell. */
+/** What the rotation offered: a skill's active, a technique, a crafted spell, or an ability action's key. */
 type PickedActive =
-  | { id: string; spec: ActiveSpec; crafted?: undefined; technique?: undefined }
-  | { id: string; spec?: undefined; crafted: SpellSpec; technique?: undefined }
-  | { id: string; spec?: undefined; crafted?: undefined; technique: TechniqueDef };
+  | { id: string; spec: ActiveSpec; crafted?: undefined; technique?: undefined; facet?: undefined }
+  | { id: string; spec?: undefined; crafted: SpellSpec; technique?: undefined; facet?: undefined }
+  | { id: string; spec?: undefined; crafted?: undefined; technique: TechniqueDef; facet?: undefined }
+  | { id: string; spec?: undefined; crafted?: undefined; technique?: undefined; facet: string };
 
 /** First known, off-cooldown active of `kind` whose trigger conditions hold. */
 export function pickActive(
@@ -1959,6 +1975,14 @@ export function pickActive(
   const c = state.combat!;
   const ctx = { state, combat: c, stats };
   for (const id of activeRotation(state)) {
+    // An ability action spends the bar like an attack, while its document says
+    // it is ready (Sun Blast: 80% charge), and answers to the player's trigger.
+    if (id.startsWith(FACET_ACTION)) {
+      if (kind !== 'attack' || (c.cooldowns[id] ?? 0) > 0) continue;
+      if (!facetActions(state).some((a) => a.id === id && a.ready)) continue;
+      if (!evaluateTrigger(ctx, state.skillTriggers?.[id])) continue;
+      return { id, facet: id.slice(FACET_ACTION.length) };
+    }
     if (id.startsWith('grimoire:')) {
       const spell = findSpell(state, Number(id.slice('grimoire:'.length)));
       if (!spell) continue;
@@ -3469,6 +3493,20 @@ export function sweepDead(state: GameState, bus: EventBus): boolean {
   return frontDied;
 }
 
+/**
+ * An ability action (`reading.actions`, Solar Charge's Sun Blast) spends this
+ * bar fill: the document answers `act`, its damage lands through
+ * abilityStrike, and what it killed is swept here. False when the action is
+ * not ready, so the bar fill goes on to the rotation.
+ */
+function useFacetAction(state: GameState, bus: EventBus, key: string): boolean {
+  const action = facetActions(state).find((a) => a.key === key);
+  if (!action || !fireFacetAction(state, key)) return false;
+  feed(state, `${action.icon} You use ${action.name}.`);
+  sweepDead(state, bus);
+  return true;
+}
+
 /** Feed groups for the run's ability; settled when the fight ends (tickCombat). */
 export const ABILITY_RUN = 'ability:';
 
@@ -4159,7 +4197,15 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
       return;
     }
     trackWeaponFamily(state, bus);
+    // A pressed ability action (the Ability tab's button) takes this bar fill
+    // before the rotation is read. One that is no longer ready is dropped.
+    const pressed = c.queuedAct;
+    if (pressed) {
+      c.queuedAct = undefined;
+      if (useFacetAction(state, bus, pressed)) return;
+    }
     const active = pickActive(state, 'attack', stats);
+    if (active?.facet && useFacetAction(state, bus, active.facet)) return;
 
     /*
      * A FAST REFUSES THE EASY BLOW, NOT THE FIGHT.
@@ -4524,6 +4570,12 @@ function runCombatTick(state: GameState, bus: EventBus, spot: SpotDef): void {
           for (const b of runeBonus.flat) typed.push(b as { type: DamageType; value: number; source: string });
           for (const b of runeBonus.pct) {
             typed.push({ type: b.type as DamageType, value: rawHit * b.value, source: b.source });
+          }
+          // Solar Charge at 40%: a bare-handed blow adds a share of itself as
+          // Heat (StatusDef.unarmedRider; the intensity is the share).
+          const rider = wielded ? null : heldWith(state, 'unarmedRider');
+          if (rider?.def.unarmedRider) {
+            typed.push({ type: rider.def.unarmedRider, value: rawHit * rider.intensity, source: rider.def.name });
           }
           for (const b of typed) {
             const extra = monsterSlice(monster, b.type, b.source, b.value, penetration);

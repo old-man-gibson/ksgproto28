@@ -143,7 +143,8 @@ describe('this game as host', () => {
  * Solar Charge, the first bank ability (Facet repo core/facet.bank.js): banks
  * sunlight each game minute, drains a little every minute, and sets a damage
  * and spell power multiplier from the charge, +20% from half charge up and
- * −30% at empty. Numbers are the bank's placeholders.
+ * −15% at empty (user 2026-11-04; it was −30%). Numbers are the bank's
+ * placeholders. The tiers and Sun Blast are in solarCharge.test.ts.
  */
 describe('Solar Charge', () => {
   const HOUR = 600; // ticks: 10 per game minute
@@ -196,12 +197,12 @@ describe('Solar Charge', () => {
     expect(sunlight(s)).toBe(0);
   });
 
-  it('opens empty, at −30% damage and spell power', () => {
+  it('opens empty, at −15% damage and spell power', () => {
     const state = solar(ROOFED);
     expect(cell(state, 'charge')).toBe(0);
-    expect(cell(state, 'power')).toBeCloseTo(-0.3);
-    expect(getDerivedStats(state).damage).toBeCloseTo(plainTwin(ROOFED).damage * 0.7);
-    expect(getDerivedStats(state).spellPower).toBeCloseTo(plainTwin(ROOFED).spellPower * 0.7);
+    expect(cell(state, 'power')).toBeCloseTo(-0.15);
+    expect(getDerivedStats(state).damage).toBeCloseTo(plainTwin(ROOFED).damage * 0.85);
+    expect(getDerivedStats(state).spellPower).toBeCloseTo(plainTwin(ROOFED).spellPower * 0.85);
   });
 
   it('banks under open sky by day and drains under a roof', () => {
@@ -215,7 +216,7 @@ describe('Solar Charge', () => {
     expect(cell(state, 'charge')).toBeGreaterThan(0);
   });
 
-  it('sets power from the charge: +20% from half up, a straight line down to −30% at empty', () => {
+  it('sets power from the charge: +20% from half up, a straight line down to −15% at empty', () => {
     const state = solar(ROOFED);
     debugSetCell(state, 'charge', 0.5);
     minutes(state, 1);
@@ -226,7 +227,7 @@ describe('Solar Charge', () => {
     expect(cell(state, 'power')).toBeCloseTo(0.2);
     debugSetCell(state, 'charge', 0.25);
     minutes(state, 1);
-    expect(cell(state, 'power')).toBeCloseTo(-0.05, 2);
+    expect(cell(state, 'power')).toBeCloseTo(0.025, 2);
   });
 
   it('runs from the game loop, travel and all, once per game minute', () => {

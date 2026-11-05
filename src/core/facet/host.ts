@@ -14,10 +14,11 @@ import { appendLog } from '../systems/log';
 import { abilityStrike, isSpotBoss } from '../systems/combat';
 import { monsterStats } from '../systems/monsterStats';
 import { spendResource } from '../systems/resources';
+import { heal } from '../systems/health';
 import { FACET_POOLS, facetQuantities, readQuantity } from './quantities';
 import type { EventBus } from '../engine/events';
 import type { FacetDoc, FacetHost } from './facet';
-import { bindFacets, boundState, facetSignal, FOE, PLAYER_REF } from './signal';
+import { actionsOf, bindFacets, boundState, facetActions, facetSignal, FOE, PLAYER_REF, type HeldAction } from './signal';
 import './load';
 
 /**
@@ -61,7 +62,7 @@ import './load';
  * `pendingEvolution`, and `chooseEvolution` swaps the branch in.
  */
 
-export { bindFacets, facetSignal, PLAYER_REF } from './signal';
+export { bindFacets, facetActions, facetSignal, FACET_ACTION, PLAYER_REF, type HeldAction } from './signal';
 
 const DAMAGE_TYPES = Object.keys(RES_STAT_BY_TYPE) as DamageType[];
 
@@ -114,6 +115,8 @@ const STATUS_SCHEMA = {
     // Shadow Clone: a deployed clone's yield and skill XP shares (systems/clones.ts).
     cloneYield: { kind: 'meta' },
     cloneXp: { kind: 'meta' },
+    // Solar Charge at 40%: unarmed blows add the intensity x their damage as this type (combat.ts).
+    unarmedRider: { kind: 'meta' },
   },
 };
 
@@ -315,6 +318,13 @@ export function createFacetHost(getState: () => GameState): FacetHost {
         icon: doc?.reading?.icon ?? '✦',
         hit: doc?.reading?.hit,
       });
+    },
+    // The `heal` verb (Solar Charge's mending): the player's HP through health.ts
+    // heal, so a burn still caps it. Kind 'other': a trickle each minute is not
+    // treatment, so it closes no wound. Enemies are not healed.
+    applyHeal: (ref: string, amount: number) => {
+      const state = s();
+      return ref === PLAYER_REF ? heal(state, getDerivedStats(state), amount, 'other') : 0;
     },
     // A pool cost (the `spend` verb): stamina, mana, spirit or focus, never HP.
     spendPool: (ref: string, pool: string, amount: number) =>
@@ -652,10 +662,12 @@ export interface FacetReadout {
   choice: { label: string; options: FacetOption[]; want: number; active: number } | null;
   /** The evolution its clauses offer: which cell triggers it, at what value, into which branches. */
   evolves: { label: string; at: number; into: EvolutionChoice[] } | null;
+  /** What the player can use (Solar Charge's Sun Blast), and whether each is pressed for the next bar fill. */
+  actions: (HeldAction & { queued: boolean })[];
 }
 
-/** Carrier fields that act on a fight with no modifier (Weakest Weapon Master's stances). */
-const ACTING_FIELDS = ['parryContest', 'blowCut', 'pureBlows'];
+/** Carrier fields that act on a fight with no modifier (Weakest Weapon Master's stances, Solar Charge's infusion). */
+const ACTING_FIELDS = ['parryContest', 'blowCut', 'pureBlows', 'unarmedRider'];
 const hasMods = (status: { [field: string]: unknown } | undefined) =>
   Array.isArray(status?.mods) && (status.mods as unknown[]).length > 0;
 
@@ -764,6 +776,24 @@ export function facetReadouts(state: GameState): FacetReadout[] {
             into: (evolve.eff.into ?? []).filter((k) => F.bank?.[k]).map(choiceOf),
           }
         : null,
+      actions: actionsOf(doc).map((a) => ({ ...a, queued: state.combat?.queuedAct === a.key })),
     };
   });
+}
+
+/**
+ * The Ability tab's button for an action (Sun Blast): it takes the player's
+ * next bar fill, before the rotation is read (combat.ts). Only in a fight and
+ * only while the action is ready; pressing it again takes it back.
+ */
+export function queueFacetAction(state: GameState, key: string): boolean {
+  const c = state.combat;
+  if (!c) return false;
+  if (c.queuedAct === key) {
+    c.queuedAct = undefined;
+    return true;
+  }
+  if (!facetActions(state).some((a) => a.key === key && a.ready)) return false;
+  c.queuedAct = key;
+  return true;
 }

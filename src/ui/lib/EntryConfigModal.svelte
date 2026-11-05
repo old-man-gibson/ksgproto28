@@ -29,6 +29,8 @@
   import type { TriggerCondition } from '../../core/types';
   import { fmt, geneAbilityLines, pct, specLines, targetLabel, techniqueMoveText, ticksToTime } from './format';
   import Modal from './Modal.svelte';
+  import FactLines from './FactLines.svelte';
+  import { FACET_ACTION, facetActions } from '../../core/facet/host';
 
   /**
    * Where one rotation entry is configured — the detail that used to live
@@ -56,7 +58,11 @@
   // own source — so it heads the window with what the chromosome expresses.
   const gene = $derived(id === GENE_ACTIVE ? (geneAbility(gs) ?? null) : null);
 
+  // The run's ability action (Sun Blast): its document names and describes it.
+  const action = $derived(id.startsWith(FACET_ACTION) ? (facetActions(gs).find((a) => a.id === id) ?? null) : null);
+
   const heading = $derived.by(() => {
+    if (action) return { icon: action.icon, name: action.name };
     if (tech) return { icon: tech.icon, name: techniqueDisplayName(gs, tech) };
     if (spell) {
       const spec = resolveSpell(spell);
@@ -180,6 +186,9 @@
       <p class="small ctx">{line}</p>
     {/each}
     <p class="dim small ctx">From your chromosome · ⟳ {ticksToTime(gene.spec.cooldown)}</p>
+  {:else if action}
+    {#if action.desc}<div class="small ctx"><FactLines text={action.desc} /></div>{/if}
+    <p class="dim small ctx">From your ability · the button is on the ✦ Ability tab</p>
   {:else if skill}
     <p class="dim small ctx">{skill.desc}</p>
   {/if}

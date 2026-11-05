@@ -30,7 +30,7 @@
   import type { TechniqueDef } from '../../core/types';
   import { POSITION_MODS, activeRotation } from '../../core/systems/combat';
   import BattleStage from '../lib/BattleStage.svelte';
-  import { facetReadouts } from '../../core/facet/host';
+  import { FACET_ACTION, facetActions, facetReadouts } from '../../core/facet/host';
   import { GENE_ACTIVE, expressedGene, geneAbility } from '../../core/systems/mutagens';
   import { monsterMind, monsterStats } from '../../core/systems/monsterStats';
   import { resourceLock } from '../../core/systems/resources';
@@ -112,9 +112,18 @@
     cooldown?: number;
     /** Ticks left on a wind-up still being spoken, when one is (see `whenText`). */
     speaking?: number;
+    /** What stands in the right-hand slot instead, while the entry cannot be used (an ability action not ready). */
+    blocked?: string;
   }
 
   function rotationEntry(id: string): RotationEntry | null {
+    // The run's ability action (Sun Blast). The document says when it is ready;
+    // the Ability tab carries its full text and its button.
+    if (id.startsWith(FACET_ACTION)) {
+      const act = facetActions(gs).find((a) => a.id === id);
+      if (!act) return null;
+      return { icon: act.icon, name: act.name, mark: '✦', cost: '', blocked: act.ready ? undefined : 'not ready' };
+    }
     if (id.startsWith('grimoire:')) {
       const spell = findSpell(gs, Number(id.slice('grimoire:'.length)));
       if (!spell) return null;
@@ -940,7 +949,7 @@
           <div class="line2 small">
             <span class="mark dim">{entry.mark}{entry.cost ? ` ${entry.cost}` : ''}</span>
             <span class="when dim" class:primed={status?.kind === 'primed'}>
-              {whenText(status, cd, off, entry.cooldown, entry.speaking)}
+              {entry.blocked && !off ? entry.blocked : whenText(status, cd, off, entry.cooldown, entry.speaking)}
             </span>
           </div>
         </div>

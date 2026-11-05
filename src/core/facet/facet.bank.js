@@ -24,13 +24,65 @@ const B = F.bank = F.bank || {};
 //   charge   banked sunlight. Cap 60 + 5 x (CON + WIS). Each game minute it gains
 //            sunlight x (0.2 + 0.02 x (CON + WIS)) and loses 0.02 x (CON + WIS)^0.75, sun or not.
 //   power    a damage and spell power multiplier set from the charge every minute:
-//            +20% at half charge and above, falling in a straight line to -30% at empty.
+//            +20% at half charge and above, falling in a straight line to -15% at empty.
 //            Two numbers steer it: the +20% peak and the 50% knee.
 //
-// Reads: world.sunlight (0..1), stat.eff.con, stat.eff.wis. Modifies: fighter.damage,
-// fighter.magicDamage. Needs a host that calls Facet.minute once per game minute.
-// Starts empty, so a fresh grant opens at -30%.
+// User, 2026-11-04 ("solar charge can in general be buffed"), tiers by charge share, each on top
+// of the ones below it:
+//   20%  "an increase to cold and poison resistance"
+//   40%  "infuse the player's unarmed attacks, dealing heat and unarmed damage, i.e. adding an
+//        additional heat damage to the attacks"
+//   60%  "regenerate hp if they're below max (the increase is proportional to how much hp is
+//        missing) but this drains solar charge faster until the player falls below 60% charge"
+//   80%  "a Sun Blast action that drains 5% charge and deals damage based on level, con and
+//        current charge"
+//   and "the player's stat reduction is only -15% when empty". Answers the same day: the +20%
+//   stays; the heal costs "0.1 charge per 1 hp x 1/4 con"; Sun Blast hits "every enemy, heat and
+//   light"; it is used from "a button under the solar charge bar plus be able to set a trigger like
+//   any normal action bar".
+//
+// Readings taken, numbers placeholders unless quoted above:
+//   - Resistance: +10% Cold and +10% Poison.
+//   - Infusion: each unarmed blow adds 25% of its damage as Heat (the host's `unarmedRider`).
+//   - Healing: each game minute, 5% of the missing HP. "0.1 charge per 1 hp x 1/4 con" is read as
+//     0.1 x CON / 4 charge per HP healed, CON / 40: at CON 20 a heal of 10 HP costs 5 charge.
+//   - Sun Blast: level + CON + 25% of the charge, half Heat and half Light, at every living enemy.
+//     The charge is read before the 5% is paid. 5% is of the cap. No cooldown: the cost is the
+//     limit, so from full it fires five times before the charge falls under 80%.
+//
+//   warmth   1 at 20% and above; carrier: Cold and Poison resistance +10%.
+//   infuse   0.25 at 40% and above; carrier: unarmed blows add that share as Heat.
+//   mend     1 at 60% and above. The heal reads the charge, not this cell; it is for the readout.
+//   blast    1 at 80% and above: Sun Blast is ready.
+// Tier cells are set each game minute and after a blast.
+//
+// Reads: world.sunlight (0..1), stat.eff.con, stat.eff.wis, fighter.level, fighter.hp,
+// fighter.maxHpAbs. Modifies: fighter.damage, fighter.magicDamage, res.cold, res.poison. Needs a
+// host that calls Facet.minute once per game minute, has applyHeal, and raises `act` with detail
+// `action` when the player uses one of the document's `reading.actions`. A host without the
+// `unarmedRider` status field gets everything but the infusion.
+// Starts empty, so a fresh grant opens at -15%.
 const MAIN = { expr: 'add', a: { q: 'stat.eff.con' }, b: { q: 'stat.eff.wis' } };
+const SOLAR_CAP = { expr: 'add', a: 60, b: { expr: 'mul', a: 5, b: MAIN } };
+const SOLAR_SHARE = { cell: 'charge', of: 'frac' };
+const SOLAR_CON = { q: 'stat.eff.con' };
+// 1 at a charge share of t or more, else 0. The 1e-9 keeps a charge of exactly t x cap on the tier.
+const solarTier = (t) => ({ expr: 'min', a: 1, b: { expr: 'floor', a: { expr: 'add', a: { expr: 'div', a: SOLAR_SHARE, b: t }, b: 1e-9 } } });
+const solarAt = (t) => ({ cell: 'charge', of: 'frac', op: 'gte', v: t - 1e-9 });
+const SOLAR_RES = 0.1;
+const SOLAR_INFUSE = 0.25;
+const SOLAR_MEND = { expr: 'mul', a: 0.05, b: { expr: 'sub', a: { q: 'fighter.maxHpAbs' }, b: { q: 'fighter.hp' } } };
+const SOLAR_BLAST = { expr: 'add',
+  a: { expr: 'add', a: { q: 'fighter.level' }, b: SOLAR_CON },
+  b: { expr: 'mul', a: 0.25, b: { cell: 'charge' } } };
+const SOLAR_HALF_BLAST = { expr: 'mul', a: 0.5, b: SOLAR_BLAST };
+const solarCell = (cell, verb, value) => ({ emit: 'cell', cell, verb, value });
+const SOLAR_TIERS = [
+  solarCell('warmth', 'set', solarTier(0.2)),
+  solarCell('infuse', 'set', { expr: 'mul', a: SOLAR_INFUSE, b: solarTier(0.4) }),
+  solarCell('mend', 'set', solarTier(0.6)),
+  solarCell('blast', 'set', solarTier(0.8)),
+];
 
 // `show` on a cell, `reading.inputs` and `reading.desc` are display hints for a game's ability
 // readout; the engine never reads them. A `reading.desc` is lines of "Label: fact" joined by '\n':
@@ -38,6 +90,9 @@ const MAIN = { expr: 'add', a: { q: 'stat.eff.con' }, b: { q: 'stat.eff.wis' } }
 // A cell's `status.desc` is one such line without the label. A cell's `line` ({ text, scale, base })
 // is what a short readout shows after the label instead of the bare number: `text` with {v} as the value x scale,
 // rounded; `base` names the bare number for a longer readout (Weakest Weapon Master's stances).
+// `reading.actions` lists what the player can use: `key` (the `act` event's `action`), `name`,
+// `icon`, `desc`, `ready` (an Expr; usable while it is above 0) and `under` (the cell a readout
+// draws its button beneath). The engine never reads it either; the host raises `act`.
 B.solar_charge = {
   v: 1,
   reading: {
@@ -45,38 +100,95 @@ B.solar_charge = {
     desc: [
       'Does: Damage and spell power change with your charge.',
       'Full: +20% from half charge up.',
-      'Empty: -30% at 0 charge. The change is linear in between.',
+      'Empty: -15% at 0 charge. The change is linear in between.',
+      '20%: Cold and Poison resistance +10%.',
+      '40%: Unarmed blows add 25% of their damage as Heat.',
+      '60%: Each game minute, heals 5% of missing HP. Each HP costs CON / 40 charge.',
+      '80%: Sun Blast is ready. It hits every enemy and costs 5% of the cap.',
       'Fills: Each game minute under open sky by day. More sunlight fills faster.',
       'Drains: Each game minute, day or night.',
       'Grows: CON + WIS raise the cap, the fill and the drain.',
     ].join('\n'),
+    actions: [{
+      // Read from the charge, not the blast cell, so a charge set between minutes counts at once.
+      key: 'sun_blast', name: 'Sun Blast', icon: '🌞', under: 'charge', ready: solarTier(0.8),
+      desc: [
+        'Needs: 80% charge.',
+        'Hits: Every enemy. Half Heat, half Light.',
+        'Damage: Level + CON + 25% of your charge.',
+        'Cost: 5% of the cap.',
+      ].join('\n'),
+    }],
   },
   cells: [
     {
       key: 'charge', label: 'Solar Charge', icon: '☀️', hold: 'none', level: 'real', tier: 'run', show: 'bar',
-      cap: { expr: 'add', a: 60, b: { expr: 'mul', a: 5, b: MAIN } },
+      cap: SOLAR_CAP,
       status: { desc: 'Stored sunlight. Cap 60 + 5 per point of CON + WIS.' },
     },
     {
       key: 'power', label: 'Sunpower', icon: '🔆', hold: 'none', level: 'real', tier: 'run', show: 'signedPct',
-      floor: -0.3, cap: 0.2,
+      floor: -0.15, cap: 0.2,
       status: {
-        desc: 'Damage and spell power. +20% from half charge up, -30% at 0 charge.',
+        desc: 'Damage and spell power. +20% from half charge up, -15% at 0 charge.',
         mods: [
           { q: 'fighter.damage', op: 'mult', value: 1 },
           { q: 'fighter.magicDamage', op: 'mult', value: 1 },
         ],
       },
     },
+    {
+      key: 'warmth', label: 'Sun-warmed', icon: '🌡️', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1,
+      line: { text: 'Cold and Poison resistance +10%', scale: 1 },
+      status: {
+        desc: 'At 20% charge: Cold and Poison resistance +10%.',
+        mods: [
+          { q: 'res.cold', op: 'add', value: SOLAR_RES },
+          { q: 'res.poison', op: 'add', value: SOLAR_RES },
+        ],
+      },
+    },
+    {
+      key: 'infuse', label: 'Sun-fists', icon: '🔥', hold: 'none', level: 'real', tier: 'run', show: 'count', cap: 1,
+      line: { text: 'unarmed blows +{v}% as Heat', scale: 100 },
+      status: { desc: 'At 40% charge: unarmed blows add 25% of their damage as Heat.', unarmedRider: 'heat' },
+    },
+    {
+      key: 'mend', label: 'Sun-mending', icon: '💗', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1,
+      carrier: false, line: { text: 'heals 5% of missing HP each minute', scale: 1 },
+      status: { desc: 'At 60% charge: heals 5% of missing HP each game minute. Each HP costs CON / 40 charge.' },
+    },
+    {
+      key: 'blast', label: 'Sun Blast', icon: '🌞', hold: 'none', level: 'int', tier: 'run', show: 'count', cap: 1,
+      carrier: false, line: { text: 'ready', scale: 1 },
+      status: { desc: 'At 80% charge: Sun Blast can be used.' },
+    },
   ],
   clauses: [
-    { id: 'absorb', on: 'minute', do: [{ emit: 'cell', cell: 'charge', verb: 'add',
-      value: { expr: 'mul', a: { q: 'world.sunlight' }, b: { expr: 'add', a: 0.2, b: { expr: 'mul', a: 0.02, b: MAIN } } } }] },
-    { id: 'drain', on: 'minute', do: [{ emit: 'cell', cell: 'charge', verb: 'add',
-      value: { expr: 'mul', a: -0.02, b: { expr: 'pow', a: MAIN, b: 0.75 } } }] },
-    // power = min(peak, floor + (peak - floor) / knee x share); peak 0.2, floor -0.3, knee 0.5.
-    { id: 'power', on: 'minute', do: [{ emit: 'cell', cell: 'power', verb: 'set',
-      value: { expr: 'min', a: 0.2, b: { expr: 'add', a: -0.3, b: { expr: 'mul', a: 1, b: { cell: 'charge', of: 'frac' } } } } }] },
+    { id: 'absorb', on: 'minute', do: [solarCell('charge', 'add',
+      { expr: 'mul', a: { q: 'world.sunlight' }, b: { expr: 'add', a: 0.2, b: { expr: 'mul', a: 0.02, b: MAIN } } })] },
+    { id: 'drain', on: 'minute', do: [solarCell('charge', 'add',
+      { expr: 'mul', a: -0.02, b: { expr: 'pow', a: MAIN, b: 0.75 } })] },
+    // The price first, while the missing HP is still what the heal reads.
+    { id: 'mend', on: 'minute',
+      when: { all: [solarAt(0.6), { q: 'fighter.hp', op: 'lt', v: { q: 'fighter.maxHpAbs' } }] },
+      do: [
+        solarCell('charge', 'add', { expr: 'mul', a: -1, b: { expr: 'mul', a: SOLAR_MEND, b: { expr: 'div', a: SOLAR_CON, b: 40 } } }),
+        { emit: 'world', verb: 'heal', value: SOLAR_MEND },
+      ] },
+    // power = min(peak, floor + (peak - floor) / knee x share); peak 0.2, floor -0.15, knee 0.5.
+    { id: 'power', on: 'minute', do: [solarCell('power', 'set',
+      { expr: 'min', a: 0.2, b: { expr: 'add', a: -0.15, b: { expr: 'mul', a: 0.7, b: SOLAR_SHARE } } })] },
+    { id: 'tiers', on: 'minute', do: SOLAR_TIERS },
+    // The damage reads the charge before the 5% is paid.
+    { id: 'blast', on: 'event:act',
+      when: { all: [{ not: { frame: 'action', op: 'ne', v: 'sun_blast' } }, solarAt(0.8)] },
+      do: [
+        { emit: 'world', verb: 'damage', damageType: 'heat', scope: { side: 'enemy' }, value: SOLAR_HALF_BLAST },
+        { emit: 'world', verb: 'damage', damageType: 'light', scope: { side: 'enemy' }, value: SOLAR_HALF_BLAST },
+        solarCell('charge', 'add', { expr: 'mul', a: -0.05, b: SOLAR_CAP }),
+        ...SOLAR_TIERS,
+      ] },
   ],
 };
 

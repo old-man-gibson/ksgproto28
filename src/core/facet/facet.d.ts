@@ -38,6 +38,18 @@ export interface FacetCell {
   [field: string]: unknown;
 }
 
+/** One thing a document lets the player use (`reading.actions`). */
+export interface FacetAction {
+  key: string;
+  name: string;
+  icon: string;
+  desc?: string;
+  /** An Expr; the action is usable while it is above 0. */
+  ready: unknown;
+  /** The cell a readout draws the action's button beneath. */
+  under?: string;
+}
+
 /** A number a readout shows beside the cells: a quantity the ability reads. */
 export interface FacetInput {
   q: string;
@@ -72,6 +84,12 @@ export interface FacetDoc {
       active: string;
       options: { v: number; name: string; icon: string; desc: string }[];
     };
+    /**
+     * What the player can use (Solar Charge's Sun Blast): a rotation entry
+     * `facet:<key>` and a button under cell `under`. Usable while the Expr
+     * `ready` is above 0; using it raises `act` with detail `action: key`.
+     */
+    actions?: FacetAction[];
   };
   /** Bank keys this document may evolve into, written by the core's `evolve` effect; saved with it. */
   offer?: string[];
