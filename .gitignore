@@ -1,6 +1,9 @@
 node_modules/
 dist/
 *.local
+# Personal Claude Code settings (permission approvals, machine paths). Shared
+# settings live in .claude/settings.json.
+.claude/settings.local.json
 .forge-backups/
 
 # Third-party enemy art: Librarium battlers by Ækashics (akashics.moe), used
