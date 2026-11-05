@@ -1,0 +1,282 @@
+/*
+ * Registry display theme: the band 1 offices and the Chancery. Active while
+ * <html data-theme="registry"> (src/ui/lib/theme.ts).
+ *
+ * Grey-green filing cabinet ground, a manila accent, form headings in mono
+ * capitals with a trailing rule, warnings as boxed stamps, a graph-paper map.
+ * Tokens first (docs/THEMES.md §2), then the shared shapes.
+ *
+ * Selection: a manila fill with dark ink is allowed only where no authored
+ * colour (rarity, grade, status) sits inside, because those colours would fall
+ * under 4.5:1 on manila (plan ruling 3). The screen list and the tab rows are
+ * solid manila; every other selected thing keeps the dark --sel-bg and gets a
+ * manila bar on its left edge.
+ */
+
+:root[data-theme='registry'] {
+  --bg: #151a18;
+  --bg-panel: #1c2320;
+  --bg-raised: #26302c;
+  --bg-hover: #323e39;
+  --bg-sunken: #0f1311;
+  --border: #455249;
+  --frame: #2c3631; /* graph-paper lines, row rules */
+  --text: #e6e4d8;
+  --text-dim: #a8b0a4;
+  --accent: #d6bd7c; /* manila */
+  --hp: #d0493d;
+  --xp: #96c671;
+  --skill: #baa2de;
+  --stamina: #3baf75;
+  --stamina-winded: #2f7f56;
+  --stamina-exhausted: #a6a83e;
+  --mana: #5ea5ea;
+  --manaburn: #d95bc9;
+  --spirit: #9167d1;
+  --focus: #e68034;
+  --danger: #ff8574;
+  --warn: #f0a85a;
+  --action: #ecdd31;
+
+  --log-combat: #e0a69b;
+  --log-danger: #ff8574;
+  --log-loot: #d6bd7c;
+  --log-skill: #baa2de;
+  --log-achievement: #f0d86e;
+  --log-fusion: #ee9a52;
+  --log-quest: #cfd08a;
+  --log-travel: #86b4dc;
+  --log-explore: #80d0b0;
+  --log-plain: #a8b0a4;
+
+  --edge: #80908a;
+  --ring: #ffffff;
+  --here: #f08cc0; /* highlighter pink, apart from the white ring and the manila */
+  --sel-bg: color-mix(in srgb, var(--accent) 11%, var(--bg-sunken));
+  --sel-ink: var(--text);
+  --text-off: #8f9b94;
+
+  --bar-ink: #ffffff;
+  --bar-halo: #000000;
+
+  --ink-lmin: 0.5;
+  --ink-lmax: 1;
+  --sel-ink-lmin: 0.5;
+  --sel-ink-lmax: 1;
+
+  /* Ink on a solid manila block (the screen list, the tab rows). */
+  --ink-on-accent: #151a18;
+
+  --font-caps: 'IBM Plex Mono', ui-monospace, monospace;
+
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  scrollbar-color: var(--edge) var(--bg);
+}
+
+/* Square forms. The round exceptions are the battle stage's shadow, ring and aura and the status dots. */
+:root[data-theme='registry'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 0 !important;
+}
+
+/* Section titles read as form headings: mono capitals, then a rule to the edge. */
+:root[data-theme='registry'] :is(h1, h2, h3) {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='registry'] :is(h2, h3) {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  font-size: 13px;
+}
+
+:root[data-theme='registry'] :is(h2, h3)::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+:root[data-theme='registry'] h4 {
+  font-weight: 600;
+}
+
+/* The form: a spine on the left edge of every top-level panel. */
+:root[data-theme='registry'] .panel:not(.panel .panel) {
+  border-left: 4px solid var(--edge);
+}
+
+/* The header: a tear-off line under it. A frozen world turns the whole border manila. */
+:root[data-theme='registry'] .layout > header {
+  border-bottom: 3px dotted var(--edge);
+}
+
+:root[data-theme='registry'] .layout.paused > header {
+  border-color: var(--accent);
+}
+
+/* Mono capitals are wide: 15px holds the title inside the budget the transport row leaves it. */
+:root[data-theme='registry'] .layout > header h1 {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme='registry'] .layout > header button {
+  white-space: nowrap;
+}
+
+@media (max-width: 1179px) {
+  :root[data-theme='registry'] .layout > header {
+    font-size: 13.5px;
+  }
+}
+
+/* Plex Sans is wider than Default's face. The chips sit at 12.5px; the clock chip's slot holds its text
+   ("🕰️ about 23:00") and the bonus chip's slot holds its widest text ("⏩ 2× 1h 10m", 96.3px; the
+   component's 7.9em is 94.8px), so neither chip changes width as its text changes. */
+:root[data-theme='registry'] .layout > header :is(.rate-chip, .timesense, .weather) {
+  font-size: 12.5px;
+}
+
+:root[data-theme='registry'] .layout > header .timesense {
+  min-width: 7.4em;
+}
+
+:root[data-theme='registry'] .layout > header .clock .bonus {
+  min-width: 8.2em;
+}
+
+/* Hover underlines the label; the background step comes from the global rule. */
+:root[data-theme='registry'] button:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Selected: the global fill and manila border, plus a manila bar on the left edge. A selected button that is
+   also disabled keeps the plain disabled look (dashed, no fill): the :not(:disabled) leaves it to cues.css. */
+:root[data-theme='registry'] button.selected:not(:disabled) {
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+/* Solid manila, ink on top. Only buttons that are not disabled and have no authored colour on them or in them:
+   a rarity chip and a forced stance carry an inline style on the button itself; a child that carries an
+   authored colour has an inline style holding oklch, a hex, a custom property, color or background. The
+   Icon component's own style (width, font-size) is none of these: it exists only while the pixel art is
+   missing, so keying on any style would make the plate depend on whether the art packs are installed.
+   Buttons that are excluded keep the dark fill and the bar above. */
+:root[data-theme='registry'] :is(.tabs > button.selected, .region-switch > button.selected):not(:disabled),
+:root[data-theme='registry'] button.selected:not(:disabled, [style], :has([style*='oklch'], [style*='#'], [style*='--'], [style*='color'], [style*='background'])) {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  box-shadow: none;
+}
+
+:root[data-theme='registry'] :is(.tabs > button.selected, .region-switch > button.selected, button.selected:not([style], :has([style*='oklch'], [style*='#'], [style*='--'], [style*='color'], [style*='background']))):not(:disabled) * {
+  color: inherit;
+}
+
+/* The screen list: the open screen is a manila block, and it stays one under the pointer (the component's
+   hover rule has the same specificity as the plain rule, so the hover variant is named). */
+:root[data-theme='registry'] .nav-caption {
+  font-weight: 600;
+}
+
+:root[data-theme='registry'] .nav-list .nav-entry.nav-on,
+:root[data-theme='registry'] .nav-list .nav-entry.nav-on:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--ink-on-accent);
+  border-left-color: var(--text);
+}
+
+:root[data-theme='registry'] .nav-list .nav-entry.nav-on :is(.nav-new, .nav-mark) {
+  color: var(--ink-on-accent);
+}
+
+/* Form fields: a sunken box with a heavier bottom line. */
+:root[data-theme='registry'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 1px solid var(--edge);
+  border-bottom-width: 2px;
+}
+
+:root[data-theme='registry'] :is(input, select, textarea)::placeholder {
+  color: var(--text-dim);
+}
+
+:root[data-theme='registry'] input:is([type='checkbox'], [type='radio'], [type='range']) {
+  accent-color: var(--accent);
+}
+
+/* Bars: flat, with quarter marks in the empty part. */
+:root[data-theme='registry'] .bar {
+  outline: 1px solid var(--edge);
+  background-image: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgb(255 255 255 / 16%) calc(25% - 1px) 25%);
+}
+
+:root[data-theme='registry'] .bar > .label {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 10.5px;
+}
+
+/* The map ground is graph paper. */
+:root[data-theme='registry'] .map-wrap {
+  border-color: var(--edge);
+  background-image:
+    linear-gradient(var(--frame) 1px, transparent 1px),
+    linear-gradient(90deg, var(--frame) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+:root[data-theme='registry'] .ring-outer {
+  stroke-dasharray: 5 3;
+}
+
+/* The tower column is 184px wide: mono capitals and Plex Sans run wider than Default's face, so both sit
+   smaller than the component's 11.5px and 13px. */
+:root[data-theme='registry'] .ts-band {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+:root[data-theme='registry'] .ts-row {
+  font-size: 12.5px;
+}
+
+/* A heading with a control on its right (Skills: Expand all, Collapse all): the rule fills the gap and the
+   control stays on the right edge, where Default puts it. */
+:root[data-theme='registry'] :is(h2, h3) > .fold-all {
+  order: 1;
+  margin-left: 0;
+}
+
+/* The pin card: a filed card with a heavier border. */
+:root[data-theme='registry'] .map-card {
+  border-width: 2px;
+}
+
+/* A warning is a rubber stamp: boxed mono capitals in the warning's own colour. */
+:root[data-theme='registry'] .map-card .warn {
+  display: inline-block;
+  align-self: flex-start;
+  border: 2px solid currentColor;
+  padding: 0 6px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The enemy name plate on the battle stage is 132px wide (BattleStage.svelte): Plex Sans at 11.5px cut
+   "Aberrant Forest Rat Lv 15" (135px) where Default's face fits it (130px). */
+:root[data-theme='registry'] .stage .name {
+  font-size: 11px;
+}
