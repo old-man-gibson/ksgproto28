@@ -85,7 +85,9 @@
   --stripe-warn: repeating-linear-gradient(135deg, var(--accent) 0 6px, #000 6px 12px);
   --stripe-danger: repeating-linear-gradient(135deg, var(--danger) 0 6px, #000 6px 12px);
 
-  --font-caps: 'Barlow Condensed', 'Barlow', sans-serif;
+  /* A narrow system face stands in until Barlow Condensed loads (or if it does not): the
+     fallback must not be wider than the header and the 184px floor column allow. */
+  --font-caps: 'Barlow Condensed', 'Arial Narrow', 'Barlow', sans-serif;
   font-family: 'Barlow', 'Segoe UI', system-ui, sans-serif;
   font-size: 16px;
   font-variant-numeric: tabular-nums;
@@ -168,8 +170,30 @@
   border-bottom: 4px solid var(--accent);
 }
 
+:root[data-theme='signage'] .layout > header {
+  column-gap: 8px;
+}
+
 :root[data-theme='signage'] .layout > header h1 {
-  font-size: 22px;
+  font-size: 17px;
+  letter-spacing: 0.05em;
+}
+
+/* Header budget (App.svelte). The 2px button edge and the face are wider than Default's, and the
+   job strip and the clock chip share what is left. Narrower side padding on the transport buttons
+   pays for it. The bonus chip counts down every second: it reserves its widest text
+   ("⏩ 2× 7h 59m") so the header never moves when the bank crosses an hour. The clock chip keeps
+   96px at every width: its widest hour string fits, where Default's 6.5em cuts it. */
+:root[data-theme='signage'] .clock button {
+  padding: 4px 6px;
+}
+
+:root[data-theme='signage'] .clock .bonus {
+  min-width: 96px;
+}
+
+:root[data-theme='signage'] .timesense {
+  min-width: 96px;
 }
 
 :root[data-theme='signage'] .layout.paused > header::after {
@@ -256,8 +280,8 @@
   font-weight: 700;
   color: var(--text);
   background: var(--bg-raised);
-  font-size: 13px;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  letter-spacing: 0.04em;
 }
 
 :root[data-theme='signage'] .ts-row {
@@ -275,6 +299,12 @@
 
 :root[data-theme='signage'] .ts-row.here :is(.ts-side, .ts-num, .ts-name) {
   color: #000;
+}
+
+/* TowerSection draws the ring inside the row (offset -3px), so on the yellow plate it is black:
+   14:1 on #ffd400. The white ring is 1.43:1 there. */
+:root[data-theme='signage'] .ts-row.here:focus-visible {
+  outline-color: #000;
 }
 
 :root[data-theme='signage'] .ts-row.picked {
@@ -354,8 +384,9 @@
   padding-bottom: 2px;
 }
 
-/* Afflictions: a hazard stripe on the left. */
-:root[data-theme='signage'] .affliction {
+/* Afflictions in the sidebar: a hazard stripe on the left. Scoped to .afflictions: the Fight
+   Feed's riders (CombatPanel) use the class name `affliction` too (PITFALLS §8). */
+:root[data-theme='signage'] .afflictions .affliction {
   background:
     var(--stripe-danger) left / 6px 100% no-repeat,
     color-mix(in srgb, var(--danger) 14%, transparent);
