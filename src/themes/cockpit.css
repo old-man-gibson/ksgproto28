@@ -1,0 +1,301 @@
+/*
+ * Cockpit display theme. Active while <html data-theme="cockpit"> (src/ui/lib/theme.ts).
+ * Concept: a dark-cockpit panel. Dim grey at rest; a lit, filled tile appears only for an
+ * exception (a forced fight, a one-way road, an affliction, a frozen world); amber marks
+ * the current item. Flat surfaces, 1px rules, no gradients and no glow.
+ *
+ * Font: B612, drawn for cockpit displays. It is wide: the header's flex budgets
+ * (App.svelte) were measured with it (docs/THEMES.md §11).
+ *
+ * `:where(:root[data-theme='cockpit'])` keeps a rule at the specificity of the global one
+ * it replaces, so a component's own single-class rule still wins (docs/THEMES.md §11).
+ */
+
+:root[data-theme='cockpit'] {
+  --bg: #0e100f;
+  --bg-panel: #161917;
+  --bg-raised: #1f2321;
+  --bg-hover: #2c312e;
+  --bg-sunken: #090b0a;
+  --border: #3b423e;
+  --frame: #252a27;
+  --text: #e6eae4;
+  --text-dim: #a3aca5;
+  --accent: #f2b84b;
+  --hp: #b8322e;
+  --xp: #86dcb8;
+  --skill: #8f78a8;
+  --stamina: #86ab72;
+  --stamina-winded: #4d6b34;
+  --stamina-exhausted: #8a8a2a;
+  --mana: #5aa0ee;
+  --manaburn: #c050b8;
+  --spirit: #7d63b5;
+  --focus: #da6600;
+  --danger: #ff7566;
+  --warn: #ffd24d;
+  --buff: #7fd4b8;
+  --night: #c3b2ec;
+  --night-edge: #5a4f80;
+  --action: #e8cf4a;
+
+  --log-combat: #ddb2a8;
+  --log-danger: #ff8a7c;
+  --log-loot: #dbc06f;
+  --log-skill: #b18ef5;
+  --log-achievement: #ffef30;
+  --log-fusion: #f08a3c;
+  --log-quest: #f6f1c3;
+  --log-travel: #a8d5fd;
+  --log-explore: #9ff0e4;
+  --log-plain: #a0adb5;
+
+  --edge: #8f9891;
+  --ring: #f4f6f2;
+  --ring-w: 2px;
+  --here: #e879b9;
+  --sel-bg: #2b2412;
+  --sel-ink: #e6eae4;
+  --text-off: #89938c;
+
+  --bar-ink: #ffffff;
+  --bar-halo: #000000;
+
+  --ink-lmin: 0.44;
+  --ink-lmax: 1;
+  --sel-ink-lmin: 0.47;
+  --sel-ink-lmax: 1;
+
+  --scrim: rgb(5 7 6 / 72%);
+  --scrim-deep: rgb(5 7 6 / 84%);
+  --lift: transparent;
+  --hatch-lock: repeating-linear-gradient(135deg, transparent 0 5px, rgb(255 255 255 / 11%) 5px 6px);
+
+  --font-caps: 'B612', sans-serif;
+  font-family: 'B612', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13.5px;
+  scrollbar-color: var(--border) var(--bg);
+}
+
+/* Shapes. */
+
+:root[data-theme='cockpit'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 0 !important;
+}
+
+/* Titles are placards: small spaced capitals. A section title (h3) is dim and trails a rule;
+   a screen title (h2) is the one bright heading. */
+:root[data-theme='cockpit'] :is(h1, h2, h3) {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+:root[data-theme='cockpit'] h2 {
+  font-size: 15px;
+  letter-spacing: 0.12em;
+}
+
+:root[data-theme='cockpit'] h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+:root[data-theme='cockpit'] h3::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+:root[data-theme='cockpit'] h4 {
+  font-weight: 700;
+}
+
+:root[data-theme='cockpit'] .layout > header h1 {
+  font-size: 13px;
+  color: var(--text);
+}
+
+:where(:root[data-theme='cockpit']) button {
+  background: transparent;
+}
+
+/* Selected: the lit bar of an annunciator under a dark amber well. The border stays grey. */
+:root[data-theme='cockpit'] button.selected {
+  border-color: var(--edge);
+  color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+:root[data-theme='cockpit'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 1px solid var(--edge);
+}
+
+:root[data-theme='cockpit'] :is(input, select, textarea)::placeholder {
+  color: var(--text-dim);
+}
+
+:root[data-theme='cockpit'] input:is([type='checkbox'], [type='radio'], [type='range']) {
+  accent-color: var(--accent);
+}
+
+/* Screen list: spaced captions; every row is dim except the open screen, which is amber on a
+   dark amber well with a bar at its left edge. */
+:root[data-theme='cockpit'] .nav-caption {
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+}
+
+:root[data-theme='cockpit'] .nav-list .nav-entry {
+  border-left-width: 3px;
+  font-size: 14px;
+}
+
+:root[data-theme='cockpit'] .nav-list .nav-entry:not(.nav-on) {
+  color: var(--text-dim);
+}
+
+:root[data-theme='cockpit'] .nav-list .nav-entry.nav-on,
+:root[data-theme='cockpit'] .nav-list .nav-entry.nav-on:hover:not(:disabled) {
+  background: var(--sel-bg);
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+/* The marks are small capitals. A mark that asks for action (quests ready) is a boxed amber tile;
+   "new" is only text, so a column of them stays quiet. */
+:root[data-theme='cockpit'] .nav-list .nav-marks > span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+:root[data-theme='cockpit'] .nav-list .nav-marks > .nav-mark {
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 0 4px;
+}
+
+/* Bars read as instrument scales: a thin frame and a tick every tenth along the bottom edge. */
+:root[data-theme='cockpit'] .bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 1px solid var(--border);
+  background: repeating-linear-gradient(90deg, rgb(0 0 0 / 60%) 0 1px, transparent 1px 10%) bottom / 100% 3px no-repeat;
+}
+
+:root[data-theme='cockpit'] .bar > .label {
+  font-size: 10.5px;
+  z-index: 1;
+}
+
+/* Tabs: flat, a 3px rule under the open one. */
+:root[data-theme='cockpit'] .region-switch,
+:root[data-theme='cockpit'] .tabs {
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme='cockpit'] .region-switch button,
+:root[data-theme='cockpit'] .tabs > button {
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: var(--text-dim);
+}
+
+:root[data-theme='cockpit'] .region-switch button.selected,
+:root[data-theme='cockpit'] .tabs > button.selected {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Floor list. B612 is wide: the names get a smaller size so a floor name fits the 184px column. */
+:root[data-theme='cockpit'] .ts-row {
+  font-size: 11.5px;
+  letter-spacing: -0.02em;
+}
+
+:root[data-theme='cockpit'] .ts-band {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+:root[data-theme='cockpit'] .ts-row:not(.here, .picked) {
+  color: var(--text-dim);
+}
+
+:root[data-theme='cockpit'] .ts-row.picked {
+  background: var(--bg-raised);
+}
+
+:root[data-theme='cockpit'] .ts-row.here {
+  background: var(--sel-bg);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+:root[data-theme='cockpit'] .ts-side.here-tag {
+  border: 1px solid var(--accent);
+  padding: 0 2px;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+/* Map card: grey frame, amber top bar. A warning line is a lit tile, the one place the card fills. */
+:root[data-theme='cockpit'] .map-card {
+  border: 1px solid var(--edge);
+  border-top: 3px solid var(--accent);
+}
+
+:root[data-theme='cockpit'] .map-card .warn {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 1px 6px;
+  background: var(--warn);
+  color: #000;
+  font-weight: 700;
+}
+
+:root[data-theme='cockpit'] .map-card .warn.danger-line {
+  background: var(--danger);
+  color: #000;
+}
+
+/* Stations: the newest one carries the amber bar. */
+:root[data-theme='cockpit'] .st-scroll .station.back:not(:disabled) {
+  border-color: var(--accent);
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+/* A frozen world and an affliction are lit tiles. */
+:root[data-theme='cockpit'] .clock .pause.on {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+:root[data-theme='cockpit'] .affliction {
+  background: var(--danger);
+  color: #000;
+  border-color: var(--danger);
+  font-weight: 700;
+}
+
+/* Map. */
+:root[data-theme='cockpit'] .plan .cell {
+  fill-opacity: 0.18;
+}
+
+:root[data-theme='cockpit'] .plan .dname {
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}

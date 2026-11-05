@@ -328,3 +328,38 @@ single-class rule (`.map-toggle { border: none }`) still wins. A rule that must 
   - Brightest of the dark themes: white text on near-black. The yellow plates are limited to the four places above.
   - Barlow is the Latin slice only; `ā` and `ō` fall back to the system face.
   - `.map-card .warn` and `.affliction` rules name component classes; a renamed class loses its stripe and keeps working.
+
+### Cockpit
+
+- **Concept:** a dark-cockpit panel. Dim grey-green at rest; a filled tile appears only for an exception; amber marks the
+  current item. Flat surfaces, 1px rules, no gradient and no glow; radius 0.
+- **Font:** B612 400 and 700 (`@fontsource/b612/latin-{400,700}.css`). Root size 13.5px. B612 digits are tabular without a
+  feature flag (checked: ten digits measure the same), so the header's clock slot holds one width for all 24 hours.
+- **Tokens:**
+  - Surfaces: bg `#0e100f`, panel `#161917`, raised `#1f2321`, hover `#2c312e`, sunken `#090b0a`; border `#3b423e`, frame `#252a27`.
+  - Ink: text `#e6eae4` (10.9:1 worst), dim `#a3aca5` (5.68), accent amber `#f2b84b` (7.40), danger `#ff7566` (5.04),
+    warn `#ffd24d` (9.19). Log colours: worst `--log-skill` 5.08.
+  - Cues: edge `#8f9891` (5.35:1 worst of panel and raised), ring `#f4f6f2` 2px (14.6), here `#e879b9`, text-off `#89938c` (5.01).
+  - Selected: `--sel-bg` `#2b2412` (a dark amber well), `--sel-ink` `#e6eae4` (12.65). Authored colours: `--ink-lmin` 0.44 (worst 4.67),
+    `--sel-ink-lmin` 0.47 (worst 4.82 on `--sel-bg`); Refuse and Poor 14.7 ΔE00 apart.
+  - Bars: hp `#b8322e`, stamina `#86ab72`, mana `#5aa0ee`, spirit `#7d63b5`, focus `#da6600`, action `#e8cf4a`, xp `#86dcb8`. Chosen by
+    lightness steps so the confusable hues (red, green, orange, yellow) stay apart for protan and deutan viewers: worst pair
+    protan stamina/xp 14.45, deutan mana/spirit 14.39. No `VISION_EXCEPTIONS` entry.
+- **Decorations (CSS only):**
+  - Annunciator tiles, filled, for exceptions only: a one-way line (`--warn`) and a no-retreat line (`--danger`) in a map card,
+    an affliction chip, and the Pause button while the world is frozen (`.clock .pause.on`, amber).
+  - The open screen is amber text on `--sel-bg` with a 3px amber bar at the left (`.nav-on`); a selected control is the same well with
+    a 3px amber bar under it; a selected tab is a 3px amber rule under flat text. Every other row and tab is dim.
+  - Placards: `h3` is 11.5px dim spaced capitals with a trailing 1px rule; `h2` is 15px, the one bright heading. The nav mark
+    "ready" is a boxed amber caption; "new" is plain text so a column of them stays quiet.
+  - Bars: a 1px frame and a tick every tenth along the bottom edge (`.bar::after`).
+  - Map card: grey frame with a 3px amber top bar. Locked rows: white 11% hatch. No shadow under floating cards (`--lift` is transparent).
+- **Header budget:** one row at 1024, 1094, 1180, 1440 and 1920 px, no overflow. Job strip width at those widths is 167, 237, 338,
+  441 and 691 px (Default 198, 268, 362, 462, 752): B612 is wide, so the strip is 24 to 31px narrower than Default at the
+  four narrower widths. The detail text (330px) and the bar (210px) drop at the same widths as in Default: the bar at 1024 only.
+- **Known limits:**
+  - B612 is wide. Tower floor names use 11.5px and a tighter letter-spacing to fit the 184px column; "The Flooded Offices" is still
+    cut by 8px, as it is in Default.
+  - Closest of the dark themes to a plain dark UI. What marks it as a panel: the face, the tiles, the placards and the tick scale.
+    A screen with no exception on it shows no filled tile.
+  - B612 is the Latin slice only; `ā` and `ō` fall back to the system face.
