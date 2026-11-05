@@ -186,12 +186,13 @@
       onclick={(ev) => onpick(node.id, ev.currentTarget)}
       onkeydown={(ev) => pressed(ev) && onpick(node.id, ev.currentTarget)}
     >
-      <!-- Keyboard focus: drawn only on :focus-visible (the node's own outline is off). -->
-      <circle cx={node.x} cy={node.y} r={f.pinR + 10} class="focus-ring" />
       {#if node.here}
         <circle cx={node.x} cy={node.y} r={f.pinR + 6} class="ring" />
         <circle cx={node.x} cy={node.y} r={f.pinR + 10} class="ring ring-outer" />
       {/if}
+      <!-- Keyboard focus: drawn only on :focus-visible (the node's own outline is off). It is
+           outside the here rings (+6, +10) and painted after them. -->
+      <circle cx={node.x} cy={node.y} r={f.pinR + 15} class="focus-ring" />
       {#if node.pointed}
         <circle cx={node.x} cy={node.y} r={f.pinR + 4} class="beacon" />
       {/if}
@@ -332,7 +333,7 @@
   }
 
   .road {
-    stroke: color-mix(in srgb, var(--accent) 34%, var(--border));
+    stroke: var(--road);
     stroke-linecap: round;
   }
 
@@ -347,7 +348,7 @@
   }
 
   .head {
-    fill: color-mix(in srgb, var(--accent) 34%, var(--border));
+    fill: var(--road);
     stroke: var(--bg-sunken);
     stroke-width: 1;
   }
