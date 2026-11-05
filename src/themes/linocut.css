@@ -122,9 +122,30 @@
   border-top: 5px solid var(--frame);
 }
 
+:root[data-theme='linocut'] .layout > header {
+  column-gap: 8px;
+}
+
 :root[data-theme='linocut'] .layout > header h1 {
-  font-size: 19px;
+  font-size: 15px;
   color: var(--frame);
+}
+
+/* Header budget (App.svelte). Alfa Slab One and Bitter are wide, and the job strip and the clock
+   chip share what is left. Narrower side padding on the transport buttons pays for it. The bonus
+   chip counts down every second: it reserves its widest text ("⏩ 2× 7h 59m") so the header never
+   moves when the bank crosses an hour. The clock chip keeps 96px at every width, which holds its
+   widest hour string in Bitter and in the fallback face (Georgia's digits are not tabular). */
+:root[data-theme='linocut'] .clock button {
+  padding: 4px 6px;
+}
+
+:root[data-theme='linocut'] .clock .bonus {
+  min-width: 104px;
+}
+
+:root[data-theme='linocut'] .timesense {
+  min-width: 96px;
 }
 
 :where(:root[data-theme='linocut']) button {
@@ -233,14 +254,21 @@
   color: #000;
 }
 
+/* TowerSection draws the ring inside the row (offset -3px), so on the bone plate it is black:
+   16:1 on #ece7d8. The bone ring is 1.19:1 there. */
+:root[data-theme='linocut'] .ts-row.here:focus-visible {
+  outline-color: #000;
+}
+
 :root[data-theme='linocut'] .ts-band.title-only {
   opacity: 1;
   font-style: italic;
   background-image: var(--hatch);
 }
 
-/* Floating cards sit on a hard saffron block. */
-:root[data-theme='linocut'] :is(.map-card, .tip-pop, .log-drawer, .tutorial, .drop, .overlay .window) {
+/* Floating cards sit on a hard saffron block. `.drop` is MartialPlanner's family list; CombatPanel
+   has a notebook button of the same name, so it is scoped to its parent. */
+:root[data-theme='linocut'] :is(.map-card, .tip-pop, .log-drawer, .tutorial, .fam-wrap .drop, .overlay > .window.panel) {
   box-shadow: 6px 6px 0 var(--block);
 }
 
@@ -269,7 +297,9 @@
   letter-spacing: 0.14em;
 }
 
-:root[data-theme='linocut'] .affliction {
+/* Scoped to the sidebar's .afflictions: the Fight Feed's riders (CombatPanel) use the class name
+   `affliction` too (PITFALLS §8). */
+:root[data-theme='linocut'] .afflictions .affliction {
   border-width: 2px;
   background: repeating-linear-gradient(135deg, transparent 0 3px, rgb(255 123 107 / 30%) 3px 4px);
 }
@@ -280,8 +310,8 @@
   padding-bottom: 2px;
 }
 
-/* Map. */
-:root[data-theme='linocut'] .plan .node .dot {
+/* Map. A selected pin keeps MapPlan's 3.5 outline. */
+:root[data-theme='linocut'] .plan .node:not(.selected) .dot {
   stroke-width: 2.5;
 }
 
