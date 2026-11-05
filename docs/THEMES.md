@@ -277,3 +277,54 @@ line. The nav list keeps a `1em` marker slot on every row for the same reason.
 - Tip.svelte opens on hover. The click-not-hover rule applies to it; the change is not made here.
 - Default's authored colours are under 4.5:1 in places (§7). The fix is two numbers in `app.css` and a visible change to
   every rarity and grade colour in Default.
+
+## 11. Theme catalogue
+
+One subsection per built theme after the foundation: concept, fonts, key tokens, decorations, known limits. Numbers are
+measured with the test's own functions on the token values in the theme file (`tests/themeColor.ts`). "Worst" is the
+minimum over panel, raised and hover unless a surface is named.
+
+A rule that sets a default (a border width, a font weight) is written `:where(:root[data-theme='id']) <selector>`. `:where()`
+adds no specificity, so the rule ties with the global one it replaces (`button`, `.panel` in `app.css`) and a component's own
+single-class rule (`.map-toggle { border: none }`) still wins. A rule that must beat a component rule keeps the plain
+`:root[data-theme='id']` prefix.
+
+### Signage
+
+- **Concept:** wayfinding signs. Black ground, white type, signal-yellow plates, hazard stripes. A state is a fill, a stripe
+  or a glyph; there is no glow and no gradient other than the stripes and the bar ticks.
+- **Fonts:** Barlow 400 and 600 (text), Barlow Condensed 600 and 700 (headings, captions, bar labels, tower rows). Imports:
+  `@fontsource/barlow/latin-{400,600}.css`, `@fontsource/barlow-condensed/latin-{600,700}.css`. Root size 16px, tabular figures.
+  Radius 3px on everything except the round parts (`.shadow .ring .aura .dot .pip`).
+- **Tokens:**
+  - Surfaces: bg `#0b0b0b`, panel `#141414`, raised `#1f1f1f`, hover `#333333`, sunken `#000000`; border `#8a8a8a`, frame `#3a3a3a`.
+  - Ink: text `#ffffff` (12.6:1 worst), dim `#bcbcbc` (6.65), accent `#ffd400` (8.83), danger `#ff7a6c` (4.97 on hover),
+    warn `#ffa726` (6.50). Log colours: worst `--log-skill` 4.95.
+  - Cues: edge `#e6e6e6` (13.2:1 worst of panel and raised), ring `#ffffff` 3px (16.5), here `#ff5cc4`, text-off `#8d8d8d` (4.97 on raised).
+  - Selected: `--sel-bg` `#000000`, `--sel-ink` `#ffffff` (21:1). Authored colours: `--ink-lmin` 0.43 (worst 4.71 on panel and
+    raised, Refuse and Poor 15.2 ΔE00 apart), `--sel-ink-lmin` 0.36 (worst 4.96 on `--sel-bg`).
+  - Bars: saturated mid-dark fills, white label with a black halo. Worst colour-vision pair: protan hp/stamina 9.40; deutan
+    focus/action 12.50. No `VISION_EXCEPTIONS` entry.
+- **Decorations (CSS only):**
+  - A solid `--accent` plate with black ink marks the open screen (nav entry), the tower floor underfoot (`.ts-row.here`), the
+    newest station (`.station.back`) and a map card's head. Nothing else is filled yellow.
+  - A selected control (`button.selected`) is a black plate with a yellow border and a 4px yellow bar under the label.
+  - Header: 2px white edge, 4px yellow bottom rule. While the game is paused a yellow and black hazard stripe covers the rule
+    (`.layout.paused > header::after`).
+  - `h2` carries a 4px yellow rule; `h3` is a raised label strip with a 6px white block at its left end; the nav captions use the
+    same strip.
+  - Bars: 1px white edge and gauge ticks at 25, 50 and 75% (`.bar::after`, drawn above the fill, no pointer events).
+  - Hazard stripes (`--stripe-warn`, `--stripe-danger`, 135 degrees, 6px bands) mark a one-way line and a no-retreat line in a
+    map card, and the left end of an affliction chip. They exist only while such a line is shown.
+  - Locked rows: white 24% hatch (`--hatch-lock`). Floating cards have no shadow (`--lift` is transparent); a 2px yellow border
+    separates them from what is under them.
+- **Header budget:** one row at 1024, 1094, 1180, 1440 and 1920 px, no overflow. Job strip width at those widths is 191, 261,
+  355, 441 and 709 px (Default 198, 268, 362, 462, 752; Gothic 221, 291, 385, 433, 703). At 1024 the strip is under 210px,
+  so its bar is hidden, as in Default. The transport buttons are 311px wide (Default 307).
+- **Known limits:**
+  - Selected controls are black, not yellow. A solid yellow `--sel-bg` cannot pass the authored-colour check: the authored
+    colours inside it would have to stay under OKLCH lightness 0.5, which leaves quality tiers 8 ΔE00 apart against a floor of
+    12 (best margin -4.0 on `#ffd400`, -0.6 on white; measured with `tests/themeColor.ts`).
+  - Brightest of the dark themes: white text on near-black. The yellow plates are limited to the four places above.
+  - Barlow is the Latin slice only; `ā` and `ō` fall back to the system face.
+  - `.map-card .warn` and `.affliction` rules name component classes; a renamed class loses its stripe and keeps working.
