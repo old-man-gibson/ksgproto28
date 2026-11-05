@@ -391,3 +391,46 @@ single-class rule (`.map-toggle { border: none }`) still wins. A rule that must 
   - Closest of the dark themes to a plain dark UI. What marks it as a panel: the face, the tiles, the placards and the tick scale.
     A screen with no exception on it shows no filled tile.
   - B612 is the Latin slice only; `ā` and `ō` fall back to the system face.
+
+### Linocut
+
+- **Concept:** a relief print. A black key block, bone ink and one spot colour, saffron. Hatching carries the tone: disabled
+  and locked things are hatched, the unfilled part of a bar is hatched. A selected control and a floating card are printed with
+  a hard offset block of saffron behind them. Neutrals are pure grey; there is no brown.
+- **Fonts:** Bitter 400, 600 and 700 (text), Alfa Slab One 400 (h1 to h3 only). Imports:
+  `@fontsource/bitter/latin-{400,600,700}.css`, `@fontsource/alfa-slab-one/latin-400.css`. Root size 14.5px, lining tabular
+  figures. A control inside a title (Expand all, Collapse all) is reset to Bitter 12px. Radius 0.
+- **Tokens:**
+  - Surfaces: bg `#0a0a0a`, panel `#121212`, raised `#1c1c1c`, hover `#292929`, sunken `#050505`; border `#8a877d`, frame (bone) `#ece7d8`.
+  - Ink: text `#ece7d8` (11.8:1 worst), dim `#aba79a` (6.04), accent saffron `#f2a20c` (6.89), danger `#ff7b6b` (5.75),
+    warn `#f7c948` (9.29). Log colours: worst `--log-plain` 6.04.
+  - Cues: edge `#8a877d` (4.74:1 worst of panel and raised), ring `#fffaf0` 3px dashed (16.4), here `#ee7fc0`, text-off `#8c897f` (4.87).
+  - Selected: `--sel-bg` `#000000`, `--sel-ink` `#ece7d8` (17.0). Authored colours: `--ink-lmin` 0.43 (worst 4.87), `--sel-ink-lmin` 0.36
+    (worst 4.96 on `--sel-bg`); Refuse and Poor 15.2 ΔE00 apart. Worst bar `-ink` token: `--hp-ink` 5.89 (panel, raised, hover and
+    `--sel-bg`).
+  - Bars: hp `#e5483a`, stamina `#4fae6a`, mana `#3b82f0`, spirit `#c8a4f0`, focus `#f08c2e`, action `#f2d024`, xp `#86f0c4`. Worst
+    colour-vision pair: protan stamina/focus 9.34; deutan hp/stamina 10.10. No `VISION_EXCEPTIONS` entry. The bar label is bone
+    `#fffaf0` with a black halo.
+- **Decorations (CSS only):**
+  - A block: 2px grey outline and a 5px bone bar across the top, on every `.panel` and the header.
+  - The open screen is reversed type: a bone plate with black ink and a 6px saffron block at its left edge (`.nav-on`); the
+    tower floor underfoot is the same plate (`.ts-row.here`).
+  - A selected control has a bone edge and a 3px saffron block offset down and right (`box-shadow: 3px 3px 0`). The newest station
+    has the same block in saffron on a saffron edge.
+  - Floating cards (`.map-card .tip-pop .log-drawer .tutorial .drop`, modal windows) have a 6px saffron offset block (`--block`).
+    `--lift` is transparent, so no blur shadow is drawn.
+  - Hatch (`--hatch`, `--hatch-lock`): 135 degrees, 1px bone lines at 14 to 16% every 5px. It fills a disabled button (with the
+    dashed edge and the grayscale from `cues.css`), a locked row, the next band's name and the empty part of every bar. A
+    no-retreat line in a map card and an affliction chip carry a red hatch.
+  - A one-way line has a 5px `--warn` bar at its left; a no-retreat line the same in `--danger`.
+- **Header budget:** one row at 1024, 1094, 1180, 1440 and 1920 px, no overflow. Job strip width at those widths is 171, 241, 336,
+  431 and 680 px (Default 198, 268, 362, 462, 752): Alfa Slab One and Bitter are wide. The bar and the detail text drop at the same
+  widths as in Default. At 1180 the strip has 6px over the 330px the detail needs.
+- **Known limits:**
+  - Selected controls are black with a bone edge, not a bone plate: a bone `--sel-bg` cannot pass the authored-colour check (best
+    margin -0.6 on white).
+  - The palette shares bone and a warm accent with Gothic. What separates them: neutral black surfaces, saffron at higher chroma
+    than brass, slab type, hatching and offset blocks.
+  - Tower floor names use 11.5px at weight 400 to fit the 184px column; "The Flooded Offices" is cut by 4px, as in Default.
+  - The hatch under a bar label lowers the label's local contrast; the 1px black halo carries it (bone on black halo 20:1).
+  - Bitter and Alfa Slab One are the Latin slice only; `ā` and `ō` fall back to the system face.
