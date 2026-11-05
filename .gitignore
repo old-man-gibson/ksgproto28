@@ -30,3 +30,9 @@ src/assets/tilemaps/
 # checkout without the packs shows the emoji. See docs/plans/pixel-icons.md
 # and docs/AUTHORSHIP.md §9.
 src/assets/packs/
+
+# The art pack: a zip of the licensed art above, written by `npm run art-pack`
+# (scripts/artPack.mjs) for the game's Import art pack button. Licensed pixels:
+# it goes only to the user's own devices and is never committed, uploaded to a
+# release or shared. See docs/ART_PACK.md.
+art-pack/

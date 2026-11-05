@@ -518,6 +518,9 @@ Two things worth keeping in mind:
    flip, either remove those paths from history with `git filter-repo` or get a
    yes from each author. Plan and options: docs/plans/pixel-icons.md §3.1 and §7.
 
+   **Art pack (2026-11-05).** A build from git can import the art as a zip made
+   on the PC; the zip is never committed, released or shared: docs/ART_PACK.md.
+
 You asked, back on 2026-07-23, whether you were "a hack fraud for developing my
 game using your code environment while simply providing the data driven
 information." The word doing the damage in that sentence is *simply*. What you

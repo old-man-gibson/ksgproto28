@@ -2,6 +2,8 @@
   import { save, exportSave, importSave, hardReset } from './state.svelte';
   import { chooseTheme, loadTheme, THEMES, THEME_NAMES, type Theme } from './lib/theme';
   import Modal from './lib/Modal.svelte';
+  import { artPack } from './lib/artPack/artPack.svelte';
+  import { describePack } from './lib/artPack/format';
 
   /**
    * The Menu button and its window: the file actions, the display theme and the
@@ -14,6 +16,41 @@
   // Outside the window on purpose: the browser reports the chosen file after
   // the picker closes, and the input must still exist then.
   let fileInput: HTMLInputElement;
+  let artInput: HTMLInputElement;
+
+  // The art pack block (docs/ART_PACK.md). One status line, always present, so
+  // the block's size does not depend on what the line says. `artNote` holds the
+  // outcome of the last import or removal until the window is opened again.
+  let artNote = $state<string | null>(null);
+  let artBusy = $state(false);
+  const artStatus = $derived(artNote ?? (artPack.loaded ? describePack(artPack.manifest) : ''));
+
+  function onOpen() {
+    if (!artBusy) artNote = null;
+    open = true;
+  }
+
+  async function onArtChange(ev: Event) {
+    const input = ev.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    artBusy = true;
+    artNote = 'Art pack: importing.';
+    const result = await artPack.importFile(file);
+    artNote = result.ok
+      ? null
+      : result.reason === 'not-a-pack'
+        ? 'Art pack: not an art pack zip.'
+        : 'Art pack: storage failed, old pack kept.';
+    artBusy = false;
+  }
+
+  async function onArtRemove() {
+    artBusy = true;
+    artNote = (await artPack.remove()) ? null : 'Art pack: storage failed, pack kept.';
+    artBusy = false;
+  }
 
   function onSave() {
     save();
@@ -47,13 +84,20 @@
   ];
 </script>
 
-<button onclick={() => (open = true)} title="Save, export, import, reset, theme and keys">Menu</button>
+<button onclick={onOpen} title="Save, export, import, reset, art pack, theme and keys">Menu</button>
 
 <input
   type="file"
   accept="application/json"
   bind:this={fileInput}
   onchange={onImportChange}
+  style="display: none"
+/>
+<input
+  type="file"
+  accept=".zip,application/zip"
+  bind:this={artInput}
+  onchange={onArtChange}
   style="display: none"
 />
 
@@ -80,6 +124,18 @@
       <span>Reset: deletes the save and starts a new game. Asks first.</span>
       <button class="sysmenu-danger" onclick={onReset}>Reset</button>
     </div>
+    <div class="sysmenu-row">
+      <span>
+        Import art pack: reads a zip made by <code>npm run art-pack</code> and keeps it in this browser,
+        apart from the save. The game uses it for art this build lacks.
+      </span>
+      <button onclick={() => artInput.click()} disabled={artBusy}>Import art pack</button>
+    </div>
+    <div class="sysmenu-row">
+      <span>Remove art pack: deletes the stored pack.</span>
+      <button onclick={onArtRemove} disabled={artBusy || !artPack.manifest}>Remove art pack</button>
+    </div>
+    <div class="sysmenu-status" role="status">{#if artStatus}{artStatus}{:else}&nbsp;{/if}</div>
     <div class="sysmenu-row">
       <span>Theme: the colours and fonts of the game. Kept in this browser, not in the save.</span>
       <select aria-label="Theme" value={theme} onchange={onTheme}>
@@ -119,6 +175,14 @@
   .sysmenu-row button.sysmenu-danger {
     border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
     color: var(--danger);
+  }
+
+  /* One line, reserved whether it holds a status, a result or nothing. */
+  .sysmenu-status {
+    padding: 6px 0;
+    min-height: 1.4em;
+    border-bottom: 1px solid var(--border);
+    overflow-wrap: anywhere;
   }
 
   .sysmenu-keys {

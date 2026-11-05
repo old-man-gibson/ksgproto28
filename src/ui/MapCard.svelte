@@ -497,7 +497,7 @@
         <div class="map-wrap" class:tiled bind:clientWidth={wrapW} style:height="{plan.frame.h + 2}px">
           {#if tilemap}
             {#key shownRegion}
-              <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} />
+              <TileMap map={tilemap} onfallback={() => (tilesFailed = true)} onready={() => (tilesFailed = false)} />
             {/key}
           {/if}
           <MapPlan {plan} route={routeDraw} {stuck} {selected} onpick={pick} onexit={walkTo} />

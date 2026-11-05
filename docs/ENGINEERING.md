@@ -452,7 +452,9 @@ portraits), `src/assets/tilemaps/` (tile packs) and `src/assets/packs/` (icon
 packs). The main checkout `D:\ksgproto28` has all three. A fresh clone or a
 worktree under `.claude/worktrees/` has none, and shows emoji, the plain map
 diagram and missing portraits instead. Nothing breaks; tests that need a file
-either skip (icons) or fail with a clear message (bestiary art).
+either skip (icons) or fail with a clear message (bestiary art). A build that
+has none can import the art as a zip instead (`npm run art-pack`, the Menu's
+Import art pack): [ART_PACK.md](ART_PACK.md).
 
 **For tests** (`npm run verify`), link the enemy portraits in. A junction sits
 under an ignored path, so git never sees it:
