@@ -60,7 +60,7 @@ declare them.
 | `--log-combat`, `--log-danger`, `--log-loot`, `--log-skill`, `--log-achievement`, `--log-fusion`, `--log-quest`, `--log-travel`, `--log-explore`, `--log-plain` | Log line colours, one per kind. At least 4.5:1 on panel, raised and hover. |
 | `--edge` | Border of anything clickable. At least 3:1 on panel and raised. |
 | `--ring` | Keyboard focus ring. At least 3:1 on panel and raised. |
-| `--here` | The you-are-here ring on the map. At least 12 ΔE00 from `--ring` and from `--accent`. |
+| `--here` | The you-are-here ring on the map. At least 12 ΔE00 from `--ring` and from `--accent`, and at least 3:1 on `--bg-sunken` (the map ground) and on `#0b0e12` (tile art and the stage). A light theme needs a mid-tone colour: lightness 0.11 to 0.18 holds 3:1 on both. |
 | `--sel-bg`, `--sel-ink` | Fill and ink of a selected thing. `--sel-ink` at least 4.5:1 on `--sel-bg`. |
 | `--text-off` | Disabled text. At least 4.5:1 on raised. |
 | `--bar-ink`, `--bar-halo` | Bar label ink and its outline. `--bar-ink` is at least 4.5:1 on every fill, or on `--bar-halo`. |
@@ -84,6 +84,9 @@ declare them.
 | `--hatch-lock` | Background image of a locked row. |
 | `--tint-mix` | Share of an authored colour mixed into a chip that wears it (16% in Default). |
 | `--sel-ink-lmin`, `--sel-ink-lmax` | The `ink()` bounds inside a selected thing (§4). Default is 0.58 and 1. |
+| `--stage-ink`, `--stage-accent`, `--stage-ok`, `--stage-ok-text`, `--stage-danger` | Colours inside the painted battle stage, the place banner and the raid pill, which stay dark in every theme. Default aliases them to `--text`, `--accent`, `--xp`, `--xp-ink` and `--danger`, so Default and Gothic are unchanged. A light theme sets all five to colours that hold 4.5:1 on the stage's ground (`#0b0e12`). `--stage-ink` is the colour that text without a colour of its own inherits inside the stage. |
+| `--badge-bg`, `--badge-ink`, `--badge-dim` | A count or tag drawn on an item cell (EquipmentPanel, CollectionSection): the chip's fill, its text and its secondary text. Default aliases them to `--scrim`, `--text` and `--text-dim`. A light theme makes the chip dark and the text light. The text is at least 4.5:1 on the chip composited over `--bg-raised`. |
+| `--accent-fill`, `--buff-fill`, `--warn-fill` | A colour drawn as a bar FILL inside the global `.bar` (well `--bar-track`): the quest, achievement, ability and bench bars (`--accent-fill`), the exploration bar (`--buff-fill`) and its find ticks (`--warn-fill`). `--accent`, `--buff` and `--warn` are text and border colours, and a light theme makes them dark, which vanishes on a dark well. Default aliases each to its text colour. At least 3:1 on `--bar-track`; the test finds every fill site in the source and checks the tokens it reads. |
 | `--font-caps` | Face of letter-spaced capitals. Unset in Default (`var(--font-caps, inherit)`). |
 
 ### Fixed (the same in every theme)
@@ -129,13 +132,14 @@ allowed cases, each with the replacement.
 Rarity, quality tier, status, school, position and talent-lap colours are authored in data (`src/core/data/*.data.ts`,
 `ui/lib/talentBar.ts`) for no particular ground. They are drawn through `ink(color)` (`ui/lib/ink.ts`):
 
-- OKLCH lightness `l` becomes `lmin + l * (lmax - lmin)`. Chroma and hue are kept. This is a **remap, not a clamp**: a clamp
-  merges the dark colours (Refuse and Poor would become one grey); a remap keeps their order and spacing.
+- OKLCH lightness `l` becomes `lmin + l * (lmax - lmin)`, chroma `c` becomes `c * lmax` and hue is kept. This is a **remap, not
+  a clamp**: a clamp merges the dark colours (Refuse and Poor would become one grey); a remap keeps their order and spacing. The
+  chroma factor is 1 wherever `lmax` is 1, so every dark theme keeps chroma; a light theme needs it (§11).
 - `lmin` and `lmax` are `--ink-lmin` and `--ink-lmax`. Default is 0.48 and 1, Gothic 0.42 and 1: every dark theme lifts the
   dark colours until they pass 4.5:1 on its surfaces. A light theme lowers `lmax`. At 0 and 1 the result is the authored
   colour, pixel for pixel (checked on 44 colours in the browser).
-- The CSS is `oklch(from <color> calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h)`. A browser without
-  relative colour syntax gets the raw colour: `ink()` checks `CSS.supports` once.
+- The CSS is `oklch(from <color> calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h)`.
+  A browser without relative colour syntax gets the raw colour: `ink()` checks `CSS.supports` once.
 - Only a literal hex colour is remapped. `var(--token)` passes through, because a theme token is already the theme's colour.
 
 Use `ink()` wherever data supplies a colour to CSS: `style="--tint: {ink(c)}"`, `color: {ink(c)}`, SVG `fill={ink(c)}`,
@@ -189,7 +193,12 @@ with a `--tile-halo` outline. These tokens are fixed, so the art reads the same 
   rules do not set `font-weight`, `font-size`, `padding` or `border-width`. Use colour, an inset shadow, a border colour or
   style, or a reserved marker. This is the no-layout-shift rule; the test lints it in `app.css`, the theme files and every
   `<style>` block.
-- **Domain class names.** Do not name a class `bar`, `panel`, `dim` or `small` (app.css styles them globally).
+- **Domain class names.** Do not name a class `bar`, `panel`, `dim` or `small` (app.css styles them globally). A theme that
+  decorates the global `.bar` writes `.bar:has(> .fill)`: DefeatModal's share bars are a `.bar` with nothing in them, and a bare
+  `.bar` rule drew the theme's outline and ticks on them.
+- **Dim with a colour, not with `opacity`.** Text that must stay readable is dimmed with `--text-dim`. Opacity .55 to .65 took a
+  position chip, a "still running" label and a tower band's name under 4.5:1 (2.8 to 4.4 on a light page). An opacity on a thing
+  with no text, or on a state the text does not carry (a disabled cell), is fine.
 - **Colour is data here.** HP, stamina, mana, spirit and focus are told apart by hue, and so are rarity and elements. A theme
   may shift them but must keep them distinguishable (the hue-drift and colour-vision checks).
 - **Cinzel is capitals only.** Keep it on short titles (h1–h3, the tab rows inside panels, the screen list's group captions).
@@ -212,7 +221,12 @@ the measured value.
 | `--text-off` on raised | 4.5:1 |
 | `--edge`, `--ring` on panel and raised | 3:1 |
 | `--ring`, `--here`, `--accent` pairwise | 12 ΔE00 |
+| `--here` on `--bg-sunken` and on `#0b0e12` (tile art, the stage) | 3:1 |
 | Every bar fill on `--bar-track` | 3:1 |
+| `--accent-fill`, `--buff-fill`, `--warn-fill` on `--bar-track` | 3:1 |
+| Every token a bar-fill site reads (an element with class `fill` and an inline `background`, or a rule ending in `.fill`), found in the source | 3:1 on `--bar-track` |
+| The five `--stage-*` tokens on `#0b0e12` | 4.5:1 |
+| `--badge-ink` and `--badge-dim` on `--badge-bg` composited over `--bg-raised` | 4.5:1 |
 | `--bar-ink` on every fill, or on `--bar-halo` | 4.5:1 |
 | `--sel-ink` on `--sel-bg` | 4.5:1 |
 | Semantic colours (bar fills, danger, action) vs Default | hue drift at most 30° (OKLCH) |
@@ -326,6 +340,57 @@ fights. A theme declares a narrow system face after its own condensed face where
 Scope: a class name that two components use for different things (`affliction` in the sidebar and in the Fight Feed, `drop` on
 a family list and on a notebook button) is matched through its parent class (`.afflictions .affliction`, `.fam-wrap .drop`),
 never bare (PITFALLS §8).
+
+Castle, Survey and Sandstone are the light themes (built 2026-11-05, branch `themes-light`). Each is one file, `src/themes/<id>.css`,
+registered in `theme.ts`, with its fonts imported in `main.ts` (`latin-<weight>.css` only). They are the first themes whose page
+is lighter than their text.
+
+**Light themes.** A light theme needs a few things a dark one does not:
+
+- **Authored colours** are drawn darker, not lifted: `--ink-lmin` 0 and `--ink-lmax` about 0.52 (§4). `ink()` also scales chroma
+  by `lmax`. Without that a bright colour darkened with its chroma kept falls outside the sRGB gamut and the browser clips it
+  channel by channel: at a ceiling of 0.52 the orange and the red of the talent laps were 4.1 ΔE00 apart (20.3 unlifted) and
+  are 11.9 with the scale. A light theme's panel has to be very light for the family spacing check to hold: lightness about
+  0.88 or more, since the lightest authored colour must reach 4.5:1 on it at a ceiling of 0.52.
+- **The -ink tokens** are declared by the theme as hex (§4): each bar fill darkened uniformly in OKLab until it holds 4.7:1 on
+  panel, raised, hover and `--sel-bg`. The app.css derivation is the same remap and would also work, but a light theme picks its
+  own values.
+- **Bar wells.** Castle and Sandstone keep near-black wells with bright fills (each at least 3:1 on the well). `--xp` is the
+  one fill that is also tested as text (4.5:1 on panel, raised and hover), so it has to sit in a narrow lightness window
+  (about 0.115 to 0.125) and `--bg-hover` has to be light enough (lightness 0.73 or more) for the window to exist. Talent-lap
+  fills inside a dark well use the dark-ground ink range (`.bar:has(> .fill) { --ink-lmin: 0.5; --ink-lmax: 1 }`). The Skills
+  screen's XP bar reads `--bar-track` too (it was `--bg-sunken`, light here, where the skill fill was 2.3:1 and the talent laps
+  1.1 to 1.5:1). Survey has paper-white wells and mid to dark fills; its label is white with a black outline.
+- **Fills read their own tokens.** `--accent`, `--buff` and `--warn` are text colours, so a dark well loses them (2.5 to 2.9:1).
+  A fill site reads `--accent-fill`, `--buff-fill` or `--warn-fill` (§2). On a dark well they are a mid amber (4.1 to 4.2:1; also
+  3.4:1 on the page, where the bench's own bar sits), a teal and a bright amber. On Survey's white wells they are the text colours.
+- **The you-are-here ring** (`--here`) is a mid-tone colour (Castle raspberry, Survey magenta, Sandstone madder), 3.9 to 5.9:1 on
+  the map ground and 3.2 to 3.3:1 on dark tile art. It had been the text colour, which is 1.1:1 on art.
+- **Tiled maps** get a dark mat (`#0b0e12`) behind the picture: the strip above and below it holds labels, which are white.
+- **Painted art** stays dark. Text over it reads `--art-ink` (§5) and, for the colours that were `--text`, `--accent`, `--xp` and
+  `--danger` inside the stage, the five `--stage-*` tokens (§2). Each theme draws a hard frame between the page and the art:
+  the battle stage, the place banner and tiled maps get a border in the theme's ink colour (Castle: black timber, Survey: ink and
+  a hairline, Sandstone: kohl and a bronze line).
+- **Count chips** on item cells read `--badge-*` (§2): a dark chip with light text.
+- **Scrim, lift and hatch** are ink-coloured (not black) and lighter: `--scrim` 45–55%, `--lift` 25–35%.
+- **Specificity.** A component's scoped rule has the scope class on every compound selector, so a theme rule of the same length
+  loses. A theme rule that has to beat one writes `:root:root[data-theme='<id>']` (one more pseudo-class).
+- **Layout.** No rule here changes padding, border width, font size or font weight in a state. A theme sets the same border width
+  on all rows (`.nav-entry` 4px) and changes only colour in the state.
+- **Header slots.** A longer title leaves the clock chip less room: at 1370px the title is 37 to 55px wider than Default's and the
+  component's 6.5em (84.5px) cut "about 00:00" (Default's slot is 95.7px there). Each light theme sets `.timesense` to 7.4em
+  (96.2px). The bonus chip's slot is 8em (96px) in the component; Survey's widest text is 96.27px ("⏩ 2× 1h 10m", Plex Sans) and
+  Castle's 96.44px in its fallback face (Georgia), so both set 8.1em. Measured over every text from 0s to 8h 59m and every hour,
+  with the web fonts loaded and blocked: the header's children move 0px.
+- **A selected, disabled button** keeps the plain disabled look (dashed, grey, no fill): a theme whose selected fill is solid
+  scopes it with `:not(:disabled)` and leaves the button to cues.css. Castle did not at first, and the dashed edge was black on
+  black.
+- **The picked row** of the tower section is a focusable button; a theme draws its cue with an inset `box-shadow`, never `outline`,
+  which would replace the global focus ring.
+
+Shared limits of the three: the count on a spare stack (a cell dimmed to 0.42 by its component) is 2.9 to 3.0:1. Decorative
+glyphs (unearned achievement stars, empty slot icons) are under 3:1 in every theme, Default and Gothic included. The Skills
+screen's XP bar spills 4 to 11 px past its row at 1094 px in Castle and in Gothic (wide bold names); Survey and Sandstone do not.
 
 ### Registry
 
@@ -597,3 +662,76 @@ never bare (PITFALLS §8).
     without them), as in Default (17px).
   - The hatch under a bar label lowers the label's local contrast; the 1px black halo carries it (bone on black halo 20:1).
   - Bitter and Alfa Slab One are the Latin slice only; `ā` and `ō` fall back to the system face.
+
+### Castle
+
+The warring-states band (floors 21 to 30). White plaster, black timber, vermilion, a gold hairline.
+
+- **Fonts.** Spectral 400, 400 italic and 600 for text (16px, lining and tabular figures); Shippori Mincho 700 (`latin-700.css`
+  only: the full file pulls the Japanese slices) for h1 to h3 and `--font-caps`.
+- **Key tokens.** `--bg` #dddbd3, panel #f5f3ee, raised #fcfbf8, hover #e0ded5, text #1a1917, dim #4d4b43, accent #7a4a00
+  (bronze), danger #a8220e (vermilion), warn #6c5800, edge #6a675d, ring #2a3f8f (indigo), here #c2185b (raspberry). Bars: hp
+  #e0615d, stamina #7bda8e, mana #1a67d1, spirit #a87ed2, focus #e46d02, action #d3bc3c, xp #056e39 on a #0b0a08 well; fills
+  `--accent-fill` #9c6a14, `--buff-fill` #1f9e86, `--warn-fill` #e3c457. `--ink-lmax` 0.52.
+- **Decoration.** A black beam (inset shadow) across the top of every top-level panel; a black lintel and a gold hairline on the
+  header; a black diamond before each h3; a shoji lattice on the map ground; a solid vermilion tag with white text for a fight
+  with no way out and a bar plus text for a one-way road; a 3px timber frame on the stage and tiled maps.
+- **Selection.** Selected buttons and the open nav row are black blocks with a gold foot. They do not read `--sel-bg`: a bar colour
+  read as text has to hold 4.5:1 on `--sel-bg` (the test), which no colour does on both plaster and black. `--sel-bg` is a light
+  plaster tint (the marked cells and the selected pin read it). Inside a black block every colour token a child can read as text
+  or as an interactive edge is re-pointed in CSS to a value that holds on #1a1917 and on the hover black #35322d: `--text`,
+  `--text-dim`, `--text-off`, `--edge`, `--accent`, `--danger`, `--warn`, `--buff`, the eleven `-ink` tokens and the ten `--log-*`
+  tokens (4.7:1 or more on both; the edge 3.5:1); `--border` and `--frame` are decorative rules (2.5:1). The authored colours use
+  the range 0.5 to 1. The test does not see this. A page script read every colour token declared on `:root` as a child of a
+  selected button and of the open nav row: what is left under 4.5:1 is a surface, a halo, a scrim, a map tint or a bar fill
+  (`--sel-ink`, `--scrim*`, `--timber`, `--bar-track`, `--district-*`, `--mat-*`, `--road`, `--night`, `--ring`, `--here`,
+  `--xp`, `--mana`, `--manaburn`, `--accent-fill`), none of which a component draws as text. The bar fills cannot be text:
+  the test makes every text read a `-ink` token. A selected, disabled button is not a block (`:not(:disabled)`).
+- **Numbers.** Text 13.03, dim 6.48, danger 5.37, ring 8.58, edge 5.10 (on panel, raised, hover; ring and edge on panel and
+  raised). Worst colour-vision pair: protan hp/xp 9.85, deutan hp/focus 10.84 (the mock had 4.4). Authored colours after the remap:
+  5.42 on panel and raised, 5.34 on `--sel-bg`; 5.9 on the black block's #1a1917.
+- **Known limits.** `--xp` is the dimmest fill (3.11:1 on its well). The header is 52px tall at every width, one row.
+
+### Survey
+
+A drafting sheet. White paper, ink lines, hatch for what is locked, brick rust for the current and the selected, folder tabs.
+
+- **Fonts.** IBM Plex Sans 400, 400 italic and 600 (14.5px); IBM Plex Sans Condensed 600 for h1 to h3 and the nav captions, in
+  capitals with letter spacing.
+- **Key tokens.** `--bg` #e8e5da, panel #f7f5ed, raised #fdfcf8, hover #e4e1d3, sunken and bar well #fffdf8, text #1b1c1a, dim
+  #55564f, accent #8c3516 (brick), danger #b3261e, warn #825400, edge #5f5e56, ring #1d3f9e (blue pencil), here #b3208a
+  (magenta pencil), `--sel-bg` #fdf3e4. Bars: hp #e14b5a, stamina #218849, mana #28569b, spirit #8c61c2, focus #d6761a, action #7a660e, xp #015415;
+  label ink white, outline black (black ink read poorly on the dark `--xp`, `--mana` and `--stamina` fills). `--ink-lmax` 0.52.
+- **Decoration.** A double rule across the top of every panel and the header; an h3 underline rule; a short L at each inner corner
+  of a top-level panel; bars with a tick at every tenth; folder tabs for `.tabs` and the map's region switch (the open tab joins
+  the sheet and has a rust top bar); a survey grid on the map ground; diagonal ink hatch on locked rows.
+- **Selection.** A tinted fill and a 4px rust foot (inset shadow); the open nav row has a rust left bar. Nothing changes size.
+  The picked stop of the tower section is a raised fill and an inset ink line (box-shadow, not outline: the row's keyboard ring
+  stays the global blue outline).
+- **Numbers.** Text 13.04, dim 5.66, danger 4.98, ring 8.52, edge 5.97. Worst colour-vision pair: protan stamina/focus 9.07,
+  deutan stamina/action 9.90. Authored colours: 5.50 on panel and raised, 5.47 on `--sel-bg`.
+- **Rust and the Focus bar.** The mock's accent and Focus fill were 11.6 ΔE00 apart. Here the accent is a dark brick and the fill
+  is a lighter orange: 26.9 ΔE00 (11.3 against `--focus-ink`, which is text). The accent is 9.0 ΔE00 from `--danger`; both
+  `danger` states carry a mark and words.
+- **Known limits.** The header is 54px tall. The corner marks sit 4px inside the border, next to the first caption of a panel with
+  a small padding (the nav list).
+
+### Sandstone
+
+The desert band (floors 18 to 20). Limestone, kohl ink, bronze, a lapis focus ring, a stepped-pyramid frieze.
+
+- **Fonts.** Alegreya Sans 400, 400 italic and 700 (17px, lining and tabular figures); Marcellus 400 for h1 to h3 and
+  `--font-caps`, in capitals with letter spacing.
+- **Key tokens.** `--bg` #e7dcc0, panel #f7f1df, raised #fcf9ef, hover #e9deba, text #231a0e, dim #52432a, accent #744a14
+  (bronze), danger #9c200d, warn #6a5a00, edge #6e5c38, ring #1d4b9c (lapis), here #b02a82 (madder), `--sel-bg` #fbf5e1. Bars: hp
+  #f6797c, stamina #8be796, mana #418cea, spirit #874fcb, focus #d86918, action #fad841, xp #00713e on a #120d06 well; fills
+  `--accent-fill` #9a6a22, `--buff-fill` #1f9e86, `--warn-fill` #e3c457. `--ink-lmax` 0.52.
+- **Decoration.** A frieze of stepped pyramids over a 2px lapis rule along the top of every top-level panel, the header and the
+  map card (an inline SVG data URI in the CSS); a kohl frame and a bronze line around the stage and tiled maps; an inner rule on
+  the map.
+- **Selection.** A cartouche: a tinted fill, a bronze border and a rule inside a rule (two inset shadows); the open nav row has a
+  4px bronze left bar and a bronze tint.
+- **Numbers.** Text 12.75, dim 7.12, danger 5.95, ring 7.33, edge 5.72. Worst colour-vision pair: deutan mana/spirit 9.58, protan
+  stamina/action 11.77 (the mock had 3.6). Authored colours: 5.32 on panel and raised, 5.51 on `--sel-bg`.
+- **Known limits.** `--xp` is 4.55:1 on hover (the test needs 4.5); a change to `--bg-hover` or `--xp` has to keep the window
+  described under Bar wells above.

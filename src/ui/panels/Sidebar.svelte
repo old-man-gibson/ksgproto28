@@ -407,7 +407,7 @@
             <span class="res-spacer ability-icon" style="width: {RES_ICON}px">{cell.icon}</span>
             {#if cell.show === 'bar'}
               <div class="bar res-bar">
-                <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent)"></div>
+                <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent-fill)"></div>
                 <div class="label">{cell.label} {Math.floor(cell.value)} / {Math.floor(cell.cap)}</div>
               </div>
             {:else if cell.line}

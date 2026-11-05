@@ -250,7 +250,7 @@
 }
 
 /* Bars are gauge tapes in a display window: a frame, a tick every tenth and a long tick at half. */
-:root[data-theme='cockpit'] .bar::after {
+:root[data-theme='cockpit'] .bar:has(> .fill)::after {
   content: '';
   position: absolute;
   inset: 0;

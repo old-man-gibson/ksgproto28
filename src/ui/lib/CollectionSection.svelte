@@ -321,8 +321,8 @@
     line-height: 1;
     padding: 1px 3px;
     border-radius: 4px;
-    background: var(--scrim);
-    color: var(--text);
+    background: var(--badge-bg);
+    color: var(--badge-ink);
   }
 
   .tick {

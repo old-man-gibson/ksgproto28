@@ -34,7 +34,7 @@
           </div>
           {#if cell.show === 'bar'}
             <div class="bar">
-              <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent)"></div>
+              <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent-fill)"></div>
             </div>
           {/if}
           {#if cell.desc}<div class="small dim">{cell.desc}</div>{/if}

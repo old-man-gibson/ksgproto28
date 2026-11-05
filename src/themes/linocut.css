@@ -188,7 +188,7 @@
 }
 
 /* Bars: a heavy outline; the part with no fill is hatched, as if carved away. */
-:root[data-theme='linocut'] .bar {
+:root[data-theme='linocut'] .bar:has(> .fill) {
   outline: 2px solid var(--border);
   outline-offset: -2px;
   background-image: var(--hatch);

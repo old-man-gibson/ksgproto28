@@ -3,10 +3,10 @@
  * gutter and the talent-lap palette. The stylesheet side is tests/themes.test.ts.
  */
 import { describe, expect, it } from 'vitest';
-import { INK_LIGHTNESS, ink } from '../src/ui/lib/ink';
+import { INK_CHROMA, INK_LIGHTNESS, ink } from '../src/ui/lib/ink';
 import { logColor, logGlyph } from '../src/ui/lib/logKinds';
 import { talentBar, TALENT_LAP_COLORS } from '../src/ui/lib/talentBar';
-import { remapInk, hexToRgb } from './themeColor';
+import { deltaE00, remapInk, hexToRgb } from './themeColor';
 
 describe('ink()', () => {
   it('returns the raw colour where the browser has no relative colour syntax (node here)', () => {
@@ -21,6 +21,14 @@ describe('ink()', () => {
 
   it('remaps OKLCH lightness between --ink-lmin and --ink-lmax and keeps chroma and hue', () => {
     expect(INK_LIGHTNESS).toBe('calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin)))');
+  });
+
+  it('scales chroma with lmax, so a light theme darkens a colour instead of clipping it', () => {
+    expect(INK_CHROMA).toBe('calc(c * var(--ink-lmax))');
+    // Orange and red at a ceiling of 0.55: with chroma kept both clip to a dark red (about 5 apart);
+    // with chroma scaled they keep their hue.
+    const [orange, red] = [remapInk('#f0883e', 0, 0.55), remapInk('#e5534b', 0, 0.55)];
+    expect(deltaE00(orange, red)).toBeGreaterThan(8);
   });
 
   it('the test-side remap is the identity at 0 and 1, and lifts a dark colour for a floor', () => {

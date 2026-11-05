@@ -78,7 +78,7 @@
               class="fill"
               style="width: {(p.current / p.target) * 100}%; background: {p.current >= p.target
                 ? 'var(--xp)'
-                : 'var(--accent)'}"
+                : 'var(--accent-fill)'}"
             ></div>
           </div>
           <span class="small dim">{p.current}/{p.target}</span>

@@ -191,8 +191,8 @@
 
   /* The next band, not reached: its name, dimmed, lined up with the names above. */
   .ts-band.title-only {
+    /* The band is already --text-dim; dimming it again with opacity took it under 4.5:1. */
     padding-left: calc(6px + 1em + 6px);
-    opacity: 0.65;
   }
 
   .ts-foot {

@@ -1,0 +1,343 @@
+/*
+ * Castle display theme: the warring-states band (floors 21-30). Light.
+ * White plaster, black timber, vermilion, a gold hairline. Active while
+ * <html data-theme="castle"> (src/ui/lib/theme.ts). docs/THEMES.md §11.
+ *
+ * Tokens first (tests/themes.test.ts reads this block), then the shapes.
+ * Bar fills are baked tokens, not a filter: they sit on near-black wells, so
+ * each is at least 3:1 on the well, and --xp is also text on plaster, so it is
+ * 4.5:1 there too (a window of lightness about 0.118 to 0.13).
+ *
+ * `:root:root[data-theme='castle']` in a shape rule lifts it over a component's
+ * own scoped rule of the same length (Svelte adds a class per compound selector).
+ */
+
+:root[data-theme='castle'] {
+  --bg: #dddbd3;
+  --bg-panel: #f5f3ee;
+  --bg-raised: #fcfbf8;
+  --bg-hover: #e0ded5;
+  --bg-sunken: #d5d3c8;
+  --border: #aeaca1;
+  --frame: #cfcdc3;
+  --text: #1a1917;
+  --text-dim: #4d4b43;
+  --accent: #7a4a00;
+  --danger: #a8220e;
+  --warn: #6c5800;
+  --buff: #0e6252;
+  --night: #4b3a78;
+  --night-edge: #8a79b8;
+
+  --hp: #e0615d;
+  --xp: #056e39;
+  --skill: #9a7bd0;
+  --stamina: #7bda8e;
+  --stamina-winded: #4a9a5c;
+  --stamina-exhausted: #a0a838;
+  --mana: #1a67d1;
+  --manaburn: #c040b0;
+  --spirit: #a87ed2;
+  --focus: #e46d02;
+  --action: #d3bc3c;
+  --bar-track: #0b0a08;
+
+  /* Bar fills as text on plaster: each fill darkened to 4.7:1 on panel, raised, hover and the selected fill. */
+  --hp-ink: #9e423f;
+  --xp-ink: #056e39;
+  --skill-ink: #6a5491;
+  --stamina-ink: #386942;
+  --stamina-winded-ink: #316b3e;
+  --stamina-exhausted-ink: #5e631e;
+  --mana-ink: #165cbc;
+  --manaburn-ink: #9d338f;
+  --spirit-ink: #70538d;
+  --focus-ink: #994701;
+  --action-ink: #6b5f1a;
+
+  /* Fills on a dark well: --accent, --buff and --warn are text colours here (dark), 2.7:1 on the well. The accent fill
+     is a mid amber (4.2:1 on the well, 3.4:1 on the page, where the bench's own bar sits). */
+  --accent-fill: #9c6a14;
+  --buff-fill: #1f9e86;
+  --warn-fill: #e3c457;
+
+  /* The painted stage, banner and raid pill are dark whatever the page is. */
+  --stage-ink: var(--art-ink);
+  --stage-accent: #e0b35a;
+  --stage-ok: #6fd698;
+  --stage-ok-text: #6fd698;
+  --stage-danger: #ff8a78;
+
+  /* A count on a cell: a dark chip with light text. */
+  --badge-bg: rgb(26 25 23 / 82%);
+  --badge-ink: #f5f3ee;
+  --badge-dim: #cfccc0;
+
+  --log-combat: #884338;
+  --log-danger: #a8220e;
+  --log-loot: #774f00;
+  --log-skill: #6e3fa5;
+  --log-achievement: #675500;
+  --log-fusion: #983800;
+  --log-quest: #505d10;
+  --log-travel: #255893;
+  --log-explore: #0e6252;
+  --log-plain: #4d4b43;
+
+  --edge: #6a675d;
+  --ring: #2a3f8f;
+  /* Raspberry: 3.9:1 on the map ground and 3.3:1 on dark tile art (black was 1.1:1 there). */
+  --here: #c2185b;
+  /* The fill of a marked cell and of the selected pin. Buttons and nav rows are black blocks drawn below. */
+  --sel-bg: #efe9d6;
+  --sel-ink: #1a1917;
+  --text-off: #66635a;
+
+  --bar-ink: #ffffff;
+  --bar-halo: #000000;
+
+  --ink-lmin: 0;
+  --ink-lmax: 0.52;
+  --sel-ink-lmin: 0;
+  --sel-ink-lmax: 0.5;
+
+  --road: #7a6a44;
+  /* The map's district tints, darkened: a district name is text (a tint mixed 55% with --text) on the map ground. */
+  --district-b: #5c6670;
+  --district-c: #8a3a32;
+  --district-d: #55585f;
+  --district-e: #8f4a12;
+  --district-f: #5f656d;
+  --district-g: #7a4d1a;
+  --district-i: #6f5028;
+  --scrim: rgb(26 25 23 / 55%);
+  --scrim-deep: rgb(26 25 23 / 65%);
+  --lift: rgb(26 25 23 / 35%);
+  --hatch-lock: repeating-linear-gradient(135deg, transparent 0 4px, rgb(26 25 23 / 22%) 4px 5px);
+  --tint-mix: 30%;
+
+  /* Theme-private: the timber of the beams and the ink on it. */
+  --timber: #1a1917;
+  --on-timber: #f5f3ee;
+
+  --font-caps: 'Shippori Mincho', Georgia, serif;
+  font-family: 'Spectral', Georgia, serif;
+  font-size: 16px;
+  font-variant-numeric: lining-nums tabular-nums;
+  color-scheme: light;
+  scrollbar-color: var(--edge) var(--bg);
+}
+
+/* Square everything except the few shapes that are round on purpose. */
+:root[data-theme='castle'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 0 !important;
+}
+
+:root[data-theme='castle'] :is(h1, h2, h3) {
+  font-family: 'Shippori Mincho', Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme='castle'] .layout > header h1 {
+  font-size: 19px;
+  letter-spacing: 0.1em;
+}
+
+@media (max-width: 1179px) {
+  :root[data-theme='castle'] .layout > header h1 {
+    font-size: 16px;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* The bonus chip's slot holds its widest text. In Spectral it is 90.8px ("⏩ 2× 1h 10m"), in Georgia, which shows while
+   the web font loads or is blocked, 96.4px ("⏩ 2× 8h 40m"); the component's 8em is 96px. */
+:root[data-theme='castle'] .clock .bonus {
+  min-width: 8.1em;
+}
+
+/* The clock chip's slot holds its widest hour ("🕰️ about 00:00"). The title is 46px wider than Default's, so at 1370px
+   the component's 6.5em (84.5px) cut the text; Default's slot is 95.7px there. */
+:root[data-theme='castle'] .layout > header .timesense {
+  min-width: 7.4em;
+}
+
+/* Black timber: a beam across the top of every top-level panel, and a lintel with a gold hairline on the header. */
+:root[data-theme='castle'] .panel:not(.panel .panel) {
+  border-color: var(--edge);
+  box-shadow: inset 0 4px 0 var(--timber);
+}
+
+:root[data-theme='castle'] .layout > header {
+  border-color: var(--edge);
+  box-shadow:
+    inset 0 6px 0 var(--timber),
+    inset 0 7px 0 var(--accent);
+}
+
+:root[data-theme='castle'] button:hover:not(:disabled) {
+  border-color: var(--timber);
+}
+
+/*
+ * Selected buttons and the open nav row are black blocks with a gold foot. They
+ * do not read --sel-bg: the contract needs a bar colour read as text to hold
+ * 4.5:1 on panel and on --sel-bg, which no colour does on both plaster and
+ * black. Inside a block every colour token a child can read is re-pointed at a
+ * value that holds on #1a1917 and on the hover black #35322d (text 4.5:1, the
+ * edge 3:1), and the authored colours get the dark-ground range.
+ *
+ * A disabled button is left to cues.css (`:not(:disabled)`): a selected, disabled
+ * button (GoButton while it runs, a map card's walk) keeps the dashed grey look,
+ * with no black fill under it.
+ */
+:root:root[data-theme='castle'] button.selected:not(:disabled) {
+  background: var(--timber);
+  color: var(--on-timber);
+  border-color: var(--timber);
+  box-shadow: inset 0 -3px 0 #e0b35a;
+  --ink-lmin: 0.5;
+  --ink-lmax: 1;
+}
+
+:root:root[data-theme='castle'] :is(button.selected:not(:disabled), .nav-list .nav-entry.nav-on) {
+  --text: #f5f3ee;
+  --text-dim: #cfccc0;
+  --text-off: #aaa79c;
+  --edge: #8a877c;
+  --border: #5b584f;
+  --frame: #5b584f;
+  --accent: #e0b35a;
+  --danger: #ff9a88;
+  --warn: #e3c457;
+  --buff: #6fd6bd;
+  --hp-ink: #f17d77;
+  --xp-ink: #6fd698;
+  --skill-ink: #ae93e1;
+  --stamina-ink: #7bda8e;
+  --stamina-winded-ink: #68ae75;
+  --stamina-exhausted-ink: #a0a838;
+  --mana-ink: #679ff4;
+  --manaburn-ink: #e279d1;
+  --spirit-ink: #b68fde;
+  --focus-ink: #f08136;
+  --action-ink: #d3bc3c;
+  --log-combat: #e0a1a1;
+  --log-danger: #ff7070;
+  --log-loot: #e8b84b;
+  --log-skill: #b58fe0;
+  --log-achievement: #ffd700;
+  --log-fusion: #ff9d3c;
+  --log-quest: #e0cd7d;
+  --log-travel: #7db4e0;
+  --log-explore: #7de0c3;
+  --log-plain: #9aa4ad;
+}
+
+:root:root[data-theme='castle'] .nav-list .nav-entry {
+  border-left-width: 4px;
+}
+
+:root:root[data-theme='castle'] .nav-list .nav-entry.nav-on {
+  background: var(--timber);
+  color: var(--on-timber);
+  border-left-color: #e0b35a;
+}
+
+:root:root[data-theme='castle'] .nav-caption {
+  border-bottom-color: var(--timber);
+}
+
+:root[data-theme='castle'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--edge);
+}
+
+/* A bar is the global `.bar` with a `.fill` inside (DefeatModal's share bars are `.bar` with nothing in them and keep their own look). */
+:root[data-theme='castle'] .bar:has(> .fill) {
+  outline: 1px solid var(--timber);
+  /* Fills inside a well are bright, so authored bar colours (talent laps) use the dark-ground range. */
+  --ink-lmin: 0.5;
+  --ink-lmax: 1;
+}
+
+:root[data-theme='castle'] .bar > .label {
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 11.5px;
+}
+
+/* A hovered selected block steps to a lighter black, not to the hover fill (light ink would vanish on it). */
+:root:root[data-theme='castle'] button.selected:hover:not(:disabled) {
+  background: #35322d;
+}
+
+/* The HERE tag on the row underfoot: the accent was 4.36:1 on the tinted row; text is 11:1. */
+:root:root[data-theme='castle'] .ts-row.here .ts-side.here-tag {
+  color: var(--text);
+}
+
+/* The map ground is a lattice of shoji bars. */
+:root[data-theme='castle'] .map-wrap {
+  border-color: var(--timber);
+  background-image:
+    linear-gradient(rgb(26 25 23 / 9%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(26 25 23 / 9%) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Painted art stays dark inside the plaster page: a black timber frame holds it. A tiled map's headroom (the strip above and
+   below the picture, where a label can sit) is dark too, so white labels read there. */
+:root:root[data-theme='castle'] :is(.stage, .map-wrap.tiled) {
+  border: 3px solid var(--timber);
+}
+
+:root:root[data-theme='castle'] .map-wrap.tiled {
+  background: #0b0e12;
+}
+
+:root:root[data-theme='castle'] .place-banner {
+  border-bottom: 3px solid var(--timber);
+}
+
+:root:root[data-theme='castle'] .ts-row.here {
+  box-shadow: inset 4px 0 0 var(--timber);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+:root:root[data-theme='castle'] .map-card {
+  border: 1px solid var(--timber);
+  border-top: 4px solid var(--timber);
+}
+
+/* One-way (caution) is a bar and the words; a fight with no way out is a solid vermilion tag. */
+:root:root[data-theme='castle'] .map-card .warn {
+  border-left: 4px solid var(--warn);
+  padding-left: 6px;
+}
+
+:root:root[data-theme='castle'] .map-card .warn.danger-line {
+  align-self: flex-start;
+  border-left: 0;
+  padding: 1px 7px;
+  background: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* A small black diamond leads each panel heading. */
+:root[data-theme='castle'] h3::before {
+  content: '';
+  display: inline-block;
+  width: 0.42em;
+  height: 0.42em;
+  margin-right: 0.6em;
+  background: var(--timber);
+  transform: rotate(45deg);
+  position: relative;
+  top: -0.08em;
+}

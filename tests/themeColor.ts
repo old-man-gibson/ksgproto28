@@ -91,12 +91,15 @@ export function hueDistance(a: string, b: string): number {
 
 /**
  * The `ink()` remap (src/ui/lib/ink.ts): OKLCH lightness l becomes
- * `lmin + l * (lmax - lmin)`; chroma and hue are kept. A remap, not a clamp, so
- * the order and the spacing of colours survive.
+ * `lmin + l * (lmax - lmin)`, chroma becomes `c * lmax` and hue is kept. A
+ * remap, not a clamp, so the order and the spacing of colours survive. The
+ * chroma factor is 1 for every theme with `lmax` 1; for a light theme it keeps
+ * a darkened colour inside the sRGB gamut. A browser clips a colour outside it
+ * channel by channel (`fromOklch` does the same), which merges orange and red.
  */
 export function remapInk(hex: string, lmin: number, lmax: number): string {
   const [L, C, H] = toOklch(hex);
-  return fromOklch([lmin + L * (lmax - lmin), C, H]);
+  return fromOklch([lmin + L * (lmax - lmin), C * lmax, H]);
 }
 
 // ---------- CIEDE2000 ----------

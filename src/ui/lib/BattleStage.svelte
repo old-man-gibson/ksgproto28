@@ -279,8 +279,8 @@
         <rect x="20" y="52" width="24" height="4" fill="#5b4a33" />
         <circle cx="32" cy="22" r="10" fill="#b3bdcc" />
         <rect x="24" y="21" width="16" height="3" rx="1.5" fill="#1d222b" />
-        <path d="M32,12 Q40,2 46,8 Q38,8 34,14 Z" fill="var(--accent)" />
-        <path d="M8,44 Q8,38 16,36 Q24,38 24,44 Q24,58 16,64 Q8,58 8,44 Z" fill="#4c5d7e" stroke="var(--accent)" stroke-width="1.6" />
+        <path d="M32,12 Q40,2 46,8 Q38,8 34,14 Z" fill="var(--stage-accent)" />
+        <path d="M8,44 Q8,38 16,36 Q24,38 24,44 Q24,58 16,64 Q8,58 8,44 Z" fill="#4c5d7e" stroke="var(--stage-accent)" stroke-width="1.6" />
         <g class="blade">
           <path d="M44,50 L60,8" stroke="#e6edf6" stroke-width="3.2" stroke-linecap="round" />
           <path d="M40,46 L50,52" stroke="#b08a3e" stroke-width="3" stroke-linecap="round" />
@@ -394,6 +394,8 @@
     overflow: hidden;
     border: 1px solid var(--border);
     background: #0b0e12;
+    /* Text that sets no colour of its own (names, stances) reads the stage ink. */
+    color: var(--stage-ink);
     user-select: none;
   }
 
@@ -423,9 +425,9 @@
     padding: 3px 9px;
     border-radius: 999px;
     animation: pulse 1.4s ease-in-out infinite;
-    background: color-mix(in srgb, var(--danger) 22%, #000);
-    color: var(--danger);
-    border: 1px solid var(--danger);
+    background: color-mix(in srgb, var(--stage-danger) 22%, #000);
+    color: var(--stage-danger);
+    border: 1px solid var(--stage-danger);
   }
   @keyframes pulse {
     50% { filter: brightness(1.35); }

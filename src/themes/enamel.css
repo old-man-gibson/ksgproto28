@@ -166,7 +166,7 @@
 }
 
 /* Bars: a black well, a flat fill, figures with the halo from app.css. */
-:root[data-theme='enamel'] .bar {
+:root[data-theme='enamel'] .bar:has(> .fill) {
   outline: 1px solid var(--edge);
   outline-offset: -1px;
 }

@@ -129,6 +129,30 @@
   --art-halo: #000000;
   --tile-halo: #0b0b0b; /* outline of a label drawn over tile art */
 
+  /* Inside the painted stage and the place banner. Aliases of today's tokens, so
+     Default and Gothic keep their look; a light theme points them at colours that
+     read on the dark art (--stage-ink at --art-ink, the others light enough). */
+  --stage-ink: var(--text); /* text that inherits its colour inside the battle stage, the banner's crumb */
+  --stage-accent: var(--accent); /* raid pips and border, the stage emblem */
+  --stage-ok: var(--xp); /* a cleared raid: the pip and the border */
+  --stage-ok-text: var(--xp-ink); /* a cleared raid: the label */
+  --stage-danger: var(--danger); /* the forced-fight chip */
+
+  /* A count or a tag on a cell: a chip on art or on a coloured cell, with its own
+     ground. A light theme makes the chip dark and its text light. */
+  --badge-bg: var(--scrim);
+  --badge-ink: var(--text);
+  --badge-dim: var(--text-dim);
+
+  /* A colour used as a bar FILL inside the global .bar (well: --bar-track) reads one
+     of these, never --accent, --buff or --warn: those are text and border colours
+     and a light theme makes them dark, which vanishes on its dark wells. Default
+     aliases each to its text colour; a theme with dark wells sets them 3:1 on the
+     well. tests/themes.test.ts finds every fill site in the source. */
+  --accent-fill: var(--accent);
+  --buff-fill: var(--buff);
+  --warn-fill: var(--warn);
+
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 15px;
   color-scheme: dark;
@@ -237,20 +261,21 @@ h1, h2, h3, h4 {
   100% { box-shadow: 0 0 0 12px transparent; }
 }
 
-/* The -ink tokens: each bar fill through the ink() lightness remap. Declared on
-   :root, so they resolve with the theme's fill and bounds. */
+/* The -ink tokens: each bar fill through the ink() remap (lightness between
+   --ink-lmin and --ink-lmax, chroma times --ink-lmax; src/ui/lib/ink.ts).
+   Declared on :root, so they resolve with the theme's fill and bounds. */
 @supports (color: oklch(from red l c h)) {
   :root {
-    --hp-ink: oklch(from var(--hp) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --xp-ink: oklch(from var(--xp) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --skill-ink: oklch(from var(--skill) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --stamina-ink: oklch(from var(--stamina) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --stamina-winded-ink: oklch(from var(--stamina-winded) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --stamina-exhausted-ink: oklch(from var(--stamina-exhausted) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --mana-ink: oklch(from var(--mana) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --manaburn-ink: oklch(from var(--manaburn) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --spirit-ink: oklch(from var(--spirit) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --focus-ink: oklch(from var(--focus) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
-    --action-ink: oklch(from var(--action) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h);
+    --hp-ink: oklch(from var(--hp) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --xp-ink: oklch(from var(--xp) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --skill-ink: oklch(from var(--skill) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --stamina-ink: oklch(from var(--stamina) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --stamina-winded-ink: oklch(from var(--stamina-winded) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --stamina-exhausted-ink: oklch(from var(--stamina-exhausted) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --mana-ink: oklch(from var(--mana) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --manaburn-ink: oklch(from var(--manaburn) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --spirit-ink: oklch(from var(--spirit) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --focus-ink: oklch(from var(--focus) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
+    --action-ink: oklch(from var(--action) calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h);
   }
 }

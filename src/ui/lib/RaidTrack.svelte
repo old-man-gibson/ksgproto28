@@ -35,13 +35,13 @@
     padding: 4px 10px;
     border-radius: 999px;
     background: color-mix(in srgb, var(--art-halo) 55%, transparent);
-    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    border: 1px solid color-mix(in srgb, var(--stage-accent) 35%, transparent);
     backdrop-filter: blur(3px);
     font-size: 12px;
     white-space: nowrap;
   }
   .raid.cleared {
-    border-color: color-mix(in srgb, var(--xp) 60%, transparent);
+    border-color: color-mix(in srgb, var(--stage-ok) 60%, transparent);
   }
   .pips {
     display: inline-flex;
@@ -52,31 +52,31 @@
     width: 10px;
     height: 10px;
     transform: rotate(45deg);
-    border: 1.5px solid color-mix(in srgb, var(--accent) 60%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--stage-accent) 60%, transparent);
     background: color-mix(in srgb, var(--art-halo) 40%, transparent);
   }
   .pip.won {
-    background: var(--accent);
-    box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 70%, transparent);
+    background: var(--stage-accent);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--stage-accent) 70%, transparent);
   }
   .cleared .pip.won {
-    background: var(--xp);
-    border-color: var(--xp);
-    box-shadow: 0 0 6px color-mix(in srgb, var(--xp) 70%, transparent);
+    background: var(--stage-ok);
+    border-color: var(--stage-ok);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--stage-ok) 70%, transparent);
   }
   .pip.next {
     animation: next 1.2s ease-in-out infinite;
   }
   @keyframes next {
-    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent); }
-    50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 0%, transparent); }
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--stage-accent) 60%, transparent); }
+    50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--stage-accent) 0%, transparent); }
   }
   .label {
     color: var(--art-ink);
     font-weight: 600;
   }
   .cleared .label {
-    color: var(--xp-ink);
+    color: var(--stage-ok-text);
   }
   @media (prefers-reduced-motion: reduce) {
     .pip.next {

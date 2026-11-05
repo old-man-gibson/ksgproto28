@@ -214,7 +214,7 @@
 }
 
 /* Bars: flat, with quarter marks in the empty part. */
-:root[data-theme='registry'] .bar {
+:root[data-theme='registry'] .bar:has(> .fill) {
   outline: 1px solid var(--edge);
   background-image: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgb(255 255 255 / 16%) calc(25% - 1px) 25%);
 }

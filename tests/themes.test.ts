@@ -25,6 +25,7 @@ import {
   contrast,
   deltaE00,
   hueDistance,
+  mix,
   remapInk,
   simulate,
   type Deficiency,
@@ -36,6 +37,7 @@ import {
   filesUnder,
   readText,
   resolveColor,
+  resolveWithAlpha,
   styleBlocks,
   svelteFiles,
 } from './themeCss';
@@ -76,6 +78,19 @@ const SIDE_BY_SIDE = ['--hp', '--stamina', '--mana', '--spirit', '--focus', '--a
 
 const DISTRICTS = 'abcdefghi'.split('').map((c) => `--district-${c}`);
 
+/** Colours drawn inside the painted battle stage and the place banner (Default aliases them to today's tokens). */
+const STAGE_TOKENS = ['--stage-ink', '--stage-accent', '--stage-ok', '--stage-ok-text', '--stage-danger'];
+
+/** The stage's own ground (`background` of `.stage` in BattleStage.svelte): the darkest art a stage token has to read on. */
+const STAGE_GROUND = '#0b0e12';
+
+/**
+ * A colour drawn as a bar FILL on the global `.bar` (well: `--bar-track`) that is not one of the bar
+ * fills above: `--accent`, `--buff` and `--warn` are text and border colours (a light theme makes them
+ * dark), so a fill site reads one of these (Default aliases each to its text colour).
+ */
+const FILL_ALIASES = ['--accent-fill', '--buff-fill', '--warn-fill'];
+
 /** Identity colours and art ink: the same in every theme. A theme file does not declare them. */
 const FIXED = [
   '--mat-iron', '--mat-steel', '--mat-bronze', '--mat-metal', '--mat-wood', '--mat-leather',
@@ -96,6 +111,7 @@ const SHARED = [
   '--frame', ...BAR_FILLS, ...INK_TOKENS, '--ring-w', '--buff', '--night', '--night-edge',
   '--bar-track', '--road', ...DISTRICTS, '--scrim', '--scrim-deep', '--lift', '--hatch-lock', '--tint-mix',
   '--bg-deep', '--sel-ink-lmin', '--sel-ink-lmax',
+  ...STAGE_TOKENS, '--badge-bg', '--badge-ink', '--badge-dim', ...FILL_ALIASES,
 ];
 
 const CONTRACT = [...new Set([...PER_THEME, ...SHARED, ...FIXED])];
@@ -219,7 +235,7 @@ describe('theme files', () => {
     const colorTokens = CONTRACT.filter(
       (t) =>
         !['--ring-w', '--ink-lmin', '--ink-lmax', '--sel-ink-lmin', '--sel-ink-lmax', '--lift',
-          '--hatch-lock', '--scrim', '--scrim-deep', '--tint-mix', '--road'].includes(t) && !DISTRICTS.includes(t),
+          '--hatch-lock', '--scrim', '--scrim-deep', '--tint-mix', '--road', '--badge-bg'].includes(t) && !DISTRICTS.includes(t),
     );
     const bad: string[] = [];
     for (const id of THEME_IDS) {
@@ -292,8 +308,34 @@ describe.each(THEME_IDS)('theme %s: contrast and colour', (id) => {
     expect(bad).toEqual([]);
   });
 
+  it('the you-are-here ring is at least 3:1 on the map ground and on dark painted art', () => {
+    // The ring is drawn over the map's ground (--bg-sunken) and over tile art, which is dark in every theme.
+    const grounds: [string, string][] = [['--bg-sunken', c('--bg-sunken')], ['the stage ground', STAGE_GROUND]];
+    const bad = grounds
+      .map(([name, ground]) => [name, contrast(c('--here'), ground)] as const)
+      .filter(([, ratio]) => ratio < 3)
+      .map(([name, ratio]) => `--here on ${name}: ${r2(ratio)}`);
+    expect(bad).toEqual([]);
+  });
+
+  it('a count chip: its text and its secondary text are at least 4.5:1 on the chip over a cell', () => {
+    const { color, alpha } = resolveWithAlpha(tables.merged[id], '--badge-bg');
+    const chip = mix(color, c('--bg-raised'), alpha);
+    const bad = ['--badge-ink', '--badge-dim']
+      .filter((t) => contrast(c(t), chip) < 4.5)
+      .map((t) => `${t} on --badge-bg over --bg-raised (${chip}): ${r2(contrast(c(t), chip))}`);
+    expect(bad).toEqual([]);
+  });
+
   it('every bar fill is at least 3:1 on the bar track', () => {
     const bad = BAR_FILLS.filter((t) => contrast(c(t), c('--bar-track')) < 3).map(
+      (t) => `${t} on --bar-track: ${r2(contrast(c(t), c('--bar-track')))}`,
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it('the fill aliases (--accent-fill, --buff-fill, --warn-fill) are at least 3:1 on the bar track', () => {
+    const bad = FILL_ALIASES.filter((t) => contrast(c(t), c('--bar-track')) < 3).map(
       (t) => `${t} on --bar-track: ${r2(contrast(c(t), c('--bar-track')))}`,
     );
     expect(bad).toEqual([]);
@@ -321,6 +363,13 @@ describe.each(THEME_IDS)('theme %s: contrast and colour', (id) => {
 
   it('selected ink is at least 4.5:1 on the selected fill', () => {
     expect(contrast(c('--sel-ink'), c('--sel-bg'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('stage colours are at least 4.5:1 on the stage ground', () => {
+    const bad = STAGE_TOKENS.filter((t) => contrast(c(t), STAGE_GROUND) < 4.5).map(
+      (t) => `${t} on the stage: ${r2(contrast(c(t), STAGE_GROUND))}`,
+    );
+    expect(bad).toEqual([]);
   });
 
   it('semantic colours keep their hue within 30 degrees of Default (OKLCH)', () => {
@@ -670,5 +719,70 @@ describe('bar fills used as text', () => {
     }
     expect(bad, 'text reads var(--<bar>-ink); list a fill in tests/themeAllowlist.ts BAR_LITERALS').toEqual([]);
     expect(staleEntries(BAR_LITERALS, seen)).toEqual([]);
+  });
+});
+
+// ---------- Tokens read as a bar fill ----------
+
+interface FillRead {
+  file: string;
+  where: string;
+  token: string;
+}
+
+/**
+ * Every token the source reads as the background of a bar fill: an element with the class `fill` and a
+ * `background:` in its inline style, or a rule whose selector ends in `.fill` and sets a background.
+ * A new fill site is found without editing this file.
+ */
+function fillReadsOfTokens(): FillRead[] {
+  const reads: FillRead[] = [];
+  const add = (file: string, where: string, value: string) => {
+    for (const m of value.matchAll(/var\(\s*(--[\w-]+)/g)) reads.push({ file, where, token: m[1] });
+  };
+  for (const file of svelteFiles()) {
+    const text = readText(file);
+    for (const css of styleBlocks(text)) {
+      for (const rule of parseCss(css)) {
+        if (!rule.selectors.some((s) => /\.fill(?:\.[\w-]+|:[\w-]+)*\s*$/.test(s))) continue;
+        for (const [prop, value] of rule.decls)
+          if (prop === 'background' || prop === 'background-color') add(file, `${rule.selectors[0]} { ${prop}: ${value} }`, value);
+      }
+    }
+    const markup = text.replace(/<style[\s\S]*?<\/style>/g, '');
+    for (const m of markup.matchAll(/class\s*=\s*"[^"]*(?<![-\w])fill(?![-\w])[^"]*"/g)) {
+      // The element's own opening tag: up to the first `></` or `/>` after the class (a `>` can sit inside {...}).
+      const rest = markup.slice(m.index, m.index + 600);
+      const end = rest.search(/><\/|\/>/);
+      const tag = end < 0 ? rest : rest.slice(0, end);
+      for (const bg of tag.matchAll(/background(?:-color)?\s*:\s*([^;"]*)/g)) add(file, `class="fill" style background: ${bg[1].trim()}`, bg[1]);
+    }
+  }
+  return reads;
+}
+
+describe('tokens read as a bar fill', () => {
+  const reads = fillReadsOfTokens();
+  const tokens = [...new Set(reads.map((r) => r.token))].sort();
+
+  it('the scan finds the sites (a broken scan would pass everything)', () => {
+    expect(reads.length).toBeGreaterThan(8);
+    expect(tokens).toContain('--accent-fill');
+    expect(tokens).toContain('--buff-fill');
+    expect(tokens).toContain('--hp');
+    expect(reads.some((r) => r.file.endsWith('BenchPanel.svelte'))).toBe(true);
+    expect(reads.some((r) => r.file.endsWith('AchievementsPanel.svelte'))).toBe(true);
+  });
+
+  it.each(THEME_IDS)('theme %s: every token a fill site reads is at least 3:1 on the bar track', (id) => {
+    const bad: string[] = [];
+    for (const token of tokens) {
+      const ratio = contrast(colorOf(id, token), colorOf(id, '--bar-track'));
+      if (ratio < 3) {
+        const sites = reads.filter((r) => r.token === token).map((r) => r.file.replace('src/ui/', ''));
+        bad.push(`${token} on --bar-track: ${r2(ratio)} (${[...new Set(sites)].join(', ')})`);
+      }
+    }
+    expect(bad, 'a fill reads --accent-fill, --buff-fill or a bar fill, never --accent, --buff or --warn').toEqual([]);
   });
 });
