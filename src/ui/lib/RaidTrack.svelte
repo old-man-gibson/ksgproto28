@@ -34,7 +34,7 @@
     gap: 8px;
     padding: 4px 10px;
     border-radius: 999px;
-    background: color-mix(in srgb, #000 55%, transparent);
+    background: color-mix(in srgb, var(--art-halo) 55%, transparent);
     border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
     backdrop-filter: blur(3px);
     font-size: 12px;
@@ -53,7 +53,7 @@
     height: 10px;
     transform: rotate(45deg);
     border: 1.5px solid color-mix(in srgb, var(--accent) 60%, transparent);
-    background: color-mix(in srgb, #000 40%, transparent);
+    background: color-mix(in srgb, var(--art-halo) 40%, transparent);
   }
   .pip.won {
     background: var(--accent);
@@ -72,7 +72,7 @@
     50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 0%, transparent); }
   }
   .label {
-    color: var(--text);
+    color: var(--art-ink);
     font-weight: 600;
   }
   .cleared .label {

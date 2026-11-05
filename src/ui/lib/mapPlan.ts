@@ -176,21 +176,22 @@ export interface PlanOptions {
 
 /**
  * District tints, taken in the order the region lists its areas. They are
- * theme tokens (app.css), drawn at a low opacity, so a theme restyles them.
- * Warm and neutral only: the blue arc (--mana, --spirit, --stamina) is the
- * resource bars' (PITFALLS §7). Warm and grey alternate, so districts that are
- * neighbours in the order differ in more than a shade of brown.
+ * theme tokens (`--district-a` to `--district-i`, app.css), drawn at a low
+ * opacity, so a theme restyles them. Default points each at an existing warm or
+ * neutral token. Warm and neutral only: the blue arc (--mana, --spirit,
+ * --stamina) is the resource bars' (PITFALLS §7). Warm and grey alternate, so
+ * districts that are neighbours in the order differ in more than a shade of brown.
  */
 export const TINTS = [
-  'var(--accent)',
-  'var(--mat-steel)',
-  'var(--hp)',
-  'var(--mat-iron)',
-  'var(--focus)',
-  'var(--mat-metal)',
-  'var(--mat-bronze)',
-  'var(--text-dim)',
-  'var(--mat-wood)',
+  'var(--district-a)',
+  'var(--district-b)',
+  'var(--district-c)',
+  'var(--district-d)',
+  'var(--district-e)',
+  'var(--district-f)',
+  'var(--district-g)',
+  'var(--district-h)',
+  'var(--district-i)',
 ];
 
 export function districtTint(areaId: string): string {

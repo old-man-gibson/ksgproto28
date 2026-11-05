@@ -135,7 +135,7 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    box-shadow: 0 8px 22px rgb(0 0 0 / 45%);
+    box-shadow: 0 8px 22px var(--lift);
   }
 
   .opt {

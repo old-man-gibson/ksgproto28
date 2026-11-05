@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from './ink';
   import { QUALITY_TIERS } from '../../core/registry';
   import type { QualityTier } from '../../core/types';
 
@@ -16,7 +17,7 @@
   class="grade-badge"
   class:corner
   data-tier={tier}
-  style="--tier: {QUALITY_TIERS[tier].color}"
+  style="--tier: {ink(QUALITY_TIERS[tier].color)}"
   aria-hidden="true">{tier.toUpperCase()}</span
 >
 

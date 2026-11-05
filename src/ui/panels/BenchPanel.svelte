@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from '../lib/ink';
   import { onMount } from 'svelte';
   import { gs, game } from '../state.svelte';
   import { cloneBlocked, cloneRules } from '../../core/systems/clones';
@@ -441,7 +442,7 @@
         class:track
         class:filled={!!held}
         class:open={picking === slot.id}
-        style="--tint: {tintOf(slot, held)}"
+        style="--tint: {ink(tintOf(slot, held))}"
         onclick={() => (picking = picking === slot.id ? null : slot.id)}
         aria-label={slot.name}
       >
@@ -619,7 +620,7 @@
             <Tip>
               <button
                 class="cell opt"
-                style="--tint: {opt.color}"
+                style="--tint: {ink(opt.color)}"
                 onclick={() => put(slot.id, opt.stack)}
                 aria-label={opt.name}
               >
@@ -679,7 +680,7 @@
       {#if subject && subjectDef && target}
         {@const cost = refineCost(target)}
         <Tip block>
-          <div class="preview" style="--tint: {QUALITY_TIERS[target].color}">
+          <div class="preview" style="--tint: {ink(QUALITY_TIERS[target].color)}">
             <span class="pv-name">
               <b>{subjectDef.icon} {subjectDef.name}</b>
               <span class="dim">{QUALITY_TIERS[subject.quality].name} → {QUALITY_TIERS[target].name}</span>
@@ -720,7 +721,7 @@
       {#if potion?.ok && potion.spec}
         {@const spec = potion.spec}
         {@const kind = BREW_FORMS[spec.form]}
-        <div class="preview" class:named={!!potion.formula} style="--tint: {QUALITY_TIERS[brewGrade(spec)].color}">
+        <div class="preview" class:named={!!potion.formula} style="--tint: {ink(QUALITY_TIERS[brewGrade(spec)].color)}">
           <span class="pv-name"><b>{spec.icon} {spec.name}</b> <span class="dim small">{kind.name} · {kind.verb}</span></span>
           {#if potion.formula}<span class="known">known formula</span>{/if}
           <span class="odds small">
@@ -762,7 +763,7 @@
       {/if}
     {:else if !carving && !ordered && dish?.ok}
       <!-- Cooking: what comes out, and at what grade the basket earned. -->
-      <div class="preview" style="--tint: {QUALITY_TIERS[dish.quality!].color}">
+      <div class="preview" style="--tint: {ink(QUALITY_TIERS[dish.quality!].color)}">
         <span class="pv-name"><b>{dish.outcome?.icon} {dish.label}</b></span>
       </div>
       {#if ledger}
@@ -863,7 +864,7 @@
           <Tip>
             <span
               class="cell opt static"
-              style="--tint: {QUALITY_TIERS[brewGrade(spec)].color}"
+              style="--tint: {ink(QUALITY_TIERS[brewGrade(spec)].color)}"
               aria-label={spec.name}
             >{spec.icon}</span>
             {#snippet tip()}
@@ -888,7 +889,7 @@
           <Tip>
             <span
               class="cell opt static"
-              style="--tint: {QUALITY_TIERS[carving.stone.quality].color}"
+              style="--tint: {ink(QUALITY_TIERS[carving.stone.quality].color)}"
               aria-label={rune.name}
             >{rune.icon}</span>
             {#snippet tip()}

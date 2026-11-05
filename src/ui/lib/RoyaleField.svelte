@@ -499,8 +499,10 @@
     outline: none;
   }
 
+  /* The ground's own outline is off; the keyboard ring is its edge. */
   .royale-ground:focus-visible ~ .royale-edge {
-    stroke: var(--accent);
+    stroke: var(--ring);
+    stroke-width: 3;
   }
 
   .royale-terrain {
@@ -576,7 +578,8 @@
   }
 
   .royale-shadow {
-    fill: rgb(0 0 0 / 45%);
+    fill: var(--art-halo);
+    fill-opacity: 0.45;
   }
 
   .royale-ring {

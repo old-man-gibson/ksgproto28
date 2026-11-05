@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from '../lib/ink';
   import { gs, game, ui } from '../state.svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import type { ActiveSpec, AttributeId, Milestone, TechniqueDef } from '../../core/types';
@@ -158,7 +159,7 @@
   /** Entry-side identity color: the first entry position's, or the 'any' gray. */
   function entryColor(t: TechniqueDef): string {
     const from = entryPositions(gs, t);
-    return from === 'any' ? ANY_POSITION_COLOR : (POSITIONS[from[0]]?.color ?? ANY_POSITION_COLOR);
+    return ink(from === 'any' ? ANY_POSITION_COLOR : (POSITIONS[from[0]]?.color ?? ANY_POSITION_COLOR));
   }
 
   /** What choosing this archetype does, for the fork button tooltip. */
@@ -312,7 +313,7 @@
               MAX
               {#if talent > 0}
                 <span class="bar talent" style="height: 3px" title="Talent: +{talentPct(talent)}% gain">
-                  <span class="fill" style="width: {tbar.width}%; background: {tbar.color}"></span>
+                  <span class="fill" style="width: {tbar.width}%; background: {ink(tbar.color)}"></span>
                 </span>
               {/if}
             </span>
@@ -330,7 +331,7 @@
                    the skill through a prestige. -->
               {#if talent > 0}
                 <span class="bar talent" style="height: 3px" title="Talent: +{talentPct(talent)}% gain">
-                  <span class="fill" style="width: {tbar.width}%; background: {tbar.color}"></span>
+                  <span class="fill" style="width: {tbar.width}%; background: {ink(tbar.color)}"></span>
                 </span>
               {/if}
             </span>
@@ -344,7 +345,7 @@
             <div class="byline">
               <span class="dim">{def.desc}</span>
               {#if gs.prestige.count > 0}
-                <span class="talent-line" style="color: {talentBar(talentBonus(gs, def.id)).color}">
+                <span class="talent-line" style="color: {ink(talentBar(talentBonus(gs, def.id)).color)}">
                   Talent: +{talentPct(talentBonus(gs, def.id))}% gain
                 </span>
               {/if}
@@ -390,16 +391,16 @@
                        that the flow still reads at a glance. -->
                   <span class="flow compact">
                     {#if from === 'any'}
-                      <span class="pos-pill" style="--pc: {ANY_POSITION_COLOR}">✳</span>
+                      <span class="pos-pill" style="--pc: {ink(ANY_POSITION_COLOR)}">✳</span>
                     {:else}
                       {#each from as p (p)}
-                        <span class="pos-pill" style="--pc: {POSITIONS[p]?.color ?? ANY_POSITION_COLOR}">
+                        <span class="pos-pill" style="--pc: {ink(POSITIONS[p]?.color ?? ANY_POSITION_COLOR)}">
                           {POSITIONS[p]?.icon ?? p}
                         </span>
                       {/each}
                     {/if}
                     <span class="dim">→</span>
-                    <span class="pos-pill" style="--pc: {exit?.color ?? ANY_POSITION_COLOR}">
+                    <span class="pos-pill" style="--pc: {ink(exit?.color ?? ANY_POSITION_COLOR)}">
                       {exit?.icon ?? '?'}
                     </span>
                   </span>
@@ -432,16 +433,16 @@
               <div class="tech-lines">
                 <span class="flow">
                   {#if from === 'any'}
-                    <span class="pos-pill" style="--pc: {ANY_POSITION_COLOR}">anywhere</span>
+                    <span class="pos-pill" style="--pc: {ink(ANY_POSITION_COLOR)}">anywhere</span>
                   {:else}
                     {#each from as p (p)}
-                      <span class="pos-pill" style="--pc: {POSITIONS[p]?.color ?? ANY_POSITION_COLOR}">
+                      <span class="pos-pill" style="--pc: {ink(POSITIONS[p]?.color ?? ANY_POSITION_COLOR)}">
                         {POSITIONS[p]?.icon} {POSITIONS[p]?.name ?? p}
                       </span>
                     {/each}
                   {/if}
                   <span class="dim">→</span>
-                  <span class="pos-pill" style="--pc: {exit?.color ?? ANY_POSITION_COLOR}">
+                  <span class="pos-pill" style="--pc: {ink(exit?.color ?? ANY_POSITION_COLOR)}">
                     {exit?.icon} {exit?.name ?? techniqueExit(gs, t)}
                   </span>
                 </span>
@@ -551,7 +552,7 @@
             <!-- Endowment under XP, talent's twin: same laps, same colours. -->
             {#if endowment > 0}
               <span class="bar talent" style="height: 3px" title="Endowment: +{talentPct(endowment)}% gain">
-                <span class="fill" style="width: {ebar.width}%; background: {ebar.color}"></span>
+                <span class="fill" style="width: {ebar.width}%; background: {ink(ebar.color)}"></span>
               </span>
             {/if}
           </span>
@@ -561,7 +562,7 @@
             <div class="byline">
               <span class="dim">{training.desc}</span>
               {#if gs.prestige.count > 0}
-                <span class="talent-line" style="color: {ebar.color}">
+                <span class="talent-line" style="color: {ink(ebar.color)}">
                   Endowment: +{talentPct(endowment)}% gain
                 </span>
               {/if}
@@ -911,7 +912,7 @@
     padding: 0 6px 1px;
     border: 1px solid var(--pc);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--pc) 16%, transparent);
+    background: color-mix(in srgb, var(--pc) var(--tint-mix), transparent);
     font-size: 10.5px;
     line-height: 1.5;
     white-space: nowrap;
@@ -1048,7 +1049,7 @@
   }
 
   .tiny.danger {
-    border-color: var(--danger, #e05555);
+    border-color: var(--danger);
   }
 
   .tier {

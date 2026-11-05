@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from './ink';
   import { gs, game } from '../state.svelte';
   import { POSITIONS, SKILLS, TECHNIQUES } from '../../core/registry';
   import { ANY_POSITION_COLOR, MAX_DRILLED } from '../../core/data/martial.data';
@@ -106,16 +107,16 @@
     <p class="small ctx flow">
       <span class="dim">🥋</span>
       {#if from === 'any'}
-        <span class="pos-pill" style="--pc: {ANY_POSITION_COLOR}">any</span>
+        <span class="pos-pill" style="--pc: {ink(ANY_POSITION_COLOR)}">any</span>
       {:else}
         {#each from as p (p)}
-          <span class="pos-pill" style="--pc: {POSITIONS[p]?.color ?? ANY_POSITION_COLOR}">
+          <span class="pos-pill" style="--pc: {ink(POSITIONS[p]?.color ?? ANY_POSITION_COLOR)}">
             {POSITIONS[p]?.icon} {POSITIONS[p]?.name ?? p}
           </span>
         {/each}
       {/if}
       <span class="dim">→</span>
-      <span class="pos-pill" style="--pc: {exit?.color ?? ANY_POSITION_COLOR}">
+      <span class="pos-pill" style="--pc: {ink(exit?.color ?? ANY_POSITION_COLOR)}">
         {exit?.icon} {exit?.name}
       </span>
     </p>
@@ -278,7 +279,7 @@
     padding: 0 6px 1px;
     border: 1px solid var(--pc);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--pc) 16%, transparent);
+    background: color-mix(in srgb, var(--pc) var(--tint-mix), transparent);
     font-size: 10.5px;
     line-height: 1.5;
     white-space: nowrap;

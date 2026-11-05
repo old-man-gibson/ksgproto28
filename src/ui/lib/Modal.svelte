@@ -48,7 +48,7 @@
   .overlay {
     position: fixed;
     inset: 0;
-    background: rgb(0 0 0 / 55%);
+    background: var(--scrim);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -74,14 +74,14 @@
   .window.wide {
     width: 720px;
     max-height: 88vh;
-    box-shadow: 0 10px 34px rgb(0 0 0 / 55%);
+    box-shadow: 0 10px 34px var(--lift);
   }
 
   .window.fill {
     width: 1400px;
     height: 92vh;
     max-height: 92vh;
-    box-shadow: 0 10px 34px rgb(0 0 0 / 55%);
+    box-shadow: 0 10px 34px var(--lift);
   }
 
   .window.fill .body {

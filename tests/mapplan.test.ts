@@ -120,13 +120,15 @@ describe('districts', () => {
 describe('district tints', () => {
   const tokens = (): string[] => TINTS.map((t) => /^var\(--([a-z-]+)\)$/.exec(t)![1]);
 
-  it('are warm and neutral theme tokens, never the blue arc of the resource bars', () => {
-    for (const name of tokens()) {
-      expect(['mana', 'spirit', 'stamina', 'manaburn', 'stamina-winded', 'stamina-exhausted'], name).not.toContain(name);
-    }
-    // Each is a token app.css defines, so a theme restyles it.
+  it('are district tokens that Default points at warm or neutral tokens, never the blue arc of the resource bars', () => {
     const css = fs.readFileSync(new URL('../src/app.css', import.meta.url), 'utf8');
-    for (const name of tokens()) expect(css, `--${name} is defined in app.css`).toMatch(new RegExp(`--${name}:`));
+    for (const name of tokens()) {
+      // Each is a token app.css defines, so a theme restyles it...
+      const m = css.match(new RegExp(`--${name}: var\\(--([a-z-]+)\\)`));
+      expect(m, `--${name} is defined in app.css as a reference to another token`).not.toBeNull();
+      // ...and Default keeps it off the blue arc.
+      expect(['mana', 'spirit', 'stamina', 'manaburn', 'stamina-winded', 'stamina-exhausted'], name).not.toContain(m![1]);
+    }
   });
 
   it('give each of Threshold\'s nine districts its own tint, and no tint is shared by neighbours in the order', () => {

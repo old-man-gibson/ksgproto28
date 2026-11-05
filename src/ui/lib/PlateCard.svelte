@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from './ink';
   import { QUALITY_TIERS } from '../../core/registry';
   import { tierColour, type Plate } from './cookBook';
   import GradeBadge from './GradeBadge.svelte';
@@ -34,7 +35,7 @@
   );
 </script>
 
-<div class="plate-card" style="--tint: {tierColour(plate.quality)}" role="status">
+<div class="plate-card" style="--tint: {ink(tierColour(plate.quality))}" role="status">
   <span class="pc-dish" aria-hidden="true">{plate.icon}</span>
   <div class="pc-title">
     <GradeBadge tier={plate.quality} />

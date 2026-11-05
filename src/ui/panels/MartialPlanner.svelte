@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from '../lib/ink';
   import { gs, game, ui } from '../state.svelte';
   import { POSITIONS, TECHNIQUES } from '../../core/registry';
   import { ANY_POSITION_COLOR, TECHNIQUE_LIST, WEAPON_FAMILIES } from '../../core/data/martial.data';
@@ -196,7 +197,7 @@
         key: `${e.def.id}:${e.from}`,
         d: e.from === e.to ? loopPath(a, lane) : arcPath(a, b, lane, total.get(k)!),
         // A loop's two ends share a colour, so a gradient would be invisible.
-        stroke: e.from === e.to ? POSITIONS[e.to].color : `url(#pg-grad-${e.from}-${e.to})`,
+        stroke: e.from === e.to ? ink(POSITIONS[e.to].color) : `url(#pg-grad-${e.from}-${e.to})`,
       });
     }
     return out;
@@ -414,7 +415,7 @@
                 markerHeight="5"
                 orient="auto-start-reverse"
               >
-                <path d="M 0 0 L 8 4 L 0 8 z" fill={POSITIONS[id].color} />
+                <path d="M 0 0 L 8 4 L 0 8 z" fill={ink(POSITIONS[id].color)} />
               </marker>
             {/each}
             {#each gradients as g (g.key)}
@@ -426,8 +427,8 @@
                 x2={g.b.x}
                 y2={g.b.y}
               >
-                <stop offset="0%" stop-color={POSITIONS[g.from].color} />
-                <stop offset="100%" stop-color={POSITIONS[g.to].color} />
+                <stop offset="0%" stop-color={ink(POSITIONS[g.from].color)} />
+                <stop offset="100%" stop-color={ink(POSITIONS[g.to].color)} />
               </linearGradient>
             {/each}
             {#each reflexChips as c (c.edge.def.id)}
@@ -439,8 +440,8 @@
                 x2={c.node.x}
                 y2={c.node.y}
               >
-                <stop offset="0%" stop-color={ANY_POSITION_COLOR} />
-                <stop offset="100%" stop-color={POSITIONS[c.edge.to].color} />
+                <stop offset="0%" stop-color={ink(ANY_POSITION_COLOR)} />
+                <stop offset="100%" stop-color={ink(POSITIONS[c.edge.to].color)} />
               </linearGradient>
             {/each}
           </defs>
@@ -502,7 +503,7 @@
             {@const n = NODE_AT[id]}
             {@const isEntry = hotEntry.has(id)}
             {@const isExit = hotExit === id}
-            <g class="node" class:entry={isEntry} class:exit={isExit} style="--pc: {p.color}">
+            <g class="node" class:entry={isEntry} class:exit={isExit} style="--pc: {ink(p.color)}">
               {#if isEntry}
                 <!-- Pulses INWARD: this is where the move has to find you. -->
                 <circle cx={n.x} cy={n.y} r={NODE_R} class="pulse in" />
@@ -593,16 +594,16 @@
                 </span>
                 <span class="flow small">
                   {#if from === 'any'}
-                    <span class="pos-pill" style="--pc: {ANY_POSITION_COLOR}">any</span>
+                    <span class="pos-pill" style="--pc: {ink(ANY_POSITION_COLOR)}">any</span>
                   {:else}
                     {#each from as p (p)}
-                      <span class="pos-pill" style="--pc: {POSITIONS[p]?.color ?? ANY_POSITION_COLOR}"
+                      <span class="pos-pill" style="--pc: {ink(POSITIONS[p]?.color ?? ANY_POSITION_COLOR)}"
                         >{POSITIONS[p]?.icon}</span
                       >
                     {/each}
                   {/if}
                   <span class="dim">→</span>
-                  <span class="pos-pill" style="--pc: {exit?.color ?? ANY_POSITION_COLOR}"
+                  <span class="pos-pill" style="--pc: {ink(exit?.color ?? ANY_POSITION_COLOR)}"
                     >{exit?.icon}</span
                   >
                 </span>
@@ -691,7 +692,7 @@
     border: 1px solid var(--accent);
     border-radius: 8px;
     padding: 5px 0;
-    box-shadow: 0 6px 20px rgb(0 0 0 / 45%);
+    box-shadow: 0 6px 20px var(--lift);
   }
 
   .drop-head {
@@ -807,7 +808,7 @@
   }
 
   .reflex.planned .chip {
-    stroke: color-mix(in srgb, #6b7280 70%, var(--text));
+    stroke: color-mix(in srgb, var(--edge) 70%, var(--text));
   }
 
   .reflex.locked {
@@ -1005,7 +1006,7 @@
     padding: 0 5px 1px;
     border: 1px solid var(--pc);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--pc) 16%, transparent);
+    background: color-mix(in srgb, var(--pc) var(--tint-mix), transparent);
     font-size: 10.5px;
     line-height: 1.5;
   }

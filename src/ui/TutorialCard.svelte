@@ -192,7 +192,7 @@
     border: 2px solid var(--accent);
     border-radius: 8px;
     padding: 10px 14px 12px;
-    box-shadow: 0 4px 16px rgb(0 0 0 / 45%);
+    box-shadow: 0 4px 16px var(--lift);
   }
 
   .head {

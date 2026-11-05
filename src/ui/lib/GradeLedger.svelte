@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from './ink';
   import { gs, view } from '../state.svelte';
   import { MATERIALS, QUALITY_TIERS, SKILLS } from '../../core/registry';
   import { JUDGEMENT_CAP, exposureInfo, tierFor, type CookCheck, type CookLedger } from '../../core/systems/cooking';
@@ -96,10 +97,10 @@
           <i
             class="gl-block"
             class:gl-on={on}
-            style="--c: {colour}; left: {b.left}%; width: {b.width}%"
+            style="--c: {ink(colour)}; left: {b.left}%; width: {b.width}%"
             title={QUALITY_TIERS[b.tier].name}
           ></i>
-          <span class="gl-lbl" style="--c: {colour}; left: {b.left}%">{b.tier.toUpperCase()}</span>
+          <span class="gl-lbl" style="--c: {ink(colour)}; left: {b.left}%">{b.tier.toUpperCase()}</span>
           <span class="gl-val" style="left: {b.left}%">{b.mult}</span>
         {/each}
         <i

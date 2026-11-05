@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from '../lib/ink';
   import { gs, game, view } from '../state.svelte';
   import { ARCANE_WORDS, MIRACLES, maxSentenceWords, miraclesOf } from '../../core/data/spellcraft.data';
   import {
@@ -777,7 +778,7 @@
             class="seg"
             class:held={open && (shape[axis.id] ?? 0) >= ring}
             class:locked={!open}
-            style="--axis: {axis.color}"
+            style="--axis: {ink(axis.color)}"
             role="button"
             tabindex={open ? 0 : -1}
             aria-label={`${axis.name} ${ring}`}
@@ -797,7 +798,7 @@
           x={at.x}
           y={at.y}
           text-anchor={at.anchor}
-          style="--axis: {axis.color}"
+          style="--axis: {ink(axis.color)}"
         >
           <tspan>{axis.icon}</tspan>
           <tspan class="axis-name" dx="0.8">{axis.name}</tspan>
@@ -810,7 +811,7 @@
         {@const open = openAxes.includes(axis.id)}
         <Tip>
           <span class="legend-item" class:dim={!open}>
-            <span class="dot" style="background: {axis.color}"></span>
+            <span class="dot" style="background: {ink(axis.color)}"></span>
             {axis.icon} {axis.name} <b>{open ? (shape[axis.id] ?? 0) : '🔒'}</b>
           </span>
           {#snippet tip()}
@@ -1430,7 +1431,7 @@
   }
 
   .seg:focus-visible {
-    outline: 1.5px solid var(--accent);
+    outline: var(--ring-w) solid var(--ring);
     outline-offset: 1px;
   }
 
@@ -1440,7 +1441,7 @@
 
   .seg.held {
     fill: var(--axis);
-    stroke: color-mix(in srgb, var(--axis) 60%, black);
+    stroke: color-mix(in srgb, var(--axis) 60%, var(--bg-sunken));
   }
 
   .seg.locked {
@@ -1529,7 +1530,7 @@
   }
 
   .mem-drop:hover {
-    background: color-mix(in srgb, var(--danger, #e05555) 30%, transparent);
+    background: color-mix(in srgb, var(--danger) 30%, transparent);
     color: var(--text);
   }
 

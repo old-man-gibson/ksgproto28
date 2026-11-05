@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from '../lib/ink';
   import { resolveRune } from '../../core/systems/runes';
   import { gs, game, ui, view } from '../state.svelte';
   import { MATERIALS, RARITIES, STATUSES } from '../../core/registry';
@@ -762,7 +763,7 @@
       class:marked={mark}
       aria-label="{itemName(item)}{count > 1 ? ` ×${count}` : ''}"
       aria-pressed={mark ?? undefined}
-      style="--rar: {rarityColor(item)}"
+      style="--rar: {ink(rarityColor(item))}"
       onclick={() => (mark === null ? cellClick(onopen) : onopen())}
       ondblclick={() => mark === null && cellDblClick(ontoggle)}
     >
@@ -876,7 +877,7 @@
 
 {#snippet itemTitle(item: ItemInstance, count: number)}
   {@const def = itemDefOf(item)}
-  <div class="win-title" style="color: {rarityColor(item)}">
+  <div class="win-title" style="color: {ink(rarityColor(item))}">
     {def.icon}
     {itemName(item)}{count > 1 ? ` ×${count}` : ''}
   </div>
@@ -922,7 +923,7 @@
   {@const ok = canEquip(gs, s.item)}
   {@const cmp = compareToWorn(gs, s.item, slot, runesOpen)}
   <button class="pick" class:spare disabled={!ok} onclick={() => equipInto(s.item, slot)}>
-    <span class="icon-sm" style="color: {rarityColor(s.item)}">{d.icon}</span>
+    <span class="icon-sm" style="color: {ink(rarityColor(s.item))}">{d.icon}</span>
     <span class="pick-name">{pickLabel(s, slot)}</span>
     {#if !cmp}
       <span class="pick-mods small dim">
@@ -1118,7 +1119,7 @@
           <button
             class="small chip rar"
             class:selected={filterRarity === r}
-            style="--rar: {RARITIES[r]?.color}"
+            style="--rar: {ink(RARITIES[r]?.color)}"
             onclick={() => toggleRarity(r)}
           >
             ≤ {RARITIES[r]?.name || 'Common'}
@@ -1210,7 +1211,7 @@
       {#each flaskGroups as g (g.key)}
         {@const can = canUseFlask(gs, g.index)}
         <Tip>
-          <div class="flask" style="--tint: {QUALITY_TIERS[brewGrade(g.spec)].color}">
+          <div class="flask" style="--tint: {ink(QUALITY_TIERS[brewGrade(g.spec)].color)}">
             <span class="flask-icon">{g.spec.icon}</span>
             <span class="flask-name">{g.spec.name}{g.qty > 1 ? ` ×${g.qty}` : ''}</span>
             <button class="small" disabled={!can.ok} onclick={() => game.useFlask(g.index)}>
@@ -1362,7 +1363,7 @@
   {@const eating = eatButton(gs, id, quality)}
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}
-      <div class="win-title" style="color: {QUALITY_TIERS[quality].color}">
+      <div class="win-title" style="color: {ink(QUALITY_TIERS[quality].color)}">
         {def?.icon ?? '🍽️'} {gradeWord(id, quality)}{def?.name ?? id}
       </div>
       <div class="small dim">×{fmt(provisionQty)} held · {fmt(gradedUnitPrice(gs, id, quality, goldGain))} 🪙 each</div>
@@ -1430,7 +1431,7 @@
           <button
             class="small chip"
             class:selected={keepGrade === q}
-            style="--rar: {QUALITY_TIERS[q].color}"
+            style="--rar: {ink(QUALITY_TIERS[q].color)}"
             onclick={() => (keepGrade = keepGrade === q ? null : q)}
           >
             {QUALITY_TIERS[q].name}
@@ -1458,7 +1459,7 @@
             {#if ing.def.desc}<div class="small dim ellip">{ing.def.desc}</div>{/if}
             <div class="grade-rows">
               {#each ing.grades as g (g.quality)}
-                <div class="grade-row small" style="--tint: {QUALITY_TIERS[g.quality].color}">
+                <div class="grade-row small" style="--tint: {ink(QUALITY_TIERS[g.quality].color)}">
                   <span class="grade-name">{QUALITY_TIERS[g.quality].name}</span>
                   <span class="dim">×{fmt(g.qty)}</span>
                   <span class="spacer"></span>
@@ -1578,8 +1579,10 @@
   }
 
   .cell.marked {
+    --ink-lmin: var(--sel-ink-lmin);
+    --ink-lmax: var(--sel-ink-lmax);
     border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 18%, var(--bg-raised));
+    background: var(--sel-bg);
     box-shadow: inset 0 0 0 1px var(--accent);
   }
 
@@ -1644,7 +1647,7 @@
     line-height: 1;
     padding: 1px 3px;
     border-radius: 4px;
-    background: rgb(0 0 0 / 60%);
+    background: var(--scrim);
     color: var(--text);
   }
 
@@ -1657,7 +1660,7 @@
     line-height: 1;
     padding: 1px 3px;
     border-radius: 4px;
-    background: rgb(0 0 0 / 60%);
+    background: var(--scrim);
     color: var(--text-dim);
   }
 
@@ -1724,7 +1727,7 @@
   }
 
   .select-bar .danger {
-    border-color: #5d3030;
+    border-color: color-mix(in srgb, var(--danger) 50%, var(--edge));
     color: var(--danger);
   }
 
@@ -1737,7 +1740,7 @@
   }
 
   .spare-bar .danger {
-    border-color: #5d3030;
+    border-color: color-mix(in srgb, var(--danger) 50%, var(--edge));
     color: var(--danger);
   }
 
@@ -1820,7 +1823,7 @@
   .win-buttons .ghost,
   .grade-row .ghost,
   .pouch-item .ghost {
-    border-color: #5d3030;
+    border-color: color-mix(in srgb, var(--danger) 50%, var(--edge));
     color: var(--danger);
   }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from '../lib/ink';
   import { gs, game } from '../state.svelte';
   import { QUALITY_TIERS, STATUSES } from '../../core/registry';
   import { gradesHeld } from '../../core/systems/disciplines';
@@ -408,7 +409,7 @@
       <span class="titles">
         <b>{mainDef.name}</b>
         {#if showsGrade(expressed)}
-          <span class="grade" style="color: {QUALITY_TIERS[expressed.quality].color}">
+          <span class="grade" style="color: {ink(QUALITY_TIERS[expressed.quality].color)}">
             {QUALITY_TIERS[expressed.quality].name}
           </span>
         {/if}
@@ -664,7 +665,7 @@
                   <Tip>
                     <button
                       class="grade"
-                      style="border-color: {QUALITY_TIERS[g.quality].color}; color: {QUALITY_TIERS[g.quality].color}"
+                      style="border-color: {ink(QUALITY_TIERS[g.quality].color)}; color: {ink(QUALITY_TIERS[g.quality].color)}"
                       disabled={picking === CENTRE &&
                         (settling > 0 || (gs.materials.biomatter ?? 0) < cost)}
                       onclick={() => choose(row.def.id, g.quality)}
@@ -836,7 +837,7 @@
               {#snippet tip()}
                 <div class="tip-line tip-base">
                   {c.gene.icon} {c.gene.name}
-                  <span style="color: {QUALITY_TIERS[c.quality].color}">
+                  <span style="color: {ink(QUALITY_TIERS[c.quality].color)}">
                     {QUALITY_TIERS[c.quality].name}
                   </span>
                 </div>
@@ -906,7 +907,7 @@
   .big { font-size: 26px; }
   .grade { font-size: 11px; margin-left: 6px; }
   .cap { flex: 1 1 220px; min-width: 0; }
-  .cap-bar { height: 7px; border-radius: 4px; background: var(--bg-deep, #0003); overflow: hidden; }
+  .cap-bar { height: 7px; border-radius: 4px; background: var(--bg-deep); overflow: hidden; }
   .cap-fill { height: 100%; background: var(--accent); }
   .cap-bar.over .cap-fill { background: var(--danger); }
   .over-text { color: var(--danger); }
@@ -933,7 +934,7 @@
   .socket .tag { fill: var(--text-dim); font-weight: 600; }
   .socket.on-route .tag { fill: var(--accent); }
   /* The letter badge rides its own disc so it stays readable over the icon. */
-  .tag-disc { fill: var(--bg-deep, #111); stroke: var(--text-dim); stroke-width: 0.4; }
+  .tag-disc { fill: var(--bg-deep); stroke: var(--text-dim); stroke-width: 0.4; }
   .socket.filled .tag-disc { stroke: var(--accent); }
   /* Pointer-transparent so the glyph never steals a click from the edge it
      labels — the edge underneath is the cut/restore control. */
@@ -1035,7 +1036,8 @@
     border: 1px solid; border-radius: 4px; background: none; cursor: pointer;
   }
   .grade:hover:not(:disabled) { background: color-mix(in srgb, currentColor 20%, transparent); }
-  .grade:disabled { opacity: 0.35; cursor: default; }
+  /* The inline style carries the grade colour; a disabled grade drops to the neutral ink. */
+  .grade:disabled { color: var(--text-off) !important; border-color: var(--text-off) !important; }
   .grade .qty { margin-left: 3px; opacity: 0.7; }
   .hop { display: inline-block; width: 13px; text-align: center; opacity: 0.5; }
   .grants { color: var(--xp); margin: 2px 0; }

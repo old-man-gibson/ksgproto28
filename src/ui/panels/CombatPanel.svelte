@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from '../lib/ink';
   import { tick } from 'svelte';
   import { gs, game, stepTicks, stepEvent, ui, view } from '../state.svelte';
   import { dropFight } from '../../core/systems/ledger';
@@ -222,11 +223,11 @@
   /** Entry-side identity color: the first entry position's, or the 'any' gray. */
   function entryColor(t: TechniqueDef): string {
     const from = entryPositions(gs, t);
-    return from === 'any' ? ANY_POSITION_COLOR : (POSITIONS[from[0]]?.color ?? ANY_POSITION_COLOR);
+    return ink(from === 'any' ? ANY_POSITION_COLOR : (POSITIONS[from[0]]?.color ?? ANY_POSITION_COLOR));
   }
 
   function exitColor(t: TechniqueDef): string {
-    return POSITIONS[techniqueExit(gs, t)]?.color ?? ANY_POSITION_COLOR;
+    return ink(POSITIONS[techniqueExit(gs, t)]?.color ?? ANY_POSITION_COLOR);
   }
 
   /** The card's left→right tint: enters on its entry color, leaves on its exit color. */
@@ -416,7 +417,7 @@
   // and everything else greys out because none of it is available to you.
   const forcing = $derived(statusForcingStyle(gs));
   const forcedStance = $derived(forcing ? stanceIdFor(forcing.style) : null);
-  const forcedColor = $derived(forcing?.def.color ?? 'var(--danger)');
+  const forcedColor = $derived(ink(forcing?.def.color ?? 'var(--danger)'));
 
   /** Which rotation entry has its config window open (see EntryConfigModal). */
   let configId = $state<string | null>(null);
@@ -522,12 +523,12 @@
   {@const exit = POSITIONS[techniqueExit(gs, t)]}
   <span class="flow small">
     {#if from === 'any'}
-      <span class="pos-pill" style="--pc: {ANY_POSITION_COLOR}" title="From anywhere">any</span>
+      <span class="pos-pill" style="--pc: {ink(ANY_POSITION_COLOR)}" title="From anywhere">any</span>
     {:else}
       {#each from as p (p)}
         <span
           class="pos-pill"
-          style="--pc: {POSITIONS[p]?.color ?? ANY_POSITION_COLOR}"
+          style="--pc: {ink(POSITIONS[p]?.color ?? ANY_POSITION_COLOR)}"
           title="Enters from {POSITIONS[p]?.name ?? p}">{POSITIONS[p]?.icon}</span
         >
       {/each}
@@ -535,7 +536,7 @@
     <span class="dim">→</span>
     <span
       class="pos-pill"
-      style="--pc: {exit?.color ?? ANY_POSITION_COLOR}"
+      style="--pc: {ink(exit?.color ?? ANY_POSITION_COLOR)}"
       title="Leaves you {exit?.name ?? techniqueExit(gs, t)}">{exit?.icon}</span
     >
   </span>
@@ -735,7 +736,7 @@
       {#each knownPositions(gs) as p (p.id)}
         {@const entrants = entrantsOf(p.id)}
         <Tip>
-          <div class="pos-chip" class:current={!!gs.combat && curPos === p.id} style="--posc: {p.color}">
+          <div class="pos-chip" class:current={!!gs.combat && curPos === p.id} style="--posc: {ink(p.color)}">
             <span class="pos-icon">{p.icon}</span>
             <span class="pos-name">{p.name}</span>
             <span class="pos-badges">
@@ -1259,9 +1260,9 @@
     align-items: center;
     gap: 3px;
     padding: 0 6px 1px;
-    border: 1px solid var(--danger, #e05555);
+    border: 1px solid var(--danger);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--danger, #e05555) 14%, transparent);
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
     font-size: 0.72rem;
     white-space: nowrap;
   }
@@ -1441,7 +1442,7 @@
     padding: 0 6px 1px;
     border: 1px solid var(--pc);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--pc) 16%, transparent);
+    background: color-mix(in srgb, var(--pc) var(--tint-mix), transparent);
     font-size: 10.5px;
     line-height: 1.5;
     white-space: nowrap;
@@ -1469,13 +1470,13 @@
 
   .grounded {
     margin: 0 0 6px;
-    color: var(--danger, #e05555);
+    color: var(--danger);
   }
 
   /* Wears the spell-ready seat's own colour, so the line and the node match. */
   .readied {
     margin: 0 0 6px;
-    color: #7de0c3;
+    color: var(--buff);
   }
 
   button.exert.sheathe.on {
@@ -1499,10 +1500,6 @@
   button.cast:not(:disabled) {
     border-color: var(--focus);
     background: color-mix(in srgb, var(--focus) 14%, var(--bg-raised));
-  }
-
-  button.cast:disabled {
-    opacity: 0.45;
   }
 
   .winded {
@@ -1766,7 +1763,7 @@
   }
 
   .buff {
-    color: #7de0c3;
+    color: var(--buff);
     margin-right: 10px;
   }
 

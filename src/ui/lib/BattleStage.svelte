@@ -309,7 +309,7 @@
         >
           <Tip block>
             <div class="hud">
-              <div class="name" style="color:{m.rarity === 'common' ? 'var(--text)' : rarity.color}">
+              <div class="name" style="color:{m.rarity === 'common' ? 'var(--art-ink)' : rarity.color}">
                 {m.name} <span class="lv">Lv {m.level}</span>
               </div>
               <div class="meter hp"><div style="width:{hpPct(m)}%"></div></div>
@@ -414,8 +414,8 @@
     font-size: 12px;
     padding: 3px 9px;
     border-radius: 999px;
-    background: color-mix(in srgb, #000 50%, transparent);
-    color: var(--text);
+    background: color-mix(in srgb, var(--art-halo) 50%, transparent);
+    color: var(--art-ink);
   }
   .forced-chip {
     font-size: 12px;
@@ -668,8 +668,8 @@
     padding: 6px 12px;
     border-radius: 8px;
     font-size: 13px;
-    background: color-mix(in srgb, #000 55%, transparent);
-    color: var(--text);
+    background: color-mix(in srgb, var(--art-halo) 55%, transparent);
+    color: var(--art-ink);
     text-align: center;
   }
 

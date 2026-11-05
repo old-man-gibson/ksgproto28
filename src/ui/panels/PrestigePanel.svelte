@@ -101,6 +101,6 @@
     align-items: center;
   }
   .danger {
-    border-color: #c44;
+    border-color: var(--danger);
   }
 </style>

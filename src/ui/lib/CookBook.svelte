@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ink } from './ink';
   import { gs } from '../state.svelte';
   import { QUALITY_ORDER, QUALITY_TIERS } from '../../core/registry';
   import { bookSections, bookSummary, squaresLabel, tierColour } from './cookBook';
@@ -36,7 +37,7 @@
           <th scope="col">
             <span class="cb-grades">
               {#each QUALITY_ORDER as tier (tier)}
-                <span class="cb-letter" style="--c: {tierColour(tier)}" title={QUALITY_TIERS[tier].name}>{tier.toUpperCase()}</span>
+                <span class="cb-letter" style="--c: {ink(tierColour(tier))}" title={QUALITY_TIERS[tier].name}>{tier.toUpperCase()}</span>
               {/each}
             </span>
           </th>
@@ -62,7 +63,7 @@
               <td title={squaresLabel(row.squares)}>
                 <span class="cb-grades" role="img" aria-label={squaresLabel(row.squares)}>
                   {#each row.squares as sq (sq.tier)}
-                    <i class="cb-square cb-{sq.state}" style="--c: {tierColour(sq.tier)}"></i>
+                    <i class="cb-square cb-{sq.state}" style="--c: {ink(tierColour(sq.tier))}"></i>
                   {/each}
                 </span>
               </td>

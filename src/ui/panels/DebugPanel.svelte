@@ -729,7 +729,7 @@
     border: 1px solid var(--accent);
     border-radius: 10px;
     background: var(--bg-panel);
-    box-shadow: 0 10px 34px rgb(0 0 0 / 55%);
+    box-shadow: 0 10px 34px var(--lift);
   }
 
   .head {

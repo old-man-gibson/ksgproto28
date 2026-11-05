@@ -1199,7 +1199,7 @@
   }
 
   button.danger {
-    border-color: #5d3030;
+    border-color: color-mix(in srgb, var(--danger) 50%, var(--edge));
   }
 
   .palette {
@@ -1500,7 +1500,7 @@
 
   /* The pedal reads as what it is: one tone, held, under everything. */
   .pedalline {
-    stroke: var(--spirit, #a06fd6);
+    stroke: var(--spirit);
     stroke-width: 2;
     opacity: 0.5;
     pointer-events: none;
@@ -1558,15 +1558,15 @@
   }
 
   .perform:disabled {
-    border-color: var(--border);
-    color: var(--text-dim);
+    border-color: var(--text-off);
+    color: var(--text-off);
   }
 
   .problems {
     margin: 0;
     padding-left: 4px;
     list-style: none;
-    color: #d6b96a;
+    color: var(--warn);
     font-size: 12px;
   }
 

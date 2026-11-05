@@ -758,9 +758,9 @@
     align-items: center;
     gap: 4px;
     padding: 1px 7px 2px;
-    border: 1px solid var(--danger, #e05555);
+    border: 1px solid var(--danger);
     border-radius: 999px;
-    background: color-mix(in srgb, var(--danger, #e05555) 14%, transparent);
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
     font-size: 0.78rem;
     line-height: 1.5;
     white-space: nowrap;
@@ -774,18 +774,18 @@
     0%,
     100% {
       box-shadow: 0 0 0 0 transparent;
-      border-color: var(--danger, #e05555);
+      border-color: var(--danger);
     }
     50% {
-      box-shadow: 0 0 6px 1px color-mix(in srgb, var(--danger, #e05555) 55%, transparent);
-      border-color: color-mix(in srgb, #fff 45%, var(--danger, #e05555));
+      box-shadow: 0 0 6px 1px color-mix(in srgb, var(--danger) 55%, transparent);
+      border-color: color-mix(in srgb, var(--text) 45%, var(--danger));
     }
   }
   @media (prefers-reduced-motion: reduce) {
     .affliction.primed {
       animation: none;
-      border-color: color-mix(in srgb, #fff 45%, var(--danger, #e05555));
-      box-shadow: 0 0 5px 1px color-mix(in srgb, var(--danger, #e05555) 45%, transparent);
+      border-color: color-mix(in srgb, var(--text) 45%, var(--danger));
+      box-shadow: 0 0 5px 1px color-mix(in srgb, var(--danger) 45%, transparent);
     }
   }
   .affliction-icon {
@@ -843,7 +843,7 @@
     top: 0;
     bottom: 0;
     width: 1px;
-    background: rgb(255 255 255 / 25%);
+    background: color-mix(in srgb, var(--bar-ink) 25%, transparent);
     pointer-events: none;
   }
 

@@ -465,7 +465,7 @@
   .catchup-overlay {
     position: fixed;
     inset: 0;
-    background: rgb(0 0 0 / 60%);
+    background: var(--scrim);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -662,9 +662,9 @@
     font-size: 13px;
     padding: 1px 7px;
     border-radius: 999px;
-    color: #b9a7d6;
-    border: 1px solid #4a3f66;
-    background: color-mix(in srgb, #4a3f66 30%, transparent);
+    color: var(--night);
+    border: 1px solid var(--night-edge);
+    background: color-mix(in srgb, var(--night-edge) 30%, transparent);
   }
 
   .actions {

@@ -24,6 +24,7 @@
 </script>
 
 <script lang="ts">
+  import { ink } from './ink';
   import type { Snippet } from 'svelte';
   import Tip from './Tip.svelte';
   import { fmt } from './format';
@@ -204,7 +205,7 @@
             <button
               class="small chip"
               class:selected={tierFilter === t.rank}
-              style="--rar: {t.color}"
+              style="--rar: {ink(t.color)}"
               onclick={() => toggleTier(t.rank)}
             >
               {t.label}
@@ -221,7 +222,7 @@
             class="cell"
             class:marked
             class:dimmed={e.dim}
-            style="--tint: {e.tint ?? 'var(--border)'}"
+            style="--tint: {ink(e.tint ?? 'var(--border)')}"
             aria-label={e.label}
             aria-pressed={selectMode ? picked.has(e.key) : undefined}
             onclick={() => click(e.key)}
@@ -299,8 +300,10 @@
   }
 
   .cell.marked {
+    --ink-lmin: var(--sel-ink-lmin);
+    --ink-lmax: var(--sel-ink-lmax);
     border-color: var(--accent);
-    background: color-mix(in srgb, var(--accent) 18%, var(--bg-raised));
+    background: var(--sel-bg);
     box-shadow: inset 0 0 0 1px var(--accent);
   }
 
@@ -318,7 +321,7 @@
     line-height: 1;
     padding: 1px 3px;
     border-radius: 4px;
-    background: rgb(0 0 0 / 60%);
+    background: var(--scrim);
     color: var(--text);
   }
 
@@ -351,7 +354,7 @@
   }
 
   .select-bar .ghost {
-    border-color: #5d3030;
+    border-color: color-mix(in srgb, var(--danger) 50%, var(--edge));
     color: var(--danger);
   }
 

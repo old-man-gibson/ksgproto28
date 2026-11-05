@@ -60,7 +60,7 @@
     padding: 8px 11px;
     font-size: 12px;
     line-height: 1.45;
-    box-shadow: 0 6px 20px rgb(0 0 0 / 45%);
+    box-shadow: 0 6px 20px var(--lift);
     pointer-events: none;
   }
 </style>

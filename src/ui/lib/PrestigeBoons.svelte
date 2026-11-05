@@ -44,7 +44,7 @@
     gap: 8px;
   }
   .boon {
-    border: 1px solid var(--border, #333);
+    border: 1px solid var(--border);
     border-radius: 6px;
     padding: 8px 10px;
     display: flex;
@@ -52,7 +52,7 @@
     gap: 4px;
   }
   .boon.bought {
-    border-color: var(--accent, #8a6);
+    border-color: var(--accent);
   }
   .head {
     display: flex;

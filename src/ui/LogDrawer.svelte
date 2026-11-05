@@ -71,6 +71,6 @@
     bottom: 12px;
     width: min(360px, calc(100vw - 24px));
     z-index: 9;
-    box-shadow: -8px 0 24px rgb(0 0 0 / 45%);
+    box-shadow: -8px 0 24px var(--lift);
   }
 </style>
