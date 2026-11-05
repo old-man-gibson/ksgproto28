@@ -1,6 +1,6 @@
 <script lang="ts">
   import { save, exportSave, importSave, hardReset } from './state.svelte';
-  import { chooseTheme, loadTheme, nextTheme, THEME_NAMES } from './lib/theme';
+  import { chooseTheme, loadTheme, THEMES, THEME_NAMES, type Theme } from './lib/theme';
   import Modal from './lib/Modal.svelte';
 
   /**
@@ -34,8 +34,8 @@
     if (hardReset()) open = false;
   }
 
-  function onTheme() {
-    theme = nextTheme(theme);
+  function onTheme(ev: Event) {
+    theme = (ev.currentTarget as HTMLSelectElement).value as Theme;
     chooseTheme(theme);
   }
 
@@ -81,8 +81,12 @@
       <button class="sysmenu-danger" onclick={onReset}>Reset</button>
     </div>
     <div class="sysmenu-row">
-      <span>Theme: switches between Default and Gothic. Kept in this browser, not in the save.</span>
-      <button onclick={onTheme}>{THEME_NAMES[theme]}</button>
+      <span>Theme: the colours and fonts of the game. Kept in this browser, not in the save.</span>
+      <select aria-label="Theme" value={theme} onchange={onTheme}>
+        {#each THEMES as id (id)}
+          <option value={id}>{THEME_NAMES[id]}</option>
+        {/each}
+      </select>
     </div>
 
     <h4 class="sysmenu-keys">Keys</h4>
@@ -106,7 +110,8 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .sysmenu-row button {
+  .sysmenu-row button,
+  .sysmenu-row select {
     flex: none;
     min-width: 78px;
   }

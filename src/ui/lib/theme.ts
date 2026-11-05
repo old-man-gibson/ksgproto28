@@ -66,7 +66,3 @@ export function chooseTheme(
     // Private windows and blocked storage: the theme still applies this visit.
   }
 }
-
-export function nextTheme(theme: Theme): Theme {
-  return THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
-}

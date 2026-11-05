@@ -29,8 +29,7 @@ import {
   applyTheme,
   chooseTheme,
   loadTheme,
-  nextTheme,
-  type Theme,
+  THEME_NAMES,
 } from '../src/ui/lib/theme';
 
 /** A post-tutorial save: the screens the tab bar showed to a player past floor 0. */
@@ -391,15 +390,16 @@ describe('the display theme', () => {
     expect(loadTheme(store)).toBe('gothic');
   });
 
-  it('cycles through every theme and back', () => {
-    let t: Theme = THEMES[0];
-    const visited = new Set<string>();
-    for (let i = 0; i < THEMES.length; i++) {
-      visited.add(t);
-      t = nextTheme(t);
+  it('picks any listed theme by id, stores it, and names every one for the Menu select', () => {
+    for (const id of THEMES) {
+      const store = fakeStore();
+      const page = root();
+      chooseTheme(id, store, page);
+      expect(loadTheme(store)).toBe(id);
+      expect(page.dataset.theme).toBe(id === 'default' ? undefined : id);
+      expect(THEME_NAMES[id].length).toBeGreaterThan(0);
     }
-    expect(visited.size).toBe(THEMES.length);
-    expect(t).toBe(THEMES[0]);
+    expect(new Set(THEMES.map((id) => THEME_NAMES[id])).size).toBe(THEMES.length);
   });
 
   it('survives a store that refuses the write', () => {
