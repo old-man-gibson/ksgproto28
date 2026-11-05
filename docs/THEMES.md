@@ -277,3 +277,35 @@ line. The nav list keeps a `1em` marker slot on every row for the same reason.
 - Tip.svelte opens on hover. The click-not-hover rule applies to it; the change is not made here.
 - Default's authored colours are under 4.5:1 in places (§7). The fix is two numbers in `app.css` and a visible change to
   every rarity and grade colour in Default.
+
+## 11. Theme catalogue
+
+One entry per built theme besides Default and Gothic: the concept, the fonts, the tokens that carry the look, the decorations,
+and what it does not do. Numbers are the minimums `tests/themes.test.ts` computes on the token tables, over panel, raised and
+hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for everything not listed here.
+
+### Registry
+
+- **Concept:** the band 1 offices and the Chancery. Filing-cabinet grey-green, a manila accent, form headings, rubber stamps.
+- **Fonts:** IBM Plex Sans (400, 400 italic, 600) for text; IBM Plex Mono (500, 600) for headings, the screen list's group
+  captions, bar labels and warnings. Latin slices only.
+- **Surfaces:** `--bg` `#151a18`, `--bg-panel` `#1c2320`, `--bg-raised` `#26302c`, `--bg-hover` `#323e39`, `--bg-sunken`
+  `#0f1311`. `--accent` is manila `#d6bd7c`; `--ring` white; `--here` pink `#f08cc0`.
+- **Measured:** text 8.7:1, dim 5.0:1, danger 4.7:1, worst log colour 4.7:1, edge 4.1:1, ring 13.6:1. Authored colours after the
+  remap (`--ink-lmin` 0.5) are at least 4.6:1 on panel and 5.2:1 on `--sel-bg`.
+- **Bars:** the bar fills are moved from the first design so the seven bars drawn together reach 9.3 ΔE00 under protan and
+  deutan (worst pairs: stamina/xp 9.3 protan, focus/xp 9.3 deutan, mana/spirit 10.5 deutan). Stamina is `#3baf75` (emerald),
+  xp `#96c671`, action `#ecdd31`. No exceptions in `VISION_EXCEPTIONS`.
+- **Selection:** `--sel-bg` is a dark manila tint, darker than raised (manila 11% over sunken), and `button.selected` adds a 4 px
+  manila bar on its left edge. Solid manila with dark ink is used only where no authored colour can sit inside: the open entry
+  of the screen list, the tab rows (`.tabs`, `.region-switch`) and a selected button with no element carrying an inline
+  `style`. Rarity and grade colours would fall under 4.5:1 on manila (plan ruling 3), so those keep the dark fill.
+- **Decorations (CSS only):** square corners; h2 and h3 in mono capitals with a rule to the right edge; a 4 px spine on the
+  left of every top-level panel; a dotted tear-off line under the header; field boxes with a heavier bottom line; bars with
+  quarter marks in the empty part; a graph-paper map ground; the outer you-are-here ring dashed; the pin card's warnings as
+  boxed mono capitals in the warning's own colour.
+- **Limits:**
+  - A long h3 (for example the Skills screen's attribute heading) prints in full capitals.
+  - The solid manila rules use `:has()`. A browser without it shows the dark selected fill and the manila bar.
+  - The clock chip's text is cut with an ellipsis at 1180 px, as it is in Default; the title is 15 px mono and fits at every
+    width where it shows.

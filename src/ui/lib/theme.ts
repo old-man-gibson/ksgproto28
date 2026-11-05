@@ -9,12 +9,13 @@
  * browser that never opened the Menu's theme control keeps following
  * `DEFAULT_THEME`.
  */
-export const THEMES = ['default', 'gothic'] as const;
+export const THEMES = ['default', 'gothic', 'registry'] as const;
 export type Theme = (typeof THEMES)[number];
 
 export const THEME_NAMES: Record<Theme, string> = {
   default: 'Default',
   gothic: 'Gothic',
+  registry: 'Registry',
 };
 
 /** The theme for a browser with no stored pick. */
