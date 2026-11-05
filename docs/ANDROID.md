@@ -25,7 +25,8 @@ different app: the phone keeps the old one and its save.
   none of them: enemies show no picture, maps draw the node diagram, icons
   are emoji. The art reaches the phone as an art pack (docs/ART_PACK.md):
   `npm run art-pack` on the PC writes `art-pack/frontier-idle-art.zip`; copy
-  it to the phone and use Menu → Import art pack once. The pack is kept in
+  it to the phone and use Import art pack once (on the floor 0 card's first
+  step, or in the Menu after floor 0). The pack is kept in
   the app's storage, so APK updates keep it; uninstalling deletes it. Rerun
   and reimport when new art is added. A build made on this PC has the art
   built in; do not share that APK.
