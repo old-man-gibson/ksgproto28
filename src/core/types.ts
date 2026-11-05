@@ -1379,6 +1379,8 @@ export interface StatusDef {
   blowCut?: { rattle: number };
   /** Empty: your weapon blows cannot be dodged and skip armour, resistance and weakness. */
   pureBlows?: true;
+  /** Solar Charge: each unarmed blow adds the intensity x its damage as this type. */
+  unarmedRider?: DamageType;
   /**
    * Shadow Clone (systems/clones.ts): a deployed clone yields this share of a
    * gathering or job cycle, and takes its bench crafts this share as fast.
@@ -5735,6 +5737,11 @@ export interface CombatState {
    * fight against practice targets (systems/practice.ts). Transient.
    */
   practiceAt?: Record<string, number>;
+  /**
+   * An ability action the player pressed (`reading.actions`, the Ability tab's
+   * button), by key. It takes the next bar fill, before the rotation is read.
+   */
+  queuedAct?: string;
 }
 
 // ---------- Skill triggers ----------

@@ -9,7 +9,7 @@
   import { hpFraction } from '../../core/systems/health';
   import { visibleStatuses } from '../../core/systems/statuses';
   import { effectiveStyleDef } from '../../core/systems/styles';
-  import type { MonsterInstance, SpotDef } from '../../core/types';
+  import type { ActivityDef, MonsterInstance, SpotDef } from '../../core/types';
   import SceneBackdrop from './SceneBackdrop.svelte';
   import RaidTrack from './RaidTrack.svelte';
   import Tip from './Tip.svelte';
@@ -24,8 +24,15 @@
    * dies. Everything here is read off the state between ticks (hp and bar
    * deltas), so the core stays ignorant of it and no animation can ever
    * disagree with the numbers.
+   *
+   * `startBelow`: the hunt a button under the stage starts (CombatPanel's
+   * soleCombatActivity). The idle line names it instead of the Location tab.
    */
-  let { spot, foeTip }: { spot: SpotDef; foeTip: Snippet<[MonsterInstance, number]> } = $props();
+  let {
+    spot,
+    foeTip,
+    startBelow = null,
+  }: { spot: SpotDef; foeTip: Snippet<[MonsterInstance, number]>; startBelow?: ActivityDef | null } = $props();
 
   const scene = $derived(sceneFor(spot));
   const stats = $derived(view.stats);
@@ -369,6 +376,8 @@
         🍃 No monsters are available at {spot.name} right now.
       {:else if hunting}
         🔍 Searching for the next fight{gs.respawnTimer > 0 ? ` — ${ticksToTime(gs.respawnTimer)}` : '…'}
+      {:else if startBelow}
+        Not hunting. Start {startBelow.icon} {startBelow.name} below.
       {:else if canHunt}
         Choose a hunt in the Location tab to fight here.
       {:else}

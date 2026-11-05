@@ -1,4 +1,5 @@
 import type { GameState } from '../types';
+import type { FacetDoc } from './facet';
 
 /**
  * The game telling the run's ability what just happened (docs/FACET.md,
@@ -35,6 +36,7 @@ export const FOE = 'foe:';
  * | rocks | a statue's rocks hit an enemy (combat.ts throwRubble) | target (its ref), amount |
  * | barFill | the player's action bar filled, before the action (combat.ts) | |
  * | eat | the player ate a dish (consumables.ts useConsumable) | calories (dishCalories: Well Fed x 400, or 100, x grade) |
+ * | act | the player used one of the ability's `reading.actions` at a bar fill (combat.ts, host.ts fireFacetAction) | action (its key) |
  */
 export type FacetEventId =
   | 'fightStart'
@@ -54,7 +56,8 @@ export type FacetEventId =
   | 'statue'
   | 'rocks'
   | 'barFill'
-  | 'eat';
+  | 'eat'
+  | 'act';
 
 /** combat.ts's trigger stamps that are also ability events. onEncounterStart is not: fightStart carries the enemies. */
 const COMBAT_STAMPS: Record<string, FacetEventId> = {
@@ -108,6 +111,56 @@ export function facetCombatTick(state: GameState): boolean {
   bindFacets(state);
   if (bound !== state) return false;
   globalThis.Facet.tick(PLAYER_REF);
+  return true;
+}
+
+/** A rotation entry for an ability action is this plus the action's key (`facet:sun_blast`). */
+export const FACET_ACTION = 'facet:';
+
+/** One of the held ability's `reading.actions`, and whether it can be used now. */
+export interface HeldAction {
+  /** Its rotation id: FACET_ACTION + key. */
+  id: string;
+  key: string;
+  name: string;
+  icon: string;
+  desc: string;
+  /** The cell the Ability tab draws its button beneath; '' for none. */
+  under: string;
+  ready: boolean;
+}
+
+/**
+ * The actions the run's ability offers. Read without binding, like the
+ * readouts: a state the core is not pointed at offers none. combat.ts reads
+ * this during a fight, where facetCombatTick has just bound the state.
+ */
+export function facetActions(state: GameState): HeldAction[] {
+  if (!state.facets?.length || bound !== state || !globalThis.Facet?.ready()) return [];
+  return state.facets.flatMap(actionsOf);
+}
+
+/** One document's actions. The core must be installed and pointed at the state that holds it. */
+export function actionsOf(doc: FacetDoc): HeldAction[] {
+  return (doc.reading?.actions ?? []).map((a) => ({
+    id: FACET_ACTION + a.key,
+    key: a.key,
+    name: a.name,
+    icon: a.icon,
+    desc: a.desc ?? '',
+    under: a.under ?? '',
+    ready: globalThis.Facet.evalExpr(a.ready, { ref: PLAYER_REF, facet: doc, bindings: {} }) > 0,
+  }));
+}
+
+/**
+ * Use an action now: raise `act` for the document to answer. False when the
+ * ability does not offer it or it is not ready. combat.ts calls this at a bar
+ * fill, then sweeps what it killed.
+ */
+export function fireFacetAction(state: GameState, key: string): boolean {
+  if (!facetActions(state).some((a) => a.key === key && a.ready)) return false;
+  globalThis.Facet.event('act', PLAYER_REF, { action: key });
   return true;
 }
 

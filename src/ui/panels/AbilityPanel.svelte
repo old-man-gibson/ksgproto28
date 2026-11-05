@@ -1,6 +1,6 @@
 <script lang="ts">
   import { gs } from '../state.svelte';
-  import { facetReadouts } from '../../core/facet/host';
+  import { facetReadouts, type FacetReadout } from '../../core/facet/host';
   import { abilityValue, pct } from '../lib/format';
   import FactLines from '../lib/FactLines.svelte';
   import { game } from '../state.svelte';
@@ -14,7 +14,33 @@
    * on you right now (Sidebar.svelte).
    */
   const abilities = $derived(facetReadouts(gs));
+
+  /**
+   * What a pressed action is waiting on. One line always, so the panel keeps
+   * its height when the state changes each tick.
+   */
+  function actionState(act: { ready: boolean; queued: boolean }): string {
+    if (!gs.combat) return 'In fights only.';
+    if (act.queued) return 'Pressed: it takes your next action. Press again to cancel.';
+    return act.ready ? 'Ready: it takes your next action.' : 'Not ready.';
+  }
 </script>
+
+<!-- An ability action (Sun Blast): pressed here for the next bar fill, or fired by
+     the rotation on the Combat tab under its trigger (facet/host.ts queueFacetAction). -->
+{#snippet action(act: FacetReadout['actions'][number])}
+  <div class="act">
+    <button
+      class:selected={act.queued}
+      disabled={!gs.combat || (!act.ready && !act.queued)}
+      onclick={() => game.queueFacetAction(act.key)}
+    >
+      {act.icon} {act.name}
+    </button>
+    <span class="small dim">{actionState(act)}</span>
+  </div>
+  {#if act.desc}<div class="facts"><FactLines text={act.desc} /></div>{/if}
+{/snippet}
 
 {#each abilities as ab (ab.name)}
   <div class="panel ability">
@@ -38,7 +64,13 @@
             </div>
           {/if}
           {#if cell.desc}<div class="small dim">{cell.desc}</div>{/if}
+          {#each ab.actions.filter((a) => a.under === cell.key) as act (act.key)}
+            {@render action(act)}
+          {/each}
         </div>
+      {/each}
+      {#each ab.actions.filter((a) => !ab.cells.some((c) => c.key === a.under)) as act (act.key)}
+        <div class="row">{@render action(act)}</div>
       {/each}
       {#each ab.inputs as input (input.label)}
         <div class="row">
@@ -156,5 +188,11 @@
   }
   .low {
     color: var(--danger);
+  }
+  .act {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
   }
 </style>

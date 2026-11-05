@@ -33,7 +33,7 @@ describe('ability readout', () => {
   });
 
   it('marks as acting only the cells whose carrier modifies a number', () => {
-    expect(acting(holding('solar_charge'))).toEqual(['power']);
+    expect(acting(holding('solar_charge'))).toEqual(['power', 'warmth', 'infuse']);
     expect(acting(holding('zenkai'))).toEqual(['bonus']);
     expect(acting(holding('little_moons'))).toEqual([]);
     expect(acting(holding('bramble'))).toEqual(['thorns']);
@@ -43,7 +43,7 @@ describe('ability readout', () => {
 
   it('keeps the counters and inputs for the tab', () => {
     const solar = readout(holding('solar_charge'));
-    expect(solar.cells.map((c) => c.key)).toEqual(['charge', 'power']);
+    expect(solar.cells.map((c) => c.key)).toEqual(['charge', 'power', 'warmth', 'infuse', 'mend', 'blast']);
     expect(solar.inputs.map((i) => i.label)).toEqual(['Sunlight here']);
     const bramble = readout(holding('bramble'));
     expect(bramble.cells.find((c) => c.key === 'fights')?.acts).toBe(false);

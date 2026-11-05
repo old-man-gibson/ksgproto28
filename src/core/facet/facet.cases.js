@@ -1057,5 +1057,73 @@ CASES['serialise: no Map, Set, function or undefined reaches the wire'] = (asser
   assert(err === null, err ? err.message : '');
 };
 
+// A host for Solar Charge: CON and WIS 20 (cap 260), level 10, no sunlight, HP the engine heals,
+// and two enemies that record damage.
+function solarHost() {
+  const me = { hp: 60, max: 100 };
+  const hits = [];
+  const reads = { 'fighter.hp': () => me.hp, 'fighter.maxHpAbs': () => me.max, 'stat.eff.con': () => 20,
+    'stat.eff.wis': () => 20, 'fighter.level': () => 10, 'world.sunlight': () => 0 };
+  const H = fakeHost({
+    quantities: () => [
+      { id: 'fighter.hp', label: 'HP', kind: 'pool', nullifiable: false, writable: false, mortalRole: 'vitality' },
+      { id: 'fighter.maxHpAbs', label: 'Max HP', kind: 'pool', nullifiable: false, mortalRole: 'vitality' },
+      { id: 'stat.eff.con', label: 'CON', kind: 'attribute', namespace: 'stat', nullifiable: false, writable: true },
+      { id: 'stat.eff.wis', label: 'WIS', kind: 'attribute', namespace: 'stat', nullifiable: false, writable: true },
+      { id: 'fighter.level', label: 'Level', kind: 'flat' },
+      { id: 'world.sunlight', label: 'Sunlight', kind: 'prob' },
+    ],
+    readQ: (r, q) => (reads[q] ? reads[q]() : 1),
+    resolve: (from, scope) => scope.side === 'enemy' ? ['e1', 'e2'].slice(0, scope.n || 2) : [from],
+    applyHeal: (r, amount) => { me.hp = Math.min(me.max, me.hp + amount); },
+    applyDamage: (r, amount, type) => { hits.push({ r, amount, type }); return amount; },
+  });
+  return { H, me, hits };
+}
+
+// User 2026-11-04: resistance at 20%, Heat on unarmed blows at 40%, healing that costs charge at
+// 60%, Sun Blast at 80%, -15% at empty.
+CASES['bank: Solar Charge tiers, healing and Sun Blast'] = (assert) => {
+  const { H, me, hits } = solarHost();
+  F.install(H);
+  const doc = F.hydrate(JSON.parse(JSON.stringify(F.bank.solar_charge)));
+  F.attach('a', [doc]);
+  const cell = (k) => doc.cells.filter(c => c.key === k)[0];
+  const v = (k) => cell(k).state.v;
+  const share = (s) => { F.cellStep(cell('charge'), 'set', s * 260, { ref: 'a', facet: doc, bindings: {} }); F.minute('a'); };
+  const near = (a, b) => Math.abs(a - b) < 1e-6;
+  const DRAIN = 0.02 * Math.pow(40, 0.75);
+
+  share(0);
+  assert(near(v('power'), -0.15), 'empty power is ' + v('power') + ', not -0.15');
+  share(0.3);
+  assert(v('warmth') === 1 && v('infuse') === 0 && v('mend') === 0 && v('blast') === 0, 'at 30% only the first tier is on');
+  share(0.55);
+  assert(near(v('infuse'), 0.25) && v('mend') === 0, 'at 55% the infusion is ' + v('infuse'));
+  assert(near(v('power'), 0.2), 'power past half charge is ' + v('power'));
+
+  // 60%+: 5% of 40 missing is 2 HP, at CON / 40 = 0.5 charge each.
+  share(0.7);
+  assert(near(me.hp, 62), 'healed to ' + me.hp + ', not 62');
+  assert(near(v('charge'), 182 - DRAIN - 1), 'the heal cost ' + (182 - DRAIN - v('charge')) + ' charge, not 1');
+  assert(v('mend') === 1 && v('blast') === 0, 'at 70% mending is on and Sun Blast is not');
+  me.hp = me.max;
+  share(0.7);
+  assert(near(v('charge'), 182 - DRAIN), 'at full HP the heal still cost charge');
+
+  F.event('act', 'a', { action: 'sun_blast' });
+  assert(hits.length === 0, 'Sun Blast fired below 80%');
+  share(0.9);
+  const charge = v('charge');
+  F.event('act', 'a', { action: 'sun_blast' });
+  const each = 0.5 * (10 + 20 + 0.25 * charge);
+  assert(hits.length === 4, 'Sun Blast made ' + hits.length + ' hits, not 2 enemies x 2 types');
+  assert(hits.every(h => near(h.amount, each)), 'a half blast was not ' + each + ': ' + hits.map(h => h.amount));
+  assert(hits.filter(h => h.type === 'heat').length === 2 && hits.filter(h => h.type === 'light').length === 2, 'not half Heat, half Light');
+  assert(near(v('charge'), charge - 13), 'Sun Blast cost ' + (charge - v('charge')) + ', not 5% of 260');
+  F.event('act', 'a', { action: 'something_else' });
+  assert(hits.length === 4, 'another action fired Sun Blast');
+};
+
 globalThis.FacetFakeHost = fakeHost;
 })();

@@ -32,12 +32,13 @@
   import type { TechniqueDef } from '../../core/types';
   import { POSITION_MODS, activeRotation } from '../../core/systems/combat';
   import BattleStage from '../lib/BattleStage.svelte';
-  import { facetReadouts } from '../../core/facet/host';
+  import { FACET_ACTION, facetActions, facetReadouts } from '../../core/facet/host';
   import { GENE_ACTIVE, expressedGene, geneAbility } from '../../core/systems/mutagens';
   import { monsterMind, monsterStats } from '../../core/systems/monsterStats';
   import { resourceLock } from '../../core/systems/resources';
   import { subsystemUnlocked } from '../../core/systems/unlocks';
   import { huntRest } from '../../core/systems/huntrest';
+  import { soleCombatActivity } from '../../core/systems/actions';
   import { escalationPrimed, statusForcingStyle, visibleStatuses } from '../../core/systems/statuses';
   import { STAT_NAMES, type MonsterInstance } from '../../core/types';
   import { styleUnlocked, styleSlots, effectiveStyleDef, stanceIdFor } from '../../core/systems/styles';
@@ -116,9 +117,18 @@
     speaking?: number;
     /** A counter technique or counterspell: pickActive never takes it in turn. */
     counter?: boolean;
+    /** What stands in the right-hand slot instead, while the entry cannot be used (an ability action not ready). */
+    blocked?: string;
   }
 
   function rotationEntry(id: string): RotationEntry | null {
+    // The run's ability action (Sun Blast). The document says when it is ready;
+    // the Ability tab carries its full text and its button.
+    if (id.startsWith(FACET_ACTION)) {
+      const act = facetActions(gs).find((a) => a.id === id);
+      if (!act) return null;
+      return { icon: act.icon, name: act.name, mark: '✦', cost: '', blocked: act.ready ? undefined : 'not ready' };
+    }
     if (id.startsWith('grimoire:')) {
       const spell = findSpell(gs, Number(id.slice('grimoire:'.length)));
       if (!spell) return null;
@@ -360,6 +370,11 @@
   }
 
   const spot = $derived(getSpot(gs.spot));
+  /**
+   * The spot's one hunt, started from here as from the Location tab. None
+   * while walking: the Location tab shows no activities then either.
+   */
+  const soleHunt = $derived(gs.travel ? null : soleCombatActivity(spot));
   /** Floor 0's fight steps scroll here (lib/tutorialFocus.ts); no glow over a running fight. */
   const stageTarget = $derived(tutorialScreen(gs)?.target === 'stage');
   /** Actives in the order they'll actually be considered. */
@@ -570,10 +585,23 @@
 <!-- The fight, drawn — first on the tab, because it is what the tab is for.
      Between fights it stays up, showing the place and what it is waiting on. -->
 <div style="margin-bottom: 12px" class:tutorial-target={stageTarget}>
-  <BattleStage {spot} foeTip={enemyTip} />
+  <BattleStage {spot} foeTip={enemyTip} startBelow={soleHunt} />
   <!-- The player's own rule between fights (systems/huntrest.ts). Applies to
        hunts only: forced fights and the keeper's dare start regardless. -->
   <div class="hunt-rest small">
+    <!-- The spot's one hunt (soleCombatActivity): the Location tab's button,
+         same toggle and locks, so a fight starts without leaving this tab. -->
+    {#if soleHunt}
+      {@const running = gs.activity === soleHunt.id}
+      <button
+        class:selected={running}
+        disabled={gs.recovering || !!gs.combat?.forced}
+        title={running ? 'Running. Click to stop.' : 'Start this hunt.'}
+        onclick={() => game.selectActivity(running ? null : soleHunt.id)}
+      >
+        {soleHunt.icon} {soleHunt.name}{#if running}<span class="dim">{' · running'}</span>{/if}
+      </button>
+    {/if}
     <label>
       Rest before the next fight when HP is below
       <select
@@ -1013,7 +1041,7 @@
           <div class="line2 small">
             <span class="mark dim">{entry.mark}{entry.cost ? ` ${entry.cost}` : ''}</span>
             <span class="when dim" class:primed={status?.kind === 'primed'}>
-              {whenText(status, cd, off, entry.cooldown, entry.speaking)}
+              {entry.blocked && !off ? entry.blocked : whenText(status, cd, off, entry.cooldown, entry.speaking)}
             </span>
           </div>
         </div>
