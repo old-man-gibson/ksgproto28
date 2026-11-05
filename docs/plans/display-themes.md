@@ -2,11 +2,11 @@
 id: display-themes
 title: Display themes — a shared cue system, Gothic fixed, and new themes to pick from
 kind: epic
-status: building
+status: review
 system: ui
 parent: ''
 save: ''
-updated: 2026-11-04
+updated: 2026-11-05
 invariants:
   - no-layout-shift
   - click-not-hover
@@ -242,3 +242,43 @@ is a cheaper light representative than Castle: lower colour-vision risk, no stag
     by `.road` and `.head`.
   - The global disabled rule adds `filter: grayscale(1)`, so an emoji or a coloured delta inside a disabled button reads as
     disabled without opacity.
+- 2026-11-04 to 2026-11-05, the nine marked themes. Each of three builders branched from ui-integration and merged the foundation's
+  fix round. Each branch was attacked by antagonist-code (FIX FIRST all three times), got one fix round, and was merged into
+  ui-integration. Each theme's entry is in THEMES.md §11.
+  - `themes-dark-b` (Signage T4, Cockpit T5, Linocut T6), merged in 0131013. Fixes:
+    - `.affliction` rules leaked onto Fight Feed riders, and `.drop` collided with a second component;
+    - the focus ring under here-row plates;
+    - Signage tower names were cut;
+    - the bonus chip overflowed its 7.9em slot and moved the header;
+    - the clock chip was cut;
+    - Linocut's selected pin stroke;
+    - Bitter's digits were not tabular.
+
+    Cockpit was pushed from a generic dark dashboard to a flight-deck panel: grey slabs, recessed display windows, engraved legends.
+  - `themes-dark-a` (Registry T1, Quayside T2, Enamel T3), merged in a2cfa35. Fixes:
+    - nav hover was dark on dark;
+    - a forced stance that is also picked;
+    - Enamel's focus ring on cream;
+    - the selected+disabled plate;
+    - tower names were cut in Registry and Quayside;
+    - Quayside's skill rows.
+  - `themes-light` (Castle T7, Sandstone T9, Survey T10, plus the light-ground step), merged in 3dc395b. Fixes:
+    - accent, buff and warn as fills on black wells (2.5 to 2.9:1), now on `--accent-fill`, `--buff-fill` and `--warn-fill`;
+    - the Skills XP well, now `--bar-track`;
+    - `--here` equalled `--text` and was 1.1:1 on tile art;
+    - Survey's picked-row outline replaced the focus ring;
+    - Castle's selected+disabled button looked live;
+    - the Survey bonus chip moved the header 1.5px;
+    - Castle's HERE tag was 4.36:1;
+    - text dimmed with opacity, now dimmed with `--text-dim`, in Default and Gothic too: the position chip, "still running",
+      the next band's name;
+    - badge tokens were untested;
+    - `.bar` decorations leaked into DefeatModal's share bars, so themes now scope them `.bar:has(> .fill)`.
+  - ui-integration 0c621c1: `vite.config.ts` allows the real paths of linked folders, so a worktree's dev server serves the
+    @fontsource files. Before it, every builder and antagonist measured in fallback faces.
+  - ui-integration 142e66a: Default's bonus chip slot is 8em (its widest text, "⏩ 2× 1h 10m", is 95.6px).
+  - Checked after the last merge (2026-11-05):
+    - verify: svelte-check 0 errors, 3858 tests passed (2 skipped), build ok;
+    - headless Edge at 1440px, all 11 themes switched through the Menu select, on Location, Combat, Skills and Equipment: every
+      font loaded, the header stayed one row, nothing overflowed.
+  - Ledger (T8) is not built: the user left it unmarked.

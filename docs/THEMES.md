@@ -2,9 +2,14 @@
 
 *How the game's look is switched, how a theme is written, and what keeps it working as panels are added.*
 
-Two themes exist: **Default** (the plain tokens in `app.css`) and **Gothic** (dark brown stone, bone text, brass accent, Cinzel
-titles, EB Garamond body). Gothic is what a browser gets until its player picks one (user, 2026-11-03). The Menu window holds
-the theme select. A theme is CSS only: it needs no save change and no art.
+Eleven themes exist:
+- **Default:** the plain tokens in `app.css`.
+- **Gothic:** dark brown stone, bone text, brass accent, Cinzel titles, EB Garamond body. Its colours have been Gothic+'s since 2026-11-04.
+- Six dark themes: Registry, Enamel, Quayside, Signage, Cockpit, Linocut.
+- Three light themes: Castle, Survey, Sandstone.
+
+§11 describes each. Gothic is what a browser gets until its player picks one (user, 2026-11-03; kept 2026-11-04). The Menu window
+holds the theme select. A theme is CSS only: it needs no save change and no art.
 
 The foundation (a shared cue system, a token contract and `tests/themes.test.ts`) was built on 2026-11-04 from
 [plans/display-themes.md](plans/display-themes.md). A theme that passes the test meets the contract. Everything a person needs
@@ -311,8 +316,8 @@ line. The nav list keeps a `1em` marker slot on every row for the same reason.
 
 - Pixel icons replace the emoji one group at a time, in both themes ([plans/pixel-icons.md](plans/pixel-icons.md)). Story 1
   (2026-10-22) did the sidebar: attributes, superattributes and the resource bars. Everything else still shows its emoji.
-- Candidate themes (Registry, Enamel, Castle and seven more) are in [plans/display-themes.md](plans/display-themes.md) §4. None
-  is built; they are written against this contract.
+- Ledger (T8 in [plans/display-themes.md](plans/display-themes.md) §4: cream paper, iron-gall ink, bars as a rule plus a thin
+  rail) is not built: the user left it unmarked on 2026-11-04. The other nine candidates are built (§11).
 - Tip.svelte opens on hover. The click-not-hover rule applies to it; the change is not made here.
 - Default's selected floor is high (0.58) because its `--sel-bg` is lighter than Gothic's. A darker Default `--sel-bg` (the
   accent at 8% over panel is #2a2b2a) would pass at 0.48 and keep more colour inside selected things, at the cost of a weaker
@@ -329,9 +334,10 @@ adds no specificity, so the rule ties with the global one it replaces (`button`,
 single-class rule (`.map-toggle { border: none }`) still wins. A rule that must beat a component rule keeps the plain
 `:root[data-theme='id']` prefix.
 
-**Measure with the web fonts blocked as well as loaded.** A checkout whose `node_modules` is a junction (a worktree) serves no
-font files from the dev server (Vite's `server.fs.allow`), so every face falls back: the page then shows `Segoe UI`, `Arial`
-or `Georgia` in place of the theme's face, and a layout that fits only the real face breaks. Header chips, the bonus chip and
+**Measure with the web fonts blocked as well as loaded.** A player whose fonts fail to load sees the fallback: `Segoe UI`,
+`Arial` or `Georgia` in place of the theme's face, and a layout that fits only the real face breaks. Before 2026-11-05 a
+worktree's dev server showed the fallback too: its `node_modules` is a junction whose real path Vite's `server.fs.allow`
+refused. `vite.config.ts` now allows the real paths of the linked folders. Header chips, the bonus chip and
 the 184px floor column are sized to hold in both cases. The bonus chip reserves its widest text; the clock chip reserves its
 widest hour string; the tests for both are "set every possible text and measure the header" (movement 0), not a sample of real
 fights. A theme declares a narrow system face after its own condensed face where the fallback would be wider (Signage's
@@ -340,57 +346,6 @@ fights. A theme declares a narrow system face after its own condensed face where
 Scope: a class name that two components use for different things (`affliction` in the sidebar and in the Fight Feed, `drop` on
 a family list and on a notebook button) is matched through its parent class (`.afflictions .affliction`, `.fam-wrap .drop`),
 never bare (PITFALLS §8).
-
-Castle, Survey and Sandstone are the light themes (built 2026-11-05, branch `themes-light`). Each is one file, `src/themes/<id>.css`,
-registered in `theme.ts`, with its fonts imported in `main.ts` (`latin-<weight>.css` only). They are the first themes whose page
-is lighter than their text.
-
-**Light themes.** A light theme needs a few things a dark one does not:
-
-- **Authored colours** are drawn darker, not lifted: `--ink-lmin` 0 and `--ink-lmax` about 0.52 (§4). `ink()` also scales chroma
-  by `lmax`. Without that a bright colour darkened with its chroma kept falls outside the sRGB gamut and the browser clips it
-  channel by channel: at a ceiling of 0.52 the orange and the red of the talent laps were 4.1 ΔE00 apart (20.3 unlifted) and
-  are 11.9 with the scale. A light theme's panel has to be very light for the family spacing check to hold: lightness about
-  0.88 or more, since the lightest authored colour must reach 4.5:1 on it at a ceiling of 0.52.
-- **The -ink tokens** are declared by the theme as hex (§4): each bar fill darkened uniformly in OKLab until it holds 4.7:1 on
-  panel, raised, hover and `--sel-bg`. The app.css derivation is the same remap and would also work, but a light theme picks its
-  own values.
-- **Bar wells.** Castle and Sandstone keep near-black wells with bright fills (each at least 3:1 on the well). `--xp` is the
-  one fill that is also tested as text (4.5:1 on panel, raised and hover), so it has to sit in a narrow lightness window
-  (about 0.115 to 0.125) and `--bg-hover` has to be light enough (lightness 0.73 or more) for the window to exist. Talent-lap
-  fills inside a dark well use the dark-ground ink range (`.bar:has(> .fill) { --ink-lmin: 0.5; --ink-lmax: 1 }`). The Skills
-  screen's XP bar reads `--bar-track` too (it was `--bg-sunken`, light here, where the skill fill was 2.3:1 and the talent laps
-  1.1 to 1.5:1). Survey has paper-white wells and mid to dark fills; its label is white with a black outline.
-- **Fills read their own tokens.** `--accent`, `--buff` and `--warn` are text colours, so a dark well loses them (2.5 to 2.9:1).
-  A fill site reads `--accent-fill`, `--buff-fill` or `--warn-fill` (§2). On a dark well they are a mid amber (4.1 to 4.2:1; also
-  3.4:1 on the page, where the bench's own bar sits), a teal and a bright amber. On Survey's white wells they are the text colours.
-- **The you-are-here ring** (`--here`) is a mid-tone colour (Castle raspberry, Survey magenta, Sandstone madder), 3.9 to 5.9:1 on
-  the map ground and 3.2 to 3.3:1 on dark tile art. It had been the text colour, which is 1.1:1 on art.
-- **Tiled maps** get a dark mat (`#0b0e12`) behind the picture: the strip above and below it holds labels, which are white.
-- **Painted art** stays dark. Text over it reads `--art-ink` (§5) and, for the colours that were `--text`, `--accent`, `--xp` and
-  `--danger` inside the stage, the five `--stage-*` tokens (§2). Each theme draws a hard frame between the page and the art:
-  the battle stage, the place banner and tiled maps get a border in the theme's ink colour (Castle: black timber, Survey: ink and
-  a hairline, Sandstone: kohl and a bronze line).
-- **Count chips** on item cells read `--badge-*` (§2): a dark chip with light text.
-- **Scrim, lift and hatch** are ink-coloured (not black) and lighter: `--scrim` 45–55%, `--lift` 25–35%.
-- **Specificity.** A component's scoped rule has the scope class on every compound selector, so a theme rule of the same length
-  loses. A theme rule that has to beat one writes `:root:root[data-theme='<id>']` (one more pseudo-class).
-- **Layout.** No rule here changes padding, border width, font size or font weight in a state. A theme sets the same border width
-  on all rows (`.nav-entry` 4px) and changes only colour in the state.
-- **Header slots.** A longer title leaves the clock chip less room: at 1370px the title is 37 to 55px wider than Default's and the
-  component's 6.5em (84.5px) cut "about 00:00" (Default's slot is 95.7px there). Each light theme sets `.timesense` to 7.4em
-  (96.2px). The bonus chip's slot is 8em (96px) in the component; Survey's widest text is 96.27px ("⏩ 2× 1h 10m", Plex Sans) and
-  Castle's 96.44px in its fallback face (Georgia), so both set 8.1em. Measured over every text from 0s to 8h 59m and every hour,
-  with the web fonts loaded and blocked: the header's children move 0px.
-- **A selected, disabled button** keeps the plain disabled look (dashed, grey, no fill): a theme whose selected fill is solid
-  scopes it with `:not(:disabled)` and leaves the button to cues.css. Castle did not at first, and the dashed edge was black on
-  black.
-- **The picked row** of the tower section is a focusable button; a theme draws its cue with an inset `box-shadow`, never `outline`,
-  which would replace the global focus ring.
-
-Shared limits of the three: the count on a spare stack (a cell dimmed to 0.42 by its component) is 2.9 to 3.0:1. Decorative
-glyphs (unearned achievement stars, empty slot icons) are under 3:1 in every theme, Default and Gothic included. The Skills
-screen's XP bar spills 4 to 11 px past its row at 1094 px in Castle and in Gothic (wide bold names); Survey and Sandstone do not.
 
 ### Registry
 
@@ -662,6 +617,59 @@ screen's XP bar spills 4 to 11 px past its row at 1094 px in Castle and in Gothi
     without them), as in Default (17px).
   - The hatch under a bar label lowers the label's local contrast; the 1px black halo carries it (bone on black halo 20:1).
   - Bitter and Alfa Slab One are the Latin slice only; `ā` and `ō` fall back to the system face.
+
+### Light themes
+
+Castle, Survey and Sandstone are the light themes (built 2026-11-04 to 2026-11-05, branch `themes-light`). Each is one file, `src/themes/<id>.css`,
+registered in `theme.ts`, with its fonts imported in `main.ts` (`latin-<weight>.css` only). They are the first themes whose page
+is lighter than their text.
+
+**Light themes.** A light theme needs a few things a dark one does not:
+
+- **Authored colours** are drawn darker, not lifted: `--ink-lmin` 0 and `--ink-lmax` about 0.52 (§4). `ink()` also scales chroma
+  by `lmax`. Without that a bright colour darkened with its chroma kept falls outside the sRGB gamut and the browser clips it
+  channel by channel: at a ceiling of 0.52 the orange and the red of the talent laps were 4.1 ΔE00 apart (20.3 unlifted) and
+  are 11.9 with the scale. A light theme's panel has to be very light for the family spacing check to hold: lightness about
+  0.88 or more, since the lightest authored colour must reach 4.5:1 on it at a ceiling of 0.52.
+- **The -ink tokens** are declared by the theme as hex (§4): each bar fill darkened uniformly in OKLab until it holds 4.7:1 on
+  panel, raised, hover and `--sel-bg`. The app.css derivation is the same remap and would also work, but a light theme picks its
+  own values.
+- **Bar wells.** Castle and Sandstone keep near-black wells with bright fills (each at least 3:1 on the well). `--xp` is the
+  one fill that is also tested as text (4.5:1 on panel, raised and hover), so it has to sit in a narrow lightness window
+  (about 0.115 to 0.125) and `--bg-hover` has to be light enough (lightness 0.73 or more) for the window to exist. Talent-lap
+  fills inside a dark well use the dark-ground ink range (`.bar:has(> .fill) { --ink-lmin: 0.5; --ink-lmax: 1 }`). The Skills
+  screen's XP bar reads `--bar-track` too (it was `--bg-sunken`, light here, where the skill fill was 2.3:1 and the talent laps
+  1.1 to 1.5:1). Survey has paper-white wells and mid to dark fills; its label is white with a black outline.
+- **Fills read their own tokens.** `--accent`, `--buff` and `--warn` are text colours, so a dark well loses them (2.5 to 2.9:1).
+  A fill site reads `--accent-fill`, `--buff-fill` or `--warn-fill` (§2). On a dark well they are a mid amber (4.1 to 4.2:1; also
+  3.4:1 on the page, where the bench's own bar sits), a teal and a bright amber. On Survey's white wells they are the text colours.
+- **The you-are-here ring** (`--here`) is a mid-tone colour (Castle raspberry, Survey magenta, Sandstone madder), 3.9 to 5.9:1 on
+  the map ground and 3.2 to 3.3:1 on dark tile art. It had been the text colour, which is 1.1:1 on art.
+- **Tiled maps** get a dark mat (`#0b0e12`) behind the picture: the strip above and below it holds labels, which are white.
+- **Painted art** stays dark. Text over it reads `--art-ink` (§5) and, for the colours that were `--text`, `--accent`, `--xp` and
+  `--danger` inside the stage, the five `--stage-*` tokens (§2). Each theme draws a hard frame between the page and the art:
+  the battle stage, the place banner and tiled maps get a border in the theme's ink colour (Castle: black timber, Survey: ink and
+  a hairline, Sandstone: kohl and a bronze line).
+- **Count chips** on item cells read `--badge-*` (§2): a dark chip with light text.
+- **Scrim, lift and hatch** are ink-coloured (not black) and lighter: `--scrim` 45–55%, `--lift` 25–35%.
+- **Specificity.** A component's scoped rule has the scope class on every compound selector, so a theme rule of the same length
+  loses. A theme rule that has to beat one writes `:root:root[data-theme='<id>']` (one more pseudo-class).
+- **Layout.** No rule here changes padding, border width, font size or font weight in a state. A theme sets the same border width
+  on all rows (`.nav-entry` 4px) and changes only colour in the state.
+- **Header slots.** A longer title leaves the clock chip less room: at 1370px the title is 37 to 55px wider than Default's and the
+  component's 6.5em (84.5px) cut "about 00:00" (Default's slot is 95.7px there). Each light theme sets `.timesense` to 7.4em
+  (96.2px). The bonus chip's slot is 8em (96px) in the component; Survey's widest text is 96.27px ("⏩ 2× 1h 10m", Plex Sans) and
+  Castle's 96.44px in its fallback face (Georgia), so both set 8.1em. Measured over every text from 0s to 8h 59m and every hour,
+  with the web fonts loaded and blocked: the header's children move 0px.
+- **A selected, disabled button** keeps the plain disabled look (dashed, grey, no fill): a theme whose selected fill is solid
+  scopes it with `:not(:disabled)` and leaves the button to cues.css. Castle did not at first, and the dashed edge was black on
+  black.
+- **The picked row** of the tower section is a focusable button; a theme draws its cue with an inset `box-shadow`, never `outline`,
+  which would replace the global focus ring.
+
+Shared limits of the three: the count on a spare stack (a cell dimmed to 0.42 by its component) is 2.9 to 3.0:1. Decorative
+glyphs (unearned achievement stars, empty slot icons) are under 3:1 in every theme, Default and Gothic included. The Skills
+screen's XP bar spills 4 to 11 px past its row at 1094 px in Castle and in Gothic (wide bold names); Survey and Sandstone do not.
 
 ### Castle
 
