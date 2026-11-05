@@ -1,0 +1,325 @@
+/*
+ * Linocut display theme. Active while <html data-theme="linocut"> (src/ui/lib/theme.ts).
+ * Concept: a relief print. A black key block, bone ink and one spot colour, saffron.
+ * Disabled and locked things are hatched, the way a cut block shows tone. A selected
+ * control and a floating card are printed with a hard offset block of saffron behind
+ * them. No brown: the neutrals are pure grey and the warm colours are bone and saffron.
+ *
+ * Fonts: Bitter (text) and Alfa Slab One (titles). Alfa Slab One is wide and heavy, so
+ * it stays on h1 to h3; the header's flex budgets (App.svelte) were measured with it
+ * (docs/THEMES.md §11).
+ *
+ * `:where(:root[data-theme='linocut'])` keeps a rule at the specificity of the global one
+ * it replaces, so a component's own single-class rule still wins (docs/THEMES.md §11).
+ */
+
+:root[data-theme='linocut'] {
+  --bg: #0a0a0a;
+  --bg-panel: #121212;
+  --bg-raised: #1c1c1c;
+  --bg-hover: #292929;
+  --bg-sunken: #050505;
+  --border: #8a877d;
+  --frame: #ece7d8; /* bone: the bar across a block and the edge of a hovered or selected control */
+  --text: #ece7d8;
+  --text-dim: #aba79a;
+  --accent: #f2a20c; /* saffron */
+  --hp: #e5483a;
+  --xp: #86f0c4;
+  --skill: #b79be6;
+  --stamina: #4fae6a;
+  --stamina-winded: #3f8a4c;
+  --stamina-exhausted: #b2b83a;
+  --mana: #3b82f0;
+  --manaburn: #e45ad0;
+  --spirit: #c8a4f0;
+  --focus: #f08c2e;
+  --danger: #ff7b6b;
+  --warn: #f7c948;
+  --buff: #72dfb2;
+  --night: #c3b4e6;
+  --night-edge: #6a5f96;
+  --action: #f2d024;
+
+  --log-combat: #efa99b;
+  --log-danger: #ff8878;
+  --log-loot: #f2a20c;
+  --log-skill: #c3a4f0;
+  --log-achievement: #ffd24a;
+  --log-fusion: #f59a4a;
+  --log-quest: #d6cc86;
+  --log-travel: #8fbff0;
+  --log-explore: #72dfb2;
+  --log-plain: #aba79a;
+
+  --edge: #8a877d;
+  --ring: #fffaf0;
+  --ring-w: 3px;
+  --here: #ee7fc0;
+  --sel-bg: #000000;
+  --sel-ink: #ece7d8;
+  --text-off: #8c897f;
+
+  --bar-ink: #fffaf0;
+  --bar-halo: #000000;
+
+  --ink-lmin: 0.43;
+  --ink-lmax: 1;
+  --sel-ink-lmin: 0.36;
+  --sel-ink-lmax: 1;
+
+  --scrim: rgb(0 0 0 / 70%);
+  --scrim-deep: rgb(0 0 0 / 82%);
+  --lift: transparent;
+  --hatch-lock: repeating-linear-gradient(135deg, transparent 0 4px, rgb(236 231 216 / 16%) 4px 5px);
+
+  /* The hard offset block behind a floating card, and the hatch of a disabled control. */
+  --block: #f2a20c;
+  --hatch: repeating-linear-gradient(135deg, transparent 0 4px, rgb(236 231 216 / 14%) 4px 5px);
+
+  --font-caps: 'Bitter', Georgia, serif;
+  font-family: 'Bitter', Georgia, serif;
+  font-size: 14.5px;
+  font-variant-numeric: lining-nums tabular-nums;
+  scrollbar-color: var(--border) var(--bg);
+}
+
+/* Shapes. */
+
+:root[data-theme='linocut'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 0 !important;
+}
+
+/* Titles are cut in slab type. */
+:root[data-theme='linocut'] :is(h1, h2, h3) {
+  font-family: 'Alfa Slab One', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+}
+
+:root[data-theme='linocut'] h3 {
+  font-size: 15px;
+}
+
+/* A control inside a title (Expand all, Collapse all) keeps the text face. */
+:root[data-theme='linocut'] :is(h1, h2, h3) :is(button, select, input) {
+  font-family: 'Bitter', Georgia, serif;
+  font-size: 12px;
+}
+
+:root[data-theme='linocut'] h4 {
+  font-weight: 600;
+}
+
+/* A block: a 2px outline and a 5px bone bar across the top. */
+:where(:root[data-theme='linocut']) .panel {
+  border-width: 2px;
+  border-top: 5px solid var(--frame);
+}
+
+:root[data-theme='linocut'] .layout > header {
+  border: 2px solid var(--border);
+  border-top: 5px solid var(--frame);
+}
+
+:root[data-theme='linocut'] .layout > header {
+  column-gap: 8px;
+}
+
+:root[data-theme='linocut'] .layout > header h1 {
+  font-size: 15px;
+  color: var(--frame);
+}
+
+/* Header budget (App.svelte). Alfa Slab One and Bitter are wide, and the job strip and the clock
+   chip share what is left. Narrower side padding on the transport buttons pays for it. The bonus
+   chip counts down every second: it reserves its widest text ("⏩ 2× 7h 59m") so the header never
+   moves when the bank crosses an hour. The clock chip keeps 96px at every width, which holds its
+   widest hour string in Bitter and in the fallback face (Georgia's digits are not tabular). */
+:root[data-theme='linocut'] .clock button {
+  padding: 4px 6px;
+}
+
+:root[data-theme='linocut'] .clock .bonus {
+  min-width: 104px;
+}
+
+:root[data-theme='linocut'] .timesense {
+  min-width: 96px;
+}
+
+:where(:root[data-theme='linocut']) button {
+  border-width: 2px;
+  font-weight: 600;
+}
+
+:root[data-theme='linocut'] button:hover:not(:disabled) {
+  border-color: var(--frame);
+}
+
+/* Selected: bone edge and a hard saffron block offset behind it, as a misregistered second colour. */
+:root[data-theme='linocut'] button.selected {
+  border-color: var(--frame);
+  box-shadow: 3px 3px 0 var(--accent);
+}
+
+/* Disabled and locked: the cut hatch. The dashed edge and the grayscale are in cues.css. */
+:root[data-theme='linocut'] button:disabled {
+  background: var(--hatch), transparent;
+}
+
+:root[data-theme='linocut'] :focus-visible {
+  outline-style: dashed;
+}
+
+:root[data-theme='linocut'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 2px solid var(--border);
+}
+
+:root[data-theme='linocut'] :is(input, select, textarea)::placeholder {
+  color: var(--text-dim);
+}
+
+:root[data-theme='linocut'] input:is([type='checkbox'], [type='radio'], [type='range']) {
+  accent-color: var(--accent);
+}
+
+/* Bars: a heavy outline; the part with no fill is hatched, as if carved away. */
+:root[data-theme='linocut'] .bar {
+  outline: 2px solid var(--border);
+  outline-offset: -2px;
+  background-image: var(--hatch);
+}
+
+:root[data-theme='linocut'] .bar > .label {
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+/* Screen list: the open screen is reversed type, bone with black ink, and a saffron block at its edge. */
+:root[data-theme='linocut'] .nav-caption {
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--frame);
+  border-bottom: 2px solid var(--border);
+}
+
+:root[data-theme='linocut'] .nav-list .nav-entry {
+  border-left-width: 6px;
+}
+
+:root[data-theme='linocut'] .nav-list .nav-entry.nav-on,
+:root[data-theme='linocut'] .nav-list .nav-entry.nav-on:hover:not(:disabled) {
+  background: var(--frame);
+  color: #000;
+  border-left-color: var(--accent);
+}
+
+:root[data-theme='linocut'] .nav-list .nav-entry.nav-on :is(.nav-new, .nav-mark) {
+  color: #000;
+}
+
+/* Floor list. */
+/* Bitter is wide at 600: plain weight and a smaller size keep a floor name inside the 184px column. */
+:root[data-theme='linocut'] .ts-row {
+  border-bottom: 1px solid var(--bg-raised);
+  font-weight: 400;
+  font-size: 11.5px;
+}
+
+:root[data-theme='linocut'] .ts-side.here-tag {
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+:root[data-theme='linocut'] .ts-band {
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme='linocut'] .ts-row.picked {
+  box-shadow: inset 0 0 0 2px var(--border);
+}
+
+:root[data-theme='linocut'] .ts-row.here {
+  background: var(--frame);
+  color: #000;
+  box-shadow: inset 5px 0 0 var(--accent);
+}
+
+:root[data-theme='linocut'] .ts-row.here :is(.ts-side, .ts-num, .ts-name) {
+  color: #000;
+}
+
+/* TowerSection draws the ring inside the row (offset -3px), so on the bone plate it is black:
+   16:1 on #ece7d8. The bone ring is 1.19:1 there. */
+:root[data-theme='linocut'] .ts-row.here:focus-visible {
+  outline-color: #000;
+}
+
+:root[data-theme='linocut'] .ts-band.title-only {
+  opacity: 1;
+  font-style: italic;
+  background-image: var(--hatch);
+}
+
+/* Floating cards sit on a hard saffron block. `.drop` is MartialPlanner's family list; CombatPanel
+   has a notebook button of the same name, so it is scoped to its parent. */
+:root[data-theme='linocut'] :is(.map-card, .tip-pop, .log-drawer, .tutorial, .fam-wrap .drop, .overlay > .window.panel) {
+  box-shadow: 6px 6px 0 var(--block);
+}
+
+:root[data-theme='linocut'] .map-card {
+  border: 3px solid var(--frame);
+}
+
+:root[data-theme='linocut'] .map-card .warn {
+  border-left: 5px solid var(--warn);
+  padding-left: 6px;
+}
+
+:root[data-theme='linocut'] .map-card .warn.danger-line {
+  border-left-color: var(--danger);
+  background: repeating-linear-gradient(135deg, transparent 0 4px, rgb(255 123 107 / 24%) 4px 5px);
+}
+
+/* Stations: the newest one is printed in saffron. */
+:root[data-theme='linocut'] .st-scroll .station.back:not(:disabled) {
+  border-color: var(--accent);
+  box-shadow: 3px 3px 0 var(--accent);
+}
+
+:root[data-theme='linocut'] .st-cap {
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+/* Scoped to the sidebar's .afflictions: the Fight Feed's riders (CombatPanel) use the class name
+   `affliction` too (PITFALLS §8). */
+:root[data-theme='linocut'] .afflictions .affliction {
+  border-width: 2px;
+  background: repeating-linear-gradient(135deg, transparent 0 3px, rgb(255 123 107 / 30%) 3px 4px);
+}
+
+/* Log. */
+:root[data-theme='linocut'] .log .entry {
+  border-bottom: 1px solid var(--bg-raised);
+  padding-bottom: 2px;
+}
+
+/* Map. A selected pin keeps MapPlan's 3.5 outline. */
+:root[data-theme='linocut'] .plan .node:not(.selected) .dot {
+  stroke-width: 2.5;
+}
+
+:root[data-theme='linocut'] .plan .leg.done {
+  opacity: 0.8;
+}
+
+:root[data-theme='linocut'] .plan .exit.clickable {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}

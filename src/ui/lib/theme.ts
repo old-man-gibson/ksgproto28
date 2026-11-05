@@ -9,12 +9,30 @@
  * browser that never opened the Menu's theme control keeps following
  * `DEFAULT_THEME`.
  */
-export const THEMES = ['default', 'gothic', 'castle', 'survey', 'sandstone'] as const;
+export const THEMES = [
+  'default',
+  'gothic',
+  'registry',
+  'enamel',
+  'quayside',
+  'signage',
+  'cockpit',
+  'linocut',
+  'castle',
+  'survey',
+  'sandstone',
+] as const;
 export type Theme = (typeof THEMES)[number];
 
 export const THEME_NAMES: Record<Theme, string> = {
   default: 'Default',
   gothic: 'Gothic',
+  registry: 'Registry',
+  enamel: 'Enamel',
+  quayside: 'Quayside',
+  signage: 'Signage',
+  cockpit: 'Cockpit',
+  linocut: 'Linocut',
   castle: 'Castle',
   survey: 'Survey',
   sandstone: 'Sandstone',

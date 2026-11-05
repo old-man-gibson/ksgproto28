@@ -309,6 +309,27 @@ line. The nav list keeps a `1em` marker slot on every row for the same reason.
 
 ## 11. Theme catalogue
 
+One subsection per built theme after the foundation: concept, fonts, key tokens, decorations, known limits. Numbers are
+measured with the test's own functions on the token values in the theme file (`tests/themeColor.ts`). "Worst" is the
+minimum over panel, raised and hover unless a surface is named.
+
+A rule that sets a default (a border width, a font weight) is written `:where(:root[data-theme='id']) <selector>`. `:where()`
+adds no specificity, so the rule ties with the global one it replaces (`button`, `.panel` in `app.css`) and a component's own
+single-class rule (`.map-toggle { border: none }`) still wins. A rule that must beat a component rule keeps the plain
+`:root[data-theme='id']` prefix.
+
+**Measure with the web fonts blocked as well as loaded.** A checkout whose `node_modules` is a junction (a worktree) serves no
+font files from the dev server (Vite's `server.fs.allow`), so every face falls back: the page then shows `Segoe UI`, `Arial`
+or `Georgia` in place of the theme's face, and a layout that fits only the real face breaks. Header chips, the bonus chip and
+the 184px floor column are sized to hold in both cases. The bonus chip reserves its widest text; the clock chip reserves its
+widest hour string; the tests for both are "set every possible text and measure the header" (movement 0), not a sample of real
+fights. A theme declares a narrow system face after its own condensed face where the fallback would be wider (Signage's
+`--font-caps`).
+
+Scope: a class name that two components use for different things (`affliction` in the sidebar and in the Fight Feed, `drop` on
+a family list and on a notebook button) is matched through its parent class (`.afflictions .affliction`, `.fam-wrap .drop`),
+never bare (PITFALLS §8).
+
 Castle, Survey and Sandstone are the light themes (built 2026-11-05, branch `themes-light`). Each is one file, `src/themes/<id>.css`,
 registered in `theme.ts`, with its fonts imported in `main.ts` (`latin-<weight>.css` only). They are the first themes whose page
 is lighter than their text.
@@ -344,6 +365,277 @@ count on a spare stack) is 2.8 to 3.8:1, against 3.1 to 4.4 in Gothic; a light p
 Decorative glyphs (unearned achievement stars, empty slot icons) are under 3:1 in every theme, Default and Gothic included. The
 Skills screen's XP bar spills 4 to 11 px past its row at 1094 px in Castle and in Gothic (wide bold names); Survey and Sandstone
 do not.
+
+### Registry
+
+- **Concept:** the band 1 offices and the Chancery. Filing-cabinet grey-green, a manila accent, form headings, rubber stamps.
+- **Fonts:** IBM Plex Sans (400, 400 italic, 600) for text; IBM Plex Mono (500, 600) for headings, the screen list's group
+  captions, bar labels and warnings. Latin slices only.
+- **Surfaces:** `--bg` `#151a18`, `--bg-panel` `#1c2320`, `--bg-raised` `#26302c`, `--bg-hover` `#323e39`, `--bg-sunken`
+  `#0f1311`. `--accent` is manila `#d6bd7c`; `--ring` white; `--here` pink `#f08cc0`.
+- **Measured:** text 8.7:1, dim 5.0:1, danger 4.7:1, worst log colour 4.7:1, edge 4.1:1, ring 13.6:1. Bar fills read as text
+  (`-ink` tokens) are at least 4.9:1. Authored colours after the remap (`--ink-lmin` 0.5) are at least 4.6:1 on panel and 5.2:1
+  on `--sel-bg`.
+- **Bars:** the bar fills are moved from the first design so the seven bars drawn together reach 9.3 ΔE00 under protan and
+  deutan (worst pairs: stamina/xp 9.3 protan, focus/xp 9.3 deutan, mana/spirit 10.5 deutan). Stamina is `#3baf75` (emerald),
+  xp `#96c671`, action `#ecdd31`. No exceptions in `VISION_EXCEPTIONS`.
+- **Selection:** `--sel-bg` is a dark manila tint, darker than raised (manila 11% over sunken), and `button.selected` adds a 4 px
+  manila bar on its left edge. Solid manila with dark ink is used only where no authored colour can sit inside: the open entry
+  of the screen list (kept under the pointer), the tab rows (`.tabs`, `.region-switch`) and a selected button that is not
+  disabled, has no inline `style` on it and has no child whose inline style holds a colour (`oklch`, a hex, a custom
+  property, `color`, `background`). Rarity and grade colours would fall under 4.5:1 on manila (plan ruling 3), so those keep
+  the dark fill: a rarity chip and a forced stance carry the style on the button itself (the four buttons of that kind are
+  CollectionSection.svelte:205, EquipmentPanel.svelte:1119 and :1431, CombatPanel.svelte:466). The Icon component's own
+  style (width, font-size) is not a colour and exists only while the pixel art is missing, so it does not count. A selected
+  and disabled button keeps the disabled look (dashed, no fill, `--text-off`).
+- **Decorations (CSS only):** square corners; h2 and h3 in mono capitals with a rule to the right edge; a 4 px spine on the
+  left of every top-level panel; a dotted tear-off line under the header; field boxes with a heavier bottom line; bars with
+  quarter marks in the empty part; a graph-paper map ground; the outer you-are-here ring dashed; the pin card's warnings as
+  boxed mono capitals in the warning's own colour.
+- **Limits:**
+  - A long h3 (for example the Skills screen's attribute heading) prints in full capitals.
+  - The solid manila rules use `:has()`. A browser without it shows the dark selected fill and the manila bar.
+  - Header chips (rate, clock, weather) are 12.5px. The clock chip's slot is `7.4em` (93 px, its text is 89 px) and the bonus
+    chip's slot is `8.2em` (98.4 px); its widest text, "⏩ 2× 1h 10m", is 96.3 px and the component's `7.9em` is 94.8 px. Clock
+    text cut at 1370 to 1470 px: 0 px (Default 0 px); at 1920 px (full date text, slot capped at 230 px): 91 px (Default 98 px).
+  - The tower column (184 px) is 12.5px for rows and 11px for band captions. Rows are cut by 3, 14 and 5 px (Default 6, 17, 8).
+  - A heading with a control on its right (`.fold-all`) keeps the control on the right edge: the trailing rule is `order: 0`
+    and the control `order: 1`.
+  - The enemy name plate is 11px (132 px wide): "Aberrant Forest Rat Lv 15" is 129 px (Default 130 px).
+
+### Enamel
+
+- **Concept:** vitreous-enamel signage. Bottle-green plates with a green rim, cream plates for the open screen, a hazard stripe
+  beside warnings, rivets in the corners.
+- **Font:** Barlow Semi Condensed (400, 400 italic, 600, 700), latin slice. Headings are 700 capitals; buttons are 600.
+- **Surfaces:** `--bg` `#07120d`, `--bg-panel` `#0d1f17`, `--bg-raised` `#153427`, `--bg-hover` `#1c4434`, `--bg-sunken`
+  `#050d09`. `--edge` `#6aa98c` is the rim of panels and buttons. `--accent` is signal amber `#f4b52a`. Theme-local tokens:
+  `--rim` `#e4dcc2` (the cream rim), `--plate` `#e6dec4` and `--plate-ink` `#07120d` (a cream plate and its ink),
+  `--stripe-a`, `--stripe-b` (the hazard stripe).
+- **Focus and here:** `--ring` is cream-white `#fffdf2`, `--here` is pink `#ff8fb8`, `--accent` is amber. The first design used
+  the accent as the ring (plan ruling 7); the three are now 28.6 ΔE00 or more apart.
+- **Measured:** text 9.2:1, dim 5.7:1, danger 4.7:1, worst log colour 4.7:1, edge 4.9:1, ring 13.3:1, disabled 5.3:1. Bar fills
+  read as text (`-ink` tokens) are at least 5.1:1. Authored colours after the remap (`--ink-lmin` 0.5) are at least 4.6:1 on panel
+  and 5.2:1 on `--sel-bg`.
+- **Bars:** the first design had mana/spirit 2.5 ΔE00 under deutan. Mana is `#6eaaed` and spirit `#9078ff`; the seven bars drawn
+  together reach 9.3 ΔE00 under protan (action/xp) and 9.35 under deutan (hp/focus, hp/stamina); mana/spirit is 9.4. No
+  exceptions in `VISION_EXCEPTIONS`.
+- **Selection:** `--sel-bg` is dark (`#0a2a1d`), so a marked inventory cell is a dark cell with the component's amber border,
+  and a wall of marked cells does not glare. A cream plate with dark ink is used only where no authored colour can sit inside:
+  the open entry of the screen list (kept under the pointer), the tab rows, the stop underfoot in the tower list, the pin
+  card's title strip and a selected button that is not disabled, has no inline `style` on it and has no child whose inline
+  style holds a colour (the Icon component's width and font-size style does not count). Every other selected button (a
+  rarity chip, a forced stance) gets the dark fill and a cream inset rim. A selected and disabled button keeps the disabled
+  look. The focus ring on the cream stop row is the plate's ink (14:1), because the component draws that ring inside the row.
+  At most four cream plates show together on the Location screen at 1440 px.
+- **Decorations (CSS only):** 2px rims on panels, buttons and fields (a button with `border: 0` stays borderless, because only
+  `border-width` is set); a rivet in each corner of a top-level panel and of the header (a cream head in a dark ring); a cream
+  header rim, amber while the world is paused; a cream-rimmed pin card with a cream title strip; a red and cream stripe at the
+  left of each warning line; dotted underline on clickable map text.
+- **Limits:**
+  - The cream rules use `:has()`. A browser without it shows the dark selected fill and the cream rim.
+  - The header is 56 px tall (Default 52 px) because of the 2px rims; it does not change with state.
+  - At 1024 px the strip is wide enough to show its bar, so the job name slot is 97 px (Default 169 px, which hides the bar). The
+    name ends in an ellipsis when longer.
+  - Rivets are drawn at 7 px from each corner of a top-level panel, so a panel padded under 8 px would have them over its
+    content. The Menu window (padding 0, header padded 10 px) was checked; no other zero-padding panel was.
+
+### Quayside
+
+- **Concept:** the harbor band (floors 11 to 14). Teal-black planking, sailcloth text, a rope stripe along the top of each panel,
+  the map framed as a chart.
+- **Font:** Libre Caslon Text (400, 400 italic, 700), latin slice. Caslon is the widest face of the set, so the header gives up
+  size: the header is 14px, its chips (rate, clock, weather) 12px, the title 15px with 0.08em tracking.
+- **Surfaces:** `--bg` `#0b1316`, `--bg-panel` `#111c20`, `--bg-raised` `#192a2f`, `--bg-hover` `#24383e`, `--bg-sunken`
+  `#070d0f`. `--text` is sailcloth `#e8e2d0`.
+- **Accent:** lantern amber `#f0a24d`, hue about 65 in OKLCH. The first design used brass `#e2b04a` (hue about 85), which sits
+  next to Gothic's `#c9a45c`. Brass stays in the rope stripe (`--rope-a` `#a8946a`, `--rope-b` `#4d432c`, theme-local).
+  `--ring` is sailcloth `#f6f1e3`, `--here` pink `#ff9ccf`; the three are 26.6 ΔE00 or more apart.
+- **Measured:** text 9.5:1, dim 5.7:1, danger 4.8:1, worst log colour 4.8:1, edge 4.4:1, ring 13.2:1, disabled 5.4:1. Bar fills
+  read as text (`-ink` tokens) are at least 5.6:1. Authored colours after the remap (`--ink-lmin` 0.5) are at least 5.0:1 on
+  panel and 5.7:1 on `--sel-bg`.
+- **Bars:** the seven bars drawn together reach 9.35 ΔE00 under deutan (stamina/xp) and 9.7 under protan (focus/xp). Stamina is
+  `#69e98c` and xp `#89b66d`; they are told apart by lightness and chroma. No exceptions in `VISION_EXCEPTIONS`.
+- **Selection:** `--sel-bg` is dark (amber 11% over sunken). A selected button gets an amber bar along its top edge (a sign hung
+  from its hooks); the open screen in the list gets a bar on the left. No solid light plate: Caslon rows carry rarity and
+  grade colours that need the dark fill.
+- **Decorations (CSS only):** a rope stripe (a 135 degree repeating gradient, 5 px) on the top edge of every top-level panel,
+  the header and the pin card; h3 with a hairline and a short amber tab; a double rule under the screen list captions; bars
+  marked in quarters like a gauge; a neatline inside the map frame; a double rule round the pin card; a bar on the left of
+  each warning in the warning's own colour.
+- **Limits:**
+  - Header budgets, measured against Default at 1024, 1094, 1180 and 1440 px: the job name slot is 159, 141, 135 and 224 px
+    (Default 169, 151, 153 and 240). The clock chip shows its whole hour at every width; its slot is `7.6em` of 12px (the
+    component's `6.5em` is too narrow for Caslon). The bonus chip's slot is `8.4em` (100.8 px); its widest text, "⏩ 2× 1h 10m",
+    is 98.6 px and the component's `7.9em` is 94.8 px. Clock text cut at 1370 to 1470 px: 0 px; at 1920 px: 98 px (Default 98 px).
+  - A skill row (`.skill-block .row`) is 12px with a 5px gap; at 13.5px and the 7px gap its bar overran the row. After the
+    change no row runs past its content box at 1440 px (log open) or 1094 px.
+  - The tower column (184 px): rows are 12px with -0.02em tracking and a narrower number column; band captions are italic, mixed
+    case, 12px, no tracking. Rows are cut by 5, 9 and 2 px (Default 6, 17, 8) and no band caption is cut.
+  - The enemy name plate is 10.5px regular weight (132 px wide): "Aberrant Forest Rat Lv 15" is 128 px (Default 130 px).
+    At 11.5px and bold it is 151 px.
+  - The rope is a background image on the panel, so a panel with its own `background-image` would lose it. None was found on
+    the 12 screens of the screen list at 1440 px (Default theme).
+
+### Signage
+
+- **Concept:** wayfinding signs. Black ground, white type, signal-yellow plates, hazard stripes. A state is a fill, a stripe
+  or a glyph; there is no glow and no gradient other than the stripes and the bar ticks.
+- **Fonts:** Barlow 400 and 600 (text), Barlow Condensed 600 and 700 (headings, captions, bar labels, tower rows). Imports:
+  `@fontsource/barlow/latin-{400,600}.css`, `@fontsource/barlow-condensed/latin-{600,700}.css`. Root size 16px, tabular figures.
+  `--font-caps` is `'Barlow Condensed', 'Arial Narrow', 'Barlow', sans-serif`: the narrow system face keeps the tower rows and
+  captions inside their budgets when the web face is missing. Radius 3px on everything except the round parts
+  (`.shadow .ring .aura .dot .pip`).
+- **Tokens:**
+  - Surfaces: bg `#0b0b0b`, panel `#141414`, raised `#1f1f1f`, hover `#333333`, sunken `#000000`; border `#8a8a8a`, frame `#3a3a3a`.
+  - Ink: text `#ffffff` (12.6:1 worst), dim `#bcbcbc` (6.65), accent `#ffd400` (8.83), danger `#ff7a6c` (4.97 on hover),
+    warn `#ffa726` (6.50). Log colours: worst `--log-skill` 4.95.
+  - Cues: edge `#e6e6e6` (13.2:1 worst of panel and raised), ring `#ffffff` 3px (16.5), here `#ff5cc4`, text-off `#8d8d8d` (4.97 on raised).
+  - Selected: `--sel-bg` `#000000`, `--sel-ink` `#ffffff` (21:1). Authored colours: `--ink-lmin` 0.43 (worst 4.71 on panel and
+    raised, Refuse and Poor 15.2 ΔE00 apart), `--sel-ink-lmin` 0.36 (worst 4.96 on `--sel-bg`). Bar fills read as text through the
+    `-ink` tokens (the fill remapped with `--ink-lmin`): worst `--spirit-ink` 4.79 on panel, raised, hover and `--sel-bg`.
+  - Bars: saturated mid-dark fills, white label with a black halo. Worst colour-vision pair: protan hp/stamina 9.40; deutan
+    focus/action 12.50. No `VISION_EXCEPTIONS` entry.
+- **Decorations (CSS only):**
+  - A solid `--accent` plate with black ink marks the open screen (nav entry), the tower floor underfoot (`.ts-row.here`), the
+    newest station (`.station.back`) and a map card's head. Nothing else is filled yellow. TowerSection draws its focus ring
+    inside the row, so the ring on the floor plate is black (14.7:1 on `#ffd400`; white was 1.43:1). The other plates are
+    rung from outside, on the panel (18.4:1).
+  - A selected control (`button.selected`) is a black plate with a yellow border and a 4px yellow bar under the label.
+  - Header: 2px white edge, 4px yellow bottom rule. While the game is paused a yellow and black hazard stripe covers the rule
+    (`.layout.paused > header::after`).
+  - `h2` carries a 4px yellow rule; `h3` is a raised label strip with a 6px white block at its left end; the nav captions use the
+    same strip.
+  - Bars: 1px white edge and gauge ticks at 25, 50 and 75% (`.bar::after`, drawn above the fill, no pointer events).
+  - Hazard stripes (`--stripe-warn`, `--stripe-danger`, 135 degrees, 6px bands) mark a one-way line and a no-retreat line in a
+    map card, and the left end of an affliction chip. They exist only while such a line is shown.
+  - Locked rows: white 24% hatch (`--hatch-lock`). Floating cards have no shadow (`--lift` is transparent); a 2px yellow border
+    separates them from what is under them.
+- **Header budget:** one row (58px) at 1024, 1094, 1180, 1370, 1440 and 1920 px, no overflow. Job strip width at 1024, 1094, 1180,
+  1440 and 1920 px: 222, 292, 378, 478 and 783 with the web fonts, 207, 277, 363, 462 and 750 without (Default 195, 265, 359, 461,
+  749). The 2px button edge and the face cost room, so: transport buttons take 6px side padding, the header's column gap is
+  8px, the title is 17px. The bonus chip (`.clock .bonus`) reserves 96px: its widest text, "⏩ 2× 1h 10m" (digits are
+  tabular), measures 87.2px with Barlow and 95.0px in the fallback. The clock chip (`.timesense`) keeps 96px at every width.
+  Measured movement of the header over every bonus text (0s to 8h 59m) and every clock hour: 0.00px, both font modes. Clock chip
+  whole at every measured width, with the widest bonus text in place (Default cuts 4px at 1180). At 1024 the strip is under
+  210px with the web fonts, so its bar is hidden, as in Default.
+- **Known limits:**
+  - Selected controls are black, not yellow. A solid yellow `--sel-bg` cannot pass the authored-colour check: the authored
+    colours inside it would have to stay under OKLCH lightness 0.5, which leaves quality tiers 8 ΔE00 apart against a floor of
+    12 (best margin -4.0 on `#ffd400`, -0.6 on white; measured with `tests/themeColor.ts`).
+  - Brightest of the dark themes: white text on near-black. The yellow plates are limited to the four places above.
+  - Barlow is the Latin slice only; `ā` and `ō` fall back to the system face.
+  - `.map-card .warn` and `.afflictions .affliction` rules name component classes; a renamed class loses its stripe and keeps working.
+  - Tower floor names: with the web fonts none is cut; without them "4 The Greenwood" is cut by 4px (Default 6), "1 The Flooded
+    Offices" by 13 (Default 17), "The Foot of the Ascent" by 1 (Default 8), and no band caption is cut.
+
+### Cockpit
+
+- **Concept:** a flight-deck panel. Mid-dark grey slabs on a darker ground, white engraved legends, numbers and the log in
+  recessed near-black display windows, bars drawn as gauge tapes, amber for the current item. A filled tile is lit only for an
+  exception (a one-way line, a no-retreat line, an affliction, a frozen world). Flat surfaces and hard 1px lines: no gradient,
+  no blur, no glow; radius 0. No rivets or screws.
+- **Font:** B612 400 and 700 (`@fontsource/b612/latin-{400,700}.css`). Root size 13.5px. B612 digits are tabular without a
+  feature flag (checked: ten digits measure the same), so the header's clock chip holds one width for all 24 hours.
+- **Tokens:**
+  - Surfaces: bg `#171918` (the ground between slabs), panel `#292d2b`, raised `#323734`, hover `#3a3f3c`, sunken `#0e100f`
+    (display windows); border `#565d58`, frame `#1b1e1c` (the groove around a slab or window).
+  - Ink: text `#f2f4f0` (9.70:1 worst), dim `#bdc4be` (6.03), accent amber `#f2b84b` (6.00), danger `#ff9b8f` (5.28),
+    warn `#ffd24d` (7.45). Log colours: worst `--log-skill` 5.31.
+  - Cues: edge `#a3aca6` (5.20:1 worst of panel and raised), ring `#ffffff` 2px (12.1), here `#e879b9`, text-off `#a3aca6` (5.20).
+  - Selected: `--sel-bg` `#1c1709` (a dark amber well, darker than the slab), `--sel-ink` `#f2f4f0` (16.1). Authored colours:
+    `--ink-lmin` 0.56 (worst 4.75), `--sel-ink-lmin` 0.5 (worst 6.04 on `--sel-bg`); Refuse and Poor 10.9 ΔE00 apart (floor 10).
+    Worst bar `-ink` token: `--hp-ink` 4.69 (panel, raised, hover and `--sel-bg`). The lighter slab is why `--ink-lmin` is
+    0.56 here against 0.43 to 0.44 on the near-black themes; the family spacing margin is 1 ΔE00 on quality tiers and 0.3 on
+    martial positions.
+  - Bars: hp `#b8322e`, stamina `#86ab72`, mana `#5aa0ee`, spirit `#7d63b5`, focus `#da6600`, action `#e8cf4a`, xp `#86dcb8`. Chosen by
+    lightness steps so the confusable hues (red, green, orange, yellow) stay apart for protan and deutan viewers: worst pair
+    protan stamina/xp 14.45, deutan mana/spirit 14.39. No `VISION_EXCEPTIONS` entry.
+- **Decorations (CSS only):**
+  - Slabs: every `.panel` and the header have a 1px dark groove (`--frame`) and a 1px light edge along the top
+    (`inset 0 1px 0 rgb(255 255 255 / 8%)`).
+  - Display windows: `--bg-sunken` with a 2px dark lip along the top and a 1px light lip along the bottom. They hold the
+    attribute readouts (`.attr-chip`), the gold chip, the log entries (`.log .entries`) and every bar.
+  - Legends: `h1` to `h3` and the nav captions are white spaced capitals with a 1px dark cast line under the letters
+    (`text-shadow: 0 1px 0`, no blur). `h3` trails a groove (a dark line over a light line). `h2` is 15px.
+  - Keys: a button has a darker lower edge (`inset 0 -2px 0`); selected replaces it with a 3px amber bar on the amber well;
+    disabled has none. A selected tab is a 3px amber rule under flat text.
+  - Gauge tapes: each bar has a 1px frame, a tick every tenth and a long tick at half, in 40 to 55% white
+    (`.bar::after`, above the fill, no pointer events).
+  - Annunciator tiles, filled, for exceptions only: a one-way line (`--warn`) and a no-retreat line (`--danger`) in a map card,
+    an affliction chip (`.afflictions .affliction`, the sidebar's only), and the Pause button while the world is frozen
+    (`.clock .pause.on`, amber). The nav mark "ready" is a boxed amber caption; "new" is plain text so a column of them stays quiet.
+  - The open screen is amber text on `--sel-bg` with a 3px amber bar at the left (`.nav-on`), as is the floor underfoot.
+  - Map card: grey frame with a 3px amber top bar. Locked rows: white 13% hatch. No shadow under floating cards (`--lift` is
+    transparent).
+- **Header budget:** one row (52 to 53px) at 1024, 1094, 1180, 1370, 1440 and 1920 px, no overflow. Job strip width at 1024, 1094,
+  1180, 1440 and 1920 px: 194, 264, 350, 463 and 735 with B612, 221, 291, 377, 477 and 782 without (Default 195, 265, 359, 461, 749).
+  The strip is 12px narrower than Default at 1180 and keeps the 330px its detail text needs. B612 is wide, so the transport
+  buttons use 11px and 6px side padding, the column gap is 8px, the title 12px, and the gold chip's window costs 14px. The bonus chip
+  reserves 96px (widest text 94.6px with B612, 85.1px in the fallback). The clock chip keeps 104px at every width (B612's
+  "about 00:00" is 100px; the 6.5em slot Default uses cut it by 15px at 1180 and by 2px at 1370). Measured movement of the header
+  over every bonus text and every clock hour: 0.00px, both font modes. The clock chip is whole at every measured width.
+- **Known limits:**
+  - B612 is wide. Tower floor names use 11.5px and a tighter letter-spacing to fit the 184px column; "The Flooded Offices" is still
+    cut by 8px with the web face (0 without it), as it is in Default.
+  - The slab is lighter than the other dark themes, so the authored colours are lifted more (`--ink-lmin` 0.56) and a rarity
+    colour sits closer to its neighbours; the spacing check passes with a margin of 0.3 to 1 ΔE00.
+  - The unlit tiles are not drawn: a screen with no exception shows no tile at all.
+  - B612 is the Latin slice only; `ā` and `ō` fall back to the system face.
+
+### Linocut
+
+- **Concept:** a relief print. A black key block, bone ink and one spot colour, saffron. Hatching carries the tone: disabled
+  and locked things are hatched, the unfilled part of a bar is hatched. A selected control and a floating card are printed with
+  a hard offset block of saffron behind them. Neutrals are pure grey; there is no brown.
+- **Fonts:** Bitter 400, 600 and 700 (text), Alfa Slab One 400 (h1 to h3 only). Imports:
+  `@fontsource/bitter/latin-{400,600,700}.css`, `@fontsource/alfa-slab-one/latin-400.css`. Root size 14.5px, `lining-nums
+  tabular-nums`. Bitter's ten digits measure the same width (checked): the chip text "🕰️ about HH:00" is 93.44px for all 24
+  hours, against a 92.3px slot in Default's rule. The fallback face (Georgia) has proportional digits: the same text runs
+  88.1 to 92.9px. So no width here relies on the digits being tabular: the clock chip keeps 96px and the bonus chip 104px. A control inside a title (Expand all,
+  Collapse all) is reset to Bitter 12px. Radius 0.
+- **Tokens:**
+  - Surfaces: bg `#0a0a0a`, panel `#121212`, raised `#1c1c1c`, hover `#292929`, sunken `#050505`; border `#8a877d`, frame (bone) `#ece7d8`.
+  - Ink: text `#ece7d8` (11.8:1 worst), dim `#aba79a` (6.04), accent saffron `#f2a20c` (6.89), danger `#ff7b6b` (5.75),
+    warn `#f7c948` (9.29). Log colours: worst `--log-plain` 6.04.
+  - Cues: edge `#8a877d` (4.74:1 worst of panel and raised), ring `#fffaf0` 3px dashed (16.4), here `#ee7fc0`, text-off `#8c897f` (4.87).
+  - Selected: `--sel-bg` `#000000`, `--sel-ink` `#ece7d8` (17.0). Authored colours: `--ink-lmin` 0.43 (worst 4.87), `--sel-ink-lmin` 0.36
+    (worst 4.96 on `--sel-bg`); Refuse and Poor 15.2 ΔE00 apart. Worst bar `-ink` token: `--hp-ink` 5.89 (panel, raised, hover and
+    `--sel-bg`).
+  - Bars: hp `#e5483a`, stamina `#4fae6a`, mana `#3b82f0`, spirit `#c8a4f0`, focus `#f08c2e`, action `#f2d024`, xp `#86f0c4`. Worst
+    colour-vision pair: protan stamina/focus 9.34; deutan hp/stamina 10.10. No `VISION_EXCEPTIONS` entry. The bar label is bone
+    `#fffaf0` with a black halo.
+- **Decorations (CSS only):**
+  - A block: 2px grey outline and a 5px bone bar across the top, on every `.panel` and the header.
+  - The open screen is reversed type: a bone plate with black ink and a 6px saffron block at its left edge (`.nav-on`); the
+    tower floor underfoot is the same plate (`.ts-row.here`).
+  - A selected control has a bone edge and a 3px saffron block offset down and right (`box-shadow: 3px 3px 0`). The newest station
+    has the same block in saffron on a saffron edge.
+  - Floating cards (`.map-card .tip-pop .log-drawer .tutorial .fam-wrap .drop`, `.overlay > .window.panel`) have a 6px saffron
+    offset block (`--block`). `--lift` is transparent, so no blur shadow is drawn. CombatPanel's notebook button is also
+    classed `drop`, so the family list is matched through `.fam-wrap`. The selected pin keeps MapPlan's 3.5px outline
+    (`.plan .node:not(.selected) .dot` sets the others to 2.5px). The floor underfoot draws its focus ring inside the row, so the
+    ring on the bone plate is black (17.0:1; bone on bone was 1.19:1).
+  - Hatch (`--hatch`, `--hatch-lock`): 135 degrees, 1px bone lines at 14 to 16% every 5px. It fills a disabled button (with the
+    dashed edge and the grayscale from `cues.css`), a locked row, the next band's name and the empty part of every bar. A
+    no-retreat line in a map card and a sidebar affliction chip (`.afflictions .affliction`) carry a red hatch.
+  - A one-way line has a 5px `--warn` bar at its left; a no-retreat line the same in `--danger`.
+- **Header budget:** one row (59px) at 1024, 1094, 1180, 1370, 1440 and 1920 px, no overflow. Job strip width at 1024, 1094, 1180,
+  1440 and 1920 px: 195, 265, 351, 461 and 740 with the web fonts, 179, 249, 335, 461 and 740 without (Default 195, 265, 359, 461,
+  749). Alfa Slab One and Bitter are wide, so: transport buttons take 6px side padding, the header's column gap is 8px, the title
+  is 15px. The bonus chip reserves 104px (widest text 94.5px with Bitter, 102.3px in the fallback, where "8h 40m" is the widest).
+  The clock chip keeps 96px at every width. Measured movement of the header over every bonus text and every clock hour: 0.00px,
+  both font modes. The clock chip is whole at every measured width. Without the web fonts the strip has 5px over the 330px the
+  detail text needs at 1180.
+- **Known limits:**
+  - Selected controls are black with a bone edge, not a bone plate: a bone `--sel-bg` cannot pass the authored-colour check (best
+    margin -0.6 on white).
+  - The palette shares bone and a warm accent with Gothic. What separates them: neutral black surfaces, saffron at higher chroma
+    than brass, slab type, hatching and offset blocks.
+  - Tower floor names use 11.5px at weight 400 to fit the 184px column; "The Flooded Offices" is cut by 4px with the web fonts (0
+    without them), as in Default (17px).
+  - The hatch under a bar label lowers the label's local contrast; the 1px black halo carries it (bone on black halo 20:1).
+  - Bitter and Alfa Slab One are the Latin slice only; `ā` and `ō` fall back to the system face.
 
 ### Castle
 
