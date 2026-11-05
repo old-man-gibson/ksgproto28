@@ -328,7 +328,8 @@ single-class rule (`.map-toggle { border: none }`) still wins. A rule that must 
     warn `#ffa726` (6.50). Log colours: worst `--log-skill` 4.95.
   - Cues: edge `#e6e6e6` (13.2:1 worst of panel and raised), ring `#ffffff` 3px (16.5), here `#ff5cc4`, text-off `#8d8d8d` (4.97 on raised).
   - Selected: `--sel-bg` `#000000`, `--sel-ink` `#ffffff` (21:1). Authored colours: `--ink-lmin` 0.43 (worst 4.71 on panel and
-    raised, Refuse and Poor 15.2 ΔE00 apart), `--sel-ink-lmin` 0.36 (worst 4.96 on `--sel-bg`).
+    raised, Refuse and Poor 15.2 ΔE00 apart), `--sel-ink-lmin` 0.36 (worst 4.96 on `--sel-bg`). Bar fills read as text through the
+    `-ink` tokens (the fill remapped with `--ink-lmin`): worst `--spirit-ink` 4.79 on panel, raised, hover and `--sel-bg`.
   - Bars: saturated mid-dark fills, white label with a black halo. Worst colour-vision pair: protan hp/stamina 9.40; deutan
     focus/action 12.50. No `VISION_EXCEPTIONS` entry.
 - **Decorations (CSS only):**
@@ -367,7 +368,8 @@ single-class rule (`.map-toggle { border: none }`) still wins. A rule that must 
     warn `#ffd24d` (9.19). Log colours: worst `--log-skill` 5.08.
   - Cues: edge `#8f9891` (5.35:1 worst of panel and raised), ring `#f4f6f2` 2px (14.6), here `#e879b9`, text-off `#89938c` (5.01).
   - Selected: `--sel-bg` `#2b2412` (a dark amber well), `--sel-ink` `#e6eae4` (12.65). Authored colours: `--ink-lmin` 0.44 (worst 4.67),
-    `--sel-ink-lmin` 0.47 (worst 4.82 on `--sel-bg`); Refuse and Poor 14.7 ΔE00 apart.
+    `--sel-ink-lmin` 0.47 (worst 4.82 on `--sel-bg`); Refuse and Poor 14.7 ΔE00 apart. Worst bar `-ink` token: `--hp-ink` 5.11
+    (panel, raised, hover and `--sel-bg`).
   - Bars: hp `#b8322e`, stamina `#86ab72`, mana `#5aa0ee`, spirit `#7d63b5`, focus `#da6600`, action `#e8cf4a`, xp `#86dcb8`. Chosen by
     lightness steps so the confusable hues (red, green, orange, yellow) stay apart for protan and deutan viewers: worst pair
     protan stamina/xp 14.45, deutan mana/spirit 14.39. No `VISION_EXCEPTIONS` entry.
