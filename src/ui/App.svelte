@@ -529,9 +529,11 @@
   }
 
   /* The bank counts up every second while idle: a fixed slot as wide as its
-     longest text ("⏩ 2× 7h 59m", 94px), so the chips after it stay put. */
+     longest text, so the chips after it stay put. The widest is "⏩ 2× 1h 10m"
+     (95.6px in Default, measured 2026-11-05 over every text from 0s to 8h 59m);
+     7.9em (94.8px) let it push the header 0.8px. */
   .clock .bonus {
-    min-width: 7.9em;
+    min-width: 8em;
     color: var(--text-dim);
     font-variant-numeric: tabular-nums;
   }
