@@ -1,12 +1,19 @@
+/*
+ * Default theme tokens and the shared shapes. A theme file (src/themes/) redefines
+ * tokens under :root[data-theme='id']; docs/THEMES.md lists every token, what it
+ * means and which ones a theme must define. tests/themes.test.ts checks them.
+ */
 :root {
   --bg: #12151a;
   --bg-panel: #1a1f27;
   --bg-raised: #232a35;
   --bg-hover: #2c3542;
   --bg-sunken: #0d1014; /* wells: bar tracks, the map's ground */
-  --border: #303a48;
+  --bg-deep: var(--bg-sunken); /* alias: ChromosomePanel reads it */
+  --border: #303a48; /* a rule between things; not an interactive edge */
+  --frame: var(--border); /* the inner rule of a double frame */
   --text: #d7dee8;
-  --text-dim: #8b96a5;
+  --text-dim: #929dac;
   --accent: #e8b84b;
   --hp: #e05555;
   --xp: #4caf7d;
@@ -23,7 +30,11 @@
      glance. Amber is the only bar hue far from all three, and distinguishable
      from HP's red by being plainly orange. */
   --focus: #e07b39;
-  --danger: #ff6b6b;
+  --danger: #ff7070;
+  --warn: #f0a742; /* caution: a second tier under --danger (one-way roads, short supply) */
+  --buff: #7de0c3; /* a gain in progress; the exploration fill */
+  --night: #b9a7d6; /* the Gloom chip's ink */
+  --night-edge: #4a3f66; /* the Gloom chip's border and fill */
   --action: #f2d024; /* action bars — time until the next action fires */
   /* Materials, as the anvil's silhouette draws them (ui/lib/anvilView.ts reads
      these by a material's craft tag). Identity colours like the resource hues,
@@ -34,6 +45,70 @@
   --mat-metal: #9aa0a8; /* a metal with no token of its own */
   --mat-wood: #a07a46;
   --mat-leather: #7a4a3a;
+
+  /* Log kinds (ui/lib/logKinds.ts). Each kind also prints a glyph, so colour
+     is not the only channel. */
+  --log-combat: #e0a1a1;
+  --log-danger: #ff7070;
+  --log-loot: #e8b84b;
+  --log-skill: #b58fe0;
+  --log-achievement: #ffd700;
+  --log-fusion: #ff9d3c;
+  --log-quest: #e0cd7d;
+  --log-travel: #7db4e0;
+  --log-explore: #7de0c3;
+  --log-plain: #9aa4ad;
+
+  /* Navigation cues (docs/THEMES.md §3). Each has a shape or text channel too. */
+  --edge: #727f93; /* border of anything clickable; 3:1 on panel and raised */
+  --ring: #ffffff; /* keyboard focus ring */
+  --ring-w: 2px;
+  --here: #e879b9; /* the you-are-here ring on the map */
+  --sel-bg: color-mix(in srgb, var(--accent) 12%, var(--bg-raised)); /* fill of a selected thing */
+  --sel-ink: var(--text); /* text on --sel-bg */
+  --text-off: #8792a1; /* disabled text; the dashed border is the shape cue */
+  --hatch-lock: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--text-dim) 28%, transparent) 4px 5px);
+
+  /* Bars: the label is --bar-ink with a --bar-halo outline, so it reads on any fill. */
+  --bar-track: var(--bg-sunken);
+  --bar-ink: #ffffff;
+  --bar-halo: #000000;
+
+  /* Authored colours (rarity, grade, status, school, position, talent lap) are
+     drawn through ink() (ui/lib/ink.ts): OKLCH lightness l becomes
+     lmin + l * (lmax - lmin). Identity here. A selected thing re-inks its
+     children against --sel-bg with the --sel-ink-* pair. */
+  --ink-lmin: 0;
+  --ink-lmax: 1;
+  --sel-ink-lmin: 0;
+  --sel-ink-lmax: 1;
+
+  /* Map: roads and the nine district tints (ui/lib/mapPlan.ts). Warm and
+     neutral only; the blue arc belongs to the resource bars. */
+  --road: color-mix(in srgb, var(--accent) 34%, var(--border));
+  --district-a: var(--accent);
+  --district-b: var(--mat-steel);
+  --district-c: var(--hp);
+  --district-d: var(--mat-iron);
+  --district-e: var(--focus);
+  --district-f: var(--mat-metal);
+  --district-g: var(--mat-bronze);
+  --district-h: var(--text-dim);
+  --district-i: var(--mat-wood);
+
+  /* Surfaces over the page: the dim behind a window, and a floating panel's shadow colour. */
+  --scrim: rgb(0 0 0 / 60%);
+  --scrim-deep: rgb(0 0 0 / 70%);
+  --lift: rgb(0 0 0 / 45%);
+
+  /* Share of an authored colour mixed into the background of a chip that wears it. */
+  --tint-mix: 16%;
+
+  /* Painted art (the battle stage, scenes, tile maps) does not change with the
+     theme, so text over it reads these and never --text. */
+  --art-ink: #d7dee8;
+  --art-halo: #000000;
+  --tile-halo: #0b0b0b; /* outline of a label drawn over tile art */
 
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 15px;
@@ -54,7 +129,7 @@ button {
   font: inherit;
   color: var(--text);
   background: var(--bg-raised);
-  border: 1px solid var(--border);
+  border: 1px solid var(--edge);
   border-radius: 6px;
   padding: 6px 12px;
   cursor: pointer;
@@ -65,14 +140,15 @@ button:hover:not(:disabled) {
   background: var(--bg-hover);
 }
 
-button:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
+/* Selected: a fill and an accent border. The colour of authored children is
+   re-inked for the fill (--sel-ink-*). Disabled and keyboard focus are in
+   themes/cues.css. */
 button.selected {
+  --ink-lmin: var(--sel-ink-lmin);
+  --ink-lmax: var(--sel-ink-lmax);
   border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
+  background: var(--sel-bg);
+  color: var(--sel-ink);
 }
 
 h1, h2, h3, h4 {
@@ -90,7 +166,7 @@ h1, h2, h3, h4 {
 .bar {
   position: relative;
   height: 14px;
-  background: var(--bg-sunken);
+  background: var(--bar-track);
   border-radius: 7px;
   overflow: hidden;
 }
@@ -110,8 +186,10 @@ h1, h2, h3, h4 {
   justify-content: center;
   font-size: 10px;
   line-height: 1;
-  color: #fff;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 80%);
+  color: var(--bar-ink);
+  text-shadow:
+    -1px 0 var(--bar-halo), 1px 0 var(--bar-halo), 0 -1px var(--bar-halo), 0 1px var(--bar-halo),
+    -1px -1px var(--bar-halo), 1px -1px var(--bar-halo), -1px 1px var(--bar-halo), 1px 1px var(--bar-halo);
 }
 
 .dim {

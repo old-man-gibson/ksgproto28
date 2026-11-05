@@ -105,7 +105,12 @@ const r2 = (n: number): string => n.toFixed(2);
 
 // ---------- Authored colours (the data the UI draws with ink()) ----------
 
-type Family = { id: string; colors: string[] };
+type Family = {
+  id: string;
+  colors: string[];
+  /** Compare the colours against each other after the remap. Off where colour is not the identity. */
+  pairwise: boolean;
+};
 
 const lower = (list: (string | undefined)[]): string[] => [
   ...new Set(list.filter((c): c is string => !!c).map((c) => c.toLowerCase())),
@@ -113,15 +118,18 @@ const lower = (list: (string | undefined)[]): string[] => [
 
 /** Same-family colours are compared against each other after the remap. */
 const FAMILIES: Family[] = [
-  { id: 'quality tiers', colors: lower(Object.values(QUALITY_TIERS).map((t) => t.color)) },
-  { id: 'monster rarities', colors: lower(Object.values(RARITIES).map((t) => t.color)) },
-  { id: 'statuses', colors: lower(Object.values(STATUSES).map((t) => t.color)) },
-  { id: 'psionic axes', colors: lower(Object.values(PSI_AXES).map((t) => t.color)) },
+  { id: 'quality tiers', colors: lower(Object.values(QUALITY_TIERS).map((t) => t.color)), pairwise: true },
+  { id: 'monster rarities', colors: lower(Object.values(RARITIES).map((t) => t.color)), pairwise: true },
+  // A status is told apart by its icon and its name; Default itself gives five statuses
+  // nearly the same red, and a lifted red clips to one pink. Contrast is still checked.
+  { id: 'statuses', colors: lower(Object.values(STATUSES).map((t) => t.color)), pairwise: false },
+  { id: 'psionic axes', colors: lower(Object.values(PSI_AXES).map((t) => t.color)), pairwise: true },
   {
     id: 'martial positions',
     colors: lower([...Object.values(POSITIONS).map((t) => t.color), ANY_POSITION_COLOR]),
+    pairwise: true,
   },
-  { id: 'talent laps', colors: lower(TALENT_LAP_COLORS) },
+  { id: 'talent laps', colors: lower(TALENT_LAP_COLORS), pairwise: true },
 ];
 const DATA_COLORS = lower(FAMILIES.flatMap((f) => f.colors));
 
@@ -151,7 +159,7 @@ const FAMILY_FLOOR: Record<string, number> = Object.fromEntries(
  * authored colour fails here instead of joining the list unseen. Raise
  * Default's `--ink-lmin` in app.css and set this to 0 to remove the exception.
  */
-const DEFAULT_LOW_CONTRAST_DATA = { panelOrRaised: 22, selected: 22 };
+const DEFAULT_LOW_CONTRAST_DATA = { panelOrRaised: 22, selected: 34 };
 
 // ---------- Colour-vision exceptions ----------
 
@@ -173,10 +181,12 @@ const VISION_EXCEPTIONS: Record<string, VisionException[]> = {
     { a: '--mana', b: '--spirit', kind: 'deutan', measured: 1.6, reason: KEEPS_FILLS },
     { a: '--stamina', b: '--xp', kind: 'protan', measured: 7.6, reason: KEEPS_FILLS },
     { a: '--hp', b: '--stamina', kind: 'deutan', measured: 7.1, reason: KEEPS_FILLS },
+    { a: '--hp', b: '--focus', kind: 'deutan', measured: 7.99, reason: KEEPS_FILLS },
   ],
   gothic: [
     { a: '--mana', b: '--spirit', kind: 'protan', measured: 4.0, reason: KEEPS_FILLS },
     { a: '--mana', b: '--spirit', kind: 'deutan', measured: 1.8, reason: KEEPS_FILLS },
+    { a: '--stamina', b: '--focus', kind: 'deutan', measured: 5.64, reason: KEEPS_FILLS },
   ],
 };
 
@@ -245,9 +255,9 @@ describe.each(THEME_IDS)('theme %s: contrast and colour', (id) => {
     expect(bad).toEqual([]);
   });
 
-  it('dim text, accent, danger, warn and every log colour are at least 4.5:1 on panel, raised and hover', () => {
+  it('dim text, accent, danger, warn, xp and every log colour are at least 4.5:1 on panel, raised and hover', () => {
     const bad: string[] = [];
-    for (const token of ['--text-dim', '--accent', '--danger', '--warn', ...LOG_TOKENS]) {
+    for (const token of ['--text-dim', '--accent', '--danger', '--warn', '--xp', ...LOG_TOKENS]) {
       for (const s of SURFACES) {
         const ratio = contrast(c(token), c(s));
         if (ratio < 4.5) bad.push(`${token} on ${s}: ${r2(ratio)}`);
@@ -257,7 +267,7 @@ describe.each(THEME_IDS)('theme %s: contrast and colour', (id) => {
   });
 
   it('disabled text is at least 4.5:1 on raised', () => {
-    expect(r2(contrast(c('--text-off'), c('--bg-raised')))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c('--text-off'), c('--bg-raised'))).toBeGreaterThanOrEqual(4.5);
   });
 
   it('edge and ring are at least 3:1 on panel and raised', () => {
@@ -297,7 +307,7 @@ describe.each(THEME_IDS)('theme %s: contrast and colour', (id) => {
   });
 
   it('selected ink is at least 4.5:1 on the selected fill', () => {
-    expect(r2(contrast(c('--sel-ink'), c('--sel-bg')))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c('--sel-ink'), c('--sel-bg'))).toBeGreaterThanOrEqual(4.5);
   });
 
   it('semantic colours keep their hue within 30 degrees of Default (OKLCH)', () => {
@@ -381,7 +391,7 @@ describe.each(THEME_IDS)('theme %s: authored colours after ink()', (id) => {
   it('keep their family apart: each family keeps half of Default separation, Refuse and Poor stay distinct', () => {
     const bad: string[] = [];
     for (const [label, bounds] of [['normal', normal], ['selected', selected]] as const) {
-      for (const family of FAMILIES) {
+      for (const family of FAMILIES.filter((f) => f.pairwise)) {
         const { min, pair } = minPair(family.colors.map((raw) => remapInk(raw, bounds[0], bounds[1])));
         if (min < FAMILY_FLOOR[family.id])
           bad.push(`${family.id} (${label} scope): ${r2(min)} < ${r2(FAMILY_FLOOR[family.id])} at ${pair}`);

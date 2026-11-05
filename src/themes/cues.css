@@ -1,0 +1,28 @@
+/*
+ * Cue rules shared by every theme (docs/THEMES.md §3). They read tokens only:
+ * a theme changes the colours, not these shapes. Every other cue is written
+ * into its component, because a bare class selector here would restyle every
+ * component that uses the same word (PITFALLS §8).
+ *
+ * Neither rule changes size, padding, font or border width: a state change
+ * must not move layout.
+ */
+
+/* Keyboard focus. The ring sits outside the element; a component that hides it
+   (`outline: none`) must draw its own ring on :focus-visible. */
+:focus-visible {
+  outline: var(--ring-w) solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Disabled: dashed edge, no fill, disabled ink. The shape (dashed) is the cue;
+   dimming alone fails contrast. A reason, where one exists, is printed as text
+   next to the button. */
+button:disabled {
+  opacity: 1;
+  background: transparent;
+  color: var(--text-off);
+  border-style: dashed;
+  border-color: var(--text-off);
+  cursor: not-allowed;
+}
