@@ -151,9 +151,12 @@ export function resolveColor(table: TokenTable, name: string, trail: string[] = 
   return resolveValue(table, raw, [...trail, name]);
 }
 
-/** `ink()` as a token value: `oklch(from <colour> calc(<lmin> + l * (<lmax> - <lmin>)) c h)`. */
+/**
+ * `ink()` as a token value:
+ * `oklch(from <colour> calc(<lmin> + l * (<lmax> - <lmin>)) calc(c * <lmax>) h)`.
+ */
 const INK_REMAP =
-  /^oklch\(\s*from\s+(.+?)\s+calc\(\s*var\(--ink-lmin\)\s*\+\s*l\s*\*\s*\(\s*var\(--ink-lmax\)\s*-\s*var\(--ink-lmin\)\s*\)\s*\)\s+c\s+h\s*\)$/;
+  /^oklch\(\s*from\s+(.+?)\s+calc\(\s*var\(--ink-lmin\)\s*\+\s*l\s*\*\s*\(\s*var\(--ink-lmax\)\s*-\s*var\(--ink-lmin\)\s*\)\s*\)\s+calc\(\s*c\s*\*\s*var\(--ink-lmax\)\s*\)\s+h\s*\)$/;
 
 function resolveValue(table: TokenTable, raw: string, trail: string[]): string {
   const value = raw.trim();

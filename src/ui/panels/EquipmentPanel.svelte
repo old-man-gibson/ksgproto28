@@ -1647,8 +1647,8 @@
     line-height: 1;
     padding: 1px 3px;
     border-radius: 4px;
-    background: var(--scrim);
-    color: var(--text);
+    background: var(--badge-bg);
+    color: var(--badge-ink);
   }
 
   /* "2/3 spare" on a stack that keeps some of its copies. Sits above the rune pips. */
@@ -1660,8 +1660,8 @@
     line-height: 1;
     padding: 1px 3px;
     border-radius: 4px;
-    background: var(--scrim);
-    color: var(--text-dim);
+    background: var(--badge-bg);
+    color: var(--badge-dim);
   }
 
   .star {

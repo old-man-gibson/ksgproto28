@@ -76,6 +76,12 @@ const SIDE_BY_SIDE = ['--hp', '--stamina', '--mana', '--spirit', '--focus', '--a
 
 const DISTRICTS = 'abcdefghi'.split('').map((c) => `--district-${c}`);
 
+/** Colours drawn inside the painted battle stage and the place banner (Default aliases them to today's tokens). */
+const STAGE_TOKENS = ['--stage-ink', '--stage-accent', '--stage-ok', '--stage-ok-text', '--stage-danger'];
+
+/** The stage's own ground (`background` of `.stage` in BattleStage.svelte): the darkest art a stage token has to read on. */
+const STAGE_GROUND = '#0b0e12';
+
 /** Identity colours and art ink: the same in every theme. A theme file does not declare them. */
 const FIXED = [
   '--mat-iron', '--mat-steel', '--mat-bronze', '--mat-metal', '--mat-wood', '--mat-leather',
@@ -96,6 +102,7 @@ const SHARED = [
   '--frame', ...BAR_FILLS, ...INK_TOKENS, '--ring-w', '--buff', '--night', '--night-edge',
   '--bar-track', '--road', ...DISTRICTS, '--scrim', '--scrim-deep', '--lift', '--hatch-lock', '--tint-mix',
   '--bg-deep', '--sel-ink-lmin', '--sel-ink-lmax',
+  ...STAGE_TOKENS, '--badge-bg', '--badge-ink', '--badge-dim',
 ];
 
 const CONTRACT = [...new Set([...PER_THEME, ...SHARED, ...FIXED])];
@@ -219,7 +226,7 @@ describe('theme files', () => {
     const colorTokens = CONTRACT.filter(
       (t) =>
         !['--ring-w', '--ink-lmin', '--ink-lmax', '--sel-ink-lmin', '--sel-ink-lmax', '--lift',
-          '--hatch-lock', '--scrim', '--scrim-deep', '--tint-mix', '--road'].includes(t) && !DISTRICTS.includes(t),
+          '--hatch-lock', '--scrim', '--scrim-deep', '--tint-mix', '--road', '--badge-bg'].includes(t) && !DISTRICTS.includes(t),
     );
     const bad: string[] = [];
     for (const id of THEME_IDS) {
@@ -321,6 +328,13 @@ describe.each(THEME_IDS)('theme %s: contrast and colour', (id) => {
 
   it('selected ink is at least 4.5:1 on the selected fill', () => {
     expect(contrast(c('--sel-ink'), c('--sel-bg'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('stage colours are at least 4.5:1 on the stage ground', () => {
+    const bad = STAGE_TOKENS.filter((t) => contrast(c(t), STAGE_GROUND) < 4.5).map(
+      (t) => `${t} on the stage: ${r2(contrast(c(t), STAGE_GROUND))}`,
+    );
+    expect(bad).toEqual([]);
   });
 
   it('semantic colours keep their hue within 30 degrees of Default (OKLCH)', () => {

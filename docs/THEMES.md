@@ -84,6 +84,8 @@ declare them.
 | `--hatch-lock` | Background image of a locked row. |
 | `--tint-mix` | Share of an authored colour mixed into a chip that wears it (16% in Default). |
 | `--sel-ink-lmin`, `--sel-ink-lmax` | The `ink()` bounds inside a selected thing (§4). Default is 0.58 and 1. |
+| `--stage-ink`, `--stage-accent`, `--stage-ok`, `--stage-ok-text`, `--stage-danger` | Colours inside the painted battle stage, the place banner and the raid pill, which stay dark in every theme. Default aliases them to `--text`, `--accent`, `--xp`, `--xp-ink` and `--danger`, so Default and Gothic are unchanged. A light theme sets all five to colours that hold 4.5:1 on the stage's ground (`#0b0e12`). `--stage-ink` is the colour that text without a colour of its own inherits inside the stage. |
+| `--badge-bg`, `--badge-ink`, `--badge-dim` | A count or tag drawn on an item cell (EquipmentPanel, CollectionSection): the chip's fill, its text and its secondary text. Default aliases them to `--scrim`, `--text` and `--text-dim`. A light theme makes the chip dark and the text light. |
 | `--font-caps` | Face of letter-spaced capitals. Unset in Default (`var(--font-caps, inherit)`). |
 
 ### Fixed (the same in every theme)
@@ -129,13 +131,14 @@ allowed cases, each with the replacement.
 Rarity, quality tier, status, school, position and talent-lap colours are authored in data (`src/core/data/*.data.ts`,
 `ui/lib/talentBar.ts`) for no particular ground. They are drawn through `ink(color)` (`ui/lib/ink.ts`):
 
-- OKLCH lightness `l` becomes `lmin + l * (lmax - lmin)`. Chroma and hue are kept. This is a **remap, not a clamp**: a clamp
-  merges the dark colours (Refuse and Poor would become one grey); a remap keeps their order and spacing.
+- OKLCH lightness `l` becomes `lmin + l * (lmax - lmin)`, chroma `c` becomes `c * lmax` and hue is kept. This is a **remap, not
+  a clamp**: a clamp merges the dark colours (Refuse and Poor would become one grey); a remap keeps their order and spacing. The
+  chroma factor is 1 wherever `lmax` is 1, so every dark theme keeps chroma; a light theme needs it (§11).
 - `lmin` and `lmax` are `--ink-lmin` and `--ink-lmax`. Default is 0.48 and 1, Gothic 0.42 and 1: every dark theme lifts the
   dark colours until they pass 4.5:1 on its surfaces. A light theme lowers `lmax`. At 0 and 1 the result is the authored
   colour, pixel for pixel (checked on 44 colours in the browser).
-- The CSS is `oklch(from <color> calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h)`. A browser without
-  relative colour syntax gets the raw colour: `ink()` checks `CSS.supports` once.
+- The CSS is `oklch(from <color> calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) calc(c * var(--ink-lmax)) h)`.
+  A browser without relative colour syntax gets the raw colour: `ink()` checks `CSS.supports` once.
 - Only a literal hex colour is remapped. `var(--token)` passes through, because a theme token is already the theme's colour.
 
 Use `ink()` wherever data supplies a colour to CSS: `style="--tint: {ink(c)}"`, `color: {ink(c)}`, SVG `fill={ink(c)}`,
@@ -303,3 +306,41 @@ line. The nav list keeps a `1em` marker slot on every row for the same reason.
 - Default's selected floor is high (0.58) because its `--sel-bg` is lighter than Gothic's. A darker Default `--sel-bg` (the
   accent at 8% over panel is #2a2b2a) would pass at 0.48 and keep more colour inside selected things, at the cost of a weaker
   selected fill on every Default button.
+
+## 11. Theme catalogue
+
+Castle, Survey and Sandstone are the light themes (built 2026-11-05, branch `themes-light`). Each is one file, `src/themes/<id>.css`,
+registered in `theme.ts`, with its fonts imported in `main.ts` (`latin-<weight>.css` only). They are the first themes whose page
+is lighter than their text.
+
+**Light themes.** A light theme needs a few things a dark one does not:
+
+- **Authored colours** are drawn darker, not lifted: `--ink-lmin` 0 and `--ink-lmax` about 0.52 (§4). `ink()` also scales chroma
+  by `lmax`. Without that a bright colour darkened with its chroma kept falls outside the sRGB gamut and the browser clips it
+  channel by channel: at a ceiling of 0.52 the orange and the red of the talent laps were 4.1 ΔE00 apart (20.3 unlifted) and
+  are 11.9 with the scale. A light theme's panel has to be very light for the family spacing check to hold: lightness about
+  0.88 or more, since the lightest authored colour must reach 4.5:1 on it at a ceiling of 0.52.
+- **The -ink tokens** are declared by the theme as hex (§4): each bar fill darkened uniformly in OKLab until it holds 4.7:1 on
+  panel, raised, hover and `--sel-bg`. The app.css derivation is the same remap and would also work, but a light theme picks its
+  own values.
+- **Bar wells.** Castle and Sandstone keep near-black wells with bright fills (each at least 3:1 on the well). `--xp` is the
+  one fill that is also tested as text (4.5:1 on panel, raised and hover), so it has to sit in a narrow lightness window
+  (about 0.115 to 0.125) and `--bg-hover` has to be light enough (lightness 0.73 or more) for the window to exist. Talent-lap
+  fills inside a dark well use the dark-ground ink range (`.bar { --ink-lmin: 0.5; --ink-lmax: 1 }`). Survey has paper-white
+  wells and mid to dark fills; its label is white with a black outline.
+- **Painted art** stays dark. Text over it reads `--art-ink` (§5) and, for the colours that were `--text`, `--accent`, `--xp` and
+  `--danger` inside the stage, the five `--stage-*` tokens (§2). Each theme draws a hard frame between the page and the art:
+  the battle stage, the place banner and tiled maps get a border in the theme's ink colour (Castle: black timber, Survey: ink and
+  a hairline, Sandstone: kohl and a bronze line).
+- **Count chips** on item cells read `--badge-*` (§2): a dark chip with light text.
+- **Scrim, lift and hatch** are ink-coloured (not black) and lighter: `--scrim` 45–55%, `--lift` 25–35%.
+- **Specificity.** A component's scoped rule has the scope class on every compound selector, so a theme rule of the same length
+  loses. A theme rule that has to beat one writes `:root:root[data-theme='<id>']` (one more pseudo-class).
+- **Layout.** No rule here changes padding, border width, font size or font weight in a state. A theme sets the same border width
+  on all rows (`.nav-entry` 4px) and changes only colour in the state.
+
+Shared limits of the three: text dimmed by `opacity` in a component (the next floor band's name, an inactive position chip, the
+count on a spare stack) is 2.8 to 3.8:1, against 3.1 to 4.4 in Gothic; a light page loses more contrast to the same opacity.
+Decorative glyphs (unearned achievement stars, empty slot icons) are under 3:1 in every theme, Default and Gothic included. The
+Skills screen's XP bar spills 4 to 11 px past its row at 1094 px in Castle and in Gothic (wide bold names); Survey and Sandstone
+do not.

@@ -794,7 +794,7 @@
     font-size: 1.45rem;
   }
   .place-title .crumb {
-    color: color-mix(in srgb, var(--text) 80%, transparent);
+    color: color-mix(in srgb, var(--stage-ink) 80%, transparent);
   }
   .place-raid {
     position: absolute;
