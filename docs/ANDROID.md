@@ -20,12 +20,15 @@ different app: the phone keeps the old one and its save.
 
 ## What the phone build has
 
-- **No licensed art.** The enemy battlers, the tile packs and the icon packs
-  are gitignored (docs/AUTHORSHIP.md §9), so the Actions build has none of
-  them: enemies show no picture, maps draw the node diagram, icons are emoji.
-  Bringing them in would mean a private store outside git that the workflow
-  downloads from (a private Cloudflare R2 bucket, say). Not set up. A build
-  made on this PC has the art; do not share that APK.
+- **No licensed art in the APK.** The enemy battlers, the tile packs and the
+  icon packs are gitignored (docs/AUTHORSHIP.md §9), so the Actions build has
+  none of them: enemies show no picture, maps draw the node diagram, icons
+  are emoji. The art reaches the phone as an art pack (docs/ART_PACK.md):
+  `npm run art-pack` on the PC writes `art-pack/frontier-idle-art.zip`; copy
+  it to the phone and use Menu → Import art pack once. The pack is kept in
+  the app's storage, so APK updates keep it; uninstalling deletes it. Rerun
+  and reimport when new art is added. A build made on this PC has the art
+  built in; do not share that APK.
 - **Its own save.** The save lives in the app's WebView storage, apart from
   any browser's. The header's Export and Import move a save between the two.
 - **The desktop layout.** The phone layout (UI proposal A3) is not built.
