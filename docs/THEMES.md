@@ -344,3 +344,25 @@ count on a spare stack) is 2.8 to 3.8:1, against 3.1 to 4.4 in Gothic; a light p
 Decorative glyphs (unearned achievement stars, empty slot icons) are under 3:1 in every theme, Default and Gothic included. The
 Skills screen's XP bar spills 4 to 11 px past its row at 1094 px in Castle and in Gothic (wide bold names); Survey and Sandstone
 do not.
+
+### Castle
+
+The warring-states band (floors 21 to 30). White plaster, black timber, vermilion, a gold hairline.
+
+- **Fonts.** Spectral 400, 400 italic and 600 for text (16px, lining and tabular figures); Shippori Mincho 700 (`latin-700.css`
+  only: the full file pulls the Japanese slices) for h1 to h3 and `--font-caps`.
+- **Key tokens.** `--bg` #dddbd3, panel #f5f3ee, raised #fcfbf8, hover #e0ded5, text #1a1917, dim #4d4b43, accent #7a4a00
+  (bronze), danger #a8220e (vermilion), warn #6c5800, edge #6a675d, ring #2a3f8f (indigo), here #1a1917. Bars: hp #e0615d,
+  stamina #7bda8e, mana #1a67d1, spirit #a87ed2, focus #e46d02, action #d3bc3c, xp #056e39 on a #0b0a08 well. `--ink-lmax` 0.52.
+- **Decoration.** A black beam (inset shadow) across the top of every top-level panel; a black lintel and a gold hairline on the
+  header; a black diamond before each h3; a shoji lattice on the map ground; a solid vermilion tag with white text for a fight
+  with no way out and a bar plus text for a one-way road; a 3px timber frame on the stage and tiled maps.
+- **Selection.** Selected buttons and the open nav row are black blocks with a gold foot. They do not read `--sel-bg`: a bar colour
+  read as text has to hold 4.5:1 on `--sel-bg` (the test), which no colour does on both plaster and black. `--sel-bg` is a light
+  plaster tint (the marked cells and the selected pin read it). Inside a black block the colours a child reads from a token are
+  re-pointed in CSS (`--text-dim`, `--accent`, `--xp-ink`, `--danger`, `--warn`, `--buff`, `--border`) and the authored colours
+  use the range 0.5 to 1. The test does not see this; the DOM contrast audit of every screen found no text under 4.5:1 in a block.
+- **Numbers.** Text 13.03, dim 6.48, danger 5.37, ring 8.58, edge 5.10 (on panel, raised, hover; ring and edge on panel and
+  raised). Worst colour-vision pair: protan hp/xp 9.85, deutan hp/focus 10.84 (the mock had 4.4). Authored colours after the remap:
+  5.42 on panel and raised, 5.34 on `--sel-bg`; 5.9 on the black block's #1a1917.
+- **Known limits.** `--xp` is the dimmest fill (3.11:1 on its well). The header is 52px tall at every width, one row.
