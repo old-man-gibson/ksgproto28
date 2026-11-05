@@ -1,0 +1,218 @@
+/*
+ * Quayside display theme: the harbor band (floors 11 to 14). Active while
+ * <html data-theme="quayside"> (src/ui/lib/theme.ts).
+ *
+ * Teal-black planking, sailcloth text, a lantern-amber accent, a rope stripe
+ * along the top of every top-level panel, the map framed as a chart. Tokens
+ * first (docs/THEMES.md §2), then the shared shapes.
+ *
+ * The accent is amber with an orange lean (hue about 65), not brass: brass sits
+ * next to Gothic's gold (hue about 85). The brass stays in the rope stripe.
+ */
+
+:root[data-theme='quayside'] {
+  --bg: #0b1316;
+  --bg-panel: #111c20;
+  --bg-raised: #192a2f;
+  --bg-hover: #24383e;
+  --bg-sunken: #070d0f;
+  --border: #34505a;
+  --frame: #1d3037; /* hairlines between rows */
+  --text: #e8e2d0; /* sailcloth */
+  --text-dim: #a3b4b4;
+  --accent: #f0a24d; /* lantern amber */
+  --hp: #da5349;
+  --xp: #89b66d;
+  --skill: #b79ad8;
+  --stamina: #69e98c;
+  --stamina-winded: #3f7a45;
+  --stamina-exhausted: #a3ad3a;
+  --mana: #61a8ee;
+  --manaburn: #dc55cd;
+  --spirit: #9568d3;
+  --focus: #eb8637;
+  --danger: #ff7a6b;
+  --warn: #e8d36e;
+  --action: #f1d027;
+
+  --log-combat: #e3a99d;
+  --log-danger: #ff7a6b;
+  --log-loot: #f0a24d;
+  --log-skill: #b79ad8;
+  --log-achievement: #f4d56a;
+  --log-fusion: #f09a4e;
+  --log-quest: #dccb84;
+  --log-travel: #86b9e0;
+  --log-explore: #7fd3b4;
+  --log-plain: #a3b4b4;
+
+  --edge: #6f929b;
+  --ring: #f6f1e3;
+  --here: #ff9ccf; /* pink, apart from the sailcloth ring and the amber accent */
+  --sel-bg: color-mix(in srgb, var(--accent) 11%, var(--bg-sunken));
+  --sel-ink: var(--text);
+  --text-off: #8ba0a2;
+
+  --bar-ink: #ffffff;
+  --bar-halo: #000000;
+
+  --ink-lmin: 0.5;
+  --ink-lmax: 1;
+  --sel-ink-lmin: 0.5;
+  --sel-ink-lmax: 1;
+
+  /* The rope along the top of a panel: hemp and tar. */
+  --rope-a: #a8946a;
+  --rope-b: #4d432c;
+
+  --font-caps: 'Libre Caslon Text', Georgia, serif;
+
+  font-family: 'Libre Caslon Text', Georgia, serif;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  scrollbar-color: var(--edge) var(--bg);
+}
+
+:root[data-theme='quayside'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 2px !important;
+}
+
+:root[data-theme='quayside'] :is(h1, h2, h3) {
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* A section title: a hairline under it with a short amber tab at the left. */
+:root[data-theme='quayside'] h3 {
+  font-size: 13.5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--frame);
+  background: linear-gradient(var(--accent), var(--accent)) left bottom / 26px 2px no-repeat;
+}
+
+:root[data-theme='quayside'] h4 {
+  font-weight: 700;
+}
+
+/* A rope laid along the top edge of every top-level panel, the header and the pin card. */
+:root[data-theme='quayside'] :is(.panel:not(.panel .panel), .layout > header, .map-card) {
+  background-image: repeating-linear-gradient(135deg, var(--rope-a) 0 2px, var(--rope-b) 2px 4px);
+  background-size: 100% 5px;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+}
+
+:root[data-theme='quayside'] .layout.paused > header {
+  border-color: var(--accent);
+}
+
+/* Caslon is the widest face of the set. The header gives up size (and the title some tracking) so the clock
+   chip and the job name keep the room Default gives them (budgets in App.svelte and JobStrip.svelte). */
+:root[data-theme='quayside'] .layout > header {
+  font-size: 14px;
+}
+
+:root[data-theme='quayside'] .layout > header :is(.rate-chip, .timesense, .weather) {
+  font-size: 12px;
+}
+
+/* The clock chip's slot: wide enough for its widest hour ("🕰️ about 23:00") at 12px, which the component's 6.5em is not. */
+:root[data-theme='quayside'] .layout > header .timesense {
+  min-width: 7.6em;
+}
+
+:root[data-theme='quayside'] .layout > header h1 {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme='quayside'] .layout > header button {
+  white-space: nowrap;
+}
+
+/* Selected: a sign hung from its top edge, amber bar over a dark fill. */
+:root[data-theme='quayside'] button.selected {
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+:root[data-theme='quayside'] :is(.tabs, .region-switch) > button {
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The screen list: captions over a double rule, the open screen a bar on the left. */
+:root[data-theme='quayside'] .nav-caption {
+  font-weight: 700;
+  border-bottom: 3px double var(--frame);
+}
+
+:root[data-theme='quayside'] .nav-list .nav-entry.nav-on {
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-raised));
+}
+
+:root[data-theme='quayside'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 1px solid var(--edge);
+}
+
+:root[data-theme='quayside'] :is(input, select, textarea)::placeholder {
+  color: var(--text-dim);
+}
+
+:root[data-theme='quayside'] input:is([type='checkbox'], [type='radio'], [type='range']) {
+  accent-color: var(--accent);
+}
+
+/* A gauge: the empty part of every bar is marked in quarters. */
+:root[data-theme='quayside'] .bar {
+  box-shadow: inset 0 0 0 1px var(--border);
+  background-image: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgb(255 255 255 / 14%) calc(25% - 1px) 25%);
+}
+
+:root[data-theme='quayside'] .bar > .label {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* The map is a chart: a neatline inside the frame. */
+:root[data-theme='quayside'] .map-wrap {
+  border-color: var(--edge);
+  outline: 1px solid var(--edge);
+  outline-offset: -5px;
+}
+
+:root[data-theme='quayside'] .ts-row {
+  box-shadow: inset 0 -1px 0 var(--frame);
+}
+
+:root[data-theme='quayside'] .ts-row.here {
+  box-shadow: inset 4px 0 0 var(--accent), inset 0 -1px 0 var(--frame);
+}
+
+:root[data-theme='quayside'] .ts-band {
+  letter-spacing: 0.06em;
+}
+
+/* The pin card: a rope on top, a double rule round it. */
+:root[data-theme='quayside'] .map-card {
+  box-shadow: 0 0 0 1px var(--bg), 0 0 0 2px var(--border), 0 8px 24px var(--lift);
+}
+
+/* A warning: a bar on the left in the warning's own colour. */
+:root[data-theme='quayside'] .map-card .warn {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-left: 3px solid currentColor;
+  padding-left: 6px;
+}
+
+/* Caslon is wide: a skill row (name, tier tag, level, 64px bar) overruns its box at 13.5px. */
+:root[data-theme='quayside'] .skill-block .row {
+  font-size: 12.5px;
+}

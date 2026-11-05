@@ -368,3 +368,34 @@ hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for every
     name ends in an ellipsis when longer.
   - Rivets are drawn at 7 px from each corner of a top-level panel, so a panel padded under 8 px would have them over its
     content. The Menu window (padding 0, header padded 10 px) was checked; no other zero-padding panel was.
+
+### Quayside
+
+- **Concept:** the harbor band (floors 11 to 14). Teal-black planking, sailcloth text, a rope stripe along the top of each panel,
+  the map framed as a chart.
+- **Font:** Libre Caslon Text (400, 400 italic, 700), latin slice. Caslon is the widest face of the set, so the header gives up
+  size: the header is 14px, its chips (rate, clock, weather) 12px, the title 15px with 0.08em tracking.
+- **Surfaces:** `--bg` `#0b1316`, `--bg-panel` `#111c20`, `--bg-raised` `#192a2f`, `--bg-hover` `#24383e`, `--bg-sunken`
+  `#070d0f`. `--text` is sailcloth `#e8e2d0`.
+- **Accent:** lantern amber `#f0a24d`, hue about 65 in OKLCH. The first design used brass `#e2b04a` (hue about 85), which sits
+  next to Gothic's `#c9a45c`. Brass stays in the rope stripe (`--rope-a` `#a8946a`, `--rope-b` `#4d432c`, theme-local).
+  `--ring` is sailcloth `#f6f1e3`, `--here` pink `#ff9ccf`; the three are 26.6 ΔE00 or more apart.
+- **Measured:** text 9.5:1, dim 5.7:1, danger 4.8:1, worst log colour 4.8:1, edge 4.4:1, ring 13.2:1, disabled 5.4:1. Bar fills
+  read as text (`-ink` tokens) are at least 5.6:1. Authored colours after the remap (`--ink-lmin` 0.5) are at least 5.0:1 on
+  panel and 5.7:1 on `--sel-bg`.
+- **Bars:** the seven bars drawn together reach 9.35 ΔE00 under deutan (stamina/xp) and 9.7 under protan (focus/xp). Stamina is
+  `#69e98c` and xp `#89b66d`; they are told apart by lightness and chroma. No exceptions in `VISION_EXCEPTIONS`.
+- **Selection:** `--sel-bg` is dark (amber 11% over sunken). A selected button gets an amber bar along its top edge (a sign hung
+  from its hooks); the open screen in the list gets a bar on the left. No solid light plate: Caslon rows carry rarity and
+  grade colours that need the dark fill.
+- **Decorations (CSS only):** a rope stripe (a 135 degree repeating gradient, 5 px) on the top edge of every top-level panel,
+  the header and the pin card; h3 with a hairline and a short amber tab; a double rule under the screen list captions; bars
+  marked in quarters like a gauge; a neatline inside the map frame; a double rule round the pin card; a bar on the left of
+  each warning in the warning's own colour.
+- **Limits:**
+  - Header budgets, measured against Default at 1024, 1094, 1180 and 1440 px: the job name slot is 165, 147, 141 and 227 px
+    (Default 169, 151, 153 and 240). The clock chip shows its whole hour at every width; its slot is `7.6em` of 12px (the
+    component's `6.5em` is too narrow for Caslon).
+  - A skill row (`.skill-block .row`) is 12.5px, not 13.5px; at 13.5px its bar overran the row.
+  - The rope is a background image on the panel, so a panel with its own `background-image` would lose it. None was found on
+    the 12 screens of the screen list at 1440 px (Default theme).
