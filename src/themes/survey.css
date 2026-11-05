@@ -1,0 +1,290 @@
+/*
+ * Survey display theme: a drafting sheet. Light. White paper, ink lines, hatch
+ * for what is locked, brick rust for the current and the selected, folder tabs.
+ * Active while <html data-theme="survey"> (src/ui/lib/theme.ts). docs/THEMES.md §11.
+ *
+ * Tokens first (tests/themes.test.ts reads this block), then the shapes.
+ * The bar wells are paper-white and the fills are mid to dark tones, so the
+ * label is white with a black outline (it reads on a fill and on the well). The
+ * accent is a dark brick; the Focus bar is a lighter orange, so the two do not
+ * read as one colour.
+ *
+ * `:root:root[data-theme='survey']` in a shape rule lifts it over a component's
+ * own scoped rule of the same length (Svelte adds a class per compound selector).
+ */
+
+:root[data-theme='survey'] {
+  --bg: #e8e5da;
+  --bg-panel: #f7f5ed;
+  --bg-raised: #fdfcf8;
+  --bg-hover: #e4e1d3;
+  --bg-sunken: #fffdf8;
+  --border: #8d897a;
+  --frame: #cbc7b8;
+  --text: #1b1c1a;
+  --text-dim: #55564f;
+  --accent: #8c3516;
+  --danger: #b3261e;
+  --warn: #825400;
+  --buff: #0b6b57;
+  --night: #5b3f99;
+  --night-edge: #8a79b8;
+
+  --hp: #e14b5a;
+  --xp: #015415;
+  --skill: #7a55b0;
+  --stamina: #218849;
+  --stamina-winded: #5a8a60;
+  --stamina-exhausted: #8a8a1a;
+  --mana: #28569b;
+  --manaburn: #b03aa0;
+  --spirit: #8c61c2;
+  --focus: #d6761a;
+  --action: #7a660e;
+
+  /* Bar fills as text on paper: each fill darkened to 4.7:1 on panel, raised, hover and the selected fill. */
+  --hp-ink: #ac3743;
+  --xp-ink: #015415;
+  --skill-ink: #724fa5;
+  --stamina-ink: #196f3b;
+  --stamina-winded-ink: #446a49;
+  --stamina-exhausted-ink: #646410;
+  --mana-ink: #28569b;
+  --manaburn-ink: #a03491;
+  --spirit-ink: #734fa1;
+  --focus-ink: #924f0e;
+  --action-ink: #72600c;
+
+  /* The painted stage, banner and raid pill are dark whatever the page is. */
+  --stage-ink: var(--art-ink);
+  --stage-accent: #e0b35a;
+  --stage-ok: #6fd698;
+  --stage-ok-text: #6fd698;
+  --stage-danger: #ff8a78;
+
+  /* A count on a cell: a dark chip with light text. */
+  --badge-bg: rgb(27 28 26 / 82%);
+  --badge-ink: #f7f5ed;
+  --badge-dim: #d0cebf;
+
+  --log-combat: #884338;
+  --log-danger: #a8220e;
+  --log-loot: #774f00;
+  --log-skill: #6e3fa5;
+  --log-achievement: #675500;
+  --log-fusion: #983800;
+  --log-quest: #505d10;
+  --log-travel: #255893;
+  --log-explore: #0e6252;
+  --log-plain: #55564f;
+
+  --edge: #5f5e56;
+  --ring: #1d3f9e;
+  --here: #1b1c1a;
+  --sel-bg: #fdf3e4;
+  --sel-ink: #1b1c1a;
+  --text-off: #6b6b62;
+
+  --bar-ink: #ffffff;
+  --bar-halo: #000000;
+
+  --ink-lmin: 0;
+  --ink-lmax: 0.52;
+  --sel-ink-lmin: 0;
+  --sel-ink-lmax: 0.52;
+
+  --road: #7a6a44;
+  /* The map's district tints, darkened: a district name is text (a tint mixed 55% with --text) on the map ground. */
+  --district-b: #5c6670;
+  --district-c: #8a3a32;
+  --district-d: #55585f;
+  --district-e: #8f4a12;
+  --district-f: #5f656d;
+  --district-g: #7a4d1a;
+  --district-i: #6f5028;
+  --scrim: rgb(27 28 26 / 45%);
+  --scrim-deep: rgb(27 28 26 / 60%);
+  --lift: rgb(27 28 26 / 25%);
+  --hatch-lock: repeating-linear-gradient(135deg, transparent 0 4px, rgb(27 28 26 / 22%) 4px 5px);
+  --tint-mix: 30%;
+
+  --font-caps: 'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+  font-family: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  font-size: 14.5px;
+  font-variant-numeric: tabular-nums;
+  color-scheme: light;
+  scrollbar-color: var(--edge) var(--bg);
+}
+
+/* Square everything except the few shapes that are round on purpose. */
+:root[data-theme='survey'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 0 !important;
+}
+
+:root[data-theme='survey'] :is(h1, h2, h3) {
+  font-family: var(--font-caps);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme='survey'] h3 {
+  border-bottom: 2px solid var(--text);
+  padding-bottom: 3px;
+}
+
+:root[data-theme='survey'] .layout > header h1 {
+  color: var(--text);
+  font-size: 17px;
+}
+
+/* The title block: a double rule across the top of every panel and of the header. */
+:root[data-theme='survey'] :is(.panel, .layout > header) {
+  border-top: 3px double var(--edge);
+}
+
+:root[data-theme='survey'] button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+
+/* Selected: a rust foot under a tinted fill; the border, fill and ink come from the global rule. */
+:root[data-theme='survey'] button.selected {
+  border-color: var(--edge);
+  box-shadow: inset 0 -4px 0 var(--accent);
+}
+
+:root:root[data-theme='survey'] .nav-caption {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--text);
+  border-bottom-color: var(--edge);
+}
+
+:root:root[data-theme='survey'] .nav-list .nav-entry {
+  border-left-width: 4px;
+}
+
+:root:root[data-theme='survey'] .nav-list .nav-entry.nav-on {
+  background: var(--sel-bg);
+  color: var(--text);
+}
+
+:root[data-theme='survey'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--edge);
+}
+
+/* A bar is a scale: an ink outline, a tick at every tenth. */
+:root[data-theme='survey'] .bar {
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+:root[data-theme='survey'] .bar::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 20%;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), var(--edge) calc(10% - 1px) 10%);
+}
+
+:root[data-theme='survey'] .bar > .label {
+  font-weight: 600;
+  font-size: 11px;
+  z-index: 2;
+}
+
+/* Folder tabs (the spellcraft tabs, the map's region switch): raised tabs on a rule, the open one joined to the sheet. */
+:root:root[data-theme='survey'] :is(.tabs, .region-switch) {
+  gap: 2px;
+  border-bottom: 1px solid var(--edge);
+}
+
+:root:root[data-theme='survey'] :is(.tabs, .region-switch) > button {
+  border-bottom: 0;
+  background: var(--bg-raised);
+  margin-bottom: -1px;
+}
+
+:root:root[data-theme='survey'] :is(.tabs, .region-switch) > button.selected {
+  background: var(--bg-panel);
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+/* Registration marks: a short L at each inner corner of a top-level panel. */
+:root[data-theme='survey'] .panel:not(.panel .panel) {
+  background-image:
+    linear-gradient(var(--edge), var(--edge)), linear-gradient(var(--edge), var(--edge)),
+    linear-gradient(var(--edge), var(--edge)), linear-gradient(var(--edge), var(--edge)),
+    linear-gradient(var(--edge), var(--edge)), linear-gradient(var(--edge), var(--edge)),
+    linear-gradient(var(--edge), var(--edge)), linear-gradient(var(--edge), var(--edge));
+  background-size: 9px 1px, 1px 9px, 9px 1px, 1px 9px, 9px 1px, 1px 9px, 9px 1px, 1px 9px;
+  background-repeat: no-repeat;
+  background-position:
+    left 4px top 4px, left 4px top 4px,
+    right 4px top 4px, right 4px top 4px,
+    left 4px bottom 4px, left 4px bottom 4px,
+    right 4px bottom 4px, right 4px bottom 4px;
+}
+
+/* The map is a survey sheet: fine grid, a heavier line every fifth. */
+:root[data-theme='survey'] .map-wrap {
+  border-color: var(--edge);
+  background-image:
+    linear-gradient(rgb(27 28 26 / 12%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(27 28 26 / 12%) 1px, transparent 1px),
+    linear-gradient(rgb(27 28 26 / 5%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(27 28 26 / 5%) 1px, transparent 1px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+}
+
+:root[data-theme='survey'] .dname {
+  font-family: var(--font-caps);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+/* Painted art stays dark inside the paper page: an ink frame and a hairline hold it. */
+:root:root[data-theme='survey'] :is(.stage, .map-wrap.tiled) {
+  border: 2px solid var(--text);
+  outline: 1px solid var(--edge);
+  outline-offset: 2px;
+}
+
+:root:root[data-theme='survey'] .place-banner {
+  border-bottom: 2px solid var(--text);
+}
+
+:root:root[data-theme='survey'] .ts-row {
+  border-bottom: 1px solid var(--border);
+}
+
+:root:root[data-theme='survey'] .ts-row.here {
+  box-shadow: inset 4px 0 0 var(--accent);
+  color: var(--text);
+  background: var(--sel-bg);
+}
+
+:root:root[data-theme='survey'] .ts-row.picked {
+  background: var(--bg-raised);
+  outline: 1px solid var(--edge);
+  outline-offset: -2px;
+}
+
+:root:root[data-theme='survey'] .map-card {
+  border: 1px solid var(--edge);
+  border-top: 4px solid var(--accent);
+}
+
+:root:root[data-theme='survey'] .map-card .warn {
+  padding-left: 6px;
+  border-left: 4px solid var(--warn);
+}
+
+:root:root[data-theme='survey'] .map-card .warn.danger-line {
+  border-left: 6px double var(--danger);
+  font-weight: 600;
+}

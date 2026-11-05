@@ -366,3 +366,25 @@ The warring-states band (floors 21 to 30). White plaster, black timber, vermilio
   raised). Worst colour-vision pair: protan hp/xp 9.85, deutan hp/focus 10.84 (the mock had 4.4). Authored colours after the remap:
   5.42 on panel and raised, 5.34 on `--sel-bg`; 5.9 on the black block's #1a1917.
 - **Known limits.** `--xp` is the dimmest fill (3.11:1 on its well). The header is 52px tall at every width, one row.
+
+### Survey
+
+A drafting sheet. White paper, ink lines, hatch for what is locked, brick rust for the current and the selected, folder tabs.
+
+- **Fonts.** IBM Plex Sans 400, 400 italic and 600 (14.5px); IBM Plex Sans Condensed 600 for h1 to h3 and the nav captions, in
+  capitals with letter spacing.
+- **Key tokens.** `--bg` #e8e5da, panel #f7f5ed, raised #fdfcf8, hover #e4e1d3, sunken and bar well #fffdf8, text #1b1c1a, dim
+  #55564f, accent #8c3516 (brick), danger #b3261e, warn #825400, edge #5f5e56, ring #1d3f9e (blue pencil), here #1b1c1a,
+  `--sel-bg` #fdf3e4. Bars: hp #e14b5a, stamina #218849, mana #28569b, spirit #8c61c2, focus #d6761a, action #7a660e, xp #015415;
+  label ink white, outline black (black ink read poorly on the dark `--xp`, `--mana` and `--stamina` fills). `--ink-lmax` 0.52.
+- **Decoration.** A double rule across the top of every panel and the header; an h3 underline rule; a short L at each inner corner
+  of a top-level panel; bars with a tick at every tenth; folder tabs for `.tabs` and the map's region switch (the open tab joins
+  the sheet and has a rust top bar); a survey grid on the map ground; diagonal ink hatch on locked rows.
+- **Selection.** A tinted fill and a 4px rust foot (inset shadow); the open nav row has a rust left bar. Nothing changes size.
+- **Numbers.** Text 13.04, dim 5.66, danger 4.98, ring 8.52, edge 5.97. Worst colour-vision pair: protan stamina/focus 9.07,
+  deutan stamina/action 9.90. Authored colours: 5.50 on panel and raised, 5.47 on `--sel-bg`.
+- **Rust and the Focus bar.** The mock's accent and Focus fill were 11.6 ΔE00 apart. Here the accent is a dark brick and the fill
+  is a lighter orange: 26.9 ΔE00 (11.3 against `--focus-ink`, which is text). The accent is 9.0 ΔE00 from `--danger`; both
+  `danger` states carry a mark and words.
+- **Known limits.** The header is 54px tall. The corner marks sit 4px inside the border, next to the first caption of a panel with
+  a small padding (the nav list).
