@@ -38,7 +38,8 @@ code the plan touches. Cite what you rely on as `path:line`.
    deliberate break; do not flag that.
 8. Scope. Does it finish in one session, or leave half-built state? Does it
    reopen something the user shelved (`docs/LONGTERM.md`, the parked sections
-   of `docs/NEXT.md`)?
+   of `docs/NEXT.md`)? `grep -n '^## ' docs/NEXT.md` lists the parked
+   sections; read the ones the plan comes near, not the whole file.
 
 Out of scope: the inattentive "goldfish" player (archetype 1). The user
 retired it on 2026-09-15. Do not argue from it.

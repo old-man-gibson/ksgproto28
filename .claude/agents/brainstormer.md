@@ -14,8 +14,13 @@ so check the laws before you pitch.
 
 ## Read first
 
-- `docs/NEXT.md` (in flight and parked), `docs/LONGTERM.md` (the shelf), the
-  system's own `docs/*.md`, `docs/COMPLETABILITY.md`, `docs/PITFALLS.md` §7.
+- `docs/NEXT.md` is long and mostly history. List its headings
+  (`grep -n '^## ' docs/NEXT.md`), then read only "Invariants worth not
+  breaking" (the last section) and the in-flight and parked sections that
+  touch your problem. Skip "Shipped recently" unless the problem is about
+  something listed there.
+- `docs/LONGTERM.md` (the shelf), the system's own `docs/*.md`,
+  `docs/COMPLETABILITY.md`, `docs/PITFALLS.md` §7.
 - Do not re-pitch a shelved or parked idea as new. If an option resembles one,
   name it and say what is different.
 
