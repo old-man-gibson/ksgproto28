@@ -309,3 +309,36 @@ hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for every
   - The solid manila rules use `:has()`. A browser without it shows the dark selected fill and the manila bar.
   - The clock chip's text is cut with an ellipsis at 1180 px, as it is in Default; the title is 15 px mono and fits at every
     width where it shows.
+
+### Enamel
+
+- **Concept:** vitreous-enamel signage. Bottle-green plates with a green rim, cream plates for the open screen, a hazard stripe
+  beside warnings, rivets in the corners.
+- **Font:** Barlow Semi Condensed (400, 400 italic, 600, 700), latin slice. Headings are 700 capitals; buttons are 600.
+- **Surfaces:** `--bg` `#07120d`, `--bg-panel` `#0d1f17`, `--bg-raised` `#153427`, `--bg-hover` `#1c4434`, `--bg-sunken`
+  `#050d09`. `--edge` `#6aa98c` is the rim of panels and buttons. `--accent` is signal amber `#f4b52a`. Theme-local tokens:
+  `--rim` `#e4dcc2` (the cream rim), `--plate` `#e6dec4` and `--plate-ink` `#07120d` (a cream plate and its ink),
+  `--stripe-a`, `--stripe-b` (the hazard stripe).
+- **Focus and here:** `--ring` is cream-white `#fffdf2`, `--here` is pink `#ff8fb8`, `--accent` is amber. The first design used
+  the accent as the ring (plan ruling 7); the three are now 28.6 ΔE00 or more apart.
+- **Measured:** text 9.2:1, dim 5.7:1, danger 4.7:1, worst log colour 4.7:1, edge 4.9:1, ring 13.3:1, disabled 5.3:1. Authored
+  colours after the remap (`--ink-lmin` 0.5) are at least 4.6:1 on panel and 5.2:1 on `--sel-bg`.
+- **Bars:** the first design had mana/spirit 2.5 ΔE00 under deutan. Mana is `#6eaaed` and spirit `#9078ff`; the seven bars drawn
+  together reach 9.3 ΔE00 under protan (action/xp) and 9.35 under deutan (hp/focus, hp/stamina); mana/spirit is 9.4. No
+  exceptions in `VISION_EXCEPTIONS`.
+- **Selection:** `--sel-bg` is dark (`#0a2a1d`), so a marked inventory cell is a dark cell with the component's amber border,
+  and a wall of marked cells does not glare. A cream plate with dark ink is used only where no authored colour can sit inside:
+  the open entry of the screen list, the tab rows, the stop underfoot in the tower list, the pin card's title strip and a
+  selected button with no inline-styled child. Every other selected button gets the dark fill and a cream inset rim. At most
+  four cream plates show together on the Location screen at 1440 px.
+- **Decorations (CSS only):** 2px rims on panels, buttons and fields (a button with `border: 0` stays borderless, because only
+  `border-width` is set); a rivet in each corner of a top-level panel and of the header (a cream head in a dark ring); a cream
+  header rim, amber while the world is paused; a cream-rimmed pin card with a cream title strip; a red and cream stripe at the
+  left of each warning line; dotted underline on clickable map text.
+- **Limits:**
+  - The cream rules use `:has()`. A browser without it shows the dark selected fill and the cream rim.
+  - The header is 56 px tall (Default 52 px) because of the 2px rims; it does not change with state.
+  - At 1024 px the strip is wide enough to show its bar, so the job name slot is 97 px (Default 169 px, which hides the bar). The
+    name ends in an ellipsis when longer.
+  - Rivets are drawn at 7 px from each corner of a top-level panel, so a panel padded under 8 px would have them over its
+    content. The Menu window (padding 0, header padded 10 px) was checked; no other zero-padding panel was.

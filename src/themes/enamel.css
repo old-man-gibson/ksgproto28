@@ -1,0 +1,247 @@
+/*
+ * Enamel display theme: vitreous-enamel signage. Active while <html data-theme="enamel">
+ * (src/ui/lib/theme.ts).
+ *
+ * Bottle-green plates with a mid-green rim, rivets in the corners of a top-level
+ * panel, cream plates for the open screen and the open tab, a red and cream hazard
+ * stripe beside warnings. Tokens first (docs/THEMES.md §2), then the shared shapes.
+ *
+ * Selection: a cream plate with dark ink is allowed only where no authored colour
+ * can sit inside (plan ruling 3). The screen list, the tab rows, the stop underfoot
+ * and a selected button with no inline-styled child are cream plates. Every other
+ * selected thing keeps the dark --sel-bg and gets a cream inset rim. --sel-bg is
+ * dark on purpose: a marked inventory cell uses it, and a wall of cream cells glares.
+ */
+
+:root[data-theme='enamel'] {
+  --bg: #07120d;
+  --bg-panel: #0d1f17;
+  --bg-raised: #153427;
+  --bg-hover: #1c4434;
+  --bg-sunken: #050d09;
+  --border: #3f7a60;
+  --frame: #2f5f4a;
+  --text: #f1ebd8;
+  --text-dim: #a8c2b3;
+  --accent: #f4b52a; /* signal amber */
+  --hp: #e55b4a;
+  --xp: #b0e984;
+  --skill: #c3a2f2;
+  --stamina: #4dc574;
+  --stamina-winded: #3f8a52;
+  --stamina-exhausted: #b2b83a;
+  --mana: #6eaaed;
+  --manaburn: #e05ad0;
+  --spirit: #9078ff;
+  --focus: #ee8a37;
+  --danger: #ff8878;
+  --warn: #f5d070;
+  --action: #f0ce20;
+
+  --log-combat: #f0a898;
+  --log-danger: #ff8878;
+  --log-loot: #f4b52a;
+  --log-skill: #c2a0f0;
+  --log-achievement: #ffd966;
+  --log-fusion: #f4a259;
+  --log-quest: #d8cf8a;
+  --log-travel: #8fc0f0;
+  --log-explore: #6fe0b0;
+  --log-plain: #a8c2b3;
+
+  --edge: #6aa98c; /* the rim of a button and of a panel */
+  --ring: #fffdf2; /* cream-white: apart from the amber accent and the pink here-ring */
+  --here: #ff8fb8;
+  --sel-bg: #0a2a1d;
+  --sel-ink: var(--text);
+  --text-off: #8aaa9a;
+
+  --bar-ink: #ffffff;
+  --bar-halo: #000000;
+
+  --ink-lmin: 0.5;
+  --ink-lmax: 1;
+  --sel-ink-lmin: 0.5;
+  --sel-ink-lmax: 1;
+
+  /* The cream plate and its rim, and the hazard stripe beside a warning. */
+  --rim: #e4dcc2;
+  --plate: #e6dec4;
+  --plate-ink: #07120d;
+  --stripe-a: #c8362a;
+  --stripe-b: #f1ebd8;
+
+  --font-caps: 'Barlow Semi Condensed', 'Segoe UI', system-ui, sans-serif;
+
+  font-family: 'Barlow Semi Condensed', 'Segoe UI', system-ui, sans-serif;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  scrollbar-color: var(--edge) var(--bg);
+}
+
+:root[data-theme='enamel'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 4px !important;
+}
+
+:root[data-theme='enamel'] :is(h1, h2, h3) {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+:root[data-theme='enamel'] h4 {
+  font-weight: 600;
+}
+
+/* A plate: a 2px rim in the edge green. A top-level panel has a rivet in each corner (a cream head in a dark ring). */
+:root[data-theme='enamel'] :is(.panel, .layout > header) {
+  border: 2px solid var(--edge);
+}
+
+:root[data-theme='enamel'] :is(.panel:not(.panel .panel), .layout > header) {
+  background:
+    radial-gradient(circle at 7px 7px, var(--rim) 0 1.5px, var(--bg-sunken) 2px 3px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 7px) 7px, var(--rim) 0 1.5px, var(--bg-sunken) 2px 3px, transparent 3.5px),
+    radial-gradient(circle at 7px calc(100% - 7px), var(--rim) 0 1.5px, var(--bg-sunken) 2px 3px, transparent 3.5px),
+    radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), var(--rim) 0 1.5px, var(--bg-sunken) 2px 3px, transparent 3.5px),
+    var(--bg-panel);
+}
+
+/* The header has the cream rim, and a frozen world turns it amber. */
+:root[data-theme='enamel'] .layout > header {
+  border-color: var(--rim);
+}
+
+:root[data-theme='enamel'] .layout.paused > header {
+  border-color: var(--accent);
+}
+
+:root[data-theme='enamel'] .layout > header h1 {
+  color: var(--rim);
+  font-size: 19px;
+}
+
+:root[data-theme='enamel'] button {
+  border-width: 2px;
+  font-weight: 600;
+}
+
+/* Selected, dark case: the global fill and amber border, plus a cream inset rim. */
+:root[data-theme='enamel'] button.selected {
+  box-shadow: inset 0 0 0 2px var(--rim);
+}
+
+/* Selected, cream plate. Only buttons with no authored colour inside (those carry an inline style). */
+:root[data-theme='enamel'] :is(.tabs > button.selected, .region-switch > button.selected),
+:root[data-theme='enamel'] button.selected:not(:has([style])) {
+  background: var(--plate);
+  border-color: var(--plate);
+  color: var(--plate-ink);
+  box-shadow: none;
+}
+
+:root[data-theme='enamel'] :is(.tabs > button.selected, .region-switch > button.selected, button.selected:not(:has([style]))) * {
+  color: inherit;
+}
+
+:root[data-theme='enamel'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-sunken);
+  border: 2px solid var(--edge);
+}
+
+:root[data-theme='enamel'] :is(input, select, textarea)::placeholder {
+  color: var(--text-dim);
+}
+
+:root[data-theme='enamel'] input:is([type='checkbox'], [type='radio'], [type='range']) {
+  accent-color: var(--accent);
+}
+
+/* Bars: a black well, a flat fill, figures with the halo from app.css. */
+:root[data-theme='enamel'] .bar {
+  outline: 1px solid var(--edge);
+  outline-offset: -1px;
+}
+
+:root[data-theme='enamel'] .bar > .label {
+  font-weight: 600;
+  font-size: 11.5px;
+}
+
+/* The screen list: cream captions over a rule, the open screen a cream plate. */
+:root[data-theme='enamel'] .nav-caption {
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--rim);
+  border-bottom: 2px solid var(--border);
+}
+
+:root[data-theme='enamel'] .nav-list .nav-entry.nav-on {
+  background: var(--plate);
+  border-left-color: var(--plate-ink);
+  color: var(--plate-ink);
+}
+
+:root[data-theme='enamel'] .nav-list .nav-entry.nav-on :is(.nav-new, .nav-mark) {
+  color: var(--plate-ink);
+}
+
+/* The tower list: the stop underfoot is a cream plate, the stop on show an inset rim. */
+:root[data-theme='enamel'] .ts-row {
+  border-bottom: 1px solid var(--bg-raised);
+}
+
+:root[data-theme='enamel'] .ts-row.picked {
+  box-shadow: inset 0 0 0 2px var(--edge);
+}
+
+:root[data-theme='enamel'] .ts-row.here {
+  background: var(--plate);
+  box-shadow: none;
+  color: var(--plate-ink);
+}
+
+:root[data-theme='enamel'] .ts-row.here :is(.ts-num, .ts-side) {
+  color: var(--plate-ink);
+}
+
+:root[data-theme='enamel'] .ts-band.title-only {
+  opacity: 1;
+  font-style: italic;
+  border-bottom-style: dashed;
+}
+
+/* The pin card: a cream rim and a cream strip on top; warnings get a hazard stripe at the left edge. */
+:root[data-theme='enamel'] .map-card {
+  border: 3px solid var(--rim);
+  padding-top: 0;
+}
+
+:root[data-theme='enamel'] .map-card .card-head {
+  margin: 0 -11px 4px;
+  padding: 3px 11px;
+  background: var(--plate);
+  color: var(--plate-ink);
+}
+
+:root[data-theme='enamel'] .map-card .card-head .dim {
+  color: var(--plate-ink);
+}
+
+:root[data-theme='enamel'] .map-card .warn {
+  padding-left: 14px;
+  background: repeating-linear-gradient(-45deg, var(--stripe-a) 0 4px, var(--stripe-b) 4px 8px) left / 8px 100% no-repeat;
+}
+
+/* A map text link: a dotted underline marks clickable text. */
+:root[data-theme='enamel'] .exit.clickable {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+:root[data-theme='enamel'] .entries > .entry {
+  border-bottom: 1px solid var(--frame);
+  padding-bottom: 2px;
+}
