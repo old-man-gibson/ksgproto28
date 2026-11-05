@@ -86,8 +86,8 @@ const PER_THEME = [
 
 /** Declared by Default (app.css) and optionally overridden by a theme. */
 const SHARED = [
-  '--frame', ...BAR_FILLS.filter((t) => t !== '--danger'), '--ring-w', '--buff', '--night',
-  '--bar-track', '--road', ...DISTRICTS, '--scrim', '--lift', '--hatch-lock', '--tint-mix',
+  '--frame', ...BAR_FILLS, '--ring-w', '--buff', '--night', '--night-edge',
+  '--bar-track', '--road', ...DISTRICTS, '--scrim', '--scrim-deep', '--lift', '--hatch-lock', '--tint-mix',
   '--bg-deep', '--sel-ink-lmin', '--sel-ink-lmax',
 ];
 
@@ -216,7 +216,7 @@ describe('theme files', () => {
     const colorTokens = CONTRACT.filter(
       (t) =>
         !['--ring-w', '--ink-lmin', '--ink-lmax', '--sel-ink-lmin', '--sel-ink-lmax', '--lift',
-          '--hatch-lock', '--scrim', '--tint-mix', '--road'].includes(t) && !DISTRICTS.includes(t),
+          '--hatch-lock', '--scrim', '--scrim-deep', '--tint-mix', '--road'].includes(t) && !DISTRICTS.includes(t),
     );
     const bad: string[] = [];
     for (const id of THEME_IDS) {

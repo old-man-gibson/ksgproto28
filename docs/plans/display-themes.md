@@ -2,11 +2,11 @@
 id: display-themes
 title: Display themes — a shared cue system, Gothic fixed, and new themes to pick from
 kind: epic
-status: planning
+status: building
 system: ui
 parent: ''
 save: ''
-updated: 2026-11-04
+updated: 2026-11-05
 invariants:
   - no-layout-shift
   - click-not-hover
@@ -212,3 +212,21 @@ Dropped:
 
 Recommendation after the rulings: the same three (Registry, Enamel, Castle) as the user's picks allow. Survey (T10)
 is a cheaper light representative than Castle: lower colour-vision risk, no stage ink beyond F2. The user picks.
+
+## 8. Build log
+
+- 2026-11-05, branch `theme-foundation`: F1–F6 and Gothic+ built with the rulings of §7 applied. The user approved the
+  foundation and Gothic+ (Gothic's colours are replaced; no separate entry; the default stays Gothic). The contract, the
+  cue table, `ink()` and the test are written up in [../THEMES.md](../THEMES.md). Candidates T1–T10 are not built.
+  - Test first: `tests/themes.test.ts` failed 35 of 41 assertions on the old tree. The source lints found 62 colour
+    literals, 1 state-rule hit (AscentPanel `.here { font-size }`) and 5 `outline: none` rules.
+  - Deviations from §2: `--scrim-deep`, `--night-edge` added (the 70% scrims and the Gloom border had no other token);
+    `--lift` is a shadow colour, not a whole shadow, so each component keeps its geometry; `--tint-mix` is the 16% the
+    position pills already used; `--bg-deep` aliases `--bg-sunken` (two ChromosomePanel reads moved from fallbacks).
+  - The selected-scope remap (ruling 3) is set on `button.selected` and on the marked cells of CollectionSection and
+    EquipmentPanel. A search of every selected-like rule found no other state that holds authored colours; the plan's count
+    of 9 is not reproduced.
+  - Default keeps `--ink-lmin` 0 (render unchanged). 22 of its 49 authored colours are under 4.5:1; the count is pinned in
+    the test. Default's colour-vision exceptions are mana/spirit, stamina/xp, hp/stamina and hp/focus, Gothic's are
+    mana/spirit and stamina/focus (THEMES.md §7).
+  - Default `--text-dim` and `--danger` moved by about 1% (4.13 and 4.46 on `--bg-hover`, now 4.51 and 4.60).
