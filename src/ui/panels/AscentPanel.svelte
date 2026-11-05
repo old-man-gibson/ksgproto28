@@ -335,7 +335,7 @@
 
   .here-label {
     font-size: 11px;
-    color: var(--action);
+    color: var(--action-ink);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }

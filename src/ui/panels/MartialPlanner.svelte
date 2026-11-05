@@ -724,7 +724,7 @@
   }
 
   .in-plan {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   /* Graph left, plan right; they stack on a narrow screen, graph first. */
@@ -977,7 +977,7 @@
 
   /* A quiet mark that this move carries conditions of the player's own. */
   .tuned {
-    color: var(--xp);
+    color: var(--xp-ink);
     font-size: 10px;
   }
 

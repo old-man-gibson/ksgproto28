@@ -6,7 +6,7 @@ Two themes exist: **Default** (the plain tokens in `app.css`) and **Gothic** (da
 titles, EB Garamond body). Gothic is what a browser gets until its player picks one (user, 2026-11-03). The Menu window holds
 the theme select. A theme is CSS only: it needs no save change and no art.
 
-The foundation (a shared cue system, a token contract and `tests/themes.test.ts`) was built on 2026-11-05 from
+The foundation (a shared cue system, a token contract and `tests/themes.test.ts`) was built on 2026-11-04 from
 [plans/display-themes.md](plans/display-themes.md). A theme that passes the test meets the contract. Everything a person needs
 to write or fix a theme is on this page.
 
@@ -64,7 +64,7 @@ declare them.
 | `--sel-bg`, `--sel-ink` | Fill and ink of a selected thing. `--sel-ink` at least 4.5:1 on `--sel-bg`. |
 | `--text-off` | Disabled text. At least 4.5:1 on raised. |
 | `--bar-ink`, `--bar-halo` | Bar label ink and its outline. `--bar-ink` is at least 4.5:1 on every fill, or on `--bar-halo`. |
-| `--ink-lmin`, `--ink-lmax` | The `ink()` remap bounds (§4). Default is 0 and 1. |
+| `--ink-lmin`, `--ink-lmax` | The `ink()` remap bounds (§4). Default is 0.48 and 1. |
 
 ### Shared (Default declares, a theme may override)
 
@@ -83,7 +83,7 @@ declare them.
 | `--lift` | Shadow colour of a floating panel. |
 | `--hatch-lock` | Background image of a locked row. |
 | `--tint-mix` | Share of an authored colour mixed into a chip that wears it (16% in Default). |
-| `--sel-ink-lmin`, `--sel-ink-lmax` | The `ink()` bounds inside a selected thing (§4). Default is 0 and 1. |
+| `--sel-ink-lmin`, `--sel-ink-lmax` | The `ink()` bounds inside a selected thing (§4). Default is 0.58 and 1. |
 | `--font-caps` | Face of letter-spaced capitals. Unset in Default (`var(--font-caps, inherit)`). |
 
 ### Fixed (the same in every theme)
@@ -107,18 +107,19 @@ not depend on per-tick or per-fight state. Hover is an underline or a background
 | Selected pin | `--sel-bg` fill, 3.5px outline, underlined label, `aria-expanded` | `--accent`, `--sel-bg` |
 | Unvisited place | dashed outline and a "?" icon | `--edge` |
 | Clickable | border of `--edge` | `--edge` |
-| Disabled | dashed border, no fill, `--text-off`, `not-allowed`; a reason as text where one exists | `--text-off` |
+| Disabled | dashed border, no fill, `--text-off`, `not-allowed`, grayscale on what the button holds; a reason as text where one exists | `--text-off` |
 | Locked row | hatch (`--hatch-lock`), a lock mark and the status word | `--text-dim` |
 | Danger (a fight with no way out) | dashed ring, a crossed-swords mark, the words | `--danger` |
 | Caution (one-way) | a ⤵ mark and the words | `--warn` |
-| Keyboard focus | global `:focus-visible` outline of `--ring-w`, 2px offset; map pins draw a ring circle; map exits underline | `--ring` |
+| Keyboard focus | global `:focus-visible` outline of `--ring-w`, 2px offset; map pins draw a ring circle outside the here rings and painted after them; map exits underline | `--ring` |
 | Current screen in the nav | a `▸` marker slot (always laid out, visible on the open screen), a left bar, `aria-current` | `--accent` |
 | Log kind | a one-character glyph in a fixed-width gutter: `!` danger, `×` combat, `+` loot and item, `↑` skill, `★` achievement, `≈` fusion, `?` quest, `→` travel, `◦` explore, `·` info and action | `--log-*` |
 | Bar label | `--bar-ink` with a 1px `--bar-halo` outline | `--bar-ink`, `--bar-halo` |
 
 `themes/cues.css` holds only the focus ring and the disabled style. Every other cue is written into its component, because a bare
 class selector in a shared file would restyle every component that uses the same word (PITFALLS §8). The disabled rule is
-`:root button:disabled`: the `:root` prefix lifts it over a component's own single-class button colours.
+`:root button:disabled`: the `:root` prefix lifts it over a component's own single-class button colours. A rule with two
+classes and the scope class beats it; such a rule must not set `opacity` on text that has to stay readable.
 
 A component that removes the browser outline (`outline: none`) draws its own ring on `:focus-visible`. The test lists the few
 allowed cases, each with the replacement.
@@ -130,8 +131,9 @@ Rarity, quality tier, status, school, position and talent-lap colours are author
 
 - OKLCH lightness `l` becomes `lmin + l * (lmax - lmin)`. Chroma and hue are kept. This is a **remap, not a clamp**: a clamp
   merges the dark colours (Refuse and Poor would become one grey); a remap keeps their order and spacing.
-- `lmin` and `lmax` are `--ink-lmin` and `--ink-lmax`. Default is 0 and 1: the result is the authored colour, pixel for pixel
-  (checked on 44 colours in the browser). A dark theme raises `lmin`; a light theme lowers `lmax`.
+- `lmin` and `lmax` are `--ink-lmin` and `--ink-lmax`. Default is 0.48 and 1, Gothic 0.42 and 1: every dark theme lifts the
+  dark colours until they pass 4.5:1 on its surfaces. A light theme lowers `lmax`. At 0 and 1 the result is the authored
+  colour, pixel for pixel (checked on 44 colours in the browser).
 - The CSS is `oklch(from <color> calc(var(--ink-lmin) + l * (var(--ink-lmax) - var(--ink-lmin))) c h)`. A browser without
   relative colour syntax gets the raw colour: `ink()` checks `CSS.supports` once.
 - Only a literal hex colour is remapped. `var(--token)` passes through, because a theme token is already the theme's colour.
@@ -148,8 +150,29 @@ marked cells of CollectionSection and EquipmentPanel (the two selected states th
 rarity icons). A new selected state that holds authored colours does the same and fills with `--sel-bg`. A theme with a solid
 `--sel-bg` (a dark block on a light page) must pass the test's check of authored colours on `--sel-bg`.
 
-Numbers, Gothic (`--ink-lmin` 0.42, `--sel-ink-lmin` 0.48): every authored colour is at least 4.63:1 on panel and raised and
-4.74:1 on `--sel-bg`. Refuse and Poor are 15.6 ΔE00 apart (29.9 in Default).
+Numbers (every authored colour, after the remap):
+
+| Theme | `--ink-lmin` / `--sel-ink-lmin` | Worst on panel and raised | Worst on `--sel-bg` | Refuse / Poor ΔE00 (normal, selected) |
+|---|---|---|---|---|
+| Default | 0.48 / 0.58 | 4.64 | 4.62 | 13.7, 10.4 (29.9 unlifted) |
+| Gothic | 0.42 / 0.48 | 4.63 | 4.74 | 15.6, 13.7 |
+
+Default's `--sel-bg` (the accent at 12% over raised) is lighter than Gothic's, so Default's selected floor is higher and its
+colours inside a selected thing are compressed more. The family spacing check allows for that (§7).
+
+**Bar fills as text.** A bar fill has to hold 3:1 on its track; text has to hold 4.5:1 on panel, raised and hover. A bar
+token used as text (`color: var(--focus)`, an SVG `<text>` fill) reads its **-ink token** instead: `--hp-ink`, `--xp-ink`,
+`--skill-ink`, `--stamina-ink`, `--stamina-winded-ink`, `--stamina-exhausted-ink`, `--mana-ink`, `--manaburn-ink`,
+`--spirit-ink`, `--focus-ink`, `--action-ink`. app.css defines each as the fill through the same lightness remap, inside
+`@supports (color: oklch(from red l c h))` (the plain fill is the fallback in `:root`, because a bare `var()` fallback does not
+cover a value the browser cannot parse). A theme may declare any -ink token itself. The -ink tokens resolve on `:root`, so a
+selected thing does not re-ink them; the test checks them on `--sel-bg` too.
+
+The test finds every text read of a bar token in the source (§7). A colour that reaches `color:` through a custom property
+(`color: var(--c)`) is not found: feed the property an -ink token (HeatTrack's `--c-ink`).
+
+Worst text read, `--hp-ink` in both themes: Default 5.60, Gothic 5.46 (panel, raised, hover). Before the change the worst
+were `--stamina-winded` 2.42 in Default and `--hp` 2.38 in Gothic.
 
 ## 5. Art ink
 
@@ -194,11 +217,14 @@ the measured value.
 | `--sel-ink` on `--sel-bg` | 4.5:1 |
 | Semantic colours (bar fills, danger, action) vs Default | hue drift at most 30° (OKLCH) |
 | Bars drawn together (hp, stamina, mana, spirit, focus, action, xp), protan and deutan (Machado 2009, severity 1) | 8 ΔE00 per pair, with a listed exception per theme |
+| Every `-ink` token on panel, raised, hover and `--sel-bg` | 4.5:1 |
+| Every text read of a bar token found in the source (`color:` in a stylesheet, `<style>` block, inline style or script string; `fill` on a text rule or `<text>`) | reads the `-ink` token; 4.5:1 on panel, raised, hover |
+| A bar token written as a string literal | listed in `BAR_LITERALS` with what it paints |
 | Authored colours after the `ink()` remap on panel and raised | 4.5:1 |
 | Authored colours after the selected-scope remap on `--sel-bg` | 4.5:1 |
-| Authored colours of one family after the remap | pairwise at least half of Default's minimum; Refuse and Poor at least 10 ΔE00 |
+| Authored colours of one family after the remap | pairwise at least 40% of Default's unlifted minimum; Refuse and Poor at least 10 ΔE00 |
 | Every hex in `src/core/data` is in a known family | exact |
-| Bar label draws `--bar-ink` with a `--bar-halo` outline; the focus ring and disabled style exist | exact |
+| Bar label draws `--bar-ink` with a `--bar-halo` outline; the focus ring exists; the disabled style is dashed, grayscale, `--text-off`, full opacity | exact |
 | No colour literal in a `.svelte` file outside `tests/themeAllowlist.ts` | exact |
 | No `font-weight`, `font-size`, `padding` or `border-width` in a state rule | exact |
 | No `outline: none` without a listed replacement | exact |
@@ -209,10 +235,9 @@ Exceptions are explicit and pinned:
   0.15) and the reason. Default: mana/spirit (protan 6.4, deutan 1.6), stamina/xp (protan 7.6), hp/stamina (deutan 7.1),
   hp/focus (deutan 7.99). Gothic: mana/spirit (protan 4.0, deutan 1.8), stamina/focus (deutan 5.64). Both keep their bar fills
   (the bars carry a text label and an icon), so the pairs stay. A new theme gets no exceptions.
-- **Default's authored colours.** Default keeps `--ink-lmin` 0, so 22 of its 49 authored colours are under 4.5:1 on panel or
-  raised (34 on `--sel-bg`). The count is pinned in `DEFAULT_LOW_CONTRAST_DATA`. To fix it, raise `--ink-lmin` and
-  `--sel-ink-lmin` in `app.css` (about 0.42 and 0.48) and set both counts to 0; every authored colour in Default then renders
-  lighter.
+- **Authored colours have no exception.** Default lifts them like every theme (§4). Its selected floor (0.58) compresses the
+  colours inside a selected thing, so the family spacing check is 40% of Default's unlifted minimum, not half: at 0.58 the
+  tightest family (martial positions) keeps 5.8 ΔE00 against a floor of 5.7.
 - **Statuses** are not compared pairwise: Default gives five statuses nearly the same red, and a status carries an icon and a
   name.
 
@@ -275,8 +300,9 @@ line. The nav list keeps a `1em` marker slot on every row for the same reason.
 - Candidate themes (Registry, Enamel, Castle and seven more) are in [plans/display-themes.md](plans/display-themes.md) §4. None
   is built; they are written against this contract.
 - Tip.svelte opens on hover. The click-not-hover rule applies to it; the change is not made here.
-- Default's authored colours are under 4.5:1 in places (§7). The fix is two numbers in `app.css` and a visible change to
-  every rarity and grade colour in Default.
+- Default's selected floor is high (0.58) because its `--sel-bg` is lighter than Gothic's. A darker Default `--sel-bg` (the
+  accent at 8% over panel is #2a2b2a) would pass at 0.48 and keep more colour inside selected things, at the cost of a weaker
+  selected fill on every Default button.
 
 ## 11. Theme catalogue
 

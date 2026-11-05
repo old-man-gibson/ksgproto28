@@ -971,7 +971,7 @@
     font-size: 0.75rem;
   }
   .key.gen {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
   .key.des {
     color: var(--danger);
@@ -1005,7 +1005,7 @@
     font-size: 0.72rem;
   }
   .chip.good {
-    color: var(--xp);
+    color: var(--xp-ink);
     border-color: var(--xp);
   }
 
@@ -1051,7 +1051,7 @@
     font-weight: 700;
   }
   .arrow.gen {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
   .arrow.des {
     color: var(--danger);

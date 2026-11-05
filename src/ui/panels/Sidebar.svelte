@@ -640,7 +640,7 @@
               {#snippet tip()}{@render statTip(r.key)}{/snippet}
             </Tip>
           </td>
-          <td style="color: {r.value > 0 ? 'var(--xp)' : 'var(--danger)'}">{pct(r.value)}</td>
+          <td style="color: {r.value > 0 ? 'var(--xp-ink)' : 'var(--danger)'}">{pct(r.value)}</td>
         </tr>
       {/each}
       {/if}
@@ -827,7 +827,7 @@
   }
   .ability-line {
     font-size: 0.8rem;
-    color: var(--xp);
+    color: var(--xp-ink);
   }
   .ability-line.ability-low {
     color: var(--danger);
@@ -907,7 +907,7 @@
   }
 
   .attr-chip-value.buff {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .attr-chip-value.debuff {
@@ -928,7 +928,7 @@
   }
 
   :global(.tip-line) {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   :global(.tip-line.tip-base) {

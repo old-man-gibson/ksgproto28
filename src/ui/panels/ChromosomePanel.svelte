@@ -954,7 +954,7 @@
     padding: 0 6px; font-size: 11px; line-height: 18px; border-radius: 4px;
     border: 1px solid var(--text-dim); color: var(--text-dim);
   }
-  .cap-trait { border-color: var(--xp); color: var(--xp); }
+  .cap-trait { border-color: var(--xp); color: var(--xp-ink); }
   /* A capability nothing reads yet is still worth showing — it is what the
      mutagen you spent capacity on actually carried — but it must not wear the
      colour the working ones wear. */
@@ -1008,7 +1008,7 @@
     font-size: 10px; padding: 0 4px; border-radius: 3px;
     border: 1px solid var(--text-dim); color: var(--text-dim);
   }
-  .split.capped { border-color: var(--xp); color: var(--xp); }
+  .split.capped { border-color: var(--xp); color: var(--xp-ink); }
   .split.amp { border-color: var(--accent); color: var(--accent); }
   /* What the graph did to the ability, next to the ability it did it to. */
   .changed { margin-top: 3px; color: var(--accent); line-height: 1.35; }
@@ -1024,7 +1024,7 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600;
   }
   .node.from { color: var(--accent); }
-  .centre-node { color: var(--xp); }
+  .centre-node { color: var(--xp-ink); }
 
   /* One row per kind with its grades as chips. Flattened to a row per
      (kind × grade), nine mutations became sixty-three rows. */
@@ -1040,7 +1040,7 @@
   .grade:disabled { color: var(--text-off) !important; border-color: var(--text-off) !important; }
   .grade .qty { margin-left: 3px; opacity: 0.7; }
   .hop { display: inline-block; width: 13px; text-align: center; opacity: 0.5; }
-  .grants { color: var(--xp); margin: 2px 0; }
+  .grants { color: var(--xp-ink); margin: 2px 0; }
   .legend { display: flex; flex-direction: column; gap: 3px; line-height: 1.4; }
   .picker { display: flex; flex-direction: column; gap: 3px; }
 
