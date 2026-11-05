@@ -1,26 +1,28 @@
 /*
  * Cockpit display theme. Active while <html data-theme="cockpit"> (src/ui/lib/theme.ts).
- * Concept: a dark-cockpit panel. Dim grey at rest; a lit, filled tile appears only for an
- * exception (a forced fight, a one-way road, an affliction, a frozen world); amber marks
- * the current item. Flat surfaces, 1px rules, no gradients and no glow.
+ * Concept: a flight-deck panel. Mid-dark grey slabs on a darker ground, white engraved
+ * legends, numbers and the log in recessed near-black display windows, bars drawn as gauge
+ * tapes, amber for the current item. A lit, filled tile appears only for an exception (a
+ * forced fight, a one-way road, an affliction, a frozen world). Flat surfaces and hard
+ * 1px lines: no gradient, no blur, no glow.
  *
  * Font: B612, drawn for cockpit displays. It is wide: the header's flex budgets
- * (App.svelte) were measured with it (docs/THEMES.md §11).
+ * (App.svelte) were measured with it and with the fallback face (docs/THEMES.md §11).
  *
  * `:where(:root[data-theme='cockpit'])` keeps a rule at the specificity of the global one
  * it replaces, so a component's own single-class rule still wins (docs/THEMES.md §11).
  */
 
 :root[data-theme='cockpit'] {
-  --bg: #0e100f;
-  --bg-panel: #161917;
-  --bg-raised: #1f2321;
-  --bg-hover: #2c312e;
-  --bg-sunken: #090b0a;
-  --border: #3b423e;
-  --frame: #252a27;
-  --text: #e6eae4;
-  --text-dim: #a3aca5;
+  --bg: #171918; /* the dark ground between slabs */
+  --bg-panel: #292d2b; /* a panel slab */
+  --bg-raised: #323734; /* a key cap, a cell */
+  --bg-hover: #3a3f3c;
+  --bg-sunken: #0e100f; /* a display window: bar track, map ground, log */
+  --border: #565d58; /* a rule on a slab */
+  --frame: #1b1e1c; /* the groove between slabs and around a window */
+  --text: #f2f4f0;
+  --text-dim: #bdc4be;
   --accent: #f2b84b;
   --hp: #b8322e;
   --xp: #86dcb8;
@@ -32,7 +34,7 @@
   --manaburn: #c050b8;
   --spirit: #7d63b5;
   --focus: #da6600;
-  --danger: #ff7566;
+  --danger: #ff9b8f;
   --warn: #ffd24d;
   --buff: #7fd4b8;
   --night: #c3b2ec;
@@ -40,37 +42,39 @@
   --action: #e8cf4a;
 
   --log-combat: #ddb2a8;
-  --log-danger: #ff8a7c;
+  --log-danger: #ff9f94;
   --log-loot: #dbc06f;
-  --log-skill: #b18ef5;
+  --log-skill: #c4a8ff;
   --log-achievement: #ffef30;
-  --log-fusion: #f08a3c;
+  --log-fusion: #ffa55e;
   --log-quest: #f6f1c3;
   --log-travel: #a8d5fd;
   --log-explore: #9ff0e4;
-  --log-plain: #a0adb5;
+  --log-plain: #b3bec6;
 
-  --edge: #8f9891;
-  --ring: #f4f6f2;
+  --edge: #a3aca6;
+  --ring: #ffffff;
   --ring-w: 2px;
   --here: #e879b9;
-  --sel-bg: #2b2412;
-  --sel-ink: #e6eae4;
-  --text-off: #89938c;
+  --sel-bg: #1c1709;
+  --sel-ink: #f2f4f0;
+  --text-off: #a3aca6;
 
   --bar-ink: #ffffff;
   --bar-halo: #000000;
 
-  --ink-lmin: 0.44;
+  --ink-lmin: 0.56;
   --ink-lmax: 1;
-  --sel-ink-lmin: 0.47;
+  --sel-ink-lmin: 0.5;
   --sel-ink-lmax: 1;
 
   --scrim: rgb(5 7 6 / 72%);
   --scrim-deep: rgb(5 7 6 / 84%);
   --lift: transparent;
-  --hatch-lock: repeating-linear-gradient(135deg, transparent 0 5px, rgb(255 255 255 / 11%) 5px 6px);
+  --hatch-lock: repeating-linear-gradient(135deg, transparent 0 5px, rgb(255 255 255 / 13%) 5px 6px);
 
+  /* A stand-in narrow face until B612 loads (or if it does not): the fallback must not be wider
+     than the header and the floor column allow. */
   --font-caps: 'B612', sans-serif;
   font-family: 'B612', 'Segoe UI', system-ui, sans-serif;
   font-size: 13.5px;
@@ -83,12 +87,24 @@
   border-radius: 0 !important;
 }
 
-/* Titles are placards: small spaced capitals. A section title (h3) is dim and trails a rule;
-   a screen title (h2) is the one bright heading. */
+/* A slab: a dark groove around it and a 1px light edge along its top. */
+:where(:root[data-theme='cockpit']) .panel {
+  border-color: var(--frame);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+:root[data-theme='cockpit'] .layout > header {
+  border-color: var(--frame);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+/* Titles are engraved legends: white spaced capitals with a dark cast line under the letters.
+   A section title (h3) trails a groove; a screen title (h2) is the larger legend. */
 :root[data-theme='cockpit'] :is(h1, h2, h3) {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 70%);
 }
 
 :root[data-theme='cockpit'] h2 {
@@ -101,27 +117,54 @@
   align-items: center;
   gap: 8px;
   font-size: 11.5px;
-  color: var(--text-dim);
 }
 
 :root[data-theme='cockpit'] h3::after {
   content: '';
   flex: 1;
-  height: 1px;
-  background: var(--border);
+  height: 0;
+  border-top: 1px solid var(--frame);
+  border-bottom: 1px solid rgb(255 255 255 / 9%);
 }
 
 :root[data-theme='cockpit'] h4 {
   font-weight: 700;
 }
 
+:root[data-theme='cockpit'] .layout > header {
+  column-gap: 8px;
+}
+
 :root[data-theme='cockpit'] .layout > header h1 {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
 }
 
+/* Header budget (App.svelte). B612 is wide, and the job strip and the clock chip share what is left.
+   A smaller size and narrower side padding on the transport buttons pay for it. The bonus chip
+   counts down every second: it reserves its widest text ("⏩ 2× 7h 59m") so the header never moves
+   when the bank crosses an hour. The clock slot under 1180px reserves its widest hour string. */
+:root[data-theme='cockpit'] .clock button {
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+:root[data-theme='cockpit'] .clock .bonus {
+  min-width: 96px;
+}
+
+/* B612's "about 00:00" is 100px: the chip keeps that much at every width (Default's 6.5em cuts it). */
+:root[data-theme='cockpit'] .timesense {
+  min-width: 104px;
+}
+
+/* Keys: a cap with a darker lower edge. Hover steps the fill; selected and disabled replace it. */
 :where(:root[data-theme='cockpit']) button {
-  background: transparent;
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 30%);
+}
+
+:root[data-theme='cockpit'] button:disabled {
+  box-shadow: none;
 }
 
 /* Selected: the lit bar of an annunciator under a dark amber well. The border stays grey. */
@@ -146,16 +189,39 @@
   accent-color: var(--accent);
 }
 
-/* Screen list: spaced captions; every row is dim except the open screen, which is amber on a
+/* Display windows: recessed near-black, a dark lip along the top and a light lip along the bottom.
+   Numbers live in them: the gold chip, the attribute readouts, the log. */
+:root[data-theme='cockpit'] :is(.attr-chip, .layout > header .gold, .log .entries) {
+  background: var(--bg-sunken);
+  border-color: var(--frame);
+  box-shadow:
+    inset 0 2px 0 rgb(0 0 0 / 70%),
+    0 1px 0 rgb(255 255 255 / 9%);
+}
+
+:root[data-theme='cockpit'] .layout > header .gold {
+  padding: 2px 6px;
+}
+
+:root[data-theme='cockpit'] .log .entries {
+  padding: 6px 8px;
+}
+
+/* Screen list: engraved captions; every row is dim except the open screen, which is amber on a
    dark amber well with a bar at its left edge. */
 :root[data-theme='cockpit'] .nav-caption {
   font-size: 10.5px;
   letter-spacing: 0.16em;
+  color: var(--text);
+  text-shadow: 0 1px 0 rgb(0 0 0 / 70%);
+  border-bottom: 1px solid var(--frame);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 9%);
 }
 
 :root[data-theme='cockpit'] .nav-list .nav-entry {
   border-left-width: 3px;
   font-size: 14px;
+  box-shadow: none;
 }
 
 :root[data-theme='cockpit'] .nav-list .nav-entry:not(.nav-on) {
@@ -183,14 +249,17 @@
   padding: 0 4px;
 }
 
-/* Bars read as instrument scales: a thin frame and a tick every tenth along the bottom edge. */
+/* Bars are gauge tapes in a display window: a frame, a tick every tenth and a long tick at half. */
 :root[data-theme='cockpit'] .bar::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  border: 1px solid var(--border);
-  background: repeating-linear-gradient(90deg, rgb(0 0 0 / 60%) 0 1px, transparent 1px 10%) bottom / 100% 3px no-repeat;
+  border: 1px solid var(--frame);
+  box-shadow: inset 0 2px 0 rgb(0 0 0 / 55%);
+  background:
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgb(255 255 255 / 55%) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) bottom / 100% 6px no-repeat,
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 40%) 0 1px, transparent 1px 10%) bottom / 100% 3px no-repeat;
 }
 
 :root[data-theme='cockpit'] .bar > .label {
@@ -202,7 +271,7 @@
 :root[data-theme='cockpit'] .region-switch,
 :root[data-theme='cockpit'] .tabs {
   gap: 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--frame);
 }
 
 :root[data-theme='cockpit'] .region-switch button,
@@ -210,6 +279,8 @@
   border: 0;
   border-bottom: 3px solid transparent;
   color: var(--text-dim);
+  background: transparent;
+  box-shadow: none;
 }
 
 :root[data-theme='cockpit'] .region-switch button.selected,
@@ -224,12 +295,14 @@
 :root[data-theme='cockpit'] .ts-row {
   font-size: 11.5px;
   letter-spacing: -0.02em;
+  box-shadow: none;
 }
 
 :root[data-theme='cockpit'] .ts-band {
   font-size: 10.5px;
   letter-spacing: 0.06em;
 }
+
 :root[data-theme='cockpit'] .ts-row:not(.here, .picked) {
   color: var(--text-dim);
 }
@@ -281,9 +354,12 @@
   background: var(--accent);
   color: #000;
   border-color: var(--accent);
+  box-shadow: none;
 }
 
-:root[data-theme='cockpit'] .affliction {
+/* Scoped to the sidebar's .afflictions: the Fight Feed's riders (CombatPanel) use the class name
+   `affliction` too (PITFALLS §8). */
+:root[data-theme='cockpit'] .afflictions .affliction {
   background: var(--danger);
   color: #000;
   border-color: var(--danger);
