@@ -2,7 +2,7 @@
   import { gs } from './state.svelte';
   import Tip from './lib/Tip.svelte';
   import { hiddenLabels } from '../core/systems/log';
-  import { logColor } from './lib/logKinds';
+  import { logColor, logGlyph } from './lib/logKinds';
 
   /**
    * The full log. It sits in the right column (App.svelte) while the log is
@@ -31,19 +31,23 @@
   <div class="entries small">
     {#each entries as { entry, rest } (entry)}
       <div class="entry" style="color: {logColor(entry.kind)}">
-        {#if rest.length > 0}
-          <Tip>
+        <!-- The glyph gutter has a fixed width: the kind shows without colour and no line shifts. -->
+        <span class="glyph" aria-hidden="true">{logGlyph(entry.kind)}</span>
+        <span class="msg">
+          {#if rest.length > 0}
+            <Tip>
+              {entry.msg}
+              {#snippet tip()}
+                <div class="rest-head">Also in this line:</div>
+                {#each rest as label}
+                  <div>{label}</div>
+                {/each}
+              {/snippet}
+            </Tip>
+          {:else}
             {entry.msg}
-            {#snippet tip()}
-              <div class="rest-head">Also in this line:</div>
-              {#each rest as label}
-                <div>{label}</div>
-              {/each}
-            {/snippet}
-          </Tip>
-        {:else}
-          {entry.msg}
-        {/if}
+          {/if}
+        </span>
       </div>
     {/each}
     {#if entries.length === 0}
@@ -87,7 +91,19 @@
   }
 
   .entry {
+    display: flex;
     line-height: 1.35;
+  }
+
+  .glyph {
+    flex: none;
+    width: 1.3em;
+    text-align: center;
+  }
+
+  .msg {
+    min-width: 0;
+    flex: 1;
   }
 
   .rest-head {

@@ -75,6 +75,7 @@
     class="ts-row"
     class:picked={row.key === shownKey}
     class:here={row.current}
+    class:locked={row.mark === 'gated' || row.mark === 'sealed' || row.mark === 'locked'}
     aria-current={row.current ? 'location' : undefined}
     aria-pressed={row.key === shownKey}
     aria-label={rowLabel(row)}
@@ -217,8 +218,24 @@
     overflow: hidden;
   }
 
+  /* The stop whose plan is on show: a fill and an underlined name. */
   .ts-row.picked {
     background: var(--bg-raised);
+  }
+
+  .ts-row.picked .ts-name {
+    text-decoration: underline;
+  }
+
+  /* Not open yet (locked, sealed or shut): hatched, next to the lock mark and the
+     status word. The hatch is a background image, so it keeps the fixed row height. */
+  .ts-row.locked {
+    background-image: var(--hatch-lock);
+  }
+
+  /* The column scrolls and clips, so the focus ring sits inside the row. */
+  .ts-row:focus-visible {
+    outline-offset: -3px;
   }
 
   /* The stop underfoot: a bar on the left edge and the accent. */

@@ -26,6 +26,11 @@ export const COLOR_LITERALS: Allow[] = [
     file: 'src/ui/lib/SceneBackdrop.svelte',
     reason: 'Painted scene art: sky, ground and weather are drawn in fixed colours.',
   },
+  {
+    file: 'src/ui/MapPlan.svelte',
+    line: 'fill: #fff;',
+    reason: 'Tile labels: white ink over painted tile art, outlined with --tile-halo. The art does not change with the theme.',
+  },
 ];
 
 /**
@@ -37,4 +42,25 @@ export const COLOR_LITERALS: Allow[] = [
 export const STATE_METRICS: Allow[] = [];
 
 /** `outline: none` and `outline: 0`, each with the cue that replaces the focus ring. */
-export const OUTLINE_NONE: Allow[] = [];
+export const OUTLINE_NONE: Allow[] = [
+  {
+    file: 'src/ui/MapPlan.svelte',
+    line: '.node:focus { outline: none }',
+    reason: 'The pin draws .focus-ring, a circle in --ring, on :focus-visible.',
+  },
+  {
+    file: 'src/ui/lib/RoyaleField.svelte',
+    line: '.royale-ground { outline: none }',
+    reason: 'The ground has no box; .royale-ground:focus-visible ~ .royale-edge turns the map edge to --ring.',
+  },
+  {
+    file: 'src/ui/panels/MusicPanel.svelte',
+    line: '.lane rect { outline: none }',
+    reason: 'Pointer-only targets: the lanes are not reachable by Tab (see the comment on the rule), so a click would leave a ring across the staff.',
+  },
+  {
+    file: 'src/ui/panels/MusicPanel.svelte',
+    line: '.event { outline: none }',
+    reason: 'Pointer-only target, same as the lanes.',
+  },
+];

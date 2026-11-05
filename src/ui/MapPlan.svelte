@@ -186,8 +186,11 @@
       onclick={(ev) => onpick(node.id, ev.currentTarget)}
       onkeydown={(ev) => pressed(ev) && onpick(node.id, ev.currentTarget)}
     >
+      <!-- Keyboard focus: drawn only on :focus-visible (the node's own outline is off). -->
+      <circle cx={node.x} cy={node.y} r={f.pinR + 10} class="focus-ring" />
       {#if node.here}
         <circle cx={node.x} cy={node.y} r={f.pinR + 6} class="ring" />
+        <circle cx={node.x} cy={node.y} r={f.pinR + 10} class="ring ring-outer" />
       {/if}
       {#if node.pointed}
         <circle cx={node.x} cy={node.y} r={f.pinR + 4} class="beacon" />
@@ -375,8 +378,12 @@
     fill: var(--accent);
   }
 
-  .exit:focus {
-    outline: none;
+  /* The global focus ring (themes/cues.css) draws the box; the underline and the
+     ring colour make it readable on a text label over tiles. */
+  .exit:focus-visible {
+    fill: var(--ring);
+    text-decoration: underline;
+    text-decoration-thickness: var(--ring-w);
   }
 
   /* An exit is the only way off a drawn region (floor 0's gate is the
@@ -385,17 +392,24 @@
   .plan.tiled .exit {
     fill: #fff;
     font-weight: 600;
+    stroke: var(--tile-halo);
     stroke-width: 4px;
+  }
+
+  .plan.tiled .exit:focus-visible {
+    fill: var(--ring);
   }
 
   .node .dot {
     fill: var(--bg-raised);
-    stroke: var(--border);
-    stroke-width: 1.5;
+    stroke: var(--edge);
+    stroke-width: 2;
   }
 
-  .node:not(.known) {
-    opacity: 0.45;
+  /* A place not visited yet: a dashed outline and a "?" icon, not a faded pin. */
+  .node:not(.known) .dot {
+    fill: var(--bg-sunken);
+    stroke-dasharray: 3 3;
   }
 
   /* Every pin is clickable: the first click opens its card. Hover only
@@ -405,31 +419,40 @@
   }
 
   .node:hover .dot {
-    stroke: var(--accent);
+    fill: var(--bg-hover);
   }
 
+  .node:hover .label {
+    text-decoration: underline;
+  }
+
+  /* The pin's own outline is off: the focus ring is the circle drawn around it. */
   .node:focus {
     outline: none;
   }
 
-  .node:focus-visible .dot {
-    stroke: var(--accent);
-    stroke-width: 2.5;
+  .focus-ring {
+    display: none;
+    fill: none;
+    stroke: var(--ring);
+    stroke-width: var(--ring-w);
+    pointer-events: none;
   }
 
-  /* The pin whose card is open. */
-  .node.selected {
-    opacity: 1;
+  .node:focus-visible .focus-ring {
+    display: inline;
   }
 
+  /* The pin whose card is open: --sel-bg fill, a thick accent outline, an underlined label. */
   .node.selected .dot {
-    fill: var(--bg-hover);
+    fill: var(--sel-bg);
     stroke: var(--accent);
-    stroke-width: 3;
+    stroke-width: 3.5;
   }
 
   .plan .node.selected .label {
     fill: var(--accent);
+    text-decoration: underline;
   }
 
   .icon {
@@ -451,6 +474,7 @@
 
   .plan.tiled .label {
     fill: #fff;
+    stroke: var(--tile-halo);
     stroke-width: 4px;
   }
 
@@ -473,18 +497,33 @@
     font-weight: 700;
   }
 
+  /* You are here: two solid rings in --here (the inner one pulses). Selected,
+     hovered and pointed pins use other shapes. */
   .ring {
     fill: none;
-    stroke: var(--accent);
+    stroke: var(--here);
     stroke-width: 2;
     animation: pulse 1.6s ease-in-out infinite;
     pointer-events: none;
   }
 
+  .ring-outer {
+    stroke-width: 1.5;
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring {
+      animation: none;
+    }
+  }
+
+  /* A fight with no way out waits here: a dashed ring in the danger colour. */
   .forced-ring {
     fill: none;
     stroke: var(--danger);
     stroke-width: 2;
+    stroke-dasharray: 4 3;
   }
 
   @keyframes pulse {
@@ -492,12 +531,8 @@
     50% { opacity: 0.3; }
   }
 
-  /* Floor 0's pointer (lib/tutorialFocus.ts). A ❓ pin is drawn faint until
-     visited; the one the step names is drawn full, with a widening ring. */
-  .node.pointed {
-    opacity: 1;
-  }
-
+  /* Floor 0's pointer (lib/tutorialFocus.ts). A ❓ pin is drawn dashed until
+     visited; the one the step names has an accent outline and a widening ring. */
   .node.pointed .dot {
     stroke: var(--accent);
     stroke-width: 2.5;

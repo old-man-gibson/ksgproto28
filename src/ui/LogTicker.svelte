@@ -1,6 +1,6 @@
 <script lang="ts">
   import { gs } from './state.svelte';
-  import { logColor } from './lib/logKinds';
+  import { logColor, logGlyph } from './lib/logKinds';
 
   /**
    * The folded log: the newest line on one row, cut with an ellipsis, and the
@@ -14,6 +14,9 @@
 </script>
 
 <div class="log-ticker">
+  <span class="log-ticker-glyph" aria-hidden="true" style="color: {newest ? logColor(newest.kind) : 'var(--text-dim)'}">
+    {newest ? logGlyph(newest.kind) : ''}
+  </span>
   <span
     class="log-ticker-line"
     style="color: {newest ? logColor(newest.kind) : 'var(--text-dim)'}"
@@ -52,6 +55,14 @@
     background: var(--bg-panel);
     border: 1px solid var(--frame, var(--border));
     font-size: 13px;
+  }
+
+  /* A fixed-width gutter, as in the open log: the kind's glyph never moves the line. */
+  .log-ticker-glyph {
+    flex: none;
+    width: 1.3em;
+    margin-right: -6px;
+    text-align: center;
   }
 
   .log-ticker-line {

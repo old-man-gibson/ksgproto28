@@ -1,24 +1,46 @@
 /**
- * The colour of a log line by its kind, shared by the open log (LogFeed) and
- * the folded row (LogTicker). Each colour is a token with its default as the
- * fallback, so a theme can repaint the log without touching a component
- * (src/themes/).
+ * How a log line shows its kind, shared by the open log (LogFeed) and the
+ * folded row (LogTicker): a colour and a one-character glyph. The colours are
+ * tokens (`--log-*` in app.css), so a theme can repaint the log without touching
+ * a component (src/themes/). The glyph is the second channel, so the kind
+ * reads without colour.
  */
 const KIND_COLORS: Record<string, string> = {
-  combat: 'var(--log-combat, #e0a1a1)',
-  danger: 'var(--log-danger, #ff6b6b)',
-  loot: 'var(--log-loot, #e8b84b)',
-  item: 'var(--log-loot, #e8b84b)',
-  skill: 'var(--log-skill, #b58fe0)',
-  achievement: 'var(--log-achievement, #ffd700)',
-  fusion: 'var(--log-fusion, #ff9d3c)',
-  quest: 'var(--log-quest, #e0cd7d)',
-  travel: 'var(--log-travel, #7db4e0)',
-  explore: 'var(--log-explore, #7de0c3)',
-  action: 'var(--log-plain, #9aa4ad)',
-  info: 'var(--log-plain, #9aa4ad)',
+  combat: 'var(--log-combat)',
+  danger: 'var(--log-danger)',
+  loot: 'var(--log-loot)',
+  item: 'var(--log-loot)',
+  skill: 'var(--log-skill)',
+  achievement: 'var(--log-achievement)',
+  fusion: 'var(--log-fusion)',
+  quest: 'var(--log-quest)',
+  travel: 'var(--log-travel)',
+  explore: 'var(--log-explore)',
+  action: 'var(--log-plain)',
+  info: 'var(--log-plain)',
+};
+
+/** One glyph per kind. `item` shares `loot`'s, `action` and `info` share the plain dot. */
+const KIND_GLYPHS: Record<string, string> = {
+  danger: '!',
+  combat: '×',
+  loot: '+',
+  item: '+',
+  skill: '↑',
+  achievement: '★',
+  fusion: '≈',
+  quest: '?',
+  travel: '→',
+  explore: '◦',
+  action: '·',
+  info: '·',
 };
 
 export function logColor(kind: string): string {
   return KIND_COLORS[kind] ?? 'var(--text)';
+}
+
+/** The kind's glyph; a kind the table does not name gets the plain dot. */
+export function logGlyph(kind: string): string {
+  return KIND_GLYPHS[kind] ?? '·';
 }

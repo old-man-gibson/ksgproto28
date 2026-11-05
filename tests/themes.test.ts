@@ -37,7 +37,6 @@ import {
   resolveColor,
   styleBlocks,
   svelteFiles,
-  type TokenTable,
 } from './themeCss';
 import { COLOR_LITERALS, OUTLINE_NONE, STATE_METRICS, type Allow } from './themeAllowlist';
 
@@ -445,8 +444,8 @@ describe('shared cue rules', () => {
   });
 
   it('a disabled button changes colour, border style and cursor, and nothing that moves layout', () => {
-    const rule = cues().find((r) => r.selectors.includes('button:disabled'));
-    expect(rule, 'button:disabled in cues.css').toBeDefined();
+    const rule = cues().find((r) => r.selectors.includes(':root button:disabled'));
+    expect(rule, ':root button:disabled in cues.css').toBeDefined();
     const props = Object.fromEntries(rule!.decls);
     expect(props['color']).toBe('var(--text-off)');
     expect(props['border-style']).toBe('dashed');
@@ -456,7 +455,7 @@ describe('shared cue rules', () => {
 
   it('cues.css holds tokens, :focus-visible and button:disabled only', () => {
     const selectors = cues().flatMap((r) => r.selectors);
-    expect(selectors.filter((s) => !/^(:root|:focus-visible|button:disabled)/.test(s))).toEqual([]);
+    expect(selectors.filter((s) => !/^(:root( button:disabled)?$|:focus-visible$)/.test(s))).toEqual([]);
   });
 });
 

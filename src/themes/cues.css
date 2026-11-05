@@ -17,8 +17,10 @@
 
 /* Disabled: dashed edge, no fill, disabled ink. The shape (dashed) is the cue;
    dimming alone fails contrast. A reason, where one exists, is printed as text
-   next to the button. */
-button:disabled {
+   next to the button. The :root prefix lifts the rule over a component's own
+   single-class button colours (`.danger`, `.walk`), which would otherwise keep a
+   disabled button looking live. */
+:root button:disabled {
   opacity: 1;
   background: transparent;
   color: var(--text-off);

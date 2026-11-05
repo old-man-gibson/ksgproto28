@@ -109,7 +109,7 @@
     {#if stop.name}
       <div class="rung-sub dim small">
         Floor {floor.index}
-        {#if stop.current}<span class="here">you are here</span>{/if}
+        {#if stop.current}<span class="here-label">you are here</span>{/if}
       </div>
     {/if}
     <!-- The terms are the teaching: a shut door always says what opens it. -->
@@ -129,7 +129,7 @@
     </div>
     <div class="rung-sub dim small">
       Hub
-      {#if stop.current}<span class="here">you are here</span>{/if}
+      {#if stop.current}<span class="here-label">you are here</span>{/if}
     </div>
     {#each stop.terms as t}
       <div class="term small" class:dim={t.dim}>{t.icon ? `${t.icon} ` : ''}{t.text}</div>
@@ -210,7 +210,7 @@
             <div class="rung-name">
               <b>{foot.icon} {foot.name}</b>
             </div>
-            {#if foot.current}<div class="rung-sub small"><span class="here">you are here</span></div>{/if}
+            {#if foot.current}<div class="rung-sub small"><span class="here-label">you are here</span></div>{/if}
             {@render rideButton(foot)}
           </div>
         </div>
@@ -300,7 +300,7 @@
   }
 
   .rung.current {
-    border-color: var(--action, #7de0c3);
+    border-color: var(--action);
   }
 
   .rung.sealed {
@@ -333,9 +333,9 @@
     align-self: flex-start;
   }
 
-  .here {
+  .here-label {
     font-size: 11px;
-    color: var(--action, #7de0c3);
+    color: var(--action);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }

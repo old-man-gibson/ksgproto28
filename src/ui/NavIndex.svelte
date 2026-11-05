@@ -27,6 +27,8 @@
         aria-current={ui.tab === entry.id ? 'page' : undefined}
         onclick={() => (ui.tab = entry.id)}
       >
+        <!-- Always laid out, visible on the open screen only: the marker never moves a row. -->
+        <span class="nav-slot" aria-hidden="true">▸</span>
         <Icon of={entry} />
         <span class="nav-label">{entry.label}</span>
         {#if fresh || mark}
@@ -89,6 +91,17 @@
     border-left-color: var(--accent);
     background: var(--bg-raised);
     color: var(--accent);
+  }
+
+  .nav-slot {
+    flex: none;
+    width: 1em;
+    text-align: center;
+    visibility: hidden;
+  }
+
+  .nav-list .nav-entry.nav-on .nav-slot {
+    visibility: visible;
   }
 
   .nav-label {

@@ -587,7 +587,7 @@
       </div>
       {#if r.oneWay}<div class="warn small">⤵ One-way: no coming back this way</div>{/if}
       {#if r.noExit}
-        <div class="warn small">⚔️ No retreat: arriving starts a fight you win or are carried off from</div>
+        <div class="warn danger-line small">⚔️ No retreat: arriving starts a fight you win or are carried off from</div>
       {/if}
       {#if r.shut}<div class="shut small">🔒 Shut: {r.shut}</div>{/if}
       {#if !c.journeyEnds}
@@ -829,7 +829,7 @@
     border-radius: 8px;
     padding: 8px 11px;
     font-size: 13px;
-    box-shadow: 0 6px 20px rgb(0 0 0 / 45%);
+    box-shadow: 0 6px 20px var(--lift);
   }
 
   .card-head {
@@ -844,7 +844,12 @@
     margin-top: 2px;
   }
 
+  /* Caution (one-way) is --warn; a fight with no way out is --danger. Both start with a glyph. */
   .map-card .warn {
+    color: var(--warn);
+  }
+
+  .map-card .warn.danger-line {
     color: var(--danger);
   }
 
