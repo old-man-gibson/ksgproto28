@@ -71,7 +71,7 @@
           <div class="bar" style="height: 8px; margin: 6px 0">
             <div
               class="fill"
-              style="width: {Math.min(100, (value / next.threshold) * 100)}%; background: var(--accent)"
+              style="width: {Math.min(100, (value / next.threshold) * 100)}%; background: var(--accent-fill)"
             ></div>
           </div>
           <div class="dim small">{fmt(value)} / {fmt(next.threshold)}</div>

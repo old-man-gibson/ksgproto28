@@ -773,7 +773,7 @@
   .xp .bar {
     display: block;
     position: relative;
-    background: var(--bg-sunken);
+    background: var(--bar-track);
     border-radius: 3px;
     overflow: hidden;
   }

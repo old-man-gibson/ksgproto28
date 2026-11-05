@@ -1419,12 +1419,13 @@
        pills wear on every technique card. */
     border-top: 2px solid var(--posc, var(--border));
     border-radius: 6px;
-    opacity: 0.55;
+    /* Dimmed with a colour, not opacity: opacity takes the text under 4.5:1. */
+    color: var(--text-dim);
     line-height: 1.15;
   }
 
   .pos-chip.current {
-    opacity: 1;
+    color: var(--text);
     border-color: var(--posc, var(--accent));
     background: color-mix(in srgb, var(--posc, var(--accent)) 16%, var(--bg-raised));
   }
@@ -1802,7 +1803,7 @@
     font-size: 10px;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    opacity: 0.6;
+    color: var(--text-dim);
   }
 
   /* Sub-detail under one damage-type row (what armor or resistance took). */

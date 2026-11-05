@@ -333,7 +333,7 @@
           <div class="explore small">
             <span class="dim">Exploration:</span>
             <div class="bar" style="flex: 1; height: 10px">
-              <div class="fill" style="width: {explorePct * 100}%; background: var(--buff)"></div>
+              <div class="fill" style="width: {explorePct * 100}%; background: var(--buff-fill)"></div>
               <!--
                 Ticks for finds the spot still owes you. Claimed ones are dropped
                 rather than dimmed: a mark that never moves reads as a bug, and the
@@ -893,7 +893,7 @@
     bottom: 0;
     width: 2px;
     margin-left: -1px;
-    background: var(--warn);
+    background: var(--warn-fill);
     opacity: 0.85;
     pointer-events: none;
   }

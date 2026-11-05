@@ -80,7 +80,8 @@
 
   --edge: #5f5e56;
   --ring: #1d3f9e;
-  --here: #1b1c1a;
+  /* Magenta pencil: 5.9:1 on the white map ground and 3.2:1 on dark tile art (ink black was 1.1:1 there). */
+  --here: #b3208a;
   --sel-bg: #fdf3e4;
   --sel-ink: #1b1c1a;
   --text-off: #6b6b62;
@@ -138,6 +139,18 @@
   font-size: 17px;
 }
 
+/* The bonus chip's slot holds its widest text. "⏩ 2× 1h 10m" is 96.27px in Plex Sans at 12px (measured over every text
+   from 0s to 8h 59m); the component's 8em is 96px and the header moved when the bank crossed an hour. */
+:root[data-theme='survey'] .clock .bonus {
+  min-width: 8.1em;
+}
+
+/* The clock chip's slot holds its widest hour ("🕰️ about 00:00", 92.5px in Plex Sans at 13px). The title is 37px wider
+   than Default's, so at 1370px the component's 6.5em (84.5px) cut the text; Default's slot is 95.7px there. */
+:root[data-theme='survey'] .layout > header .timesense {
+  min-width: 7.4em;
+}
+
 /* The title block: a double rule across the top of every panel and of the header. */
 :root[data-theme='survey'] :is(.panel, .layout > header) {
   border-top: 3px double var(--edge);
@@ -176,12 +189,13 @@
   border: 1px solid var(--edge);
 }
 
-/* A bar is a scale: an ink outline, a tick at every tenth. */
-:root[data-theme='survey'] .bar {
+/* A bar is a scale: an ink outline, a tick at every tenth. Only the global `.bar` with a `.fill` inside is one
+   (DefeatModal's share bars are `.bar` with nothing in them). */
+:root[data-theme='survey'] .bar:has(> .fill) {
   box-shadow: inset 0 0 0 1px var(--edge);
 }
 
-:root[data-theme='survey'] .bar::after {
+:root[data-theme='survey'] .bar:has(> .fill)::after {
   content: '';
   position: absolute;
   inset: auto 0 0 0;
@@ -254,6 +268,12 @@
   outline-offset: 2px;
 }
 
+/* A tiled map's headroom (the strip above and below the picture, where a label can sit) is dark too, so white labels read
+   there; the survey grid is drawn on the paper map only. */
+:root:root[data-theme='survey'] .map-wrap.tiled {
+  background: #0b0e12;
+}
+
 :root:root[data-theme='survey'] .place-banner {
   border-bottom: 2px solid var(--text);
 }
@@ -268,10 +288,18 @@
   background: var(--sel-bg);
 }
 
+/* The picked stop: a raised fill and an inset ink line. Never `outline`: the row is focusable and the global
+   `:focus-visible` outline is its keyboard ring (an `outline` here beat it). The line is a box-shadow, and the
+   row underfoot keeps its rust bar under it. */
 :root:root[data-theme='survey'] .ts-row.picked {
   background: var(--bg-raised);
-  outline: 1px solid var(--edge);
-  outline-offset: -2px;
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+
+:root:root[data-theme='survey'] .ts-row.here.picked {
+  box-shadow:
+    inset 4px 0 0 var(--accent),
+    inset 0 0 0 1px var(--edge);
 }
 
 :root:root[data-theme='survey'] .map-card {

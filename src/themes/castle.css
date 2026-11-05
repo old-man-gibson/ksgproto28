@@ -55,6 +55,12 @@
   --focus-ink: #994701;
   --action-ink: #6b5f1a;
 
+  /* Fills on a dark well: --accent, --buff and --warn are text colours here (dark), 2.7:1 on the well. The accent fill
+     is a mid amber (4.2:1 on the well, 3.4:1 on the page, where the bench's own bar sits). */
+  --accent-fill: #9c6a14;
+  --buff-fill: #1f9e86;
+  --warn-fill: #e3c457;
+
   /* The painted stage, banner and raid pill are dark whatever the page is. */
   --stage-ink: var(--art-ink);
   --stage-accent: #e0b35a;
@@ -80,7 +86,8 @@
 
   --edge: #6a675d;
   --ring: #2a3f8f;
-  --here: #1a1917;
+  /* Raspberry: 3.9:1 on the map ground and 3.3:1 on dark tile art (black was 1.1:1 there). */
+  --here: #c2185b;
   /* The fill of a marked cell and of the selected pin. Buttons and nav rows are black blocks drawn below. */
   --sel-bg: #efe9d6;
   --sel-ink: #1a1917;
@@ -144,6 +151,18 @@
   }
 }
 
+/* The bonus chip's slot holds its widest text. In Spectral it is 90.8px ("⏩ 2× 1h 10m"), in Georgia, which shows while
+   the web font loads or is blocked, 96.4px ("⏩ 2× 8h 40m"); the component's 8em is 96px. */
+:root[data-theme='castle'] .clock .bonus {
+  min-width: 8.1em;
+}
+
+/* The clock chip's slot holds its widest hour ("🕰️ about 00:00"). The title is 46px wider than Default's, so at 1370px
+   the component's 6.5em (84.5px) cut the text; Default's slot is 95.7px there. */
+:root[data-theme='castle'] .layout > header .timesense {
+  min-width: 7.4em;
+}
+
 /* Black timber: a beam across the top of every top-level panel, and a lintel with a gold hairline on the header. */
 :root[data-theme='castle'] .panel:not(.panel .panel) {
   border-color: var(--edge);
@@ -165,10 +184,15 @@
  * Selected buttons and the open nav row are black blocks with a gold foot. They
  * do not read --sel-bg: the contract needs a bar colour read as text to hold
  * 4.5:1 on panel and on --sel-bg, which no colour does on both plaster and
- * black. Inside a block the colours a child reads from a token are re-pointed at
- * light values, and the authored colours get the dark-ground range.
+ * black. Inside a block every colour token a child can read is re-pointed at a
+ * value that holds on #1a1917 and on the hover black #35322d (text 4.5:1, the
+ * edge 3:1), and the authored colours get the dark-ground range.
+ *
+ * A disabled button is left to cues.css (`:not(:disabled)`): a selected, disabled
+ * button (GoButton while it runs, a map card's walk) keeps the dashed grey look,
+ * with no black fill under it.
  */
-:root:root[data-theme='castle'] button.selected {
+:root:root[data-theme='castle'] button.selected:not(:disabled) {
   background: var(--timber);
   color: var(--on-timber);
   border-color: var(--timber);
@@ -177,15 +201,38 @@
   --ink-lmax: 1;
 }
 
-:root:root[data-theme='castle'] :is(button.selected, .nav-list .nav-entry.nav-on) {
+:root:root[data-theme='castle'] :is(button.selected:not(:disabled), .nav-list .nav-entry.nav-on) {
+  --text: #f5f3ee;
   --text-dim: #cfccc0;
+  --text-off: #aaa79c;
+  --edge: #8a877c;
+  --border: #5b584f;
+  --frame: #5b584f;
   --accent: #e0b35a;
-  --xp-ink: #6fd698;
   --danger: #ff9a88;
   --warn: #e3c457;
   --buff: #6fd6bd;
-  --border: #5b584f;
-  --frame: #5b584f;
+  --hp-ink: #f17d77;
+  --xp-ink: #6fd698;
+  --skill-ink: #ae93e1;
+  --stamina-ink: #7bda8e;
+  --stamina-winded-ink: #68ae75;
+  --stamina-exhausted-ink: #a0a838;
+  --mana-ink: #679ff4;
+  --manaburn-ink: #e279d1;
+  --spirit-ink: #b68fde;
+  --focus-ink: #f08136;
+  --action-ink: #d3bc3c;
+  --log-combat: #e0a1a1;
+  --log-danger: #ff7070;
+  --log-loot: #e8b84b;
+  --log-skill: #b58fe0;
+  --log-achievement: #ffd700;
+  --log-fusion: #ff9d3c;
+  --log-quest: #e0cd7d;
+  --log-travel: #7db4e0;
+  --log-explore: #7de0c3;
+  --log-plain: #9aa4ad;
 }
 
 :root:root[data-theme='castle'] .nav-list .nav-entry {
@@ -209,8 +256,12 @@
   border: 1px solid var(--edge);
 }
 
-:root[data-theme='castle'] .bar {
+/* A bar is the global `.bar` with a `.fill` inside (DefeatModal's share bars are `.bar` with nothing in them and keep their own look). */
+:root[data-theme='castle'] .bar:has(> .fill) {
   outline: 1px solid var(--timber);
+  /* Fills inside a well are bright, so authored bar colours (talent laps) use the dark-ground range. */
+  --ink-lmin: 0.5;
+  --ink-lmax: 1;
 }
 
 :root[data-theme='castle'] .bar > .label {
@@ -219,15 +270,14 @@
   font-size: 11.5px;
 }
 
-/* Fills inside a well are bright, so authored bar colours (talent laps) use the dark-ground range. */
-:root[data-theme='castle'] .bar {
-  --ink-lmin: 0.5;
-  --ink-lmax: 1;
-}
-
 /* A hovered selected block steps to a lighter black, not to the hover fill (light ink would vanish on it). */
 :root:root[data-theme='castle'] button.selected:hover:not(:disabled) {
   background: #35322d;
+}
+
+/* The HERE tag on the row underfoot: the accent was 4.36:1 on the tinted row; text is 11:1. */
+:root:root[data-theme='castle'] .ts-row.here .ts-side.here-tag {
+  color: var(--text);
 }
 
 /* The map ground is a lattice of shoji bars. */
@@ -239,9 +289,14 @@
   background-size: 24px 24px;
 }
 
-/* Painted art stays dark inside the plaster page: a black timber frame holds it. */
+/* Painted art stays dark inside the plaster page: a black timber frame holds it. A tiled map's headroom (the strip above and
+   below the picture, where a label can sit) is dark too, so white labels read there. */
 :root:root[data-theme='castle'] :is(.stage, .map-wrap.tiled) {
   border: 3px solid var(--timber);
+}
+
+:root:root[data-theme='castle'] .map-wrap.tiled {
+  background: #0b0e12;
 }
 
 :root:root[data-theme='castle'] .place-banner {

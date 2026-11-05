@@ -56,6 +56,12 @@
   --focus-ink: #99490e;
   --action-ink: #6e5e17;
 
+  /* Fills on a dark well: --accent, --buff and --warn are text colours here (dark), 2.5:1 on the well. The accent fill
+     is a mid amber (4.1:1 on the well, 3.4:1 on the page, where the bench's own bar sits). */
+  --accent-fill: #9a6a22;
+  --buff-fill: #1f9e86;
+  --warn-fill: #e3c457;
+
   /* The painted stage, banner and raid pill are dark whatever the page is. */
   --stage-ink: var(--art-ink);
   --stage-accent: #e0b35a;
@@ -81,7 +87,8 @@
 
   --edge: #6e5c38;
   --ring: #1d4b9c;
-  --here: #231a0e;
+  /* Madder: 4.0:1 on the map ground and 3.2:1 on dark tile art (kohl was 1.1:1 there). */
+  --here: #b02a82;
   --sel-bg: #fbf5e1;
   --sel-ink: #231a0e;
   --text-off: #6a5d44;
@@ -145,6 +152,13 @@
   }
 }
 
+/* The clock chip's slot holds its widest hour ("🕰️ about 00:00", 88px in the fallback face at 13px). The title is 55px
+   wider than Default's, so at 1370px the component's 6.5em (84.5px) can cut the text; Default's slot is 95.7px there.
+   The bonus chip's widest text ("⏩ 2× 1h 10m") is 84.8px in Alegreya Sans and 95.6px in the fallback: 8em holds both. */
+:root[data-theme='sandstone'] .layout > header .timesense {
+  min-width: 7.4em;
+}
+
 /* A frieze of stepped pyramids over a lapis rule along the top of every top-level panel, the header and the map card. */
 :root[data-theme='sandstone'] :is(.panel:not(.panel .panel), .layout > header, .map-card) {
   background-image:
@@ -191,8 +205,8 @@
   border: 1px solid var(--edge);
 }
 
-/* Bars are kohl wells. */
-:root[data-theme='sandstone'] .bar {
+/* Bars are kohl wells: the global `.bar` with a `.fill` inside (DefeatModal's share bars are `.bar` with nothing in them). */
+:root[data-theme='sandstone'] .bar:has(> .fill) {
   outline: 1px solid var(--edge);
   /* Fills inside a well are bright, so authored bar colours (talent laps) use the dark-ground range. */
   --ink-lmin: 0.5;
@@ -218,6 +232,11 @@
   outline-offset: 1px;
 }
 
+/* A tiled map's headroom (the strip above and below the picture, where a label can sit) is dark too, so white labels read there. */
+:root:root[data-theme='sandstone'] .map-wrap.tiled {
+  background: #0b0e12;
+}
+
 :root:root[data-theme='sandstone'] .place-banner {
   border-bottom: 3px solid var(--text);
 }
@@ -225,6 +244,11 @@
 :root:root[data-theme='sandstone'] .ts-row.here {
   box-shadow: inset 4px 0 0 var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* The HERE tag on the row underfoot: the accent was 4.52:1 on the tinted row (4.5 needed); text is 11:1. */
+:root:root[data-theme='sandstone'] .ts-row.here .ts-side.here-tag {
+  color: var(--text);
 }
 
 :root:root[data-theme='sandstone'] .map-card {

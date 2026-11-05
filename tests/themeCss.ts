@@ -182,6 +182,33 @@ function resolveValue(table: TokenTable, raw: string, trail: string[]): string {
   throw new Error(`cannot resolve ${trail[trail.length - 1] ?? ''}: ${value}`);
 }
 
+/**
+ * A token that carries an alpha (`--badge-bg`, `--scrim`): `rgb(r g b / 60%)`,
+ * `rgba(r, g, b, 0.6)`, an 8-digit hex, or `var()` of one. A value without an
+ * alpha is opaque. Returns the colour and the alpha (0 to 1).
+ */
+export function resolveWithAlpha(
+  table: TokenTable,
+  name: string,
+  trail: string[] = [],
+): { color: string; alpha: number } {
+  if (trail.includes(name)) throw new Error(`token cycle: ${[...trail, name].join(' -> ')}`);
+  const raw = table[name];
+  if (raw === undefined) throw new Error(`token ${name} is not defined`);
+  const value = raw.trim();
+  const ref = value.match(/^var\(\s*(--[\w-]+)\s*(?:,\s*(.+))?\)$/);
+  if (ref && table[ref[1]] !== undefined) return resolveWithAlpha(table, ref[1], [...trail, name]);
+  const rgb = value.match(/^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)\s*(?:[,/]\s*(\d+(?:\.\d+)?)(%?))?\s*\)$/);
+  if (rgb) {
+    const alpha = rgb[4] === undefined ? 1 : rgb[5] ? Number(rgb[4]) / 100 : Number(rgb[4]);
+    const hex = '#' + [rgb[1], rgb[2], rgb[3]].map((n) => Number(n).toString(16).padStart(2, '0')).join('');
+    return { color: hex, alpha };
+  }
+  const hex8 = value.match(/^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})$/);
+  if (hex8) return { color: '#' + hex8[1].toLowerCase(), alpha: parseInt(hex8[2], 16) / 255 };
+  return { color: resolveColor(table, name, trail), alpha: 1 };
+}
+
 function normaliseHex(hex: string): string {
   let h = hex.slice(1);
   if (h.length === 3 || h.length === 4) h = [...h].map((c) => c + c).join('');

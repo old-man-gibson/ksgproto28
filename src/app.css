@@ -144,6 +144,15 @@
   --badge-ink: var(--text);
   --badge-dim: var(--text-dim);
 
+  /* A colour used as a bar FILL inside the global .bar (well: --bar-track) reads one
+     of these, never --accent, --buff or --warn: those are text and border colours
+     and a light theme makes them dark, which vanishes on its dark wells. Default
+     aliases each to its text colour; a theme with dark wells sets them 3:1 on the
+     well. tests/themes.test.ts finds every fill site in the source. */
+  --accent-fill: var(--accent);
+  --buff-fill: var(--buff);
+  --warn-fill: var(--warn);
+
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 15px;
   color-scheme: dark;

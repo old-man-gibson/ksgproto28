@@ -1410,7 +1410,7 @@
 
   .bar .fill {
     height: 100%;
-    background: var(--accent);
+    background: var(--accent-fill);
     transition: width 120ms linear;
   }
 

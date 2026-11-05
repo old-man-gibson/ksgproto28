@@ -177,7 +177,7 @@
 }
 
 /* A gauge: the empty part of every bar is marked in quarters. */
-:root[data-theme='quayside'] .bar {
+:root[data-theme='quayside'] .bar:has(> .fill) {
   box-shadow: inset 0 0 0 1px var(--border);
   background-image: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), rgb(255 255 255 / 14%) calc(25% - 1px) 25%);
 }
