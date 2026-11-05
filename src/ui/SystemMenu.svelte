@@ -2,17 +2,21 @@
   import { save, exportSave, importSave, hardReset } from './state.svelte';
   import { chooseTheme, loadTheme, THEMES, THEME_NAMES, type Theme } from './lib/theme';
   import Modal from './lib/Modal.svelte';
+  import ArtPackControl from './ArtPackControl.svelte';
 
   /**
-   * The Menu button and its window: the file actions, the display theme and the
-   * keyboard keys, one fact line each. App.svelte hides the button on floor 0
-   * (a new save offers Import on the tutorial card instead).
+   * The Menu button and its window: the file actions, the art pack, the display
+   * theme and the keyboard keys, one fact line each. App.svelte hides the button
+   * on floor 0 (a new save offers Import and Import art pack on the tutorial
+   * card instead).
    */
   let open = $state(false);
   let savedAt = $state<string | null>(null);
   let theme = $state(loadTheme());
   // Outside the window on purpose: the browser reports the chosen file after
-  // the picker closes, and the input must still exist then.
+  // the picker closes, and the input must still exist then. The art pack's
+  // input lives in ArtPackControl, inside the window: the window stays open
+  // through an art pack import.
   let fileInput: HTMLInputElement;
 
   function onSave() {
@@ -47,7 +51,7 @@
   ];
 </script>
 
-<button onclick={() => (open = true)} title="Save, export, import, reset, theme and keys">Menu</button>
+<button onclick={() => (open = true)} title="Save, export, import, reset, art pack, theme and keys">Menu</button>
 
 <input
   type="file"
@@ -80,6 +84,7 @@
       <span>Reset: deletes the save and starts a new game. Asks first.</span>
       <button class="sysmenu-danger" onclick={onReset}>Reset</button>
     </div>
+    <ArtPackControl />
     <div class="sysmenu-row">
       <span>Theme: the colours and fonts of the game. Kept in this browser, not in the save.</span>
       <select aria-label="Theme" value={theme} onchange={onTheme}>
