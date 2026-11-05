@@ -317,8 +317,9 @@ hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for every
   captions, bar labels and warnings. Latin slices only.
 - **Surfaces:** `--bg` `#151a18`, `--bg-panel` `#1c2320`, `--bg-raised` `#26302c`, `--bg-hover` `#323e39`, `--bg-sunken`
   `#0f1311`. `--accent` is manila `#d6bd7c`; `--ring` white; `--here` pink `#f08cc0`.
-- **Measured:** text 8.7:1, dim 5.0:1, danger 4.7:1, worst log colour 4.7:1, edge 4.1:1, ring 13.6:1. Authored colours after the
-  remap (`--ink-lmin` 0.5) are at least 4.6:1 on panel and 5.2:1 on `--sel-bg`.
+- **Measured:** text 8.7:1, dim 5.0:1, danger 4.7:1, worst log colour 4.7:1, edge 4.1:1, ring 13.6:1. Bar fills read as text
+  (`-ink` tokens) are at least 4.9:1. Authored colours after the remap (`--ink-lmin` 0.5) are at least 4.6:1 on panel and 5.2:1
+  on `--sel-bg`.
 - **Bars:** the bar fills are moved from the first design so the seven bars drawn together reach 9.3 ΔE00 under protan and
   deutan (worst pairs: stamina/xp 9.3 protan, focus/xp 9.3 deutan, mana/spirit 10.5 deutan). Stamina is `#3baf75` (emerald),
   xp `#96c671`, action `#ecdd31`. No exceptions in `VISION_EXCEPTIONS`.
@@ -347,8 +348,9 @@ hover. A theme file is `src/themes/<id>.css`; its CSS is the reference for every
   `--stripe-a`, `--stripe-b` (the hazard stripe).
 - **Focus and here:** `--ring` is cream-white `#fffdf2`, `--here` is pink `#ff8fb8`, `--accent` is amber. The first design used
   the accent as the ring (plan ruling 7); the three are now 28.6 ΔE00 or more apart.
-- **Measured:** text 9.2:1, dim 5.7:1, danger 4.7:1, worst log colour 4.7:1, edge 4.9:1, ring 13.3:1, disabled 5.3:1. Authored
-  colours after the remap (`--ink-lmin` 0.5) are at least 4.6:1 on panel and 5.2:1 on `--sel-bg`.
+- **Measured:** text 9.2:1, dim 5.7:1, danger 4.7:1, worst log colour 4.7:1, edge 4.9:1, ring 13.3:1, disabled 5.3:1. Bar fills
+  read as text (`-ink` tokens) are at least 5.1:1. Authored colours after the remap (`--ink-lmin` 0.5) are at least 4.6:1 on panel
+  and 5.2:1 on `--sel-bg`.
 - **Bars:** the first design had mana/spirit 2.5 ΔE00 under deutan. Mana is `#6eaaed` and spirit `#9078ff`; the seven bars drawn
   together reach 9.3 ΔE00 under protan (action/xp) and 9.35 under deutan (hp/focus, hp/stamina); mana/spirit is 9.4. No
   exceptions in `VISION_EXCEPTIONS`.
