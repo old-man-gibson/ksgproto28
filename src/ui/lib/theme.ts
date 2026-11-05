@@ -9,7 +9,7 @@
  * browser that never opened the Menu's theme control keeps following
  * `DEFAULT_THEME`.
  */
-export const THEMES = ['default', 'gothic', 'castle', 'survey'] as const;
+export const THEMES = ['default', 'gothic', 'castle', 'survey', 'sandstone'] as const;
 export type Theme = (typeof THEMES)[number];
 
 export const THEME_NAMES: Record<Theme, string> = {
@@ -17,6 +17,7 @@ export const THEME_NAMES: Record<Theme, string> = {
   gothic: 'Gothic',
   castle: 'Castle',
   survey: 'Survey',
+  sandstone: 'Sandstone',
 };
 
 /** The theme for a browser with no stored pick. */

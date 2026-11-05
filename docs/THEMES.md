@@ -388,3 +388,22 @@ A drafting sheet. White paper, ink lines, hatch for what is locked, brick rust f
   `danger` states carry a mark and words.
 - **Known limits.** The header is 54px tall. The corner marks sit 4px inside the border, next to the first caption of a panel with
   a small padding (the nav list).
+
+### Sandstone
+
+The desert band (floors 18 to 20). Limestone, kohl ink, bronze, a lapis focus ring, a stepped-pyramid frieze.
+
+- **Fonts.** Alegreya Sans 400, 400 italic and 700 (17px, lining and tabular figures); Marcellus 400 for h1 to h3 and
+  `--font-caps`, in capitals with letter spacing.
+- **Key tokens.** `--bg` #e7dcc0, panel #f7f1df, raised #fcf9ef, hover #e9deba, text #231a0e, dim #52432a, accent #744a14
+  (bronze), danger #9c200d, warn #6a5a00, edge #6e5c38, ring #1d4b9c (lapis), here #231a0e, `--sel-bg` #fbf5e1. Bars: hp #f6797c,
+  stamina #8be796, mana #418cea, spirit #874fcb, focus #d86918, action #fad841, xp #00713e on a #120d06 well. `--ink-lmax` 0.52.
+- **Decoration.** A frieze of stepped pyramids over a 2px lapis rule along the top of every top-level panel, the header and the
+  map card (an inline SVG data URI in the CSS); a kohl frame and a bronze line around the stage and tiled maps; an inner rule on
+  the map.
+- **Selection.** A cartouche: a tinted fill, a bronze border and a rule inside a rule (two inset shadows); the open nav row has a
+  4px bronze left bar and a bronze tint.
+- **Numbers.** Text 12.75, dim 7.12, danger 5.95, ring 7.33, edge 5.72. Worst colour-vision pair: deutan mana/spirit 9.58, protan
+  stamina/action 11.77 (the mock had 3.6). Authored colours: 5.32 on panel and raised, 5.51 on `--sel-bg`.
+- **Known limits.** `--xp` is 4.55:1 on hover (the test needs 4.5); a change to `--bg-hover` or `--xp` has to keep the window
+  described under Bar wells above.

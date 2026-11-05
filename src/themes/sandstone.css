@@ -1,0 +1,243 @@
+/*
+ * Sandstone display theme: the desert band (floors 18-20). Light. Limestone
+ * ground, kohl ink, bronze, a lapis rule and a stepped-pyramid frieze. Active
+ * while <html data-theme="sandstone"> (src/ui/lib/theme.ts). docs/THEMES.md §11.
+ *
+ * Tokens first (tests/themes.test.ts reads this block), then the shapes.
+ * Bar fills are baked tokens, not a filter: they sit on kohl wells, so each is
+ * at least 3:1 on the well, and --xp is also text on limestone, so it is 4.5:1
+ * there too (a window of lightness about 0.115 to 0.13).
+ *
+ * `:root:root[data-theme='sandstone']` in a shape rule lifts it over a
+ * component's own scoped rule of the same length (Svelte adds a class per
+ * compound selector).
+ */
+
+:root[data-theme='sandstone'] {
+  --bg: #e7dcc0;
+  --bg-panel: #f7f1df;
+  --bg-raised: #fcf9ef;
+  --bg-hover: #e9deba;
+  --bg-sunken: #e0d3ac;
+  --border: #b3a074;
+  --frame: #cdbb8f;
+  --text: #231a0e;
+  --text-dim: #52432a;
+  --accent: #744a14;
+  --danger: #9c200d;
+  --warn: #6a5a00;
+  --buff: #0e6252;
+  --night: #4b3a78;
+  --night-edge: #8a79b8;
+
+  --hp: #f6797c;
+  --xp: #00713e;
+  --skill: #9a7bd0;
+  --stamina: #8be796;
+  --stamina-winded: #4a9a5c;
+  --stamina-exhausted: #a0a838;
+  --mana: #418cea;
+  --manaburn: #c040b0;
+  --spirit: #874fcb;
+  --focus: #d86918;
+  --action: #fad841;
+  --bar-track: #120d06;
+
+  /* Bar fills as text on limestone: each fill darkened to 4.7:1 on panel, raised, hover and the selected fill. */
+  --hp-ink: #954749;
+  --xp-ink: #016e44;
+  --skill-ink: #6a5491;
+  --stamina-ink: #3c6941;
+  --stamina-winded-ink: #316b3e;
+  --stamina-exhausted-ink: #5e631e;
+  --mana-ink: #2b60a3;
+  --manaburn-ink: #9d338f;
+  --spirit-ink: #7745b4;
+  --focus-ink: #99490e;
+  --action-ink: #6e5e17;
+
+  /* The painted stage, banner and raid pill are dark whatever the page is. */
+  --stage-ink: var(--art-ink);
+  --stage-accent: #e0b35a;
+  --stage-ok: #6fd698;
+  --stage-ok-text: #6fd698;
+  --stage-danger: #ff8a78;
+
+  /* A count on a cell: a dark chip with light text. */
+  --badge-bg: rgb(35 26 14 / 82%);
+  --badge-ink: #f7f1df;
+  --badge-dim: #d8ceb2;
+
+  --log-combat: #884338;
+  --log-danger: #a8220e;
+  --log-loot: #774f00;
+  --log-skill: #6e3fa5;
+  --log-achievement: #675500;
+  --log-fusion: #983800;
+  --log-quest: #505d10;
+  --log-travel: #255893;
+  --log-explore: #0e6252;
+  --log-plain: #52432a;
+
+  --edge: #6e5c38;
+  --ring: #1d4b9c;
+  --here: #231a0e;
+  --sel-bg: #fbf5e1;
+  --sel-ink: #231a0e;
+  --text-off: #6a5d44;
+
+  --bar-ink: #ffffff;
+  --bar-halo: #000000;
+
+  --ink-lmin: 0;
+  --ink-lmax: 0.52;
+  --sel-ink-lmin: 0;
+  --sel-ink-lmax: 0.52;
+
+  --road: #7b6232;
+  /* The map's district tints, darkened: a district name is text (a tint mixed 55% with --text) on the map ground. */
+  --district-b: #5c6670;
+  --district-c: #8a3a32;
+  --district-d: #55585f;
+  --district-e: #8f4a12;
+  --district-f: #5f656d;
+  --district-g: #7a4d1a;
+  --district-i: #6f5028;
+  --scrim: rgb(35 26 14 / 55%);
+  --scrim-deep: rgb(35 26 14 / 65%);
+  --lift: rgb(35 26 14 / 35%);
+  --hatch-lock: repeating-linear-gradient(135deg, transparent 0 4px, rgb(35 26 14 / 22%) 4px 5px);
+  --tint-mix: 30%;
+
+  --font-caps: 'Marcellus', Georgia, serif;
+  font-family: 'Alegreya Sans', system-ui, sans-serif;
+  font-size: 17px;
+  font-variant-numeric: lining-nums tabular-nums;
+  color-scheme: light;
+  scrollbar-color: var(--edge) var(--bg);
+}
+
+/* Square everything except the few shapes that are round on purpose. */
+:root[data-theme='sandstone'] *:not(.shadow, .ring, .aura, .dot, .pip) {
+  border-radius: 0 !important;
+}
+
+:root[data-theme='sandstone'] :is(h1, h2, h3) {
+  font-family: 'Marcellus', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='sandstone'] h3 {
+  font-size: 14px;
+}
+
+:root[data-theme='sandstone'] .layout > header h1 {
+  font-size: 18px;
+  letter-spacing: 0.14em;
+}
+
+@media (max-width: 1179px) {
+  :root[data-theme='sandstone'] .layout > header h1 {
+    font-size: 15px;
+    letter-spacing: 0.08em;
+  }
+}
+
+/* A frieze of stepped pyramids over a lapis rule along the top of every top-level panel, the header and the map card. */
+:root[data-theme='sandstone'] :is(.panel:not(.panel .panel), .layout > header, .map-card) {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath d='M0 6V4h2V2h2V0h4v2h2v2h2v2z' fill='%23865627'/%3E%3C/svg%3E"),
+    linear-gradient(#1d4b9c, #1d4b9c);
+  background-size: 12px 6px, 100% 2px;
+  background-position: 0 0, 0 6px;
+  background-repeat: repeat-x, no-repeat;
+}
+
+:root[data-theme='sandstone'] :is(.panel:not(.panel .panel), .layout > header) {
+  border-color: var(--edge);
+}
+
+:root[data-theme='sandstone'] button:hover:not(:disabled) {
+  border-color: var(--text);
+}
+
+/* Selected: a cartouche, a rule inside a rule. */
+:root[data-theme='sandstone'] button.selected {
+  background: var(--sel-bg);
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 0 0 2px var(--bg-raised),
+    inset 0 0 0 3px var(--accent);
+}
+
+:root:root[data-theme='sandstone'] .nav-list .nav-entry {
+  border-left-width: 4px;
+}
+
+:root:root[data-theme='sandstone'] .nav-list .nav-entry.nav-on {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-raised));
+}
+
+:root:root[data-theme='sandstone'] .nav-caption {
+  border-bottom-color: var(--border);
+}
+
+:root[data-theme='sandstone'] :is(select, input:not([type='checkbox'], [type='radio'], [type='range']), textarea) {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--edge);
+}
+
+/* Bars are kohl wells. */
+:root[data-theme='sandstone'] .bar {
+  outline: 1px solid var(--edge);
+  /* Fills inside a well are bright, so authored bar colours (talent laps) use the dark-ground range. */
+  --ink-lmin: 0.5;
+  --ink-lmax: 1;
+}
+
+:root[data-theme='sandstone'] .bar > .label {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 11.5px;
+}
+
+:root[data-theme='sandstone'] .map-wrap {
+  border-color: var(--edge);
+  outline: 1px solid var(--edge);
+  outline-offset: -4px;
+}
+
+/* Painted art stays dark inside the limestone page: a kohl frame and a bronze line hold it. */
+:root:root[data-theme='sandstone'] :is(.stage, .map-wrap.tiled) {
+  border: 3px solid var(--text);
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+:root:root[data-theme='sandstone'] .place-banner {
+  border-bottom: 3px solid var(--text);
+}
+
+:root:root[data-theme='sandstone'] .ts-row.here {
+  box-shadow: inset 4px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+:root:root[data-theme='sandstone'] .map-card {
+  border-color: var(--accent);
+}
+
+:root:root[data-theme='sandstone'] .map-card .warn {
+  font-weight: 700;
+  border-left: 3px solid var(--warn);
+  padding-left: 6px;
+}
+
+:root:root[data-theme='sandstone'] .map-card .warn.danger-line {
+  border-left: 3px solid var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
