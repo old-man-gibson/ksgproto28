@@ -814,7 +814,7 @@
   }
 
   .resrow b {
-    color: var(--xp);
+    color: var(--xp-ink);
     white-space: nowrap;
   }
 

@@ -1746,7 +1746,7 @@
 
   /* Worn-piece deltas: green when the change helps the wearer, red when it costs. */
   .better {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .worse {
@@ -1776,7 +1776,7 @@
 
   .mod {
     font-size: 13px;
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .mod.affix {
@@ -1789,7 +1789,7 @@
   }
 
   .reqs.met {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .socket {
@@ -1960,6 +1960,11 @@
   .pick.spare {
     opacity: 0.6;
     border-style: dashed;
+  }
+
+  /* A spare row that cannot be equipped reads as disabled (themes/cues.css): no opacity on its text. */
+  .pick.spare:disabled {
+    opacity: 1;
   }
 
   .pick-name {

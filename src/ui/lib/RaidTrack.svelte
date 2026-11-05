@@ -76,7 +76,7 @@
     font-weight: 600;
   }
   .cleared .label {
-    color: var(--xp);
+    color: var(--xp-ink);
   }
   @media (prefers-reduced-motion: reduce) {
     .pip.next {

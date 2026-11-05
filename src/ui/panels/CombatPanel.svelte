@@ -1486,7 +1486,7 @@
 
   /* A primed reflex is about to answer — say so in the card's "when" slot. */
   .when.primed {
-    color: var(--xp);
+    color: var(--xp-ink);
     font-weight: 600;
   }
 
@@ -1503,15 +1503,15 @@
   }
 
   .winded {
-    color: var(--stamina-winded);
+    color: var(--stamina-winded-ink);
   }
 
   .exhausted {
-    color: var(--stamina-exhausted);
+    color: var(--stamina-exhausted-ink);
   }
 
   .momentum {
-    color: var(--stamina);
+    color: var(--stamina-ink);
   }
 
   /* The panel title, the one-line hint and the slot count share a row. */
@@ -1735,7 +1735,7 @@
 
   /* A quiet mark that the player has narrowed this entry's firing. */
   .tuned {
-    color: var(--xp);
+    color: var(--xp-ink);
     font-size: 10px;
   }
 

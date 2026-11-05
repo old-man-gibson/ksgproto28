@@ -6,7 +6,7 @@
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { mix } from './themeColor';
+import { mix, remapInk } from './themeColor';
 
 export const ROOT = join(__dirname, '..');
 
@@ -109,7 +109,15 @@ export interface ThemeTables {
 }
 
 export function loadThemeTables(): ThemeTables {
-  const base = tokensOf(readFileSync(join(ROOT, 'src/app.css'), 'utf8'), ':root');
+  const appCss = readFileSync(join(ROOT, 'src/app.css'), 'utf8');
+  const base = tokensOf(appCss, ':root');
+  // The -ink tokens are plain fallbacks in :root and lifted values in an @supports block;
+  // the test reads the lifted ones, as a current browser does.
+  for (const rule of parseCss(appCss)) {
+    if (rule.at.length !== 1 || !rule.at[0].startsWith('@supports')) continue;
+    if (rule.selectors.length !== 1 || rule.selectors[0] !== ':root') continue;
+    for (const [prop, value] of rule.decls) if (prop.startsWith('--')) base[prop] = value;
+  }
   const own: Record<string, TokenTable> = {};
   const dir = join(ROOT, 'src/themes');
   for (const file of readdirSync(dir).filter((f) => f.endsWith('.css'))) {
@@ -131,7 +139,9 @@ export function loadThemeTables(): ThemeTables {
 
 /**
  * A token's value as `#rrggbb`: hex, `rgb(r g b)`, `var(--x)` (with its
- * fallback), and `color-mix(in srgb, A p%, B)`. Throws on anything else, so a
+ * fallback), `color-mix(in srgb, A p%, B)` and the `ink()` remap
+ * (`oklch(from A calc(...) c h)`, read with the table's `--ink-lmin` and
+ * `--ink-lmax`). Throws on anything else, so a
  * token a theme writes in a new form is noticed rather than skipped.
  */
 export function resolveColor(table: TokenTable, name: string, trail: string[] = []): string {
@@ -140,6 +150,10 @@ export function resolveColor(table: TokenTable, name: string, trail: string[] = 
   if (raw === undefined) throw new Error(`token ${name} is not defined`);
   return resolveValue(table, raw, [...trail, name]);
 }
+
+/** `ink()` as a token value: `oklch(from <colour> calc(<lmin> + l * (<lmax> - <lmin>)) c h)`. */
+const INK_REMAP =
+  /^oklch\(\s*from\s+(.+?)\s+calc\(\s*var\(--ink-lmin\)\s*\+\s*l\s*\*\s*\(\s*var\(--ink-lmax\)\s*-\s*var\(--ink-lmin\)\s*\)\s*\)\s+c\s+h\s*\)$/;
 
 function resolveValue(table: TokenTable, raw: string, trail: string[]): string {
   const value = raw.trim();
@@ -151,6 +165,14 @@ function resolveValue(table: TokenTable, raw: string, trail: string[]): string {
     if (table[ref[1]] !== undefined) return resolveColor(table, ref[1], trail);
     if (ref[2] !== undefined) return resolveValue(table, ref[2], trail);
     throw new Error(`token ${ref[1]} is not defined`);
+  }
+  const lifted = value.match(INK_REMAP);
+  if (lifted) {
+    return remapInk(
+      resolveValue(table, lifted[1], trail),
+      Number(table['--ink-lmin']),
+      Number(table['--ink-lmax']),
+    );
   }
   const m = value.match(/^color-mix\(\s*in srgb\s*,\s*(.+?)\s+(\d+(?:\.\d+)?)%\s*,\s*(.+)\)$/);
   if (m) return mix(resolveValue(table, m[1], trail), resolveValue(table, m[3], trail), Number(m[2]) / 100);
@@ -167,16 +189,21 @@ export function readText(rel: string): string {
   return readFileSync(join(ROOT, rel), 'utf8');
 }
 
-/** Every `.svelte` file under src/, as repo-relative paths with forward slashes. */
-export function svelteFiles(): string[] {
+/** Every file with the extension under `dir`, as repo-relative paths with forward slashes. */
+export function filesUnder(dir: string, ext: string): string[] {
   const out: string[] = [];
-  const walk = (dir: string) => {
-    for (const ent of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
-      const rel = `${dir}/${ent.name}`;
+  const walk = (d: string) => {
+    for (const ent of readdirSync(join(ROOT, d), { withFileTypes: true })) {
+      const rel = `${d}/${ent.name}`;
       if (ent.isDirectory()) walk(rel);
-      else if (ent.name.endsWith('.svelte')) out.push(rel);
+      else if (ent.name.endsWith(ext)) out.push(rel);
     }
   };
-  walk('src');
+  walk(dir);
   return out.sort();
+}
+
+/** Every `.svelte` file under src/. */
+export function svelteFiles(): string[] {
+  return filesUnder('src', '.svelte');
 }

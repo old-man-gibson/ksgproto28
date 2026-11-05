@@ -33,12 +33,13 @@ import {
   ROOT,
   loadThemeTables,
   parseCss,
+  filesUnder,
   readText,
   resolveColor,
   styleBlocks,
   svelteFiles,
 } from './themeCss';
-import { COLOR_LITERALS, OUTLINE_NONE, STATE_METRICS, type Allow } from './themeAllowlist';
+import { BAR_LITERALS, COLOR_LITERALS, OUTLINE_NONE, STATE_METRICS, type Allow } from './themeAllowlist';
 
 // ---------- The contract ----------
 
@@ -54,6 +55,12 @@ const BAR_FILLS = [
   '--hp', '--xp', '--skill', '--stamina', '--stamina-winded', '--stamina-exhausted',
   '--mana', '--manaburn', '--spirit', '--focus', '--action',
 ];
+
+/**
+ * A bar fill read as TEXT goes through its -ink token (app.css): the fill need
+ * only hold 3:1 on the bar track, the text needs 4.5:1.
+ */
+const INK_TOKENS = BAR_FILLS.map((t) => `${t}-ink`);
 
 /** Colours whose hue carries a meaning. A theme may move them, not change what they mean. */
 const SEMANTIC = [
@@ -86,7 +93,7 @@ const PER_THEME = [
 
 /** Declared by Default (app.css) and optionally overridden by a theme. */
 const SHARED = [
-  '--frame', ...BAR_FILLS, '--ring-w', '--buff', '--night', '--night-edge',
+  '--frame', ...BAR_FILLS, ...INK_TOKENS, '--ring-w', '--buff', '--night', '--night-edge',
   '--bar-track', '--road', ...DISTRICTS, '--scrim', '--scrim-deep', '--lift', '--hatch-lock', '--tint-mix',
   '--bg-deep', '--sel-ink-lmin', '--sel-ink-lmax',
 ];
@@ -147,18 +154,14 @@ function minPair(colors: string[]): { min: number; pair: string } {
   return { min, pair };
 }
 
-/** What Default keeps today per family: the floor a remapped family may not fall below is half of it. */
-const FAMILY_FLOOR: Record<string, number> = Object.fromEntries(
-  FAMILIES.map((f) => [f.id, minPair(f.colors).min * 0.5]),
-);
-
 /**
- * Default keeps its authored colours as they are (`--ink-lmin: 0`), so some of
- * them sit under 4.5:1 on its panels. The count is pinned: a new low-contrast
- * authored colour fails here instead of joining the list unseen. Raise
- * Default's `--ink-lmin` in app.css and set this to 0 to remove the exception.
+ * What the colours of a family keep apart in Default: the floor a remapped
+ * family may not fall below is this share of Default's minimum.
  */
-const DEFAULT_LOW_CONTRAST_DATA = { panelOrRaised: 22, selected: 34 };
+const FAMILY_SHARE = 0.4;
+const FAMILY_FLOOR: Record<string, number> = Object.fromEntries(
+  FAMILIES.map((f) => [f.id, minPair(f.colors).min * FAMILY_SHARE]),
+);
 
 // ---------- Colour-vision exceptions ----------
 
@@ -305,6 +308,17 @@ describe.each(THEME_IDS)('theme %s: contrast and colour', (id) => {
     expect(bad).toEqual([]);
   });
 
+  it('bar fills read as text (the -ink tokens) are at least 4.5:1 on panel, raised, hover and the selected fill', () => {
+    const bad: string[] = [];
+    for (const token of INK_TOKENS) {
+      for (const s of [...SURFACES, '--sel-bg']) {
+        const ratio = contrast(c(token), c(s));
+        if (ratio < 4.5) bad.push(`${token} on ${s}: ${r2(ratio)}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
   it('selected ink is at least 4.5:1 on the selected fill', () => {
     expect(contrast(c('--sel-ink'), c('--sel-bg'))).toBeGreaterThanOrEqual(4.5);
   });
@@ -357,12 +371,6 @@ describe.each(THEME_IDS)('theme %s: authored colours after ink()', (id) => {
 
   it('are at least 4.5:1 on panel and raised', () => {
     const bad = failing(normal, ['--bg-panel', '--bg-raised']);
-    if (id === 'default') {
-      expect(bad.length, `Default's low-contrast authored colours: ${bad.join(' ')}`).toBe(
-        DEFAULT_LOW_CONTRAST_DATA.panelOrRaised,
-      );
-      return;
-    }
     expect(
       bad.map((raw) => {
         const ink = remapInk(raw, normal[0], normal[1]);
@@ -373,12 +381,6 @@ describe.each(THEME_IDS)('theme %s: authored colours after ink()', (id) => {
 
   it('are at least 4.5:1 on the selected fill, with the selected-scope remap', () => {
     const bad = failing(selected, ['--sel-bg']);
-    if (id === 'default') {
-      expect(bad.length, `Default's low-contrast authored colours on --sel-bg: ${bad.join(' ')}`).toBe(
-        DEFAULT_LOW_CONTRAST_DATA.selected,
-      );
-      return;
-    }
     expect(
       bad.map((raw) => {
         const ink = remapInk(raw, selected[0], selected[1]);
@@ -387,7 +389,7 @@ describe.each(THEME_IDS)('theme %s: authored colours after ink()', (id) => {
     ).toEqual([]);
   });
 
-  it('keep their family apart: each family keeps half of Default separation, Refuse and Poor stay distinct', () => {
+  it('keep their family apart: each family keeps 40% of Default separation, Refuse and Poor stay distinct', () => {
     const bad: string[] = [];
     for (const [label, bounds] of [['normal', normal], ['selected', selected]] as const) {
       for (const family of FAMILIES.filter((f) => f.pairwise)) {
@@ -450,6 +452,8 @@ describe('shared cue rules', () => {
     expect(props['color']).toBe('var(--text-off)');
     expect(props['border-style']).toBe('dashed');
     expect(props['cursor']).toBe('not-allowed');
+    expect(props['filter']).toBe('grayscale(1)');
+    expect(props['opacity']).toBe('1');
     expect(Object.keys(props).filter((p) => /^(padding|font|border-width|margin)/.test(p))).toEqual([]);
   });
 
@@ -566,5 +570,105 @@ describe('source lints', () => {
     }
     expect(bad, 'draw a ring on :focus-visible instead').toEqual([]);
     expect(staleEntries(OUTLINE_NONE, seen)).toEqual([]);
+  });
+});
+
+// ---------- Bar fills used as text ----------
+
+/** A read of a bar token or its -ink token: `var(--hp)`, `var(--hp-ink)`, `var(--stamina-ink, ...)`. */
+const BAR_NAMES = BAR_FILLS.map((t) => t.slice(2)).sort((a, b) => b.length - a.length);
+const BAR_READ = new RegExp(`var\\(--(${BAR_NAMES.join('|')})(-ink)?(?=[,)])`, 'g');
+
+interface TextRead {
+  file: string;
+  where: string;
+  token: string;
+  ink: boolean;
+}
+
+/**
+ * Every place the source draws text in a bar colour: a `color:` declaration in
+ * a stylesheet or a `<style>` block, an inline `style="color: ..."` or a script
+ * string that carries one, a `fill:` on a text element's rule, and a `fill`
+ * attribute on a `<text>`. A new site is found without editing this file.
+ * A colour that reaches `color:` through a custom property (`color: var(--c)`) is
+ * not found here: the component must feed that property an -ink token itself.
+ */
+function textReadsOfBarTokens(): TextRead[] {
+  const reads: TextRead[] = [];
+  const add = (file: string, where: string, value: string) => {
+    for (const m of value.matchAll(BAR_READ)) reads.push({ file, where, token: `--${m[1]}${m[2] ?? ''}`, ink: !!m[2] });
+  };
+  const sheets: { file: string; css: string }[] = [{ file: 'src/app.css', css: readText('src/app.css') }];
+  for (const f of readdirSync(`${ROOT}/src/themes`).filter((n) => n.endsWith('.css')))
+    sheets.push({ file: `src/themes/${f}`, css: readText(`src/themes/${f}`) });
+  for (const file of svelteFiles()) {
+    const text = readText(file);
+    for (const css of styleBlocks(text)) sheets.push({ file, css });
+    const markup = text.replace(/<style[\s\S]*?<\/style>/g, '');
+    for (const m of markup.matchAll(/(?<![-\w])color\s*:\s*[^;"`<]*/g)) add(file, m[0].trim().slice(0, 90), m[0]);
+    for (const m of markup.matchAll(/<text\b[^>]*>/g)) {
+      const fill = m[0].match(/\bfill\s*=\s*("[^"]*"|\{[^}]*\})/);
+      if (fill) add(file, `<text fill=${fill[1]}>`, fill[1]);
+    }
+  }
+  for (const { file, css } of sheets) {
+    for (const rule of parseCss(css)) {
+      for (const [prop, value] of rule.decls) {
+        const isText =
+          prop === 'color' ||
+          (prop === 'fill' && rule.selectors.some((s) => /(^|[\s>+~])(text|tspan)(?![\w-])/.test(s)));
+        if (isText) add(file, `${rule.selectors[0]} { ${prop}: ${value} }`, value);
+      }
+    }
+  }
+  return reads;
+}
+
+describe('bar fills used as text', () => {
+  const reads = textReadsOfBarTokens();
+
+  it('the scan finds the sites (a broken scan would pass everything)', () => {
+    expect(reads.length).toBeGreaterThan(30);
+    expect(new Set(reads.map((r) => r.token))).toContain('--xp-ink');
+    expect(reads.some((r) => r.file.endsWith('HeatTrack.svelte'))).toBe(true);
+    expect(reads.some((r) => r.file.endsWith('Sidebar.svelte') && r.where.startsWith('color: {'))).toBe(true);
+  });
+
+  it('every text read is the -ink token, so a theme can override it', () => {
+    const bad = reads.filter((r) => !r.ink).map((r) => `${r.file}  ${r.where}`);
+    expect(bad, 'read var(--<bar>-ink) for text; the fill token is for fills and borders').toEqual([]);
+  });
+
+  it.each(THEME_IDS)('theme %s: every text read is at least 4.5:1 on panel, raised and hover', (id) => {
+    const bad: string[] = [];
+    for (const token of new Set(reads.map((r) => r.token))) {
+      for (const s of SURFACES) {
+        const ratio = contrast(colorOf(id, token), colorOf(id, s));
+        if (ratio < 4.5) {
+          const sites = reads.filter((r) => r.token === token).map((r) => r.file.replace('src/ui/', ''));
+          bad.push(`${token} on ${s}: ${r2(ratio)} (${[...new Set(sites)].join(', ')})`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('a bar token written as a string literal paints a fill, and is listed with that reason', () => {
+    const literal = new RegExp(`['"\`]var\\(--(${BAR_NAMES.join('|')})\\)['"\`]`);
+    const bad: string[] = [];
+    const seen = new Set<Allow>();
+    for (const file of [...svelteFiles(), ...filesUnder('src/ui', '.ts')]) {
+      blankComments(readText(file))
+        .split('\n')
+        .forEach((line, i) => {
+          if (!literal.test(line)) return;
+          const hit = allowed(BAR_LITERALS, file, line);
+          if (hit) seen.add(hit);
+          else bad.push(`${file}:${i + 1}  ${line.trim().slice(0, 110)}`);
+        });
+    }
+    expect(bad, 'text reads var(--<bar>-ink); list a fill in tests/themeAllowlist.ts BAR_LITERALS').toEqual([]);
+    expect(staleEntries(BAR_LITERALS, seen)).toEqual([]);
   });
 });

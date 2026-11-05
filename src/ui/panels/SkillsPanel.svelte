@@ -805,7 +805,7 @@
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 1.5px;
-    color: var(--skill);
+    color: var(--skill-ink);
   }
 
   .reqs {
@@ -822,7 +822,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 3px 14px;
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .active-info {
@@ -845,7 +845,7 @@
 
   .milestones {
     margin-top: 4px;
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .ranks {
@@ -871,7 +871,7 @@
   }
 
   .rank-bonus {
-    color: var(--xp);
+    color: var(--xp-ink);
     text-align: right;
     white-space: nowrap;
   }
@@ -954,7 +954,7 @@
   }
 
   .chip-tech {
-    color: var(--stamina, var(--accent));
+    color: var(--stamina-ink, var(--accent));
     border-color: var(--stamina, var(--accent));
   }
 
@@ -988,7 +988,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 2px 14px;
-    color: var(--xp);
+    color: var(--xp-ink);
   }
 
   .tech-move {
@@ -1009,7 +1009,7 @@
   }
 
   .fork-head {
-    color: var(--xp);
+    color: var(--xp-ink);
     font-weight: 600;
   }
 

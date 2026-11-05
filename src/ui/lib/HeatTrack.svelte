@@ -72,6 +72,12 @@
     default: 'var(--accent)',
     after: 'var(--hp)',
   };
+  /** The same colours as text: a bar fill read as text uses its -ink token. */
+  const windowInk: Record<CookWindow['side'], string> = {
+    before: 'var(--focus-ink)',
+    default: 'var(--accent)',
+    after: 'var(--hp-ink)',
+  };
 
   const gradeName = (id: string, quality: QualityTier) =>
     `${QUALITY_TIERS[quality].name} ${MATERIALS[id]?.name ?? id}`;
@@ -157,13 +163,13 @@
             <span
               class="ht-win"
               class:ht-on={w === c.here}
-              style="--c: {windowColour[w.side]}; left: {pct(w.from)}; width: calc({pct(w.to - w.from)} - 2px)"
+              style="--c: {windowColour[w.side]}; --c-ink: {windowInk[w.side]}; left: {pct(w.from)}; width: calc({pct(w.to - w.from)} - 2px)"
               title="{w.outcome?.name ?? 'No dish'}: {c.tag} {windowWords(w, max)}"
             >{#if roomy(w)}{labelOf(w)}{/if}</span>
           {/each}
           <!-- A window too narrow for its name is named under the strip instead of cut off. -->
           {#each c.windows.filter((w) => !roomy(w)) as w (w.from)}
-            <span class="ht-cap" style="--c: {windowColour[w.side]}; right: calc(100% - {pct(w.to)})">
+            <span class="ht-cap" style="--c: {windowColour[w.side]}; --c-ink: {windowInk[w.side]}; right: calc(100% - {pct(w.to)})">
               {labelOf(w)}: {c.tag} {windowWords(w, max)}
             </span>
           {/each}
@@ -379,7 +385,7 @@
   }
 
   .ht-under {
-    color: var(--focus);
+    color: var(--focus-ink);
   }
 
   .ht-over {
@@ -400,7 +406,7 @@
     top: 34px;
     font-size: 11.5px;
     white-space: nowrap;
-    color: var(--c);
+    color: var(--c-ink);
   }
 
   .ht-hold {
@@ -422,7 +428,7 @@
     white-space: nowrap;
     font-size: 12px;
     line-height: 18px;
-    color: var(--c);
+    color: var(--c-ink);
     border: 1px solid var(--c);
     background: color-mix(in srgb, var(--c) 16%, var(--bg-sunken));
   }
@@ -499,7 +505,7 @@
   }
 
   .ht-fix .ht-arrow {
-    color: var(--focus);
+    color: var(--focus-ink);
   }
 
   /* A narrow bench: the right-hand text drops under its row. */
