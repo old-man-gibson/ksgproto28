@@ -615,9 +615,9 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     s.stats[floorXpKey(floorId)] = 1;
     checkFloorClears(s, g.bus);
   };
-  /** What the floor looked like when the cap ran out, from the fights since it began. */
-  const diagnose = (why: string, wall: boolean): StuckRecord => {
-    const fights = report.fights.filter((f) => f.at > segStart);
+  /** What the floor looked like when the cap ran out, from the fights that began in its segment. */
+  const diagnose = (seg: ClimbSegment, why: string, wall: boolean): StuckRecord => {
+    const fights = report.fights.filter((f) => f.segment === seg);
     const lost = fights.filter((f) => f.lost);
     const tally = new Map<string, number>();
     for (const f of lost) for (const foe of f.foes) tally.set(foe, (tally.get(foe) ?? 0) + 1);
@@ -678,17 +678,18 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     if (!o.replay) segment = seg;
     segStart = t;
     capEnd = t + opts.floorCap;
-    settle();
-    o.prep?.();
-    const entered = goal() || o.ride === false || climbTo(floorId);
+    const onFloor = () => SPOTS[s.spot]?.areaId === FLOORS[floorId].areaId;
+    let entered = true;
     // A pass that ends early (a knockout moved him, a route was refused) is
-    // taken up again until the floor opens, the cap runs out, or a pass does nothing.
-    if (entered) {
-      repeat(goal, () => {
-        settle();
-        work();
-      });
-    }
+    // taken up again until the floor opens, the cap runs out, or a pass does
+    // nothing. Each pass settles first, does the floor's prep (what its gate
+    // asks for), and climbs if he is not on the floor.
+    repeat(goal, () => {
+      settle();
+      o.prep?.();
+      entered = o.ride === false || onFloor() || climbTo(floorId);
+      if (entered) work();
+    });
     const capped = t >= capEnd;
     capEnd = Infinity;
     if (goal()) {
@@ -697,15 +698,16 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     }
     if (t >= opts.budget) return false;
     if (o.replay) {
+      report.firstSkip ??= seg;
       skip();
       return true;
     }
-    const why = !entered
-      ? 'the climb was refused (the floor gate is unmet)'
-      : capped
-        ? `open at the ${Math.round(opts.floorCap / TPS / 3600)} h cap`
+    const why = capped
+      ? `open at the ${Math.round(opts.floorCap / TPS / 60)} min cap` + (entered ? '' : ' (the climb was refused: the floor gate is unmet)')
+      : !entered
+        ? 'the climb was refused (the floor gate is unmet) and no rule could meet it'
         : 'the script stopped with the floor open (no rule left to try; not a measured wall)';
-    report.stuck[seg] = diagnose(why, capped);
+    report.stuck[seg] = diagnose(seg, why, capped);
     if (!opts.skipWalls) return false;
     // Recorded as the floor stood, before the skip: the stronghold's skip
     // ends the run, and the prestige resets the level and the gold.
@@ -907,6 +909,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     19: {
       // Floor 19's gate: sixty desert kills, hunted at floor 18's den.
       prep: () => {
+        if (desert() >= gateKills('ascent_f19')) return;
         if (scout(['f18_dune_den'])) persist('f18_dune_den', 'hunt', () => desert() >= gateKills('ascent_f19'));
       },
       work: () => {
@@ -918,6 +921,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     20: {
       // Floor 20's gate: a hundred and fifty, hunted in floor 19's valley.
       prep: () => {
+        if (desert() >= gateKills('ascent_f20')) return;
         if (scout(['f19_causeway', 'f19_valley'])) persist('f19_valley', 'hunt', () => desert() >= gateKills('ascent_f20'));
       },
       work: () => {

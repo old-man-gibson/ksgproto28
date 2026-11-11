@@ -16,9 +16,13 @@
 //                                                the festival, floor 17 and the desert). Prints a
 //                                                per-floor table for each climb after the band 1 one.
 //   npm run pacing -- --through 20 --side navy   the harbor side John signs with (default merchants)
+//   npm run pacing -- --through 20 --wards 10,9,8,7   band 3's wards in this order (default 7,8,9,10)
+//   npm run pacing -- --through 20 --cap 120     a floor still open after 120 minutes of game time
+//                                                is a wall (default 240); past it John takes a debug
+//                                                skip and the later floors read "measured after skip"
 //
-// Past floor 6 a climb is three runs and takes seconds per climb at `--weapons skip` and
-// about a minute with the whole rack; pass --weapons to keep it short.
+// Past floor 6 a climb plays three runs (two prestiges). Measured 2026-11-11: about 10 s of
+// wall clock per climb, 18 climbs in under three minutes.
 
 import { runJohn, secs, SEGMENTS, type ClimbReport, type ClimbSegment } from '../tests/john';
 import { TPS } from '../src/core/engine/loop';
@@ -36,6 +40,10 @@ const attentive = args.includes('--attentive');
 const showFights = args.includes('--fights');
 const through = Number(list('--through', '3')[0]);
 const side = list('--side', 'merchants')[0];
+/** Minutes of game time one floor past 6 may take before it is a wall (default 240). */
+const capMinutes = Number(list('--cap', '240')[0]);
+/** Band 3's wards, by floor number, in the order John takes them. */
+const wards = list('--wards', '7,8,9,10').map(Number);
 
 const min = (ticks: number | null) => (ticks === null ? '—' : `${(ticks / 600).toFixed(1)}m`);
 const gap = (a: number | null, b: number | null) => (a === null || b === null ? '—' : `${Math.round((b - a) / 10)}s`);
@@ -66,7 +74,7 @@ const rows: ClimbReport[] = [];
 for (const seed of seeds)
   for (const weapon of weapons)
     for (const spell of weapon === 'skip' ? spells.slice(0, 1) : spells) {
-      const r = runJohn({ seed, weapon, spell, attentive, through, side });
+      const r = runJohn({ seed, weapon, spell, attentive, through, side, wards, floorCap: capMinutes * 60 * TPS });
       rows.push(r);
       if (showFights) {
         console.log(`\n${weapon} / ${spell} / seed ${seed}`);
@@ -117,7 +125,7 @@ if (through > 3) {
       const stuck = r.stuck[k];
       const note = [
         stuck ? (stuck.wall ? 'WALL, debug skip' : 'SCRIPT STOPPED, debug skip') : '',
-        r.skipBefore[k] ? `measured after skip at ${r.skipBefore[k]}` : '',
+        r.skipBefore[k] ? `measured after skip at ${floorName(r.skipBefore[k]!)}` : '',
       ].filter(Boolean).join('; ');
       const row = [
         floorName(k),
