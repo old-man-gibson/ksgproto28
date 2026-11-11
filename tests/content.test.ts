@@ -69,6 +69,7 @@ import { TERRAIN_PROFILES } from '../src/core/data/climate.data';
 import { SPINE_EXEMPT, offLadderDoor } from '../src/core/data/towers.data';
 import { SEA_CRATES_OFFLINE, SEA_CRATES_WON, SEA_MISSION_DONE } from '../src/core/data/sea.data';
 import { seaContentIssues } from '../src/core/systems/seaValidation';
+import { skyContentIssues } from '../src/core/systems/skyValidation';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../src/core/systems/monsterStats';
 import { resistanceProblems } from '../src/core/systems/conditionHarm';
@@ -2388,6 +2389,18 @@ describe('band 3 wards: stamps, kept wounds and windows', () => {
 describe('the harbor band: sides and convoys', () => {
   it('every side and convoy resolves, and join quests lock one side per run', () => {
     const issues = seaContentIssues(SEA_SIDES, CONVOYS, { spots: SPOTS, npcs: NPCS, quests: QUESTS, monsters: MONSTERS, materials: MATERIALS });
+    expect(issues.map((i) => `${i.kind} ${i.id}: ${i.message}`)).toEqual([]);
+  });
+});
+
+/**
+ * Region skies and the encounter lines that wait on them (RegionDef.sky,
+ * SpotEncounter.sky). One pure function in systems/skyValidation.ts, run here
+ * on the live registry and by forge/lib/validate.ts on the staged copy.
+ */
+describe('region skies and sky-gated encounter lines', () => {
+  it('every region sky names a table, and every sky line can roll where it stands', () => {
+    const issues = skyContentIssues({ regions: REGIONS, areas: AREAS, spots: SPOTS });
     expect(issues.map((i) => `${i.kind} ${i.id}: ${i.message}`)).toEqual([]);
   });
 });

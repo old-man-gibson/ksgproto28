@@ -14,7 +14,7 @@ import {
   type WeatherKind,
   type WeatherSample,
 } from './weather';
-import { SKY_RULES, TICKS_PER_GAME_MINUTE } from '../data/climate.data';
+import { CALM_SEEN_KEY, SKY_RULES, TICKS_PER_GAME_MINUTE } from '../data/climate.data';
 import { text } from '../text/log';
 import { tickWeathersense } from './weathersense';
 
@@ -354,16 +354,6 @@ export function tickExposure(state: GameState, bus: EventBus): void {
 }
 
 // ---------- The open sky's rules ----------
-
-/**
- * Set to 1 the first time the player stands under a calm sky, by `tickSky`.
- * A `flag:` counter in `state.stats`: no save shape change, reset by a
- * prestige like every other stat. Calm is secret until then, so the log line
- * `exposure.calm_first` is the one place that names it, and anything else that
- * would name calm to the player (a hint, a tracker, a tooltip) reads this first.
- * The weather chip and the forecast show the kind like any other sky.
- */
-export const CALM_SEEN_KEY = 'flag:malgeri_calm_seen';
 
 /**
  * Runs every tick from Game.advance(), beside tickExposure; does its work once

@@ -221,19 +221,21 @@ export const ANOMALY_OCTAVES: { space: number; hours: number; amp: number }[] = 
  * noise field; `heatwave` and `calm` come only from a region sky table
  * (SKY_TABLES) and are never produced by a region without one.
  */
-export type WeatherKind =
-  | 'still'
-  | 'clear'
-  | 'overcast'
-  | 'mist'
-  | 'rain'
-  | 'storm'
-  | 'snow'
-  | 'blizzard'
-  | 'gale'
-  | 'sandstorm'
-  | 'heatwave'
-  | 'calm';
+export const WEATHER_KINDS = [
+  'still',
+  'clear',
+  'overcast',
+  'mist',
+  'rain',
+  'storm',
+  'snow',
+  'blizzard',
+  'gale',
+  'sandstorm',
+  'heatwave',
+  'calm',
+] as const;
+export type WeatherKind = (typeof WEATHER_KINDS)[number];
 
 // ---------- Region skies: fronts and calm ----------
 
@@ -251,6 +253,16 @@ export const FRONT_HOURS = 6;
 export const CALM_PERIOD_DAYS = 12;
 /** Game hours one calm spell lasts. */
 export const CALM_HOURS = 8;
+/**
+ * Set to 1 the first time the player stands under a calm sky
+ * (`tickSky`, systems/exposure.ts). A `flag:` counter in `state.stats`: no save
+ * shape change. A prestige carries it over, so the disclosure line fires once
+ * per save. Calm is secret until then: the log line `exposure.calm_first` is
+ * the one text that names it, and anything else that would name calm to the
+ * player (a hint, a tracker, a tooltip) reads this first. The weather chip and
+ * the forecast show the kind like any other sky.
+ */
+export const CALM_SEEN_KEY = 'flag:malgeri_calm_seen';
 
 /**
  * Thresholds `classify` applies only when a region sky table feeds it
@@ -324,8 +336,8 @@ export const SKY_RULES: Partial<Record<WeatherKind, SkyRule>> = {
   rain: { every: 3, self: [{ id: 'wet', intensity: 1 }] },
   snow: { every: 3, self: [{ id: 'chilled', intensity: 0.15 }] },
   storm: { every: 3, self: [{ id: 'wet', intensity: 1 }, { id: 'jolted', intensity: 0.5 }] },
-  // Dazzled extends by one dose each time and reaches Blinded at four, so the
-  // heatwave's dazzle lands one dose in four.
+  // Dazzled adds one stack per dose and becomes Blinded at four. A dose every
+  // 3 minutes would blind in 12, so each dose lands with chance 0.25.
   heatwave: {
     every: 3,
     self: [{ id: 'sweltering', intensity: 0.5 }, { id: 'dazzled', intensity: 1, chance: 0.25 }],

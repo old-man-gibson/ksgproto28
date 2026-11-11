@@ -12,6 +12,7 @@ import { smithingContentIssues } from '../../src/core/systems/assemblyValidation
 import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
 import { SPINE_EXEMPT, offLadderDoor } from '../../src/core/data/towers.data';
 import { seaContentIssues } from '../../src/core/systems/seaValidation';
+import { skyContentIssues } from '../../src/core/systems/skyValidation';
 import { festivalContentIssues } from '../../src/core/systems/festivalValidation';
 import { wardContentIssues } from '../../src/core/systems/wardValidation';
 import { WARD_WINDOWS } from '../../src/core/data/wards.data';
@@ -154,6 +155,11 @@ export function validate(store: S): Issue[] {
     if (region.terrain && terrains.length > 0 && !terrains.includes(region.terrain)) {
       err('region', region.id, `terrain '${region.terrain}' is not in TERRAIN_PROFILES`, ['terrain']);
     }
+  }
+  // Region skies and the encounter lines that wait on them — the same function
+  // tests/content.test.ts runs (systems/skyValidation.ts).
+  for (const issue of skyContentIssues({ regions, areas, spots })) {
+    err(issue.kind, issue.id, issue.message, issue.kind === 'region' ? ['sky'] : ['encounters']);
   }
   // Place tags at every level of the chain — a spot's effective set is the
   // union region ∪ area ∪ spot, so all three speak the same vocabulary.
