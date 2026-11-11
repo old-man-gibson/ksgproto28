@@ -309,6 +309,8 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   let fightBoss: ClimbSegment | null = null;
   let fightSegment: ClimbSegment = 'tutorial';
   let fightLevel = 1;
+  /** A fight was open when the last tick ended. */
+  let inFight = false;
   const foeHp = () => sum((s.combat?.enemies ?? []).filter((m) => m !== null).map((m) => m!.hp));
   const tick = () => {
     // The stronghold ends the run unasked (Game.tick does this with the clock
@@ -319,9 +321,12 @@ export function runJohn(options: ClimbOptions): ClimbReport {
       run++;
       g.leavePrestigeReview();
       t++;
+      inFight = false;
       return;
     }
-    const before = !!s.combat;
+    // A fight an action ended between two ticks (a climb out of one that
+    // can be fled) closes on the next tick, so it still gets its record.
+    const before = inFight;
     const wasDown = s.recovering;
     g.tick();
     t++;
@@ -330,6 +335,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
       report.knockouts[segment]++;
     }
     const after = !!s.combat;
+    inFight = after;
     if (!before && after) {
       fightStart = t;
       fightHp = s.resources.hp;
