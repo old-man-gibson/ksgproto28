@@ -132,6 +132,11 @@ export interface FightRecord {
   hpBefore: number;
   hpAfter: number;
   maxHp: number;
+  /** The segment in play when the fight began, and John's character level then. */
+  segment: ClimbSegment;
+  level: number;
+  /** A try at the segment's boss (BOSSES). */
+  boss: boolean;
   /** The fight ended with John knocked out. */
   lost?: boolean;
   /** The foes' combined max HP at the start, and what they had left at the end (0 on a win). */
@@ -171,7 +176,10 @@ export interface ClimbReport {
   /** The first walk into the toll collector's office. */
   firstBoss: { ticks: number; won: boolean } | null;
   bossAttempts: number;
+  /** Gold earned in the run the climb ended in (a prestige resets the counter). */
   goldEarned: number;
+  /** Ticks of play the whole climb took, every run. */
+  ticks: number;
   /** Character level when each segment finished (systems/levels.ts). */
   levels: Record<ClimbSegment, number | null>;
   /** Lifetime character-level XP at the end of the climb. */
@@ -260,6 +268,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     firstBoss: null,
     bossAttempts: 0,
     goldEarned: 0,
+    ticks: 0,
     levels: blank(null),
     levelXp: 0,
     gold: blank(null),
@@ -298,6 +307,8 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   let foeLeft = 0;
   /** The segment whose boss the fight in progress is a try at, if it is one. */
   let fightBoss: ClimbSegment | null = null;
+  let fightSegment: ClimbSegment = 'tutorial';
+  let fightLevel = 1;
   const foeHp = () => sum((s.combat?.enemies ?? []).filter((m) => m !== null).map((m) => m!.hp));
   const tick = () => {
     // The stronghold ends the run unasked (Game.tick does this with the clock
@@ -329,6 +340,8 @@ export function runJohn(options: ClimbOptions): ClimbReport {
       foeLeft = foeMax;
       const boss = BOSSES[segment];
       fightBoss = null;
+      fightSegment = segment;
+      fightLevel = s.level;
       if (boss && boss.spots.includes(s.spot) && (!boss.foe || fightFoeIds.includes(boss.foe))) {
         fightBoss = segment;
         report.bossTries[segment]++;
@@ -346,6 +359,9 @@ export function runJohn(options: ClimbOptions): ClimbReport {
         hpBefore: Math.round(fightHp),
         hpAfter: Math.round(s.resources.hp),
         maxHp: Math.round(maxHp()),
+        segment: fightSegment,
+        level: fightLevel,
+        boss: fightBoss !== null,
         lost,
         foeMaxHp: Math.round(foeMax),
         foeHpLeft: lost ? Math.round(foeLeft) : 0,
@@ -661,7 +677,12 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     const entered = goal() || o.ride === false || climbTo(floorId);
     // A pass that ends early (a knockout moved him, a route was refused) is
     // taken up again until the floor opens, the cap runs out, or a pass does nothing.
-    if (entered) repeat(goal, work);
+    if (entered) {
+      repeat(goal, () => {
+        settle();
+        work();
+      });
+    }
     const capped = t >= capEnd;
     capEnd = Infinity;
     if (goal()) {
@@ -905,6 +926,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
 
   function finish(): ClimbReport {
     report.goldEarned = earned();
+    report.ticks = t;
     report.levelXp = Math.round(xpToReach(s.level) + s.levelXp);
     return report;
   }
