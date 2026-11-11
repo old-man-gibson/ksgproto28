@@ -108,9 +108,9 @@ export interface ClimbOptions {
   /** Give up after this many ticks of play. Default: two hours, 80 hours past floor 6. */
   budget?: number;
   /**
-   * The last floor John climbs: 3 (band 1, the default), 6 (band 2 too) or
-   * 7 to 20. 7 to 10 stop after those wards of run 2; 11 and up play the
-   * stronghold and the third run too.
+   * The last floor John climbs: 3 (band 1, the default), 4 to 6 (all of band
+   * 2: a stop inside a band is not offered) or 7 to 20. 7 to 10 stop after
+   * those wards of run 2; 11 and up play the stronghold and the third run too.
    */
   through?: number;
   /** Ticks of play one floor past 6 may take before it is a wall. Default: four hours. */
@@ -811,13 +811,13 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     if (!climbTo('ascent_f11')) return;
     handIn('f11_arm_the_wall');
     if (s.quests.f11_arm_the_wall?.status !== 'done') return;
-    if (scout(['f11_yard', 'f11_wall'])) persist('f11_wall', 'hunt', () => s.prestige.stronghold);
+    if (scout(['f11_yard', 'f11_wall'])) persist('f11_wall', 'hunt', () => !!s.prestige.stronghold);
   };
   const siegeSkip = () => {
     s.stats['fights:f11_wall'] = STRONGHOLD_WAVE;
     tick();
   };
-  if (!attempt('siege', 'ascent_f11', siegeWork, { goal: () => s.prestige.stronghold, skip: siegeSkip })) return finish();
+  if (!attempt('siege', 'ascent_f11', siegeWork, { goal: () => !!s.prestige.stronghold, skip: siegeSkip })) return finish();
   if (run !== 3) return finish();
 
   // ---- Run 3: floors 1 to 10 again. A ward that was a wall in run 2 is skipped. ----
