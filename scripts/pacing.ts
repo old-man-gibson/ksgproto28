@@ -10,8 +10,22 @@
 //   npm run pacing -- --spells fire,ice,spark    compare the tutorial spells
 //   npm run pacing -- --attentive                explore first, wield the finds
 //   npm run pacing -- --fights                   every fight of every climb
+//   npm run pacing -- --through 20 --seeds 42 --weapons skip
+//                                                climb past band 1: floors 4 to 20 (6 = band 2,
+//                                                7 to 10 = band 3's wards, 11 and up = the harbor,
+//                                                the festival, floor 17 and the desert). Prints a
+//                                                per-floor table for each climb after the band 1 one.
+//   npm run pacing -- --through 20 --side navy   the harbor side John signs with (default merchants)
+//   npm run pacing -- --through 20 --wards 10,9,8,7   band 3's wards in this order (default 7,8,9,10)
+//   npm run pacing -- --through 20 --cap 120     a floor still open after 120 minutes of game time
+//                                                is a wall (default 240); past it John takes a debug
+//                                                skip and the later floors read "measured after skip"
+//
+// Past floor 6 a climb plays three runs (two prestiges). Measured 2026-11-11: about 10 s of
+// wall clock per climb, 18 climbs in under three minutes.
 
-import { runJohn, secs, SEGMENTS, type ClimbReport } from '../tests/john';
+import { runJohn, secs, SEGMENTS, type ClimbReport, type ClimbSegment } from '../tests/john';
+import { TPS } from '../src/core/engine/loop';
 import type { TutorialWeapon } from '../src/core/types';
 
 const args = process.argv.slice(2);
@@ -24,6 +38,12 @@ const weapons = list('--weapons', 'skip,sword,spear,dagger,hammer,unarmed') as (
 const spells = list('--spells', 'fire');
 const attentive = args.includes('--attentive');
 const showFights = args.includes('--fights');
+const through = Number(list('--through', '3')[0]);
+const side = list('--side', 'merchants')[0];
+/** Minutes of game time one floor past 6 may take before it is a wall (default 240). */
+const capMinutes = Number(list('--cap', '240')[0]);
+/** Band 3's wards, by floor number, in the order John takes them. */
+const wards = list('--wards', '7,8,9,10').map(Number);
 
 const min = (ticks: number | null) => (ticks === null ? '—' : `${(ticks / 600).toFixed(1)}m`);
 const gap = (a: number | null, b: number | null) => (a === null || b === null ? '—' : `${Math.round((b - a) / 10)}s`);
@@ -54,7 +74,7 @@ const rows: ClimbReport[] = [];
 for (const seed of seeds)
   for (const weapon of weapons)
     for (const spell of weapon === 'skip' ? spells.slice(0, 1) : spells) {
-      const r = runJohn({ seed, weapon, spell, attentive });
+      const r = runJohn({ seed, weapon, spell, attentive, through, side, wards, floorCap: capMinutes * 60 * TPS });
       rows.push(r);
       if (showFights) {
         console.log(`\n${weapon} / ${spell} / seed ${seed}`);
@@ -77,5 +97,70 @@ console.log(
   `\nfinished ${finished.length}/${rows.length}` +
     (unfinished ? ` (${unfinished} ran out of time)` : '') +
     ` · first boss lost ${rows.filter((r) => r.firstBoss && !r.firstBoss.won).length}/${rows.length}` +
-    ` · knockouts ${SEGMENTS.map((k) => `${k} ${total(k)}`).join(', ')}`,
+    ` · knockouts ${SEGMENTS.filter((k) => rows.some((r) => r.done[k] !== null)).map((k) => `${k} ${total(k)}`).join(', ')}`,
 );
+
+// ---- Past band 1: one table per climb, a row per segment in the order it was played. ----
+
+/** Game time as h:mm:ss. */
+const clock = (ticks: number) => {
+  const sec = Math.round(ticks / TPS);
+  const two = (n: number) => String(n).padStart(2, '0');
+  return `${Math.floor(sec / 3600)}:${two(Math.floor(sec / 60) % 60)}:${two(sec % 60)}`;
+};
+/** The floor each segment is, for the first column. */
+const FLOOR_OF: Partial<Record<ClimbSegment, string>> = {
+  tutorial: 'f0', vermin: 'f1 vermin', floor1: 'f1', floor2: 'f2', gate3: 'f3 gate', descent: 'f3 stairs', floor3: 'f3',
+  floor4: 'f4', gate5: 'f5 gate', floor5: 'f5', gate6: 'f6 gate', floor6: 'f6',
+  reclimb2: 'f1-6 again', siege: 'f11 siege', reclimb3: 'f1-10 again',
+};
+const floorName = (k: ClimbSegment) => FLOOR_OF[k] ?? `f${k.replace('floor', '')}`;
+
+if (through > 3) {
+  for (const r of rows) {
+    const played = SEGMENTS.filter((k) => r.done[k] !== null).sort((a, b) => r.done[a]! - r.done[b]! || SEGMENTS.indexOf(a) - SEGMENTS.indexOf(b));
+    const head = ['floor', 'run', 'cleared at', 'took', 'KO', 'boss tries/lost', 'level', 'gold', 'note'];
+    let prev = 0;
+    const body = played.map((k) => {
+      const stuck = r.stuck[k];
+      const note = [
+        stuck ? (stuck.wall ? 'WALL, debug skip' : 'SCRIPT STOPPED, debug skip') : '',
+        r.skipBefore[k] ? `measured after skip at ${floorName(r.skipBefore[k]!)}` : '',
+      ].filter(Boolean).join('; ');
+      const row = [
+        floorName(k),
+        String(r.runs[k] ?? '—'),
+        clock(r.done[k]!),
+        clock(r.done[k]! - prev),
+        String(r.knockouts[k]),
+        r.bossTries[k] ? `${r.bossTries[k]}/${r.bossLost[k]}` : '—',
+        String(r.levels[k] ?? '—'),
+        String(r.gold[k] ?? '—'),
+        note,
+      ];
+      prev = r.done[k]!;
+      return row;
+    });
+    const w = head.map((h, i) => Math.max(h.length, ...body.map((b) => b[i].length)));
+    const fmt = (c: string[]) => c.map((x, i) => (i === 0 || i === c.length - 1 ? x.padEnd(w[i]) : x.padStart(w[i]))).join('  ').trimEnd();
+    console.log(`\nJohn ${r.opts.weapon === 'skip' ? '(skip)' : r.opts.weapon}, seed ${r.opts.seed}, side ${r.opts.side}, through floor ${r.opts.through}: ${r.runs.reclimb2 ? 'three runs' : 'one run'}, ${clock(r.ticks)} of play, ${r.fights.length} fights, ${r.goldEarned} gold earned in the last run`);
+    console.log(fmt(head));
+    for (const b of body) console.log(fmt(b));
+    // Bosses: the try that ended the segment (the last), with its foes against John's level.
+    for (const k of played) {
+      const tries = r.fights.filter((f) => f.segment === k && f.boss);
+      const last = tries[tries.length - 1];
+      if (last && SEGMENTS.indexOf(k) >= SEGMENTS.indexOf('floor7'))
+        console.log(`  boss ${floorName(k)}: ${last.foes.join(', ')} vs John level ${last.level}, ${secs(last.ticks)} s, ${last.lost ? 'lost' : 'won'}; ${tries.length} tries, ${tries.filter((f) => f.lost).length} lost`);
+    }
+    for (const k of SEGMENTS) {
+      const st = r.stuck[k];
+      if (!st) continue;
+      console.log(
+        `  stuck ${floorName(k)}: ${st.why}; ${st.fights} fights, ${st.lost} lost` +
+          (st.foe ? `; knocked out by ${st.foe} at ${st.spot}, foe level about ${st.foeLevel} vs John level ${st.level}` : '') +
+          (st.taken !== null ? `; HP per second taken ${st.taken}, dealt ${st.dealt}` : ''),
+      );
+    }
+  }
+}
