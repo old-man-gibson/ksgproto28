@@ -1,5 +1,6 @@
 // The countryside these tests stand on is SHELVED content; the fixture mounts it.
 import './fixtures/shelved-world';
+import './fixtures/fair-sky';
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';

@@ -274,6 +274,26 @@ export const STATUSES = prose<StatusDef>('STATUSES', STATUSES_TEXT, {
     removal: [{ on: 'heal', healKinds: ['rest', 'salve', 'spell'], effect: 'remove' }],
   },
 
+  /*
+   * SWELTERING — the heatwave's cost, paid in stamina.
+   *
+   * Modelled on `perforated`'s ceiling, without its other halves: no regen
+   * block and no forced stance. Applied by the heatwave sky rule (SKY_RULES,
+   * climate.data.ts) in half-point doses, so it takes twelve doses to reach the
+   * cap. It does not escalate and does not decay while held: the ceiling sits
+   * at its depth until the last dose runs out. Fingerprinted like any held
+   * status (derived.ts) because `ceilings` change the stat block.
+   */
+  sweltering: {
+    id: 'sweltering',
+    name: 'Sweltering',
+    icon: '🥵',
+    element: 'heat',
+    stacking: { mode: 'sum', cap: 6 },
+    duration: 30 * SECOND,
+    ceilings: [{ resource: 'stamina', per: 0.05, max: 0.3 }],
+  },
+
   // ---------- Cold: chill ----------
 
   chilled: {

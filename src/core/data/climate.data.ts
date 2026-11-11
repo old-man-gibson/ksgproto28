@@ -1,4 +1,4 @@
-import type { TerrainId } from '../types';
+import type { StatusApplication, TerrainId } from '../types';
 
 /**
  * The calendar and the sky, as data.
@@ -213,3 +213,121 @@ export const ANOMALY_OCTAVES: { space: number; hours: number; amp: number }[] = 
   { space: 4, hours: 48, amp: 0.5 },
   { space: 2, hours: 18, amp: 0.3 },
 ];
+
+// ---------- Sky kinds ----------
+
+/**
+ * Every sky a region can show. The first ten come from `classify` over the
+ * noise field; `heatwave` and `calm` come only from a region sky table
+ * (SKY_TABLES) and are never produced by a region without one.
+ */
+export type WeatherKind =
+  | 'still'
+  | 'clear'
+  | 'overcast'
+  | 'mist'
+  | 'rain'
+  | 'storm'
+  | 'snow'
+  | 'blizzard'
+  | 'gale'
+  | 'sandstorm'
+  | 'heatwave'
+  | 'calm';
+
+// ---------- Region skies: fronts and calm ----------
+
+/**
+ * A region with `RegionDef.sky` set does not read the noise field. Its sky is
+ * a run of FRONTS, each FRONT_HOURS long and drawn by weight, with one CALM
+ * spell per CALM_PERIOD_DAYS window laid over them (systems/weather.ts). Both
+ * are pure in (world seed, region id, tick). Regions without `sky` are
+ * untouched.
+ */
+
+/** Game hours one front lasts. Cells start at tick 0, so four fit a day. */
+export const FRONT_HOURS = 6;
+/** One calm spell in every window of this many game days. */
+export const CALM_PERIOD_DAYS = 12;
+/** Game hours one calm spell lasts. */
+export const CALM_HOURS = 8;
+
+/**
+ * Thresholds `classify` applies only when a region sky table feeds it
+ * (`extended`): a temperature at or above `heatwaveTemp` with a dry sky is a
+ * heatwave, and wind at or below `calmWind` with a dry sky is calm. The noise
+ * path never passes `extended`, so its output is unchanged.
+ */
+export const SKY_THRESHOLDS = { heatwaveTemp: 35, calmWind: 0.05, dryPrecip: 0.18 } as const;
+
+/** One front: the values `classify` reads, and the weight it is drawn with. */
+export interface FrontDef {
+  kind: WeatherKind;
+  /** Relative draw weight. A season's excluded kind drops out and the rest renormalise. */
+  weight: number;
+  /** °C. Absolute, not an offset from the climate baseline. */
+  temp: number;
+  /** 0–1. */
+  precip: number;
+  /** 0–1. */
+  wind: number;
+}
+
+export interface SkyTable {
+  fronts: FrontDef[];
+  /** The one front kind each season never draws. */
+  excluded: Record<SeasonId, WeatherKind>;
+  /** The values calm carries (kind 'calm'; it is never drawn as a front). */
+  calm: Pick<FrontDef, 'temp' | 'precip' | 'wind'>;
+}
+
+/**
+ * Sky tables by `RegionDef.sky`. `classify(front, terrain, false, true)` must
+ * return the front's `kind` (asserted in tests/sky.test.ts), so the values
+ * here are what the weather chip, the forecast and the exposure rules see.
+ */
+export const SKY_TABLES: Record<string, SkyTable> = {
+  // The Malgeri Mountains: five harsh kinds, one of them absent each season.
+  malgeri: {
+    fronts: [
+      { kind: 'gale', weight: 24, temp: 5, precip: 0.3, wind: 0.8 },
+      { kind: 'snow', weight: 22, temp: -4, precip: 0.8, wind: 0.35 },
+      { kind: 'rain', weight: 20, temp: 7, precip: 0.8, wind: 0.35 },
+      { kind: 'storm', weight: 18, temp: 8, precip: 0.85, wind: 0.8 },
+      { kind: 'heatwave', weight: 14.5, temp: 38, precip: 0.05, wind: 0.2 },
+    ],
+    excluded: { summer: 'snow', winter: 'heatwave', spring: 'storm', autumn: 'rain' },
+    calm: { temp: 14, precip: 0.1, wind: 0.02 },
+  },
+};
+
+// ---------- What the open sky does to whoever stands under it ----------
+
+/**
+ * A rule applied by `tickSky` (systems/exposure.ts) every `every` game
+ * minutes to the player standing under an open sky of that kind, through
+ * `applyStatus`, so resistances thin the dose. `foes` are applied the same way
+ * to the enemies of a fight in progress. Applies in every region, not only
+ * those with a sky table. A kind with no entry does nothing.
+ *
+ * Doses are per application. A status holds its own duration, so a rule whose
+ * period is shorter than the status's duration keeps it topped up.
+ */
+export interface SkyRule {
+  every: number;
+  self: StatusApplication[];
+  foes?: StatusApplication[];
+}
+
+export const SKY_RULES: Partial<Record<WeatherKind, SkyRule>> = {
+  gale: { every: 3, self: [{ id: 'buffeted', intensity: 0.5 }] },
+  rain: { every: 3, self: [{ id: 'wet', intensity: 1 }] },
+  snow: { every: 3, self: [{ id: 'chilled', intensity: 0.15 }] },
+  storm: { every: 3, self: [{ id: 'wet', intensity: 1 }, { id: 'jolted', intensity: 0.5 }] },
+  // Dazzled extends by one dose each time and reaches Blinded at four, so the
+  // heatwave's dazzle lands one dose in four.
+  heatwave: {
+    every: 3,
+    self: [{ id: 'sweltering', intensity: 0.5 }, { id: 'dazzled', intensity: 1, chance: 0.25 }],
+  },
+};

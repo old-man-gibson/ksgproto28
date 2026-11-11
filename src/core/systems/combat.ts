@@ -59,7 +59,7 @@ import { TPS } from '../engine/loop';
 import { formulaAttr, grantAttrXp } from './attributes';
 import { checkDiscovery, grantSkillXp, isUnlocked } from './skills';
 import { isPracticeFight, practising } from './practice';
-import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from './exposure';
+import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor, skyKindAt } from './exposure';
 import { itemName, unequipSlot } from './equipment';
 import { itemDefOf } from './assembly';
 import { effectiveStyleDef, effectiveStyleId } from './styles';
@@ -821,10 +821,19 @@ export function encounterPowerRatio(state: GameState, e: SpotEncounter): number 
  */
 export function eligibleEncounters(state: GameState, spot: SpotDef): SpotEncounter[] {
   const night = isNightNow(state);
+  // The sky is read once, and only if a line asks: a table with no `sky` line
+  // never samples the weather. No open sky (a roof, an `indoor` tag) is null,
+  // which no `sky` list contains.
+  let sky: ReturnType<typeof skyKindAt> | undefined;
   return (spot.encounters ?? []).filter((e) => {
     if (e.once && (state.stats[slainKey(spot.id, e.monsterId)] ?? 0) > 0) return false;
     // The clock decides which keeper holds the floor tonight.
     if (e.daypart && (e.daypart === 'night') !== night) return false;
+    // The sky over the spot decides which lines can roll (`SpotEncounter.sky`).
+    if (e.sky) {
+      if (sky === undefined) sky = skyKindAt(state, spot.id);
+      if (sky === null || !e.sky.includes(sky)) return false;
+    }
     // The ambush window: an overtuned spawn that appears only while the fight
     // would be tough-but-possible, and vanishes once outgrown — it can never
     // be farmed from above, and never flattens someone it would simply kill.

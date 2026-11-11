@@ -2,6 +2,7 @@
 // Everything here is plain data — no DOM, no framework imports.
 
 import type { FacetDoc } from './facet/facet';
+import type { WeatherKind } from './data/climate.data';
 
 // ---------- Attributes ----------
 
@@ -4272,6 +4273,13 @@ export interface RegionDef {
   /** Climate terrain. A region without one gets the neutral 'plains' profile. */
   terrain?: TerrainId;
   /**
+   * Names a sky table (SKY_TABLES, data/climate.data.ts). The region's weather
+   * is then a run of fronts with a periodic calm spell instead of the noise
+   * field. Ignored while the place is sheltered. An area opts in by belonging
+   * to the region (`AreaDef.regionId`).
+   */
+  sky?: string;
+  /**
    * Interiors: caves, the home base. Weather stops at the door — wind and
    * precipitation zero out and only a damped temperature leaks in. An area
    * can override it (`AreaDef.sheltered`).
@@ -4572,6 +4580,13 @@ export interface SpotEncounter {
    * whose keeper changes with the clock is authored as two entries.
    */
   daypart?: 'day' | 'night';
+  /**
+   * Rolled only while the sky over the spot is one of these kinds. A spot with
+   * no open sky (a roofed or `indoor` place, an unplaced region) has none, so
+   * a line with `sky` never rolls there. Counts like `daypart` for the clear
+   * table rule: a line that waits on the sky does not cover a gap.
+   */
+  sky?: WeatherKind[];
   /**
    * This entry is the SPOT'S BOSS: killing it bumps `boss:<spotId>` (an
    * engine counter, `slain:*`'s sibling — announced on the first kill only).

@@ -33,6 +33,11 @@ export const REGIONS: Record<string, RegionDef> = {
   // exists to explain fighting.
   holding_level: { id: 'holding_level', name: 'The Holding Level', terrain: 'plains', tags: ['settlement'], world: { x: 14.3, y: 22.4 } },
   the_hold: { id: 'the_hold', name: 'Your Hold', terrain: 'plains', sheltered: true, world: { x: 14.8, y: 21 } },
+  // The Malgeri Mountains' open sky. Weather here is fronts plus a periodic
+  // calm (`sky`, SKY_TABLES in climate.data.ts), not the noise field. An area
+  // joins it by naming this region in `regionId`; floor 17's area does not yet.
+  // The pin is the shelved Malgeri Mountainrange's.
+  malgeri_range: { id: 'malgeri_range', name: 'Malgeri Range', terrain: 'mountains', sky: 'malgeri', world: { x: 16, y: 29 } },
 };
 
 export const AREAS: Record<string, AreaDef> = {

@@ -386,16 +386,18 @@ function wingIssues(
  * Samples every counter the clear spot's encounter lines read (stat and
  * statMax) at 0, at each threshold and at threshold + 1, over the cartesian
  * product, and reports each sample at which no line is eligible among the lines
- * with no `daypart` and no `window`. A line with a condition that is not a
- * counter (attribute, skill, equipment, quest) cannot be counted on, so it
- * does not cover a sample. `once` history is ignored: a latched line is
- * counted as eligible, because the clear has already been paid by then.
+ * with no `daypart`, no `sky` and no `window`. A line with a condition that is
+ * not a counter (attribute, skill, equipment, quest) cannot be counted on, so
+ * it does not cover a sample. A `sky` line waits on the weather the way a
+ * `daypart` line waits on the clock, so it covers nothing either. `once`
+ * history is ignored: a latched line is counted as eligible, because the clear
+ * has already been paid by then.
  */
 export function clearTableIssues(spot: Pick<SpotDef, 'id' | 'encounters'>): string[] {
   const { gaps, overflow } = tableGaps([spot]);
   if (overflow) return [overflow];
   if (!gaps.length) return [];
-  return [`no encounter line without a daypart or window is eligible at '${spot.id}' when ${shownGaps(gaps)}`];
+  return [`no encounter line without a daypart, sky or window is eligible at '${spot.id}' when ${shownGaps(gaps)}`];
 }
 
 /**
@@ -410,7 +412,7 @@ export function stampClearTableIssues(spots: Pick<SpotDef, 'id' | 'encounters'>[
   if (overflow) return [overflow];
   if (!gaps.length) return [];
   const ids = spots.map((sp) => `'${sp.id}'`).join(', ');
-  return [`no encounter line without a daypart or window is eligible at any of ${ids} (stamp ${stamp}) when ${shownGaps(gaps)}`];
+  return [`no encounter line without a daypart, sky or window is eligible at any of ${ids} (stamp ${stamp}) when ${shownGaps(gaps)}`];
 }
 
 function shownGaps(gaps: string[]): string {
@@ -448,7 +450,7 @@ function tableGaps(
     const ids = spots.map((sp) => `'${sp.id}'`).join(', ');
     return { gaps: [], overflow: `${ids} reads ${keys.length} counters (${total} combinations); too many to check` };
   }
-  const plain = lines.filter((l) => !l.daypart && !l.window);
+  const plain = lines.filter((l) => !l.daypart && !l.sky && !l.window);
   const covers = (requires: UnlockCondition[] | undefined, sample: Record<string, number>): boolean =>
     (requires ?? []).every((c) =>
       c.type === 'stat' ? sample[c.key] >= c.value : c.type === 'statMax' ? sample[c.key] <= c.value : false,

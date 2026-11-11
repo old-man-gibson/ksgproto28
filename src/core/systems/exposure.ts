@@ -3,15 +3,19 @@ import type { EventBus } from '../engine/events';
 import { AREAS, SPOTS, skyRegionOf } from '../registry';
 import { checkDiscovery, grantSkillXp } from './skills';
 import { clockOf, moonlight, type MoonState } from './clock';
-import { hasStatus } from './statuses';
+import { applyStatus, hasStatus } from './statuses';
+import { getDerivedStats } from './derived';
+import { raiseStat } from './achievements';
 import {
+  WEATHER_ICONS,
   climateBaseline,
   weatherAt,
   worldSeedOf,
   type WeatherKind,
   type WeatherSample,
 } from './weather';
-import { TICKS_PER_GAME_MINUTE } from '../data/climate.data';
+import { SKY_RULES, TICKS_PER_GAME_MINUTE } from '../data/climate.data';
+import { text } from '../text/log';
 import { tickWeathersense } from './weathersense';
 
 /**
@@ -97,6 +101,8 @@ export const MOONLIGHT_THROUGH: Record<WeatherKind, number> = {
   snow: 0,
   blizzard: 0,
   sandstorm: 0,
+  heatwave: 1,
+  calm: 1,
 };
 
 // ---------- Weather → elements ----------
@@ -115,6 +121,7 @@ const KIND_EXPOSURE: Partial<Record<WeatherKind, [string, number][]>> = {
     ['wind', 0.8],
     ['earth', 0.2],
   ],
+  heatwave: [['heat', 1]],
 };
 
 /** The elements a given sky trains, with their shares of the base rate. */
@@ -124,7 +131,8 @@ export function weatherExposure(
   hour: number,
 ): [string, number][] {
   const out: [string, number][] = [...(KIND_EXPOSURE[sample.kind] ?? [])];
-  if (sample.temp >= HEAT_TRAINS_AT) out.push(['heat', 1]);
+  // A heatwave already pays heat; its temperature must not pay it twice.
+  if (sample.temp >= HEAT_TRAINS_AT && !out.some(([element]) => element === 'heat')) out.push(['heat', 1]);
   if (sample.temp <= COLD_TRAINS_AT) out.push(['cold', 1]);
   // Unseasonable glare: a clear daytime sky running well above what the
   // season owes — brightness is inferred, not simulated.
@@ -178,12 +186,28 @@ function groundMoonlight(state: GameState, region: RegionDef | undefined): numbe
  * region darkens every chamber, and one poisonous chamber inside it can still
  * add 'poison' (and 'heat', if it borders magma) on its own line.
  */
-function placeOf(state: GameState) {
-  const spot = SPOTS[state.spot];
+function placeAt(spotId: string) {
+  const spot = SPOTS[spotId];
   const area = spot ? AREAS[spot.areaId] : undefined;
-  const region = skyRegionOf(state.spot);
+  const region = skyRegionOf(spotId);
   const tags = new Set([...(region?.tags ?? []), ...(area?.tags ?? []), ...(spot?.tags ?? [])]);
   return { spot, region, tags };
+}
+
+function placeOf(state: GameState) {
+  return placeAt(state.spot);
+}
+
+/**
+ * The sky kind over a spot, or null where there is no open sky: a sheltered
+ * region or area, an `indoor` place (the roof tickExposure uses), or a region
+ * with no atlas pin. Encounter tables (`SpotEncounter.sky`) and the sky rules
+ * both ask this.
+ */
+export function skyKindAt(state: GameState, spotId: string): WeatherKind | null {
+  const { region, tags } = placeAt(spotId);
+  if (!region || region.sheltered || tags.has('indoor')) return null;
+  return skyKind(state, region);
 }
 
 /**
@@ -257,6 +281,8 @@ export const SUN_SHARE: Record<WeatherKind, number> = {
   sandstorm: 0.2,
   storm: 0.1,
   blizzard: 0.05,
+  heatwave: 1,
+  calm: 1,
 };
 
 /**
@@ -324,6 +350,51 @@ export function tickExposure(state: GameState, bus: EventBus): void {
   // from region, area and spot, each element its own trickle.
   for (const tag of tags) {
     if (ELEMENT_TAGS.has(tag)) grantExposure(state, bus, tag, SPOT_XP_PER_MINUTE);
+  }
+}
+
+// ---------- The open sky's rules ----------
+
+/**
+ * Set to 1 the first time the player stands under a calm sky, by `tickSky`.
+ * A `flag:` counter in `state.stats`: no save shape change, reset by a
+ * prestige like every other stat. Calm is secret until then, so the log line
+ * `exposure.calm_first` is the one place that names it, and anything else that
+ * would name calm to the player (a hint, a tracker, a tooltip) reads this first.
+ * The weather chip and the forecast show the kind like any other sky.
+ */
+export const CALM_SEEN_KEY = 'flag:malgeri_calm_seen';
+
+/**
+ * Runs every tick from Game.advance(), beside tickExposure; does its work once
+ * per game minute. Under an open sky (the same test tickExposure uses: no
+ * sheltered region or area, no `indoor` tag) it applies the sky's SKY_RULES
+ * entry on every minute its `every` divides. The player's doses go through
+ * `applyStatus` with their stat block, so resistance thins them; `foes` land
+ * on the enemies of a fight in progress.
+ *
+ * It also stamps CALM_SEEN_KEY and logs the first calm. Not while catching up
+ * offline: the line would be suppressed with the rest of the log, and the
+ * player has not yet met the sky.
+ */
+export function tickSky(state: GameState, bus: EventBus, catchingUp = false): void {
+  if (state.totalTicks % TICKS_PER_GAME_MINUTE !== 0) return;
+  const kind = skyKindAt(state, state.spot);
+  if (!kind) return;
+
+  if (kind === 'calm' && !catchingUp && (state.stats[CALM_SEEN_KEY] ?? 0) < 1) {
+    raiseStat(state, bus, CALM_SEEN_KEY, 1);
+    bus.emit({ type: 'log', msg: text('exposure.calm_first', { icon: WEATHER_ICONS.calm }), kind: 'info' });
+  }
+
+  const rule = SKY_RULES[kind];
+  if (!rule || (state.totalTicks / TICKS_PER_GAME_MINUTE) % rule.every !== 0) return;
+  const source = `Weather: ${kind}`;
+  const stats = getDerivedStats(state);
+  for (const app of rule.self) applyStatus(state, state, app, source, stats);
+  for (const enemy of state.combat?.enemies ?? []) {
+    if (!enemy) continue;
+    for (const app of rule.foes ?? []) applyStatus(state, enemy, app, source);
   }
 }
 

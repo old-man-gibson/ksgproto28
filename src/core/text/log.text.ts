@@ -225,6 +225,11 @@ export const LOG_TEXT = {
   'equipment.discarded_stack': 'Discarded {icon} {grade}{name} ×{qty}.',
   'equipment.sold_material': 'Sold {icon} {name} ×{qty} for {price} gold.',
 
+  // ---------- exposure (systems/exposure.ts) ----------
+  // Once per save, the first time the player stands under a calm sky. The only
+  // line in the game that names it; see CALM_SEEN_KEY.
+  'exposure.calm_first': '{icon} Weather: calm. Wind and precipitation have stopped.',
+
   // ---------- festival (systems/festival.ts, systems/royale.ts) ----------
   'festival.door_held': '🚪 {pieces} piece{plural} of your gear, your flasks and your provisions are stored until the festival ends, won or lost. Issued weapon: {issued}.',
   'festival.bumped': '🎒 {count} held piece{plural} went to the pack: the slot was taken.',
