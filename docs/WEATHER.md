@@ -254,7 +254,8 @@ without one.
 ## Region skies: the Malgeri Mountains
 
 User ruling, 2026-11-11: floor 17 becomes the Malgeri Mountains, a floor whose
-mechanic is weather. This is the engine; the spots are authored separately.
+mechanic is weather. This section is the engine; the floor built on it, with
+its spots, monsters and the calm rule, is docs/MALGERI.md.
 Data: `SKY_TABLES`, `SKY_RULES`, `SKY_THRESHOLDS` and the constants in
 climate.data.ts. Code: the "region skies" half of weather.ts, `tickSky` in
 exposure.ts, `skyContentIssues` in skyValidation.ts. Nothing is saved except
@@ -380,8 +381,9 @@ logs one line, `exposure.calm_first`, the first minute the player stands under
 a calm open sky. The flag is a plain `state.stats` counter, so there is no
 save change. It is not set during offline catch-up (the log is suppressed
 there and the player has not yet looked), and `prestigeNow` carries it over,
-so the line fires once per save. That log entry is the only text that names
-calm. The weather chip and the forecast show the kind like any other; the
+so the line fires once per save. Before the flag is set, that log entry is the
+only text that names calm; floor 17's captain line and the calm species'
+bestiary entries wait on the flag (MALGERI.md, "The disclosure rule"). The weather chip and the forecast show the kind like any other; the
 forecast's rough read says "plain skies". Any future hint, tracker or tooltip
 that would name calm reads `CALM_SEEN_KEY` first. tests/sky.test.ts asserts
 that no other log text and no sky-rule status text contains the word.
@@ -398,7 +400,9 @@ proto26) no longer need it, and the fixture is deleted.
 
 The map's threat badge (`spotThreat`, ui/lib/navigation.ts) reads
 `eligibleEncounters`, so a spot whose `sky` lines have different levels shows
-a range that moves with the sky.
+a range that moves with the sky. It skips the lines of a veiled species
+(`MonsterDef.veil`, `isVeiled` in systems/bestiary.ts), so a calm line adds
+its levels to the badge only after `flag:malgeri_calm_seen` is set.
 
 **Cost** (8-hour offline catch-up, 288,000 ticks, hunting, level 30
 attributes, one run each, wall time noisy):
