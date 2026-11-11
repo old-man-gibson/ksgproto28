@@ -672,6 +672,78 @@ What he found on the way, before the band was retuned around him:
   Swordsmanship and roughly breaks even. That is a real decision rather than a
   bug, so it is tested as a duel, not as a rule John must follow.
 
+**Extended 2026-11-11 to floor 20** (`runJohn({ through: 20 })`,
+`npm run pacing -- --through 20`). The game's own rules make the climb three
+runs: run 1 to the floor 6 warchief, prestige, buy the Key to the City
+(`city_key`, the only boon he buys); run 2 floors 1-6 again, band 3's four
+wards (floors 7-10), the floor 11 stronghold wave, whose hold is an automatic
+prestige; run 3 floors 1-10 again, then the harbor (11-14), the festival
+(15-16), floor 17 and the desert (18-20). The report is the band 1 segment
+shape plus clear time (cumulative and per floor), boss tries and boss losses,
+level at clear and gold. Flags: `--through N`, `--side <harbor side>`,
+`--wards 10,9,8,7`, `--cap <minutes>`. One climb is about 10 s of wall clock;
+`tests/john.test.ts` runs one as a smoke test with no numeric bounds.
+
+His rules past floor 6, each the simplest a player could follow:
+
+- Wards in ladder order 7, 8, 9, 10 (reverse measured: no wall).
+- Floor 11: both of the steward's repairs, then the wave.
+- Harbor: signs with the merchants (all four sides measured on seed 42: the
+  side changes gold and cargo, not progress); floor 12 and 13 are time gates
+  (convoys, crates), floor 13 by the picket line, no pilot purchase; floor 14
+  clears on the side's mission boss.
+- Festival: no preparation; rides up the day the door opens and waits out the
+  lockout after a loss.
+- Desert: kills the tagged desert enemies to the gate counts (60, 150).
+- No gear, shop, consumables or bonus time.
+- Prestiges take fixed seeds, so a climb stays deterministic.
+
+The one non-player action is the debug skip: a floor still open after the cap
+(`floorCap`, default 4 h of game time) is a wall, recorded as `stuck` with the
+foe level against John's level and HP per second each way, and John writes the
+floor's gate counters and goes on; every later floor reads "measured after
+skip". It never fired on its own in 18 climbs (seeds 42, 7, 1234, each with the
+skip build, sword, spear, dagger, hammer and unarmed); it is exercised with
+`--cap 2`.
+
+Measured (18 climbs, merchants, medians): 258 min of play per climb (235-339).
+No wall on floors 7-20. The floors that cost time or lives:
+
+| floor | took | KO | boss first try | note |
+| --- | --- | --- | --- | --- |
+| 7 | 3m20s | 4 | - | ph_bandit_thug and archer |
+| 8 | 0m16s | 0 | 18 of 18 | |
+| 9 | 12m39s | 15 | 0 of 18 (up to 3 tries) | ph_death_squire |
+| 10 | 6m26s | 2 | 9 of 18 | |
+| 11 siege | 7m49s | 3 | 7 of 18 | |
+| 12 | 24m00s | 7 | - | time gate |
+| 13 | 96m00s (90-108) | 7 | - | time gate; level 31 at clear of 12, 40 at clear of 13 |
+| 14 | 13 s | 0 | 18 of 18 | |
+| 15 | 23 s | 0 | 17 of 18 | one climb lost the festival: 73 min lockout |
+| 16 | 4m05s | 0 | 18 of 18 | one climb 78 min after the lockout |
+| 17 | 10 s | 0 | - | |
+| 18 | 17 s | 0 | - | |
+| 19 | 2m12s | 0 | - | |
+| 20 | 3m22s | 0-1 | - | |
+
+Findings:
+
+- **Floors 14 and 17-20 are trivial.** John is level 41-43 there against
+  bosses of level 31-45 and wins in 1-5 s, 0 knockouts, first try. The harbor
+  (12 and 13) is the level pump: gold reaches about 2M on the merchants side
+  and level goes from 31 to 40 over floor 13.
+- **Floor 9 is the one hard floor.** 15 knockouts median, no first-try boss,
+  and 176 of the 232 lost fights on it are the death squire.
+- **Floors 12 and 13 are time, not danger.** 24 and 96 min set by the convoy
+  schedule (a convoy per 6 min, 8 crates each); the knockouts there are the
+  boarding fights.
+- **Floor 19's Sabaket reads L33** against John L41-42; the judge's base
+  level reads low for the boss and the floor is a formality (for
+  FLOOR_IDEAS).
+- **Runs 2 and 3 re-climb floors 1-10 from level 1.** Lost fights over the 18
+  climbs: re-climb in run 2 366, re-climb in run 3 691, against 232 on floor 9,
+  the worst single floor. About half of all lost fights are in the re-climbs.
+
 ---
 
 ## 9. Cross-references
