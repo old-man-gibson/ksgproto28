@@ -157,6 +157,8 @@ export interface StuckRecord {
   /** HP per second John took from the floor's foes, and the foes' HP per second he took off them, over every fight on the floor. */
   taken: number | null;
   dealt: number | null;
+  /** True when the floor stayed shut for the whole cap; false when the script ran out of rules first. */
+  wall: boolean;
   /** One line for the table: why the floor did not open. */
   why: string;
 }
@@ -178,6 +180,8 @@ export interface ClimbReport {
   gold: Record<ClimbSegment, number | null>;
   /** Fights started at the floor's boss spots, per segment (BOSSES): a try, won or lost. */
   bossTries: Record<ClimbSegment, number>;
+  /** How many of those tries ended with John knocked out. */
+  bossLost: Record<ClimbSegment, number>;
   /** Which run (1 first life, 2 after the first prestige, 3 after the stronghold) played each segment. */
   runs: Record<ClimbSegment, number | null>;
   /** Floors past 6 that did not open inside the cap, and what stopped John. */
@@ -260,6 +264,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     levelXp: 0,
     gold: blank(null),
     bossTries: blank(0),
+    bossLost: blank(0),
     runs: blank(null),
     stuck: {},
     firstSkip: null,
@@ -291,6 +296,8 @@ export function runJohn(options: ClimbOptions): ClimbReport {
   let fightFoeIds: string[] = [];
   let foeMax = 0;
   let foeLeft = 0;
+  /** The segment whose boss the fight in progress is a try at, if it is one. */
+  let fightBoss: ClimbSegment | null = null;
   const foeHp = () => sum((s.combat?.enemies ?? []).filter((m) => m !== null).map((m) => m!.hp));
   const tick = () => {
     // The stronghold ends the run unasked (Game.tick does this with the clock
@@ -321,11 +328,16 @@ export function runJohn(options: ClimbOptions): ClimbReport {
       foeMax = sum(foes.map((m) => statsFromAttrs(m!.attrs).maxHp));
       foeLeft = foeMax;
       const boss = BOSSES[segment];
-      if (boss && boss.spots.includes(s.spot) && (!boss.foe || fightFoeIds.includes(boss.foe))) report.bossTries[segment]++;
+      fightBoss = null;
+      if (boss && boss.spots.includes(s.spot) && (!boss.foe || fightFoeIds.includes(boss.foe))) {
+        fightBoss = segment;
+        report.bossTries[segment]++;
+      }
     } else if (after) {
       foeLeft = foeHp();
     } else if (before) {
       const lost = !wasDown && s.recovering;
+      if (lost && fightBoss) report.bossLost[fightBoss]++;
       report.fights.push({
         at: t,
         ticks: t - fightStart,
@@ -346,9 +358,13 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     return done();
   };
   const walk = (spot: string) => {
-    if (s.spot === spot) return true;
-    if (!(g.travelTo(spot) || g.travelPlanTo(spot))) return false;
-    until(() => !s.travel && s.travelPlan.length === 0, 10 * 60 * TPS);
+    // A forced arrival (a boarding) starts a fight that cannot be fled and
+    // cuts a multi-stop route short: fight it out, then set out again.
+    for (let leg = 0; leg < 8 && s.spot !== spot && !outOfTime(); leg++) {
+      if (s.combat?.forced) until(() => !s.combat, 5 * 60 * TPS);
+      if (!(g.travelTo(spot) || g.travelPlanTo(spot))) return false;
+      until(() => !s.travel && s.travelPlan.length === 0, 10 * 60 * TPS);
+    }
     return s.spot === spot;
   };
   /** Rest to full wherever John stands, if the spot offers a bed. */
@@ -370,7 +386,9 @@ export function runJohn(options: ClimbOptions): ClimbReport {
       }
       if (activity) g.selectActivity(activity);
       const k0 = knockouts;
-      until(() => goal() || knockouts > k0 || s.spot !== spot);
+      const t0 = t;
+      // An activity a forced fight cleared (a boarding) is picked up again.
+      until(() => goal() || knockouts > k0 || s.spot !== spot || (!!activity && t > t0 && !s.activity));
     }
     return goal();
   };
@@ -576,7 +594,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     checkFloorClears(s, g.bus);
   };
   /** What the floor looked like when the cap ran out, from the fights since it began. */
-  const diagnose = (why: string): StuckRecord => {
+  const diagnose = (why: string, wall: boolean): StuckRecord => {
     const fights = report.fights.filter((f) => f.at > segStart);
     const lost = fights.filter((f) => f.lost);
     const tally = new Map<string, number>();
@@ -598,6 +616,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
       level: s.level,
       taken: secs > 0 ? Math.round((sum(fights.map((f) => f.hpBefore - f.hpAfter)) / secs) * 10) / 10 : null,
       dealt: secs > 0 ? Math.round((sum(fights.map((f) => (f.foeMaxHp ?? 0) - (f.foeHpLeft ?? 0))) / secs) * 10) / 10 : null,
+      wall,
       why,
     };
   };
@@ -640,7 +659,10 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     settle();
     o.prep?.();
     const entered = goal() || o.ride === false || climbTo(floorId);
-    if (entered) work();
+    // A pass that ends early (a knockout moved him, a route was refused) is
+    // taken up again until the floor opens, the cap runs out, or a pass does nothing.
+    if (entered) repeat(goal, work);
+    const capped = t >= capEnd;
     capEnd = Infinity;
     if (goal()) {
       if (!o.replay) record(seg);
@@ -651,8 +673,12 @@ export function runJohn(options: ClimbOptions): ClimbReport {
       skip();
       return true;
     }
-    const why = entered ? `open at the ${Math.round(opts.floorCap / TPS / 3600)} h cap` : 'the climb was refused (the floor gate is unmet)';
-    report.stuck[seg] = diagnose(why);
+    const why = !entered
+      ? 'the climb was refused (the floor gate is unmet)'
+      : capped
+        ? `open at the ${Math.round(opts.floorCap / TPS / 3600)} h cap`
+        : 'the script stopped with the floor open (no rule left to try; not a measured wall)';
+    report.stuck[seg] = diagnose(why, capped);
     if (!opts.skipWalls) return false;
     // Recorded as the floor stood, before the skip: the stronghold's skip
     // ends the run, and the prestige resets the level and the gold.
