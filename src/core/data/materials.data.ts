@@ -128,6 +128,14 @@ export const MATERIALS = prose<MaterialDef>('MATERIALS', MATERIALS_TEXT, {
     icon: '🪙',
     value: 100,
   },
+  // Floor 17's calm-only drop (docs/MALGERI.md): only the three monsters that
+  // spawn under a calm sky carry it. The name and text say nothing about calm.
+  ridge_amber: {
+    id: 'ridge_amber',
+    name: 'Ridge Amber',
+    icon: '🟠',
+    value: 70,
+  },
   // ---- Runecarving stock ----
   // Graded materials are stocked per quality (see MaterialDef.graded): a
   // runestone remembers whether it is any good, a lump of scrap does not.

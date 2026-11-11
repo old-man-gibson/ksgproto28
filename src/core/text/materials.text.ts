@@ -31,6 +31,8 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'boss_token.desc': 'Dropped by bosses. No use yet. Sells for 100 gold.',
 
+  'ridge_amber.desc': 'Dropped by some monsters of the Malgeri Mountains. No use yet. Sells for 70 gold.',
+
   'runestone_blank.desc': 'Base slab for the rune bench. Graded: the stone grade sets how strongly the carved pattern works.',
 
   'gold_leaf.desc': 'Rune inlay. Weapon: +3% damage. Armor: +8 max HP. Accessory: +5% gold gain.',

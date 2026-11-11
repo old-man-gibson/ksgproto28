@@ -116,7 +116,7 @@ export const BANDS = prose<BandDef>('BANDS', BANDS_TEXT, {
   },
   ascent_aberrant: {
     id: 'ascent_aberrant',
-    name: 'Floor 17',
+    name: 'The Malgeri Mountains',
     towerId: 'the_ascent',
     index: 6,
     clearsToAdvance: 1,
@@ -404,13 +404,15 @@ export const FLOORS = prose<FloorDef>('FLOORS', FLOORS_TEXT, {
   // ==== ABERRANT: floors (skeleton 2026-10-30; the aberrant builder's section) ====
   ascent_f17: {
     id: 'ascent_f17',
-    name: 'Floor 17',
+    name: 'The Malgeri Crossing',
     towerId: 'the_ascent',
     bandId: 'ascent_aberrant',
     index: 17,
     areaId: 'ascent_f17_area',
     landing: 'f17_landing',
-    clear: [{ type: 'stat', key: 'fights:f17_keeper', value: 1 }],
+    // The Slime Regent's kill. A boss row, so it latches on every kill and
+    // stays repeatable; a fight of legionaries alone clears nothing.
+    clear: [{ type: 'stat', key: 'boss:f17_keeper', value: 1 }],
     clearXp: 900,
   },
   // ==== DESERT: floors (skeleton 2026-10-30; the desert builder's section) ====

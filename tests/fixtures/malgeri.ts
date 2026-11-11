@@ -5,7 +5,8 @@
  *
  *   import './fixtures/malgeri';
  *
- * Floor 17's real spots are not authored yet; these stand in. The registry's
+ * Floor 17's real spots (docs/MALGERI.md) have tables the engine tests should
+ * not depend on; these give them one of known shape. The registry's
  * tables are plain objects re-exported by reference (see ./shelved-world), so
  * assigning into them is enough, and a mount never leaks between test files.
  * The three spots share one encounter table: a plain line, a line that waits on

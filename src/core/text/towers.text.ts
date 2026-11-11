@@ -16,7 +16,7 @@ export const BANDS_TEXT: ProseTable = {
 
   'ascent_festival.desc': 'Floors 15 and 16, the Vermin Festival: ten rooms of ten, one survivor from each, then one of a hundred. The festival keeps its own clock, which runs only while the game does; time away inside it goes to banked bonus time.',
 
-  'ascent_aberrant.desc': 'Floor 17, a special floor.',
+  'ascent_aberrant.desc': 'Floor 17, the Malgeri Crossing: four maps in a line, from the cave out of the Vermin Festival over the eastern ascent, the ridge and the peak, and down the west side to a hamlet before the desert. Open slopes take the range’s weather; roofed places take none.',
 
   'ascent_desert.desc': 'Floors 18 to 20: the Necropolis Road, the Pyramid and the Delta Port. Each floor must be cleared before the next opens. Floors 19 and 20 also need desert kills: 60, then 150 in all.',
 
@@ -60,7 +60,7 @@ export const FLOORS_TEXT: ProseTable = {
   'ascent_f16.desc': 'Floor 16, the royale: ninety-nine survivors of the other rooms and you, on one field. Climbing here from the hall before the ten days are out jumps the festival’s clock to the end; the survivors get the rest of their preparation either way. Win the royale to clear the floor and get your gear back.',
 
   // ==== ABERRANT: floor text (skeleton 2026-10-30; the aberrant builder's section) ====
-  'ascent_f17.desc': 'Floor 17: a landing with an endless hunt (raiders and brutes) and a keeper whose fight clears the floor.',
+  'ascent_f17.desc': 'Floor 17, the Malgeri Crossing: from the cave exit up the eastern slope, along the ridge to the peak and down the west face to the hamlet. Hunts are endless, and the open slopes take the sky’s weather. The Peak Guardian’s first kill opens the way down the west face. Clear: kill the Slime Regent at the hamlet’s gates. The Brood Queen’s nest off the cave’s hub is optional.',
 
   // ==== DESERT: floor text (skeleton 2026-10-30; the desert builder's section) ====
   'ascent_f18.desc': 'Floor 18, the Necropolis Road: open desert between five obelisks, each a haven, with dens of desert monsters along the road. Each obelisk read adds one to your chart; with three, the roadstead crew on floor 20 starts its fight surprised. The forecourt guardian’s kill is the clear, and it fights again on every visit.',

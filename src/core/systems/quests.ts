@@ -26,6 +26,15 @@ export function npcsAt(spotId: string): NpcDef[] {
   return Object.values(NPCS).filter((n) => n.spotId === spotId);
 }
 
+/** What this person says now: `dialogue`, plus each `lore` entry whose conditions hold. */
+export function npcDialogue(state: GameState, npc: NpcDef): string[] {
+  const lines = [...npc.dialogue];
+  for (const entry of npc.lore ?? []) {
+    if (conditionsMet(state, entry.requires)) lines.push(...entry.dialogue);
+  }
+  return lines;
+}
+
 // ---------- Meeting people ----------
 
 /** Where the game remembers a first greeting. Engine-written, like `slain:*`. */

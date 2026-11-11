@@ -1,6 +1,7 @@
 import type { NpcDef } from '../types';
 import { prose } from '../text/prose';
 import { NPCS_TEXT } from '../text/npcs.text';
+import { CALM_SEEN_KEY } from './climate.data';
 
 /** NPCs stand at spots, chat, and hand out quests (ported/extended from proto26). */
 export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
@@ -318,6 +319,25 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
   // ==== FESTIVAL: NPCs (skeleton 2026-10-30; the festival builder's section) ====
 
   // ==== ABERRANT: NPCs (skeleton 2026-10-30; the aberrant builder's section) ====
+  // The hamlet at the foot of floor 17's western descent: the shelved hamlet's
+  // smith and watch captain (npcs.shelved.ts), copied under f17_ ids without
+  // their quests. The captain carries the one line about the still hours,
+  // which waits for the first calm (docs/MALGERI.md, the disclosure rule).
+  f17_thora: {
+    id: 'f17_thora',
+    name: 'Thora Ironbrand',
+    icon: '👩‍🏭',
+    spotId: 'f17_hamlet_forge',
+    quests: [],
+  },
+  f17_bren: {
+    id: 'f17_bren',
+    name: 'Captain Bren',
+    icon: '💂',
+    spotId: 'f17_hamlet_square',
+    quests: [],
+    lore: [{ requires: [{ type: 'stat', key: CALM_SEEN_KEY, value: 1 }] }],
+  },
 
   // ==== DESERT: NPCs (skeleton 2026-10-30; the desert builder's section) ====
   // Floor 20's broker (FLOOR_IDEAS §4). Buys at the global sell price and

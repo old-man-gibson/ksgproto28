@@ -319,8 +319,9 @@ export const SKY_TABLES: Record<string, SkyTable> = {
  * A rule applied by `tickSky` (systems/exposure.ts) every `every` game
  * minutes to the player standing under an open sky of that kind, through
  * `applyStatus`, so resistances thin the dose. `foes` are applied the same way
- * to the enemies of a fight in progress. Applies in every region, not only
- * those with a sky table. A kind with no entry does nothing.
+ * to the enemies of a fight in progress. Applies only where the spot's sky
+ * region has a sky table (SKY_TABLES): the noise-field regions never apply it.
+ * A kind with no entry does nothing.
  *
  * Doses are per application. A status holds its own duration, so a rule whose
  * period is shorter than the status's duration keeps it topped up.

@@ -20,6 +20,9 @@
 //   npm run pacing -- --through 20 --cap 120     a floor still open after 120 minutes of game time
 //                                                is a wall (default 240); past it John takes a debug
 //                                                skip and the later floors read "measured after skip"
+//   npm run pacing -- --through 17 --malgeri-calm   floor 17 arranged under a calm: the clock jumps to the
+//                                                range's next calm and John's den is the open east ridge
+//                                                (docs/MALGERI.md, "Measuring")
 //
 // Past floor 6 a climb plays three runs (two prestiges). Measured 2026-11-11: about 10 s of
 // wall clock per climb, 18 climbs in under three minutes.
@@ -40,6 +43,7 @@ const attentive = args.includes('--attentive');
 const showFights = args.includes('--fights');
 const through = Number(list('--through', '3')[0]);
 const side = list('--side', 'merchants')[0];
+const calmAtMalgeri = args.includes('--malgeri-calm');
 /** Minutes of game time one floor past 6 may take before it is a wall (default 240). */
 const capMinutes = Number(list('--cap', '240')[0]);
 /** Band 3's wards, by floor number, in the order John takes them. */
@@ -74,7 +78,7 @@ const rows: ClimbReport[] = [];
 for (const seed of seeds)
   for (const weapon of weapons)
     for (const spell of weapon === 'skip' ? spells.slice(0, 1) : spells) {
-      const r = runJohn({ seed, weapon, spell, attentive, through, side, wards, floorCap: capMinutes * 60 * TPS });
+      const r = runJohn({ seed, weapon, spell, attentive, through, side, wards, calmAtMalgeri, floorCap: capMinutes * 60 * TPS });
       rows.push(r);
       if (showFights) {
         console.log(`\n${weapon} / ${spell} / seed ${seed}`);
@@ -160,6 +164,26 @@ if (through > 3) {
         `  stuck ${floorName(k)}: ${st.why}; ${st.fights} fights, ${st.lost} lost` +
           (st.foe ? `; knocked out by ${st.foe} at ${st.spot}, foe level about ${st.foeLevel} vs John level ${st.level}` : '') +
           (st.taken !== null ? `; HP per second taken ${st.taken}, dealt ${st.dealt}` : ''),
+      );
+    }
+    // Floor 17 (docs/MALGERI.md): the two bosses told apart, and the calm lines. A lost fight is
+    // recorded where John woke, so the foes name the fight, not the spot. The fight that ends the
+    // floor is not recorded (the climb stops at the clear), so the gate's tries come off the counters.
+    if (r.done.floor17 !== null) {
+      const f17 = r.fights.filter((f) => f.segment === 'floor17');
+      const has = (f: (typeof f17)[number], id: string) => f.foes.some((x) => x.startsWith(`${id} `));
+      const peak = f17.filter((f) => f.boss && has(f, 'malgeri_guardian'));
+      const peakLost = peak.filter((f) => f.lost).length;
+      const gateTries = r.bossTries.floor17 - peak.length;
+      const gateLost = r.bossLost.floor17 - peakLost;
+      const calmLines = f17.filter((f) => ['malgeri_ridge_wolf', 'malgeri_cairn_brute', 'malgeri_hollow_seer'].some((id) => has(f, id)));
+      const calmLost = calmLines.filter((f) => f.lost).length;
+      const calmMin = (n: number) => `${(n / 600).toFixed(0)}m`;
+      console.log(
+        `  floor 17: ${clock((r.done.floor17 ?? 0) - (r.done.floor16 ?? 0))} on the floor, ${r.knockouts.floor17} knockouts, left at level ${r.levels.floor17}; ` +
+          `peak ${peak.length} tries/${peakLost} lost, gate ${gateTries} tries/${gateLost} lost; ` +
+          `calm: ${calmMin(r.malgeriCalm.inSpell)} of the stay inside a calm spell, ${calmMin(r.malgeriCalm.underOpenSky)} under the open sky, ` +
+          `${calmLines.length} fights against calm lines, ${calmLines.length - calmLost} won`,
       );
     }
   }

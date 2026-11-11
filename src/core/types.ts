@@ -2309,6 +2309,14 @@ export interface MonsterDef {
   /** Monster ids that fill the remaining slots; absent = re-roll the spot table. */
   escorts?: string[];
   /**
+   * The bestiary keeps no entry for this species while any of these is unmet:
+   * kills still count, but the book, its facts, the first-kill log line and the
+   * discovery XP wait until they hold (systems/bestiary.ts `isVeiled`). For a
+   * species whose existence is a secret until a counter is set (the Malgeri
+   * Mountains' calm monsters wait on `flag:malgeri_calm_seen`).
+   */
+  veil?: UnlockCondition[];
+  /**
    * Fractional damage reduction per incoming type: 0.5 = takes half damage,
    * negative = vulnerable (−0.5 = takes 50% more). Missing = 0. Damage is capped
    * at 0.9 on read, but a value of 1 or more also makes the species immune to
@@ -5150,6 +5158,12 @@ export interface NpcDef {
    * A school lesson manifests a combat school's skill instead (`teachSchool`).
    */
   teaches?: Lesson[];
+  /**
+   * Lines added to `dialogue` while their conditions hold (`npcDialogue` in
+   * systems/quests.ts). Each entry is its own set: the lines rotate with the
+   * base ones once every condition in `requires` is met, and not before.
+   */
+  lore?: { requires: UnlockCondition[]; dialogue: string[] }[];
 }
 
 /** One lesson on a teacher's list: a technique, or a whole combat school. */

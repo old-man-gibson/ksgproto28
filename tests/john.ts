@@ -3,6 +3,9 @@ import { Game } from '../src/core/game';
 import { TPS } from '../src/core/engine/loop';
 import { STRONGHOLD_WAVE } from '../src/core/data/prestige.data';
 import { getDerivedStats } from '../src/core/systems/derived';
+import { TICKS_PER_GAME_MINUTE } from '../src/core/data/climate.data';
+import { skyKindAt } from '../src/core/systems/exposure';
+import { isCalmAt, worldSeedOf } from '../src/core/systems/weather';
 import { lockoutLeft } from '../src/core/systems/festivalRules';
 import { hasKeyItem } from '../src/core/systems/keyitems';
 import { clearMet } from '../src/core/systems/ladder';
@@ -121,6 +124,14 @@ export interface ClimbOptions {
   wards?: number[];
   /** The harbor side John signs with: merchants, pirates, privateers or navy. Default: the first berth. */
   side?: string;
+  /**
+   * An arranged climb of floor 17 (docs/MALGERI.md, "Measuring"): as John sets
+   * out for the floor the clock jumps to the first minute of the Malgeri
+   * range's next calm, and his den between boss tries is the open east ridge
+   * instead of the roofed west peak, so the calm lines are what he fights.
+   * Default false: the climb takes the sky as it comes and dens under a roof.
+   */
+  calmAtMalgeri?: boolean;
 }
 
 export interface FightRecord {
@@ -199,6 +210,12 @@ export interface ClimbReport {
   /** The first debug skip before each segment (null: measured with none). */
   skipBefore: Record<ClimbSegment, ClimbSegment | null>;
   fights: FightRecord[];
+  /**
+   * Floor 17 only: ticks of the floor's play that fell inside a calm spell of
+   * the Malgeri range wherever John stood (`inSpell`), and the ticks he stood
+   * under the open calm sky (`underOpenSky`; a roof or a cave takes none).
+   */
+  malgeriCalm: { inSpell: number; underOpenSky: number };
   /** The save as the climb left it, for drivers that carry on from there. */
   state: GameState;
 }
@@ -232,7 +249,8 @@ const BOSSES: Partial<Record<ClimbSegment, { spots: string[]; foe?: string }>> =
   floor14: { spots: ['f14_closed_port', 'f14_treasure_galleon', 'f14_flagship', 'f14_beast_lair'] },
   floor15: { spots: ['f15_dark_room'], foe: 'ph_room_last' },
   floor16: { spots: ['f16_arena'], foe: 'ph_survivor_champion' },
-  floor17: { spots: ['f17_keeper'] },
+  // The peak guardian and the regent at the hamlet's gates; `fights` tells them apart by spot.
+  floor17: { spots: ['f17_peak', 'f17_keeper'] },
   floor18: { spots: ['f18_forecourt'] },
   floor19: { spots: ['f19_door'] },
   floor20: { spots: ['f20_roadstead'] },
@@ -255,6 +273,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     skipWalls: true,
     wards: [7, 8, 9, 10],
     side: 'merchants',
+    calmAtMalgeri: false,
     ...options,
     through,
   };
@@ -279,6 +298,7 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     firstSkip: null,
     skipBefore: blank(null),
     fights: [],
+    malgeriCalm: { inSpell: 0, underOpenSky: 0 },
     state: s,
   };
 
@@ -330,6 +350,10 @@ export function runJohn(options: ClimbOptions): ClimbReport {
     const wasDown = s.recovering;
     g.tick();
     t++;
+    if (segment === 'floor17' && isCalmAt(worldSeedOf(s.createdAt), 'malgeri_range', s.totalTicks)) {
+      report.malgeriCalm.inSpell++;
+      if (skyKindAt(s, s.spot) === 'calm') report.malgeriCalm.underOpenSky++;
+    }
     if (!wasDown && s.recovering) {
       knockouts++;
       report.knockouts[segment]++;
@@ -893,12 +917,39 @@ export function runJohn(options: ClimbOptions): ClimbReport {
 
   // ---- Floor 17 and the desert (18 to 20). Desert gates are kill counts. ----
   const desert = () => stat('kills:tag:desert');
+  /** `calmAtMalgeri`: the clock has been jumped to the calm (once per climb). */
+  let calmArranged = false;
   const gateKills = (floorId: string) => {
     const c = FLOORS[floorId].gate?.find((x) => x.type === 'stat');
     return c && c.type === 'stat' ? c.value : 0;
   };
   const desertFloors: Record<number, { work: () => void; prep?: () => void }> = {
-    17: { work: () => scout(['f17_keeper']) && keeperLoop('f17_landing', 'f17_keeper', () => clearMet(s, FLOORS.ascent_f17)) },
+    17: {
+      // The Malgeri Crossing (docs/MALGERI.md), four maps in order. The cave
+      // and the east slope are walked through, not worked: the nest is
+      // optional and John skips it. The peak's guardian opens the west face;
+      // the regent at the hamlet's gates is the clear. The camps on the way
+      // are the dens (roofed, so the sky does not reach him there); with
+      // `calmAtMalgeri` the peak's den is the open east ridge, under a calm.
+      prep: () => {
+        if (!opts.calmAtMalgeri || calmArranged) return;
+        calmArranged = true;
+        // Jump the clock to the first minute of the next calm spell (at most one 12-day window away).
+        for (let i = 0; i < 12 * 24 * 60 && skyKindAt(s, 'f17_east_ridge') !== 'calm'; i++) s.totalTicks += TICKS_PER_GAME_MINUTE;
+      },
+      work: () => {
+        const peakDown = () => stat('boss:f17_peak') >= 1;
+        if (!peakDown()) {
+          const route = ['f17_cave_hub', 'f17_central_caves', 'f17_east_mouth', 'f17_east_ascent', 'f17_east_peak', 'f17_east_ridge', 'f17_west_ridge', 'f17_west_peak', 'f17_peak'];
+          if (!scout(route)) return;
+          keeperLoop(opts.calmAtMalgeri ? 'f17_east_ridge' : 'f17_west_peak', 'f17_peak', peakDown);
+        }
+        if (!peakDown()) return;
+        if (scout(['f17_base', 'f17_path', 'f17_old_path', 'f17_hamlet_square', 'f17_keeper'])) {
+          keeperLoop('f17_base', 'f17_keeper', () => clearMet(s, FLOORS.ascent_f17));
+        }
+      },
+    },
     18: {
       work: () => {
         if (scout(['f18_first_obelisk', 'f18_dune_den', 'f18_second_obelisk', 'f18_tomb_row', 'f18_third_obelisk', 'f18_forecourt'])) {

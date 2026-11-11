@@ -147,6 +147,25 @@ export const NPCS_TEXT: ProseTable = {
     'I sell Port Clearance to merchants only.',
   ],
 
+  // ==== ABERRANT: NPC text ====
+  // The hamlet's two (docs/MALGERI.md). The captain's lore entry is the only
+  // NPC line that names the calm, and it waits on flag:malgeri_calm_seen.
+  'f17_thora.desc': 'Smith at the hamlet forge on floor 17, in Kystel’s Anvil. Sells nothing and gives no quests; the forge she works smelts and forges (its recipes are listed on the forge).',
+  'f17_thora.dialogue': [
+    'Keep your edge keen and your work honest.',
+    'The anvil’s song rewards patience.',
+    'Scrap in, steel out. That’s the whole philosophy.',
+  ],
+  'f17_bren.desc': 'Captain of the hamlet watch on floor 17, in the square. Sells nothing and gives no quests.',
+  'f17_bren.dialogue': [
+    'Eyes up. Trouble comes when you least expect it.',
+    'A steady post keeps the roads safe.',
+    'The gates are held against a slime regent and its legionaries. The road on to the desert is past them.',
+  ],
+  'f17_bren.lore.0.dialogue': [
+    'The mountain goes still for 8 hours in every 12 days. Wolves, brutes and seers come out onto the open slopes then, two or three together, at levels 46 to 48. Roofed places are not reached.',
+  ],
+
   // ==== DESERT: NPC text (the desert builder's section) ====
   'f20_broker.desc': 'The port house broker on floor 20’s quay. Buys at the posted rates, which are the global sell prices: selling here pays what selling anywhere pays. Sells nothing.',
   'f20_broker.dialogue': [
