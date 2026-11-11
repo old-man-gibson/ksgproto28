@@ -6,7 +6,7 @@ import { SPOTS } from '../src/core/registry';
 import { startForcedFight } from '../src/core/systems/combat';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { createItem } from '../src/core/systems/runes';
-import { runJohn, secs, type ClimbReport } from './john';
+import { runJohn, secs, SEGMENTS, type ClimbReport } from './john';
 import type { TutorialWeapon } from '../src/core/types';
 
 /**
@@ -170,5 +170,21 @@ describe('pacing — the floors hand over their own answers', () => {
     expect(sword3, `${table}: the cuts must count`).toBeGreaterThanOrEqual(sword0 + 5);
     expect(club0, `${table}: the club must count`).toBeGreaterThanOrEqual(sword0 + 5);
     expect(club3, table).toBeGreaterThanOrEqual(18);
+  }, 60_000);
+});
+
+describe('John — the road past band 2 (smoke test, no bounds)', () => {
+  /**
+   * The driver's own health, not the game's pacing: `through: 20` plays three
+   * runs (two prestiges) and reports a time for every floor. A floor that
+   * stays shut for the cap is a finding (`stuck`, then a debug skip), so this
+   * does not fail on one; it fails when John stops for want of a rule, or
+   * when a segment never closes. The numbers are `npm run pacing -- --through 20`.
+   */
+  it('plays every floor to 20 and never stops for want of a rule', () => {
+    const r = runJohn({ seed: 42, weapon: 'skip', through: 20 });
+    for (const k of SEGMENTS) expect(r.done[k], `${k} never closed`).not.toBeNull();
+    for (const [k, st] of Object.entries(r.stuck)) expect(st.wall, `${k}: ${st.why}`).toBe(true);
+    expect(r.runs.floor20, 'floor 20 is played in the third run').toBe(3);
   }, 60_000);
 });
