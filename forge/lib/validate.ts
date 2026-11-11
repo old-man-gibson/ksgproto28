@@ -82,7 +82,7 @@ export function idProblem(store: S, kind: string, next: string): string | null {
 export function validate(store: S): Issue[] {
   const issues: Issue[] = [];
   const spots = store.all<SpotDef>('spot');
-  const areas = store.all<{ id: string; regionId: string }>('area');
+  const areas = store.all<{ id: string; regionId: string; skyRegionId?: string }>('area');
   const regions = store.all<{ id: string }>('region');
   const npcs = store.all<NpcDef>('npc');
   const materials = store.all('material');
@@ -159,7 +159,8 @@ export function validate(store: S): Issue[] {
   // Region skies and the encounter lines that wait on them — the same function
   // tests/content.test.ts runs (systems/skyValidation.ts).
   for (const issue of skyContentIssues({ regions, areas, spots })) {
-    err(issue.kind, issue.id, issue.message, issue.kind === 'region' ? ['sky'] : ['encounters']);
+    const path = { region: ['sky'], area: ['skyRegionId'], spot: ['encounters'] }[issue.kind];
+    err(issue.kind, issue.id, issue.message, path);
   }
   // Place tags at every level of the chain — a spot's effective set is the
   // union region ∪ area ∪ spot, so all three speak the same vocabulary.

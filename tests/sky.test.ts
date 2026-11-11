@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { GameState, RegionDef, StatusDef, TerrainId } from '../src/core/types';
-import { REGIONS, SPOTS, STATUSES, skyRegionOf } from '../src/core/registry';
+import { AREAS, REGIONS, SPOTS, STATUSES, skyRegionOf } from '../src/core/registry';
 import {
   CALM_HOURS,
   CALM_PERIOD_DAYS,
@@ -424,8 +424,9 @@ describe('SKY_RULES: what the open sky does to the player', () => {
     }
   });
 
-  it('applies in a region with no sky table too, wherever the sky is open and the kind has a rule', () => {
-    // Threshold's outdoor spots and the tower's open floors take the same rules.
+  it('does nothing in a region with no sky table, whatever the noise field shows', () => {
+    // Threshold's outdoor spots and the tower's open floors draw weather (the
+    // sky readouts and `sky:` encounter lines see it) but take no rules.
     const spot = 'ascent_foot';
     const region = skyRegionOf(spot)!;
     expect(region.sky).toBeUndefined();
@@ -434,7 +435,50 @@ describe('SKY_RULES: what the open sky does to the player', () => {
     const state = stateAt(spot, tick);
     expect(skyKindAt(state, spot)).toBe('rain');
     tickSky(state, new EventBus());
-    expect(statusIntensity(state, 'wet')).toBeCloseTo(1, 5);
+    expect(statusesOf(state)).toEqual([]);
+  });
+
+  describe('an area drawn in one region and standing under another region\'s sky', () => {
+    const AREA = 'test_malgeri_sky_area';
+    const FLOOR_SPOT = 'test_malgeri_sky_spot';
+    beforeAll(() => {
+      AREAS[AREA] = { id: AREA, name: 'Test Sky Area', regionId: 'the_ascent', skyRegionId: 'malgeri_range' };
+      SPOTS[FLOOR_SPOT] = {
+        id: FLOOR_SPOT,
+        name: FLOOR_SPOT,
+        icon: '⛰️',
+        areaId: AREA,
+        desc: 'A test spot.',
+        activities: [],
+        connections: [],
+      };
+    });
+    afterAll(() => {
+      delete AREAS[AREA];
+      delete SPOTS[FLOOR_SPOT];
+    });
+
+    it('resolves to the sky region while the area keeps its own region', () => {
+      expect(AREAS[AREA].regionId).toBe('the_ascent');
+      expect(skyRegionOf(FLOOR_SPOT)!.id).toBe('malgeri_range');
+    });
+
+    it('shows the sky region\'s weather, calm included, and applies its rules', () => {
+      const gale = stateAt(FLOOR_SPOT, tickShowing('gale'));
+      expect(skyKindAt(gale, FLOOR_SPOT)).toBe('gale');
+      tickSky(gale, new EventBus());
+      expect(statusIntensity(gale, 'buffeted')).toBeCloseTo(0.5, 5);
+      expect(skyKindAt(stateAt(FLOOR_SPOT, tickShowing('calm')), FLOOR_SPOT)).toBe('calm');
+    });
+
+    it('keeps the area\'s own sheltered override', () => {
+      AREAS[AREA].sheltered = true;
+      try {
+        expect(skyKindAt(stateAt(FLOOR_SPOT, tickShowing('gale')), FLOOR_SPOT)).toBeNull();
+      } finally {
+        delete AREAS[AREA].sheltered;
+      }
+    });
   });
 
   describe('resistance', () => {
@@ -801,6 +845,28 @@ describe('skyContentIssues', () => {
     expect(issues(plain, area(), spot(['heatwave']))).toEqual([expect.stringContaining('only a region sky table produces')]);
     // The kinds the noise field draws are fine anywhere with a sky.
     expect(issues(plain, area(), spot(['rain', 'storm']))).toEqual([]);
+  });
+
+  it('follows an area\'s skyRegionId for the table, and refuses one that names no region', () => {
+    const plain = region({ sky: undefined, world: undefined });
+    const under = { id: 'u', sky: 'malgeri', world: { x: 1, y: 1 } };
+    // Drawn in a region with no table, standing under one with a table: calm is allowed.
+    expect(
+      skyContentIssues({
+        regions: { r: plain, u: under },
+        areas: { a: area({ skyRegionId: 'u' }) },
+        spots: { s: spot(['calm']) },
+      }),
+    ).toEqual([]);
+    // Without the override the same line has no table and no atlas pin under it.
+    expect(
+      skyContentIssues({ regions: { r: plain, u: under }, areas: { a: area() }, spots: { s: spot(['calm']) } }),
+    ).not.toEqual([]);
+    expect(
+      skyContentIssues({ regions: { r: region() }, areas: { a: area({ skyRegionId: 'gone' }) }, spots: {} }).map(
+        (i) => `${i.kind} ${i.id}: ${i.message}`,
+      ),
+    ).toEqual(["area a: skyRegionId 'gone' is not a region"]);
   });
 
   it('refuses a sky line where the sky is never open: indoor, sheltered, or unplaced', () => {

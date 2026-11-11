@@ -225,8 +225,9 @@ precipitation 0–1, wind 0–1):
 `RegionDef.sheltered` is for interiors — wind and precipitation zero out and
 only a damped temperature leaks in (the cave system, the home base).
 `AreaDef.sheltered` overrides it for one area (band 2's floors open the roofed
-Ascent to the sky); read the sky through `skyRegionOf`, never
-`REGIONS[area.regionId]`.
+Ascent to the sky). `AreaDef.skyRegionId` names the region whose sky the area
+stands under when that is not the region it is drawn in. Read the sky through
+`skyRegionOf`, never `REGIONS[area.regionId]`: it applies both fields.
 A region with no atlas pin has **no weather at all** — `weatherAt` returns
 null; place it in the forge first.
 
@@ -261,9 +262,15 @@ one `flag:` counter (see "The first calm"), so there is no save version bump.
 
 **How an area opts in.** `RegionDef.sky` names a table in `SKY_TABLES`. The
 region `malgeri_range` (locations.data.ts) carries `sky: 'malgeri'`, terrain
-'mountains' and an atlas pin at (16, 29). An area opts in by setting
-`regionId: 'malgeri_range'`. No area does yet: floor 17's area keeps its
-current region until the spots exist. `weatherAt` takes the table path when
+'mountains' and an atlas pin at (16, 29). An area opts in with
+`skyRegionId: 'malgeri_range'`, or with `regionId: 'malgeri_range'` if it
+belongs to that region outright. The two differ in what else reads
+`regionId`: the stack map, the ladder and the tower section group floors by
+it, one region per tower (`stackAreas`, `towerOfRegion`, `regionOfTower` in
+ladderView.ts). An area of a banded tower that left its region would drop out
+of its stack (tests/map.test.ts and tests/towersection.test.ts count 19 floors
+instead of 20), so a tower floor uses `skyRegionId` and keeps `regionId`.
+`weatherAt` takes the table path when
 `region.sky` names a table, the region has a pin and it is not `sheltered`;
 every other region takes the noise path above, unchanged. tests/sky.test.ts
 pins that with digests of the noise samples of the regions without a table.
@@ -319,11 +326,13 @@ identity, because `skyRegionOf` returns a fresh object per call. Samples are
 frozen. The map clears at 4,096 entries. The noise path is not cached.
 
 **What the open sky does: `SKY_RULES`.** `tickSky(state, bus, catchingUp)`
-runs from `Game.advance` beside `tickExposure`. Once per game minute, under an
-open sky (`skyKindAt` is non-null: no sheltered region or area, no `indoor`
-tag at any level, an atlas pin), it applies `SKY_RULES[kind]` on every minute
-`every` divides, through `applyStatus` with the player's derived stats, so
-resistances thin the dose. The source string is `Weather: <kind>`. A rule's
+runs from `Game.advance` beside `tickExposure`. It returns at once unless the
+spot's sky region has a sky table (`skyRegionOf(spot)?.sky`): the noise-field
+weather of the rest of the world is cosmetic and applies no rule. Otherwise,
+once per game minute, under an open sky (`skyKindAt` is non-null: no sheltered
+region or area, no `indoor` tag at any level, an atlas pin), it applies
+`SKY_RULES[kind]` on every minute `every` divides, through `applyStatus` with
+the player's derived stats, so resistances thin the dose. The source string is `Weather: <kind>`. A rule's
 `foes` (none shipped) land the same way on the enemies of a fight in
 progress.
 
@@ -360,7 +369,9 @@ line like a `daypart` line: it does not cover a gap. `skyContentIssues`
 `forge/lib/validate.ts`. It rejects: a region `sky` that is not in `SKY_TABLES`
 or has no pin; a `sky` list that is empty or names a non-kind; heatwave or
 calm in a region with no sky table; a `sky` line on a sheltered or `indoor`
-spot; a `sky` line in an unpinned region.
+spot; a `sky` line in an unpinned region; an area `skyRegionId` that names no
+region. A spot's sky region for these checks is `skyRegionId ?? regionId`, as
+`skyRegionOf` resolves it.
 
 **The first calm.** Calm is dangerous only through which monsters its lines
 bring, never through a status. Nothing may tell the player that before they
@@ -375,17 +386,15 @@ forecast's rough read says "plain skies". Any future hint, tracker or tooltip
 that would name calm reads `CALM_SEEN_KEY` first. tests/sky.test.ts asserts
 that no other log text and no sky-rule status text contains the word.
 
-**The tower-wide consequence.** `SKY_RULES` applies wherever the sky is open,
-not only in the mountains. Open sky today: about 14 Threshold outdoor spots,
-the Foot of the Ascent, floor 0's field and gate, floor 4 (6 spots), floor 5
-(5 of 6) and floor 6 (3 of 7). Those regions use the noise field, where the
-kinds with a rule cover 41.3% (Ascent) and 42.1% (Threshold) of game time
-(rain 18.6%, snow 16.4%, storm 3.6%, gale 2.8%; three seeds, three years).
-Blizzard and mist have no rule. Chilled escalates to Frozen about every 21
-game minutes under snow. `tickSky` could skip regions without a sky table with
-one predicate; that is a decision for the owner of the floors. Tests that
-depend on the old pacing import `tests/fixtures/fair-sky.ts`, which empties
-`SKY_RULES`.
+**Rules apply only under a sky table.** `SKY_RULES` was first written to apply
+wherever the sky is open. That reached about 14 Threshold outdoor spots, the
+Foot of the Ascent, floor 0's field and gate, floor 4 (6 spots), floor 5 (5 of
+6) and floor 6 (3 of 7), whose noise-field weather has a rule-bearing kind
+(rain, snow, storm, gale) 41.3% (Ascent) and 42.1% (Threshold) of game time
+(three seeds, three years). The restriction in `tickSky` removes that: those
+places show weather and take no status from it. The tests that had imported
+`tests/fixtures/fair-sky.ts` to empty `SKY_RULES` (alchemy, john, phase2,
+proto26) no longer need it, and the fixture is deleted.
 
 The map's threat badge (`spotThreat`, ui/lib/navigation.ts) reads
 `eligibleEncounters`, so a spot whose `sky` lines have different levels shows
@@ -401,7 +410,9 @@ attributes, one run each, wall time noisy):
 | mountain spot, every front a gale | off | 7,016 (14.6 a minute) | 9.2–13.4 s |
 | mountain spot, every front a gale | on | 88,320 (184 a minute, 31% of ticks) | 14.4–17.8 s |
 
-About 99% of those rebuilds happen while `buffeted` is held. `buffeted` has
+The two noise-field rows were measured before `tickSky` was restricted to sky
+tables; with the restriction a noise-field region costs the "off" row. About
+99% of those rebuilds happen while `buffeted` is held. `buffeted` has
 `decayWithDuration`, so its `effectiveIntensity` moves every tick, and
 `modFingerprint` includes `effectiveIntensity` for every held status, with or
 without stat mods. Options, none applied: (a) fingerprint a decaying
@@ -471,8 +482,9 @@ arcane):
   ≤ −5° cold; rain → water; storm → wind:water:lightning 65:30:5; gale and
   blizzard → wind; sandstorm → wind:earth 80:20; heatwave → heat (paid once,
   not again for its temperature); a clear daytime sky ≥ 6° over its seasonal
-  baseline is glare → light. Under the same open sky, `tickSky` also applies
-  the sky's status doses (see "Region skies" below).
+  baseline is glare → light. Under the same open sky in a region with a sky
+  table, `tickSky` also applies the sky's status doses (see "Region skies"
+  below).
 - **Places**: elemental tags seep a small trickle into whoever loiters —
   and they live at every level of the chain: a spot's effective tags are the
   UNION region ∪ area ∪ spot, so `'dark'` on the Malgeri Cave System region

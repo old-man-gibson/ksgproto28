@@ -19,6 +19,7 @@ interface RegionRef {
 interface AreaRef {
   id: string;
   regionId: string;
+  skyRegionId?: string;
   sheltered?: boolean;
   tags?: string[];
 }
@@ -31,7 +32,7 @@ interface SpotRef {
 }
 
 export interface SkyIssue {
-  kind: 'region' | 'spot';
+  kind: 'region' | 'area' | 'spot';
   id: string;
   message: string;
 }
@@ -55,12 +56,20 @@ export function skyContentIssues(refs: {
     if (!region.world) add('a sky table needs an atlas pin (world): an unplaced region has no weather');
   }
 
+  for (const area of Object.values(refs.areas)) {
+    if (area.skyRegionId === undefined) continue;
+    if (!refs.regions[area.skyRegionId]) {
+      issues.push({ kind: 'area', id: area.id, message: `skyRegionId '${area.skyRegionId}' is not a region` });
+    }
+  }
+
   for (const spot of Object.values(refs.spots)) {
     const lines = (spot.encounters ?? []).filter((e) => e.sky !== undefined);
     if (!lines.length) continue;
     const add = (message: string) => issues.push({ kind: 'spot', id: spot.id, message });
     const area = refs.areas[spot.areaId];
-    const region = area && refs.regions[area.regionId];
+    // The sky region, as skyRegionOf (registry.ts) resolves it.
+    const region = area && refs.regions[area.skyRegionId ?? area.regionId];
     // The same test skyKindAt (systems/exposure.ts) runs: the area's `sheltered`
     // overrides the region's, and an `indoor` tag at any level is a roof.
     const sheltered = area?.sheltered ?? region?.sheltered ?? false;

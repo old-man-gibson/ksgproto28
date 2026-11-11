@@ -165,7 +165,7 @@ export function getSpot(id: string): SpotDef {
  */
 export function skyRegionOf(spotId: string): RegionDef | undefined {
   const area = AREAS[SPOTS[spotId]?.areaId];
-  const region = area && REGIONS[area.regionId];
+  const region = area && REGIONS[area.skyRegionId ?? area.regionId];
   if (!region || area.sheltered === undefined || area.sheltered === !!region.sheltered) return region;
   return { ...region, sheltered: area.sheltered };
 }

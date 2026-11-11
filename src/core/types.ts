@@ -4308,6 +4308,13 @@ export interface AreaDef {
    * 'indoor'. Read through `skyRegionOf`, never off the region directly.
    */
   sheltered?: boolean;
+  /**
+   * The region whose sky this area stands under, when that is not the region
+   * it is drawn in. The Malgeri floor stays in the Ascent's stack (its map,
+   * ladder and tower section group floors by `regionId`) and reads the Malgeri
+   * Range's sky table. Read through `skyRegionOf`.
+   */
+  skyRegionId?: string;
   /** Place tags for every spot in the area — see `SpotDef.tags`. */
   tags?: string[];
   /** The backdrop fights here are drawn against (see SceneId). */

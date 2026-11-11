@@ -357,11 +357,13 @@ export function tickExposure(state: GameState, bus: EventBus): void {
 
 /**
  * Runs every tick from Game.advance(), beside tickExposure; does its work once
- * per game minute. Under an open sky (the same test tickExposure uses: no
- * sheltered region or area, no `indoor` tag) it applies the sky's SKY_RULES
- * entry on every minute its `every` divides. The player's doses go through
- * `applyStatus` with their stat block, so resistance thins them; `foes` land
- * on the enemies of a fight in progress.
+ * per game minute. Only a region with a sky table (`RegionDef.sky`) has rules
+ * to apply: elsewhere it returns, so the noise-field weather of the rest of the
+ * world stays cosmetic and cannot hurt. Under an open sky (the same test
+ * tickExposure uses: no sheltered region or area, no `indoor` tag) it applies
+ * the sky's SKY_RULES entry on every minute its `every` divides. The player's
+ * doses go through `applyStatus` with their stat block, so resistance thins
+ * them; `foes` land on the enemies of a fight in progress.
  *
  * It also stamps CALM_SEEN_KEY and logs the first calm. Not while catching up
  * offline: the line would be suppressed with the rest of the log, and the
@@ -369,6 +371,7 @@ export function tickExposure(state: GameState, bus: EventBus): void {
  */
 export function tickSky(state: GameState, bus: EventBus, catchingUp = false): void {
   if (state.totalTicks % TICKS_PER_GAME_MINUTE !== 0) return;
+  if (!skyRegionOf(state.spot)?.sky) return;
   const kind = skyKindAt(state, state.spot);
   if (!kind) return;
 

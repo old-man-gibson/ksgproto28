@@ -28,6 +28,7 @@ export const REF_KIND: Record<string, string> = {
   exitTo: 'spot',
   areaId: 'area',
   regionId: 'region',
+  skyRegionId: 'region',
   npcId: 'npc',
   giver: 'npc',
   questId: 'quest',

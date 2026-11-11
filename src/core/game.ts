@@ -313,7 +313,8 @@ export class Game {
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);
     tickExposure(this.state, this.bus);
-    // What the open sky does to the body standing under it (SKY_RULES).
+    // What the open sky does to the body standing under it (SKY_RULES), in
+    // regions with a sky table only.
     tickSky(this.state, this.bus, this.catchingUp);
     // The run's ability, once a minute: Solar Charge banks the sky the
     // exposure tick just sampled.

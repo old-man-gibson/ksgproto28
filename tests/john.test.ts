@@ -1,4 +1,3 @@
-import './fixtures/fair-sky';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Game } from '../src/core/game';
 import { createInitialState } from '../src/core/state';
