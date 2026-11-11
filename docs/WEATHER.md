@@ -126,7 +126,7 @@ skyDarkness = naturalDarkness(hour) × (1 − MOONLIGHT_MAX × moonlight × thro
 |---|---|---|---|
 | `MOONLIGHT_WEIGHT` | large 0.5, medium 0.3, small 0.2 | climate.data.ts | share of the light per moon; sums to 1 |
 | `MOONLIGHT_MAX` | 0.6 | exposure.ts | three full moons on a clear night remove 60% of the dark |
-| `MOONLIGHT_THROUGH` | clear and still 1, mist and gale 0.5, others 0 | exposure.ts | how much moonlight each sky lets through; keyed on the weather `kind` (the bucket rule below), never the raw floats |
+| `MOONLIGHT_THROUGH` | clear, still, heatwave and calm 1, mist and gale 0.5, others 0 | exposure.ts | how much moonlight each sky lets through; keyed on the weather `kind` (the bucket rule below), never the raw floats |
 
 A region with no weather sample (no atlas pin) counts as cloudless. Every moon
 lights the whole night by its phase; moons do not rise or set.
@@ -179,8 +179,8 @@ same nights. Darkness is applied at roll time in combat, not through
 
 **Cost.** `darknessFactor` runs per attack roll; under the open night sky it
 now samples the weather each time, which floors 4–5 and floor 6's open spots
-pay at night. If it shows up in profiling, memoize the weather kind per region per
-game minute.
+pay at night. Regions with a sky table (below) memoize their sample per game
+minute; the noise path does not, because its anomaly moves every tick.
 
 **Tests** (tests/exposure.test.ts, tests/keeper.test.ts): all moons new gives
 the old darkness exactly; three full moons on a clear night give 0.4 at
@@ -233,19 +233,194 @@ null; place it in the forge first.
 **Phenomena are classifications, not variables.** `classify()` reads the three
 curves plus terrain: freezing rain is snow, a windy snow is a blizzard, a dry
 desert gale is a sandstorm, a still sheltered room is 'still'. Kinds today:
-still, clear, overcast, mist, rain, storm, snow, blizzard, gale, sandstorm.
-Adding a phenomenon means adding a branch there — never a new simulated
-variable.
+still, clear, overcast, mist, rain, storm, snow, blizzard, gale, sandstorm,
+heatwave, calm. Heatwave and calm are table-only: `classify` returns them
+only for a region sky table (its `extended` argument, below), so the noise
+path never produces them. Adding a phenomenon means adding a branch there —
+never a new simulated variable.
 
 **Sunlight is a classification too.** `sunlight(state)` (exposure.ts) is 0
 under a roof (a sheltered region or an `indoor` tag) and on a `dark` tag, and
 otherwise the sky's daylight (1 − `naturalDarkness(hour)`) times `SUN_SHARE`
 for the weather kind: clear and still 1, gale 0.8, mist 0.5, overcast 0.4,
-snow 0.3, rain and sandstorm 0.2, storm 0.1, blizzard 0.05 (placeholders). An
+snow 0.3, rain and sandstorm 0.2, storm 0.1, blizzard 0.05, heatwave and calm
+1 (placeholders). An
 unplaced region reads as clear. Lamplight is not sun: a settlement street at
 night reads 0. Solar Charge banks it (docs/FACET.md). A new weather kind needs
 a share; `SUN_SHARE` is a `Record<WeatherKind, …>`, so it will not compile
 without one.
+
+## Region skies: the Malgeri Mountains
+
+User ruling, 2026-11-11: floor 17 becomes the Malgeri Mountains, a floor whose
+mechanic is weather. This is the engine; the spots are authored separately.
+Data: `SKY_TABLES`, `SKY_RULES`, `SKY_THRESHOLDS` and the constants in
+climate.data.ts. Code: the "region skies" half of weather.ts, `tickSky` in
+exposure.ts, `skyContentIssues` in skyValidation.ts. Nothing is saved except
+one `flag:` counter (see "The first calm"), so there is no save version bump.
+
+**How an area opts in.** `RegionDef.sky` names a table in `SKY_TABLES`. The
+region `malgeri_range` (locations.data.ts) carries `sky: 'malgeri'`, terrain
+'mountains' and an atlas pin at (16, 29). An area opts in by setting
+`regionId: 'malgeri_range'`. No area does yet: floor 17's area keeps its
+current region until the spots exist. `weatherAt` takes the table path when
+`region.sky` names a table, the region has a pin and it is not `sheltered`;
+every other region takes the noise path above, unchanged. tests/sky.test.ts
+pins that with digests of the noise samples of the regions without a table.
+
+**Fronts.** The sky is a run of fronts, `FRONT_HOURS` = 6 game hours each,
+cells aligned to tick 0 (four a day). Each cell draws one front by weight:
+
+| front | weight | temp °C | precip | wind |
+|---|---|---|---|---|
+| gale | 24 | 5 | 0.30 | 0.80 |
+| snow | 22 | −4 | 0.80 | 0.35 |
+| rain | 20 | 7 | 0.80 | 0.35 |
+| storm | 18 | 8 | 0.85 | 0.80 |
+| heatwave | 14.5 | 38 | 0.05 | 0.20 |
+
+Each season excludes one kind and the remaining weights renormalise (divided
+by the remaining total): summer no snow, winter no heatwave, spring no storm,
+autumn no rain. The season is `clockOf` at the cell's first tick. The draw is
+`skyDraw(seed, region id, cell, salt)`: the FNV-1a hash of the region id mixed
+with the world seed and the cell index through murmur3 fmix32, one number in
+[0, 1). It is pure in (seed, region id, tick), so there is nothing to save and
+offline catch-up replays the same sky. The values are absolute, not offsets
+from the climate baseline, and `classify(front, terrain, false, true)` must
+return the front's kind (asserted for every front).
+
+**Calm.** One spell per window of `CALM_PERIOD_DAYS` = 12 game days, each
+`CALM_HOURS` = 8 game hours long (2.8% of the time). `calmSpell(seed, region,
+window)` hashes the start over every position that fits the whole spell in its
+window, so a spell never straddles two windows and every window holds exactly
+one. A calm spell replaces whatever front is running. Its values are
+temp 14, precip 0.1, wind 0.02.
+
+| knob | value | meaning |
+|---|---|---|
+| `FRONT_HOURS` | 6 | game hours per front |
+| `CALM_PERIOD_DAYS` | 12 | one calm spell per window of this many game days |
+| `CALM_HOURS` | 8 | game hours per calm spell |
+| `SKY_THRESHOLDS.heatwaveTemp` | 35 | `classify` reads temp ≥ this, with a dry sky, as heatwave |
+| `SKY_THRESHOLDS.calmWind` | 0.05 | wind ≤ this, with a dry sky, is calm |
+| `SKY_THRESHOLDS.dryPrecip` | 0.18 | the dry-sky bound for both |
+
+`classify`'s fourth argument, `extended`, enables heatwave and calm. Only the
+table path passes it, which is why the noise path can never produce either.
+
+**Measured shares** (three seeds, three years, one sample an hour): gale
+29.1%, snow 20.1%, rain 18.0%, storm 16.6%, heatwave 13.4%, calm 2.8%.
+
+**The sample memo.** The table path caches its `WeatherSample` per (seed,
+region id, sky, terrain, game minute); a front changes only on a cell
+boundary and calm on a whole minute, so nothing moves inside a minute. Ten
+ticks of a minute cost one computation. The key uses ids, not object
+identity, because `skyRegionOf` returns a fresh object per call. Samples are
+frozen. The map clears at 4,096 entries. The noise path is not cached.
+
+**What the open sky does: `SKY_RULES`.** `tickSky(state, bus, catchingUp)`
+runs from `Game.advance` beside `tickExposure`. Once per game minute, under an
+open sky (`skyKindAt` is non-null: no sheltered region or area, no `indoor`
+tag at any level, an atlas pin), it applies `SKY_RULES[kind]` on every minute
+`every` divides, through `applyStatus` with the player's derived stats, so
+resistances thin the dose. The source string is `Weather: <kind>`. A rule's
+`foes` (none shipped) land the same way on the enemies of a fight in
+progress.
+
+| sky | every | doses |
+|---|---|---|
+| gale | 3 min | buffeted 0.5 |
+| rain | 3 min | wet 1 |
+| snow | 3 min | chilled 0.15 |
+| storm | 3 min | wet 1, jolted 0.5 |
+| heatwave | 3 min | sweltering 0.5, dazzled 1 with chance 0.25 |
+| calm, and every kind with no row | none | none |
+
+Each status is an existing one and climbs its own ladder at the dose given
+(wet to soaked, buffeted to unfooted, chilled to frozen, jolted to shocked,
+dazzled to blinded). `dazzled` adds a stack per dose and blinds at four, so a
+dose every 3 minutes would blind in 12; the 0.25 chance makes it one stack per
+12 minutes on average. `sweltering` is new: icon 🥵, element heat, sum stacking
+capped at 6, 30 s duration, maximum stamina −5% per point of intensity up to
+−30% (`ceilings`, read outside the derived-stats cache). Its text is a
+"Label: fact" block like the other statuses.
+
+**Weather is still not a mod source.** `SKY_RULES` only applies statuses, and
+the fingerprint already includes every held status, so there is no
+`modFingerprint` or derivedcache change.
+
+**Encounter lines that wait on the sky.** `SpotEncounter.sky?: WeatherKind[]`:
+the line rolls only while the spot's sky is one of the listed kinds.
+`eligibleEncounters` (combat.ts) reads the sky through `skyKindAt`, and only
+when some line has `sky`. Under no open sky (a roof, a sheltered area, an
+`indoor` tag, no pin) a `sky` line never rolls and plain lines are unaffected.
+The floor-standard clear-table rule (docs/FLOOR_STANDARD.md) treats a `sky`
+line like a `daypart` line: it does not cover a gap. `skyContentIssues`
+(skyValidation.ts) is the shared lint, called by tests/content.test.ts and by
+`forge/lib/validate.ts`. It rejects: a region `sky` that is not in `SKY_TABLES`
+or has no pin; a `sky` list that is empty or names a non-kind; heatwave or
+calm in a region with no sky table; a `sky` line on a sheltered or `indoor`
+spot; a `sky` line in an unpinned region.
+
+**The first calm.** Calm is dangerous only through which monsters its lines
+bring, never through a status. Nothing may tell the player that before they
+have met it. `tickSky` sets `flag:malgeri_calm_seen` (`CALM_SEEN_KEY`) and
+logs one line, `exposure.calm_first`, the first minute the player stands under
+a calm open sky. The flag is a plain `state.stats` counter, so there is no
+save change. It is not set during offline catch-up (the log is suppressed
+there and the player has not yet looked), and `prestigeNow` carries it over,
+so the line fires once per save. That log entry is the only text that names
+calm. The weather chip and the forecast show the kind like any other; the
+forecast's rough read says "plain skies". Any future hint, tracker or tooltip
+that would name calm reads `CALM_SEEN_KEY` first. tests/sky.test.ts asserts
+that no other log text and no sky-rule status text contains the word.
+
+**The tower-wide consequence.** `SKY_RULES` applies wherever the sky is open,
+not only in the mountains. Open sky today: about 14 Threshold outdoor spots,
+the Foot of the Ascent, floor 0's field and gate, floor 4 (6 spots), floor 5
+(5 of 6) and floor 6 (3 of 7). Those regions use the noise field, where the
+kinds with a rule cover 41.3% (Ascent) and 42.1% (Threshold) of game time
+(rain 18.6%, snow 16.4%, storm 3.6%, gale 2.8%; three seeds, three years).
+Blizzard and mist have no rule. Chilled escalates to Frozen about every 21
+game minutes under snow. `tickSky` could skip regions without a sky table with
+one predicate; that is a decision for the owner of the floors. Tests that
+depend on the old pacing import `tests/fixtures/fair-sky.ts`, which empties
+`SKY_RULES`.
+
+The map's threat badge (`spotThreat`, ui/lib/navigation.ts) reads
+`eligibleEncounters`, so a spot whose `sky` lines have different levels shows
+a range that moves with the sky.
+
+**Cost** (8-hour offline catch-up, 288,000 ticks, hunting, level 30
+attributes, one run each, wall time noisy):
+
+| spot and sky | rules | derived-stats rebuild ticks | wall time |
+|---|---|---|---|
+| floor 4 woods edge (noise field) | off | 455 (0.95 a minute) | 3.6 s |
+| floor 4 woods edge (noise field) | on | 4,988 (10.4 a minute) | 3.9–5.3 s |
+| mountain spot, every front a gale | off | 7,016 (14.6 a minute) | 9.2–13.4 s |
+| mountain spot, every front a gale | on | 88,320 (184 a minute, 31% of ticks) | 14.4–17.8 s |
+
+About 99% of those rebuilds happen while `buffeted` is held. `buffeted` has
+`decayWithDuration`, so its `effectiveIntensity` moves every tick, and
+`modFingerprint` includes `effectiveIntensity` for every held status, with or
+without stat mods. Options, none applied: (a) fingerprint a decaying
+intensity only for statuses whose definition has fields derived stats read
+(mods, resistance overrides, ceilings), and key the rest on `id:stacks`; this
+needs an audit of every status field `derived.ts` reads; (b) quantize the
+decaying intensity in the fingerprint; (c) accept it, about 60–90 µs a
+rebuild, a few seconds per 8 hours. The `weatherAt` memo itself saves about
+0.15 s per 8 hours (285 ms of misses against 130 ms of hits over 288,000
+calls).
+
+**Tests** (tests/sky.test.ts, fixtures in tests/fixtures/malgeri.ts):
+table shape, front shares within 1% of the weights per season, the excluded
+kinds, calm length, spacing and determinism, regions without a table
+byte-identical, the sample memo, every `SKY_RULES` row (dose, period, none
+under a roof or in calm, resistance thinning, the sweltering ceiling,
+dazzle's chance, foes), the `sky` encounter filter, the first-calm line (once,
+not while catching up, kept over a prestige), the secrecy checks on log and
+status text, the forecast, and `skyContentIssues`.
 
 ## Rules for future work
 
@@ -253,7 +428,9 @@ without one.
   modifier must key on the **bucket** — `kind` + `band` (the five temperature
   bands), never the raw floats — and that bucket must join the derived-stats
   `modFingerprint`, or the memo will thrash every game minute. See
-  ENGINEERING.md.
+  ENGINEERING.md. `SKY_RULES` is not that: it applies ordinary statuses, which
+  the fingerprint already covers as held statuses, and `getDerivedStats` never
+  reads the sky.
 - **Named events are step 3+** (see NEXT.md §2): detected as connected
   excursions of the anomaly field past a percentile-baked threshold, ranked by
   integrated severity, named from a word registry, frozen into a chronicle
@@ -292,8 +469,10 @@ arcane):
 - **Weather**, per game minute, in the player's region, unless a roof (spot
   `indoor` tag or region `sheltered`) intervenes: temp ≥ 32° trains heat,
   ≤ −5° cold; rain → water; storm → wind:water:lightning 65:30:5; gale and
-  blizzard → wind; sandstorm → wind:earth 80:20; a clear daytime sky ≥ 6°
-  over its seasonal baseline is glare → light.
+  blizzard → wind; sandstorm → wind:earth 80:20; heatwave → heat (paid once,
+  not again for its temperature); a clear daytime sky ≥ 6° over its seasonal
+  baseline is glare → light. Under the same open sky, `tickSky` also applies
+  the sky's status doses (see "Region skies" below).
 - **Places**: elemental tags seep a small trickle into whoever loiters —
   and they live at every level of the chain: a spot's effective tags are the
   UNION region ∪ area ∪ spot, so `'dark'` on the Malgeri Cave System region
@@ -332,7 +511,10 @@ started in when the countryside was shelved, 2026-09-12.)
   tooltip with the tomorrow row at 5**, then a new day every 4 levels out to
   7 days at 29–30. Each row arrives as a *rough guess* (vague words + "(?)"),
   turns *fair* (kind + temperature band) two levels later, and *precise*
-  (kind + exact degrees) five levels on. The novelty spec's `discovery`
+  (kind + exact degrees) five levels on. A rough read of a calm sky, a
+  heatwave or any dry sky says "plain skies"; the fair and precise reads name
+  the kind, calm included. The forecast may show calm as weather; nothing in
+  it says what calm does (see "The first calm"). The novelty spec's `discovery`
   value is reserved for the chronicle: witnessing a NAMED event will pay it
   outright. Divination/deity forecasting can still layer on top later.
 - Changing `TICKS_PER_GAME_MINUTE` or the year's shape rewrites every save's
