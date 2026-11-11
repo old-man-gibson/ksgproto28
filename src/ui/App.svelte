@@ -38,13 +38,20 @@
   import { navListShown, reconcileTab, visibleNav, type MainTab } from './lib/nav';
   import { logIsOpen, shortClock } from './lib/shell';
   import DebugPanel from './panels/DebugPanel.svelte';
-  import { clockOf } from '../core/systems/clock';
-  import { CHRONOSENSE_ID, describeTimeSense } from '../core/systems/chronosense';
+  import { clockOf, MOON_ICONS } from '../core/systems/clock';
+  import { CHRONOSENSE_ID, describeMoons, describeTimeSense } from '../core/systems/chronosense';
   import { WEATHER_ICONS, weatherAt, worldSeedOf } from '../core/systems/weather';
   import { forecastFor, PROGNOSIS_TOOLTIP_AT, WEATHERSENSE_ID } from '../core/systems/weathersense';
   import Tip from './lib/Tip.svelte';
-  import { DARK_DODGE_PENALTY, DARK_MISS_CHANCE, darknessFactor } from '../core/systems/exposure';
-  import { AREAS, REGIONS, SKILLS, SPOTS } from '../core/registry';
+  import {
+    DARK_DODGE_PENALTY,
+    DARK_MISS_CHANCE,
+    darknessFactor,
+    MOONLIGHT_MAX,
+    MOONLIGHT_THROUGH,
+    moonlightOn,
+  } from '../core/systems/exposure';
+  import { SKILLS, skyRegionOf } from '../core/registry';
   import {
     barCapacity,
     barTickStarts,
@@ -69,7 +76,10 @@
   // Chronosense manifests, then as precise as its level allows (see
   // systems/chronosense.ts for the ladder).
   const senseLevel = $derived(gs.skills[CHRONOSENSE_ID]?.level ?? 0);
-  const timeSense = $derived(describeTimeSense(clockOf(gs.totalTicks), senseLevel));
+  const clock = $derived(clockOf(gs.totalTicks));
+  const timeSense = $derived(describeTimeSense(clock, senseLevel));
+  // The moons join the chip at season-sense, as glyphs; the names are on hover.
+  const moonLines = $derived(describeMoons(clock, senseLevel));
 
   // The sky needs no skill — skin reads weather for free. Null while the
   // player's region has no atlas pin (no geography, no weather).
@@ -85,10 +95,20 @@
     const miss = Math.round(DARK_MISS_CHANCE * dark * 100);
     const level = gs.skills.darkvision?.level ?? 0;
     const seen = level > 0 ? ` · ${SKILLS.darkvision.name} ${level} is buying it back` : '';
-    return `You are fighting in the dark: −${dodge}% dodge, +${miss}% chance of your attacks missing${seen}`;
+    const moon = moonLine(moonlightOn(gs));
+    return `You are fighting in the dark: −${dodge}% dodge, +${miss}% chance of your attacks missing${seen}${moon}`;
   });
 
-  const wxRegion = $derived(REGIONS[AREAS[SPOTS[gs.spot]?.areaId]?.regionId]);
+  /** The dark chip's moonlight line; empty where the dark is not the open sky's. */
+  function moonLine(moon: ReturnType<typeof moonlightOn>): string {
+    if (!moon) return '';
+    const cut = Math.round(MOONLIGHT_MAX * moon.lit * 100);
+    if (cut > 0) return `\nMoonlight: −${cut}% darkness`;
+    if (moon.kind && MOONLIGHT_THROUGH[moon.kind] === 0) return `\nMoonlight: none (${moon.kind})`;
+    return '\nMoonlight: none';
+  }
+
+  const wxRegion = $derived(skyRegionOf(gs.spot));
   const weather = $derived(
     wxRegion ? weatherAt(worldSeedOf(gs.createdAt), wxRegion, gs.totalTicks) : null,
   );
@@ -322,6 +342,21 @@
       <div class="timesense" title="{timeSense} ({SKILLS[CHRONOSENSE_ID].name} {senseLevel})">
         🕰️ <span class="clock-full">{timeSense}</span><span class="clock-short">{shortClock(timeSense)}</span>
       </div>
+    {/if}
+    {#if moonLines.length && !screen}
+      <!-- Glyphs drawn at each moon's relative size; hover names them. -->
+      <Tip block>
+        <div class="moonchip">
+          {#each clock.moons as m (m.id)}
+            <span class="moonglyph {m.size}">{MOON_ICONS[m.phaseId]}</span>
+          {/each}
+        </div>
+        {#snippet tip()}
+          {#each moonLines as line (line)}
+            <div class="tip-line">{line}</div>
+          {/each}
+        {/snippet}
+      </Tip>
     {/if}
     {#if weather && !screen}
       <!-- Same tooltip system as stats and resources. It grows with
@@ -635,6 +670,22 @@
       max-width: none;
       container-type: normal;
     }
+  }
+
+  .moonchip {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+  }
+  .moonglyph.large {
+    font-size: 17px;
+  }
+  .moonglyph.medium {
+    font-size: 13px;
+  }
+  .moonglyph.small {
+    font-size: 10px;
   }
 
   .weather {

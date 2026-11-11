@@ -4273,7 +4273,8 @@ export interface RegionDef {
   terrain?: TerrainId;
   /**
    * Interiors: caves, the home base. Weather stops at the door — wind and
-   * precipitation zero out and only a damped temperature leaks in.
+   * precipitation zero out and only a damped temperature leaks in. An area
+   * can override it (`AreaDef.sheltered`).
    */
   sheltered?: boolean;
   /**
@@ -4293,6 +4294,12 @@ export interface AreaDef {
   id: string;
   name: string;
   regionId: string;
+  /**
+   * Overrides the region's `sheltered` for this area. The Ascent is roofed; a
+   * floor that opens onto the sky sets false and tags its roofed spots
+   * 'indoor'. Read through `skyRegionOf`, never off the region directly.
+   */
+  sheltered?: boolean;
   /** Place tags for every spot in the area — see `SpotDef.tags`. */
   tags?: string[];
   /** The backdrop fights here are drawn against (see SceneId). */

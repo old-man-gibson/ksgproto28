@@ -67,10 +67,13 @@ export const AREAS: Record<string, AreaDef> = {
   ascent_f2_area: { id: 'ascent_f2_area', name: 'The Long Hall', regionId: 'the_ascent', scene: 'hall' },
   ascent_f3_area: { id: 'ascent_f3_area', name: 'The Descent', regionId: 'the_ascent', scene: 'hall' },
   // Band 2 (bands-2-3.md). No forest scene exists yet; the swamp borrows the
-  // cistern's and the warren the crypt's.
-  ascent_f4_area: { id: 'ascent_f4_area', name: 'The Greenwood', regionId: 'the_ascent' },
-  ascent_f5_area: { id: 'ascent_f5_area', name: 'The Mire', regionId: 'the_ascent', scene: 'cistern' },
-  ascent_f6_area: { id: 'ascent_f6_area', name: 'The Warren', regionId: 'the_ascent', scene: 'crypt' },
+  // cistern's and the warren the crypt's. Open sky (user, 2026-10-29): floors
+  // 4 and 5 whole, floor 6 in part — its roofed spots carry 'indoor', and the
+  // caves keep 'dark' with 'indoor' so no weather falls in them. Open sky
+  // means weather, night darkness and moonlight (WEATHER.md).
+  ascent_f4_area: { id: 'ascent_f4_area', name: 'The Greenwood', regionId: 'the_ascent', sheltered: false },
+  ascent_f5_area: { id: 'ascent_f5_area', name: 'The Mire', regionId: 'the_ascent', sheltered: false, scene: 'cistern' },
+  ascent_f6_area: { id: 'ascent_f6_area', name: 'The Warren', regionId: 'the_ascent', sheltered: false, scene: 'crypt' },
   // Band 3, the City (bands-2-3.md), a skeleton. The castle is the band's hub:
   // no floor claims its area, and the ladder answers there (BandDef.hub).
   ascent_castle_area: { id: 'ascent_castle_area', name: 'The Castle', regionId: 'the_ascent', scene: 'hall' },
@@ -1746,7 +1749,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     areaId: 'ascent_f5_area',
     map: { x: 50, y: 54 },
     // Dark: footwork suffers until Darkvision pays it off (combat.ts).
-    tags: ['dark'],
+    tags: ['dark', 'indoor'],
     activities: [
       { id: 'hunt', kind: 'hunt', name: 'Hunt the Hollows', icon: '🏹' },
       { id: 'explore', kind: 'explore', name: 'Map the Hollows', icon: '🔦' },
@@ -1790,6 +1793,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
   // pens, kitchens, shrine) and, down the drop, the deep encampment. Each of
   // the three sabotages takes a level off the warchief (11 with none, 8 with
   // all three), the floor 3 pattern. Arriving in the great hall is the fight.
+  // Under the sky (user, 2026-10-29): the Mouth, the Pens and the Shrine. The
+  // Tunnels, Kitchens and Great Hall are roofed ('indoor'); the Drop is dark.
   f6_warren_mouth: {
     id: 'f6_warren_mouth',
     name: 'The Warren Mouth',
@@ -1805,6 +1810,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🪨',
     areaId: 'ascent_f6_area',
     map: { x: 50, y: 20 },
+    tags: ['indoor'],
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Fight Through the Tunnels', icon: '⚔️' }],
     groupWeights: { 1: 50, 2: 30, 3: 20 },
     encounters: [
@@ -1839,6 +1845,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🍲',
     areaId: 'ascent_f6_area',
     map: { x: 82, y: 20 },
+    tags: ['indoor'],
     activities: [{ id: 'explore', kind: 'explore', name: 'Foul the Stores', icon: '🧪' }],
     exploreTicks: 300,
     finds: [
@@ -1875,7 +1882,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🕳️',
     areaId: 'ascent_f6_area',
     map: { x: 50, y: 52 },
-    tags: ['dark'],
+    tags: ['dark', 'indoor'],
     activities: [
       { id: 'camp_f6_deep', kind: 'rest', name: 'Camp in the Drop', icon: '🏕️' },
       { id: 'hunt', kind: 'hunt', name: 'Hold the Drop', icon: '⚔️' },
@@ -1895,6 +1902,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🔥',
     areaId: 'ascent_f6_area',
     map: { x: 50, y: 70 },
+    tags: ['indoor'],
     forced: true,
     fightLimit: 1,
     modifierWeights: { normal: 100 },

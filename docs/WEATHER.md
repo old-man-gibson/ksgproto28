@@ -37,9 +37,171 @@ preview seed; every save rolls its own sky.
   but re-flavourable.
 
 `clockOf(totalTicks)` returns the whole picture (year, month, day, weekday,
-hour, holy day, season, phase); `formatDate`/`formatTime` render it. On a holy
+hour, holy day, season, phase, moons); `formatDate`/`formatTime` render it. On a holy
 day, `monthIndex`, `dayOfMonth` and `weekday` are all null — those days are
 genuinely outside the system, which is what makes them holy.
+
+## The moons
+
+Three moons (user, 2026-10-29). Data: `MOONS` and `MOON_PHASES` in
+climate.data.ts. State: `WorldClock.moons`, derived like the rest of the clock,
+so there are no save fields and nothing to catch up.
+
+| moon | cycle | size |
+|---|---|---|
+| Large Moon | 79 days | largest |
+| Middle Moon | 28 days | medium |
+| Small Moon | 37 days | smallest |
+
+The names are scaffolding (TODO in the data file), like the months.
+
+- **Moons count month-days.** On a holy day every moon holds the phase it had
+  at the end of the day before, the same way holy days stand outside the week.
+- **The 28-day moon is locked to the month.** Every month opens on its new
+  moon, every year. The holy days land on its four principal phases: Vernal
+  Equinox first quarter, Summer Solstice full, Autumnal Equinox last quarter,
+  Winter Solstice new.
+- **The 37- and 79-day moons drift** against the calendar. All three are new
+  at the epoch (Firstday, 1st of First Month, Year 1) and are all new together
+  again after 28 × 37 × 79 = 81,844 month-days, about 225 years.
+- Each `MoonState` carries `phase` (0..1: 0 new, 0.25 first quarter, 0.5 full,
+  0.75 last quarter, continuous through the day), `age` (whole days into the
+  cycle), `illumination` (lit fraction, 0 at new, 1 at full), `phaseId` and
+  `phaseName`.
+- **Phase names**: new moon, waxing crescent, first quarter, waxing gibbous,
+  full moon, waning gibbous, last quarter, waning crescent. A principal phase
+  (new, the quarters, full) names the one day that starts at its exact
+  moment; the crescents and gibbouses fill the days between. For the 28-day
+  moon that is new on day 1 of the cycle, waxing crescent days 2–7, first
+  quarter day 8, and so on.
+- `cycleDays` is a knob. The month lock holds only while a cycle divides 28;
+  any other value still works, it just drifts.
+- **Where the player reads them**: the header clock chip, as three glyphs drawn
+  at each moon's relative size, from Chronosense **season tier (4)**. Hover
+  names each moon's phase; from **date tier (16)** the hover adds the day of
+  the cycle ("day 12 of 79"). Season tier because moons and seasons are both
+  read off the sky rather than counted; the date tier is the one that counts
+  days. The forge's World Atlas Sky bar shows the same glyphs, with the full
+  line on hover.
+- **Moonlight** lowers the darkness of the open night sky (below).
+
+### Moonlight (built 2026-10-29)
+
+The user asked for moonlight to lighten the night and took the defaults of
+the design (record at the end of this section).
+
+**Where it applies.** Sky darkness only exists outdoors, away from lamplight.
+The user's ruling (2026-10-29): floors 4 and 5 are open sky, floor 6 is in
+part, and each band-3 direction (floors 7–10) has open-sky areas. Built:
+
+| place | sky | how |
+|---|---|---|
+| floors 1–3 | roofed | the Ascent region is `sheltered` |
+| floor 4, the Greenwood | open | `ascent_f4_area` sets `sheltered: false` |
+| floor 5, the Mire | open, except the Hollows | `ascent_f5_area` sets `sheltered: false`; the Hollows carry `dark` and `indoor` |
+| floor 6, the Warren | the Mouth, the Pens, the Shrine | `ascent_f6_area` sets `sheltered: false`; the Tunnels, Kitchens and Great Hall carry `indoor`, the Drop `dark` and `indoor` |
+| floors 7–10 | open areas per direction | unbuilt; mark them when built (plans/bands-2-3.md) |
+| Threshold, the Holding Level | lamplight | `settlement` |
+| the Hold | roofed | `sheltered`; the yard is a TODO in locations.data.ts |
+
+`AreaDef.sheltered` overrides the region's for one area. Every reader of the
+sky goes through `skyRegionOf(spotId)` (registry.ts), which returns the region
+with the area's override applied, so the open floors share one sky over the
+Ascent's pin and 'plains' terrain. Open sky is the whole package, not
+moonlight alone: weather in the header chip and the Weathersense forecast,
+resist exposure from the weather, Weathersense watching XP, night darkness
+(combat penalties and Darkvision training), and moonlight. Floor 6's split
+is the user's (2026-10-29): the Pens and the Shrine are open, the Kitchens
+are not.
+
+**The rule.** Moonlight lowers the darkness of the open night sky:
+
+```
+moonlight   = Σ moon.illumination × MOONLIGHT_WEIGHT[moon.size]      0..1
+through     = MOONLIGHT_THROUGH[weather.kind]                        0..1
+skyDarkness = naturalDarkness(hour) × (1 − MOONLIGHT_MAX × moonlight × through)
+```
+
+| knob | value | where | meaning |
+|---|---|---|---|
+| `MOONLIGHT_WEIGHT` | large 0.5, medium 0.3, small 0.2 | climate.data.ts | share of the light per moon; sums to 1 |
+| `MOONLIGHT_MAX` | 0.6 | exposure.ts | three full moons on a clear night remove 60% of the dark |
+| `MOONLIGHT_THROUGH` | clear and still 1, mist and gale 0.5, others 0 | exposure.ts | how much moonlight each sky lets through; keyed on the weather `kind` (the bucket rule below), never the raw floats |
+
+A region with no weather sample (no atlas pin) counts as cloudless. Every moon
+lights the whole night by its phase; moons do not rise or set.
+
+Code: `moonlight(moons)` in clock.ts; `moonlightThrough`, `skyDarkness`,
+`placeDarkness` (its `lit` argument) and `moonlightOn` (the readout) in
+exposure.ts. `placeDarkness` calls `lit` only outdoors at night, so daytime and
+roofed places never sample the weather for it. One darkness number feeds both
+the combat penalties (`darknessFactor`) and Darkvision training
+(`tickExposure`), so a moonlit night also teaches less. Everything else stays
+as it was:
+
+- `dark`-tagged places stay at 1. Caves get no moonlight.
+- Roofs, `indoor`, `sheltered` and `settlement` stay at 0.
+- **Night stays night.** `naturalDarkness(hour)` is still the night boundary
+  for `daypart: 'night'` encounters (`isNightNow` in combat.ts). Moonlight
+  changes how dark the night is, not whether it is night.
+- `eyeless` still zeroes the factor; monsters still pay nothing.
+- Darkvision erodes what is left, as before: `darknessFactor = darkness ×
+  (1 − level / 50)`.
+
+**Numbers.** Simulated for an open-sky plains region at the Foot's pin, three
+seeds, three years of nights each (hours 20–04, every 10 game minutes):
+
+| measure | before moonlight | with moonlight |
+|---|---|---|
+| clear sky at night | — | 20–25% of samples |
+| mean night darkness | 1.00 | 0.92 |
+| darkest / brightest night | 1.00 / 1.00 | 1.00 / 0.41–0.44 |
+| header chip, untrained: Blind dark (≥ 0.85) | 100% | 76–80% |
+| header chip, untrained: Dark (0.4–0.85) | 0% | 20–24% |
+
+One full Large Moon on a clear night alone gives darkness 0.70: an untrained
+fighter loses 17.5% dodge instead of 25% and swings at shadows 10.5% of the
+time instead of 15%. Darkvision training slows by the same 8% on average.
+
+**What the player sees.** The header's dark chip bands the factor
+(Blind dark / Dark / Gloom); on a moonlit night it can drop a band. Under the
+open night sky its tooltip adds one line: "Moonlight: −30% darkness" or
+"Moonlight: none (overcast)". In a `dark` place the line is absent.
+No Chronosense gate: you see moonlight whether or not you can name the phase.
+The Weathersense forecast already shows which coming hours are clear, so a
+player who reads both chips can pick a moonlit night to hunt in. No new
+system teaches this; it is not on the critical path.
+
+**Laws.** Every factor is in 0..1, so darkness stays in 0.4..1 at night: no
+new arithmetic edge (COMPLETABILITY C). No save field; offline replay gets the
+same nights. Darkness is applied at roll time in combat, not through
+`getDerivedStats`, so the derived-stats fingerprint is untouched.
+
+**Cost.** `darknessFactor` runs per attack roll; under the open night sky it
+now samples the weather each time, which floors 4–5 and floor 6's open spots
+pay at night. If it shows up in profiling, memoize the weather kind per region per
+game minute.
+
+**Tests** (tests/exposure.test.ts, tests/keeper.test.ts): all moons new gives
+the old darkness exactly; three full moons on a clear night give 0.4 at
+midnight; overcast gives 1; `dark` gives 1; roofs and lamplight give 0 and
+never sample the sky; a real clear night in the shelved woods is lighter and an
+overcast one is not; a moonlit night teaches Darkvision less; a
+`daypart: 'night'` encounter still rolls under a full moon. The tower's open
+floors: band 1 keeps the roof and the open floors share the Ascent's pin;
+floor 4 has weather and floor 1 is always 'still'; a night on floor 4 is dark
+and moonlit while floor 1 is not; on floor 6 the Mouth, Pens and Shrine see
+the night and the Tunnels, Kitchens and Great Hall do not;
+rain on floor 5 trains the Bog but not the Hollows, the Tunnels or floor 1.
+
+**Decisions (user, 2026-10-29, defaults taken):** build now, inert until an
+open-sky region exists; no rise and set; `MOONLIGHT_MAX` 0.6 with weights
+0.5 / 0.3 / 0.2; moonlight slows Darkvision training too. The rejected
+options: build with the first open-sky region; moons that rise and set by
+phase (a moon up for the 12 hours centred on 12:00 + phase × 24 h, so a first
+quarter sets at midnight); Darkvision XP that ignores moonlight. Later the
+same day the user ruled which floors are open sky (the table above); that is
+what made moonlight live.
 
 ## The weather
 
@@ -62,6 +224,9 @@ precipitation 0–1, wind 0–1):
 `RegionDef.terrain` picks the profile ('plains' when absent);
 `RegionDef.sheltered` is for interiors — wind and precipitation zero out and
 only a damped temperature leaks in (the cave system, the home base).
+`AreaDef.sheltered` overrides it for one area (band 2's floors open the roofed
+Ascent to the sky); read the sky through `skyRegionOf`, never
+`REGIONS[area.regionId]`.
 A region with no atlas pin has **no weather at all** — `weatherAt` returns
 null; place it in the forge first.
 
@@ -97,7 +262,7 @@ without one.
 - The player-facing clock is **Chronosense** (`systems/chronosense.ts`, skill
   `chronosense`): manifests after one lived day, gains XP passively per game
   minute (offline replay included — time away counts), and each precision
-  tier widens the header chip — daypart (1), season (4), hour (8), weekday
+  tier widens the header chip — daypart (1), season and moons (4), hour (8), weekday
   (12), full date (16), exact minute (25). A holy day is *felt* at
   season-tier, *named* at date-tier. Exists for time-gated content: post-
   prestige events and the base's hint system will point at dates, which only
@@ -145,7 +310,8 @@ arcane):
   heat for the whole job, and a faster smith completes more jobs an hour.
 
 **Darkness** trains a sense instead: true dark (night hours, outdoors, no
-`settlement` lamplight) grows **Darkvision** (`darkvision`, environmental,
+`settlement` lamplight, less under moonlight, see "Moonlight" above) grows
+**Darkvision** (`darkvision`, environmental,
 capped 50). Night fighting carries real penalties — a flat miss chance and a
 dodge tax (`DARK_MISS_CHANCE`, `DARK_DODGE_PENALTY`), scaled by
 `darknessFactor(state)` and eroded linearly to ZERO at Darkvision 50.

@@ -1,8 +1,8 @@
-import type { GameState } from '../types';
+import type { GameState, RegionDef } from '../types';
 import type { EventBus } from '../engine/events';
-import { AREAS, REGIONS, SPOTS } from '../registry';
+import { AREAS, SPOTS, skyRegionOf } from '../registry';
 import { checkDiscovery, grantSkillXp } from './skills';
-import { clockOf } from './clock';
+import { clockOf, moonlight, type MoonState } from './clock';
 import { hasStatus } from './statuses';
 import {
   climateBaseline,
@@ -30,7 +30,8 @@ import { tickWeathersense } from './weathersense';
  * Plus DARKNESS, which trains a sense rather than a resistance: true dark,
  * away from any hearth-light, grows `darkvision` — and darkvision is what
  * unpicks the night's combat penalties (see `darknessFactor`, consumed in
- * combat.ts).
+ * combat.ts). Moonlight lowers the open sky's darkness at night; it never
+ * reaches a 'dark'-tagged place.
  *
  * Everything here is deliberately small-per-minute: exposure should reward
  * living somewhere, not replace getting hit.
@@ -80,6 +81,24 @@ export const DARK_MISS_CHANCE = 0.15;
 /** The level at which darkvision has unpicked the night entirely. */
 export const DARKVISION_CEILING = 50;
 
+/** Share of the open night sky's darkness that moonlight 1 (three full moons,
+ *  nothing in the way) removes: the brightest night is still 0.4 dark. */
+export const MOONLIGHT_MAX = 0.6;
+/** How much moonlight each sky lets through. Keyed on the weather KIND, the
+ *  bucket, never the raw floats (docs/WEATHER.md, rules for future work). */
+export const MOONLIGHT_THROUGH: Record<WeatherKind, number> = {
+  still: 1,
+  clear: 1,
+  mist: 0.5,
+  gale: 0.5,
+  overcast: 0,
+  rain: 0,
+  storm: 0,
+  snow: 0,
+  blizzard: 0,
+  sandstorm: 0,
+};
+
 // ---------- Weather → elements ----------
 
 /** How hard each sky leans on each element, as shares of the base rate. */
@@ -122,12 +141,35 @@ export function weatherExposure(
 
 // ---------- Darkness ----------
 
-/** How dark the SKY is at this hour: 1 through the night, half at the
- *  twilight fringes, 0 in daylight. Moonless on purpose, for now. */
+/** How dark the SKY is at this hour before moonlight: 1 through the night,
+ *  half at the twilight fringes, 0 in daylight. This is also the NIGHT
+ *  boundary (`isNightNow` in combat.ts): moonlight changes how dark the night
+ *  is, never whether it is night. */
 export function naturalDarkness(hour: number): number {
   if (hour >= 20 || hour <= 4) return 1;
   if (hour === 19 || hour === 5) return 0.5;
   return 0;
+}
+
+/** Moonlight reaching the ground, 0..1: the moons' light times what this sky
+ *  lets through. No weather sample (an unpinned region) means no clouds. */
+export function moonlightThrough(moons: MoonState[], kind: WeatherKind | null): number {
+  return moonlight(moons) * (kind ? MOONLIGHT_THROUGH[kind] : 1);
+}
+
+/** The open sky's darkness at this hour under `lit` moonlight (0..1). */
+export function skyDarkness(hour: number, lit: number): number {
+  return naturalDarkness(hour) * (1 - MOONLIGHT_MAX * lit);
+}
+
+function skyKind(state: GameState, region: RegionDef | undefined): WeatherKind | null {
+  if (!region) return null;
+  return weatherAt(worldSeedOf(state.createdAt), region, state.totalTicks)?.kind ?? null;
+}
+
+/** Moonlight reaching the ground over this region right now. */
+function groundMoonlight(state: GameState, region: RegionDef | undefined): number {
+  return moonlightThrough(clockOf(state.totalTicks).moons, skyKind(state, region));
 }
 
 /**
@@ -139,7 +181,7 @@ export function naturalDarkness(hour: number): number {
 function placeOf(state: GameState) {
   const spot = SPOTS[state.spot];
   const area = spot ? AREAS[spot.areaId] : undefined;
-  const region = area ? REGIONS[area.regionId] : undefined;
+  const region = skyRegionOf(state.spot);
   const tags = new Set([...(region?.tags ?? []), ...(area?.tags ?? []), ...(spot?.tags ?? [])]);
   return { spot, region, tags };
 }
@@ -149,16 +191,32 @@ function placeOf(state: GameState) {
  * is darkness by nature — a deep cave at noon is as black as it is at
  * midnight, and no lamplight rule applies, because you tagged it dark on
  * purpose. Otherwise it is the sky's darkness, cancelled by roofs and
- * settlement lamplight.
+ * settlement lamplight and lowered by moonlight. `lit` is only called outdoors
+ * at night, so daytime and roofed places never sample the weather for it.
  */
 export function placeDarkness(
   region: { sheltered?: boolean } | undefined,
   tags: Set<string>,
   hour: number,
+  lit: () => number = () => 0,
 ): number {
   if (tags.has('dark')) return 1;
   if (region?.sheltered || tags.has('indoor') || tags.has('settlement')) return 0;
-  return naturalDarkness(hour);
+  if (naturalDarkness(hour) === 0) return 0;
+  return skyDarkness(hour, lit());
+}
+
+/**
+ * The moonlight on the player right now, for the darkness readout: null
+ * unless the dark around them is the open night sky's (a 'dark' place, a
+ * roof, lamplight and daylight all make moonlight irrelevant).
+ */
+export function moonlightOn(state: GameState): { lit: number; kind: WeatherKind | null } | null {
+  const { region, tags } = placeOf(state);
+  const clock = clockOf(state.totalTicks);
+  if (tags.has('dark') || placeDarkness(region, tags, clock.hour) === 0) return null;
+  const kind = skyKind(state, region);
+  return { lit: moonlightThrough(clock.moons, kind), kind };
 }
 
 /**
@@ -174,7 +232,9 @@ export function darknessFactor(state: GameState): number {
   // sites that spend it.
   if (hasStatus(state, 'eyeless')) return 0;
   const { region, tags } = placeOf(state);
-  const dark = placeDarkness(region, tags, clockOf(state.totalTicks).hour);
+  const dark = placeDarkness(region, tags, clockOf(state.totalTicks).hour, () =>
+    groundMoonlight(state, region),
+  );
   if (dark === 0) return 0;
   const level = Math.min(state.skills.darkvision?.level ?? 0, DARKVISION_CEILING);
   return dark * (1 - level / DARKVISION_CEILING);
@@ -232,11 +292,13 @@ export function tickExposure(state: GameState, bus: EventBus): void {
   const { spot, region, tags } = placeOf(state);
   if (!spot || !region) return;
 
+  const clock = clockOf(state.totalTicks);
+  let sample: WeatherSample | null = null;
+
   // The sky — unless a roof (spot or whole region) is in the way.
   if (!region.sheltered && !tags.has('indoor')) {
-    const sample = weatherAt(worldSeedOf(state.createdAt), region, state.totalTicks);
+    sample = weatherAt(worldSeedOf(state.createdAt), region, state.totalTicks);
     if (sample) {
-      const clock = clockOf(state.totalTicks);
       const base = climateBaseline(region, clock)!;
       for (const [element, share] of weatherExposure(sample, base.temp, clock.hour)) {
         grantExposure(state, bus, element, WEATHER_XP_PER_MINUTE * share);
@@ -248,8 +310,11 @@ export function tickExposure(state: GameState, bus: EventBus): void {
 
   // The dark grows a faculty wherever it reigns — the night sky far from
   // hearth-light, or a place that is dark by NATURE (a 'dark' tag: deep
-  // caves are as black at noon as at midnight).
-  const darkness = placeDarkness(region, tags, clockOf(state.totalTicks).hour);
+  // caves are as black at noon as at midnight). A moonlit night teaches less,
+  // the same number that sets the combat penalties.
+  const darkness = placeDarkness(region, tags, clock.hour, () =>
+    moonlightThrough(clock.moons, sample?.kind ?? null),
+  );
   if (darkness > 0) {
     checkDiscovery(state, bus, ['darkness']);
     grantSkillXp(state, bus, ['darkness'], DARKNESS_XP_PER_MINUTE * darkness);

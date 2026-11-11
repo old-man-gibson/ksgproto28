@@ -495,8 +495,10 @@ REGION darkens every chamber without tagging each one. Elemental tags
 ('heat', 'poison'…) seep passive resist XP into loiterers; `dark` is
 darkness at any hour (trains Darkvision, applies night-fighting penalties,
 beats roofs and lamplight); `indoor` roofs out the weather; `settlement`
-means lamplight. The same elemental tags on an *activity* pay resist XP per
-completed cycle. Both linter layers check the vocabulary at all three levels
+means lamplight. A place with none of these under an unsheltered region or
+area is open sky: weather, dark at night, lighter under moonlight on a clear
+night (WEATHER.md, "Moonlight", has the table of which floors are). The same elemental
+tags on an *activity* pay resist XP per completed cycle. Both linter layers check the vocabulary at all three levels
 (`ELEMENT_TAGS`/`PLACE_TAGS` in systems/exposure.ts).
 
 A region may also carry `world: { x, y }` — its pin on the **World Atlas**
@@ -509,7 +511,11 @@ Two more region fields feed the climate (see WEATHER.md): `terrain` picks a
 profile from `TERRAIN_PROFILES` in climate.data.ts ('plains' when absent; the
 linter checks the value in both layers), and `sheltered: true` marks
 interiors — weather stops at the door. An unpinned region has no weather at
-all.
+all. An area may set its own `sheltered`, which overrides the region's: the
+Ascent is roofed, and a tower floor that opens onto the sky sets
+`sheltered: false` on its area and tags its roofed spots `indoor` (floors
+4–6). A cave on such a floor carries `dark` and `indoor`, so no weather falls
+in it.
 
 `mapped: true` removes a region's fog: standing in (discovering) any of its
 spots discovers all of them, on arrival and on load (NAVIGATION.md §2.4). Set
