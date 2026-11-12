@@ -259,7 +259,9 @@ its spots, monsters and the calm rule, is docs/MALGERI.md.
 Data: `SKY_TABLES`, `SKY_RULES`, `SKY_THRESHOLDS` and the constants in
 climate.data.ts. Code: the "region skies" half of weather.ts, `tickSky` in
 exposure.ts, `skyContentIssues` in skyValidation.ts. Nothing is saved except
-one `flag:` counter (see "The first calm"), so there is no save version bump.
+one `flag:` counter (see "The first calm"), so the engine needs no save field.
+The floor built on it bumps the save to v65 for the placeholder floor's old
+clear (docs/MALGERI.md, "Old saves").
 
 **How an area opts in.** `RegionDef.sky` names a table in `SKY_TABLES`. The
 region `malgeri_range` (locations.data.ts) carries `sky: 'malgeri'`, terrain

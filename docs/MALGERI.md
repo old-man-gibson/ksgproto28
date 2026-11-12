@@ -19,7 +19,7 @@ under it.
 | Spots | 18, four maps |
 | Levels | plain 40 to 42, queen 43, peak boss 44, gate boss 45, calm lines 46 to 48 |
 | People | Thora Ironbrand (hamlet forge), Captain Bren (hamlet square); no quests |
-| Save | no change: the first-calm flag is a plain `stats` counter (`flag:malgeri_calm_seen`) |
+| Save | v65 (migration 64 in `save/migrations.ts`, section 2 "Old saves"); the first-calm flag is a plain `stats` counter (`flag:malgeri_calm_seen`) |
 
 ## 1. The four maps
 
@@ -102,6 +102,18 @@ shelf paid 10 to 16).
 - `floorStructureIssues`, `exploreIssues` and the content lints pass
   (tests/malgeri.test.ts runs the first two on this floor).
 - Fixed levels everywhere; no `dynamicLevel` anywhere on the floor.
+
+**Old saves (save v65).** The placeholder floor cleared on
+`fights:f17_keeper` (one fight at a spot the landing connected to). Migration
+64 carries that over:
+- `fights:f17_keeper >= 1` sets `boss:f17_keeper` and `boss:f17_peak` to at
+  least 1. Floors 18 to 20 stay open; the clear XP stays latched.
+- A save standing at `f17_keeper` without `boss:f17_peak` is on the far side of
+  a gate it never opened. It wakes at `f17_landing` with its activity, journey,
+  approach, resume entry and any pending return or proven hunt that names the
+  spot cleared, and the spot is dropped from `discovered`.
+- Idempotent: it only raises counters, and only moves a save that is still
+  standing there. Test: tests/malgeriSave.test.ts.
 
 ## 3. Sky lines
 
