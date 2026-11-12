@@ -11,6 +11,7 @@ import {
   tickExposure,
 } from '../src/core/systems/exposure';
 import { WEATHER_KINDS } from '../src/core/data/climate.data';
+import { headerSky } from '../src/ui/lib/shell';
 
 /**
  * The open sky of the tower (user ruling, 2026-11-11): every tower area is open
@@ -227,6 +228,39 @@ describe('weather on the new floors', () => {
     }
     expect(seen.has('still')).toBe(false);
     expect(seen.size).toBeGreaterThan(2);
+  });
+});
+
+describe('the header weather chip', () => {
+  const INSIDE = ['f5_hollows', 'f6_tunnels', 'f10_quarry', 'f17_cave_hub', 'f19_chamber', 'f19_door'];
+
+  it('shows the roofed value at an inside spot, the same one floor 1 shows, and the weather at an open one', () => {
+    const open = new Set<string>();
+    for (let d = 1; d < 120; d++) {
+      for (const id of INSIDE) {
+        const sky = headerSky(stateAt(id, at(d, 12)));
+        expect(sky, id).not.toBeNull();
+        expect(sky!.weather.kind, `${id} day ${d}`).toBe('still');
+        expect(sky!.region.sheltered, id).toBe(true);
+      }
+      // The Ascent's own sky, sheltered or not, is the one the roofed floors read.
+      expect(headerSky(stateAt('f10_quarry', at(d, 12)))!.weather).toEqual(headerSky(stateAt('f1_landing', at(d, 12)))!.weather);
+      open.add(headerSky(stateAt('f10_artificers_row', at(d, 12)))!.weather.kind);
+    }
+    expect(open.has('still')).toBe(false);
+    expect(open.size).toBeGreaterThan(2);
+  });
+
+  it('the chip is roofed exactly where skyKindAt is null', () => {
+    const state = stateAt('f12_landing', at(40, 12));
+    for (const areaId of TOWER_AREAS) {
+      for (const spot of spotsOf(areaId)) {
+        state.spot = spot.id;
+        const sky = headerSky(state);
+        if (skyKindAt(state, spot.id) === null) expect(sky?.weather.kind ?? 'still', spot.id).toBe('still');
+        else expect(sky, spot.id).not.toBeNull();
+      }
+    }
   });
 });
 

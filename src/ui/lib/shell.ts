@@ -1,3 +1,7 @@
+import type { GameState, RegionDef } from '../../core/types';
+import { skyRegionOf } from '../../core/registry';
+import { skyKindAt } from '../../core/systems/exposure';
+import { weatherAt, worldSeedOf, type WeatherSample } from '../../core/systems/weather';
 import { browserStore, patchShell, readShell, type ShellStore } from './nav';
 
 /**
@@ -40,6 +44,21 @@ export function logIsOpen(choice: boolean | null, width: number): boolean {
 export function shortClock(text: string): string {
   const parts = text.split(' · ');
   return parts.find((part) => /\d{1,2}:\d{2}/.test(part)) ?? parts[0];
+}
+
+/**
+ * The sky the header's weather chip and its prognosis read at the player's
+ * spot: the spot's sky region and the weather over it. Where `skyKindAt` is
+ * null because a roof covers the spot (an `indoor` spot inside an open area),
+ * the region is read as sheltered, so the chip shows 'still' and the damped
+ * temperature that floors 1 to 3 show. Null where the region has no atlas pin.
+ */
+export function headerSky(state: GameState): { region: RegionDef; weather: WeatherSample } | null {
+  const open = skyRegionOf(state.spot);
+  if (!open) return null;
+  const region: RegionDef = !open.sheltered && skyKindAt(state, state.spot) === null ? { ...open, sheltered: true } : open;
+  const weather = weatherAt(worldSeedOf(state.createdAt), region, state.totalTicks);
+  return weather ? { region, weather } : null;
 }
 
 /** The stored choice, or null when none is stored or the value is not a boolean. */

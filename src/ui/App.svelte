@@ -36,11 +36,11 @@
   import { tick, untrack, type Component } from 'svelte';
   import { fmt } from './lib/format';
   import { navListShown, reconcileTab, visibleNav, type MainTab } from './lib/nav';
-  import { logIsOpen, shortClock } from './lib/shell';
+  import { headerSky, logIsOpen, shortClock } from './lib/shell';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf, MOON_ICONS } from '../core/systems/clock';
   import { CHRONOSENSE_ID, describeMoons, describeTimeSense } from '../core/systems/chronosense';
-  import { WEATHER_ICONS, weatherAt, worldSeedOf } from '../core/systems/weather';
+  import { WEATHER_ICONS, worldSeedOf } from '../core/systems/weather';
   import { forecastFor, PROGNOSIS_TOOLTIP_AT, WEATHERSENSE_ID } from '../core/systems/weathersense';
   import Tip from './lib/Tip.svelte';
   import {
@@ -51,7 +51,7 @@
     MOONLIGHT_THROUGH,
     moonlightOn,
   } from '../core/systems/exposure';
-  import { SKILLS, skyRegionOf } from '../core/registry';
+  import { SKILLS } from '../core/registry';
   import {
     barCapacity,
     barTickStarts,
@@ -108,10 +108,10 @@
     return '\nMoonlight: none';
   }
 
-  const wxRegion = $derived(skyRegionOf(gs.spot));
-  const weather = $derived(
-    wxRegion ? weatherAt(worldSeedOf(gs.createdAt), wxRegion, gs.totalTicks) : null,
-  );
+  // A roofed spot (an `indoor` spot in an open area) shows what floors 1 to 3 show.
+  const sky = $derived(headerSky(gs));
+  const wxRegion = $derived(sky?.region ?? null);
+  const weather = $derived(sky?.weather ?? null);
   // The PROGNOSIS is Weathersense's: rows appear and sharpen by level.
   const wxLevel = $derived(gs.skills[WEATHERSENSE_ID]?.level ?? 0);
   const forecast = $derived(
