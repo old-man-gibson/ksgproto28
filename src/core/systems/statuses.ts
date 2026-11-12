@@ -15,6 +15,7 @@ import type {
 } from '../types';
 import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE, isMonsterBearer } from '../types';
 import { STATUSES } from '../data/statuses.data';
+import { WEATHER_SOURCE_PREFIX } from '../data/climate.data';
 import { MONSTERS } from '../data/monsters.data';
 import { TITLES } from '../data/titles.data';
 import { chance } from '../engine/rng';
@@ -446,6 +447,12 @@ export function reform(
   return inflict(state, bearer, app, source, 1);
 }
 
+const isWeatherSource = (source: string | undefined): boolean =>
+  !!source && source.startsWith(WEATHER_SOURCE_PREFIX);
+
+/** A held condition the open sky's rules put there and nothing else has added to. */
+const weatherHeld = (held: StatusInstance): boolean => isWeatherSource(held.source);
+
 function inflict(
   state: GameState,
   bearer: GameState | MonsterInstance,
@@ -488,6 +495,12 @@ function inflict(
     return fresh;
   }
 
+  // A dose from anywhere but the weather takes over a condition the weather
+  // started, so it counts as that source's (see `weatherHeld`).
+  if (weatherHeld(held) && !isWeatherSource(source)) {
+    if (source) held.source = source;
+    else delete held.source;
+  }
   // Already afflicted: the stacking rule decides what a fresh dose does.
   // The worst single dose is tracked whatever the rule is — see StatusDot.fromPeak.
   held.peak = Math.max(held.peak ?? held.intensity, intensity);
@@ -1400,7 +1413,9 @@ export function statusBarDamage(
       id: def!.id,
       name: def!.name,
       icon: def!.icon,
-      dropWeaponBelow: def!.dropWeaponBelow,
+      // Weather alone never costs the weapon: storm's jolt would unequip it
+      // on the first discharge and leave an idle character unarmed for good.
+      dropWeaponBelow: weatherHeld(held) ? undefined : def!.dropWeaponBelow,
     });
     held.data = held.data ?? {};
     held.data.dealt = (held.data.dealt ?? 0) + spec.flat * held.intensity;

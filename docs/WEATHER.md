@@ -357,6 +357,16 @@ capped at 6, 30 s duration, maximum stamina −5% per point of intensity up to
 −30% (`ceilings`, read outside the derived-stats cache). Its text is a
 "Label: fact" block like the other statuses.
 
+**The jolt from a storm never drops the weapon.** `jolted` carries
+`dropWeaponBelow: 0.5` (a discharge under half health unequips the weapon).
+Weather doses carry the source `Weather: <kind>` (`WEATHER_SOURCE_PREFIX`,
+climate.data.ts). `statusBarDamage` leaves `dropWeaponBelow` off a condition
+that is held under a weather source, so a character parked under an open sky
+keeps the weapon through every storm. A dose from any other source takes the
+held condition over (`inflict`, statuses.ts), so a Spark Slime's jolt keeps its
+drop, even when a storm's jolt was there first. Test: tests/sky.test.ts, "a jolt
+the storm applied never makes the bearer drop the weapon".
+
 **Weather is still not a mod source.** `SKY_RULES` only applies statuses, and
 the fingerprint already includes every held status, so there is no
 `modFingerprint` or derivedcache change.

@@ -334,6 +334,16 @@ export interface SkyRule {
   foes?: StatusApplication[];
 }
 
+/**
+ * The source string of a condition `tickSky` applies is this prefix and the sky
+ * kind ("Weather: storm"). A condition held under a weather source never makes
+ * the bearer drop their weapon (`StatusDef.dropWeaponBelow`, systems/
+ * statuses.ts): a storm parked on for hours would otherwise unequip the weapon
+ * once and leave the character unarmed. A dose from any other source takes the
+ * held condition over, so a Spark Slime's jolt still drops it.
+ */
+export const WEATHER_SOURCE_PREFIX = 'Weather: ';
+
 export const SKY_RULES: Partial<Record<WeatherKind, SkyRule>> = {
   gale: { every: 3, self: [{ id: 'buffeted', intensity: 0.5 }] },
   rain: { every: 3, self: [{ id: 'wet', intensity: 1 }] },

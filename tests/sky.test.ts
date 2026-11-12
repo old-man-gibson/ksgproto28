@@ -10,6 +10,7 @@ import {
   SKY_RULES,
   SKY_TABLES,
   WEATHER_KINDS,
+  WEATHER_SOURCE_PREFIX,
   type SeasonId,
   type WeatherKind,
 } from '../src/core/data/climate.data';
@@ -35,10 +36,13 @@ import {
   clearStatuses,
   findStatus,
   hasStatus,
+  statusBarDamage,
   statusCeiling,
   statusIntensity,
   statusesOf,
 } from '../src/core/systems/statuses';
+import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
+import { startActivity } from '../src/core/systems/actions';
 import { getDerivedStats } from '../src/core/systems/derived';
 import { availableMax } from '../src/core/systems/resources';
 import { forecastFor } from '../src/core/systems/weathersense';
@@ -388,6 +392,61 @@ describe('SKY_RULES: what the open sky does to the player', () => {
     tickSky(state, new EventBus());
     expect(hasStatus(state, 'wet')).toBe(true);
     expect(statusIntensity(state, 'jolted')).toBeGreaterThan(0);
+  });
+
+  it('a jolt the storm applied never makes the bearer drop the weapon; a creature\'s jolt does', () => {
+    const storm = stateAt(RIDGE, tickShowing('storm'));
+    tickSky(storm, new EventBus());
+    expect(findStatus(storm, 'jolted')!.source).toBe(`${WEATHER_SOURCE_PREFIX}storm`);
+    expect(statusBarDamage(storm, 'onFill').map((h) => h.dropWeaponBelow)).toEqual([undefined]);
+
+    const slime = stateAt(RIDGE, 0);
+    applyStatus(slime, slime, { id: 'jolted', intensity: 0.5 }, 'Spark Slime');
+    expect(statusBarDamage(slime, 'onFill').map((h) => h.dropWeaponBelow)).toEqual([0.5]);
+  });
+
+  it('a creature\'s dose takes a storm\'s jolt over, and a storm dose on a creature\'s jolt changes nothing', () => {
+    const state = stateAt(RIDGE, tickShowing('storm'));
+    tickSky(state, new EventBus());
+    applyStatus(state, state, { id: 'jolted', intensity: 0.5 }, 'Spark Slime');
+    expect(findStatus(state, 'jolted')!.source).toBe('Spark Slime');
+    expect(statusBarDamage(state, 'onFill').map((h) => h.dropWeaponBelow)).toEqual([0.5]);
+    // The storm's next dose lands on the creature's condition and leaves its source alone.
+    applyStatus(state, state, { id: 'jolted', intensity: 0.5 }, `${WEATHER_SOURCE_PREFIX}storm`);
+    expect(findStatus(state, 'jolted')!.source).toBe('Spark Slime');
+    expect(statusBarDamage(state, 'onFill').map((h) => h.dropWeaponBelow)).toEqual([0.5]);
+  });
+
+  it('a hunt under a storm with health held under half keeps the weapon through every discharge', () => {
+    // A hunt of level-1 goblins on an open Malgeri spot: the fight cannot kill the
+    // player, so the only thing that can unequip the weapon is the jolt.
+    SPOTS.test_storm_hunt = {
+      ...SPOTS[RIDGE],
+      id: 'test_storm_hunt',
+      activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt', icon: '⚔️' }],
+      encounters: [{ monsterId: PLAIN, weight: 1, level: [1, 1] }],
+    };
+    try {
+      const state = stateAt('test_storm_hunt', tickShowing('storm'));
+      for (const a of ATTRIBUTE_LIST) state.attrs[a.id].level = 50;
+      const game = new Game(state);
+      game.equip(1); // the starting rusty sword
+      const weapon = state.equipment.weapon;
+      expect(weapon).toBeTruthy();
+      startActivity(state, new EventBus(), 'hunt');
+      let jolted = 0;
+      for (let i = 0; i < 3000; i++) {
+        // Under the drop threshold at every swing: a discharge the jolt owns would shed the weapon.
+        state.resources.hp = Math.min(state.resources.hp, availableMax(state, getDerivedStats(state), 'hp') * 0.45);
+        game.tick();
+        if (statusIntensity(state, 'jolted') > 0) jolted += 1;
+      }
+      expect(jolted).toBeGreaterThan(100);
+      expect(state.stats.kills).toBeGreaterThan(0);
+      expect(state.equipment.weapon).toBe(weapon);
+    } finally {
+      delete SPOTS.test_storm_hunt;
+    }
   });
 
   it('applies on every third game minute and not between', () => {

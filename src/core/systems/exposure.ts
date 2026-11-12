@@ -15,7 +15,7 @@ import {
   type WeatherKind,
   type WeatherSample,
 } from './weather';
-import { CALM_SEEN_KEY, SKY_RULES, TICKS_PER_GAME_MINUTE } from '../data/climate.data';
+import { CALM_SEEN_KEY, SKY_RULES, TICKS_PER_GAME_MINUTE, WEATHER_SOURCE_PREFIX } from '../data/climate.data';
 import { text } from '../text/log';
 import { tickWeathersense } from './weathersense';
 
@@ -389,7 +389,7 @@ export function tickSky(state: GameState, bus: EventBus): void {
 
   const rule = SKY_RULES[kind];
   if (!rule || (state.totalTicks / TICKS_PER_GAME_MINUTE) % rule.every !== 0) return;
-  const source = `Weather: ${kind}`;
+  const source = `${WEATHER_SOURCE_PREFIX}${kind}`;
   const stats = getDerivedStats(state);
   for (const app of rule.self) applyStatus(state, state, app, source, stats);
   for (const enemy of state.combat?.enemies ?? []) {
