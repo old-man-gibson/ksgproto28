@@ -1286,13 +1286,14 @@ Band: band 5, floors 18–20 · Floors: 3 · Verdict: **Bank** (antagonist fixes
 taken).
 
 It waits on:
-- open sky on tower floors: the Ascent region is `sheltered` on main; open
-  sky (`AreaDef.sheltered`, `skyRegionOf`) is on the unpushed branch
-  `moon-phase`
+- open sky on tower floors: built 2026-11-11 (user ruling, branch
+  `open-sky-floors`). Floors 18 to 20 set `sheltered: false` and read the
+  Ascent's sky; WEATHER.md "Open sky in the tower" has the table
 - a per-area climate pin: at the tower's pin a desert floor peaks at
   28.5 °C (0 hours a year at heat's 32 °C training line) and bottoms at
   −13.5 °C (1,287 hours a year at or below −5, so it trains cold). Terrain
-  alone does not fix it; the area needs its own latitude
+  alone does not fix it; the area needs its own latitude. Still open: with
+  the sky on, floor 18 shows snow 19% of a year (WEATHER.md measures it)
 - the killing blow's damage type on each monster (shared with idea 2's
   kill-source field), for method drops
 

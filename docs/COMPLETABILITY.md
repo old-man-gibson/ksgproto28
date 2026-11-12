@@ -744,6 +744,55 @@ Findings:
   climbs: re-climb in run 2 366, re-climb in run 3 691, against 232 on floor 9,
   the worst single floor. About half of all lost fights are in the re-climbs.
 
+**Open sky on the tower (2026-11-11).** Floors 7 to 14 and 18 to 20 became
+open sky (WEATHER.md "Open sky in the tower"): night darkness and moonlight,
+weather and its exposure XP now reach them. Measured with
+`npm run pacing -- --through 20 --seeds 42,7 --weapons skip`, merchants, before
+(main a68a260) and after (branch `open-sky-floors`), same harness, same seeds.
+Run 1 (floors 1 to 6, data unchanged) is identical before and after on both
+seeds, so the harness is deterministic; floors 7 and 8 are identical too. The
+`took` columns are time on the floor, before -> after; the KO columns are
+knockouts.
+
+| floor | seed 42 took | seed 42 KO | seed 7 took | seed 7 KO |
+| --- | --- | --- | --- | --- |
+| 7 | 3:02 -> 3:02 | 3 -> 3 | 2:58 -> 2:58 | 3 -> 3 |
+| 8 | 6:33 -> 6:33 | 9 -> 9 | 0:15 -> 0:15 | 0 -> 0 |
+| 9 | 12:42 -> 12:44 | 11 -> 11 | 6:26 -> 12:51 | 8 -> 15 |
+| 10 | 0:14 -> 0:11 | 0 -> 0 | 12:41 -> 12:42 | 6 -> 2 |
+| 11 siege | 7:24 -> 7:29 | 4 -> 3 | 7:29 -> 6:54 | 3 -> 2 |
+| floors 1-10 again (run 3) | 40:34 -> 46:42 | 42 -> 47 | 39:36 -> 39:36 | 36 -> 36 |
+| 11 | 12:26 -> 12:18 | 5 -> 6 | 7:24 -> 7:24 | 5 -> 4 |
+| 12 | 24:00 -> 30:00 | 6 -> 8 | 24:00 -> 36:00 | 8 -> 10 |
+| 13 | 1:30:00 -> 1:30:00 | 7 -> 6 | 1:36:00 -> 1:42:00 | 10 -> 9 |
+| 14 | 0:16 -> 0:13 | 0 -> 0 | 0:12 -> 0:14 | 0 -> 0 |
+| 15 | 0:23 -> 0:21 | 0 -> 0 | 0:23 -> 0:25 | 0 -> 0 |
+| 16 | 4:04 -> 3:45 | 0 -> 0 | 3:43 -> 3:05 | 0 -> 0 |
+| 17 | 20:42 -> 14:13 | 20 -> 14 | 20:54 -> 14:19 | 18 -> 14 |
+| 18 | 0:18 -> 0:16 | 0 -> 0 | 0:16 -> 0:17 | 0 -> 0 |
+| 19 | 2:02 -> 2:00 | 0 -> 0 | 2:01 -> 2:15 | 0 -> 0 |
+| 20 | 3:11 -> 3:06 | 0 -> 0 | 2:57 -> 3:30 | 0 -> 1 |
+| whole climb | 4:37:47 -> 4:42:50 | | 4:35:38 -> 4:53:06 | |
+
+Level at the floor 20 clear: 47 -> 46 on both seeds. Fights: 2844 -> 2940
+(seed 42), 2914 -> 3186 (seed 7). Knockouts through floor 20, both seeds
+together: floor 9 19 -> 26, floor 10 6 -> 2, siege 7 -> 5, floors 1 to 10 in
+run 3 78 -> 83, floor 12 14 -> 18, floor 13 17 -> 15, floor 17 38 -> 28,
+floor 20 0 -> 1; floors 14, 15, 16, 18 and 19 stay at 0.
+
+- No wall appears: no floor changes from a clear to a stuck, and floors 14 to 16
+  and 18 to 20 stay trivial (0 or 1 knockout, under 4 minutes).
+- Floor 12 gains 6 and 12 minutes. It clears on crates won, 8 a convoy every
+  6 minutes, so that is one and two convoys. The cause is not isolated: night
+  darkness on the water is the likely one.
+- Floor 9 doubles on seed 7 (8 -> 15 knockouts) and does not move on seed 42.
+  Two seeds do not separate the sky from a changed fight order, so the floor 9
+  figure is a reading of noise plus an unknown share of night darkness.
+- Floor 17 improves (20 -> 14 knockouts, 6 minutes faster). Its data is
+  unchanged; John reaches it at a different game clock and its sky table is
+  seeded by the clock. That is not an effect of this change.
+- Not retuned: the brief says to measure, and the monsters stay as they are.
+
 ---
 
 ## 9. Cross-references

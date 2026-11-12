@@ -91,18 +91,12 @@ The user asked for moonlight to lighten the night and took the defaults of
 the design (record at the end of this section).
 
 **Where it applies.** Sky darkness only exists outdoors, away from lamplight.
-The user's ruling (2026-10-29): floors 4 and 5 are open sky, floor 6 is in
-part, and each band-3 direction (floors 7–10) has open-sky areas. Built:
-
-| place | sky | how |
-|---|---|---|
-| floors 1–3 | roofed | the Ascent region is `sheltered` |
-| floor 4, the Greenwood | open | `ascent_f4_area` sets `sheltered: false` |
-| floor 5, the Mire | open, except the Hollows | `ascent_f5_area` sets `sheltered: false`; the Hollows carry `dark` and `indoor` |
-| floor 6, the Warren | the Mouth, the Pens, the Shrine | `ascent_f6_area` sets `sheltered: false`; the Tunnels, Kitchens and Great Hall carry `indoor`, the Drop `dark` and `indoor` |
-| floors 7–10 | open areas per direction | unbuilt; mark them when built (plans/bands-2-3.md) |
-| Threshold, the Holding Level | lamplight | `settlement` |
-| the Hold | roofed | `sheltered`; the yard is a TODO in locations.data.ts |
+User rulings: floors 4 and 5 are open sky and floor 6 is in part (2026-10-29);
+every other tower area is open sky except floors 1 to 3, the castle and the
+Vermin Festival (2026-11-11). The per-floor table is "Open sky in the tower",
+after this section. Outside the tower: Threshold and the Holding Level are
+lamplight (`settlement`), and the Hold is roofed (`sheltered`; the yard is a
+TODO in locations.data.ts).
 
 `AreaDef.sheltered` overrides the region's for one area. Every reader of the
 sky goes through `skyRegionOf(spotId)` (registry.ts), which returns the region
@@ -200,8 +194,121 @@ open-sky region exists; no rise and set; `MOONLIGHT_MAX` 0.6 with weights
 options: build with the first open-sky region; moons that rise and set by
 phase (a moon up for the 12 hours centred on 12:00 + phase × 24 h, so a first
 quarter sets at midnight); Darkvision XP that ignores moonlight. Later the
-same day the user ruled which floors are open sky (the table above); that is
-what made moonlight live.
+same day the user ruled which floors are open sky (floors 4 and 5, floor 6 in
+part); that is what made moonlight live. The ruling of 2026-11-11 widened it to
+the rest of the tower (next section).
+
+### Open sky in the tower (user ruling, 2026-11-11)
+
+Weather works normally on the tower's open-sky areas. **A tower area is open
+sky unless stated.** Roofed on purpose: floors 1 to 3, the castle of the floors
+7 to 10 band (`ascent_castle_area`, spot `castle_court`) and the Vermin Festival
+(floors 15 and 16, every spot, the herb yard and the Royale field included).
+Inside an open area, a spot that is inside carries `indoor`.
+
+How it is set: the Ascent region is `sheltered`, so an open area sets
+`sheltered: false` on its `AreaDef` and a roofed spot carries `indoor` (and
+`dark` too for a cave that is black at noon). Floor 17 is open through
+`skyRegionId: 'malgeri_range'` instead (Region skies, below). A new tower area
+that sets neither is roofed and fails tests/openSky.test.ts.
+
+| floor | area | roofed spots (`indoor`) | judgement calls left open |
+|---|---|---|---|
+| 0, Holding Level | region `holding_level` (lamplight: no night dark, no moon) | Cell, Cellblock | Gate |
+| 1 to 3 | roofed | every spot | none |
+| 4, Greenwood | `sheltered: false` | none | none |
+| 5, Mire | `sheltered: false` | Hollows (also `dark`) | Cave Mouth, Back Door |
+| 6, Warren | `sheltered: false` | Tunnels, Kitchens, Great Hall; Drop (also `dark`) | Warren Mouth |
+| castle | roofed | every spot (Castle Court) | none |
+| 7, South Ward | `sheltered: false` | Chief's Tent | Watchtowers |
+| 8, West Ward | `sheltered: false` | Hunting Lodge | none |
+| 9, North Ward | `sheltered: false` | Ossuary | none |
+| 10, East Ward | `sheltered: false` | The Mine, The Deep Seam | Artificers' Row |
+| 11, Stronghold Road | `sheltered: false` | none | Gatehouse |
+| 12, Crossings | `sheltered: false` | none | none |
+| 13, Blockade | `sheltered: false` | none | none |
+| 14, Final Mission | `sheltered: false` | none | Beast's Lair |
+| 15 and 16, Festival | roofed | every spot | none |
+| 17, Malgeri Crossing | Malgeri range sky table (`skyRegionId`) | 10 spots, five of them also `dark` (MALGERI.md) | none |
+| 18, Necropolis Road | `sheltered: false`, area tag `heat` | none | Tomb Row |
+| 19, Pyramid | `sheltered: false` | Side Tomb (also `heat`), Entrance Passage, Grand Gallery, Burial Chamber, Treasury | Valley Temples, the Door |
+| 20, Delta Port | `sheltered: false` | Warehouses | Notice Wall |
+
+Every other spot of an open area, such as the landings, roads, fields and
+waters, is open with no call to make.
+
+**The `indoor` rule.** Tag a spot only when its text says a roof, a cave, a tomb
+interior, a building interior or underground. When the text is silent, leave it
+open. Tagged, with the words that justified it: the Chief's Tent (a tent), the
+Hunting Lodge and the Warehouses (buildings), the Ossuary, the Side Tomb ("a
+sealed side tomb"), the Entrance Passage, the Grand Gallery, the Burial Chamber
+and the Treasury (rooms of the pyramid), the Mine ("the ward's copper and iron
+mine") and the Deep Seam (the mine's seam, where the ore eater eats "the
+mine's ore"). The spot ids of the Mine and the Deep Seam are `f10_quarry` and
+`f10_foundry`. Left open, each on its text; the last two are the calls most
+likely to be wrong:
+
+- Gate (floor 0): "the way out of floor 0"; no roof named.
+- Cave Mouth (floor 5): the mouth of the cave; the Hollows behind it carry the roof.
+- Back Door (floor 5): a fight at the warren's back door; no room named.
+- Warren Mouth (floor 6): open by the 2026-10-29 ruling.
+- Watchtowers (floor 7): "the camp's towers"; no roof named.
+- Artificers' Row (floor 10): the landing; "Camp in a Workshop" is its rest
+  activity and the hunt (automata) is not placed in one.
+- Gatehouse (floor 11): "the stronghold's gatehouse"; a door to the hold is
+  named, no room.
+- Beast's Lair (floor 14): the sea beast's fight on the water; no cave or depth
+  named.
+- Tomb Row (floor 18): a mummy and scarab hunt; no interior named, and the floor
+  is "in full sun" (Well-Head text).
+- Notice Wall (floor 20): notices for the island; no roof named.
+- Valley Temples (floor 19): a cobra and scorpion hunt; "temples" may be roofed
+  but the text names no roof.
+- The Door (floor 19): "arriving from the chamber"; it is past the Burial
+  Chamber and may be inside the pyramid, the text names no roof.
+
+**What an open area gets.** Weather in the header chip and the Weathersense
+forecast, exposure XP from the weather, night darkness with moonlight (combat
+penalties and Darkvision training), and sunlight for Solar Charge. All of it
+reads `skyRegionOf(spot)` and `skyKindAt`, so no per-floor code exists.
+**What it does not get.** `SKY_RULES` statuses: `tickSky` returns unless the
+spot's sky region has a sky table, and only floor 17's does. Weather on the
+other open floors shows and trains, and applies no status.
+
+**The sky they read.** Every open Ascent area reads the Ascent's pin
+(14.3, 21.6) with 'plains' terrain, so floor 12 (sea) and floor 18 (desert) see
+the same sky as floor 4. One game year (368 days, one sample an hour, seed from
+`createdAt` 20260804): overcast 36.5%, snow 19.2%, rain 19.0%, clear 17.2%,
+mist 3.8%, storm 2.3%, gale 1.4%, blizzard 0.6%. Temperature −17.4 to 25.4 °C,
+mean 3.6; 14.1% of the hours are at or below −5 °C (trains cold), none at or
+above 32 °C. No heatwave and no sandstorm: heatwave and calm are table-only,
+sandstorm needs desert terrain. A per-area climate pin is not built
+(FLOOR_IDEAS §4). On floors 18 to 20 the `heat` tag trains Heat Resistance every
+minute whatever the sky, while the weather shows snow 19.2% of the year and
+trains cold on 14.1% of the hours. Nothing reads both together.
+
+**Knockout fallback.** `indoorHunt` (knockoutReturn.ts) picks an `indoor` hunt
+with no fight budget on the fall's floor, the third choice after the proven spot
+and a limited spot. Floors with one: 5 (Hollows), 6 (Tunnels, Drop), 10 (the
+Mine), 17 (six cave and shelter spots) and 19 (Entrance Passage, Grand Gallery,
+Burial Chamber). Floors 10 and 19 gained theirs from the tags above; 5, 6 and 17
+had theirs. Floors 4, 7 to 9, 11 to 14, 18 and 20 have none, as before the
+ruling: `pickFallback` returns null there and a fall with no proven and no
+limited spot idles at the haven, the case `indoorHunt` exists to avoid.
+
+**Cost.** `darknessFactor` at night samples the noise-field weather when the
+sky is open: 1.2 µs a call against 0.6 µs under a roof (300,000 calls, a new
+tick each call). No derived-stats input changes: darkness is read at roll time
+in combat and `world.sunlight` has `modStat: null`.
+
+**Tests** (tests/openSky.test.ts): every spot of floors 0 to 20 and the castle
+is in an area that is roofed (the list above) or open; a spot has no sky exactly
+when its area is roofed or it carries `indoor`; the eleven tagged spots of
+floors 7 to 10, 19 and 20 are open areas roofed by the tag; the twelve spots
+left open have a sky; a floor 12 spot has a sky kind and a festival spot has
+none; one open spot on each of floors 7 to 14 and 18 to 20 is dark and moonlit
+at night, trains Darkvision and is lit by day, while the tagged spots and the
+roofed floors are not dark.
 
 ## The weather
 
