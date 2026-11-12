@@ -252,8 +252,9 @@ export function createFacetHost(getState: () => GameState): FacetHost {
     overrideQ: notYet('overrideQ', 'K3'),
     clearOverrides: () => {},
     // getDerivedStats is cached behind modFingerprint, which already covers
-    // every status's intensity and stacks, so a carrier status moving needs
-    // no extra invalidation. K3 adds the override hash here.
+    // every status's intensity (as the stat block reads it, see
+    // statBlockIntensity) and stacks, so a carrier status moving needs no extra
+    // invalidation. K3 adds the override hash here.
     touchQ: () => {},
 
     // ---- statuses ----

@@ -368,8 +368,8 @@ drop, even when a storm's jolt was there first. Test: tests/sky.test.ts, "a jolt
 the storm applied never makes the bearer drop the weapon".
 
 **Weather is still not a mod source.** `SKY_RULES` only applies statuses, and
-the fingerprint already includes every held status, so there is no
-`modFingerprint` or derivedcache change.
+the fingerprint includes every held status, so no new modifier source joins
+`modFingerprint`. What changed is how a decaying status is keyed (below, "Cost").
 
 **Encounter lines that wait on the sky.** `SpotEncounter.sky?: WeatherKind[]`:
 the line rolls only while the spot's sky is one of the listed kinds.
@@ -431,17 +431,34 @@ attributes, one run each, wall time noisy):
 
 The two noise-field rows were measured before `tickSky` was restricted to sky
 tables; with the restriction a noise-field region costs the "off" row. About
-99% of those rebuilds happen while `buffeted` is held. `buffeted` has
+99% of those rebuilds happened while `buffeted` is held. `buffeted` has
 `decayWithDuration`, so its `effectiveIntensity` moves every tick, and
-`modFingerprint` includes `effectiveIntensity` for every held status, with or
-without stat mods. Options, none applied: (a) fingerprint a decaying
-intensity only for statuses whose definition has fields derived stats read
-(mods, resistance overrides, ceilings), and key the rest on `id:stacks`; this
-needs an audit of every status field `derived.ts` reads; (b) quantize the
-decaying intensity in the fingerprint; (c) accept it, about 60–90 µs a
-rebuild, a few seconds per 8 hours. The `weatherAt` memo itself saves about
-0.15 s per 8 hours (285 ms of misses against 130 ms of hits over 288,000
-calls).
+`modFingerprint` keyed `effectiveIntensity` for every held status, with or
+without stat mods.
+
+Applied: `modFingerprint` keys a held condition by `statBlockIntensity`
+(statuses.ts). A `decayWithDuration` condition keeps its effective intensity in
+the key only when its definition carries a field the stat block reads through
+intensity: `mods`, `damp`, `resFloor` or `attrCeiling`. Every other condition
+is keyed by its raw intensity, so `buffeted` (displacement only) no longer moves
+the key as it fades. `tainted` has `mods` and keeps its decay. The audited field
+list and the fields read by presence only are in the comment on
+`statBlockIntensity`. Tests (tests/derivedcache.test.ts, "a decaying condition
+and the cache"): the cached block equals a fresh compute on every tick of every
+decaying condition's life; held `tainted` still follows its decay; a decaying
+condition with no read field serves at most two distinct blocks across its
+life; a 3,000-tick stay at the open east ridge from the start of a gale serves
+a block equal to a fresh compute on every tick.
+
+Measured after the change, same 8-hour catch-up on the open ridge (hp held so a
+knockout does not end the stay; 19,693 kills in every run): live play from a
+gale start rebuilt on 2,764 of 3,000 ticks before and 348 after. Catch-up wall
+time, alternating old and new keys on one machine with noisy timing: old 48.3,
+45.0, 31.4 and 31.1 s; new 35.3, 27.8, 27.4 and 26.5 s. The last two runs of
+each average 31.2 s old against 26.9 s new, about 13% less. The rest of the
+catch-up is the fight loop, not the stat block. The `weatherAt` memo itself
+saves about 0.15 s per 8 hours (285 ms of misses against 130 ms of hits over
+288,000 calls).
 
 **Tests** (tests/sky.test.ts, fixtures in tests/fixtures/malgeri.ts):
 table shape, front shares within 1% of the weights per season, the excluded

@@ -807,6 +807,38 @@ export function effectiveIntensity(held: StatusInstance): number {
   return held.intensity * Math.max(0, Math.min(1, held.ticksLeft / full));
 }
 
+/**
+ * The intensity `modFingerprint` (derived.ts) keys a held condition by: its
+ * effective intensity when the stat block reads that, else its raw one.
+ *
+ * A decaying condition's effective intensity moves on every tick it is held.
+ * Keyed by it, the stat block rebuilds on every one of those ticks, so a
+ * condition that never reaches a stat (buffeted only displaces) cost a rebuild
+ * per tick for as long as a gale lasted. The stat block reads a held
+ * condition's intensity through four fields, and only these:
+ * - `mods`: statusMods, scaled by effective intensity (attributes.ts
+ *   collectBaseMods);
+ * - `damp`: statusDampingFor, `per` times effective intensity (derived.ts
+ *   collectModifiers);
+ * - `resFloor`: statusResFloor, the penalty it took off, `mods` times effective
+ *   intensity (derived.ts computeDerivedStats);
+ * - `attrCeiling`: attrCeiling, the rounded effective intensity (attributes.ts
+ *   formulaAttrFrom).
+ * `overrideRes` and `statueOf` read presence only (the id is in the key). The
+ * pool `ceilings` scale by effective intensity too, but resources.ts reads them
+ * live from the state (`ceilingMult`), never through the stat block. A new field
+ * of StatusDef that scales by intensity inside collectModifiers or
+ * computeDerivedStats must be added here, or a decaying condition that carries
+ * it serves stale stats: tests/derivedcache.test.ts walks every decaying
+ * condition through its whole duration against a fresh compute.
+ */
+export function statBlockIntensity(held: StatusInstance): number {
+  const def = STATUSES[held.id];
+  if (!def?.decayWithDuration) return held.intensity;
+  const read = (def.mods?.length ?? 0) > 0 || !!def.damp || !!def.resFloor || !!def.attrCeiling;
+  return read ? effectiveIntensity(held) : held.intensity;
+}
+
 /** Stat modifiers from every held condition, scaled by intensity. */
 export function statusMods(
   bearer: GameState | MonsterInstance,

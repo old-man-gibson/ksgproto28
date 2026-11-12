@@ -28,7 +28,7 @@ import {
   undersizeSteps,
 } from './wield';
 import {
-  effectiveIntensity,
+  statBlockIntensity,
   fieldHungerBucket,
   hasDamping,
   hasStatus,
@@ -634,9 +634,12 @@ function modFingerprint(state: GameState): string {
     // walking the enemy roster here would be pure cost.
     if (hasStatus(state, 'fasting')) parts.push(`h${fieldHungerBucket(state)}`);
   }
-  // Effective intensity, not raw: a decaying condition's mods genuinely change
-  // as it wanes, and the stats must wane with them.
-  for (const s of state.statuses ?? []) parts.push(`s${s.id}:${effectiveIntensity(s)}:${s.stacks}`);
+  // Effective intensity, not raw, for a decaying condition the stat block reads
+  // by it: its mods genuinely change as it wanes, and the stats must wane with
+  // them. A decaying condition that carries none of those fields (buffeted only
+  // displaces) is keyed by its raw intensity, so its decay rebuilds nothing.
+  // statBlockIntensity (statuses.ts) lists the fields and why.
+  for (const s of state.statuses ?? []) parts.push(`s${s.id}:${statBlockIntensity(s)}:${s.stacks}`);
   for (const [slot, item] of Object.entries(state.equipment ?? {})) {
     if (!item) continue;
     // The uid pins the instance (def, affix); runes are the one thing that
