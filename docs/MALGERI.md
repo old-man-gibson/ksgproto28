@@ -167,6 +167,17 @@ wins 32% of fights, 28% of the fights that include a calm line, at 9.6 s and
 about 500 HP lost on a win. At L44 (841 HP) the calm wins 33% and 35% at the
 ridge and the path. The calm kills a L41 to L45 climber more often than not.
 
+**Knockouts in a calm.** Five knockouts in a row at one open spot send the
+knockout return to a fallback hunt (docs/plans/knockout-return.md, 2.3). With no
+proven hunt and no won-at budgeted hunt, the fallback is a roofed hunt: a
+discovered `indoor` spot of this floor with no `fightLimit`, the lowest level
+first, then the one found first (the cave mouth, 40 to 41). A roof takes the
+spot out of the sky, so the calm lines never roll there. Without this pick the
+return held at the haven for 10 to 80 minutes, which the knockout rule forbids
+(a knockout must not leave the character idle). The pick applies on every floor,
+and a knockout at it follows the proven fallback's rule: back to it, and a hold
+only after five in a row there.
+
 ## 5. The disclosure rule
 
 Calm is quasi-hidden. Until `flag:malgeri_calm_seen` (`CALM_SEEN_KEY`) is set,

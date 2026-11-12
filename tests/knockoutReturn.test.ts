@@ -6,6 +6,7 @@ import {
   ADJACENCY,
   AREAS,
   FLOORS,
+  FLOOR_BY_AREA,
   SPOTS,
   buildAdjacency,
   declaredConnections,
@@ -1685,5 +1686,143 @@ describe('a knockout at a limited fallback', () => {
     expect(lines(g)).toContain('Returning to Test Meadow.');
     for (let i = 1; i < STREAK_LIMIT; i++) fallAt(g, 'kr_meadow');
     expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_field' } });
+  });
+});
+
+describe('a roofed hunt as the last fallback', () => {
+  /** Floor 17's spots as found in a walk up from the landing. */
+  const FOUND = [
+    'f17_landing',
+    'f17_cave_hub',
+    'f17_cave_crack',
+    'f17_nest',
+    'f17_central_caves',
+    'f17_east_mouth',
+    'f17_east_ascent',
+    'f17_east_peak',
+    'f17_east_ridge',
+  ];
+
+  /** At the open east ridge with `found` on the map and the landing as the haven. */
+  function ridge(seed: number, found: string[] = FOUND): Game {
+    const g = new Game(createInitialState(seed));
+    const s = g.state;
+    s.spot = 'f17_east_ridge';
+    s.discovered.push(...found);
+    s.safeSpots = { nearest: 'f17_landing', unconditional: 'f17_landing' };
+    return g;
+  }
+
+  const streak = (g: Game, spot = 'f17_east_ridge'): void => {
+    for (let i = 0; i < STREAK_LIMIT; i++) fallAt(g, spot);
+  };
+
+  it('five knockouts at the open ridge with nothing proven go to the lowest-level roofed hunt', () => {
+    const g = ridge(110);
+    expect(g.state.proven).toBeNull();
+    streak(g);
+    expect(pending(g)).toMatchObject({
+      phase: 'fallback',
+      target: { spot: 'f17_east_ridge', activity: 'hunt' },
+      fallback: { spot: 'f17_landing', activity: 'hunt' },
+      from: 'f17_east_ridge',
+    });
+    expect(lines(g)).toContain(
+      `5 knockouts in a row at ${SPOTS.f17_east_ridge.name}. Hunting ${SPOTS.f17_landing.name} for 200 wins.`,
+    );
+    // The character is not left idle: recovered, it hunts the roofed spot.
+    const s = g.state;
+    recovered(g);
+    for (let i = 0; i < 50 && !(s.spot === 'f17_landing' && s.activity === 'hunt'); i++) g.tick();
+    expect(s.spot).toBe('f17_landing');
+    expect(s.activity).toBe('hunt');
+  });
+
+  it('a forced-spot loss with no target takes it too', () => {
+    const g = ridge(111);
+    fallAt(g, 'f17_east_ridge', null, true);
+    expect(pending(g)).toMatchObject({ phase: 'fallback', target: null, fallback: { spot: 'f17_landing' } });
+  });
+
+  it('takes the lowest level, then the earlier-found spot', () => {
+    // The east mouth (41 to 42) is found first; the hub and the landing (40 to 41) follow.
+    const g = ridge(112, ['f17_east_mouth', 'f17_cave_hub', 'f17_landing', 'f17_east_ridge']);
+    streak(g);
+    expect(pending(g).fallback).toMatchObject({ spot: 'f17_cave_hub' });
+  });
+
+  it('skips a spot with a fight budget, an unfound spot and a spot on another floor', () => {
+    // Floor 5's roofed hunts are reachable by the ladder with floors 1 to 4 cleared (the Greenwood's
+    // setup above), so only the same-floor rule keeps them out.
+    const lower = Object.values(SPOTS).find(
+      (sp) =>
+        sp.areaId === 'ascent_f5_area' &&
+        !!sp.tags?.includes('indoor') &&
+        !sp.fightLimit &&
+        sp.activities.some((a) => a.kind === 'hunt'),
+    );
+    expect(lower).toBeDefined();
+    expect(SPOTS.f17_nest.fightLimit).toBeGreaterThan(0);
+    // Found: floor 5 and the nest (a fight budget of 1) and the ridge, with the cave crack (no
+    // hunt) as the haven. The landing, hub and caves are not found. The ridge has no route back
+    // from the crack, so the fall is a blocked one, which idles with no pick.
+    const g = ridge(113, ['f17_cave_crack', 'f17_nest', 'f17_east_ridge']);
+    const s = g.state;
+    clearFloors(s.stats, ['ascent_f1', 'ascent_f2', 'ascent_f3', 'ascent_f4']);
+    s.stats['gold:earned'] = 100_000;
+    s.stats['kills:tag:goblin'] = 100;
+    for (const sp of Object.values(SPOTS)) if (sp.areaId === 'ascent_f5_area') s.discovered.push(sp.id);
+    expect(floorUnlocked(s, FLOORS.ascent_f5)).toBe(true);
+    const lowerHunt = lower!.activities.find((a) => a.kind === 'hunt')!;
+    expect(returnBlock(s, { spot: lower!.id, activity: lowerHunt.id })).toBeNull();
+    s.safeSpots = { nearest: 'f17_cave_crack', unconditional: 'f17_cave_crack' };
+    streak(g);
+    expect(g.state.spot).toBe('f17_cave_crack');
+    expect(g.state.pendingReturn).toBeNull();
+    expect(lines(g)).toContain(`${SPOTS.f17_east_ridge.name}: no known route back. No safer hunt known.`);
+  });
+
+  it('never picks the spot that was lost at', () => {
+    const g = ridge(114, ['f17_landing', 'f17_east_ridge']);
+    streak(g, 'f17_landing');
+    // The landing is the only roofed hunt found, and it is the fall.
+    expect(pending(g).phase).toBe('hold');
+  });
+
+  it('ranks behind a usable proven hunt', () => {
+    const g = ridge(115);
+    g.state.proven = { spot: 'f17_central_caves', activity: 'hunt' };
+    streak(g);
+    expect(pending(g).fallback).toMatchObject({ spot: 'f17_central_caves' });
+  });
+
+  it('ranks behind a limited hunt that was won at', () => {
+    const g = ridge(116);
+    win(g, 'f17_nest');
+    expect(g.state.stats['win:n:f17_nest']).toBe(1);
+    g.state.spot = 'f17_east_ridge';
+    streak(g);
+    expect(pending(g).fallback).toMatchObject({ spot: 'f17_nest' });
+  });
+
+  it('a knockout at the roofed fallback returns to it; five in a row hold on the target', () => {
+    const g = ridge(117);
+    streak(g);
+    expect(pending(g).fallback).toMatchObject({ spot: 'f17_landing' });
+    fallAt(g, 'f17_landing');
+    expect(pending(g)).toMatchObject({
+      phase: 'fallback',
+      fallback: { spot: 'f17_landing' },
+      target: { spot: 'f17_east_ridge' },
+    });
+    expect(lines(g)).toContain(`Returning to ${SPOTS.f17_landing.name}.`);
+    for (let i = 1; i < STREAK_LIMIT; i++) fallAt(g, 'f17_landing');
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'f17_east_ridge' } });
+  });
+
+  it('a floor with no roofed hunt still holds', () => {
+    const g = world(118);
+    streak(g, 'kr_field');
+    expect(pending(g).phase).toBe('hold');
   });
 });

@@ -110,10 +110,17 @@ accepted). §6 lists the questions for the user.
     still qualifies for a fall on floor 3.
   - A hold after a spent fallback waits where the character stands: the cleared spot, which spawns
     nothing. A hold after a knockout waits at the haven, as in the Hold bullet below.
-- Fallback: go to `proven` (or the limited spot) and hunt there. Cross-floor: `climbTo` down, then walk.
+- Roofed fallback (2026-11-11): when neither a usable `proven` spot nor a limited spot exists, a
+  hunt spot qualifies if it is discovered, tagged `indoor`, on the fall's floor, has no `fightLimit`
+  and passes every `proven` re-check. The lowest encounter level first, then the order found in
+  `discovered`. It ranks behind both other picks, so every earlier preference is unchanged. It is an
+  unlimited fallback: the `proven` rules apply (return to it after a knockout there, hold after 5 in
+  a row there). Reason: on the Malgeri Crossing a calm over the open spots brings five knockouts with
+  nothing proven, and the hold would idle the character at the haven.
+- Fallback: go to `proven` (or the limited spot, or the roofed spot) and hunt there. Cross-floor: `climbTo` down, then walk.
 - Retry: after 200 wins at the fallback, or 2 h of game time, whichever comes first, return to the
   target.
-- Hold: with no usable `proven` spot, stay at the haven. Banking applies, as idle does today.
+- Hold: with no usable `proven`, limited or roofed spot, stay at the haven. Banking applies, as idle does today.
   - Probe the target after 10 min.
   - Each failed probe doubles the wait: 10, 20, 40, 80, 80 min.
   - A win resets the schedule.

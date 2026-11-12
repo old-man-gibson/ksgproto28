@@ -1,5 +1,5 @@
 import type { EventBus } from '../engine/events';
-import type { FloorDef, GameState, PendingReturn, ReturnSpot } from '../types';
+import type { FloorDef, GameState, PendingReturn, ReturnSpot, SpotDef } from '../types';
 import { TPS } from '../engine/loop';
 import { FLOOR_BY_AREA, SPOTS, edgesFrom } from '../registry';
 import { canStartActivity, currentActivity, spotActivities, startActivity } from './actions';
@@ -25,8 +25,10 @@ import { text } from '../text/log';
  *   cannot be walked back to), hunt the `proven` spot until 200 wins or 2 h,
  *   then retry the target. With no usable proven spot, a spot with a fight
  *   budget that was won at before (and not lost at since) stands in, the most
- *   recent first; when its budget is spent the pick is made again.
- * - `hold`: with no usable proven spot, wait at the haven and probe the
+ *   recent first; when its budget is spent the pick is made again. With
+ *   neither, a roofed (`indoor`) endless hunt on the fall's floor stands in,
+ *   the lowest level first.
+ * - `hold`: with no usable fallback of any kind, wait at the haven and probe the
  *   target after 10, 20, 40, then 80 minutes. The longest wait is 80 minutes.
  *
  * The return never walks into a forced fight (a forced spot, a forced last
@@ -216,11 +218,53 @@ function limitedHunt(state: GameState, fallSpot: string): ReturnSpot | null {
 }
 
 /**
+ * The lowest encounter level a hunt can roll now. Used only to order the
+ * roofed picks of `indoorHunt`.
+ */
+function huntLevel(state: GameState, spot: SpotDef): number {
+  let low = Infinity;
+  for (const e of eligibleEncounters(state, spot)) low = Math.min(low, e.level[0]);
+  return low;
+}
+
+/**
+ * A roofed hunt on the fall's floor, for a fall with no proven or limited spot
+ * to go to. Without it the hold idles the character at the haven for 10 to 80
+ * minutes, which a knockout may not do (2026-11-03); on the Malgeri Crossing
+ * the open ridge under a calm is where five knockouts in a row happen with
+ * nothing proven. Discovered, tagged `indoor`, no fight budget, plus every
+ * check of `huntUsable`. The lowest level first, then the order the spots were
+ * found in. A roof takes the spot out of the sky's reach, so the pick is not in
+ * the weather that caused the knockouts. A floor with no roofed hunt finds none.
+ */
+function indoorHunt(state: GameState, fallSpot: string): ReturnSpot | null {
+  const floor = floorOf(fallSpot);
+  if (!floor) return null;
+  let best: ReturnSpot | null = null;
+  let bestLevel = Infinity;
+  for (const id of state.discovered) {
+    const spot = SPOTS[id];
+    if (!spot?.tags?.includes('indoor') || spot.fightLimit || floorOf(id)?.id !== floor.id) continue;
+    const act = spotActivities(spot).find((a) => a.kind === 'hunt');
+    if (!act) continue;
+    const cand = huntUsable(state, { spot: id, activity: act.id }, fallSpot);
+    if (!cand) continue;
+    const level = huntLevel(state, spot);
+    if (level < bestLevel) {
+      best = cand;
+      bestLevel = level;
+    }
+  }
+  return best;
+}
+
+/**
  * Where a fallback hunts: the proven spot when it is usable, since it never
- * runs out, else the limited spot won at most recently.
+ * runs out, else the limited spot won at most recently, else a roofed hunt on
+ * the fall's floor.
  */
 function pickFallback(state: GameState, fallSpot: string): ReturnSpot | null {
-  return usableHunt(state, state.proven, fallSpot) ?? limitedHunt(state, fallSpot);
+  return usableHunt(state, state.proven, fallSpot) ?? limitedHunt(state, fallSpot) ?? indoorHunt(state, fallSpot);
 }
 
 // ---------- The knockout ----------
