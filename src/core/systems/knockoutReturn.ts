@@ -33,7 +33,10 @@ import { text } from '../text/log';
  *
  * The return never walks into a forced fight (a forced spot, a forced last
  * road, a spot that cannot be reached without one), never targets the
- * stronghold wall and never targets a festival floor; those fall back.
+ * stronghold wall and never targets a festival floor; those fall back. One
+ * exception (user rule 2026-11-03, no idling): a plain hunt behind a forced
+ * road, such as the harbor waters, with no fallback at all, holds and walks the
+ * road again (`roadHunt`). A boss door is never walked into again.
  */
 
 /** Knockouts in a row at one spot after which the return stops going back to it. */
@@ -115,12 +118,28 @@ function hopsTo(state: GameState, to: string): { start: string; path: string[] }
 type Why = 'forced_spot' | 'forced_road' | 'wall' | 'festival' | 'route' | 'start';
 
 /**
+ * A hunt the return may walk a forced road to, once the knockouts leave it no
+ * other work: an endless-style hunt at a spot that is not itself forced and
+ * holds no boss row. A boss door (f19_door) is one fight to be chosen, so it
+ * never qualifies; a water (f12_trade_lane, f13_picket, f14_beast_grounds) and
+ * the one-fight roadstead do. The fight on the road is the boarding the player
+ * chose when sailing out the first time.
+ */
+function roadHuntOk(goal: ReturnSpot): boolean {
+  const spot = SPOTS[goal.spot];
+  if (!spot || spot.forced || spot.encounters?.some((e) => e.boss)) return false;
+  return spotActivities(spot).find((a) => a.id === goal.activity)?.kind === 'hunt';
+}
+
+/**
  * Why the character cannot be sent from where it stands to `goal` and put to
  * work, or null when it can. The route never passes through a forced spot
  * (`findPath` refuses them), so the checks left are the destination itself and
- * the last road into it.
+ * the last road into it. `viaRoad`: a forced last road is allowed to a goal
+ * `roadHuntOk` accepts. Only the walk to a target passes it; a fallback pick
+ * never does, so a fallback is never behind a forced road.
  */
-export function returnBlock(state: GameState, goal: ReturnSpot): Why | null {
+export function returnBlock(state: GameState, goal: ReturnSpot, viaRoad = false): Why | null {
   const spot = SPOTS[goal.spot];
   if (!spot) return 'route';
   if (NEVER_TARGET.has(goal.spot)) return 'wall';
@@ -133,7 +152,7 @@ export function returnBlock(state: GameState, goal: ReturnSpot): Why | null {
   // The last hop is a road when the walk has hops; a climb alone ends on the landing.
   if (hops.path.length > 0) {
     const prev = hops.path.length > 1 ? hops.path[hops.path.length - 2] : hops.start;
-    if (edgesFrom(prev).find((e) => e.to === goal.spot)?.forced) return 'forced_road';
+    if (edgesFrom(prev).find((e) => e.to === goal.spot)?.forced) return viaRoad && roadHuntOk(goal) ? null : 'forced_road';
   }
   return null;
 }
@@ -144,6 +163,21 @@ function ambushWhy(spotId: string): Why {
   if (SPOTS[spotId]?.forced) return 'forced_spot';
   if (festivalFloorOf(spotId)) return 'festival';
   return 'forced_road';
+}
+
+/**
+ * The hunt a knockout behind a forced road resumes when there is no fallback to
+ * go to, or null. The fall was in the hunt itself (`fall.activity`) or in the
+ * boarding fight on arrival (no activity: the spot's hunt is the work the
+ * player sailed out for). A boss door and a forced spot return null.
+ */
+function roadHunt(fall: Fall): ReturnSpot | null {
+  const spot = SPOTS[fall.spot];
+  if (!spot) return null;
+  const acts = spotActivities(spot);
+  const act = fall.activity ? acts.find((a) => a.id === fall.activity) : acts.find((a) => a.kind === 'hunt');
+  const goal = act ? { spot: fall.spot, activity: act.id } : null;
+  return goal && roadHuntOk(goal) ? goal : null;
 }
 
 function whyText(why: Why): string {
@@ -227,19 +261,42 @@ function huntLevel(state: GameState, spot: SpotDef): number {
   return low;
 }
 
+/** The highest encounter level a hunt can roll now, or 0 with none eligible. */
+function huntTop(state: GameState, spot: SpotDef): number {
+  let top = 0;
+  for (const e of eligibleEncounters(state, spot)) top = Math.max(top, e.level[1]);
+  return top;
+}
+
+/**
+ * The level a roofed fallback may not exceed: the top of the spot the fall was
+ * at, when that spot is a plain hunt. A fall at a boss door or a forced spot has
+ * no such ceiling (its level says nothing about the dens beside it), and neither
+ * has a spot with no eligible encounter.
+ */
+function fallCeiling(state: GameState, fallSpot: string): number {
+  const spot = SPOTS[fallSpot];
+  if (!spot || spot.forced || spot.encounters?.some((e) => e.boss)) return Infinity;
+  return huntTop(state, spot) || Infinity;
+}
+
 /**
  * A roofed hunt on the fall's floor, for a fall with no proven or limited spot
  * to go to. Without it the hold idles the character at the haven for 10 to 80
  * minutes, which a knockout may not do (2026-11-03); on the Malgeri Crossing
  * the open ridge under a calm is where five knockouts in a row happen with
  * nothing proven. Discovered, tagged `indoor`, no fight budget, plus every
- * check of `huntUsable`. The lowest level first, then the order the spots were
- * found in. A roof takes the spot out of the sky's reach, so the pick is not in
- * the weather that caused the knockouts. A floor with no roofed hunt finds none.
+ * check of `huntUsable`. A spot whose top level is above the top level of the
+ * fall's spot is skipped: a loss at level 13 is not answered with level 14. The
+ * lowest level first, then the order the spots were found in. A roof takes the
+ * spot out of the sky's reach, so the pick is not in the weather that caused
+ * the knockouts. A floor with no roofed hunt, or none that is no harder, finds
+ * none.
  */
 function indoorHunt(state: GameState, fallSpot: string): ReturnSpot | null {
   const floor = floorOf(fallSpot);
   if (!floor) return null;
+  const ceiling = fallCeiling(state, fallSpot);
   let best: ReturnSpot | null = null;
   let bestLevel = Infinity;
   for (const id of state.discovered) {
@@ -247,6 +304,7 @@ function indoorHunt(state: GameState, fallSpot: string): ReturnSpot | null {
     if (!spot?.tags?.includes('indoor') || spot.fightLimit || floorOf(id)?.id !== floor.id) continue;
     const act = spotActivities(spot).find((a) => a.kind === 'hunt');
     if (!act) continue;
+    if (huntTop(state, spot) > ceiling) continue;
     const cand = huntUsable(state, { spot: id, activity: act.id }, fallSpot);
     if (!cand) continue;
     const level = huntLevel(state, spot);
@@ -458,10 +516,13 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
       return;
     }
     // The streak is reached. A return after that (n above the limit) is a
-    // retry or a probe that failed, which doubles the hold.
+    // retry or a probe that failed, which doubles the hold: with a fallback the
+    // count rises here and the hold after the fallback reads it, with none the
+    // plain hold below reads it.
+    const failed = n > STREAK_LIMIT;
     const fb = pickFallback(state, target.spot);
     if (fb) {
-      state.pendingReturn = fallbackPhase(state, target, fb, carried, target.spot);
+      state.pendingReturn = fallbackPhase(state, target, fb, failed ? carried + 1 : carried, target.spot);
       say(
         bus,
         text('knockout.streak_fallback', {
@@ -473,7 +534,7 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
       );
       return;
     }
-    const probes = n > STREAK_LIMIT ? carried + 1 : 0;
+    const probes = failed ? carried + 1 : 0;
     state.pendingReturn = holdPhase(state, target, probes);
     say(
       bus,
@@ -496,6 +557,19 @@ export function noteKnockout(state: GameState, bus: EventBus, fall: Fall): void 
         wins: FALLBACK_WINS,
       }),
     );
+    return;
+  }
+
+  // No fallback anywhere. A plain hunt behind a forced road (a harbor water, the
+  // roadstead) is held on and walked to again after the wait: its fall must not
+  // leave the character idle (user rule 2026-11-03), and the forced fight on the
+  // road is the boarding the player chose to sail into. A failed probe doubles
+  // the wait, as for any hold. A boss door and a forced spot idle, as before.
+  const road = why === 'forced_road' ? roadHunt(fall) : null;
+  if (road && returnBlock(state, road, true) === null) {
+    const probes = old && old.phase === 'return' && old.target?.spot === road.spot ? old.probes + 1 : 0;
+    state.pendingReturn = holdPhase(state, road, probes);
+    say(bus, text('knockout.hold', { spot: spotName(road.spot), minutes: minutes(holdTicks(probes)) }));
     return;
   }
   state.pendingReturn = null;
@@ -560,7 +634,10 @@ function onWin(state: GameState, bus: EventBus, spotId: string, forced: boolean)
     p.wins += 1;
     if (p.wins >= FALLBACK_WINS) retryTarget(state, bus, p);
   } else if (p.phase === 'return' && p.target?.spot === spotId) {
-    state.pendingReturn = null;
+    // The boarding fight on a forced road in is won at the target but is not
+    // the hunt: the return ends with the first hunt win, or when the fight
+    // cleared the spot (the roadstead's one fight) and no hunt is left.
+    if (!forced || (spot && spotCleared(state, spot))) state.pendingReturn = null;
   }
 }
 
@@ -594,16 +671,17 @@ type Drive = 'moving' | 'there' | 'stuck';
  * so the driver cannot loop on a goal it cannot reach.
  *
  * The goal's activity is started with `startActivity`, never `selectActivity`:
- * selecting is a player command and clears the return it serves.
+ * selecting is a player command and clears the return it serves. `viaRoad`: the
+ * goal is a target, which may be a hunt behind a forced road (`returnBlock`).
  */
-function driveTo(state: GameState, bus: EventBus, goal: ReturnSpot): Drive {
+function driveTo(state: GameState, bus: EventBus, goal: ReturnSpot, viaRoad: boolean): Drive {
   if (state.spot === goal.spot) {
     if (state.activity === goal.activity) return 'there';
     if (!canStartActivity(state, goal.spot, goal.activity)) return 'stuck';
     startActivity(state, bus, goal.activity);
     return state.activity === goal.activity ? 'there' : 'stuck';
   }
-  if (returnBlock(state, goal) !== null) return 'stuck';
+  if (returnBlock(state, goal, viaRoad) !== null) return 'stuck';
   if (findPath(state, state.spot, goal.spot)) {
     return goAndDo(state, bus, goal.spot, goal.activity) ? 'moving' : 'stuck';
   }
@@ -635,7 +713,9 @@ function giveUp(state: GameState, bus: EventBus, p: PendingReturn): void {
     state.pendingReturn = null;
     return;
   }
-  const block = returnBlock(state, target) ?? 'route';
+  // Not a fallback phase, so this is a target in its return: a hunt behind a
+  // forced road is still walkable, and only another block gives it up.
+  const block = returnBlock(state, target, true) ?? 'route';
   const why = whyText(block);
   const fb = pickFallback(state, target.spot);
 
@@ -724,7 +804,7 @@ export function tickKnockoutReturn(state: GameState, bus: EventBus): void {
     state.pendingReturn = null;
     return;
   }
-  const step = driveTo(state, bus, goal);
+  const step = driveTo(state, bus, goal, p.phase === 'return');
   if (step === 'stuck') {
     giveUp(state, bus, p);
     return;
