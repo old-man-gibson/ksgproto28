@@ -1824,4 +1824,223 @@ describe('a roofed hunt as the last fallback', () => {
     streak(g, 'kr_field');
     expect(pending(g).phase).toBe('hold');
   });
+
+  it('a roofed fallback lost again and again doubles the hold: 10, 20, 40, 80 minutes', () => {
+    const g = ridge(130);
+    const s = g.state;
+    const waits: number[] = [];
+    streak(g);
+    for (let round = 0; round < 4; round++) {
+      expect(pending(g)).toMatchObject({ phase: 'fallback', fallback: { spot: 'f17_landing' } });
+      // Five in a row at the roofed spot the first time; the streak stays reached after that.
+      for (let i = 0; i < (round === 0 ? STREAK_LIMIT : 1); i++) fallAt(g, 'f17_landing');
+      expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'f17_east_ridge' }, probes: round });
+      waits.push((pending(g).until! - s.totalTicks) / (60 * TPS));
+      // The wait is over, the probe is at the ridge, and the ridge loses again.
+      recovered(g);
+      s.totalTicks = pending(g).until! - 1;
+      g.tick();
+      expect(pending(g).phase).toBe('return');
+      fallAt(g, 'f17_east_ridge');
+    }
+    expect(waits).toEqual([10, 20, 40, 80]);
+  });
+
+  it('a spot whose top level is above the fall spot is not a fallback', () => {
+    const top = (id: string): number => Math.max(...SPOTS[id].encounters!.map((e) => e.level[1]));
+    // The picks above are legal: the landing is no harder than the ridge.
+    expect(top('f17_landing')).toBeLessThanOrEqual(top('f17_east_ridge'));
+    // Lower the ridge under every roofed hunt on the floor: none is the answer to a loss there.
+    const rows = SPOTS.f17_east_ridge.encounters!;
+    const saved = rows.map((e) => e.level);
+    for (const e of rows) e.level = [1, 1];
+    try {
+      const g = ridge(131);
+      streak(g);
+      expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'f17_east_ridge' } });
+      expect(pending(g).fallback).toBeUndefined();
+    } finally {
+      rows.forEach((e, i) => (e.level = saved[i]));
+    }
+  });
+});
+
+describe('a roofed fallback is never harder than the spot that was lost at', () => {
+  const ROW = 'f10_artificers_row';
+  const MINE = 'f10_quarry';
+
+  /** At the Artificers' Row (floor 10's landing, so the haven), the Mine found. */
+  function row(seed: number): Game {
+    const g = new Game(createInitialState(seed));
+    const s = g.state;
+    s.spot = ROW;
+    s.discovered.push(ROW, MINE);
+    s.safeSpots = { nearest: ROW, unconditional: ROW };
+    return g;
+  }
+
+  it('the Mine is a roofed hunt one level above the Row', () => {
+    expect(SPOTS[MINE].tags).toContain('indoor');
+    const top = (id: string): number => Math.max(...SPOTS[id].encounters!.map((e) => e.level[1]));
+    expect(top(MINE)).toBeGreaterThan(top(ROW));
+  });
+
+  it('five knockouts at the Row hold; they do not go to the Mine, and the holds double', () => {
+    const g = row(140);
+    const s = g.state;
+    const waits: number[] = [];
+    for (let round = 0; round < 5; round++) {
+      for (let i = 0; i < (round === 0 ? STREAK_LIMIT : 1); i++) fallAt(g, ROW);
+      expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: ROW } });
+      expect(pending(g).fallback).toBeUndefined();
+      waits.push((pending(g).until! - s.totalTicks) / (60 * TPS));
+      recovered(g);
+      s.totalTicks = pending(g).until! - 1;
+      g.tick(); // the wait is over: the probe
+      expect(pending(g).phase).toBe('return');
+    }
+    expect(waits).toEqual([10, 20, 40, 80, 80]);
+    expect(lines(g)).not.toContain(`5 knockouts in a row at ${SPOTS[ROW].name}. Hunting ${SPOTS[MINE].name} for 200 wins.`);
+  });
+
+});
+
+describe('a hunt behind a forced road with nothing to fall back to', () => {
+  interface Water {
+    spot: string;
+    haven: string;
+    /** Stat flags that open the road in and the table at the water. */
+    flags: string[];
+  }
+  const WATERS: Water[] = [
+    { spot: 'f12_trade_lane', haven: 'f12_landing', flags: ['flag:quest:f11_join_merchants:accepted'] },
+    { spot: 'f12_patrol_lane', haven: 'f12_landing', flags: ['flag:quest:f11_join_navy:accepted'] },
+    { spot: 'f13_picket', haven: 'f13_landing', flags: ['flag:quest:f11_join_merchants:accepted'] },
+    { spot: 'f14_beast_grounds', haven: 'f14_landing', flags: ['flag:quest:f11_join_navy:accepted'] },
+    { spot: 'f20_roadstead', haven: 'f20_quay', flags: [] },
+  ];
+
+  /** At the water, its haven and the water found, the side's flags set, nothing else known. */
+  function sailor(seed: number, w: Water): Game {
+    const g = new Game(createInitialState(seed));
+    const s = g.state;
+    s.spot = w.spot;
+    s.discovered.push(w.haven, w.spot);
+    s.safeSpots = { nearest: w.haven, unconditional: w.haven };
+    for (const key of w.flags) s.stats[key] = 1;
+    return g;
+  }
+
+  /** The wait is over: the probe sets out and the boarding fight opens at `spot`. */
+  function sailBack(g: Game, spot: string): void {
+    const s = g.state;
+    recovered(g);
+    s.totalTicks = pending(g).until! - 1;
+    for (let i = 0; i < 600 && !s.combat; i++) g.tick();
+    expect(s.spot).toBe(spot);
+    expect(s.combat?.forced).toBe(true);
+  }
+
+  it.each(WATERS)('$spot: the fall holds 10 min, sails the road again and hunts', (w) => {
+    const g = sailor(200, w);
+    const s = g.state;
+    // The water is the proven hunt, which is never its own fallback.
+    s.proven = { spot: w.spot, activity: 'hunt' };
+    fallAt(g, w.spot);
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: w.spot, activity: 'hunt' }, probes: 0 });
+    expect(pending(g).until).toBe(s.totalTicks + holdTicks(0));
+    expect(lines(g)).toContain(`No safer hunt known. Retrying ${SPOTS[w.spot].name} in 10 min.`);
+    expect(s.activity).toBeNull();
+
+    sailBack(g, w.spot);
+    s.combat = null; // the boarding is won
+    g.bus.emit({ type: 'fight:won', spot: w.spot, forced: true });
+    expect(pending(g).phase).toBe('return'); // the boarding is not the hunt
+    g.tick();
+    expect(s.spot).toBe(w.spot);
+    expect(s.activity).toBe('hunt');
+    // The first hunt win ends the return.
+    win(g, w.spot);
+    expect(g.state.pendingReturn).toBeNull();
+  });
+
+  it.each(WATERS)('$spot: a boarding fight lost with no activity holds the same way', (w) => {
+    const g = sailor(201, w);
+    fallAt(g, w.spot, null, true);
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: w.spot, activity: 'hunt' }, probes: 0 });
+  });
+
+  it('a boarding that keeps being lost doubles the wait: 10, 20, 40, 80, 80 minutes', () => {
+    const w = WATERS[0];
+    const g = sailor(202, w);
+    const s = g.state;
+    fallAt(g, w.spot, null, true);
+    const waits: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      expect(pending(g).phase).toBe('hold');
+      waits.push((pending(g).until! - s.totalTicks) / (60 * TPS));
+      sailBack(g, w.spot);
+      fallAt(g, w.spot, null, true);
+    }
+    expect(waits).toEqual([10, 20, 40, 80, 80]);
+    expect(pending(g).probes).toBe(5);
+  });
+
+  it('the walk to a target may take the road; a fallback never does', () => {
+    const w = WATERS[0];
+    const g = sailor(203, w);
+    const s = g.state;
+    s.spot = w.haven;
+    const goal = { spot: w.spot, activity: 'hunt' };
+    expect(returnBlock(s, goal)).toBe('forced_road');
+    expect(returnBlock(s, goal, true)).toBeNull();
+  });
+
+  it('a pocket pit behind a forced road: hold, sail again, hunt', () => {
+    const g = world(204, 'kr_pit');
+    const s = g.state;
+    fallAt(g, 'kr_pit');
+    expect(pending(g)).toMatchObject({ phase: 'hold', target: { spot: 'kr_pit', activity: 'hunt' }, probes: 0 });
+    expect(lines(g)).toContain('No safer hunt known. Retrying Test Pit in 10 min.');
+    sailBack(g, 'kr_pit');
+    s.combat = null;
+    g.bus.emit({ type: 'fight:won', spot: 'kr_pit', forced: true });
+    g.tick();
+    expect(s.activity).toBe('hunt');
+  });
+
+  it('a boss door is not sailed into again: it falls back where a fallback exists', () => {
+    // The Door: a boss row behind the Burial Chamber's forced road.
+    const g = new Game(createInitialState(205));
+    const s = g.state;
+    s.spot = 'f19_door';
+    s.discovered.push('f19_causeway', 'f19_entrance', 'f19_gallery', 'f19_chamber', 'f19_door');
+    s.safeSpots = { nearest: 'f19_causeway', unconditional: 'f19_causeway' };
+    expect(SPOTS.f19_door.encounters!.some((e) => e.boss)).toBe(true);
+    s.spot = 'f19_causeway';
+    const goal = { spot: 'f19_door', activity: 'hunt' };
+    expect(returnBlock(s, goal)).toBe('forced_road');
+    expect(returnBlock(s, goal, true)).toBe('forced_road');
+    fallAt(g, 'f19_door');
+    // The lowest-level roofed hunt on the floor, and no target to come back to.
+    expect(pending(g)).toMatchObject({ phase: 'fallback', target: null, fallback: { spot: 'f19_entrance' } });
+    expect(lines(g)).toContain(
+      `${SPOTS.f19_door.name}: forced road in, not re-entered. Hunting ${SPOTS.f19_entrance.name} for 200 wins.`,
+    );
+  });
+
+  it('a boss row behind a forced road is one fight to be chosen: with nothing to fall back to, it idles', () => {
+    const g = world(206, 'kr_pit');
+    const pit = SPOTS.kr_pit;
+    const saved = pit.encounters;
+    pit.encounters = [{ monsterId: 'forest_rat', weight: 1, boss: true, level: [1, 1] }];
+    try {
+      fallAt(g, 'kr_pit');
+      expect(g.state.pendingReturn).toBeNull();
+      expect(g.state.activity).toBeNull();
+      expect(lines(g)).toContain('Test Pit: forced road in, not re-entered. No safer hunt known.');
+    } finally {
+      pit.encounters = saved;
+    }
+  });
 });

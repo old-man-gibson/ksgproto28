@@ -193,6 +193,17 @@ A computed record of what is left on a floor.
 - **Pays:** a harvest source with a fixed rate (e.g. 15 marks per point), so
   discovering more never lowers points.
 
+### 2.6 Sky
+
+New tower areas are open sky unless stated (user, 2026-11-11). An open area
+sets `sheltered: false` on its `AreaDef`; a spot whose text says a roof, a cave,
+a tomb interior, a building interior or underground carries `indoor` (a cave
+that is black at noon also `dark`). When the text is silent the spot stays
+open. Roofed on purpose: floors 1 to 3, the castle and the Vermin Festival.
+A new roofed area is added to `ROOFED_AREAS` in tests/openSky.test.ts and to
+the table in WEATHER.md ("Open sky in the tower"). A floor with open sky and
+no roofed endless hunt has no knockout fallback hunt (`indoorHunt`).
+
 ## 3. The pilot: floor 2, the Long Hall
 
 8 rooms become about 15, plus a hidden floor of 5.

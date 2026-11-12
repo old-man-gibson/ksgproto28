@@ -91,18 +91,12 @@ The user asked for moonlight to lighten the night and took the defaults of
 the design (record at the end of this section).
 
 **Where it applies.** Sky darkness only exists outdoors, away from lamplight.
-The user's ruling (2026-10-29): floors 4 and 5 are open sky, floor 6 is in
-part, and each band-3 direction (floors 7–10) has open-sky areas. Built:
-
-| place | sky | how |
-|---|---|---|
-| floors 1–3 | roofed | the Ascent region is `sheltered` |
-| floor 4, the Greenwood | open | `ascent_f4_area` sets `sheltered: false` |
-| floor 5, the Mire | open, except the Hollows | `ascent_f5_area` sets `sheltered: false`; the Hollows carry `dark` and `indoor` |
-| floor 6, the Warren | the Mouth, the Pens, the Shrine | `ascent_f6_area` sets `sheltered: false`; the Tunnels, Kitchens and Great Hall carry `indoor`, the Drop `dark` and `indoor` |
-| floors 7–10 | open areas per direction | unbuilt; mark them when built (plans/bands-2-3.md) |
-| Threshold, the Holding Level | lamplight | `settlement` |
-| the Hold | roofed | `sheltered`; the yard is a TODO in locations.data.ts |
+User rulings: floors 4 and 5 are open sky and floor 6 is in part (2026-10-29);
+every other tower area is open sky except floors 1 to 3, the castle and the
+Vermin Festival (2026-11-11). The per-floor table is "Open sky in the tower",
+after this section. Outside the tower: Threshold and the Holding Level are
+lamplight (`settlement`), and the Hold is roofed (`sheltered`; the yard is a
+TODO in locations.data.ts).
 
 `AreaDef.sheltered` overrides the region's for one area. Every reader of the
 sky goes through `skyRegionOf(spotId)` (registry.ts), which returns the region
@@ -166,7 +160,10 @@ time instead of 15%. Darkvision training slows by the same 8% on average.
 **What the player sees.** The header's dark chip bands the factor
 (Blind dark / Dark / Gloom); on a moonlit night it can drop a band. Under the
 open night sky its tooltip adds one line: "Moonlight: −30% darkness" or
-"Moonlight: none (overcast)". In a `dark` place the line is absent.
+"Moonlight: none (overcast)". In a `dark` place the line is absent. The chip
+sits in a slot that is laid out at every hour, as wide as "Blind dark", so the
+night coming on moves nothing else in the header (the rule of 2026-11-04: no
+size or position depends on per-tick or per-fight state).
 No Chronosense gate: you see moonlight whether or not you can name the phase.
 The Weathersense forecast already shows which coming hours are clear, so a
 player who reads both chips can pick a moonlit night to hunt in. No new
@@ -200,8 +197,149 @@ open-sky region exists; no rise and set; `MOONLIGHT_MAX` 0.6 with weights
 options: build with the first open-sky region; moons that rise and set by
 phase (a moon up for the 12 hours centred on 12:00 + phase × 24 h, so a first
 quarter sets at midnight); Darkvision XP that ignores moonlight. Later the
-same day the user ruled which floors are open sky (the table above); that is
-what made moonlight live.
+same day the user ruled which floors are open sky (floors 4 and 5, floor 6 in
+part); that is what made moonlight live. The ruling of 2026-11-11 widened it to
+the rest of the tower (next section).
+
+### Open sky in the tower (user ruling, 2026-11-11)
+
+Weather works normally on the tower's open-sky areas. **A tower area is open
+sky unless stated.** Roofed on purpose: floors 1 to 3, the castle of the floors
+7 to 10 band (`ascent_castle_area`, spot `castle_court`) and the Vermin Festival
+(floors 15 and 16, every spot, the herb yard and the Royale field included).
+Inside an open area, a spot that is inside carries `indoor`.
+
+How it is set: the Ascent region is `sheltered`, so an open area sets
+`sheltered: false` on its `AreaDef` and a roofed spot carries `indoor` (and
+`dark` too for a cave that is black at noon). Floor 17 is open through
+`skyRegionId: 'malgeri_range'` instead (Region skies, below). A new area of the
+Ascent's region, or the area of a new floor, that sets neither is roofed, and
+tests/openSky.test.ts fails until the area is opened or is added to that test's
+roofed list, which is a deliberate choice. The test does not see a tower area in
+another region that no floor claims.
+
+| floor | area | roofed spots (`indoor`) | judgement calls left open |
+|---|---|---|---|
+| 0, Holding Level | region `holding_level` (lamplight: no night dark, no moon) | Cell, Cellblock | Gate |
+| 1 to 3 | roofed | every spot | none |
+| 4, Greenwood | `sheltered: false` | none | none |
+| 5, Mire | `sheltered: false` | Hollows (also `dark`) | Cave Mouth, Back Door |
+| 6, Warren | `sheltered: false` | Tunnels, Kitchens, Great Hall; Drop (also `dark`) | Warren Mouth |
+| castle | roofed | every spot (Castle Court) | none |
+| 7, South Ward | `sheltered: false` | Chief's Tent | Watchtowers |
+| 8, West Ward | `sheltered: false` | Hunting Lodge | none |
+| 9, North Ward | `sheltered: false` | Ossuary | none |
+| 10, East Ward | `sheltered: false` | The Mine, The Deep Seam | Artificers' Row |
+| 11, Stronghold Road | `sheltered: false` | none | Gatehouse |
+| 12, Crossings | `sheltered: false` | none | none |
+| 13, Blockade | `sheltered: false` | none | none |
+| 14, Final Mission | `sheltered: false` | none | Beast's Lair |
+| 15 and 16, Festival | roofed | every spot | none |
+| 17, Malgeri Crossing | Malgeri range sky table (`skyRegionId`) | 10 spots, five of them also `dark` (MALGERI.md) | none |
+| 18, Necropolis Road | `sheltered: false`, area tag `heat` | none | Tomb Row |
+| 19, Pyramid | `sheltered: false` | Side Tomb (also `heat`), Entrance Passage, Grand Gallery, Burial Chamber, Treasury, the Door | Valley Temples |
+| 20, Delta Port | `sheltered: false` | Warehouses | Notice Wall |
+
+Every other spot of an open area, such as the landings, roads, fields and
+waters, is open with no call to make.
+
+**The `indoor` rule.** Tag a spot only when its text says a roof, a cave, a tomb
+interior, a building interior or underground. When the text is silent, leave it
+open. Tagged, with the words that justified it: the Chief's Tent (a tent), the
+Hunting Lodge and the Warehouses (buildings), the Ossuary, the Side Tomb ("a
+sealed side tomb"), the Entrance Passage, the Grand Gallery, the Burial Chamber
+and the Treasury (rooms of the pyramid), the Door (its text names no roof, but
+its only way in is the forced road from the Burial Chamber, so the fight is
+inside the pyramid), the Mine ("the ward's copper and iron mine") and the Deep
+Seam (the mine's seam, where the ore eater eats "the mine's ore"). The spot ids
+of the Mine and the Deep Seam are `f10_quarry` and `f10_foundry`. Left open,
+each on its text; the last is the call most likely to be wrong:
+
+- Gate (floor 0): "the way out of floor 0"; no roof named.
+- Cave Mouth (floor 5): the mouth of the cave; the Hollows behind it carry the roof.
+- Back Door (floor 5): a fight at the warren's back door; no room named.
+- Warren Mouth (floor 6): open by the 2026-10-29 ruling.
+- Watchtowers (floor 7): "the camp's towers"; no roof named.
+- Artificers' Row (floor 10): the landing; "Camp in a Workshop" is its rest
+  activity and the hunt (automata) is not placed in one.
+- Gatehouse (floor 11): "the stronghold's gatehouse"; a door to the hold is
+  named, no room.
+- Beast's Lair (floor 14): the sea beast's fight on the water; the spot text
+  names no cave or depth. Its edge reads "Down to the Beast's Lair", which could
+  mean under the water. It stays open so that the four sides' mission fights
+  (Closed Port, Treasure Galleon, Flagship, Beast's Lair) are under one sky.
+- Tomb Row (floor 18): a mummy and scarab hunt; no interior named, and the floor
+  is "in full sun" (Well-Head text).
+- Notice Wall (floor 20): notices for the island; no roof named.
+- Valley Temples (floor 19): a cobra and scorpion hunt; "temples" may be roofed
+  but the text names no roof.
+
+**What an open area gets.** Weather in the header chip and the Weathersense
+forecast, exposure XP from the weather, night darkness with moonlight (combat
+penalties and Darkvision training), and sunlight for Solar Charge. All of it
+reads `skyRegionOf(spot)` and `skyKindAt`, so no per-floor code exists.
+**What it does not get.** `SKY_RULES` statuses: `tickSky` returns unless the
+spot's sky region has a sky table, and only floor 17's does. Weather on the
+other open floors shows and trains, and applies no status.
+
+**The sky they read.** Every open Ascent area reads the Ascent's pin
+(14.3, 21.6) with 'plains' terrain, so floor 12 (sea) and floor 18 (desert) see
+the same sky as floor 4. One game year (368 days, one sample an hour, seed from
+`createdAt` 20260804): overcast 36.5%, snow 19.2%, rain 19.0%, clear 17.2%,
+mist 3.8%, storm 2.3%, gale 1.4%, blizzard 0.6%. Temperature −17.4 to 25.4 °C,
+mean 3.6; 14.1% of the hours are at or below −5 °C (trains cold), none at or
+above 32 °C. No heatwave and no sandstorm: heatwave and calm are table-only,
+sandstorm needs desert terrain. A per-area climate pin is not built
+(FLOOR_IDEAS §4). On floors 18 to 20 the `heat` tag trains Heat Resistance every
+minute whatever the sky, while the weather shows snow 19.2% of the year and
+trains cold on 14.1% of the hours. Nothing reads both together.
+
+**Knockout fallback.** `indoorHunt` (knockoutReturn.ts) picks an `indoor` hunt
+with no fight budget on the fall's floor, the third choice after the proven spot
+and a limited spot. The lowest level first. A spot whose top encounter level is
+above the top level of the spot the fall was at is skipped, so a loss at level
+13 is never answered with level 14; a fall at a boss door or a forced spot has
+no ceiling. A retry that fails (a knockout at the target after the fifth) raises
+the probe count whether or not a fallback follows, so the hold that ends the
+fallback doubles each round. Floors with one: 5 (Hollows), 6 (Tunnels, Drop),
+10 (the Mine), 17 (six cave and shelter spots) and 19 (Entrance Passage, Grand
+Gallery, Burial Chamber; the Door is roofed but is a boss door, so it is never
+a pick). Floors 10 and 19 gained theirs from the tags above; 5, 6 and 17 had
+theirs.
+
+Floors 4, 7 to 9, 11 to 14, 18 and 20 have none, as before the ruling:
+`pickFallback` returns null there. What a fall does then, in order:
+
+- A fall at an ordinary hunt that can be walked back to holds at the haven for
+  10, 20, 40, then 80 minutes and walks back (the plain hold).
+- A fall at a plain hunt behind a forced road (the waters of floors 12 to 14,
+  the one-fight roadstead) holds the same way and sails the road again. The
+  fight on the road is the boarding the player chose by sailing out the first
+  time. A failed probe doubles the wait. It is the one place a forced road is
+  walked again, because of the user rule of 2026-11-03 that a knockout must not
+  idle.
+- A fall at a boss door (floor 19's Door) or a forced spot is not walked back
+  into; with no fallback it idles at the haven and the log gives the reason.
+
+**Cost.** `darknessFactor` samples the noise-field weather only when the sky is
+open and it is night: 2.0 to 2.2 µs a call there, against 0.5 to 0.6 µs open by
+day and 0.6 to 0.7 µs under a roof (300,000 calls, a new tick each call, three
+runs, vite-node). No derived-stats input changes: darkness is read at roll time
+in combat and `world.sunlight` has `modStat: null`.
+
+**Tests** (tests/openSky.test.ts): the tower's areas are every area of the
+Ascent's region plus every floor's area, and each is roofed (the test's list) or
+open; a spot has no sky exactly when its area is roofed or it carries `indoor`;
+the `indoor` spots of the open tower areas equal the test's per-floor lists
+exactly (floors 0, 5, 6, 7 to 10, 17, 19 and 20), so a tag added or dropped
+fails it, and each listed spot reads an open sky and is roofed by its tag; the
+eleven spots left open have a sky; a floor 12 spot has a sky kind and a festival
+spot has none; one open spot on each of floors 7 to 14 and 18 to 20 has a sky,
+all of them the same kind at one tick, is dark and moonlit at night, trains
+Darkvision and is lit by day, while the night adds no darkness at a tagged spot
+or on a roofed floor. The header's weather chip (`headerSky`, ui/lib/shell.ts)
+shows the roofed value ('still') at an inside spot, the same as floor 1, and the
+weather at an open one; it is roofed exactly where `skyKindAt` is null.
 
 ## The weather
 
@@ -504,7 +642,10 @@ status text, the forecast, and `skyContentIssues`.
   any skill may declare `maxLevel`.
 - The player-facing **weather chip** sits beside the clock in the header
   (icon + temperature; hover for kind and band). It needs no skill — skin
-  reads weather for free. The HP bar it replaced lives in the panels.
+  reads weather for free. The HP bar it replaced lives in the panels. The chip
+  is a fixed 3.9em wide (App.svelte): its widest text, a minus sign and two
+  digits, is 3.50em in Default and 3.77em in Cockpit, the widest of the eleven
+  themes. At a spot with no sky it shows the roofed value, 'still'.
 
 ## Exposure — the world training the body
 

@@ -36,11 +36,11 @@
   import { tick, untrack, type Component } from 'svelte';
   import { fmt } from './lib/format';
   import { navListShown, reconcileTab, visibleNav, type MainTab } from './lib/nav';
-  import { logIsOpen, shortClock } from './lib/shell';
+  import { headerSky, logIsOpen, shortClock } from './lib/shell';
   import DebugPanel from './panels/DebugPanel.svelte';
   import { clockOf, MOON_ICONS } from '../core/systems/clock';
   import { CHRONOSENSE_ID, describeMoons, describeTimeSense } from '../core/systems/chronosense';
-  import { WEATHER_ICONS, weatherAt, worldSeedOf } from '../core/systems/weather';
+  import { WEATHER_ICONS, worldSeedOf } from '../core/systems/weather';
   import { forecastFor, PROGNOSIS_TOOLTIP_AT, WEATHERSENSE_ID } from '../core/systems/weathersense';
   import Tip from './lib/Tip.svelte';
   import {
@@ -51,7 +51,7 @@
     MOONLIGHT_THROUGH,
     moonlightOn,
   } from '../core/systems/exposure';
-  import { SKILLS, skyRegionOf } from '../core/registry';
+  import { SKILLS } from '../core/registry';
   import {
     barCapacity,
     barTickStarts,
@@ -108,10 +108,10 @@
     return '\nMoonlight: none';
   }
 
-  const wxRegion = $derived(skyRegionOf(gs.spot));
-  const weather = $derived(
-    wxRegion ? weatherAt(worldSeedOf(gs.createdAt), wxRegion, gs.totalTicks) : null,
-  );
+  // A roofed spot (an `indoor` spot in an open area) shows what floors 1 to 3 show.
+  const sky = $derived(headerSky(gs));
+  const wxRegion = $derived(sky?.region ?? null);
+  const weather = $derived(sky?.weather ?? null);
   // The PROGNOSIS is Weathersense's: rows appear and sharpen by level.
   const wxLevel = $derived(gs.skills[WEATHERSENSE_ID]?.level ?? 0);
   const forecast = $derived(
@@ -382,14 +382,21 @@
     {/if}
     <!-- The dark is a real combat penalty (exposure.ts) and was invisible:
          without this, Darkvision buys back something you never saw taken. -->
-    {#if dark > 0}
-      <!-- Bands, not thresholds on the nose: Darkvision's ceiling is 50, so a
-           single level would otherwise demote "blind dark" the moment the
-           skill manifests, which reads as the label being broken. -->
-      <div class="dark" title={darkTitle}>
-        🌑 {dark >= 0.85 ? 'Blind dark' : dark >= 0.4 ? 'Dark' : 'Gloom'}
-      </div>
-    {/if}
+    <!-- The slot is laid out at every hour, empty by day: the chip shows inside
+         it, so the night coming on moves nothing. The hidden sizer is the
+         widest label; it has no hit target and no place in the accessibility
+         tree. -->
+    <div class="dark-slot">
+      <span class="dark sizer" aria-hidden="true">🌑 Blind dark</span>
+      {#if dark > 0}
+        <!-- Bands, not thresholds on the nose: Darkvision's ceiling is 50, so a
+             single level would otherwise demote "blind dark" the moment the
+             skill manifests, which reads as the label being broken. -->
+        <div class="dark" title={darkTitle}>
+          🌑 {dark >= 0.85 ? 'Blind dark' : dark >= 0.4 ? 'Dark' : 'Gloom'}
+        </div>
+      {/if}
+    </div>
     {#if !screen || screen.gold}
       <div class="gold">🪙 {fmt(gs.gold)}</div>
     {/if}
@@ -600,10 +607,12 @@
   /* The clock text yields first. Its basis is 0, so a long text never pushes
      the row onto a second line or shortens the job name; it takes the room
      left over, up to 230px, and ends in an ellipsis. The title holds the whole
-     text. */
+     text. The dark slot is laid out by day too, so a full row leaves this chip
+     at its minimum: that holds its widest hour ("🕰️ about 23:00", 89px in
+     Default's face), as the narrow layout's 7.1em does below. */
   .timesense {
     flex: 1 1 0;
-    min-width: 6.5em;
+    min-width: 7.1em;
     max-width: 230px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -688,7 +697,14 @@
     font-size: 10px;
   }
 
+  /* A fixed slot as wide as its widest text, "🕳️ -99°": the icons are one
+     width, and a minus sign and two digits are the most the header shows. The
+     text changing moves nothing after it. Widest text per em, measured in the
+     eleven themes' own faces: Default 3.50, Gothic 3.10, Cockpit (B612) 3.77,
+     Linocut 3.74, Survey 3.68, Registry 3.68, Quayside 3.61. 3.9em covers the
+     widest and leaves 1.6px at 13px. */
   .weather {
+    width: 3.9em;
     white-space: nowrap;
     color: var(--text-dim);
     font-size: 13px;
@@ -707,6 +723,29 @@
   :global(.tip-line.wx-row.wx-rough) {
     font-style: italic;
     color: var(--text-dim);
+  }
+
+  /* The dark chip's slot is as wide as the widest label, with or without the
+     chip: the chip and the hidden sizer share one grid cell, and the chip
+     fills it, so the three labels are one width too. Only the chip takes
+     the pointer (its tooltip); the empty slot and the sizer let it through. */
+  .dark-slot {
+    display: grid;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .dark-slot > .dark {
+    grid-area: 1 / 1;
+    text-align: center;
+  }
+
+  .dark-slot > .dark:not(.sizer) {
+    pointer-events: auto;
+  }
+
+  .dark.sizer {
+    visibility: hidden;
   }
 
   /* Reads as a warning rather than a readout — it is costing you something. */

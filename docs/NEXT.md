@@ -17,6 +17,10 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **Open sky on the tower (2026-11-11, branch `open-sky-floors`, no save
+  change).** Floors 7 to 14 and 18 to 20 are open sky, inside spots carry
+  `indoor`; table, calls and findings in WEATHER.md "Open sky in the tower".
+
 - **Start and navigation rethink; character levels (2026-10-18, save v56).**
   User's picks: city option A, start option 2, levels.
   - **City has no fog.** `RegionDef.mapped` on Threshold: the whole city is on
