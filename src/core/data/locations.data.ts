@@ -62,6 +62,10 @@ export const AREAS: Record<string, AreaDef> = {
   // centre of Threshold's map with all eight roads running to it, and the
   // stack proper begins on the far side of the door.
   ascent_foot_area: { id: 'ascent_foot_area', name: 'The Foot', regionId: 'threshold' },
+  // Open sky rule (user, 2026-11-11): a tower area is open sky unless stated.
+  // Roofed on purpose: floors 1 to 3, the castle and the Vermin Festival
+  // (floors 15 and 16). Every other floor sets `sheltered: false` and tags the
+  // spots that are inside `indoor` (docs/WEATHER.md has the table).
   // Band 1 of the Ascent — one area per floor, because a floor IS an area
   // (towers.data.ts). These areas are CLOSED: no authored edge crosses their
   // boundary (linted, both layers) — the ladder is the only way on or off a
@@ -80,19 +84,21 @@ export const AREAS: Record<string, AreaDef> = {
   ascent_f5_area: { id: 'ascent_f5_area', name: 'The Mire', regionId: 'the_ascent', sheltered: false, scene: 'cistern' },
   ascent_f6_area: { id: 'ascent_f6_area', name: 'The Warren', regionId: 'the_ascent', sheltered: false, scene: 'crypt' },
   // Band 3, the City (bands-2-3.md), a skeleton. The castle is the band's hub:
-  // no floor claims its area, and the ladder answers there (BandDef.hub).
+  // no floor claims its area, and the ladder answers there (BandDef.hub). The
+  // castle stays roofed; the four wards are open sky (user, 2026-11-11), and
+  // their roofed spots carry 'indoor'.
   ascent_castle_area: { id: 'ascent_castle_area', name: 'The Castle', regionId: 'the_ascent', scene: 'hall' },
-  ascent_f7_area: { id: 'ascent_f7_area', name: 'The South Ward', regionId: 'the_ascent' },
-  ascent_f8_area: { id: 'ascent_f8_area', name: 'The West Ward', regionId: 'the_ascent' },
-  ascent_f9_area: { id: 'ascent_f9_area', name: 'The North Ward', regionId: 'the_ascent', scene: 'crypt' },
-  ascent_f10_area: { id: 'ascent_f10_area', name: 'The East Ward', regionId: 'the_ascent', scene: 'hall' },
+  ascent_f7_area: { id: 'ascent_f7_area', name: 'The South Ward', regionId: 'the_ascent', sheltered: false },
+  ascent_f8_area: { id: 'ascent_f8_area', name: 'The West Ward', regionId: 'the_ascent', sheltered: false },
+  ascent_f9_area: { id: 'ascent_f9_area', name: 'The North Ward', regionId: 'the_ascent', sheltered: false, scene: 'crypt' },
+  ascent_f10_area: { id: 'ascent_f10_area', name: 'The East Ward', regionId: 'the_ascent', sheltered: false, scene: 'hall' },
   // Floor 11 (FLOOR_IDEAS.md §1.5): the stronghold road, a placeholder name.
-  ascent_f11_area: { id: 'ascent_f11_area', name: 'The Stronghold Road', regionId: 'the_ascent', scene: 'hall' },
+  ascent_f11_area: { id: 'ascent_f11_area', name: 'The Stronghold Road', regionId: 'the_ascent', sheltered: false, scene: 'hall' },
   // ==== HARBOR: areas (skeleton 2026-10-30; the harbor builder's section) ====
   // Band 4's sea floors (FLOOR_IDEAS.md idea 3). No ship scene exists yet.
-  ascent_f12_area: { id: 'ascent_f12_area', name: 'The Crossings', regionId: 'the_ascent' },
-  ascent_f13_area: { id: 'ascent_f13_area', name: 'The Blockade', regionId: 'the_ascent' },
-  ascent_f14_area: { id: 'ascent_f14_area', name: 'The Final Mission', regionId: 'the_ascent' },
+  ascent_f12_area: { id: 'ascent_f12_area', name: 'The Crossings', regionId: 'the_ascent', sheltered: false },
+  ascent_f13_area: { id: 'ascent_f13_area', name: 'The Blockade', regionId: 'the_ascent', sheltered: false },
+  ascent_f14_area: { id: 'ascent_f14_area', name: 'The Final Mission', regionId: 'the_ascent', sheltered: false },
   // ==== FESTIVAL: areas (skeleton 2026-10-30; the festival builder's section) ====
   ascent_f15_area: { id: 'ascent_f15_area', name: 'The Dark Room and the Hall', regionId: 'the_ascent', scene: 'hall' },
   ascent_f16_area: { id: 'ascent_f16_area', name: 'The Royale Field', regionId: 'the_ascent', scene: 'hall' },
@@ -102,12 +108,13 @@ export const AREAS: Record<string, AreaDef> = {
   // 'indoor'; the caves also 'dark'.
   ascent_f17_area: { id: 'ascent_f17_area', name: 'The Malgeri Crossing', regionId: 'the_ascent', skyRegionId: 'malgeri_range' },
   // ==== DESERT: areas (skeleton 2026-10-30; the desert builder's section) ====
-  // Heat trains heat_resistance through place tags only: the Ascent region is
-  // sheltered, and open sky with a per-area climate pin is not built here
-  // (FLOOR_IDEAS §4, "It waits on"). Floor 18 is all open road.
-  ascent_f18_area: { id: 'ascent_f18_area', name: 'The Necropolis Road', regionId: 'the_ascent', tags: ['heat'] },
-  ascent_f19_area: { id: 'ascent_f19_area', name: 'The Pyramid', regionId: 'the_ascent', scene: 'crypt' },
-  ascent_f20_area: { id: 'ascent_f20_area', name: 'The Delta Port', regionId: 'the_ascent' },
+  // The `heat` tag trains heat_resistance by place. Open sky (user, 2026-11-11)
+  // puts floors 18 to 20 under the Ascent's plains weather; a per-area climate
+  // pin is not built (FLOOR_IDEAS §4, "It waits on"), so the sky is the same
+  // one floors 4 to 14 read. Floor 18 is all open road.
+  ascent_f18_area: { id: 'ascent_f18_area', name: 'The Necropolis Road', regionId: 'the_ascent', sheltered: false, tags: ['heat'] },
+  ascent_f19_area: { id: 'ascent_f19_area', name: 'The Pyramid', regionId: 'the_ascent', sheltered: false, scene: 'crypt' },
+  ascent_f20_area: { id: 'ascent_f20_area', name: 'The Delta Port', regionId: 'the_ascent', sheltered: false },
 };
 
 /**
@@ -2195,6 +2202,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '⛺',
     areaId: 'ascent_f7_area',
     map: { x: 74, y: 65 },
+    tags: ['indoor'],
     fightLimit: 1,
     stampOnClear: 'ward:f7:done',
     modifierWeights: { normal: 100 },
@@ -2298,6 +2306,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🛖',
     areaId: 'ascent_f8_area',
     map: { x: 50, y: 70 },
+    tags: ['indoor'],
     fightLimit: 1,
     modifierWeights: { normal: 100 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Take the Lodge', icon: '⚔️' }],
@@ -2361,6 +2370,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '💀',
     areaId: 'ascent_f9_area',
     map: { x: 50, y: 70 },
+    tags: ['indoor'],
     fightLimit: 1,
     modifierWeights: { normal: 100 },
     // Neither form is solitary, so the default group roll would bring a second
@@ -2408,6 +2418,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '⛏️',
     areaId: 'ascent_f10_area',
     map: { x: 50, y: 40 },
+    tags: ['indoor'],
     activities: [
       { id: 'hunt', kind: 'hunt', name: 'Work the Mine', icon: '⚔️' },
       { id: 'explore', kind: 'explore', name: 'Search the Spoil Heaps', icon: '🔍' },
@@ -2431,6 +2442,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🪨',
     areaId: 'ascent_f10_area',
     map: { x: 50, y: 70 },
+    tags: ['indoor'],
     fightLimit: 1,
     modifierWeights: { normal: 100 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Go Down the Seam', icon: '⚔️' }],
@@ -4205,7 +4217,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🔥',
     areaId: 'ascent_f19_area',
     map: { x: 92, y: 44 },
-    tags: ['heat'],
+    tags: ['heat', 'indoor'],
     activities: [{ id: 'explore', kind: 'explore', name: 'Search the Side Tomb', icon: '🔍' }],
     exploreTicks: 360,
     finds: [
@@ -4221,6 +4233,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🔺',
     areaId: 'ascent_f19_area',
     map: { x: 50, y: 56 },
+    tags: ['indoor'],
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Passage', icon: '⚔️' }],
     groupWeights: { 1: 60, 2: 30, 3: 10 },
     encounters: [
@@ -4235,6 +4248,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🔺',
     areaId: 'ascent_f19_area',
     map: { x: 50, y: 42 },
+    tags: ['indoor'],
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Gallery', icon: '⚔️' }],
     groupWeights: { 1: 60, 2: 30, 3: 10 },
     encounters: [
@@ -4249,6 +4263,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '⚱️',
     areaId: 'ascent_f19_area',
     map: { x: 50, y: 26 },
+    tags: ['indoor'],
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Clear the Chamber', icon: '⚔️' }],
     groupWeights: { 1: 70, 2: 30 },
     encounters: [{ monsterId: 'ph_mummy', weight: 1, level: [42, 43] }],
@@ -4263,6 +4278,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '🏺',
     areaId: 'ascent_f19_area',
     map: { x: 80, y: 22 },
+    tags: ['indoor'],
     activities: [{ id: 'explore', kind: 'explore', name: 'Search the Treasury', icon: '🔍' }],
     exploreTicks: 360,
     finds: [
@@ -4347,6 +4363,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '📦',
     areaId: 'ascent_f20_area',
     map: { x: 80, y: 50 },
+    tags: ['indoor'],
     activities: [
       { id: 'job_f20_cargo', kind: 'job', gold: 30, ticksPer: 240, name: 'Haul Cargo', icon: '📦' },
       { id: 'gather_f20_flour', kind: 'gather', material: 'rough_flour', ticksPer: 120, name: 'Sweep the Grain Floor', icon: '🌾' },
