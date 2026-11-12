@@ -177,8 +177,8 @@ no text names calm, its monsters or Ridge Amber, and no number gives them away.
 | Spot, find, band, floor text of floor 17; `f16_arena`; `f18_well_head` | never names calm | unchanged |
 | Hamlet NPC lines | base dialogue never names it | Captain Bren (`f17_bren`) gains one `lore` line: the mountain goes still 8 hours in 12 days, who comes out and at what levels, roofed places are not reached |
 | Plain Malgeri monsters' text | never names it | unchanged |
-| The log | `exposure.calm_first` fires once, at the first live minute under a calm open sky; it is the only calm text | unchanged |
-| Bestiary | the trio are veiled: kills count; no entry, no first-kill line, no discovery XP, no facts, not in the book's total | the entry opens on the first kill after the flag |
+| The log | `exposure.calm_first` fires once, at the first minute under a calm open sky (live or catch-up; the offline summary carries it when the log is suppressed); it is the only calm text | unchanged |
+| Bestiary | the trio are veiled: kills count; no entry, no first-kill line, no discovery XP, no facts, not in the book's total | the entries of species already killed open when the flag is stamped; others open on their first kill |
 | Map badge (`spotThreat`) | plain levels only (L41-42) | the calm levels join the range under a calm sky (L41-48) |
 | Weather chip and forecast | show the kind like any kind; the rough read says "plain skies" | unchanged |
 | Ridge Amber's text | names no calm | unchanged |
@@ -193,9 +193,10 @@ monster names, Ridge Amber, and the words wolves, brutes and seers;
 - `MonsterDef.veil?: UnlockCondition[]` (types.ts). While any condition is
   unmet the species is veiled: `isVeiled(state, id)` in `systems/bestiary.ts`.
   `isDiscovered` and `bestiaryProgress` leave veiled species out. `recordKill`
-  counts the kill and returns early. After the veil lifts, the entry opens on
-  the next kill (`firstKill` is still 0), and the kills made under the veil
-  count toward the facts' kill thresholds. `spotThreat` skips veiled lines.
+  counts the kill and returns early. When the veil lifts, the entry opens
+  (`openLiftedEntries` at the flag's stamp, or the next kill while `firstKill`
+  is still 0), and the kills made under the veil count toward the facts' kill
+  thresholds. `spotThreat` skips veiled lines.
   Content lint: a veil is non-empty and its skills and quests exist
   (tests/content.test.ts, mirrored in forge/lib/validate.ts).
 - `NpcDef.lore?: { requires: UnlockCondition[]; dialogue: string[] }[]`. The
@@ -206,15 +207,24 @@ monster names, Ridge Amber, and the words wolves, brutes and seers;
 - `CALM_SEEN_KEY` is listed as a valid counter in tests/content.test.ts
   (`statCounterValid`), so conditions may read it.
 
-**The offline hole.** `tickSky` does not stamp the flag during offline
-catch-up. Floor 17's calm lines roll during catch-up (`eligibleEncounters`
-reads the sky from the clock), so a character left hunting an open spot can
-kill calm monsters offline before the flag exists. Their kills count and the
-bestiary stays veiled, but Ridge Amber can drop into the inventory, and the
-offline report lists loot. Nothing is saved wrong and no text names calm. Fix
-options if wanted: stamp the flag at the end of a catch-up that crossed a calm
-at an open spot; or skip calm lines during catch-up while the flag is unset.
-Neither is built.
+**Offline catch-up.** `tickSky` stamps the flag in catch-up exactly as in live
+play, so the same ticks leave the same state (flag, `bestiary:entries`, the
+trio's kills). Floor 17's calm lines roll during catch-up (`eligibleEncounters`
+reads the sky from the clock), so a character left hunting an open spot fights
+them offline; the stamp lands on the first calm minute, before any calm spawn
+can be killed. The log line is emitted whenever the log is live. The
+summarised catch-up (`runOfflineProgress`) suppresses the log, so the summary
+carries the line instead (`OfflineSummary.firstCalm`, shown by
+`OfflineModal.svelte`); the quiet short-gap catch-up logs it normally. Test:
+tests/malgeriCatchup.test.ts runs 288,000 ticks live and offline from the same
+state and compares the flag and the entry count.
+
+**The veil lifts at the stamp.** `tickSky` calls `openLiftedEntries`
+(`systems/bestiary.ts`) right after it sets the flag: a species killed under
+the veil gets its entry, discovery XP, `bestiary:entries` count and log line at
+that moment, not on its next kill. `recordKill` still opens an entry on the
+first kill after a veil lifts by another route (a carried flag, a loaded
+save). Facts roll from the next kill.
 
 ## 6. Monsters
 

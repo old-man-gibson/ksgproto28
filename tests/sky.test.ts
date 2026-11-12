@@ -27,7 +27,8 @@ import {
   weatherAt,
   worldSeedOf,
 } from '../src/core/systems/weather';
-import { skyKindAt, tickSky } from '../src/core/systems/exposure';
+import { firstCalmLine, skyKindAt, tickSky } from '../src/core/systems/exposure';
+import { catchUpTicks, runOfflineProgress } from '../src/core/save/offline';
 import { eligibleEncounters, spawnMonster } from '../src/core/systems/combat';
 import {
   applyStatus,
@@ -661,13 +662,13 @@ describe('the first calm', () => {
   const calmStart = () => Math.ceil(calmSpell(SEED, MOUNTAIN.id, WINDOW)[0] / 3) * 3;
 
   /** Run tickSky over every game minute in [from, to), collecting log lines. */
-  function walk(state: GameState, from: number, to: number, catchingUp = false): string[] {
+  function walk(state: GameState, from: number, to: number): string[] {
     const bus = new EventBus();
     const lines: string[] = [];
     bus.on('log', (ev) => lines.push(ev.msg));
     for (let m = from; m < to; m++) {
       state.totalTicks = m * TICKS_PER_MINUTE;
-      tickSky(state, bus, catchingUp);
+      tickSky(state, bus);
     }
     return lines;
   }
@@ -702,14 +703,21 @@ describe('the first calm', () => {
     }
   });
 
-  it('waits out an offline catch-up: nothing is logged or stamped while catching up, the line fires once live', () => {
-    const state = stateAt(RIDGE, 0);
-    const [, end] = calmSpell(SEED, MOUNTAIN.id, WINDOW);
-    expect(walk(state, calmStart(), end - 10, true)).toEqual([]);
-    expect(state.stats[CALM_SEEN_KEY]).toBeUndefined();
-    const live = walk(state, end - 10, end);
-    expect(live).toHaveLength(1);
-    expect(state.stats[CALM_SEEN_KEY]).toBe(1);
+  it('stamps the flag during offline catch-up as live play does; the summary carries the line the suppressed log loses', () => {
+    const game = new Game(stateAt(RIDGE, calmStart() * TICKS_PER_MINUTE - 5));
+    const summary = runOfflineProgress(game, 60 * 1000)!;
+    expect(game.state.stats[CALM_SEEN_KEY]).toBe(1);
+    expect(game.state.log.some((l) => /calm/i.test(l.msg))).toBe(false);
+    expect(summary.firstCalm).toBe(firstCalmLine());
+    // Already stamped: a later absence reports nothing.
+    expect(runOfflineProgress(game, 60 * 1000)!.firstCalm).toBeUndefined();
+  });
+
+  it('logs the line in an unsuppressed catch-up (the quiet short-gap path) and leaves no summary', () => {
+    const game = new Game(stateAt(RIDGE, calmStart() * TICKS_PER_MINUTE - 5));
+    catchUpTicks(game, 600);
+    expect(game.state.stats[CALM_SEEN_KEY]).toBe(1);
+    expect(game.state.log.filter((l) => /calm/i.test(l.msg))).toHaveLength(1);
   });
 
   it('does not fire again for a save that already carries the flag', () => {

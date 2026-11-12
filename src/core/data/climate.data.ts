@@ -257,8 +257,10 @@ export const CALM_HOURS = 8;
  * Set to 1 the first time the player stands under a calm sky
  * (`tickSky`, systems/exposure.ts). A `flag:` counter in `state.stats`: no save
  * shape change. A prestige carries it over, so the disclosure line fires once
- * per save. Calm is secret until then: the log line `exposure.calm_first` is
- * the one text that names it, and anything else that would name calm to the
+ * per save. Offline catch-up stamps it as live play does; the summarised one
+ * suppresses the log, so the offline summary carries the line. Calm is secret
+ * until then: the log line `exposure.calm_first` is the one text that names it,
+ * and anything else that would name calm to the
  * player (a hint, a tracker, a tooltip) reads this first. The weather chip and
  * the forecast show the kind like any other sky.
  */

@@ -315,7 +315,7 @@ export class Game {
     tickExposure(this.state, this.bus);
     // What the open sky does to the body standing under it (SKY_RULES), in
     // regions with a sky table only.
-    tickSky(this.state, this.bus, this.catchingUp);
+    tickSky(this.state, this.bus);
     // The run's ability, once a minute: Solar Charge banks the sky the
     // exposure tick just sampled.
     tickFacets(this.state);

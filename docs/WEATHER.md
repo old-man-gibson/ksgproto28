@@ -381,8 +381,11 @@ bring, never through a status. Nothing may tell the player that before they
 have met it. `tickSky` sets `flag:malgeri_calm_seen` (`CALM_SEEN_KEY`) and
 logs one line, `exposure.calm_first`, the first minute the player stands under
 a calm open sky. The flag is a plain `state.stats` counter, so there is no
-save change. It is not set during offline catch-up (the log is suppressed
-there and the player has not yet looked), and `prestigeNow` carries it over,
+save change. It is set during offline catch-up too, so the same ticks leave
+the same state; the summarised catch-up suppresses the log, and the offline
+summary carries the line (`OfflineSummary.firstCalm`) in its place.
+`tickSky` also opens the bestiary entries of species killed under the veil
+(`openLiftedEntries`). `prestigeNow` carries the flag over,
 so the line fires once per save. Before the flag is set, that log entry is the
 only text that names calm; floor 17's captain line and the calm species'
 bestiary entries wait on the flag (MALGERI.md, "The disclosure rule"). The weather chip and the forecast show the kind like any other; the
@@ -436,7 +439,7 @@ kinds, calm length, spacing and determinism, regions without a table
 byte-identical, the sample memo, every `SKY_RULES` row (dose, period, none
 under a roof or in calm, resistance thinning, the sweltering ceiling,
 dazzle's chance, foes), the `sky` encounter filter, the first-calm line (once,
-not while catching up, kept over a prestige), the secrecy checks on log and
+stamped in catch-up too, kept over a prestige), the secrecy checks on log and
 status text, the forecast, and `skyContentIssues`.
 
 ## Rules for future work

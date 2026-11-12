@@ -33,7 +33,7 @@ import { bestiaryProgress, isDiscovered, isVeiled, recordKill } from '../src/cor
 import { EventBus } from '../src/core/engine/events';
 import { npcDialogue } from '../src/core/systems/quests';
 import { calmSpell, worldSeedOf } from '../src/core/systems/weather';
-import { skyKindAt } from '../src/core/systems/exposure';
+import { skyKindAt, tickSky } from '../src/core/systems/exposure';
 import { eligibleEncounters, spotCleared } from '../src/core/systems/combat';
 import { clearMet } from '../src/core/systems/ladder';
 import { spotThreat } from '../src/ui/lib/navigation';
@@ -395,6 +395,36 @@ describe('the veil on the calm monsters', () => {
     // The next kill is an ordinary one: no second entry.
     expect(kill(state, 'malgeri_cairn_brute').entries).toEqual([]);
     expect(state.stats['bestiary:entries']).toBe(1);
+  });
+
+  it('opens the pending entries at the moment the first calm stamps the flag, not on the next kill', () => {
+    const state = createInitialState(CREATED, 'f17_east_ridge');
+    const [start] = calmSpell(SEED, 'malgeri_range', 3);
+    kill(state, 'malgeri_cairn_brute', 2);
+    kill(state, 'malgeri_ridge_wolf');
+    expect(state.stats['bestiary:entries']).toBeUndefined();
+    // The first calm minute under an open sky.
+    state.totalTicks = Math.ceil(start / 3) * 3 * TICKS_PER_MINUTE;
+    expect(skyKindAt(state, state.spot)).toBe('calm');
+    const bus = new EventBus();
+    const entries: string[] = [];
+    const log: string[] = [];
+    bus.on('bestiary:entry', (ev) => entries.push(ev.monsterId));
+    bus.on('log', (ev) => log.push(ev.msg));
+    tickSky(state, bus);
+    expect(state.stats[CALM_SEEN_KEY]).toBe(1);
+    expect(entries.sort()).toEqual(['malgeri_cairn_brute', 'malgeri_ridge_wolf']);
+    expect(state.stats['bestiary:entries']).toBe(2);
+    expect(state.bestiary.malgeri_cairn_brute.firstKill).toBe(state.totalTicks);
+    expect(log.some((m) => m.includes('Cairn Brute'))).toBe(true);
+    // A species killed only before the stamp and never opened stays out; the next kill is ordinary.
+    expect(state.bestiary.malgeri_hollow_seer?.firstKill ?? 0).toBe(0);
+    expect(kill(state, 'malgeri_cairn_brute').entries).toEqual([]);
+    expect(state.stats['bestiary:entries']).toBe(2);
+    // The stamp is once: a second calm minute opens nothing.
+    state.totalTicks += TICKS_PER_MINUTE * 3;
+    tickSky(state, bus);
+    expect(state.stats['bestiary:entries']).toBe(2);
   });
 
   it('leaves an unveiled species alone: the first kill opens its entry as before', () => {

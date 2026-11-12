@@ -6,6 +6,7 @@ import { clockOf, moonlight, type MoonState } from './clock';
 import { applyStatus, hasStatus } from './statuses';
 import { getDerivedStats } from './derived';
 import { raiseStat } from './achievements';
+import { openLiftedEntries } from './bestiary';
 import {
   WEATHER_ICONS,
   climateBaseline,
@@ -355,6 +356,9 @@ export function tickExposure(state: GameState, bus: EventBus): void {
 
 // ---------- The open sky's rules ----------
 
+/** The one line that names calm before the player has stood under it (CALM_SEEN_KEY). */
+export const firstCalmLine = (): string => text('exposure.calm_first', { icon: WEATHER_ICONS.calm });
+
 /**
  * Runs every tick from Game.advance(), beside tickExposure; does its work once
  * per game minute. Only a region with a sky table (`RegionDef.sky`) has rules
@@ -365,19 +369,22 @@ export function tickExposure(state: GameState, bus: EventBus): void {
  * doses go through `applyStatus` with their stat block, so resistance thins
  * them; `foes` land on the enemies of a fight in progress.
  *
- * It also stamps CALM_SEEN_KEY and logs the first calm. Not while catching up
- * offline: the line would be suppressed with the rest of the log, and the
- * player has not yet met the sky.
+ * It also stamps CALM_SEEN_KEY, opens the bestiary entries the flag unveils
+ * and logs the first calm, in live play and in offline catch-up alike: the
+ * same ticks must leave the same state, and the calm lines fight offline too.
+ * Catch-up with the log suppressed loses the log line; the summary carries it
+ * (`OfflineSummary.firstCalm`, save/offline.ts).
  */
-export function tickSky(state: GameState, bus: EventBus, catchingUp = false): void {
+export function tickSky(state: GameState, bus: EventBus): void {
   if (state.totalTicks % TICKS_PER_GAME_MINUTE !== 0) return;
   if (!skyRegionOf(state.spot)?.sky) return;
   const kind = skyKindAt(state, state.spot);
   if (!kind) return;
 
-  if (kind === 'calm' && !catchingUp && (state.stats[CALM_SEEN_KEY] ?? 0) < 1) {
+  if (kind === 'calm' && (state.stats[CALM_SEEN_KEY] ?? 0) < 1) {
     raiseStat(state, bus, CALM_SEEN_KEY, 1);
-    bus.emit({ type: 'log', msg: text('exposure.calm_first', { icon: WEATHER_ICONS.calm }), kind: 'info' });
+    openLiftedEntries(state, bus);
+    bus.emit({ type: 'log', msg: firstCalmLine(), kind: 'info' });
   }
 
   const rule = SKY_RULES[kind];

@@ -5,6 +5,8 @@ import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { SKILLS } from '../registry';
 import { bankTicks } from '../systems/bonustime';
 import { festivalHolds } from '../systems/festivalRules';
+import { firstCalmLine } from '../systems/exposure';
+import { CALM_SEEN_KEY } from '../data/climate.data';
 
 /** Cap offline progress at 8 hours of game time. */
 export const OFFLINE_CAP_MS = 8 * 60 * 60 * 1000;
@@ -28,6 +30,11 @@ export interface OfflineSummary {
   festivalSkipped?: number;
   /** How much of `festivalSkipped` the bonus-time bank took: less when it hit its cap. */
   festivalBanked?: number;
+  /**
+   * The first-calm log line, when this absence set CALM_SEEN_KEY. The log is
+   * suppressed during the run, so the line would otherwise be lost.
+   */
+  firstCalm?: string;
 }
 
 /** What a catch-up did: ticks simulated, and ticks the festival skipped and what the bank took of them. */
@@ -87,6 +94,7 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
     items: s.inventory.length,
     attrs: Object.fromEntries(ATTRIBUTE_LIST.map((a) => [a.id, s.attrs[a.id].level])),
     skills: Object.fromEntries(Object.entries(s.skills).map(([id, v]) => [id, v.level])),
+    calmSeen: (s.stats[CALM_SEEN_KEY] ?? 0) > 0,
   };
 
   game.suppressLog = true;
@@ -118,5 +126,6 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
     attrLevels,
     skillLevels,
     ...(run.skipped > 0 ? { festivalSkipped: run.skipped, festivalBanked: run.banked } : {}),
+    ...(!before.calmSeen && (s.stats[CALM_SEEN_KEY] ?? 0) > 0 ? { firstCalm: firstCalmLine() } : {}),
   };
 }

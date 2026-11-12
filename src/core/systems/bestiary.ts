@@ -196,6 +196,38 @@ export function recordEncounter(state: GameState, spotId: string, monsterIds: st
   }
 }
 
+/** The book gains a species: first-kill stamp, discovery XP, the entry counter, the event and the log line. */
+function openEntry(state: GameState, bus: EventBus, monsterId: string): void {
+  const def = MONSTERS[monsterId];
+  state.bestiary[monsterId].firstKill = state.totalTicks;
+  // A species nobody has written down yet is the single biggest thing the
+  // book can gain, so it pays several ordinary finds' worth.
+  grantDiscoveryXp(state, bus, 'bestiary', 3);
+  // The counter quest familiarization reads ({ type: 'stat' } objectives).
+  bumpStat(state, bus, 'bestiary:entries');
+  bus.emit({ type: 'bestiary:entry', monsterId });
+  bus.emit({
+    type: 'log',
+    msg: text('bestiary.species_added', { icon: def.icon, name: def.name }),
+    kind: 'bestiary',
+  });
+}
+
+/**
+ * Open the entries of species killed while veiled whose veil now holds. Called
+ * at the moment a veil's condition is met (tickSky stamps CALM_SEEN_KEY), so
+ * the book catches up then and not on the species' next kill. Kills made under
+ * the veil already count; facts roll from the next kill as usual.
+ */
+export function openLiftedEntries(state: GameState, bus: EventBus): void {
+  for (const [id, def] of Object.entries(MONSTERS)) {
+    if (!def.veil) continue;
+    const entry = state.bestiary[id];
+    if (!entry || entry.kills < 1 || entry.firstKill !== 0 || isVeiled(state, id)) continue;
+    openEntry(state, bus, id);
+  }
+}
+
 export function recordKill(state: GameState, bus: EventBus, monsterId: string): void {
   const def = MONSTERS[monsterId];
   if (!def) return;
@@ -206,20 +238,7 @@ export function recordKill(state: GameState, bus: EventBus, monsterId: string): 
   // is still 0 then); the kills made before it count toward the facts.
   if (isVeiled(state, monsterId)) return;
 
-  if (entry.kills === 1 || (def.veil && entry.firstKill === 0)) {
-    entry.firstKill = state.totalTicks;
-    // A species nobody has written down yet is the single biggest thing the
-    // book can gain, so it pays several ordinary finds' worth.
-    grantDiscoveryXp(state, bus, 'bestiary', 3);
-    // The counter quest familiarization reads ({ type: 'stat' } objectives).
-    bumpStat(state, bus, 'bestiary:entries');
-    bus.emit({ type: 'bestiary:entry', monsterId });
-    bus.emit({
-      type: 'log',
-      msg: text('bestiary.species_added', { icon: def.icon, name: def.name }),
-      kind: 'bestiary',
-    });
-  }
+  if (entry.kills === 1 || (def.veil && entry.firstKill === 0)) openEntry(state, bus, monsterId);
 
   // A menagerie teaches on a syllabus: caged kills skip the insight roll, so
   // every fact lands OUTRIGHT at its `minKills` — defined rates, not rolled
