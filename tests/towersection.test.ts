@@ -503,9 +503,9 @@ describe('the plan keeps a height the section’s detail can stand in', () => {
         const chips = plan.nodes.flatMap((n) => [...n.chips, ...(n.more ? [n.more] : [])].map((c) => ({ id: n.id, box: { x0: c.x - 8, y0: c.y - 8, x1: c.x + 8, y1: c.y + 8 } })));
         for (const a of named) {
           // The estimator errs wide on both faces, so touching boxes are a real overlap
-          // only by a pixel or two. The landing's and the hamlet gates' names sat 2 to 3 px
-          // from the names and pins beside them (measured in the browser at 670 to 700 and
-          // at 320): they keep 2 px clear of every other name and pin.
+          // only by a pixel or two. The landing's and the hamlet gates' names overlapped by
+          // 2 to 3 px in the browser at 670 to 700, and the landing's touched two pins at 320:
+          // they keep 2 px clear of every other name and pin.
           const margin = a.id === 'f17_landing' || a.id === 'f17_keeper' ? 2 : 0;
           const box = grown(a.box, margin);
           const at = `${spot.id} @${width}: ${a.id}`;

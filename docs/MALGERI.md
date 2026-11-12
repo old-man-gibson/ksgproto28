@@ -30,7 +30,7 @@ weather); the caves are also `dark`. Open = under the range's sky.
 
 | Spot | Name | Map | Does | Lines (weight, level) |
 |---|---|---|---|---|
-| `f17_landing` | The Cave Exit | 40, 69 | camp (rest, haven), hunt | goblin 40, deep spider 30, scree slime 30; L40-41 |
+| `f17_landing` | The Cave Exit | 42, 71 | camp (rest, haven), hunt | goblin 40, deep spider 30, scree slime 30; L40-41 |
 | `f17_cave_hub` | The Hub Cavern | 54, 67 | hunt; roads to the crack, the nest, the central caves | deep spider 40, scree slime 30, goblin 20, chief 10; L40-41 |
 | `f17_cave_crack` | The Crack | 47, 56 | explore (200 ticks): 5 iron scrap, 4 rock salt, 60 to 120 gold | none |
 | `f17_nest` | The Brood Nest | 61, 56 | one fight (`fightLimit` 1): the Brood Queen, L43, boss line, optional | queen 1, L43 |
@@ -62,7 +62,7 @@ weather); the caves are also `dark`. Open = under the range's sky.
 | `f17_old_path` | The Old Path | 10, 36 | open; hunt | plain 70 + sky + calm, L42 |
 | `f17_hamlet_square` | Hamlet Square | 22, 46 | roof; haven (rest at the well); Stand Guard (30 gold per 200 ticks), Participate in Debates (trains Charisma), Turn the Handmill (rough flour); Captain Bren | none |
 | `f17_hamlet_forge` | Kystel's Anvil | 8, 54 | roof, `heat`; Work the Bellows (30 gold per 250 ticks), Swing Practice Hammers (trains Strength); 15 recipes; Thora Ironbrand | none |
-| `f17_keeper` | The Hamlet Gates | 24, 60 | open; boss | Slime Regent L45 weight 100 (boss), Regent's Legionary L42-43 weight 6 |
+| `f17_keeper` | The Hamlet Gates | 25, 61 | open; boss | Slime Regent L45 weight 100 (boss), Regent's Legionary L42-43 weight 6 |
 
 Roads: landing to hub (30 ticks); hub to central caves (40), crack (25), nest
 (30); central caves to east mouth (55); east mouth to ascent (60) to east peak
@@ -327,10 +327,15 @@ spell and under the open sky, and calm-line fights won.
 | Where a spot sits on the diagram | `data/locations.data.ts` | `map` on each spot |
 | John's route, the calm option | `tests/john.ts`, `scripts/pacing.ts` | `desertFloors[17]`, `BOSSES.floor17`, `calmAtMalgeri`, `--malgeri-calm` |
 
-The `map` coordinates of `f17_landing`, `f17_cave_hub`, `f17_east_mouth` and
-`f17_peak` were found by search so that no label, pin or chip overlaps at the
-widths `tests/towersection.test.ts` draws (300 to 700). Renaming a spot or
-changing a badge can break that test; move a pin a few units to fix it.
+The `map` coordinates of `f17_landing`, `f17_cave_hub`, `f17_east_mouth`,
+`f17_peak` and `f17_keeper` were found by search so that no label, pin or chip
+overlaps at the widths `tests/towersection.test.ts` draws. The floor 17 test
+there stands on each of the 18 spots at every integer width from 320 to 700
+(below 560 px a plan names only the focus and its neighbours, so the names drawn
+depend on the spot underfoot). The landing's and the gates' names also keep 2 px
+clear of every name and pin: the estimator errs wide, but in the browser the
+real text boxes of the two names overlapped by 3 px at 704 px. Renaming a spot or changing a
+badge can break that test; move a pin a few units to fix it.
 
 ## 9. Decisions this build made
 
