@@ -210,6 +210,11 @@ export function condText(cond: UnlockCondition): string {
         return `win ${cond.value} fight${cond.value === 1 ? '' : 's'} at ${SPOTS[cond.key.slice(7)]?.name ?? cond.key.slice(7)}`;
       }
       if (cond.key.startsWith('band:pos:')) return `${cond.value}+ ${otherFloorsOf(cond.key)} cleared`;
+      // A spot's boss latch (`SpotEncounter.boss`): the same words `termText` uses.
+      if (cond.key.startsWith('boss:')) {
+        const spotId = cond.key.slice('boss:'.length);
+        return `defeat the keeper of ${SPOTS[spotId]?.name ?? spotId}`;
+      }
       return `${cond.key} ≥ ${cond.value}`;
     case 'statMax':
       if (cond.key.startsWith('band:pos:')) return `at most ${cond.value} ${otherFloorsOf(cond.key)} cleared`;

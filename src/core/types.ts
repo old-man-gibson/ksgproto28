@@ -2,6 +2,7 @@
 // Everything here is plain data — no DOM, no framework imports.
 
 import type { FacetDoc } from './facet/facet';
+import type { WeatherKind } from './data/climate.data';
 
 // ---------- Attributes ----------
 
@@ -2308,6 +2309,14 @@ export interface MonsterDef {
   /** Monster ids that fill the remaining slots; absent = re-roll the spot table. */
   escorts?: string[];
   /**
+   * The bestiary keeps no entry for this species while any of these is unmet:
+   * kills still count, but the book, its facts, the first-kill log line and the
+   * discovery XP wait until they hold (systems/bestiary.ts `isVeiled`). For a
+   * species whose existence is a secret until a counter is set (the Malgeri
+   * Mountains' calm monsters wait on `flag:malgeri_calm_seen`).
+   */
+  veil?: UnlockCondition[];
+  /**
    * Fractional damage reduction per incoming type: 0.5 = takes half damage,
    * negative = vulnerable (−0.5 = takes 50% more). Missing = 0. Damage is capped
    * at 0.9 on read, but a value of 1 or more also makes the species immune to
@@ -4272,6 +4281,13 @@ export interface RegionDef {
   /** Climate terrain. A region without one gets the neutral 'plains' profile. */
   terrain?: TerrainId;
   /**
+   * Names a sky table (SKY_TABLES, data/climate.data.ts). The region's weather
+   * is then a run of fronts with a periodic calm spell instead of the noise
+   * field. Ignored while the place is sheltered. An area opts in by belonging
+   * to the region (`AreaDef.regionId`).
+   */
+  sky?: string;
+  /**
    * Interiors: caves, the home base. Weather stops at the door — wind and
    * precipitation zero out and only a damped temperature leaks in. An area
    * can override it (`AreaDef.sheltered`).
@@ -4300,6 +4316,13 @@ export interface AreaDef {
    * 'indoor'. Read through `skyRegionOf`, never off the region directly.
    */
   sheltered?: boolean;
+  /**
+   * The region whose sky this area stands under, when that is not the region
+   * it is drawn in. The Malgeri floor stays in the Ascent's stack (its map,
+   * ladder and tower section group floors by `regionId`) and reads the Malgeri
+   * Range's sky table. Read through `skyRegionOf`.
+   */
+  skyRegionId?: string;
   /** Place tags for every spot in the area — see `SpotDef.tags`. */
   tags?: string[];
   /** The backdrop fights here are drawn against (see SceneId). */
@@ -4572,6 +4595,13 @@ export interface SpotEncounter {
    * whose keeper changes with the clock is authored as two entries.
    */
   daypart?: 'day' | 'night';
+  /**
+   * Rolled only while the sky over the spot is one of these kinds. A spot with
+   * no open sky (a roofed or `indoor` place, an unplaced region) has none, so
+   * a line with `sky` never rolls there. Counts like `daypart` for the clear
+   * table rule: a line that waits on the sky does not cover a gap.
+   */
+  sky?: WeatherKind[];
   /**
    * This entry is the SPOT'S BOSS: killing it bumps `boss:<spotId>` (an
    * engine counter, `slain:*`'s sibling — announced on the first kill only).
@@ -5128,6 +5158,12 @@ export interface NpcDef {
    * A school lesson manifests a combat school's skill instead (`teachSchool`).
    */
   teaches?: Lesson[];
+  /**
+   * Lines added to `dialogue` while their conditions hold (`npcDialogue` in
+   * systems/quests.ts). Each entry is its own set: the lines rotate with the
+   * base ones once every condition in `requires` is met, and not before.
+   */
+  lore?: { requires: UnlockCondition[]; dialogue: string[] }[];
 }
 
 /** One lesson on a teacher's list: a technique, or a whole combat school. */

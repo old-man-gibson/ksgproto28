@@ -4,6 +4,7 @@ import { PRESTIGE_BOONS, PRESTIGE_SOURCES, PRESTIGE_UNLOCK, TOWERS } from '../re
 import { createInitialState } from '../state';
 import { TUTORIAL_DONE_KEY, TUTORIAL_EXIT } from '../data/tutorial.data';
 import { STRONGHOLD_HELD, STRONGHOLD_KEY } from '../data/prestige.data';
+import { CALM_SEEN_KEY } from '../data/climate.data';
 import { conditionsMet } from './conditions';
 import { clearLapsed, clearMet, floorsReachedThisRun, ladderFloors } from './ladder';
 import { boonRank } from './legacy';
@@ -261,6 +262,8 @@ export function prestigeNow(state: GameState, now = Date.now()): GameState | nul
   for (const id of LOCKABLE_SUBSYSTEMS) {
     if (subsystemUnlocked(state, id)) next.stats[unlockKey(id)] = 1;
   }
+  // The first calm has been met for good: its log line fires once per save.
+  if ((state.stats[CALM_SEEN_KEY] ?? 0) > 0) next.stats[CALM_SEEN_KEY] = 1;
   // The stronghold ends the run without asking, so the bank the player had
   // not spent yet stays theirs; a prestige by choice spends it as before.
   if (strongholdHeld(state)) next.bonusTime.banked = state.bonusTime.banked;

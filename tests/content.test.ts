@@ -65,10 +65,11 @@ import { RES_STAT_BY_TYPE, SKILL_CATEGORIES, STAT_NAMES } from '../src/core/type
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCES } from '../src/core/data/resources.data';
 import { XP_BASE, XP_RATE } from '../src/core/data/progression.data';
-import { TERRAIN_PROFILES } from '../src/core/data/climate.data';
+import { CALM_SEEN_KEY, TERRAIN_PROFILES } from '../src/core/data/climate.data';
 import { SPINE_EXEMPT, offLadderDoor } from '../src/core/data/towers.data';
 import { SEA_CRATES_OFFLINE, SEA_CRATES_WON, SEA_MISSION_DONE } from '../src/core/data/sea.data';
 import { seaContentIssues } from '../src/core/systems/seaValidation';
+import { skyContentIssues } from '../src/core/systems/skyValidation';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../src/core/systems/monsterStats';
 import { resistanceProblems } from '../src/core/systems/conditionHarm';
@@ -116,6 +117,7 @@ function statCounterValid(key: string): boolean {
     SEA_CRATES_WON, // sea.ts, crates won on a water while present
     SEA_CRATES_OFFLINE, // sea.ts, crates credited during offline catch-up
     SEA_MISSION_DONE, // sea.ts, the run's side killed its floor-14 mission boss
+    CALM_SEEN_KEY, // exposure.ts tickSky, the first live calm under an open sky
     'festival:door', // festival.ts: 1 while this attempt's dark room door is open
     'festival:swift_wins', // festival.ts: royales won after entering early, the hidden title's
   ]);
@@ -790,6 +792,16 @@ describe('monsters', () => {
     }
   });
 
+  it('a veil holds at least one condition, and every condition names something real', () => {
+    // MonsterDef.veil keeps a species out of the bestiary until it lifts.
+    // Mirrored in forge/lib/validate.ts.
+    for (const m of Object.values(MONSTERS)) {
+      if (!m.veil) continue;
+      expect(m.veil.length, `${m.id}: an empty veil hides nothing`).toBeGreaterThan(0);
+      checkConditions(`${m.id} veil`, m.veil);
+    }
+  });
+
   it('every tag is registered, and tier tags are never hand-written', () => {
     for (const m of Object.values(MONSTERS)) {
       for (const tag of m.tags) {
@@ -1159,6 +1171,16 @@ describe('npcs & quests', () => {
       expect(SPOTS[npc.spotId], `${npc.id} spot`).toBeDefined();
       expect(npc.dialogue.length, `${npc.id} has dialogue`).toBeGreaterThan(0);
       for (const q of npc.quests) expect(QUESTS[q], `${npc.id} quest ${q}`).toBeDefined();
+    }
+    for (const npc of Object.values(NPCS)) {
+      // A lore entry (NpcDef.lore) has conditions that name real things and
+      // lines to say; with no conditions it would show from the start.
+      // Mirrored in forge/lib/validate.ts.
+      (npc.lore ?? []).forEach((entry, i) => {
+        expect(entry.requires.length, `${npc.id} lore ${i}: no conditions, so it always shows`).toBeGreaterThan(0);
+        expect(entry.dialogue.length, `${npc.id} lore ${i}: nothing to say`).toBeGreaterThan(0);
+        checkConditions(`${npc.id} lore ${i}`, entry.requires);
+      });
     }
     for (const npc of Object.values(NPCS)) {
       // A counter sells things that exist, at grades that exist, for prices
@@ -2388,6 +2410,18 @@ describe('band 3 wards: stamps, kept wounds and windows', () => {
 describe('the harbor band: sides and convoys', () => {
   it('every side and convoy resolves, and join quests lock one side per run', () => {
     const issues = seaContentIssues(SEA_SIDES, CONVOYS, { spots: SPOTS, npcs: NPCS, quests: QUESTS, monsters: MONSTERS, materials: MATERIALS });
+    expect(issues.map((i) => `${i.kind} ${i.id}: ${i.message}`)).toEqual([]);
+  });
+});
+
+/**
+ * Region skies and the encounter lines that wait on them (RegionDef.sky,
+ * SpotEncounter.sky). One pure function in systems/skyValidation.ts, run here
+ * on the live registry and by forge/lib/validate.ts on the staged copy.
+ */
+describe('region skies and sky-gated encounter lines', () => {
+  it('every region sky names a table, and every sky line can roll where it stands', () => {
+    const issues = skyContentIssues({ regions: REGIONS, areas: AREAS, spots: SPOTS });
     expect(issues.map((i) => `${i.kind} ${i.id}: ${i.message}`)).toEqual([]);
   });
 });

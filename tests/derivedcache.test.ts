@@ -5,11 +5,14 @@ import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { computeDerivedStats, getDerivedStats } from '../src/core/systems/derived';
 import { grantAttrXp, attrXpNeeded } from '../src/core/systems/attributes';
-import { applyStatus } from '../src/core/systems/statuses';
+import { applyStatus, hasStatus } from '../src/core/systems/statuses';
 import { monsterTagSet } from '../src/core/systems/bestiary';
 import { createItem } from '../src/core/systems/runes';
 import { stashToken } from '../src/core/systems/stash';
-import { STATUSES } from '../src/core/registry';
+import { startActivity } from '../src/core/systems/actions';
+import { FRONT_TICKS, weatherAt, worldSeedOf } from '../src/core/systems/weather';
+import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
+import { REGIONS, STATUSES } from '../src/core/registry';
 
 /**
  * The derived-stats cache (see modFingerprint in systems/derived.ts) promises
@@ -195,4 +198,109 @@ describe('derived-stats cache', () => {
       expect(getDerivedStats(g.state, tags)).toEqual(computeDerivedStats(g.state, tags));
     }
   }, 60000);
+});
+
+/**
+ * A condition that fades with its clock (`decayWithDuration`) changes its
+ * effective intensity on every tick it is held. The fingerprint keys it by that
+ * only when the stat block reads it (statuses.ts statBlockIntensity); otherwise
+ * a gale's buffeted rebuilt the whole block on nearly every tick.
+ */
+describe('a decaying condition and the cache', () => {
+  const DECAYING = Object.values(STATUSES).filter((s) => s.decayWithDuration);
+  const reads = (s: (typeof DECAYING)[number]) => (s.mods?.length ?? 0) > 0 || !!s.damp || !!s.resFloor || !!s.attrCeiling;
+
+  /**
+   * Hold `id` on an idle character until it expires, checking the cached block
+   * against a fresh compute on every tick. Returns the number of distinct blocks
+   * served from the first tick after the dose to the end, and the ticks it ran.
+   */
+  function life(id: string, doses: number[]): { blocks: number; ticks: number } {
+    const g = new Game(createInitialState(21));
+    g.suppressLog = true;
+    for (const intensity of doses) applyStatus(g.state, g.state, { id, intensity }, 'test');
+    expect(hasStatus(g.state, id)).toBe(true);
+    let last = getDerivedStats(g.state);
+    expect(last).toEqual(computeDerivedStats(g.state));
+    let blocks = 1;
+    let ticks = 0;
+    for (; hasStatus(g.state, id) && ticks < 20_000; ticks++) {
+      g.step(1);
+      const cur = getDerivedStats(g.state);
+      expect(cur, `${id} at tick ${ticks}`).toEqual(computeDerivedStats(g.state));
+      if (cur !== last) {
+        blocks++;
+        last = cur;
+      }
+    }
+    expect(hasStatus(g.state, id), `${id} ran out`).toBe(false);
+    return { blocks, ticks };
+  }
+
+  it('every decaying condition matches a fresh compute on every tick of its life', () => {
+    for (const def of DECAYING) life(def.id, [2, 1]);
+  });
+
+  it('a held tainted keeps its decay in the fingerprint: the block follows it down', () => {
+    const { blocks, ticks } = life('tainted', [2]);
+    expect(ticks).toBeGreaterThan(100);
+    // Its mods wane with its clock, so the block changes on most ticks of its life.
+    expect(blocks).toBeGreaterThan(ticks / 2);
+  });
+
+  it('a decaying condition with no field the stat block reads rebuilds nothing as it fades', () => {
+    for (const def of DECAYING.filter((s) => !reads(s))) {
+      const { blocks, ticks } = life(def.id, [2, 1]);
+      expect(ticks, def.id).toBeGreaterThan(100);
+      // The dose, and the block after it is gone: nothing between.
+      expect(blocks, def.id).toBeLessThanOrEqual(2);
+    }
+  });
+
+  describe('under a gale on the open ridge', () => {
+    const CREATED = 1_754_000_000_000;
+    const SEED = worldSeedOf(CREATED);
+    const TICKS = 3000;
+
+    /** A strong hunter on the open east ridge at the start of the first gale; hp is held so no knockout ends the stay. */
+    function galeHunter(): Game {
+      const state = createInitialState(CREATED, 'f17_east_ridge');
+      for (let cell = 0; ; cell++) {
+        if (weatherAt(SEED, REGIONS.malgeri_range, cell * FRONT_TICKS)!.kind === 'gale') {
+          state.totalTicks = cell * FRONT_TICKS;
+          break;
+        }
+      }
+      for (const a of ATTRIBUTE_LIST) state.attrs[a.id].level = 150;
+      state.level = 60;
+      startActivity(state, { emit: () => {}, on: () => () => {} } as never, 'hunt');
+      const g = new Game(state);
+      g.suppressLog = true;
+      return g;
+    }
+
+    it('serves a block equal to a fresh compute on every tick, and rebuilds on a minority of them', () => {
+      const g = galeHunter();
+      let last = getDerivedStats(g.state);
+      let rebuilds = 0;
+      let buffeted = 0;
+      for (let i = 0; i < TICKS; i++) {
+        g.state.resources.hp = 1e9;
+        g.tick();
+        if (hasStatus(g.state, 'buffeted')) buffeted++;
+        const cur = getDerivedStats(g.state);
+        expect(cur, `tick ${i}`).toEqual(computeDerivedStats(g.state));
+        if (cur !== last) {
+          rebuilds++;
+          last = cur;
+        }
+      }
+      expect(g.state.spot).toBe('f17_east_ridge');
+      // The gale must really be on the character, or the count means nothing.
+      expect(buffeted).toBeGreaterThan(TICKS / 2);
+      // Keyed by its decaying intensity, buffeted rebuilt the block on nearly every one of those
+      // ticks (2,764 of 3,000 when measured); now only its dose, its expiry and the fights do.
+      expect(rebuilds).toBeLessThan(TICKS / 4);
+    }, 60_000);
+  });
 });

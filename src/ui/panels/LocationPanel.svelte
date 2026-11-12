@@ -25,7 +25,7 @@
     recipeHidden,
     recipeUnlocked,
   } from '../../core/systems/crafting';
-  import { npcsAt, availableQuests, canTurnIn, hasMet } from '../../core/systems/quests';
+  import { npcsAt, availableQuests, canTurnIn, hasMet, npcDialogue } from '../../core/systems/quests';
   import { buyPrice, lineIcon, lineName, lineQuality, visibleLines } from '../../core/systems/shops';
   import { runeSlotRange } from '../../core/systems/runes';
   import { ITEMS } from '../../core/registry';
@@ -395,7 +395,7 @@
         <div class="npc">
           <div class="npc-head">
             <span><b>{npc.icon} {npc.name}</b></span>
-            <span class="dim small">“{dialogueLine(npc.dialogue)}”</span>
+            <span class="dim small">“{dialogueLine(npcDialogue(gs, npc))}”</span>
             <!-- A first greeting stamps met:<id> — what talk objectives read.
                  Once made it is a fact about the save, so the button becomes
                  a quiet checkmark rather than staying clickable. -->

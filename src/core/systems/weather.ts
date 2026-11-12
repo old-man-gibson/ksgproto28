@@ -2,13 +2,24 @@ import type { RegionDef, TerrainId } from '../types';
 import {
   ANOMALY_OCTAVES,
   ANOMALY_SCALE,
+  CALM_HOURS,
+  CALM_PERIOD_DAYS,
+  FRONT_HOURS,
   HOURS_PER_DAY,
   MINUTES_PER_HOUR,
+  SKY_TABLES,
+  SKY_THRESHOLDS,
   TERRAIN_PROFILES,
   TICKS_PER_GAME_MINUTE,
   WORLD_CLIMATE,
+  type FrontDef,
+  type SeasonId,
+  type SkyTable,
+  type WeatherKind,
 } from '../data/climate.data';
 import { clockOf, type WorldClock } from './clock';
+
+export type { WeatherKind };
 
 /**
  * Weather is SAMPLED, not simulated: a pure function of (world seed, region,
@@ -21,6 +32,10 @@ import { clockOf, type WorldClock } from './clock';
  * - an ANOMALY drawn from a smooth seeded noise field over (world x, y,
  *   time). The base octave spans two or three region-spacings, so neighbors
  *   agree about the weather without ever being told to.
+ *
+ * A region with `RegionDef.sky` replaces the noise with FRONTS (a weighted
+ * draw every few hours) plus a periodic CALM spell — see SKY_TABLES in
+ * data/climate.data.ts. Same inputs, same purity.
  *
  * The seed comes from the save's `createdAt` — already persisted, never
  * changing, different per playthrough. Nothing about weather touches the
@@ -147,18 +162,6 @@ export function climateBaseline(region: RegionDef, clock: WorldClock): WeatherVa
 
 // ---------- The sample ----------
 
-export type WeatherKind =
-  | 'still'
-  | 'clear'
-  | 'overcast'
-  | 'mist'
-  | 'rain'
-  | 'storm'
-  | 'snow'
-  | 'blizzard'
-  | 'gale'
-  | 'sandstorm';
-
 export type TempBand = 'freezing' | 'cold' | 'mild' | 'warm' | 'hot';
 
 /** One glyph per sky, shared by the game header and the forge's atlas. */
@@ -173,6 +176,8 @@ export const WEATHER_ICONS: Record<WeatherKind, string> = {
   blizzard: '❄️',
   gale: '💨',
   sandstorm: '🌪️',
+  heatwave: '🌡️',
+  calm: '🕊️',
 };
 
 export interface WeatherSample extends WeatherValues {
@@ -197,8 +202,15 @@ export function classify(
   values: WeatherValues,
   terrain: TerrainId | undefined,
   sheltered: boolean | undefined,
+  /** True only for the values of a region sky table: adds `heatwave` and
+   *  `calm`, which the noise path never produces. */
+  extended = false,
 ): WeatherKind {
   if (sheltered || terrain === 'caves') return 'still';
+  if (extended && values.precip < SKY_THRESHOLDS.dryPrecip) {
+    if (values.temp >= SKY_THRESHOLDS.heatwaveTemp) return 'heatwave';
+    if (values.wind <= SKY_THRESHOLDS.calmWind) return 'calm';
+  }
   const freezing = values.temp <= 0;
   if (values.precip > 0.62) {
     if (freezing) return values.wind > 0.6 ? 'blizzard' : 'snow';
@@ -212,15 +224,131 @@ export function classify(
   return 'overcast';
 }
 
+// ---------- Region skies: fronts and calm ----------
+
+/** FNV-1a over a string, for folding a region id into the sky draws. */
+function idHash(id: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 0x01000193);
+  return h >>> 0;
+}
+
+/** 32-bit avalanche finalizer (murmur3 fmix32). */
+function fmix(h: number): number {
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+const SALT_FRONT = 0x1f407;
+const SALT_CALM = 0xca17;
+
+/** One draw in [0, 1) for (world seed, region id, cell index), per purpose. */
+function skyDraw(seed: number, regionId: string, index: number, salt: number): number {
+  let h = fmix((seed ^ salt) + Math.imul(idHash(regionId), 0x9e3779b1));
+  h = fmix(h ^ Math.imul(index | 0, 0x85ebca6b));
+  return h / 4294967296;
+}
+
+const TICKS_PER_HOUR = TICKS_PER_GAME_MINUTE * MINUTES_PER_HOUR;
+/** Ticks in one front. */
+export const FRONT_TICKS = FRONT_HOURS * TICKS_PER_HOUR;
+const CALM_WINDOW_MINUTES = CALM_PERIOD_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR;
+const CALM_MINUTES = CALM_HOURS * MINUTES_PER_HOUR;
+
+/**
+ * The front a table draws for one cell (cell = floor(game hours /
+ * FRONT_HOURS)) in a given season: weighted over the table's fronts minus the
+ * season's excluded kind, the rest renormalised by dividing by the remaining
+ * total.
+ */
+export function frontOfCell(
+  table: SkyTable,
+  season: SeasonId,
+  seed: number,
+  regionId: string,
+  cell: number,
+): FrontDef {
+  const drawn = table.fronts.filter((f) => f.kind !== table.excluded[season]);
+  const total = drawn.reduce((sum, f) => sum + f.weight, 0);
+  let left = skyDraw(seed, regionId, cell, SALT_FRONT) * total;
+  for (const f of drawn) {
+    left -= f.weight;
+    if (left < 0) return f;
+  }
+  return drawn[drawn.length - 1];
+}
+
+/**
+ * The calm spell of one CALM_PERIOD_DAYS window, as [start, end) in game
+ * minutes. The start is hashed from (seed, region, window), anywhere in the
+ * window that leaves room for the whole spell, so a spell never straddles two
+ * windows and every window holds exactly one.
+ */
+export function calmSpell(seed: number, regionId: string, window: number): [number, number] {
+  const slack = CALM_WINDOW_MINUTES - CALM_MINUTES;
+  const start =
+    window * CALM_WINDOW_MINUTES + Math.floor(skyDraw(seed, regionId, window, SALT_CALM) * (slack + 1));
+  return [start, start + CALM_MINUTES];
+}
+
+/** Whether a region's calm spell covers this tick. */
+export function isCalmAt(seed: number, regionId: string, totalTicks: number): boolean {
+  const minute = Math.floor(totalTicks / TICKS_PER_GAME_MINUTE);
+  const [start, end] = calmSpell(seed, regionId, Math.floor(minute / CALM_WINDOW_MINUTES));
+  return minute >= start && minute < end;
+}
+
+/**
+ * Samples of region skies, one per game minute. A front changes on a cell
+ * boundary (whole hours) and a calm spell on a whole minute, so within one
+ * game minute the sample cannot change and the first one is reused. The noise
+ * path is not cached: its anomaly moves every tick. Samples are frozen because
+ * they are shared; spread one to change it.
+ */
+const SKY_MEMO = new Map<string, WeatherSample>();
+const SKY_MEMO_MAX = 4096;
+
+function skySampleAt(seed: number, region: RegionDef, table: SkyTable, totalTicks: number): WeatherSample {
+  const minute = Math.floor(totalTicks / TICKS_PER_GAME_MINUTE);
+  const key = `${seed}|${region.id}|${region.sky}|${region.terrain ?? ''}|${minute}`;
+  const memo = SKY_MEMO.get(key);
+  if (memo) return memo;
+
+  let values: WeatherValues;
+  if (isCalmAt(seed, region.id, totalTicks)) {
+    values = table.calm;
+  } else {
+    const cell = Math.floor(totalTicks / FRONT_TICKS);
+    values = frontOfCell(table, clockOf(cell * FRONT_TICKS).season, seed, region.id, cell);
+  }
+  const sample: WeatherSample = Object.freeze({
+    temp: values.temp,
+    precip: values.precip,
+    wind: values.wind,
+    kind: classify(values, region.terrain, region.sheltered, true),
+    band: tempBand(values.temp),
+  });
+  if (SKY_MEMO.size >= SKY_MEMO_MAX) SKY_MEMO.clear();
+  SKY_MEMO.set(key, sample);
+  return sample;
+}
+
 /**
  * The whole sky over one region at one tick. Null for an unplaced region —
- * no pin, no latitude, no weather; place it on the World Atlas first.
+ * no pin, no latitude, no weather; place it on the World Atlas first. A region
+ * with a sky table (`RegionDef.sky`) draws fronts and calm instead of reading
+ * the noise field, unless it is sheltered, which stays 'still'.
  */
 export function weatherAt(
   seed: number,
   region: RegionDef,
   totalTicks: number,
 ): WeatherSample | null {
+  const table = region.sky ? SKY_TABLES[region.sky] : undefined;
+  if (table && region.world && !region.sheltered) return skySampleAt(seed, region, table, totalTicks);
   const clock = clockOf(totalTicks);
   const base = climateBaseline(region, clock);
   if (!base || !region.world) return null;

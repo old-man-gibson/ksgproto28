@@ -15,6 +15,7 @@ import type {
 } from '../types';
 import { ELEMENTAL_TYPES, RES_STAT_BY_TYPE, isMonsterBearer } from '../types';
 import { STATUSES } from '../data/statuses.data';
+import { WEATHER_SOURCE_PREFIX } from '../data/climate.data';
 import { MONSTERS } from '../data/monsters.data';
 import { TITLES } from '../data/titles.data';
 import { chance } from '../engine/rng';
@@ -446,6 +447,12 @@ export function reform(
   return inflict(state, bearer, app, source, 1);
 }
 
+const isWeatherSource = (source: string | undefined): boolean =>
+  !!source && source.startsWith(WEATHER_SOURCE_PREFIX);
+
+/** A held condition the open sky's rules put there and nothing else has added to. */
+const weatherHeld = (held: StatusInstance): boolean => isWeatherSource(held.source);
+
 function inflict(
   state: GameState,
   bearer: GameState | MonsterInstance,
@@ -488,6 +495,12 @@ function inflict(
     return fresh;
   }
 
+  // A dose from anywhere but the weather takes over a condition the weather
+  // started, so it counts as that source's (see `weatherHeld`).
+  if (weatherHeld(held) && !isWeatherSource(source)) {
+    if (source) held.source = source;
+    else delete held.source;
+  }
   // Already afflicted: the stacking rule decides what a fresh dose does.
   // The worst single dose is tracked whatever the rule is — see StatusDot.fromPeak.
   held.peak = Math.max(held.peak ?? held.intensity, intensity);
@@ -792,6 +805,38 @@ export function effectiveIntensity(held: StatusInstance): number {
   const full = def.duration ?? held.ticksLeft;
   if (!full) return held.intensity;
   return held.intensity * Math.max(0, Math.min(1, held.ticksLeft / full));
+}
+
+/**
+ * The intensity `modFingerprint` (derived.ts) keys a held condition by: its
+ * effective intensity when the stat block reads that, else its raw one.
+ *
+ * A decaying condition's effective intensity moves on every tick it is held.
+ * Keyed by it, the stat block rebuilds on every one of those ticks, so a
+ * condition that never reaches a stat (buffeted only displaces) cost a rebuild
+ * per tick for as long as a gale lasted. The stat block reads a held
+ * condition's intensity through four fields, and only these:
+ * - `mods`: statusMods, scaled by effective intensity (attributes.ts
+ *   collectBaseMods);
+ * - `damp`: statusDampingFor, `per` times effective intensity (derived.ts
+ *   collectModifiers);
+ * - `resFloor`: statusResFloor, the penalty it took off, `mods` times effective
+ *   intensity (derived.ts computeDerivedStats);
+ * - `attrCeiling`: attrCeiling, the rounded effective intensity (attributes.ts
+ *   formulaAttrFrom).
+ * `overrideRes` and `statueOf` read presence only (the id is in the key). The
+ * pool `ceilings` scale by effective intensity too, but resources.ts reads them
+ * live from the state (`ceilingMult`), never through the stat block. A new field
+ * of StatusDef that scales by intensity inside collectModifiers or
+ * computeDerivedStats must be added here, or a decaying condition that carries
+ * it serves stale stats: tests/derivedcache.test.ts walks every decaying
+ * condition through its whole duration against a fresh compute.
+ */
+export function statBlockIntensity(held: StatusInstance): number {
+  const def = STATUSES[held.id];
+  if (!def?.decayWithDuration) return held.intensity;
+  const read = (def.mods?.length ?? 0) > 0 || !!def.damp || !!def.resFloor || !!def.attrCeiling;
+  return read ? effectiveIntensity(held) : held.intensity;
 }
 
 /** Stat modifiers from every held condition, scaled by intensity. */
@@ -1400,7 +1445,9 @@ export function statusBarDamage(
       id: def!.id,
       name: def!.name,
       icon: def!.icon,
-      dropWeaponBelow: def!.dropWeaponBelow,
+      // Weather alone never costs the weapon: storm's jolt would unequip it
+      // on the first discharge and leave an idle character unarmed for good.
+      dropWeaponBelow: weatherHeld(held) ? undefined : def!.dropWeaponBelow,
     });
     held.data = held.data ?? {};
     held.data.dealt = (held.data.dealt ?? 0) + spec.flat * held.intensity;

@@ -13,6 +13,7 @@ import {
   groupByTaxon,
   habitatNeeded,
   isDiscovered,
+  isVeiled,
   knowsFact,
   matchesQuery,
   monsterProfile,
@@ -96,7 +97,9 @@ describe('bestiary unlocking', () => {
 
   it('progress counts only what has actually been killed', () => {
     const g = newGame();
-    expect(bestiaryProgress(g.state)).toEqual({ known: 0, total: Object.keys(MONSTERS).length });
+    // A veiled species (MonsterDef.veil) is not in the total until its veil lifts.
+    const unveiled = Object.keys(MONSTERS).filter((id) => !isVeiled(g.state, id)).length;
+    expect(bestiaryProgress(g.state)).toEqual({ known: 0, total: unveiled });
     kill(g, 'goblin');
     expect(bestiaryProgress(g.state).known).toBe(1);
   });

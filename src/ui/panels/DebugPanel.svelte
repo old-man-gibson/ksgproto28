@@ -1,6 +1,6 @@
 <script lang="ts">
   import { DEBUG_SETTLE_KEY, gs, game } from '../state.svelte';
-  import { AFFIXES, AREAS, FLOORS, ITEMS, MATERIALS, REGIONS, RUNES, SKILLS, SPOTS } from '../../core/registry';
+  import { AFFIXES, AREAS, FLOORS, ITEMS, MATERIALS, RUNES, SKILLS, SPOTS, skyRegionOf } from '../../core/registry';
   import { locationBreadcrumb } from '../../core/systems/locations';
   import { raiseStat } from '../../core/systems/achievements';
   import { stashToken } from '../../core/systems/stash';
@@ -183,11 +183,15 @@
 
   // ---- Teleport ----
 
-  /** Under open sky: no sheltered region, no `indoor` tag (the roof test sunlight uses). */
+  /**
+   * Under open sky: no sheltered sky region, no `indoor` tag (the roof test
+   * sunlight uses). The region is the one the sky reads (`skyRegionOf`), so a
+   * floor that opens onto another region's sky, like floor 17, is counted.
+   */
   function openSky(id: string): boolean {
     const spot = SPOTS[id];
     const area = AREAS[spot.areaId];
-    const region = area ? REGIONS[area.regionId] : undefined;
+    const region = skyRegionOf(id);
     const tags = [...(region?.tags ?? []), ...(area?.tags ?? []), ...(spot.tags ?? [])];
     return !!region && !region.sheltered && !tags.includes('indoor');
   }

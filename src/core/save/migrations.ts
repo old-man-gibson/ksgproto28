@@ -726,6 +726,58 @@ export const MIGRATIONS: Record<number, (raw: Record<string, unknown>) => void> 
   63: (raw) => {
     raw.version = 64;
   },
+  // v64 → v65: floor 17 became the Malgeri Crossing (docs/MALGERI.md). The
+  // placeholder floor cleared on `fights:f17_keeper` (one fight, a spot the
+  // landing connected to); the new floor clears on `boss:f17_keeper`, the
+  // regent past the peak gate (`boss:f17_peak`).
+  // - A save that spent the placeholder fight keeps the clear: both counters are
+  //   stamped, so floors 18 to 20 stay open and the clear XP already paid stays
+  //   latched (floorXpKey).
+  // - A save standing at `f17_keeper` without `boss:f17_peak` is on the far side
+  //   of a gate it never opened: it wakes at the landing with its work, journey
+  //   and any pending return cleared. The spot stays known to the registry, so
+  //   the generic pruning of lost spots would not have moved it.
+  // Idempotent: it only raises counters and only moves a save that is still there.
+  64: (raw) => {
+    const stats = (raw.stats as Record<string, number> | undefined) ?? {};
+    raw.stats = stats;
+    if ((stats['fights:f17_keeper'] ?? 0) >= 1) {
+      stats['boss:f17_keeper'] = Math.max(stats['boss:f17_keeper'] ?? 0, 1);
+      stats['boss:f17_peak'] = Math.max(stats['boss:f17_peak'] ?? 0, 1);
+    }
+    if (raw.spot === 'f17_keeper' && (stats['boss:f17_peak'] ?? 0) < 1) {
+      const names = (id: unknown): boolean => id === 'f17_keeper';
+      raw.spot = 'f17_landing';
+      raw.activity = null;
+      raw.activityProgress = 0;
+      raw.pendingApproach = null;
+      raw.travel = null;
+      raw.travelPlan = [];
+      raw.travelIntent = null;
+      if (Array.isArray(raw.discovered)) {
+        const kept = (raw.discovered as unknown[]).filter((id) => !names(id));
+        if (!kept.includes('f17_landing')) kept.push('f17_landing');
+        raw.discovered = kept;
+      }
+      const resume = raw.resumeActivity as Record<string, string> | undefined;
+      if (resume) delete resume.f17_keeper;
+      const pending = raw.pendingReturn as
+        | { target?: { spot?: unknown } | null; fallback?: { spot?: unknown } | null }
+        | null
+        | undefined;
+      if (pending && (names(pending.target?.spot) || names(pending.fallback?.spot))) {
+        raw.pendingReturn = null;
+      }
+      const proven = raw.proven as { spot?: unknown } | null | undefined;
+      if (proven && names(proven.spot)) raw.proven = null;
+      const safe = raw.safeSpots as { nearest?: unknown; unconditional?: unknown } | undefined;
+      if (safe) {
+        if (names(safe.nearest)) safe.nearest = null;
+        if (names(safe.unconditional)) safe.unconditional = null;
+      }
+    }
+    raw.version = 65;
+  },
 };
 
 export function migrate(raw: Record<string, unknown>, targetVersion: number): GameState {

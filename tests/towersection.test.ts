@@ -479,6 +479,45 @@ describe('the plan keeps a height the section’s detail can stand in', () => {
     }
     expect(problems).toEqual([]);
   });
+
+  /**
+   * Floor 17 is the densest floor: 18 spots, and below 560 px a plan names only the
+   * spot underfoot and its neighbours, so the names drawn depend on where the player
+   * stands. The test above stands on the first spot only. This one stands on every
+   * spot at every integer width from a phone column to the widest the section leaves.
+   */
+  it('floor 17 keeps every name clear of pins, names and chips from every spot, at every width 320 to 700', () => {
+    const area = 'ascent_f17_area';
+    const spots = Object.values(SPOTS).filter((sp) => sp.map && sp.areaId === area);
+    expect(spots.length).toBe(18);
+    const grown = (b: MapBox, by: number): MapBox => ({ x0: b.x0 - by, y0: b.y0 - by, x1: b.x1 + by, y1: b.y1 + by });
+    const problems: string[] = [];
+    for (const spot of spots) {
+      const s = createInitialState(1, spot.id);
+      s.discovered = Object.keys(SPOTS);
+      for (let width = 320; width <= 700; width++) {
+        const plan = buildPlan(s, { region: AREAS[area].regionId, area, width, tiled: false, focus: spot.id, target: null });
+        const named = plan.nodes
+          .filter((n) => n.label)
+          .map((n) => ({ id: n.id, box: labelBox(n.label!.threat ? `${n.label!.name} · ${n.label!.threat}` : n.label!.name, n.label!, plan.frame.font) }));
+        const chips = plan.nodes.flatMap((n) => [...n.chips, ...(n.more ? [n.more] : [])].map((c) => ({ id: n.id, box: { x0: c.x - 8, y0: c.y - 8, x1: c.x + 8, y1: c.y + 8 } })));
+        for (const a of named) {
+          // The estimator errs wide on both faces, so touching boxes are a real overlap
+          // only by a pixel or two. The landing's and the hamlet gates' names overlapped by
+          // 2 to 3 px in the browser at 670 to 700, and the landing's touched two pins at 320:
+          // they keep 2 px clear of every other name and pin.
+          const margin = a.id === 'f17_landing' || a.id === 'f17_keeper' ? 2 : 0;
+          const box = grown(a.box, margin);
+          const at = `${spot.id} @${width}: ${a.id}`;
+          if (a.box.x0 < 0 || a.box.x1 > plan.frame.w || a.box.y0 < 0 || a.box.y1 > plan.frame.h) problems.push(`${at} outside the frame`);
+          for (const o of named) if (o.id > a.id && overlaps(box, o.box)) problems.push(`${at} on the name of ${o.id}`);
+          for (const n of plan.nodes) if (n.id !== a.id && overlaps(box, pinBox(n, plan.frame.pinR))) problems.push(`${at} on the ${n.id} pin`);
+          for (const c of chips) if (overlaps(a.box, c.box)) problems.push(`${at} on a chip of ${c.id}`);
+        }
+      }
+    }
+    expect(problems.slice(0, 20)).toEqual([]);
+  }, 30_000);
 });
 
 // ---------- The components, rendered on the server ----------

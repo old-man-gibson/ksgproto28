@@ -53,7 +53,7 @@ import {
   tickPerformance,
 } from './systems/music';
 import { tickChronosense } from './systems/chronosense';
-import { tickExposure } from './systems/exposure';
+import { tickExposure, tickSky } from './systems/exposure';
 import { DISCIPLINES } from './data/disciplines.data';
 import { useConsumable } from './systems/consumables';
 import { cancelQueuedMeal, eat, tickMeals } from './systems/eating';
@@ -313,6 +313,9 @@ export class Game {
     // it grows from exactly that. The weather is equally indifferent.
     tickChronosense(this.state, this.bus);
     tickExposure(this.state, this.bus);
+    // What the open sky does to the body standing under it (SKY_RULES), in
+    // regions with a sky table only.
+    tickSky(this.state, this.bus);
     // The run's ability, once a minute: Solar Charge banks the sky the
     // exposure tick just sampled.
     tickFacets(this.state);

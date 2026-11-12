@@ -110,11 +110,20 @@ export function rowQuality(level: number, req: number): ForecastQuality {
   return 'rough';
 }
 
-/** The vague vocabulary a rough read speaks in. */
+/**
+ * The vague vocabulary a rough read speaks in. It never says "calm": that word
+ * is a weather kind (named by the fair and precise reads), and a rough read of
+ * a calm sky, a heatwave or any dry sky is "plain skies".
+ */
 function roughWords(sample: WeatherSample): string {
   const sky =
-    sample.kind === 'clear' || sample.kind === 'overcast' || sample.kind === 'mist' || sample.kind === 'still'
-      ? 'calm skies'
+    sample.kind === 'clear' ||
+    sample.kind === 'overcast' ||
+    sample.kind === 'mist' ||
+    sample.kind === 'still' ||
+    sample.kind === 'calm' ||
+    sample.kind === 'heatwave'
+      ? 'plain skies'
       : sample.kind === 'gale' || sample.kind === 'sandstorm'
         ? 'wild wind'
         : 'wet weather';

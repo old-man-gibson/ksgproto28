@@ -32,6 +32,8 @@ export const STATUSES_TEXT: ProseTable = {
 
   'blaze_burn.desc': 'Healing can restore at most half of what the blaze burned. No timer. Removed by rest, a salve, or a healing spell.',
 
+  'sweltering.desc': 'Maximum stamina: -5% per point of intensity, up to -30%. Duration: 30 seconds, renewed by each dose. Doses add up to 6; it does not escalate. Source: a heatwave under an open sky.',
+
   'chilled.desc': 'Speed is reduced by 40% and weapon bonuses by 50% per intensity (up to 60%) for 20 seconds. Doses add; past intensity 1 it escalates to Frozen.',
 
   'frozen.desc': 'Speed is reduced by 95% and bludgeoning resistance by 50% for 3 seconds. Any damage taken removes it.',

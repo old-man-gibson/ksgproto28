@@ -101,8 +101,8 @@ breaks each rule on a fixture to show it fails.
   (floorRules.ts:383); content.test.ts:2062. Replaces the first draft's "one
   plain line" with a coverage rule. Sample every counter the clear spot's lines
   read in `requires` (`stat` and `statMax`) at 0, at each threshold and at
-  threshold + 1. At every sample at least one line with no `daypart` and no
-  `window` is eligible. A line with a condition that is not a counter does not
+  threshold + 1. At every sample at least one line with no `daypart`, no `sky`
+  and no `window` is eligible. A line with a condition that is not a counter does not
   count; `once` history is ignored. Floor 3's Hearing Room partitions
   `flag:f3_strings_cut` into four lines and passes.
 - **Every explore pays something.** `exploreIssues` (floorRules.ts:473);

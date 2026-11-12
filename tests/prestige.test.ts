@@ -6,6 +6,7 @@ import { migrate } from '../src/core/save/migrations';
 import { deserialize, serialize } from '../src/core/save/save';
 import { AREAS, FLOORS, PRESTIGE_BOONS, PRESTIGE_SOURCES, SKILLS, SPOTS, STARTING_SPOT } from '../src/core/registry';
 import { TUTORIAL_EXIT } from '../src/core/data/tutorial.data';
+import { CALM_SEEN_KEY } from '../src/core/data/climate.data';
 import {
   buyBoon,
   canBuyBoon,
@@ -180,6 +181,14 @@ describe('the reset', () => {
     for (const id of LOCKABLE_SUBSYSTEMS.filter((x) => x !== 'martial' && x !== 'music')) {
       expect(subsystemUnlocked(next, id), id).toBe(false);
     }
+  });
+
+  it('keeps the first-calm stamp, so that disclosure fires once per save', () => {
+    const s = bandOneCleared();
+    s.stats[CALM_SEEN_KEY] = 1;
+    expect(prestigeNow(s, 1)!.stats[CALM_SEEN_KEY]).toBe(1);
+    // A run that never met a calm carries nothing.
+    expect(prestigeNow(bandOneCleared(), 1)!.stats[CALM_SEEN_KEY]).toBeUndefined();
   });
 
   it('counts up across runs and keeps unspent points', () => {

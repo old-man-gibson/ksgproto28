@@ -12,11 +12,12 @@ import { smithingContentIssues } from '../../src/core/systems/assemblyValidation
 import { exploreIssues, floorStructureIssues } from '../../src/core/systems/floorRules';
 import { SPINE_EXEMPT, offLadderDoor } from '../../src/core/data/towers.data';
 import { seaContentIssues } from '../../src/core/systems/seaValidation';
+import { skyContentIssues } from '../../src/core/systems/skyValidation';
 import { festivalContentIssues } from '../../src/core/systems/festivalValidation';
 import { wardContentIssues } from '../../src/core/systems/wardValidation';
 import { WARD_WINDOWS } from '../../src/core/data/wards.data';
 import type { ConvoyDef, SeaSideDef } from '../../src/core/data/sea.data';
-import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, RoyaleStrategyDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef } from '../../src/core/types';
+import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, RoyaleStrategyDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef, UnlockCondition } from '../../src/core/types';
 import { DAMAGE_TYPE_NAMES } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../../src/core/systems/monsterStats';
@@ -81,7 +82,7 @@ export function idProblem(store: S, kind: string, next: string): string | null {
 export function validate(store: S): Issue[] {
   const issues: Issue[] = [];
   const spots = store.all<SpotDef>('spot');
-  const areas = store.all<{ id: string; regionId: string }>('area');
+  const areas = store.all<{ id: string; regionId: string; skyRegionId?: string }>('area');
   const regions = store.all<{ id: string }>('region');
   const npcs = store.all<NpcDef>('npc');
   const materials = store.all('material');
@@ -154,6 +155,12 @@ export function validate(store: S): Issue[] {
     if (region.terrain && terrains.length > 0 && !terrains.includes(region.terrain)) {
       err('region', region.id, `terrain '${region.terrain}' is not in TERRAIN_PROFILES`, ['terrain']);
     }
+  }
+  // Region skies and the encounter lines that wait on them — the same function
+  // tests/content.test.ts runs (systems/skyValidation.ts).
+  for (const issue of skyContentIssues({ regions, areas, spots })) {
+    const path = { region: ['sky'], area: ['skyRegionId'], spot: ['encounters'] }[issue.kind];
+    err(issue.kind, issue.id, issue.message, path);
   }
   // Place tags at every level of the chain — a spot's effective set is the
   // union region ∪ area ∪ spot, so all three speak the same vocabulary.
@@ -620,10 +627,30 @@ export function validate(store: S): Issue[] {
     }
   }
 
+  // ---------- Hidden-until conditions ----------
+  //
+  // A monster's `veil` and an NPC's `lore` entries hold ordinary unlock
+  // conditions: their skills and quests must exist (mirrors checkConditions in
+  // tests/content.test.ts).
+  const conditionRefs = (kind: string, id: string, conds: UnlockCondition[] | undefined, path: (string | number)[]) =>
+    (conds ?? []).forEach((c, i) => {
+      if (c.type === 'skill' && !skills[c.id]) err(kind, id, `condition names unknown skill '${c.id}'`, [...path, i]);
+      if (c.type === 'quest' && !quests[c.id]) err(kind, id, `condition names unknown quest '${c.id}'`, [...path, i]);
+    });
+  for (const [id, def] of Object.entries(store.all<MonsterDef>('monster'))) {
+    if (def?.veil && !def.veil.length) err('monster', id, 'an empty veil hides nothing', ['veil']);
+    conditionRefs('monster', id, def?.veil, ['veil']);
+  }
+
   // ---------- NPCs ----------
   for (const npc of Object.values(npcs)) {
     if (!spots[npc.spotId]) err('npc', npc.id, `stands at unknown spot '${npc.spotId}'`, ['spotId']);
     if (!npc.dialogue?.length) warn('npc', npc.id, 'has nothing to say');
+    (npc.lore ?? []).forEach((entry, i) => {
+      conditionRefs('npc', npc.id, entry.requires, ['lore', i, 'requires']);
+      if (!entry.requires?.length) err('npc', npc.id, `lore entry ${i} has no conditions: it would always show`, ['lore', i, 'requires']);
+      if (!entry.dialogue?.length) err('npc', npc.id, `lore entry ${i} has nothing to say`, ['lore', i, 'dialogue']);
+    });
     for (const qid of npc.quests ?? []) {
       const quest = quests[qid];
       if (!quest) err('npc', npc.id, `offers unknown quest '${qid}'`, ['quests']);

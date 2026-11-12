@@ -325,6 +325,15 @@ describe("the clear spot's table never empties", () => {
     expect(clearTableIssues(table(line({ daypart: 'night' }), line()))).toEqual([]);
   });
 
+  it('a line that waits on the sky does not cover a gap, like a daypart', () => {
+    expect(clearTableIssues(table(line({ sky: ['gale'] })))).toEqual([expect.stringContaining('daypart, sky or window')]);
+    expect(clearTableIssues(table(line({ sky: ['calm'] }), line({ sky: ['gale', 'storm'] })))).toHaveLength(1);
+    expect(clearTableIssues(table(line({ sky: ['gale'] }), line()))).toEqual([]);
+    // A sky line with a counter gate still covers nothing, so the plain line
+    // with the same gate carries the table.
+    expect(clearTableIssues(table(line({ sky: ['rain'], requires: [stat('flag:x', 1)] }), line({ requires: [statMax('flag:x', 0)] })))).toHaveLength(1);
+  });
+
   it('a line gated on a counter alone leaves the counter-zero state empty', () => {
     const issues = clearTableIssues(table(line({ requires: [stat('flag:x', 2)] })));
     expect(issues).toEqual([expect.stringContaining('flag:x = 0')]);

@@ -9,6 +9,7 @@ import { TPS } from '../../core/engine/loop';
 import { DISCIPLINES } from '../../core/data/disciplines.data';
 import { FLOORS, FLOOR_BY_AREA, SPOTS, edgesFrom, getSpot } from '../../core/registry';
 import { spotActivities } from '../../core/systems/actions';
+import { isVeiled } from '../../core/systems/bestiary';
 import { eligibleEncounters, spotCleared } from '../../core/systems/combat';
 import { conditionsMet } from '../../core/systems/conditions';
 import { FALLBACK_WINS, returnBlock } from '../../core/systems/knockoutReturn';
@@ -320,10 +321,15 @@ function rideRefusal(state: GameState, toId: string): string | null {
  * a gated line waits for its terms), minus ambush windows, which are meant to
  * be met. The level is the one `spawnMonster` gives: the line's rise, the
  * band's step, then the band's dynamic levels (never on a `once` line).
+ * A veiled species (MonsterDef.veil) adds nothing until its veil lifts, so a
+ * badge never hints at it.
  */
 export function spotThreat(state: GameState, spot: SpotDef): string | null {
   if (spotCleared(state, spot)) return null;
-  const lines = eligibleEncounters(state, { ...spot, encounters: (spot.encounters ?? []).filter((e) => !e.window) });
+  const lines = eligibleEncounters(state, {
+    ...spot,
+    encounters: (spot.encounters ?? []).filter((e) => !e.window && !isVeiled(state, e.monsterId)),
+  });
   if (!lines.length) return null;
   const step = bandLevelStep(state, spot);
   const at = (e: (typeof lines)[number], rolled: number) => {

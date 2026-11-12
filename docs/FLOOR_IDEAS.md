@@ -153,7 +153,7 @@ constraints, condensed from the post:
 | 11 | the stronghold | take it, fix it up, make workers, hold a monster wave; normal floor from the next prestige on (§5.3) | unwritten |
 | 11–14 | band 4, the harbor band | harbor side pick, two sea floors, four final missions (idea 3) | banked |
 | 15–16 | the Vermin Festival | dark room of 10, a 10-day prep hub on its own clock, an isometric free-movement battle royale of 100 (§5.3) | unwritten |
-| 17 | special floor | aberrant, one floor | unwritten |
+| 17 | the Malgeri Crossing | band "The Malgeri Mountains", one floor: four maps over a range, on the region sky table and its secret calm (MALGERI.md) | built 2026-11-11 |
 | 18–20 | band 5, the desert band | necropolis road, the pyramid (the Weighing), the delta port to the island (idea 4) | banked |
 | 21–30 | the Great Island at War | idea 2 | banked |
 | — | the base | optional para-floor, room rates feeding shipped systems | unwritten |
@@ -188,8 +188,8 @@ data model, after the antagonist's review of idea 4:
 | 6 → 7 | planned (the warren threatens band 3's city), unwritten |
 | 10 → 11 | proposed: the castle safe, a steward deeds the derelict stronghold; after the swap, floor 11's landing describes the road to the harbor |
 | 14 → 15 | proposed: the final mission's feast ends in a drugged cup; the dark room is the cut |
-| 16 → 17 | unwritten. The ladder works on 15–16 like any floor; climbing out before the royale ends is a loss (§5.3 item 25) |
-| 17 → 18 | proposed: floor 17's clear opens a shaft; floor 18's landing is a well-head in full sun. Floor 17 owes floor 18 only "ends underground" |
+| 16 → 17 | built 2026-11-11: `f16_arena`'s text names a cave exit and floor 17's landing, the Cave Exit, describes arriving in that cave. The ladder works on 15–16 like any floor; climbing out before the royale ends is a loss (§5.3 item 25) |
+| 17 → 18 | built 2026-11-11, replacing the shaft: floor 17 ends at a hamlet at the foot of the range, and `f18_well_head` says you arrive on foot from the hamlet's side, with no shaft. Floor 18's landing is still a well-head in full sun |
 | 20 → 21 | idea 4: the ferry; the roadstead fight is the crossing; verb "Sailing" |
 
 **Checks against the code and the laws.**
@@ -232,7 +232,7 @@ list."*
 | 7–10 | the City | pick your order (the city's troubles) |
 | 11–14 | the Harbor | pick your faction (sailing the six seas) |
 | 15–16 | the Vermin Festival | high-intensity: **the gold standard** |
-| 17 | special floor | one-off (to be determined) |
+| 17 | special floor | one-off (to be determined). Taken 2026-11-11 as a mountain crossing under weather (MALGERI.md) |
 | 18–20 | the Desert | adventure (tomb raiders) |
 | 21–30 | the Great Island at War | grand campaign |
 
@@ -1546,8 +1546,10 @@ scumming.
 
 None. Parked by the user, to be decided later:
 - worker creation (§5.3 item 8), a later part of base building
-- the theme of floor 17 (§5.3 item 5; 11–14 became idea 3 and 18–20
-  idea 4)
+- ~~the theme of floor 17~~ (§5.3 item 5; 11–14 became idea 3 and 18–20
+  idea 4). Decided 2026-11-11 and built: the Malgeri Mountains, four maps on
+  the region's weather table with a calm the game does not name until it has
+  been stood under (MALGERI.md)
 
 ### 5.3 Answered (user, 2026-10-29, the ladder)
 
@@ -1559,6 +1561,7 @@ None. Parked by the user, to be decided later:
    unlocked on all subsequent prestiges."*
 4. **The para-floor's output.** Materials only, for now.
 5. **Themes.** Floors 11–14, 17 and 18–20 are undefined; they come later.
+   (Floor 17 since built: MALGERI.md.)
 6. **The Vermin Festival.**
    - The player wakes in a dark room with no equipment but a simple weapon
      of their preferred type (from skill level and usage).

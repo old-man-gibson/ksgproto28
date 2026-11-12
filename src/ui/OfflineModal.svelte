@@ -31,6 +31,7 @@
       {#each summary.skillLevels as s}
         <li>📜 {s.name} +{s.gained} levels</li>
       {/each}
+      {#if summary.firstCalm}<li>{summary.firstCalm}</li>{/if}
       {#if summary.festivalSkipped}
         <!-- The festival's clock runs only while the game does: that part of the absence did not happen. -->
         <li>
