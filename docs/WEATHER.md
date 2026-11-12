@@ -209,8 +209,11 @@ Inside an open area, a spot that is inside carries `indoor`.
 How it is set: the Ascent region is `sheltered`, so an open area sets
 `sheltered: false` on its `AreaDef` and a roofed spot carries `indoor` (and
 `dark` too for a cave that is black at noon). Floor 17 is open through
-`skyRegionId: 'malgeri_range'` instead (Region skies, below). A new tower area
-that sets neither is roofed and fails tests/openSky.test.ts.
+`skyRegionId: 'malgeri_range'` instead (Region skies, below). A new area of the
+Ascent's region, or the area of a new floor, that sets neither is roofed, and
+tests/openSky.test.ts fails until the area is opened or is added to that test's
+roofed list, which is a deliberate choice. The test does not see a tower area in
+another region that no floor claims.
 
 | floor | area | roofed spots (`indoor`) | judgement calls left open |
 |---|---|---|---|
@@ -231,7 +234,7 @@ that sets neither is roofed and fails tests/openSky.test.ts.
 | 15 and 16, Festival | roofed | every spot | none |
 | 17, Malgeri Crossing | Malgeri range sky table (`skyRegionId`) | 10 spots, five of them also `dark` (MALGERI.md) | none |
 | 18, Necropolis Road | `sheltered: false`, area tag `heat` | none | Tomb Row |
-| 19, Pyramid | `sheltered: false` | Side Tomb (also `heat`), Entrance Passage, Grand Gallery, Burial Chamber, Treasury | Valley Temples, the Door |
+| 19, Pyramid | `sheltered: false` | Side Tomb (also `heat`), Entrance Passage, Grand Gallery, Burial Chamber, Treasury, the Door | Valley Temples |
 | 20, Delta Port | `sheltered: false` | Warehouses | Notice Wall |
 
 Every other spot of an open area, such as the landings, roads, fields and
@@ -242,11 +245,12 @@ interior, a building interior or underground. When the text is silent, leave it
 open. Tagged, with the words that justified it: the Chief's Tent (a tent), the
 Hunting Lodge and the Warehouses (buildings), the Ossuary, the Side Tomb ("a
 sealed side tomb"), the Entrance Passage, the Grand Gallery, the Burial Chamber
-and the Treasury (rooms of the pyramid), the Mine ("the ward's copper and iron
-mine") and the Deep Seam (the mine's seam, where the ore eater eats "the
-mine's ore"). The spot ids of the Mine and the Deep Seam are `f10_quarry` and
-`f10_foundry`. Left open, each on its text; the last two are the calls most
-likely to be wrong:
+and the Treasury (rooms of the pyramid), the Door (its text names no roof, but
+its only way in is the forced road from the Burial Chamber, so the fight is
+inside the pyramid), the Mine ("the ward's copper and iron mine") and the Deep
+Seam (the mine's seam, where the ore eater eats "the mine's ore"). The spot ids
+of the Mine and the Deep Seam are `f10_quarry` and `f10_foundry`. Left open,
+each on its text; the last is the call most likely to be wrong:
 
 - Gate (floor 0): "the way out of floor 0"; no roof named.
 - Cave Mouth (floor 5): the mouth of the cave; the Hollows behind it carry the roof.
@@ -264,8 +268,6 @@ likely to be wrong:
 - Notice Wall (floor 20): notices for the island; no roof named.
 - Valley Temples (floor 19): a cobra and scorpion hunt; "temples" may be roofed
   but the text names no roof.
-- The Door (floor 19): "arriving from the chamber"; it is past the Burial
-  Chamber and may be inside the pyramid, the text names no roof.
 
 **What an open area gets.** Weather in the header chip and the Weathersense
 forecast, exposure XP from the weather, night darkness with moonlight (combat
@@ -301,14 +303,17 @@ sky is open: 1.2 µs a call against 0.6 µs under a roof (300,000 calls, a new
 tick each call). No derived-stats input changes: darkness is read at roll time
 in combat and `world.sunlight` has `modStat: null`.
 
-**Tests** (tests/openSky.test.ts): every spot of floors 0 to 20 and the castle
-is in an area that is roofed (the list above) or open; a spot has no sky exactly
-when its area is roofed or it carries `indoor`; the eleven tagged spots of
-floors 7 to 10, 19 and 20 are open areas roofed by the tag; the twelve spots
-left open have a sky; a floor 12 spot has a sky kind and a festival spot has
-none; one open spot on each of floors 7 to 14 and 18 to 20 is dark and moonlit
-at night, trains Darkvision and is lit by day, while the tagged spots and the
-roofed floors are not dark.
+**Tests** (tests/openSky.test.ts): the tower's areas are every area of the
+Ascent's region plus every floor's area, and each is roofed (the test's list) or
+open; a spot has no sky exactly when its area is roofed or it carries `indoor`;
+the `indoor` spots of the open tower areas equal the test's per-floor lists
+exactly (floors 0, 5, 6, 7 to 10, 17, 19 and 20), so a tag added or dropped
+fails it, and each listed spot reads an open sky and is roofed by its tag; the
+eleven spots left open have a sky; a floor 12 spot has a sky kind and a festival
+spot has none; one open spot on each of floors 7 to 14 and 18 to 20 has a sky,
+all of them the same kind at one tick, is dark and moonlit at night, trains
+Darkvision and is lit by day, while the night adds no darkness at a tagged spot
+or on a roofed floor.
 
 ## The weather
 

@@ -4297,6 +4297,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     icon: '⚖️',
     areaId: 'ascent_f19_area',
     map: { x: 50, y: 8 },
+    // Roofed: the only way in is the forced road from the Burial Chamber.
+    tags: ['indoor'],
     modifierWeights: { normal: 100 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Face the Weigher', icon: '⚔️' }],
     encounters: [

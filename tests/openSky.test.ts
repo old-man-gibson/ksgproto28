@@ -32,16 +32,49 @@ const ROOFED_AREAS = new Set([
   'ascent_f16_area',
 ]);
 
-/** The tower's areas: every floor's, and the castle, which no floor claims. */
-const TOWER_AREAS = [...Object.values(FLOORS).map((f) => f.areaId), 'ascent_castle_area'];
+/**
+ * The tower's areas: every area of the Ascent's region (floors 1 to 20 and the
+ * castle, which no floor claims) and every floor's own area (floor 0 is in
+ * another region). An area added to the Ascent is in the set without an edit.
+ */
+const TOWER_AREAS = [
+  ...new Set([
+    ...Object.values(AREAS)
+      .filter((a) => a.regionId === 'the_ascent')
+      .map((a) => a.id),
+    ...Object.values(FLOORS).map((f) => f.areaId),
+  ]),
+];
 
-/** Spots inside an open area that carry `indoor`, by floor (the text names a roof, a cave, a tomb or a building). */
+/**
+ * Spots inside an open tower area that carry `indoor`, by floor (the text names
+ * a roof, a cave, a tomb or a building). The list is exact: a tag added or
+ * dropped anywhere in an open area fails the "exactly the listed ones" test.
+ * Floors 0, 5, 6 and 17 carried theirs before the ruling of 2026-11-11.
+ * f19_door is roofed because its only way in is the forced road from the
+ * Burial Chamber.
+ */
 const INDOOR_SPOTS: Record<string, string[]> = {
+  f0: ['f0_cell', 'f0_cellblock'],
+  f5: ['f5_hollows'],
+  f6: ['f6_tunnels', 'f6_kitchens', 'f6_drop', 'f6_great_hall'],
   f7: ['f7_chiefs_tent'],
   f8: ['f8_lodge'],
   f9: ['f9_ossuary'],
   f10: ['f10_quarry', 'f10_foundry'],
-  f19: ['f19_side_tomb', 'f19_entrance', 'f19_gallery', 'f19_chamber', 'f19_treasury'],
+  f17: [
+    'f17_landing',
+    'f17_cave_hub',
+    'f17_cave_crack',
+    'f17_nest',
+    'f17_central_caves',
+    'f17_east_mouth',
+    'f17_west_peak',
+    'f17_base',
+    'f17_hamlet_square',
+    'f17_hamlet_forge',
+  ],
+  f19: ['f19_side_tomb', 'f19_entrance', 'f19_gallery', 'f19_chamber', 'f19_treasury', 'f19_door'],
   f20: ['f20_warehouses'],
 };
 
@@ -57,7 +90,6 @@ const LEFT_OPEN = [
   'f14_beast_lair',
   'f18_tomb_row',
   'f19_valley',
-  'f19_door',
   'f20_notice_wall',
 ];
 
@@ -126,11 +158,21 @@ describe('inside spots of an open area', () => {
       for (const id of ids) {
         const spot = SPOTS[id];
         expect(spot, id).toBeDefined();
-        expect(AREAS[spot.areaId].sheltered, `${id} (${floor}): area open`).toBe(false);
+        // The sky the spot reads, which is not the area's own on floor 17.
+        expect(!!skyRegionOf(id)?.sheltered, `${id} (${floor}): sky open`).toBe(false);
         expect(spot.tags, id).toContain('indoor');
         expect(skyKindAt(stateAt(id, at(40, 12)), id), id).toBeNull();
       }
     }
+  });
+
+  it('the spots tagged indoor in the open tower areas are exactly the listed ones', () => {
+    const tagged: string[] = [];
+    for (const areaId of TOWER_AREAS) {
+      if (ROOFED_AREAS.has(areaId)) continue;
+      for (const spot of spotsOf(areaId)) if (spot.tags?.includes('indoor')) tagged.push(spot.id);
+    }
+    expect(tagged.sort()).toEqual(Object.values(INDOOR_SPOTS).flat().sort());
   });
 
   it('floor 0: the cell and the cellblock stay roofed, the field is open', () => {
@@ -169,7 +211,10 @@ describe('weather on the new floors', () => {
     const kinds = new Set<string>();
     for (const spot of Object.values(NIGHT_SPOT)) {
       const state = stateAt(spot, at(120, 9));
-      kinds.add(String(skyKindAt(state, spot)));
+      const kind = skyKindAt(state, spot);
+      // A null would read as one shared kind through String(): every spot must have a sky.
+      expect(kind, spot).not.toBeNull();
+      kinds.add(String(kind));
     }
     expect(kinds.size).toBe(1);
   });
@@ -205,12 +250,12 @@ describe('the night on the new floors', () => {
     }
   });
 
-  it('is not dark at an inside spot, and is not dark on a roofed floor', () => {
+  it('the night adds no darkness at an inside spot, and none on a roofed floor', () => {
     for (const ids of Object.values(INDOOR_SPOTS)) {
       for (const id of ids) {
-        const state = stateAt(id, at(3, 23));
-        expect(darknessFactor(state), id).toBe(0);
-        expect(moonlightOn(state), id).toBeNull();
+        // A cave tagged `dark` is dark at every hour; the hour changes nothing inside.
+        expect(darknessFactor(stateAt(id, at(3, 23))), id).toBe(darknessFactor(stateAt(id, at(3, 12))));
+        expect(moonlightOn(stateAt(id, at(3, 23))), id).toBeNull();
       }
     }
     for (const id of ['f15_herb_yard', 'f16_arena', 'castle_court', 'f1_landing']) {
