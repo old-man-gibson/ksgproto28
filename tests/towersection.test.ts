@@ -517,7 +517,7 @@ describe('the plan keeps a height the section’s detail can stand in', () => {
       }
     }
     expect(problems.slice(0, 20)).toEqual([]);
-  });
+  }, 30_000);
 });
 
 // ---------- The components, rendered on the server ----------

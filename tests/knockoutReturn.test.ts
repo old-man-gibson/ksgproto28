@@ -6,7 +6,6 @@ import {
   ADJACENCY,
   AREAS,
   FLOORS,
-  FLOOR_BY_AREA,
   SPOTS,
   buildAdjacency,
   declaredConnections,
