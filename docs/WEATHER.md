@@ -160,7 +160,10 @@ time instead of 15%. Darkvision training slows by the same 8% on average.
 **What the player sees.** The header's dark chip bands the factor
 (Blind dark / Dark / Gloom); on a moonlit night it can drop a band. Under the
 open night sky its tooltip adds one line: "Moonlight: −30% darkness" or
-"Moonlight: none (overcast)". In a `dark` place the line is absent.
+"Moonlight: none (overcast)". In a `dark` place the line is absent. The chip
+sits in a slot that is laid out at every hour, as wide as "Blind dark", so the
+night coming on moves nothing else in the header (the rule of 2026-11-04: no
+size or position depends on per-tick or per-fight state).
 No Chronosense gate: you see moonlight whether or not you can name the phase.
 The Weathersense forecast already shows which coming hours are clear, so a
 player who reads both chips can pick a moonlit night to hunt in. No new
@@ -261,8 +264,10 @@ each on its text; the last is the call most likely to be wrong:
   activity and the hunt (automata) is not placed in one.
 - Gatehouse (floor 11): "the stronghold's gatehouse"; a door to the hold is
   named, no room.
-- Beast's Lair (floor 14): the sea beast's fight on the water; no cave or depth
-  named.
+- Beast's Lair (floor 14): the sea beast's fight on the water; the spot text
+  names no cave or depth. Its edge reads "Down to the Beast's Lair", which could
+  mean under the water. It stays open so that the four sides' mission fights
+  (Closed Port, Treasure Galleon, Flagship, Beast's Lair) are under one sky.
 - Tomb Row (floor 18): a mummy and scarab hunt; no interior named, and the floor
   is "in full sun" (Well-Head text).
 - Notice Wall (floor 20): notices for the island; no roof named.
@@ -291,16 +296,35 @@ trains cold on 14.1% of the hours. Nothing reads both together.
 
 **Knockout fallback.** `indoorHunt` (knockoutReturn.ts) picks an `indoor` hunt
 with no fight budget on the fall's floor, the third choice after the proven spot
-and a limited spot. Floors with one: 5 (Hollows), 6 (Tunnels, Drop), 10 (the
-Mine), 17 (six cave and shelter spots) and 19 (Entrance Passage, Grand Gallery,
-Burial Chamber). Floors 10 and 19 gained theirs from the tags above; 5, 6 and 17
-had theirs. Floors 4, 7 to 9, 11 to 14, 18 and 20 have none, as before the
-ruling: `pickFallback` returns null there and a fall with no proven and no
-limited spot idles at the haven, the case `indoorHunt` exists to avoid.
+and a limited spot. The lowest level first. A spot whose top encounter level is
+above the top level of the spot the fall was at is skipped, so a loss at level
+13 is never answered with level 14; a fall at a boss door or a forced spot has
+no ceiling. A retry that fails (a knockout at the target after the fifth) raises
+the probe count whether or not a fallback follows, so the hold that ends the
+fallback doubles each round. Floors with one: 5 (Hollows), 6 (Tunnels, Drop),
+10 (the Mine), 17 (six cave and shelter spots) and 19 (Entrance Passage, Grand
+Gallery, Burial Chamber; the Door is roofed but is a boss door, so it is never
+a pick). Floors 10 and 19 gained theirs from the tags above; 5, 6 and 17 had
+theirs.
 
-**Cost.** `darknessFactor` at night samples the noise-field weather when the
-sky is open: 1.2 µs a call against 0.6 µs under a roof (300,000 calls, a new
-tick each call). No derived-stats input changes: darkness is read at roll time
+Floors 4, 7 to 9, 11 to 14, 18 and 20 have none, as before the ruling:
+`pickFallback` returns null there. What a fall does then, in order:
+
+- A fall at an ordinary hunt that can be walked back to holds at the haven for
+  10, 20, 40, then 80 minutes and walks back (the plain hold).
+- A fall at a plain hunt behind a forced road (the waters of floors 12 to 14,
+  the one-fight roadstead) holds the same way and sails the road again. The
+  fight on the road is the boarding the player chose by sailing out the first
+  time. A failed probe doubles the wait. It is the one place a forced road is
+  walked again, because of the user rule of 2026-11-03 that a knockout must not
+  idle.
+- A fall at a boss door (floor 19's Door) or a forced spot is not walked back
+  into; with no fallback it idles at the haven and the log gives the reason.
+
+**Cost.** `darknessFactor` samples the noise-field weather only when the sky is
+open and it is night: 2.0 to 2.2 µs a call there, against 0.5 to 0.6 µs open by
+day and 0.6 to 0.7 µs under a roof (300,000 calls, a new tick each call, three
+runs, vite-node). No derived-stats input changes: darkness is read at roll time
 in combat and `world.sunlight` has `modStat: null`.
 
 **Tests** (tests/openSky.test.ts): the tower's areas are every area of the
@@ -313,7 +337,9 @@ eleven spots left open have a sky; a floor 12 spot has a sky kind and a festival
 spot has none; one open spot on each of floors 7 to 14 and 18 to 20 has a sky,
 all of them the same kind at one tick, is dark and moonlit at night, trains
 Darkvision and is lit by day, while the night adds no darkness at a tagged spot
-or on a roofed floor.
+or on a roofed floor. The header's weather chip (`headerSky`, ui/lib/shell.ts)
+shows the roofed value ('still') at an inside spot, the same as floor 1, and the
+weather at an open one; it is roofed exactly where `skyKindAt` is null.
 
 ## The weather
 
@@ -616,7 +642,10 @@ status text, the forecast, and `skyContentIssues`.
   any skill may declare `maxLevel`.
 - The player-facing **weather chip** sits beside the clock in the header
   (icon + temperature; hover for kind and band). It needs no skill — skin
-  reads weather for free. The HP bar it replaced lives in the panels.
+  reads weather for free. The HP bar it replaced lives in the panels. The chip
+  is a fixed 3.9em wide (App.svelte): its widest text, a minus sign and two
+  digits, is 3.50em in Default and 3.77em in Cockpit, the widest of the eleven
+  themes. At a spot with no sky it shows the roofed value, 'still'.
 
 ## Exposure — the world training the body
 

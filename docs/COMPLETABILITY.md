@@ -793,6 +793,15 @@ floor 20 0 -> 1; floors 14, 15, 16, 18 and 19 stay at 0.
   seeded by the clock. That is not an effect of this change.
 - Not retuned: the brief says to measure, and the monsters stay as they are.
 
+Nine more whole-climb pairs, before and after, same harness (the cold review's
+runs; the figures were handed to the builder, were not re-run on this branch,
+and the seeds are not recorded here): knockouts from floor 7 on rise by 4 to 20
+per climb under the open sky, mean +10 on a mean of 89, about +12%. Two seeds
+do not separate the sky from a changed fight order (the floor 9 and floor 17
+bullets above), so these nine pairs are the better figure for the cost of the
+open sky as a whole. Open (user): whether +12% knockouts from floor 7 on is the
+difficulty wanted.
+
 ---
 
 ## 9. Cross-references

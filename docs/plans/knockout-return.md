@@ -6,7 +6,7 @@ status: review
 system: combat
 parent: ''
 save: ''
-updated: 2026-11-04
+updated: 2026-11-12
 invariants:
   - completability
   - no-terminal-states
@@ -117,6 +117,13 @@ accepted). §6 lists the questions for the user.
   unlimited fallback: the `proven` rules apply (return to it after a knockout there, hold after 5 in
   a row there). Reason: on the Malgeri Crossing a calm over the open spots brings five knockouts with
   nothing proven, and the hold would idle the character at the haven.
+  - Never harder (2026-11-12): a spot whose top encounter level is above the top level of the spot
+    the fall was at is skipped (`fallCeiling`, `huntTop`). A fall at a boss door or a forced spot has
+    no ceiling, since its level says nothing about the dens beside it, and neither has a fall spot
+    with no eligible encounter. A floor with no roofed hunt that is no harder gets no roofed pick.
+  - A retry or a probe that fails (a knockout at the target after the fifth) raises `probes` by 1
+    when a fallback follows as it does when a plain hold follows, so the hold that ends the fallback
+    doubles each round. Before, only the plain hold raised it.
 - Fallback: go to `proven` (or the limited spot, or the roofed spot) and hunt there. Cross-floor: `climbTo` down, then walk.
 - Retry: after 200 wins at the fallback, or 2 h of game time, whichever comes first, return to the
   target.
@@ -125,6 +132,18 @@ accepted). §6 lists the questions for the user.
   - Each failed probe doubles the wait: 10, 20, 40, 80, 80 min.
   - A win resets the schedule.
   - The longest hold is 80 min.
+- Hunt behind a forced road (2026-11-12, amends Q3 in §7): a knockout at a plain hunt that is
+  entered by a forced road (the waters of floors 12 to 14, the one-fight roadstead), with no
+  `proven`, limited or roofed spot to fall back to, holds on that hunt and sails the road again at
+  the end of the wait (10, 20, 40, 80 min; a failed probe doubles it). The fight on the road is
+  the boarding the player chose when sailing out the first time. The hold keeps the return open
+  through that boarding win; the first win at the hunt itself, or the boarding fight clearing a
+  spot with no hunt left, ends it. Only the walk to a target may take a forced last road
+  (`returnBlock(..., viaRoad)`); a fallback pick never does, so a fallback is never behind a forced
+  road. `roadHuntOk`: the spot is not forced, holds no `boss` row, and the activity is a hunt.
+  A boss door (`f19_door`) and a forced spot keep the old rule: not walked into again, so with no
+  fallback they idle at the haven and the log gives the reason. Reason: a knockout on the harbor
+  waters with nothing proven left the character idle, which the rule of 2026-11-03 does not allow.
 
 ### 2.4 State
 
@@ -149,6 +168,7 @@ Transitions:
 | Knockout, eligible, streak below 5 | any | `return` to the fall spot |
 | Knockout, streak reaches 5 | `return` | `fallback` if proven is usable, else `hold` |
 | Knockout, not eligible (forced, wall, forced hop) | any | `fallback` with target null if proven is usable, else idle |
+| Knockout at a plain hunt behind a forced road, no fallback | any | `hold` on that hunt (2026-11-12); the probe sails the road again |
 | Win at the fallback | `fallback` | wins + 1; at 200 or at `until`, `return` to the target (if any) |
 | Knockout at the fallback | `fallback` | return to the fallback; 5 in a row there: `hold` on the target |
 | Hold ends | `hold` | probe: `return` to the target |
@@ -185,6 +205,14 @@ Transitions:
   - Select clears the pending return.
   - A save round-trip keeps it.
   - Prestige clears it.
+  - A roofed fallback lost again and again doubles the hold: 10, 20, 40, 80 min.
+  - A roofed spot whose top level is above the fall spot's is not a fallback; the Mine is a roofed
+    hunt one level above the Row, so five knockouts at the Row hold (they do not go to the Mine).
+  - A hunt behind a forced road: hold, sail again, hunt; a boarding that keeps being lost doubles
+    the wait (10, 20, 40, 80, 80 min); the walk to a target may take the road and a fallback never
+    does.
+  - A boss door is not sailed into again (it falls back where a fallback exists), and a boss row
+    behind a forced road with nothing to fall back to idles.
 - `tests/john.test.ts` passes unchanged.
 - A hopeless-spot simulation over 288,000 ticks never idles longer than 80 min at a stretch.
 
@@ -230,7 +258,7 @@ Marked on the decision page. Every mark matches the default.
 | The plan (K1–K4) | Approved | Build as written in §2 |
 | Q1 Fallback | Approved | 5 knockouts in a row: hunt `proven`, retry after 200 wins or 2 h |
 | Q2 Forced-spot loss | Approved | After losing at a forced spot: hunt `proven` (target null), else idle |
-| Q3 Forced roads | Rejected | The return never walks a forced road; it falls back instead |
+| Q3 Forced roads | Rejected | The return never walks a forced road; it falls back instead. Amended 2026-11-12 (§2.3, not a new mark by the user): with no fallback at all, a plain hunt behind a forced road holds and sails the road again, because the rule of 2026-11-03 forbids the idling the rejection left |
 | Q4 Stronghold wall | Rejected | `f11_wall` is not a return target; it falls back instead |
 | Q5 Shaken | Hold | Not built |
 | Q6 Setting | Hold | Not built; the return always applies |
