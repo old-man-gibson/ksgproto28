@@ -3450,7 +3450,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     name: 'The Cave Exit',
     icon: '🕳️',
     areaId: 'ascent_f17_area',
-    map: { x: 40, y: 69 },
+    map: { x: 42, y: 71 },
     tags: ['indoor', 'dark'],
     activities: [
       { id: 'camp_f17', kind: 'rest', name: 'Camp', icon: '🏕️' },
@@ -3978,7 +3978,7 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
     name: 'The Hamlet Gates',
     icon: '👑',
     areaId: 'ascent_f17_area',
-    map: { x: 24, y: 60 },
+    map: { x: 25, y: 61 },
     modifierWeights: { normal: 100 },
     activities: [{ id: 'hunt', kind: 'hunt', name: 'Face the Regent', icon: '⚔️' }],
     encounters: [
