@@ -700,7 +700,7 @@
             </span>
             <span class="odds small">
               <span class:risky={heldCopies < REFINE_COPIES}>🧬 {heldCopies}/{REFINE_COPIES}</span>
-              <span class:risky={(gs.materials.biomatter ?? 0) < cost}><GlyphText text="🩸" /> {fmt(cost)}</span>
+              <span class:risky={(gs.materials.biomatter ?? 0) < cost}>🩸 {fmt(cost)}</span>
             </span>
           </div>
           {#snippet tip()}
@@ -712,7 +712,7 @@
               🧬 spends {REFINE_COPIES} × {QUALITY_TIERS[subject.quality].name} — you hold {heldCopies}
             </div>
             <div class="tip-line">
-              <GlyphText text="🩸" /> burns {fmt(cost)} biomatter — you have {fmt(gs.materials.biomatter ?? 0)}
+              🩸 burns {fmt(cost)} biomatter — you have {fmt(gs.materials.biomatter ?? 0)}
             </div>
             <div class="tip-line tip-sub">
               Tier never changes; refining raises the grade only.
@@ -755,10 +755,10 @@
             <li>💚 +{Math.round(r.amount * 10) / 10} {RESOURCES[r.resource]?.name ?? r.resource}</li>
           {/each}
           {#each spec.grants as g}
-            <li><GlyphText text="✨" /> {STATUSES[g.id]?.name ?? g.id} ×{(g.intensity ?? 1).toFixed(2)} for {((g.duration as number) / 10).toFixed(0)}s</li>
+            <li>✨ {STATUSES[g.id]?.name ?? g.id} ×{(g.intensity ?? 1).toFixed(2)} for {((g.duration as number) / 10).toFixed(0)}s</li>
           {/each}
           {#each spec.inflicts as inf}
-            <li><GlyphText text="☠️" /> Inflicts {STATUSES[inf.id]?.name ?? inf.id} ×{(inf.intensity ?? 1).toFixed(2)}{inf.duration ? ` for ${((inf.duration as number) / 10).toFixed(0)}s` : ''}{spec.form === 'fume' ? ' on every enemy' : spec.form === 'oil' ? ' per blow' : ''}</li>
+            <li>☠️ Inflicts {STATUSES[inf.id]?.name ?? inf.id} ×{(inf.intensity ?? 1).toFixed(2)}{inf.duration ? ` for ${((inf.duration as number) / 10).toFixed(0)}s` : ''}{spec.form === 'fume' ? ' on every enemy' : spec.form === 'oil' ? ' per blow' : ''}</li>
           {/each}
           {#each spec.cures as c}<li>🩹 Clears {c}</li>{/each}
           {#if !spec.strikes.length && !spec.restore.length && !spec.grants.length && !spec.inflicts.length && !spec.cures.length}

@@ -34,19 +34,20 @@
       <div class="entry" style="color: {logColor(entry.kind)}">
         <!-- The glyph gutter has a fixed width: the kind shows without colour and no line shifts. -->
         <span class="glyph" aria-hidden="true">{logGlyph(entry.kind)}</span>
+        <!-- A loot tally (`entry.tally`) is drawn as text: most materials have no drawing, so art would leave the line half emoji. -->
         <span class="msg">
           {#if rest.length > 0}
             <Tip>
-              <GlyphText text={entry.msg} />
+              <GlyphText text={entry.msg} plain={!!entry.tally} whole />
               {#snippet tip()}
                 <div class="rest-head">Also in this line:</div>
                 {#each rest as label}
-                  <div><GlyphText text={label} /></div>
+                  <div><GlyphText text={label} plain /></div>
                 {/each}
               {/snippet}
             </Tip>
           {:else}
-            <GlyphText text={entry.msg} />
+            <GlyphText text={entry.msg} plain={!!entry.tally} whole />
           {/if}
         </span>
       </div>

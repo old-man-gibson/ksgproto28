@@ -459,8 +459,8 @@
   <div class="stat-row small">
     <span>{targetLabel(spec)}</span>
     <!-- Each school spends its own pool, so only show what this one costs. -->
-    {#if spec.manaCost > 0}<span><GlyphText text="💧" /> {spec.manaCost} mana</span>{/if}
-    {#if spec.focusCost}<span><GlyphText text="🧠" /> {spec.focusCost.toFixed(2)} focus</span>{/if}
+    {#if spec.manaCost > 0}<span>💧 {spec.manaCost} mana</span>{/if}
+    {#if spec.focusCost}<span>🧠 {spec.focusCost.toFixed(2)} focus</span>{/if}
     {#if spec.staminaCost}<span>🌬️ {spec.staminaCost} stamina</span>{/if}
     <span>⏱️ every {(spec.cooldown / TPS).toFixed(1)}s</span>
   </div>
@@ -481,7 +481,7 @@
          table shows two schools to a new player, not a spoiler of the third. -->
     {#if subsystemUnlocked(gs, 'psionics')}
       <button class:selected={tab === 'psionic'} onclick={() => (tab = 'psionic')}>
-        <GlyphText text="🧠" /> Psionic <span class="small dim">Lv {psionicsLevel(gs)}</span>
+        🧠 Psionic <span class="small dim">Lv {psionicsLevel(gs)}</span>
       </button>
     {/if}
   </div>
@@ -777,7 +777,7 @@
                       {/each}
                     </div>
                     <div class="standing small">
-                      <span><GlyphText text="🕊️" /> Favor <b>{favorWith(gs, deity.id)}</b></span>
+                      <span>🕊️ Favor <b>{favorWith(gs, deity.id)}</b></span>
                       {#if floatingFavor(gs) > 0}
                         <button class="small" onclick={() => game.assignFloatingFavor(deity.id)}>+1 favor (unassigned)</button>
                       {/if}
@@ -835,7 +835,7 @@
                   <b>{deity.name}</b>
                   <span class="dim epithet small">{deity.epithet}</span>
                 </span>
-                <span class="god-favor small"><GlyphText text="🕊️" /> {favorWith(gs, deity.id)}</span>
+                <span class="god-favor small">🕊️ {favorWith(gs, deity.id)}</span>
               </button>
             {/if}
           {/each}
@@ -1084,7 +1084,7 @@
                   {#each specLines(spec) as line}<div class="tip-line">{line}</div>{/each}
                   <div class="tip-line tip-sub">
                     {targetLabel(spec)}
-                    {#if spec.focusCost}· <GlyphText text="🧠" /> {spec.focusCost.toFixed(2)}{:else}· <GlyphText text="💧" /> {spec.manaCost}{/if}
+                    {#if spec.focusCost}· 🧠 {spec.focusCost.toFixed(2)}{:else}· 💧 {spec.manaCost}{/if}
                     · ⏱️ {(spec.cooldown / TPS).toFixed(1)}s
                   </div>
                   {#if isUtilityWorking(spec)}

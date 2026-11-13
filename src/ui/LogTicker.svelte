@@ -23,7 +23,7 @@
 {#if viewport.phone}
   <button class="log-ticker log-ticker-row" class:log-ticker-on={open} data-log-toggle aria-expanded={open} onclick={ontoggle}>
     <span class="log-ticker-glyph" aria-hidden="true" style="color: {ink}">{newest ? logGlyph(newest.kind) : ''}</span>
-    <span class="log-ticker-line" style="color: {ink}">{#if newest}<GlyphText text={newest.msg} />{:else}No log entries yet.{/if}</span>
+    <span class="log-ticker-line clip-glyph" style="color: {ink}">{#if newest}<GlyphText text={newest.msg} plain={!!newest.tally} whole />{:else}No log entries yet.{/if}</span>
     <span class="log-ticker-label">Log {open ? '▾' : '▴'}</span>
   </button>
 {:else}
@@ -31,8 +31,8 @@
     <span class="log-ticker-glyph" aria-hidden="true" style="color: {ink}">
       {newest ? logGlyph(newest.kind) : ''}
     </span>
-    <span class="log-ticker-line" style="color: {ink}" title={newest?.msg}>
-      {#if newest}<GlyphText text={newest.msg} />{:else}No log entries yet.{/if}
+    <span class="log-ticker-line clip-glyph" style="color: {ink}" title={newest?.msg}>
+      {#if newest}<GlyphText text={newest.msg} plain={!!newest.tally} whole />{:else}No log entries yet.{/if}
     </span>
     <button
       class="log-ticker-button"

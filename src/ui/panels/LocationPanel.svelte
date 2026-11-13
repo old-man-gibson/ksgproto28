@@ -262,7 +262,7 @@
   {@const dest = getSpot(gs.travel.to)}
   <div class="panel act-strip" style:min-height="{Math.max(STRIP_MIN, standingH)}px">
     <b class="act-strip-title">
-      <GlyphText text="🥾" /> Traveling to {#if gs.discovered.includes(dest.id)}{dest.icon} {dest.name}{:else}<GlyphText text="❓" /> an unknown place{/if}
+      <GlyphText text="🥾" /> Traveling to {gs.discovered.includes(dest.id) ? `${dest.icon} ${dest.name}` : '❓ an unknown place'}
     </b>
     <div class="bar act-strip-travel" style="height: 18px">
       <div
@@ -567,7 +567,7 @@
           {#if benchId === 'spelltable'}
             <!-- Not a discipline: one table, three schools (see SpellcraftPanel). -->
             <button class="bench-open" onclick={() => (openBench = benchId)}>
-              <span class="bench-icon"><GlyphText text="🔮" /></span>
+              <span class="bench-icon">🔮</span>
               <span class="bench-label">
                 <b>Spellcrafting Table</b>
                 <span class="small dim"
@@ -682,7 +682,7 @@
     <Modal wide onclose={() => (openBench = null)}>
       {#snippet title()}
         <div class="win-head">
-          <div class="win-title"><GlyphText text="🔮" /> Spellcrafting Table</div>
+          <div class="win-title">🔮 Spellcrafting Table</div>
           <FoldedDesc
             text="One table for every school of magic you have unlocked. Crafted spells are added to your grimoire."
           />
@@ -807,8 +807,12 @@
     padding: 8px 12px;
   }
 
+  /* One slot for every bench: the discipline icons are emoji of different advance widths. */
   .bench-icon {
+    flex: none;
+    width: 1.4em;
     font-size: 20px;
+    text-align: center;
   }
 
   .bench-label {

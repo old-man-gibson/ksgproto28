@@ -561,9 +561,9 @@
           title={r.shut ? `Shut: ${r.shut}` : r.noExit ? 'Arriving starts a fight with no way out' : ''}
           onclick={() => walkTo(edge.to)}
         >
-          {#if known}{dest.icon} {dest.name}{:else}<GlyphText text="❓" /> Unknown place{/if} · {ticksToTime(r.ticks)}{r.oneWay
+          {known ? `${dest.icon} ${dest.name}` : '❓ Unknown place'} · {ticksToTime(r.ticks)}{r.oneWay
             ? ' ⤵'
-            : ''}{#if r.noExit}<GlyphText text=" ⚔️" />{/if}{#if r.shut}<GlyphText text=" 🔒" />{/if}
+            : ''}{r.noExit ? ' ⚔️' : ''}{r.shut ? ' 🔒' : ''}
         </button>
         <!-- The reason a road is shut or has no retreat is on the line, not in the button's title. -->
         {#if r.shut || r.noExit}
@@ -605,7 +605,7 @@
     bind:this={cardEl}
   >
     <div class="card-head">
-      <b>{#if c.known}{c.spot.icon} {c.spot.name}{:else}<GlyphText text="❓" /> Unknown place{/if}</b>
+      <b>{c.known ? `${c.spot.icon} ${c.spot.name}` : '❓ Unknown place'}</b>
       {#if !c.known}
         <span class="dim small">{REGIONS[AREAS[c.spot.areaId].regionId].name}</span>
       {/if}

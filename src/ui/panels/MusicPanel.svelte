@@ -655,7 +655,7 @@
               >
                 {#each Object.values(MUSIC_METERS) as m (m.id)}
                   <option value={m.id} disabled={m.unlockLevel > level} title={m.desc}>
-                    {#if m.unlockLevel > level}<GlyphText text="🔒" />{m.unlockLevel} {/if}{m.name}
+                    {m.unlockLevel > level ? `🔒${m.unlockLevel} ` : ''}{m.name}
                   </option>
                 {/each}
               </select>

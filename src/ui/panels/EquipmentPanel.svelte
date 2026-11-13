@@ -956,7 +956,7 @@
   {#if rune.desc}<div class="tip-line tip-sub">{rune.desc}</div>{/if}
   <div class="tip-line"><GlyphText text="⚔️" /> {describeRuneEffect(rune.effects.weapon)}</div>
   <div class="tip-line"><GlyphText text="🛡️" /> {describeRuneEffect(rune.effects.armor)}</div>
-  <div class="tip-line">💍 {describeRuneEffect(rune.effects.accessory)}</div>
+  <div class="tip-line"><GlyphText text="💍" /> {describeRuneEffect(rune.effects.accessory)}</div>
   <div class="tip-line tip-total">Sells for {fmt(e.value)} <GlyphText text="🪙" /></div>
 {/snippet}
 
@@ -1250,14 +1250,14 @@
             {/each}
             {#each g.spec.grants as gr}
               <div class="tip-line">
-                <GlyphText text="✨" /> {STATUSES[gr.id]?.name ?? gr.id} for {((gr.duration as number) / 10).toFixed(0)}s
+                ✨ {STATUSES[gr.id]?.name ?? gr.id} for {((gr.duration as number) / 10).toFixed(0)}s
               </div>
             {/each}
             {#each g.spec.inflicts as inf}
-              <div class="tip-line"><GlyphText text="☠️" /> inflicts {STATUSES[inf.id]?.name ?? inf.id}</div>
+              <div class="tip-line">☠️ inflicts {STATUSES[inf.id]?.name ?? inf.id}</div>
             {/each}
             {#each g.spec.cures as c}<div class="tip-line">🩹 clears {c}</div>{/each}
-            {#if !can.ok}<div class="tip-line tip-sub"><GlyphText text="🔒" /> {can.reason}</div>{/if}
+            {#if !can.ok}<div class="tip-line tip-sub">🔒 {can.reason}</div>{/if}
           {/snippet}
         </Tip>
       {/each}
@@ -1354,7 +1354,7 @@
     <div class="win-section">
       <div class="mod"><GlyphText text="⚔️" /> In a weapon: {describeRuneEffect(rune.effects.weapon)}</div>
       <div class="mod"><GlyphText text="🛡️" /> In armor: {describeRuneEffect(rune.effects.armor)}</div>
-      <div class="mod">💍 In an accessory: {describeRuneEffect(rune.effects.accessory)}</div>
+      <div class="mod"><GlyphText text="💍" /> In an accessory: {describeRuneEffect(rune.effects.accessory)}</div>
     </div>
     <p class="small dim">Open a piece of gear with empty rune slots to socket this.</p>
     <div class="win-buttons">

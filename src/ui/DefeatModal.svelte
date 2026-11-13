@@ -4,7 +4,6 @@
   import { onMount } from 'svelte';
   import { fmt } from './lib/format';
   import { LAYER, pushOverlay } from './lib/overlays';
-  import GlyphText from './lib/icons/GlyphText.svelte';
   import Icon from './lib/icons/Icon.svelte';
   import { STATUSES } from '../core/registry';
 
@@ -69,7 +68,7 @@
 <div class="overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div class="modal panel" role="dialog" aria-label="Fight summary">
     <header>
-      <h2><GlyphText text={title} /></h2>
+      <h2>{title}</h2>
       <p class="dim">
         {#each ledger.foes as f, i}{i > 0 ? ', ' : ''}{f.icon}
           {f.name}{f.count > 1 ? ` ×${f.count}` : ''} (Lv {f.level}){/each}{#if ledger.foes.length === 0}No
@@ -92,7 +91,7 @@
         <h4>Damage you turned away — {fmt(Math.round(prevented))}</h4>
         <ul class="stats">
           <li>
-            <span><GlyphText text="🛡️" /> Absorbed <em>armour, bracing, resistance</em></span>
+            <span>🛡️ Absorbed <em>armour, bracing, resistance</em></span>
             <b>{fmt(Math.round(stopped.absorbed))}</b>
           </li>
           <li>
@@ -100,7 +99,7 @@
             <b>{fmt(Math.round(stopped.parried))}</b>
           </li>
           <li>
-            <span><GlyphText text="💨" /> Dodged <em>{stopped.dodges} never arrived</em></span>
+            <span>💨 Dodged <em>{stopped.dodges} never arrived</em></span>
             <b>{fmt(Math.round(stopped.dodged))}</b>
           </li>
           {#if stopped.riposted > 0}
@@ -119,7 +118,7 @@
           {#if ledger.healRefused > 0}
             <!-- The reason a salve did nothing is worth as much as the salve. -->
             <li class="bad">
-              <span><GlyphText text="🚫" /> Refused by a condition</span>
+              <span>🚫 Refused by a condition</span>
               <b>{fmt(Math.round(ledger.healRefused))}</b>
             </li>
           {/if}
@@ -131,7 +130,7 @@
         <h3>Damage taken</h3>
         {#if worst}
           <p class="lead">
-            Most of it was <b><GlyphText text={worst.icon} /> {worst.label}</b> — {fmt(Math.round(worst.amount))} of
+            Most of it was <b>{worst.icon} {worst.label}</b> — {fmt(Math.round(worst.amount))} of
             {fmt(Math.round(took))} ({Math.round(share(worst.amount))}%).
           </p>
         {/if}
@@ -139,7 +138,7 @@
           {#each ledger.incoming as s}
             <li>
               <div class="bar" style="width: {share(s.amount)}%"></div>
-              <span class="who"><GlyphText text={s.icon} /> {s.label}</span>
+              <span class="who">{s.icon} {s.label}</span>
               <span class="amt">{fmt(Math.round(s.amount))}</span>
               <span class="hits dim">×{fmt(s.hits)}</span>
             </li>

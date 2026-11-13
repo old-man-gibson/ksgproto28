@@ -331,7 +331,7 @@
     <!-- What the character is doing, and gold and kills per minute. -->
     <JobStrip showRate={!screen} />
     {#if timeSense}
-      <div class="timesense" title="{timeSense} ({SKILLS[CHRONOSENSE_ID].name} {senseLevel})">
+      <div class="timesense clip-glyph" title="{timeSense} ({SKILLS[CHRONOSENSE_ID].name} {senseLevel})">
         <GlyphText text="🕰️" /> <span class="clock-full">{timeSense}</span><span class="clock-short">{shortClock(timeSense)}</span>
       </div>
     {/if}

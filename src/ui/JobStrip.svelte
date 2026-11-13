@@ -5,7 +5,6 @@
   import { fmt } from './lib/format';
   import Tip from './lib/Tip.svelte';
   import type { Snippet } from 'svelte';
-  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * The header's job strip and rate chip. The strip is the status text with a
@@ -16,8 +15,14 @@
    *
    * Width rule: nothing in the header changes width with the job. The strip
    * takes the room the other chips leave (basis 0), the bar and the detail keep
-   * their slots when the job has none, and the chip's figures have fixed-width
-   * slots. A fight starting or ending moves nothing on screen.
+   * their slots when the job has none, the icon has a fixed slot, and the
+   * chip's figures have fixed-width slots. A fight starting or ending moves
+   * nothing on screen.
+   *
+   * The icon is the job's own emoji, not pixel art: an activity's icon is any
+   * emoji, and the other jobs (rest, recovery, music) have no drawing, so a
+   * drawn icon would alternate with emoji as the job changed (the plan's "no
+   * mixed rows", docs/plans/pixel-icons.md §4.3).
    *
    * `compact` is the phone dock's block (Dock.svelte, docs/PHONE.md): the job
    * and its detail on one line, the bar under it, and a third line that holds
@@ -52,7 +57,7 @@
   <Tip block>
     <div class="job-compact" class:job-paused={gs.paused}>
       <div class="job-line">
-        <span class="job-icon"><GlyphText text={job.icon} /></span>
+        <span class="job-icon">{job.icon}</span>
         <span class="job-name">{gs.paused ? 'Paused: ' : ''}{job.name}</span>
         <span class="job-detail">{job.detail ?? ' '}</span>
       </div>
@@ -78,7 +83,7 @@
   </Tip>
 {:else}
   <div class="job-strip" class:job-paused={gs.paused} title="{job.name}. {job.tip}">
-    <span class="job-icon"><GlyphText text={job.icon} /></span>
+    <span class="job-icon">{job.icon}</span>
     <span class="job-name">{gs.paused ? 'Paused: ' : ''}{job.name}</span>
     <!-- Drawn in every state: a job without a bar hides it and keeps its slot. -->
     <div class="bar job-track" class:job-none={job.pct === null}>
@@ -111,8 +116,12 @@
     color: var(--text-dim);
   }
 
+  /* A fixed slot: emoji advance widths differ, and the name must start at one
+     place in every job. */
   .job-icon {
     flex: none;
+    width: 1.4em;
+    text-align: center;
   }
 
   /* A slot of fixed width (the room, up to 240px; never the text), so the bar

@@ -31,7 +31,6 @@
   import { mapDataUrl, readPalette, themeStamp } from './royaleMapImage.svelte';
   import BattleStage from './BattleStage.svelte';
   import RoyaleMinimap from './RoyaleMinimap.svelte';
-  import GlyphText from './icons/GlyphText.svelte';
 
   /**
    * The royale's field, drawn isometrically (systems/royaleField.ts runs it).
@@ -231,7 +230,7 @@
   <div class="royale">
     <div class="royale-status small">
       <span>👥 <b>{field.fighters.length}</b> on the field, <b>{shown.length}</b> on your map</span>
-      {#if duelling}<span><GlyphText text="⚔️" /> {duelling} duelling each other</span>{/if}
+      {#if duelling}<span>⚔️ {duelling} duelling each other</span>{/if}
       {#if engaged}<span class="royale-engaged">🗡️ {engaged} fighting you</span>{/if}
       {#if last}<span class="royale-engaged">👑 The champion is the last one left.</span>{/if}
     </div>

@@ -26,7 +26,7 @@
       {@const worn = gs.title === title.id}
       <div class="ach title-card" class:done={earned} class:worn>
         <div class="head">
-          <span class="name">{#if earned}{title.icon}{:else}<GlyphText text="❓" />{/if} {earned ? title.name : '???'}</span>
+          <span class="name">{earned ? title.icon : '❓'} {earned ? title.name : '???'}</span>
           {#if earned}
             <button class="small" onclick={() => game.setTitle(worn ? null : title.id)}>
               {worn ? 'Remove' : 'Wear'}

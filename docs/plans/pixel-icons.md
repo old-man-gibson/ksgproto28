@@ -305,7 +305,7 @@ in use, and a checkout without the packs draws the plain diagram.
 | `src/ui/lib/icons/art.gen.ts` | Yes, generated | Written by `npm run icons` from the manifest: one eager `import.meta.glob([...], { query: '?url' })` listing exactly the manifest's files. Vite copies those files into a build and nothing else. A file missing on disk is simply absent from the result, so that icon shows its emoji. Never edited by hand |
 | `src/ui/lib/icons/iconArt.ts` | Yes | `iconUrl(def)` and `glyphUrl(emoji)`: name → manifest → URL from `art.gen.ts`. Core stays browser-free |
 | `src/ui/lib/icons/Icon.svelte` | Yes | `<Icon of={def} size={16 \| 32} />`. Draws `<img>` with `image-rendering: pixelated` and `alt=""` (the name is printed beside it), else the emoji. Fixed box so rows do not shift |
-| `src/ui/lib/icons/GlyphText.svelte` | Yes | Draws a string, replacing each emoji that has a `GLYPH_ART` entry with an `<img>`. Used by LogFeed, string-built tooltips and template messages. Old log lines in a save get art too, because the log stores text |
+| `src/ui/lib/icons/GlyphText.svelte` | Yes | Draws a string, replacing each emoji that has a `GLYPH_ART` entry with an `<img>` in a fixed box (§4.5); `plain` draws it as text, `whole` draws it as text only when it holds an emoji with no drawing. Used by LogFeed, string-built tooltips and template messages. Old log lines in a save get art too, because the log stores text |
 | SVG sites | — | MapCard pins and the psionic chart draw `<image href>` in place of `<text>` when a URL resolves |
 
 Never point `import.meta.glob` at a whole pack: Vite would copy all 8,256 sheet files
@@ -331,6 +331,13 @@ One conversion = one registry's render sites switched from `{def.icon}` to
 - **A group switches only when every entry in it has art** — all nine generic stances,
   all six attributes. A row that is half pixel, half emoji looks worse than either
   (mockup §2 and §3 show it).
+- **No mixed rows, by site.** Where a row, a list, a tooltip or a line of chips
+  shows several icons, the site draws all of them as art or all as emoji. A site
+  with one undrawable sibling stays emoji (job strip, the bench row, offline and
+  defeat lists, the flask effect lines), or the missing drawing is picked first.
+  A loot tally in the log is text for the same reason: `<GlyphText plain>`. Any
+  other log line is art only when every emoji in it has a drawing (`whole`): an
+  achievement line whose own icon has none is text all through.
 - **The emoji stays in the data.** It is the fallback, the plain-text form for log
   templates and forge pickers, and what a fresh clone shows for licensed art. Never
   delete `icon`.
@@ -358,6 +365,13 @@ One conversion = one registry's render sites switched from `{def.icon}` to
 | Stance button | 17px | 32px (button grows about 15px; check the phone layout) |
 | Inline text: sidebar rows, tooltips, log, word pills | about 15px | 16px (half the art; soft on a 1× screen) or 32px where the row can grow |
 | Map pins | SVG text | SVG image at pin size |
+
+`GlyphText` draws each glyph in one box, `size` + 2 px wide and `size` px high,
+holding the image or the emoji (13px, centred): the art pack resolves URLs after
+the first paint, and a state can swap a drawn emoji for an undrawn one, so
+neither changes a line's width. The box has negative vertical margins and adds
+no height to the line. A one-line box that clips its overflow (an ellipsis) takes
+the global `.clip-glyph` class: 3px of padding with the same negative margin.
 
 The mockup shows the sidebar and the word pills at both 16px and 32px. 32px reads
 better and makes the sidebar about half again as tall.
@@ -469,8 +483,8 @@ Each step is one story and one PR.
    (`GROUPS.weather.pending`); the sky chip shows one kind at a time, so no row
    mixes. 20 `GLYPH_ART` entries, 18 manifest names (⏳ and 🕰️ share one).
    Every template site that writes one of these as text goes through
-   `<GlyphText>` (header gold and sky chip, dock gold sizer, job strip, map card,
-   panel headings, sell prices, lock lines, tooltip lines; `title=` attributes stay
+   `<GlyphText>` (header gold and sky chip, dock gold sizer, the map card's
+   headings and notes, panel headings, sell prices, lock lines, tooltip lines; `title=` attributes stay
    emoji, an attribute cannot hold an image); a site with alternates
    converts only when every alternate has art (🏹 beside ⚔ in the enemy tip,
    ✔ beside 🔒 convert only the 🔒). The header weather chip is `min-height: 1.4em`:
@@ -530,6 +544,22 @@ Each step is one story and one PR.
    table: `game.school_engaged` and `tutorial.stance`, so 💨 Quick shows the gust
    drawing, 🌪️ Flurry the sandstorm, ⚡ Jigen-ryu the spark and 🔮 Magic Combat the
    arcane one.
+
+   Review fixes, same day (the rule is §4.3 "No mixed rows, by site"). The glyph
+   box is fixed (§4.5). Sites put back to emoji because a sibling has no drawing:
+   the job strip's icon (an activity's icon is any emoji; the slot is a fixed
+   1.4em), the bench row and the spell table's title, the map card's route rows and
+   unknown-place headings, the unknown-skill rows (❓), the unearned-title rows,
+   the Spellcrafting tabs and cost chips (🌬️ and ⏱️ have none), the deity standing
+   line (🙏), the flask and brew effect lines (💥 💚 🩹 have none), the biomatter
+   cost (🧬 has none), the royale status line, the offline summary, the fight summary's
+   damage lists (🤺 and ↩️ have none; sources are monster emoji) and loot tallies in
+   the log. 💍
+   maps to `item_ring` in the glyph table, so the rune tooltip's three lines
+   (weapon, armor, accessory) are all art. `art: ''` is absent in `artName`, is
+   refused by tests/icons.test.ts, and by the forge (`validate.ts`, kinds item,
+   itemClass, skill, style, status, rune, reagent; a monster's `art` is a portrait
+   file and is not checked).
 7. **Spots and activities.** Map pins become SVG images; Epic RPG World props go in
    `packs/epic-rpg-world/`.
 8. **The rest, by tier.**

@@ -11,7 +11,7 @@ import { WEATHER_ICONS } from '../src/core/systems/weather';
 import manifest from '../src/ui/lib/icons/manifest.json';
 import { NAV } from '../src/ui/lib/nav';
 import { artName, artUrl, iconUrl } from '../src/ui/lib/icons/iconArt';
-import { GLYPH_ART, bareGlyph, glyphName, splitGlyphs } from '../src/ui/lib/icons/glyphs';
+import { GLYPH_ART, bareGlyph, glyphName, hasUndrawn, splitGlyphs } from '../src/ui/lib/icons/glyphs';
 import { FLOATING_SLOT_ART, SLOT_ART } from '../src/ui/lib/icons/slotArt';
 // @ts-expect-error — a plain .mjs script with no type declarations
 import { ART_GEN_PATH, renderArtGen } from '../scripts/icons.mjs';
@@ -69,10 +69,12 @@ function covered(group: string): IconDef[] {
 }
 
 describe('pixel icons: manifest and defs', () => {
-  it('every art a def declares is a name in the manifest', () => {
+  it('every art a def declares is a name in the manifest, and none is empty', () => {
     for (const [group, { defs }] of Object.entries(GROUPS)) {
       for (const def of defs) {
-        if (def.art) expect(MANIFEST[def.art], `${group}.${def.id}: art '${def.art}' is not in manifest.json`).toBeDefined();
+        if (def.art === undefined) continue;
+        expect(def.art, `${group}.${def.id}: art is empty: leave the field out`).not.toBe('');
+        expect(MANIFEST[def.art], `${group}.${def.id}: art '${def.art}' is not in manifest.json`).toBeDefined();
       }
     }
   });
@@ -185,9 +187,20 @@ describe('pixel icons: the glyph table', () => {
     expect(splitGlyphs('')).toEqual([]);
   });
 
+  it('flags a string that holds an emoji the table does not draw', () => {
+    // Every emoji drawn, or none: a line is art all through or text all through.
+    expect(hasUndrawn(splitGlyphs('🏆 Achievement: 🥾 Wanderer I!'))).toBe(false);
+    expect(hasUndrawn(splitGlyphs('🏆 Achievement: 🧱 Breaker III!'))).toBe(true);
+    expect(hasUndrawn(splitGlyphs('no emoji at all, ×2 · 12%'))).toBe(false);
+    expect(hasUndrawn(splitGlyphs('😮‍💨 Winded 💨'))).toBe(true);
+    expect(hasUndrawn([])).toBe(false);
+  });
+
   it('a def with its own art ignores the glyph table', () => {
     expect(artName({ icon: '⚔️', art: 'tab_combat' })).toBe('tab_combat');
     expect(artName({ icon: '⚔️' })).toBe('crossed_swords');
     expect(artName({ icon: '🗡️' })).toBeUndefined();
+    // An empty art is absent: the glyph table answers.
+    expect(artName({ icon: '⚔️', art: '' })).toBe('crossed_swords');
   });
 });

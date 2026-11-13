@@ -31,6 +31,8 @@ export const GLYPH_ART: Record<string, string> = {
   '🥾': 'boots',
   '🛡️': 'shield',
   '🧠': 'brain',
+  // The accessory slot's emoji (a rune's "in an accessory" line); rings draw as item_ring.
+  '💍': 'item_ring',
   // Weather (WEATHER_ICONS, systems/weather.ts). ☀️ and 🕊️ are also the arcane
   // words light and fly/gently; ❄️ and 💨 are ice and gust.
   '☀️': 'sun',
@@ -89,6 +91,17 @@ const GLYPH_PATTERN = new RegExp(
 );
 
 export type GlyphPart = { text: string } | { glyph: string; name: string };
+
+const PICTOGRAPH = /\p{Extended_Pictographic}/u;
+
+/**
+ * Whether a split string still holds an emoji the table has no drawing for.
+ * A line that lists several kinds of thing (a log line) is drawn as text then,
+ * so it is never half art and half emoji (docs/plans/pixel-icons.md §4.3).
+ */
+export function hasUndrawn(parts: GlyphPart[]): boolean {
+  return parts.some((part) => 'text' in part && PICTOGRAPH.test(part.text));
+}
 
 /**
  * A string cut into plain text and the emoji the table draws, in order. Joined

@@ -519,7 +519,7 @@
       <div class="skill-block">
         <div class="row hinted">
           <span class="chev"></span>
-          <span class="s-icon"><GlyphText text="❓" /></span>
+          <span class="s-icon">❓</span>
           <span class="name dim">???</span>
           <span class="reqs small dim">
             might manifest: {def.unlock.map(condText).join(', ')}{#if manifestsByXp(def)}; or by use, {Math.floor(latentXp(gs, def.id))}/{skillXpNeeded(def.id, 1)} XP{/if}

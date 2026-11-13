@@ -26,6 +26,7 @@ import { MUSIC_AXES } from '../../src/core/data/music.data';
 import { ARCANE_WORDS } from '../../src/core/data/spellcraft.data';
 import { askingPrice, lineValue } from '../../src/core/systems/shops';
 import { foodProblems, heatWindowProblems } from '../../src/core/systems/disciplines';
+import iconManifest from '../../src/ui/lib/icons/manifest.json';
 
 /**
  * Benches that are furniture rather than disciplines. The spellcrafting table
@@ -33,6 +34,9 @@ import { foodProblems, heatWindowProblems } from '../../src/core/systems/discipl
  * hand instead of from DISCIPLINES — a real id that resolves nowhere.
  */
 const SPECIAL_BENCHES = new Set(['spelltable']);
+
+/** The catalog kinds whose `art` field names a pixel icon (src/ui/lib/icons/manifest.json). */
+const ICON_ART_KINDS = ['item', 'itemClass', 'skill', 'style', 'status', 'rune', 'reagent'];
 
 export type Severity = 'error' | 'warn';
 
@@ -1212,6 +1216,24 @@ export function validate(store: S): Issue[] {
     { materials: 'tags' },
   )) {
     err(issue.kind, issue.id, `${issue.rule}: ${issue.message}`);
+  }
+
+  // ---------- Pixel icons ----------
+  // The rules of tests/icons.test.ts. A def's `art` names an entry of
+  // src/ui/lib/icons/manifest.json, and an `art` is never empty (no art is the
+  // absence of the field; the emoji shows). Only the kinds whose `art` is an
+  // icon name: a monster's `art` is a portrait file.
+  {
+    const manifestNames: Record<string, string> = iconManifest;
+    for (const kind of ICON_ART_KINDS) {
+      for (const [key, def] of Object.entries(store.all<{ art?: unknown }>(kind))) {
+        if (def?.art === undefined) continue;
+        if (def.art === '') err(kind, key, 'art is empty: leave the field out to show the emoji', ['art']);
+        else if (typeof def.art !== 'string' || !manifestNames[def.art]) {
+          err(kind, key, `art '${String(def.art)}' is not a name in src/ui/lib/icons/manifest.json`, ['art']);
+        }
+      }
+    }
   }
 
   // ---------- Duplicate ids ----------

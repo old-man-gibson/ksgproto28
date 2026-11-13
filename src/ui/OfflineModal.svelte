@@ -5,7 +5,6 @@
   import { onMount } from 'svelte';
   import { fmt, msToTime } from './lib/format';
   import { LAYER, pushOverlay } from './lib/overlays';
-  import GlyphText from './lib/icons/GlyphText.svelte';
 
   let { summary, onclose }: { summary: OfflineSummary; onclose: () => void } = $props();
 
@@ -24,19 +23,19 @@
   onclick={(e) => e.target === e.currentTarget && onclose()}
 >
   <div class="modal panel" role="dialog">
-    <h2><GlyphText text="⏳" /> Welcome back!</h2>
+    <h2>⏳ Welcome back!</h2>
     <p class="dim">
       While you were away for {msToTime(summary.ms)}{summary.capped ? ' (capped at 8h)' : ''}:
     </p>
     <ul>
-      {#if summary.kills > 0}<li><GlyphText text="☠️" /> Defeated <b>{fmt(summary.kills)}</b> monsters</li>{/if}
-      {#if summary.goldGained > 0}<li><GlyphText text="🪙" /> Earned <b>{fmt(summary.goldGained)}</b> gold</li>{/if}
-      {#if summary.itemsGained > 0}<li><GlyphText text="📦" /> Found <b>{summary.itemsGained}</b> items</li>{/if}
+      {#if summary.kills > 0}<li>☠️ Defeated <b>{fmt(summary.kills)}</b> monsters</li>{/if}
+      {#if summary.goldGained > 0}<li>🪙 Earned <b>{fmt(summary.goldGained)}</b> gold</li>{/if}
+      {#if summary.itemsGained > 0}<li>📦 Found <b>{summary.itemsGained}</b> items</li>{/if}
       {#each summary.attrLevels as a}
         <li>📈 {attrName(a.attr)} +{a.gained} levels</li>
       {/each}
       {#each summary.skillLevels as s}
-        <li><GlyphText text="📜" /> {s.name} +{s.gained} levels</li>
+        <li>📜 {s.name} +{s.gained} levels</li>
       {/each}
       {#if summary.firstCalm}<li>{summary.firstCalm}</li>{/if}
       {#if summary.ladderEnd}<li>{summary.ladderEnd}</li>{/if}

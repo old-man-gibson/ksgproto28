@@ -100,9 +100,13 @@ and the first paint has to be the one the draw will confirm.
   the first frame, as without the art pack.
 
 Other art that appears after the first paint keeps its box: `Icon.svelte`
-reserves `size` x `size` for the emoji, the Bestiary cards and portrait have
-fixed boxes, and the battle stage is a fixed-height frame whose sprite changes
-size inside it (emoji 58 px, portrait 92 px).
+reserves `size` x `size` for the emoji, `GlyphText.svelte` draws every glyph
+in one box (`size` + 2 px wide, `size` px high) that holds the image or the
+emoji, so a line of text does not reflow when the pack resolves its URLs, the
+Bestiary cards and portrait have fixed boxes, and the battle stage is a
+fixed-height frame whose sprite changes size inside it (emoji 58 px, portrait
+92 px). A slot whose content alternates between a drawn and an undrawn emoji
+(the header's job icon) holds plain emoji in a fixed-width slot instead.
 
 ## What survives
 

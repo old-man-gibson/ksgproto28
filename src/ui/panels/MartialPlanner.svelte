@@ -727,7 +727,7 @@
                 >
                 <!-- Tapping the move holds it on the graph, as a hover does. -->
                 <button class="plan-main" aria-pressed={pinned === t.id} onclick={() => pin(t.id)}>
-                  <span class="plan-name">
+                  <span class="plan-name clip-glyph">
                     {t.icon}
                     {techniqueDisplayName(gs, t)}
                     {#if overlayOf(t)}

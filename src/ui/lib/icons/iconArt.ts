@@ -31,11 +31,12 @@ export function artUrl(name: string | undefined): string | null {
 
 /**
  * The manifest name a def draws: its own `art`, else the glyph table's entry
- * for its emoji (glyphs.ts), else none. Text only, so tests can ask which
- * entries of a registry have art without the packs on disk.
+ * for its emoji (glyphs.ts), else none. An empty `art` is absent. Text only,
+ * so tests can ask which entries of a registry have art without the packs on
+ * disk.
  */
 export function artName(def: { icon?: string; art?: string }): string | undefined {
-  return def.art ?? (def.icon ? glyphName(def.icon) : undefined);
+  return def.art || (def.icon ? glyphName(def.icon) : undefined);
 }
 
 /**
