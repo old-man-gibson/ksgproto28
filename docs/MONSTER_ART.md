@@ -15,9 +15,10 @@ page holds filenames only. How the files reach a build and the Android app:
 
 ## How the stage draws them
 
-`BattleStage.svelte` draws every portrait at a fixed 92 px height, width by
-aspect, and multiplies it by the monster's size tag: `small` 0.85, `large`
-1.15, `huge` and `gargantuan` 1.3. The file's own pixel size changes nothing.
+`BattleStage.svelte` draws every portrait at a fixed height, width by
+aspect: 92 px, or 70 px on a stage 560 px wide or less (phones). It
+multiplies that by the slot's scale (1, 0.8, 0.8, 0.86 or 0.84) and by the
+monster's size tag: `small` 0.85, `large` 1.15, `huge` and `gargantuan` 1.3. The file's own pixel size changes nothing.
 So "bigger" comes from the tags and from how elaborate the picture is: a
 `Boss …` file for a boss, keeper or champion, a plain one for the rank and file.
 
