@@ -576,15 +576,15 @@
        ending does not move what is below the map. -->
   <div class="journey small">
     {#if gs.travel}
-      🥾 En route to {gs.discovered.includes(gs.travel.to) ? getSpot(gs.travel.to).name : 'an unknown place'} — {ticksToTime(gs.travel.ticksLeft)}
+      <span class="j-now">🥾 En route to {gs.discovered.includes(gs.travel.to) ? getSpot(gs.travel.to).name : 'an unknown place'} — {ticksToTime(gs.travel.ticksLeft)}</span>
       {#if gs.travelPlan.length > 0}
-        <span class="dim">
-          , then {gs.travelPlan.length} more leg{gs.travelPlan.length > 1 ? 's' : ''} to
+        <span class="j-then dim">
+          then {gs.travelPlan.length} more leg{gs.travelPlan.length > 1 ? 's' : ''} to
           {gs.discovered.includes(gs.travelPlan[gs.travelPlan.length - 1])
             ? getSpot(gs.travelPlan[gs.travelPlan.length - 1]).name
             : 'an unknown place'}
         </span>
-        <button class="small" onclick={() => game.cancelTravelPlan()}>Cancel journey</button>
+        <button class="small j-cancel" onclick={() => game.cancelTravelPlan()}>Cancel journey</button>
       {/if}
     {:else}
       &nbsp;
@@ -881,6 +881,51 @@
     gap: 8px;
     flex-wrap: wrap;
     min-height: 2.5em;
+  }
+
+  /*
+   * On a narrow tab (a phone) the line is two lines of text and the Cancel button
+   * beside them, at the height of the tallest state, in every state: a walk of one
+   * leg, of several, and standing still are all 44px. Each line is one line of
+   * text cut with an ellipsis, so a long place name cannot wrap it taller, and the
+   * button spans both rows, so its 44px is not added to the text's. It was 31px
+   * standing and 56 to 92px with a plan under it, which moved the page under the
+   * map when a multi-leg walk began.
+   */
+  @container tab (max-width: 559px) {
+    .journey {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: 22px 22px;
+      align-content: center;
+      column-gap: 8px;
+      row-gap: 0;
+      height: 44px;
+      min-height: 0;
+    }
+
+    .j-now,
+    .j-then {
+      grid-column: 1;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      line-height: 22px;
+    }
+
+    .j-now {
+      grid-row: 1;
+    }
+
+    .j-then {
+      grid-row: 2;
+    }
+
+    .j-cancel {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
   }
 
   .map-card {

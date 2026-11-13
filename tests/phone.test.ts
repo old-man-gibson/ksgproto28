@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
@@ -137,6 +139,21 @@ describe('the layouts do not draw one thing twice', () => {
     expect(bottom).toContain('class:short={viewport.short}');
   });
 
+  it('no theme sets `position` on the header without leaving the dock out: its sticky would lose', () => {
+    // The dock is a `header` child of `.layout` (Dock.svelte), so a theme's `.layout > header` rule
+    // reaches it, and a theme rule outweighs the dock's own scoped `position: sticky`
+    // (signage did: `relative`, and the dock scrolled away with the page).
+    const dir = path.resolve(__dirname, '../src/themes');
+    for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.css'))) {
+      const css = fs.readFileSync(path.join(dir, file), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        if (!/>\s*header(?!\s*[.\w\[#:])|>\s*header\s*(,|$)/.test(selector.trim())) continue;
+        if (!/(^|;|\s)position\s*:/.test(body)) continue;
+        expect(selector, `${file}: ${selector.trim()}`).toContain(':not(.dock)');
+      }
+    }
+  });
+
   it('shows the dock or the header, never both', () => {
     expect(app).toMatch(/\{#if phone\}\s*<Dock /);
     expect(app).toMatch(/\{#if !phone\}\s*<header /);
@@ -197,7 +214,8 @@ describe('storage the browser refuses', () => {
   }
 
   it('boots on an in-memory stand-in, and keeps what it is given for the visit', async () => {
-    const { browserStorage, SAVE_KEY, saveToStorage, loadFromStorage, clearStorage } = await withBlockedStorage();
+    const { browserStorage, storagePersists, SAVE_KEY, saveToStorage, loadFromStorage, clearStorage } = await withBlockedStorage();
+    expect(storagePersists).toBe(false);
     expect(browserStorage.getItem(SAVE_KEY)).toBeNull();
     expect(loadFromStorage()).toEqual({ state: null, corrupted: false });
 

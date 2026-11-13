@@ -101,4 +101,51 @@ describe('a touch-only tap card', () => {
     expect(press).not.toHaveBeenCalled();
     expect(overlayCount()).toBe(1);
   });
+
+  /** A long press whose click never comes (the finger slid off before it lifted). */
+  function longPressWithNoClick(target: Element) {
+    vi.useFakeTimers();
+    pointer(target, 'pointerdown', 'touch');
+    vi.advanceTimersByTime(500);
+    vi.useRealTimers();
+    flush();
+    expect(document.querySelector('.tip-pop')).not.toBeNull();
+    pointer(target, 'pointercancel', 'touch');
+  }
+
+  it('a long press with no click does not eat the next mouse click', () => {
+    const press = vi.fn();
+    const go = document.getElementById('go')!;
+    go.addEventListener('click', press);
+    const target = document.querySelector('.tip-target.touch-only')!;
+    longPressWithNoClick(target);
+    pointer(target, 'pointerdown', 'mouse');
+    go.click();
+    expect(press).toHaveBeenCalledTimes(1);
+  });
+
+  it('nor the next Enter on the control', () => {
+    const press = vi.fn();
+    const go = document.getElementById('go')!;
+    go.addEventListener('click', press);
+    const target = document.querySelector('.tip-target.touch-only')!;
+    longPressWithNoClick(target);
+    go.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    go.click(); // what Enter on a button does
+    expect(press).toHaveBeenCalledTimes(1);
+  });
+
+  it('putting the card away clears the swallow too', () => {
+    const press = vi.fn();
+    const go = document.getElementById('go')!;
+    go.addEventListener('click', press);
+    const target = document.querySelector('.tip-target.touch-only')!;
+    longPressWithNoClick(target);
+    // A tap elsewhere puts the card away (window pointerdown, capture).
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    flush();
+    expect(document.querySelector('.tip-pop')).toBeNull();
+    go.click();
+    expect(press).toHaveBeenCalledTimes(1);
+  });
 });

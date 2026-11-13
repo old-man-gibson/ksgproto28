@@ -994,8 +994,9 @@
       <div class="mem-row">
         {#each memorized as mem, i (mem.name + i)}
           {@const active = shapeKey(mem.shape) === shapeKey(shape)}
-          <!-- A title is hover-only: the allocation is the card of a long press. -->
-          <Tip>
+          <!-- A title is hover-only: the allocation is the card of a long press. The
+               buttons keep their titles for a mouse, so the card is touch-only. -->
+          <Tip touchOnly>
             <span class="mem-chip" class:active>
               <button
                 class="mem-load"

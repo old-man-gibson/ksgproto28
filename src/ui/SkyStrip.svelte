@@ -110,6 +110,16 @@
     overflow: hidden;
   }
 
+  /* The clock chip is a slot as wide as its widest text ("🕰️ about 23:00"), 7.1em as
+     the header's chip is (App.svelte): a daypart name or an hour turning moves
+     nothing after it. Every text the sense can write is that wide or narrower
+     (tests/skySlots.test.ts). */
+  .sky-clock {
+    display: inline-block;
+    min-width: 7.1em;
+    font-variant-numeric: tabular-nums;
+  }
+
   .sky-moons {
     display: inline-flex;
     align-items: center;

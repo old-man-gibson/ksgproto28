@@ -163,8 +163,10 @@
   accent-color: var(--accent);
 }
 
-/* Header: a white edge and a 4px yellow rule. A frozen world adds a hazard stripe over the rule. */
-:root[data-theme='signage'] .layout > header {
+/* Header: a white edge and a 4px yellow rule. A frozen world adds a hazard stripe over the rule.
+   The phone's dock is a header too and is sticky (Dock.svelte): `relative` here would win over
+   it, so the stripe's anchor is only set on the desktop header. A sticky dock anchors it as well. */
+:root[data-theme='signage'] .layout > header:not(.dock) {
   position: relative;
   border: 2px solid var(--edge);
   border-bottom: 4px solid var(--accent);

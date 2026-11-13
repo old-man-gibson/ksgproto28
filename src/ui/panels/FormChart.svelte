@@ -105,8 +105,9 @@
               <td>
                 {#each entries as entry (entry.cls.id)}
                   {@const known = formKnown(gs, entry.cls.id)}
-                  <!-- A title is hover-only: the same words are the card of a long press. -->
-                  <Tip>
+                  <!-- A title is hover-only: the same words are the card of a long press. The
+                       button keeps its title for a mouse, so the card is touch-only. -->
+                  <Tip touchOnly>
                     <button
                       class:unknown={!known}
                       class:degenerate={known && entry.cls.degenerate}
@@ -151,7 +152,7 @@
     </div>
     <div class="form-list">
       {#each knownClasses as c (c.id)}
-        <Tip>
+        <Tip touchOnly>
           <button class="small" title={placementText(c.exemplar)} onclick={() => loadOnAnvil(gs, adaptMaterials(c.exemplar, anvil.placement))}>
             {c.icon} {c.name}
           </button>

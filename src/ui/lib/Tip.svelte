@@ -7,6 +7,7 @@
   import type { Snippet } from 'svelte';
   import { cardTop } from './tipPlace';
   import { LAYER, pushOverlay } from './overlays';
+  import { portal } from './portal';
 
   // `block` targets wrap non-text content (e.g. resource bars): full-width,
   // no dotted underline. Default targets are inline text (attributes, stats).
@@ -61,12 +62,18 @@
   }
   function hide() {
     show = false;
+    // The swallow below is for the one click a long press leaves behind. A long
+    // press that left none (the finger slid off, the card was put away first) must
+    // not leave the flag up to eat the next click or Enter.
+    longPressed = false;
     if (touchCard.close === hide) touchCard.close = null;
   }
 
   function down(e: PointerEvent) {
-    if (e.pointerType !== 'touch') return;
+    // Any new press is a new gesture: a mouse click or a key press after a long
+    // press that never got its click is the control's, not the card's.
     longPressed = false;
+    if (e.pointerType !== 'touch') return;
     clearTimeout(pressTimer);
     pressTimer = setTimeout(() => {
       longPressed = true;
@@ -130,16 +137,8 @@
     };
   });
 
-  /**
-   * The popup lives on <body>, not where the target is. `position: fixed` is
-   * only fixed to the viewport while no ancestor has a transform — and the
-   * battle stage positions and scales every combatant with one, which would
-   * pin a foe's card inside the stage and clip it. Moved out, it never can be.
-   */
-  function portal(node: HTMLElement) {
-    document.body.appendChild(node);
-    return { destroy: () => node.remove() };
-  }
+  // The popup lives on <body> (lib/portal.ts), not where the target is: a card
+  // inside the battle stage would be pinned and clipped by its transform.
 </script>
 
 <span
@@ -154,6 +153,7 @@
   onpointerup={up}
   onpointercancel={up}
   onclickcapture={click}
+  onkeydowncapture={() => (longPressed = false)}
   oncontextmenu={(e) => longPressed && e.preventDefault()}
 >
   {@render children()}

@@ -180,6 +180,15 @@ describe('the panels wire the tap path to the shared rules', () => {
     }
   });
 
+  it('a mouse has the gutter arrows on a card of any width; only a finger waits for the pick bar', () => {
+    const fine = combat.match(/@media \(pointer: fine\) \{([\s\S]*?)\r?\n  \}\r?\n/);
+    expect(fine, 'a (pointer: fine) block').not.toBeNull();
+    expect(fine![1]).toMatch(/\.gutter \.step \{\s*display: inline-block;/);
+    expect(fine![1]).toMatch(/\.pick-bar \.step \{\s*display: none;/);
+    // The base rule still hides them, for a finger on a narrow card.
+    expect(combat).toMatch(/\.gutter \.step \{\s*display: none;/);
+  });
+
   it('the sentence moves, inserts and merges tiles through the shared functions, not its own splices', () => {
     expect(spell).toContain("from '../lib/reorder'");
     for (const fn of ['moveItem(', 'insertItem(', 'foldItem(']) expect(spell).toContain(fn);

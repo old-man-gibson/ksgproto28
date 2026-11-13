@@ -1788,10 +1788,12 @@
     background: color-mix(in srgb, var(--accent) 22%, var(--bg-raised));
   }
 
-  /* A card is a size container: it carries its arrows in the gutter only when it
-     is wide enough for them beside the name. A narrower one shows them in the
-     bar under it while it is picked up (card width, not window width: a tablet
-     column and a phone screen are told apart by what the card has). */
+  /* A card is a size container. A mouse has the arrows in the gutter on every card
+     (the rotation is 2, 3 or 4 columns wide on a desktop, and a card there is under
+     420px). A finger, whose arrows are 44px, has them in the gutter only when the
+     card is wide enough for them beside the name, and else in the bar under it while
+     the card is picked up (card width, not window width: a tablet column and a phone
+     screen are told apart by what the card has). */
   .active-skill {
     position: relative;
     container: card / inline-size;
@@ -1799,6 +1801,15 @@
 
   .gutter .step {
     display: none;
+  }
+
+  @media (pointer: fine) {
+    .gutter .step {
+      display: inline-block;
+    }
+    .pick-bar .step {
+      display: none;
+    }
   }
 
   @container card (min-width: 420px) {

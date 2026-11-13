@@ -1,10 +1,12 @@
 <script lang="ts">
   import { save, exportSave, importSave, hardReset, stepTicks, stepEvent } from './state.svelte';
+  import { storagePersists } from '../core/save/save';
   import { TPS } from '../core/engine/loop';
   import { chooseTheme, loadTheme, THEMES, THEME_NAMES, type Theme } from './lib/theme';
   import { viewport } from './lib/viewport.svelte';
   import { sharesFiles } from './lib/nativeExport';
   import Modal from './lib/Modal.svelte';
+  import { portal } from './lib/portal';
   import ArtPackControl from './ArtPackControl.svelte';
 
   /**
@@ -67,6 +69,9 @@
 />
 
 {#if open}
+  <!-- On <body>, not inside the phone's dock (a stacking context): the window is
+       drawn where the overlay stack counts it (lib/portal.ts). -->
+  <div class="sysmenu-portal" use:portal>
   <Modal onclose={() => (open = false)}>
     {#snippet title()}<h3 class="sysmenu-title">Menu</h3>{/snippet}
 
@@ -86,8 +91,12 @@
     {/if}
     <div class="sysmenu-row">
       <span>
-        Save: writes the game to this browser. Autosave runs every 30 s.
-        {#if savedAt}<span class="dim">Saved at {savedAt}.</span>{/if}
+        {#if storagePersists}
+          Save: writes the game to this browser. Autosave runs every 30 s.
+        {:else}
+          Save: this browser refuses site data, so a save lasts until the page closes and does not persist. Export writes a file.
+        {/if}
+        {#if savedAt}<span class="dim">{storagePersists ? 'Saved' : 'Kept in memory'} at {savedAt}.</span>{/if}
       </span>
       <button onclick={onSave}>Save</button>
     </div>
@@ -120,9 +129,14 @@
       {/each}
     {/if}
   </Modal>
+  </div>
 {/if}
 
 <style>
+  .sysmenu-portal {
+    display: contents;
+  }
+
   .sysmenu-title {
     margin: 0;
   }

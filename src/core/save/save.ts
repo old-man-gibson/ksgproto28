@@ -104,15 +104,17 @@ export function deserialize(json: string): GameState {
  * The browser's storage, or an in-memory stand-in where the browser refuses
  * it (site data blocked, some embedded or private views: touching
  * `localStorage` there throws). The game then runs; it just does not persist.
+ * `storagePersists` says which one this is, and the UI says so (the boot's log
+ * line, the Menu's Save row): a save that goes to memory looks like a save.
  */
-export const browserStorage: Storage = (() => {
+const resolvedStorage: { storage: Storage; persists: boolean } = (() => {
   try {
     const s = globalThis.localStorage;
     s.getItem(SAVE_KEY);
-    return s;
+    return { storage: s, persists: true };
   } catch {
     const mem = new Map<string, string>();
-    return {
+    const storage: Storage = {
       get length() {
         return mem.size;
       },
@@ -122,8 +124,14 @@ export const browserStorage: Storage = (() => {
       removeItem: (k: string) => void mem.delete(k),
       clear: () => mem.clear(),
     };
+    return { storage, persists: false };
   }
 })();
+
+export const browserStorage: Storage = resolvedStorage.storage;
+
+/** False where the browser refused its storage: what the game saves lasts until the page closes. */
+export const storagePersists: boolean = resolvedStorage.persists;
 
 export function saveToStorage(state: GameState, storage: Pick<Storage, 'setItem'> = browserStorage): void {
   const now = Date.now();

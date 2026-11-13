@@ -9,6 +9,7 @@ import {
   loadFromStorage,
   saveToStorage,
   serialize,
+  storagePersists,
 } from '../core/save/save';
 import { OFFLINE_CAP_MS, catchUpTicks, runOfflineProgress, type OfflineSummary } from '../core/save/offline';
 import { dropFight, isKept, keepFight, NOTEBOOK_MAX } from '../core/systems/ledger';
@@ -57,6 +58,17 @@ if (loaded.healed) {
     type: 'log',
     msg: '🩹 Restored your progress from a recovery copy after an earlier failed load.',
     kind: 'info',
+  });
+}
+
+// The browser refused its storage (site data blocked, a private or embedded view):
+// the game runs and "saves" to memory, which the page's closing ends. Said once at
+// boot, and in the Menu's Save row (SystemMenu.svelte).
+if (!storagePersists) {
+  game.bus.emit({
+    type: 'log',
+    msg: '⚠️ Storage: this browser refuses site data. Saves are kept in memory until the page closes. Export (Menu) writes the save to a file.',
+    kind: 'danger',
   });
 }
 

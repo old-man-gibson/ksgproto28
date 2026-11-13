@@ -398,9 +398,12 @@
   // The family roster and a picked row are each on the overlay stack
   // (lib/overlays.ts), so Escape and the Android back button close whichever was
   // opened last and nothing else on that press.
+  // Both are drawn only while the planner is unfolded (`ui.plannerOpen`): folded,
+  // they are on nobody's screen, and an entry left on the stack would take a back
+  // press and do nothing visible.
   const pickLayer = hostLayer(LAYER.page);
-  const rosterOpen = $derived(openFamily !== null);
-  const holdingRow = $derived(picked !== null);
+  const rosterOpen = $derived(ui.plannerOpen && openFamily !== null);
+  const holdingRow = $derived(ui.plannerOpen && picked !== null);
   $effect(() => {
     if (rosterOpen) return pushOverlay(pickLayer, () => (openFamily = null));
   });
