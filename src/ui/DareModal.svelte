@@ -5,7 +5,9 @@
   import { monsterSizeRank } from '../core/systems/bestiary';
   import { playerSizeRank } from '../core/systems/mutagens';
   import { TPS } from '../core/engine/loop';
+  import { onMount } from 'svelte';
   import { msToTime } from './lib/format';
+  import { LAYER, pushOverlay } from './lib/overlays';
 
   /**
    * The keeper's dare (systems/training.ts). Save state, not UI state: the
@@ -14,6 +16,10 @@
    * held time is banked as bonus time meanwhile.
    */
   let { spot }: { spot: SpotDef } = $props();
+
+  // Joins the overlay stack as a window that ignores Escape and the Android back
+  // button, and shields whatever is under it (lib/overlays.ts).
+  onMount(() => pushOverlay(LAYER.hold, null));
 
   const dare = $derived(spot.dare!);
   const def = $derived(MONSTERS[dare.monsterId]);

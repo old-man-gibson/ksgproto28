@@ -5,7 +5,7 @@ import { ATTRIBUTE_LIST } from '../data/attributes.data';
 import { baseMonsterAttrs } from './monsterStats';
 import { finalAttributes } from './derived';
 import { setStat } from './achievements';
-import { bandCleared, bandClearedKey, bandPosKey, clearLapsed, clearMet, floorCleared, topRung } from './ladder';
+import { bandCleared, bandClearedKey, bandPosKey, clearLapsed, clearMet, endNotice, floorCleared, topRung } from './ladder';
 import { startingLevel } from './legacy';
 import { isPracticeTarget } from './practice';
 import { text } from '../text/log';
@@ -214,9 +214,9 @@ export function checkFloorClears(state: GameState, bus: EventBus): void {
     grantLevelXp(state, bus, floor.clearXp);
     // The top rung has nothing above it: the first clear of it says so once, and
     // the ladder keeps saying it (ui/lib/ladderView.ts `ladderEnd`).
-    if (topRung(floor.towerId)?.id === floor.id) {
-      bus.emit({ type: 'log', msg: text('towers.end', { floor: floor.index + 1 }), kind: 'info' });
-    }
+    // The log is suppressed during an offline catch-up, so that run carries the
+    // line in its summary instead (save/offline.ts `ladderEnd`).
+    if (topRung(floor.towerId)?.id === floor.id) bus.emit({ type: 'log', msg: endNotice(floor), kind: 'info' });
   }
   // A band whose every floor is cleared stamps it once a run, for content to
   // read (band 3: the castle is safe, bands-2-3.md R8). Only an `any` band

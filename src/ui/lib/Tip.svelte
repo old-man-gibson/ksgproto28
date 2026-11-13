@@ -6,6 +6,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { cardTop } from './tipPlace';
+  import { LAYER, pushOverlay } from './overlays';
 
   // `block` targets wrap non-text content (e.g. resource bars): full-width,
   // no dotted underline. Default targets are inline text (attributes, stats).
@@ -95,6 +96,13 @@
   }
   $effect(() => {
     if (card && wide) fit();
+  });
+
+  // The touch card is an overlay: Escape and the Android back button put it
+  // away through the stack (lib/overlays.ts), over every window. The hover
+  // popup is not one: it goes with the pointer.
+  $effect(() => {
+    if (show && wide) return pushOverlay(LAYER.tip, hide);
   });
 
   // A tap anywhere else puts the card away; scrolling does too, except inside

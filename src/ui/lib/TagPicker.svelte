@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { LAYER, pushOverlay } from './overlays';
+
   /**
    * One category's worth of tag filtering, folded into a dropdown. Single-pick
    * categories close on choose; multi-pick ones stay open so a whole OR-set can
@@ -32,6 +34,12 @@
   let open = $state(false);
   let root = $state<HTMLElement>();
 
+  // The open list closes on Escape and the Android back button through the
+  // overlay stack (lib/overlays.ts), while it is open.
+  $effect(() => {
+    if (open) return pushOverlay(LAYER.drawer, () => (open = false));
+  });
+
   function choose(id: string) {
     if (!multi) {
       onchange(selected.includes(id) ? [] : [id]);
@@ -48,7 +56,6 @@
   onpointerdown={(e) => {
     if (open && root && !root.contains(e.target as Node)) open = false;
   }}
-  onkeydown={(e) => e.key === 'Escape' && (open = false)}
 />
 
 <div class="picker" bind:this={root}>

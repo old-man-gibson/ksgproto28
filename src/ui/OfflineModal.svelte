@@ -2,18 +2,20 @@
   import type { OfflineSummary } from '../core/save/offline';
   import { ATTRIBUTE_LIST } from '../core/data/attributes.data';
   import { MS_PER_TICK } from '../core/engine/loop';
+  import { onMount } from 'svelte';
   import { fmt, msToTime } from './lib/format';
+  import { LAYER, pushOverlay } from './lib/overlays';
 
   let { summary, onclose }: { summary: OfflineSummary; onclose: () => void } = $props();
+
+  // Escape and the Android back button close it, unless a window above it is
+  // open (lib/overlays.ts: a Modal or the fight summary sits over the report).
+  onMount(() => pushOverlay(LAYER.report, () => onclose()));
 
   function attrName(id: string): string {
     return ATTRIBUTE_LIST.find((a) => a.id === id)?.name ?? id;
   }
 </script>
-
-<!-- Escape (and the Android back button) closes it. Not while a window with aria-modal is open
-     (a Modal, or one that holds play): that one takes the key. -->
-<svelte:window onkeydown={(e) => e.key === 'Escape' && !document.querySelector('[aria-modal="true"]') && onclose()} />
 
 <div
   class="overlay"
@@ -36,6 +38,7 @@
         <li>📜 {s.name} +{s.gained} levels</li>
       {/each}
       {#if summary.firstCalm}<li>{summary.firstCalm}</li>{/if}
+      {#if summary.ladderEnd}<li>{summary.ladderEnd}</li>{/if}
       {#if summary.festivalSkipped}
         <!-- The festival's clock runs only while the game does: that part of the absence did not happen. -->
         <li>

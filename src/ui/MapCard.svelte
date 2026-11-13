@@ -44,6 +44,7 @@
   import { TILEMAPS } from './lib/tilemaps';
   import { expectsNoSheets } from './lib/tilemaps/tileArt';
   import { tutorialScreen } from './lib/tutorialFocus';
+  import { LAYER, pushOverlay } from './lib/overlays';
 
   /**
    * Floor 0 (lib/tutorialFocus.ts): the map stays open, shows only the
@@ -264,18 +265,24 @@
     if (selected) stand(pin, 360);
   }
 
-  // Escape, or a click outside the card and the pins, closes the card.
+  // Escape and the Android back button close the card through the overlay
+  // stack (lib/overlays.ts): the card is on the drawer layer, so a window above
+  // it takes the press first.
+  $effect(() => {
+    if (!selected) return;
+    return pushOverlay(LAYER.drawer, () => {
+      // Focus in the card would be lost with it: hand it back to the pin.
+      const pin = anchor as HTMLElement | SVGElement | null;
+      const inCard = !!cardEl && cardEl.contains(document.activeElement);
+      apply({ type: 'escape' });
+      if (inCard) pin?.focus();
+    });
+  });
+
+  // Tab moves between the pin and the card; a click outside the card and the pins closes it.
   $effect(() => {
     if (!selected) return;
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === 'Escape') {
-        // Focus in the card would be lost with it: hand it back to the pin.
-        const pin = anchor as HTMLElement | SVGElement | null;
-        const inCard = !!cardEl && cardEl.contains(document.activeElement);
-        apply({ type: 'escape' });
-        if (inCard) pin?.focus();
-        return;
-      }
       if (ev.key !== 'Tab') return;
       // The card is the last thing on the page: carry Tab from the selected
       // pin into it and back (`cardTab`).

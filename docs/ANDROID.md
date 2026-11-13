@@ -12,7 +12,7 @@ build"). Nothing is uploaded to a store.
 
 | Piece | Where | What |
 |---|---|---|
-| The wrapper | `capacitor.config.json`, `android/` | Capacitor 8.5.3 (pinned; `@capacitor/core`, `@capacitor/android`, `@capacitor/cli`), plus `@capacitor/app` 8.1.2 for the back button (the plugin has its own version line; its newest 8.x is 8.1.2). The app is one Android WebView that loads the built game from `dist/`. `android/` is the Gradle project `npx cap add android` made; `capacitor.build.gradle` and `capacitor.settings.gradle` in it are written by `npx cap sync android`, so rerun it after adding a plugin and commit the two files. |
+| The wrapper | `capacitor.config.json`, `android/` | Capacitor 8.5.3 (pinned; `@capacitor/core`, `@capacitor/android`, `@capacitor/cli`), plus `@capacitor/app` 8.1.2 (back button, `pause`), `@capacitor/filesystem` 8.1.5 and `@capacitor/share` 8.0.3 (Export). The plugins have their own version lines; each was the newest stable 8.x on 2026-11-12, and each needs `@capacitor/core` 8.0 or newer. The app is one Android WebView that loads the built game from `dist/`. `android/` is the Gradle project `npx cap add android` made; `capacitor.build.gradle` and `capacitor.settings.gradle` in it are written by `npx cap sync android`, so rerun it after adding a plugin and commit the two files. |
 | The copied game | `android/app/src/main/assets/public` | Written by `npx cap sync android`. Gitignored by Capacitor, so a built game never enters git through `android/`. |
 | Version and signing | `android/app/build.gradle` | `versionCode` is the env `APP_VERSION_CODE` (the workflow run number, which only grows: Android refuses an update with a lower one). The release build is signed from `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`; without them it is unsigned. The debug build is signed with the committed `android/app/debug.keystore` (`signingConfigs.debug`). |
 | The build | `.github/workflows/android.yml` | `npm ci`, `vite build`, `cap sync android`, then Gradle on `ubuntu-latest` with JDK 21 (the Capacitor modules compile at Java 21; JDK 17 fails). Triggers: a push to `main`, `apk-releases` or `mobile-apk`, and `workflow_dispatch` (Actions tab, any branch). **Three secrets set:** `assembleRelease`; on `main` a release tagged `build-<run>` holding `frontier-idle-<run>.apk`, releases past the newest 10 deleted; on another branch the signed APK as a run artifact. **Any of the three missing:** `assembleDebug`, uploaded as the run artifact `ksg-debug-apk`, no release. |
@@ -33,19 +33,29 @@ different app: the phone keeps the old one and its save.
   and reimport when new art is added. A build made on this PC has the art
   built in; do not share that APK.
 - **Its own save.** The save lives in the app's WebView storage, apart from
-  any browser's. The header's Export and Import move a save between the two.
-- **The desktop layout.** The phone layout (UI proposal A3) is not built.
+  any browser's. Export and Import (Menu) move a save between the two.
+  **Export** cannot click a download link here (the WebView drops a blob
+  link), so it writes `frontier-idle-save-<date>.json` to the app's cache
+  folder and opens the Android share sheet on it
+  (`src/ui/lib/nativeExport.ts`): choose Files, Drive or a message to keep it.
+  Android does not say which choice was made, so the game does not claim the
+  file is saved: open it from where you put it to check. Dismissing the sheet
+  logs nothing; a failed write logs `Save export failed: <reason>`. A browser
+  still downloads the file as before. **Import** is the file chooser and works
+  as in a browser; it lists files typed `application/json`.
+- **The phone layout.** Below 700 px wide the shell is the phone layout
+  (docs/PHONE.md); the panels inside the screens are the desktop ones.
 - **Both orientations, keyboard resize.** The manifest sets no orientation lock
   (the phone's rotation setting decides) and `windowSoftInputMode=adjustResize`,
   so the page shrinks above the on-screen keyboard.
 - **The back button** (`src/ui/lib/androidBack.ts`, started from `main.ts`).
-  It sends the same Escape that closes every window, drawer and picker on the
-  desktop, so the newest one closes. The welcome-back and fight-summary windows
-  close on Escape too (they only closed on a tap outside before). The dare,
-  evolve and prestige windows hold play until answered and ignore it, as they
-  ignore Escape. With nothing open
-  it moves the app to the background, like Home. It never exits the app: the
-  idle loop would stop. Outside the Android app it does nothing.
+  One press closes exactly one overlay, the topmost, from the same stack
+  Escape reads (see "Closing overlays"). With nothing open it writes the save
+  and moves the app to the background, like Home. It never exits: the idle loop
+  would stop. The dare, evolve and prestige windows hold play until answered:
+  they take the press and do nothing, and nothing under them closes. While the
+  boot catch-up runs (`ui.catchingUp`) back is ignored. Outside the Android
+  app none of this is installed.
 - **Storage that survives launches.** Capacitor turns DOM storage on, so
   `localStorage` (the save) and IndexedDB (the art pack) persist across
   launches and across updates signed with the same key. The WebView's origin is
@@ -53,8 +63,78 @@ different app: the phone keeps the old one and its save.
   `capacitor.config.json` changes the origin and the save would look lost.
 - **The end of the ladder.** Floors stop at 20. Once floor 20 is cleared the
   tower list on the map shows "Floor 21: not in this build." above floor 20, and
-  the log says it once when the clear pays. It is read from the clear counters:
-  no save field.
+  the log says it once when the clear pays. A clear that pays while the player is
+  away cannot reach the log (it is suppressed during catch-up), so the welcome-back
+  report carries the line instead (`OfflineSummary.ladderEnd`, as `firstCalm`).
+  It is read from the clear counters: no save field.
+
+## Closing overlays
+
+`src/ui/lib/overlays.ts` keeps one stack of the open windows, drawers, cards and
+pickers. Escape (one `keydown` listener, installed when the first overlay joins)
+and the Android back button both call `closeTopOverlay()`, which closes the top
+entry and nothing else. Nothing reads the DOM to find out what is open.
+
+**Order.** An entry has a layer, the CSS z-index its overlay is drawn at, so the
+top of the stack is what is on top of the screen. Within a layer the later
+arrival is on top.
+
+| `LAYER` | z-index | Who |
+|---|---|---|
+| `drawer` | 9 | the log drawer, the map card, a tag picker's list |
+| `report` | 10 | the welcome-back report |
+| `window` | 20 | `lib/Modal.svelte` (the Menu, benches, the Cook's Book), the fight summary |
+| `hold` | 30 | the dare, evolve and prestige windows: joined with `close: null` |
+| `tip` | 100 | a touch tip card (`lib/Tip.svelte`) |
+
+`tests/overlayLayers.test.ts` fails when a component's CSS z-index and its layer
+differ. A window opened from another (a bench, then its Cook's Book) sits on the
+same layer, later, so one press closes only the newer.
+
+**Joining.** A component that closes on Escape or back joins while it is open and
+leaves when it closes. `pushOverlay(layer, close)` returns the function that leaves:
+
+```ts
+// a window: join for its life
+onMount(() => pushOverlay(LAYER.window, () => onclose()));
+
+// a popup: join while it is open
+$effect(() => {
+  if (open) return pushOverlay(LAYER.drawer, () => (open = false));
+});
+```
+
+`close` must make the overlay go away (clear the flag that shows it), or its entry
+stays and blocks everything under it. Pass `null` as `close` for a window that
+holds play: Escape and back do nothing while it is on top. A component must not
+also read Escape itself, or one press closes two things.
+
+**Not yet on the stack.** The pickers in `MartialPlanner.svelte`, `BenchPanel.svelte`
+and `ChromosomePanel.svelte` (under `src/ui/panels/`) still listen for Escape on
+their own. Until each joins, the Android back button ignores them: with one open
+and nothing else, back saves and minimizes the app. Joining is the second pattern
+above, in each picker's `open` state, and then deleting its own Escape handler.
+
+## When the game saves
+
+`src/ui/lib/saveTriggers.ts` writes the save (`save()`, the autosave's call) on
+`beforeunload`, `pagehide` and the page going hidden (`visibilitychange`). The
+Android app adds the App plugin's `pause` event and the back button, just before
+it minimizes: Android can end a backgrounded app without a word, and the 30 s
+autosave would then have lost up to 30 s of play.
+
+- **Cost.** On 2026-11-12, a save of a run through floor 20 (42 KB of JSON) took
+  4 to 6 ms through the reactive state, 0.3 ms from a plain object. A run of
+  this size saves at that cost on every trigger.
+- **Race with the autosave.** There is none: the autosave and every trigger run on
+  the one JS thread, and a save is one synchronous serialize and write. Each
+  trigger restarts the autosave clock, so the two do not fire back to back.
+- **Not before the boot catch-up.** While `ui.catchingUp` is set the state is still
+  the saved one and a write would reset `lastSaved`, losing the time away that the
+  catch-up is about to credit. Every trigger, `beforeunload` included, skips then.
+- **Several triggers in a row** (a page closing fires hidden, `pagehide` and
+  `beforeunload`) write the save up to three times. Not deduplicated: each is a few
+  ms and the last one wins.
 
 ## The debug build
 
@@ -88,7 +168,11 @@ Limits of the debug build:
 
 - **It cannot replace a release install, or the other way round.** Same app id,
   different key. Pick one path per phone. Moving from debug to release (or back)
-  means Menu → Export, uninstall, install, Import, and the art pack again.
+  means: Menu → Export, and keep the file where the share sheet offers (Files or
+  Drive); **open it from there and confirm it exists and is not empty before
+  uninstalling**, because the uninstall deletes the save and the art pack with
+  nothing to get them back; then uninstall, install the other build, Menu →
+  Import, and import the art pack again.
 - **No licensed art.** The enemy battlers, tile packs and icon packs are
   gitignored and the Actions checkout has none of them, so enemies show no
   picture, maps draw the node diagram and icons are emoji. Import the art pack
@@ -119,8 +203,9 @@ repo's Actions secrets hold copies:
 | `ANDROID_KEY_ALIAS` | `frontieridle` |
 
 An installed app accepts an update only when it is signed with the same key.
-Lose the key and the next build cannot update the phone: export the save,
-uninstall, install the new build, import. Back the folder up outside the repo.
+Lose the key and the next build cannot update the phone: export the save and
+confirm the file exists (see "The debug build"), uninstall, install the new
+build, import. Back the folder up outside the repo.
 
 Setting the secrets from that folder (Git Bash, GitHub CLI logged in):
 

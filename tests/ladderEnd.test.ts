@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createInitialState } from '../src/core/state';
+import { Game } from '../src/core/game';
 import { EventBus } from '../src/core/engine/events';
-import { FLOORS, TOWERS } from '../src/core/registry';
+import { ADJACENCY, AREAS, FLOORS, SPOTS, TOWERS, buildAdjacency, declaredConnections } from '../src/core/registry';
+import { runOfflineProgress } from '../src/core/save/offline';
 import { serialize, deserialize } from '../src/core/save/save';
-import { checkFloorClears } from '../src/core/systems/levels';
+import { checkFloorClears, floorXpKey } from '../src/core/systems/levels';
 import { floorsReachedThisRun } from '../src/core/systems/ladder';
 import { prestigeNow } from '../src/core/systems/prestige';
 import {
@@ -14,7 +16,7 @@ import {
   topRung,
 } from '../src/core/systems/towers';
 import { ladderBands, ladderEnd, towerSection } from '../src/ui/lib/ladderView';
-import type { GameState } from '../src/core/types';
+import type { GameState, SpotDef } from '../src/core/types';
 import { clearFloors } from './fixtures/floors';
 
 // The ladder stops at floor 20. Once its clear holds, the ladder says that
@@ -119,5 +121,94 @@ describe('nothing reaches for floor 21', () => {
     const s = clearedTo(20);
     checkFloorClears(s, new EventBus());
     expect(Object.keys(s.stats).filter((k) => /f21|floor.?21/i.test(k))).toEqual([]);
+  });
+});
+
+// The log is suppressed while the player is away, so a clear that pays during
+// an absence cannot write its line there. The welcome-back report carries it
+// (OfflineSummary.ladderEnd), as it carries the first calm.
+describe('floor 20 clearing during an absence', () => {
+  const base = { icon: 'x', areaId: 'zz_area', desc: '', activities: [], connections: [] };
+  const ZZ: Record<string, SpotDef> = {
+    zz_camp: {
+      ...base,
+      id: 'zz_camp',
+      name: 'Camp',
+      waypoint: true,
+      activities: [{ id: 'rest', kind: 'rest', name: 'Camp', icon: 'x' }],
+      connections: [{ to: 'zz_field', ticks: 5 }],
+    } as SpotDef,
+    zz_field: {
+      ...base,
+      id: 'zz_field',
+      name: 'Field',
+      activities: [{ id: 'hunt', kind: 'hunt', name: 'Hunt', icon: 'x' }],
+      encounters: [{ monsterId: 'forest_rat', weight: 100, level: [1, 1] }],
+    } as SpotDef,
+  };
+
+  beforeAll(() => {
+    AREAS['zz_area'] = { id: 'zz_area', name: 'zz', regionId: 'the_ascent' };
+    Object.assign(SPOTS, ZZ);
+    buildAdjacency(declaredConnections(ZZ), ADJACENCY);
+  });
+  afterAll(() => {
+    for (const id of Object.keys(ZZ)) {
+      delete SPOTS[id];
+      ADJACENCY.delete(id);
+    }
+    delete AREAS['zz_area'];
+  });
+
+  const said = (g: Game) => g.state.log.filter((l) => l.msg === NOTICE).length;
+
+  /** A hunt in a pocket field with floors 1 to 19 cleared and paid. */
+  function start(): Game {
+    const g = new Game(createInitialState(27));
+    const s = g.state;
+    s.spot = 'zz_field';
+    s.discovered.push(...Object.keys(ZZ));
+    s.safeSpots = { nearest: 'zz_camp', unconditional: 'zz_camp' };
+    clearFloors(s.stats, floorsUpTo(19));
+    g.selectActivity('hunt');
+    // Live play until floors 1 to 19 have paid (the first kill runs checkFloorClears).
+    for (let i = 0; i < 3000 && !s.stats[floorXpKey('ascent_f19')]; i++) g.tick();
+    expect(s.stats[floorXpKey('ascent_f19')]).toBe(1);
+    return g;
+  }
+
+  it('control: cleared during live play, the log says it once', () => {
+    const g = start();
+    clearFloors(g.state.stats, ['ascent_f20']);
+    for (let i = 0; i < 3000 && !g.state.stats[floorXpKey('ascent_f20')]; i++) g.tick();
+    expect(said(g)).toBe(1);
+  });
+
+  it('cleared while away: the summary carries the notice, and the ladder says it too', () => {
+    const g = start();
+    clearFloors(g.state.stats, ['ascent_f20']);
+    const summary = runOfflineProgress(g, 10 * 60 * 1000);
+    expect(summary?.ladderEnd).toBe(NOTICE);
+    expect(g.state.stats[floorXpKey('ascent_f20')]).toBe(1);
+    expect(ladderEnd(g.state, ASCENT)).toBe(NOTICE);
+    // The log was suppressed, and back in live play the clear is already stamped.
+    for (let i = 0; i < 500; i++) g.tick();
+    expect(said(g)).toBe(0);
+  });
+
+  it('an absence after the ladder had already ended carries nothing', () => {
+    const g = start();
+    clearFloors(g.state.stats, ['ascent_f20']);
+    for (let i = 0; i < 3000 && !g.state.stats[floorXpKey('ascent_f20')]; i++) g.tick();
+    const summary = runOfflineProgress(g, 10 * 60 * 1000);
+    expect(summary).not.toBeNull();
+    expect(summary?.ladderEnd).toBeUndefined();
+  });
+
+  it('an absence that does not clear floor 20 carries nothing', () => {
+    const g = start();
+    const summary = runOfflineProgress(g, 10 * 60 * 1000);
+    expect(summary).not.toBeNull();
+    expect(summary?.ladderEnd).toBeUndefined();
   });
 });
