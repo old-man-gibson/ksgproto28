@@ -90,7 +90,13 @@
   </button>
 {/snippet}
 
+<!-- Past the top rung, once it is cleared: the floor there is not built. -->
+{#snippet end(line: string)}
+  <div class="ts-end small">{line}</div>
+{/snippet}
+
 <nav class="tower-section" style:height="{height}px" aria-label="{tower.name} floors" bind:this={scroller}>
+  {#if section.end && tower.direction !== 'down'}{@render end(section.end)}{/if}
   {#each section.groups as g (g.band.id)}
     {#if g.titleOnly}
       <!-- The next band, not reached: a name and nothing to fold. -->
@@ -117,6 +123,7 @@
       </details>
     {/if}
   {/each}
+  {#if section.end && tower.direction === 'down'}{@render end(section.end)}{/if}
   <div class="ts-foot">{@render stop(section.foot)}</div>
 </nav>
 
@@ -193,6 +200,14 @@
   .ts-band.title-only {
     /* The band is already --text-dim; dimming it again with opacity took it under 4.5:1. */
     padding-left: calc(6px + 1em + 6px);
+  }
+
+  /* The line past the top rung. Lined up with the band names; a plain line, not a row. */
+  .ts-end {
+    flex: none;
+    padding: 5px 6px 4px calc(6px + 1em + 6px);
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
   }
 
   .ts-foot {

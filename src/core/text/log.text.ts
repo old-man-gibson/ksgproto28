@@ -448,6 +448,8 @@ export const LOG_TEXT = {
 
   // ---------- towers ----------
   'towers.moving': '🗼 {verb} to {icon} {name}...',
+  // The floor past the tower's top rung, once the top rung is cleared (ladderEnded, systems/ladder.ts).
+  'towers.end': 'Floor {floor}: not in this build.',
 
   // ---------- tutorial ----------
   'levels.up': '⬆️ Level {level}: +{bonus} to every attribute.',

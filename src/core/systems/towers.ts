@@ -24,9 +24,11 @@ export {
   floorUnlocked,
   floorsBelow,
   hubStatus,
+  ladderEnded,
   ladderFloors,
   rungIndex,
   rungStatus,
+  topRung,
 } from './ladder';
 export type { RungStatus } from './ladder';
 

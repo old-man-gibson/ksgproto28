@@ -64,6 +64,24 @@ export function floorCleared(state: GameState, floor: FloorDef): boolean {
   return clearMet(state, floor);
 }
 
+/** The tower's highest banded floor: the last rung a climb can reach. Undefined for a tower with none. */
+export function topRung(towerId: string): FloorDef | undefined {
+  const floors = ladderFloors(towerId);
+  return floors[floors.length - 1];
+}
+
+/**
+ * The tower's top rung is cleared, so there is nothing left to climb to. The
+ * floors the design puts above it (docs/FLOOR_IDEAS.md) are not built yet; the
+ * ladder reads this to say so. Derived from the clear counters like every
+ * other reading here, so it resets with the run and needs no save field, and
+ * it stops holding on its own once a floor is added above.
+ */
+export function ladderEnded(state: GameState, towerId: string): boolean {
+  const top = topRung(towerId);
+  return !!top && floorCleared(state, top);
+}
+
 function bandIndexOf(floor: FloorDef): number {
   return floor.bandId === undefined ? 0 : (BANDS[floor.bandId]?.index ?? 0);
 }

@@ -8,8 +8,10 @@ import {
   floorCleared,
   floorReached,
   hubStatus,
+  ladderEnded,
   ladderFloors,
   rungStatus,
+  topRung,
 } from '../../core/systems/ladder';
 import {
   climbVerb,
@@ -23,6 +25,7 @@ import {
 } from '../../core/systems/towers';
 import { festivalLadder, festivalLocked, lockoutLeft } from '../../core/systems/festivalRules';
 import { MS_PER_TICK } from '../../core/engine/loop';
+import { text } from '../../core/text/log';
 import { msToTime, termText, ticksToTime } from './format';
 
 /**
@@ -464,6 +467,18 @@ export interface TowerSection {
   groups: SectionGroup[];
   /** The tower's hub, at the foot of the column. */
   foot: StopView;
+  /** Past the top of the ladder: set once the top rung is cleared (`ladderEnd`), else null. */
+  end: string | null;
+}
+
+/**
+ * What the ladder says above its top rung once that rung is cleared: the floor
+ * past it is not built. Derived from the clear counters (`ladderEnded`), so it
+ * is stored nowhere and drops out when a floor is added above.
+ */
+export function ladderEnd(state: GameState, tower: TowerDef): string | null {
+  const top = topRung(tower.id);
+  return top && ladderEnded(state, tower.id) ? text('towers.end', { floor: top.index + 1 }) : null;
 }
 
 /**
@@ -494,7 +509,7 @@ export function towerSection(
       rows: tower.direction === 'down' ? views : views.reverse(),
     };
   });
-  return { groups, foot: towerHubView(state, tower) };
+  return { groups, foot: towerHubView(state, tower), end: ladderEnd(state, tower) };
 }
 
 // ---------- Which region a tower draws in, and which area a stop shows ----------

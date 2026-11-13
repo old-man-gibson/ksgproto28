@@ -490,6 +490,10 @@ button rides.
     band's hub last; the tower's hub (The Foot) closes the column;
   - a floor not reached is its number; a floor reached is its number and name;
   - the next band is a name and nothing else, and nothing is above it;
+  - once the top rung is cleared (floor 20 today), one plain line above the top
+    band: "Floor 21: not in this build." (`ladderEnd`, read from the clear
+    counters, no save field). It is not a row: it picks and rides nothing. The
+    log says it once when that clear pays;
   - each row has a mark (the panel's: ✅ cleared, 🟢 open, 🔒 locked or shut,
     ⛔ sealed, 🚪 a door the festival closes), and its right cell says "here",
     the ride's time at the current travel speed, or "forfeit";
