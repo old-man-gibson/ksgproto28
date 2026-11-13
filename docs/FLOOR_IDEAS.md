@@ -232,6 +232,18 @@ The frame every floor sits in.
   there.
 - **The original 37–40 are hidden floors.** The floors the city displaced
   still exist, hidden.
+- **Displacement spreads from floor 50.** Floor 50 is an area of huge chaos
+  and conflict. Past it, more floors are displaced, and technology,
+  fantasy, horror and adventure turn into more and more chaotic
+  expressions with each floor.
+- **The aberrant gods are breaking the tower.** The two aberrant gods are
+  among those breaking it. The tower is an anomaly even to them. They want
+  to crack it open and consume its contents and the energy source that
+  lets everyone replay the creator's journey.
+- **Replay is a prestige variant** (user, 2026-11-12). The player can redo
+  floors, as a sub-variant of prestige, to go after hidden objectives or
+  farm rare items that drop only from limited encounters. In the lore it
+  is the same defect as prestige.
 
 **Laws it touches.** Hidden floors are secret content: nothing shows them
 (no tracker, log line or hint) until their trigger is fully met, and the
@@ -246,6 +258,16 @@ trigger stays meetable for a strong player (feedback rule, 2026-09).
    37–40 for now.
 4. Whether the defect is ever revealed to the player, and where. Default:
    not before floor 50.
+5. Which two gods. Default: Ik'Thel'the (in `deities.data.ts`) and the
+   parked god of arcane magic, yShicna' (NEXT.md "Parked: the aberrant god
+   of arcane magic").
+6. Replay rules: what a redo keeps and resets, what it costs, and whether
+   it counts as a prestige for prestige rewards. Default: the floor's own
+   state resets; character, items and prestige count are kept; it does not
+   pay prestige rewards, so it cannot be used to farm them.
+7. Rare items from limited encounters: whether replay farming breaks the
+   no-arbitrage law (shops) or the gold mint. Default: rare items are
+   unsellable, or sell for a fixed floor price.
 
 ## 2. Calibration: band 1 through the review
 
