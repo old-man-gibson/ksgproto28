@@ -1,10 +1,16 @@
 <script lang="ts">
   import { gs, game } from './state.svelte';
+  import { onMount } from 'svelte';
   import PrestigeBoons from './lib/PrestigeBoons.svelte';
+  import { LAYER, pushOverlay } from './lib/overlays';
 
   // The POST-prestige overlay. No backdrop click, no Escape: it closes only
   // once a point has been spent, or through the two-step leave below. The
   // "owed" flag is save state (gs.prestige.review), so a reload brings it back.
+  // Joins the overlay stack as a window that ignores Escape and the Android back
+  // button, and shields whatever is under it (lib/overlays.ts).
+  onMount(() => pushOverlay(LAYER.hold, null));
+
   const report = $derived(gs.prestige.lastHarvest);
   const spent = $derived(gs.prestige.spentThisReview > 0);
   let confirming = $state(false);
@@ -59,7 +65,8 @@
     align-items: center;
     justify-content: center;
     z-index: 30;
-    padding: 16px;
+    /* 16px, or the notch's or the system bar's inset where that is more (docs/PHONE.md). */
+    padding: max(16px, var(--safe-top)) max(16px, var(--safe-right)) max(16px, var(--safe-bottom)) max(16px, var(--safe-left));
   }
   .modal {
     width: 720px;

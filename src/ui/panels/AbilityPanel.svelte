@@ -180,19 +180,29 @@
     padding: 8px 10px;
     border: 1px solid var(--border);
     border-radius: 6px;
+    /* A long cell line or condition text wraps inside the row on a phone. */
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .head {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
-    gap: 12px;
+    align-items: center;
+    gap: 2px 12px;
   }
   .low {
     color: var(--danger);
   }
   .act {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 4px 10px;
     margin-top: 4px;
+  }
+  .act > span {
+    flex: 1 1 12em;
+    min-width: 0;
   }
 </style>

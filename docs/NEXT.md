@@ -17,6 +17,13 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **Phone and tablet shell (2026-11-12, branch `phone-shell`, no save change).**
+  One column below 700 px with a dock and a bottom row, tap cards, safe areas,
+  44 px hit height, a header of two rows from about 930 px (three from 700).
+  PHONE.md. Three panel passes followed (tap-to-pick reordering, the benches,
+  the read-mostly screens), and the pickers join the back-button stack. What is
+  open is PHONE.md §6.
+
 - **Open sky on the tower (2026-11-11, branch `open-sky-floors`, no save
   change).** Floors 7 to 14 and 18 to 20 are open sky, inside spots carry
   `indoor`; table, calls and findings in WEATHER.md "Open sky in the tower".

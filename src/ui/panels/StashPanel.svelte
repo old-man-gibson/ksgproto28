@@ -75,18 +75,14 @@
       </div>
     {/each}
 
+    {#if inFestival && stash?.items.length}
+      <p class="dim small">Take out is shut inside a festival attempt: the door holds everything.</p>
+    {/if}
     {#each stash?.items ?? [] as item, i (i)}
       {@const def = itemDefOf(item)}
       <div class="kept">
         <span><b>{def?.icon} {def?.name ?? item.defId}</b> <span class="dim small">{def?.desc ?? ''}</span></span>
-        <button
-          class="small"
-          disabled={inFestival}
-          title={inFestival ? 'Not inside a festival attempt: the door holds everything.' : undefined}
-          onclick={() => game.takeFromStash(i)}
-        >
-          Take out
-        </button>
+        <button class="small" disabled={inFestival} onclick={() => game.takeFromStash(i)}>Take out</button>
       </div>
     {/each}
   </div>
@@ -112,6 +108,7 @@
 
   .kept {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 10px;

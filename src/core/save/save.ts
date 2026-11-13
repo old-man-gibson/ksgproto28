@@ -100,7 +100,40 @@ export function deserialize(json: string): GameState {
   return state;
 }
 
-export function saveToStorage(state: GameState, storage: Pick<Storage, 'setItem'> = localStorage): void {
+/**
+ * The browser's storage, or an in-memory stand-in where the browser refuses
+ * it (site data blocked, some embedded or private views: touching
+ * `localStorage` there throws). The game then runs; it just does not persist.
+ * `storagePersists` says which one this is, and the UI says so (the boot's log
+ * line, the Menu's Save row): a save that goes to memory looks like a save.
+ */
+const resolvedStorage: { storage: Storage; persists: boolean } = (() => {
+  try {
+    const s = globalThis.localStorage;
+    s.getItem(SAVE_KEY);
+    return { storage: s, persists: true };
+  } catch {
+    const mem = new Map<string, string>();
+    const storage: Storage = {
+      get length() {
+        return mem.size;
+      },
+      key: (i: number) => [...mem.keys()][i] ?? null,
+      getItem: (k: string) => mem.get(k) ?? null,
+      setItem: (k: string, v: string) => void mem.set(k, String(v)),
+      removeItem: (k: string) => void mem.delete(k),
+      clear: () => mem.clear(),
+    };
+    return { storage, persists: false };
+  }
+})();
+
+export const browserStorage: Storage = resolvedStorage.storage;
+
+/** False where the browser refused its storage: what the game saves lasts until the page closes. */
+export const storagePersists: boolean = resolvedStorage.persists;
+
+export function saveToStorage(state: GameState, storage: Pick<Storage, 'setItem'> = browserStorage): void {
   const now = Date.now();
   storage.setItem(SAVE_KEY, serialize(state, now));
   state.lastSaved = now;
@@ -125,7 +158,7 @@ export interface LoadResult {
  * code can parse that copy again (e.g. after the transient bug is fixed), it
  * is restored automatically instead of the impostor.
  */
-export function loadFromStorage(storage: Storage = localStorage): LoadResult {
+export function loadFromStorage(storage: Storage = browserStorage): LoadResult {
   const json = storage.getItem(SAVE_KEY);
   if (!json) return { state: null, corrupted: false };
   try {
@@ -197,7 +230,7 @@ function stashRecoveryCopy(json: string, storage: Storage): void {
  * Hard reset: wipe the save AND all recovery/backup copies — a deliberate
  * reset must not be undone by the auto-heal on next boot.
  */
-export function clearStorage(storage: Storage = localStorage): void {
+export function clearStorage(storage: Storage = browserStorage): void {
   const doomed: string[] = [];
   for (let i = 0; i < storage.length; i++) {
     const key = storage.key(i);

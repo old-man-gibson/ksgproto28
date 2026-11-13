@@ -14,6 +14,7 @@
     DETAIL_GAP,
     DETAIL_H,
     defaultStackArea,
+    ladderEnd,
     regionOfTower,
     stackAreas,
     stopKeyOfArea,
@@ -44,6 +45,7 @@
   import { TILEMAPS } from './lib/tilemaps';
   import { expectsNoSheets } from './lib/tilemaps/tileArt';
   import { tutorialScreen } from './lib/tutorialFocus';
+  import { LAYER, pushOverlay } from './lib/overlays';
 
   /**
    * Floor 0 (lib/tutorialFocus.ts): the map stays open, shows only the
@@ -204,6 +206,12 @@
     tutorial || viewport.wide ? null : (stackTower ?? towerAt(gs) ?? Object.values(TOWERS)[0] ?? null),
   );
 
+  /**
+   * The line past the top rung, once that rung is cleared. Under 600 px it is
+   * printed in the fold's summary, so it shows with the fold closed.
+   */
+  const foldEnd = $derived(foldTower ? ladderEnd(gs, foldTower) : null);
+
   const stuck = $derived(!!gs.travel || gs.recovering || !!gs.combat?.forced);
 
   function walkTo(id: string) {
@@ -264,18 +272,24 @@
     if (selected) stand(pin, 360);
   }
 
-  // Escape, or a click outside the card and the pins, closes the card.
+  // Escape and the Android back button close the card through the overlay
+  // stack (lib/overlays.ts): the card is on the drawer layer, so a window above
+  // it takes the press first.
+  $effect(() => {
+    if (!selected) return;
+    return pushOverlay(LAYER.drawer, () => {
+      // Focus in the card would be lost with it: hand it back to the pin.
+      const pin = anchor as HTMLElement | SVGElement | null;
+      const inCard = !!cardEl && cardEl.contains(document.activeElement);
+      apply({ type: 'escape' });
+      if (inCard) pin?.focus();
+    });
+  });
+
+  // Tab moves between the pin and the card; a click outside the card and the pins closes it.
   $effect(() => {
     if (!selected) return;
     const onKey = (ev: KeyboardEvent) => {
-      if (ev.key === 'Escape') {
-        // Focus in the card would be lost with it: hand it back to the pin.
-        const pin = anchor as HTMLElement | SVGElement | null;
-        const inCard = !!cardEl && cardEl.contains(document.activeElement);
-        apply({ type: 'escape' });
-        if (inCard) pin?.focus();
-        return;
-      }
       if (ev.key !== 'Tab') return;
       // The card is the last thing on the page: carry Tab from the selected
       // pin into it and back (`cardTab`).
@@ -481,8 +495,11 @@
       <!-- Under 600 px the section is a fold with no ride button: the Ascent panel keeps its buttons.
            The fold is there in every region, so a ride that switches the map moves nothing. -->
       <details class="tower-fold" bind:open={foldOpen}>
-        <summary>🗼 {foldTower.name}{stackTower && areaTitle ? ` · ${areaTitle}` : ''}</summary>
-        <TowerSection tower={foldTower} height={PLAN_HEIGHT + 2} shownKey={shownStop} onpick={pickStop} />
+        <summary>
+          🗼 {foldTower.name}{stackTower && areaTitle ? ` · ${areaTitle}` : ''}
+          {#if foldEnd}<span class="tower-end small dim">{foldEnd}</span>{/if}
+        </summary>
+        <TowerSection tower={foldTower} height={PLAN_HEIGHT + 2} shownKey={shownStop} onpick={pickStop} showEnd={false} />
         <StopDetail tower={foldTower} stopKey={shownStop} />
       </details>
     {/if}
@@ -547,6 +564,10 @@
             ? ' ⤵'
             : ''}{r.noExit ? ' ⚔️' : ''}{r.shut ? ' 🔒' : ''}
         </button>
+        <!-- The reason a road is shut or has no retreat is on the line, not in the button's title. -->
+        {#if r.shut || r.noExit}
+          <span class="road-note dim small">{r.shut ? `Shut: ${r.shut}` : 'Arriving starts a fight with no way out'}</span>
+        {/if}
       {/each}
     </div>
   {/if}
@@ -555,15 +576,15 @@
        ending does not move what is below the map. -->
   <div class="journey small">
     {#if gs.travel}
-      🥾 En route to {gs.discovered.includes(gs.travel.to) ? getSpot(gs.travel.to).name : 'an unknown place'} — {ticksToTime(gs.travel.ticksLeft)}
+      <span class="j-now">🥾 En route to {gs.discovered.includes(gs.travel.to) ? getSpot(gs.travel.to).name : 'an unknown place'} — {ticksToTime(gs.travel.ticksLeft)}</span>
       {#if gs.travelPlan.length > 0}
-        <span class="dim">
-          , then {gs.travelPlan.length} more leg{gs.travelPlan.length > 1 ? 's' : ''} to
+        <span class="j-then dim">
+          then {gs.travelPlan.length} more leg{gs.travelPlan.length > 1 ? 's' : ''} to
           {gs.discovered.includes(gs.travelPlan[gs.travelPlan.length - 1])
             ? getSpot(gs.travelPlan[gs.travelPlan.length - 1]).name
             : 'an unknown place'}
         </span>
-        <button class="small" onclick={() => game.cancelTravelPlan()}>Cancel journey</button>
+        <button class="small j-cancel" onclick={() => game.cancelTravelPlan()}>Cancel journey</button>
       {/if}
     {:else}
       &nbsp;
@@ -715,6 +736,14 @@
     column-gap: 8px;
   }
 
+  /* A wide screen gives the column room for the floor names a 184 px column cuts
+     ("The Necropolis Ro…"): 240 px from a 680 px tab body, which leaves the plan 430. */
+  @container tab (min-width: 680px) {
+    .stackpane.with-section {
+      grid-template-columns: 240px minmax(0, 1fr);
+    }
+  }
+
   .stackpane.with-section > .route-line {
     grid-column: 1 / -1;
     grid-row: 1;
@@ -744,6 +773,11 @@
     font-size: 13px;
   }
 
+  /* The line past the top rung: its own row of the summary, so the closed fold says it. */
+  .tower-fold > summary .tower-end {
+    display: block;
+  }
+
   .map-empty {
     position: absolute;
     inset: 0;
@@ -771,6 +805,22 @@
 
   .route-head {
     color: var(--accent);
+  }
+
+  /* A narrow tab: two lines of the same fixed height rule (44 px, never 22 in one
+     state and 44 in another). The legs of a long route and a shut road's terms
+     are most of the line, and a finger has no tooltip to read the rest from. */
+  @container tab (max-width: 560px) {
+    .route-line {
+      height: 44px;
+      line-height: 20px;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
   }
 
   /*
@@ -813,6 +863,12 @@
     margin-top: 8px;
   }
 
+  /* A road's note takes its own line under its button. */
+  .roads > .road-note {
+    flex: 1 1 100%;
+    margin: -4px 0 2px;
+  }
+
   /*
    * The line keeps the height it has with the Cancel button, so the last leg
    * of a journey (which has no plan left to cancel) does not move what is
@@ -825,6 +881,51 @@
     gap: 8px;
     flex-wrap: wrap;
     min-height: 2.5em;
+  }
+
+  /*
+   * On a narrow tab (a phone) the line is two lines of text and the Cancel button
+   * beside them, at the height of the tallest state, in every state: a walk of one
+   * leg, of several, and standing still are all 44px. Each line is one line of
+   * text cut with an ellipsis, so a long place name cannot wrap it taller, and the
+   * button spans both rows, so its 44px is not added to the text's. It was 31px
+   * standing and 56 to 92px with a plan under it, which moved the page under the
+   * map when a multi-leg walk began.
+   */
+  @container tab (max-width: 559px) {
+    .journey {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: 22px 22px;
+      align-content: center;
+      column-gap: 8px;
+      row-gap: 0;
+      height: 44px;
+      min-height: 0;
+    }
+
+    .j-now,
+    .j-then {
+      grid-column: 1;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      line-height: 22px;
+    }
+
+    .j-now {
+      grid-row: 1;
+    }
+
+    .j-then {
+      grid-row: 2;
+    }
+
+    .j-cancel {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+    }
   }
 
   .map-card {

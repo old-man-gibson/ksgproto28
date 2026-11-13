@@ -1,11 +1,13 @@
-import type { AttributeId } from '../types';
+import type { AttributeId, GameState } from '../types';
 import type { Game } from '../game';
 import { MS_PER_TICK } from '../engine/loop';
 import { ATTRIBUTE_LIST } from '../data/attributes.data';
-import { SKILLS } from '../registry';
+import { SKILLS, TOWERS } from '../registry';
 import { bankTicks } from '../systems/bonustime';
 import { festivalHolds } from '../systems/festivalRules';
 import { firstCalmLine } from '../systems/exposure';
+import { endNotice, topRung } from '../systems/ladder';
+import { floorXpKey } from '../systems/levels';
 import { CALM_SEEN_KEY } from '../data/climate.data';
 
 /** Cap offline progress at 8 hours of game time. */
@@ -35,6 +37,13 @@ export interface OfflineSummary {
    * suppressed during the run, so the line would otherwise be lost.
    */
   firstCalm?: string;
+  /**
+   * The end-of-ladder notice, when a tower's top rung paid its clear during this
+   * absence (`endNotice`, systems/ladder.ts). The log is suppressed during the run, so
+   * the line `checkFloorClears` writes at the clear would otherwise be lost. The
+   * tower list shows it either way; no save field.
+   */
+  ladderEnd?: string;
 }
 
 /** What a catch-up did: ticks simulated, and ticks the festival skipped and what the bank took of them. */
@@ -73,6 +82,12 @@ export function catchUpTicks(game: Game, ticks: number): CatchUp {
   return { simulated, skipped, banked: game.state.bonusTime.banked - before };
 }
 
+/** The tower's top rung has paid its clear this run (the once-per-run stamp `checkFloorClears` sets). */
+function topRungPaid(s: GameState, towerId: string): boolean {
+  const top = topRung(towerId);
+  return !!top && (s.stats[floorXpKey(top.id)] ?? 0) >= 1;
+}
+
 /**
  * Run capped catch-up ticks with logging suppressed and report what happened.
  * Returns null when the absence was too short to matter.
@@ -95,6 +110,7 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
     attrs: Object.fromEntries(ATTRIBUTE_LIST.map((a) => [a.id, s.attrs[a.id].level])),
     skills: Object.fromEntries(Object.entries(s.skills).map(([id, v]) => [id, v.level])),
     calmSeen: (s.stats[CALM_SEEN_KEY] ?? 0) > 0,
+    topPaid: Object.keys(TOWERS).filter((id) => topRungPaid(s, id)),
   };
 
   game.suppressLog = true;
@@ -114,6 +130,12 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
     }))
     .filter((x) => x.gained > 0);
 
+  // A tower whose top rung's clear paid during the absence: the moment the log
+  // line would have been written (systems/levels.ts checkFloorClears). One paid
+  // before the player left said so then; a prestige during the run resets it.
+  const endedNow = Object.keys(TOWERS).find((id) => !before.topPaid.includes(id) && topRungPaid(s, id));
+  const endedTop = endedNow ? topRung(endedNow) : undefined;
+
   // A prestige during catch-up (the stronghold's, Game.tick) resets the run
   // under these counts, so a difference can go negative: report nothing for it.
   return {
@@ -127,5 +149,6 @@ export function runOfflineProgress(game: Game, elapsedMs: number): OfflineSummar
     skillLevels,
     ...(run.skipped > 0 ? { festivalSkipped: run.skipped, festivalBanked: run.banked } : {}),
     ...(!before.calmSeen && (s.stats[CALM_SEEN_KEY] ?? 0) > 0 ? { firstCalm: firstCalmLine() } : {}),
+    ...(endedTop ? { ladderEnd: endNotice(endedTop) } : {}),
   };
 }

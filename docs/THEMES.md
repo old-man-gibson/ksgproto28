@@ -302,8 +302,15 @@ save.
   under the header, or 12 px from the top once the header has scrolled away. An open log is a 220 px row under the page.
 - The overlay ignores Escape and outside presses while a window is up (a Modal or the defeat, offline, prestige, dare or evolve
   window).
-- **Header under 1180 px:** one row holds down to 1024 px because the rate chip drops its kills figure (the title has both), the
-  clock chip shows only the hour (`shortClock`; the title has the whole text) and the Gothic title shrinks.
+- **Header under 1180 px:** two rows since 2026-11-12 (it held one row down to 1024 px before). The job strip and the rate chip
+  start the second row; the first row holds the transport buttons, the chips, the gold and the Menu. The rate chip drops its kills
+  figure (the title has both), the clock chip shows only the hour (`shortClock`; the title has the whole text) and the Gothic title
+  shrinks. The per-theme "one row at 1024 and 1094 px" measurements below were taken before the change. From 1180 px it is one row.
+- **Under 700 px** the shell is the phone layout (PHONE.md): the dock is a `header` child of `.layout`, so every theme's
+  `.layout > header` rule frames it, and its Pause and bonus chips use the header's `clock`, `pause` and `bonus` class names. The
+  bottom row's entries use the screen list's `nav-list`, `nav-entry` and `nav-on`, so each theme's open-screen colours apply; the
+  left border the themes draw is switched off there and the entry's top bar marks it. Checked in all eleven themes at 375 px: no
+  horizontal scroll, dock height 125 to 132 px.
 
 A screen whose columns depend on room sizes them by its own width, not the window's, so the log's state does not break it: the
 Combat screen's Combat Style and Active Skills panels stack when the screen is under 760 px wide (container query on

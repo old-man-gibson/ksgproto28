@@ -1,0 +1,8 @@
+{
+  "appId": "io.github.oldmangibson.frontieridle",
+  "appName": "Frontier Idle",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}

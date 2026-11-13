@@ -508,6 +508,13 @@
     color: var(--focus-ink);
   }
 
+  /* A finger: the bench's squares are 44px, so a row is tall enough to hold one. */
+  @media (pointer: coarse) {
+    .heat-track {
+      --ht-row: 48px;
+    }
+  }
+
   /* A narrow bench: the right-hand text drops under its row. */
   @container (max-width: 560px) {
     .ht-row {

@@ -48,7 +48,7 @@
           <td>{line.icon} {line.name}</td>
           <td class="num">+{line.points}</td>
           <td class="dim small">{line.detail}</td>
-          <td class="dim small">
+          <td class="dim small next" class:none={!ahead}>
             {#if ahead}+1 at {unitText(ahead.need, ahead.unit)} more{/if}
           </td>
         </tr>
@@ -97,8 +97,44 @@
   }
   .row {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
+  }
+
+  /* A narrow screen: four columns leave each a word or two wide. A source is two
+     lines instead: its name and points, then what it was paid for and the next point. */
+  @container tab (max-width: 560px) {
+    table,
+    tbody {
+      display: block;
+    }
+
+    tr {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 10px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 0;
+    }
+
+    td:nth-child(2) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    td:nth-child(3),
+    td:nth-child(4) {
+      grid-column: 1 / -1;
+    }
+
+    td.none {
+      display: none;
+    }
   }
   .danger {
     border-color: var(--danger);

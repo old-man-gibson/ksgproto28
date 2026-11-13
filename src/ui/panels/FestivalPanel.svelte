@@ -70,15 +70,22 @@
   <div class="panel festival" style="margin-top: 12px">
     <h3>🎪 The Vermin Festival</h3>
     {#if run.phase === 'dark'}
+      <!-- The counts that change sit on lines of their own, each short: a figure
+           gaining or losing a digit must not re-wrap a paragraph on a narrow screen. -->
       <p>
-        <b>The dark room.</b> {standing} still standing, in {wavesLeft} wave{wavesLeft === 1 ? '' : 's'}; the last one
-        fights alone. The door opens when you are the only one left.
+        <b>The dark room.</b> The last one fights alone. The door opens when you are the only one left.
       </p>
+      <ul class="festival-facts">
+        <li>Still standing: {standing}</li>
+        <li>Waves left: {wavesLeft}</li>
+      </ul>
     {:else if run.phase === 'prep'}
-      <p>
-        <b>Festival day {day} of {PREP_DAYS}</b>, {String(hour).padStart(2, '0')}:00. The royale on floor 16 opens on its
-        own in {msToTime(prepLeft(run) * MS_PER_TICK)} of play; the other {SURVIVORS} prepare until then.
-      </p>
+      <ul class="festival-facts">
+        <li><b>Festival day:</b> {day} of {PREP_DAYS}, {String(hour).padStart(2, '0')}:00</li>
+        <li><b>Royale opens in:</b> {msToTime(prepLeft(run) * MS_PER_TICK)} of play</li>
+        <li><b>Preparing until then:</b> the other {SURVIVORS}</li>
+      </ul>
+      <p class="dim small">The royale is on floor 16 and opens on its own when day {PREP_DAYS} ends.</p>
       <div class="enter">
         <button onclick={() => game.climbTo(ROYALE_FLOOR)} disabled={gs.recovering || !!gs.travel || !!gs.combat}>
           🏟️ Enter the royale now
@@ -140,6 +147,15 @@
 <style>
   .festival p {
     margin: 6px 0;
+  }
+
+  .festival-facts {
+    list-style: none;
+    margin: 6px 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .enter {

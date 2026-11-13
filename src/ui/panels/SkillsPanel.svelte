@@ -298,44 +298,52 @@
         >
           <span class="chev dim">{nodeOpen ? '▾' : '▸'}</span>
           <span class="s-icon">{def.icon}</span>
-          <span class="name">{def.name}</span>
-          {#if tier}<span class="tier small">「{tier}」</span>{/if}
-          <!-- Passive is the default state of a skill; only Active is news. -->
-          {#if def.kind === 'active'}<span class="chip chip-active">Active</span>{/if}
-          <!-- Folded, the row still says what is inside — otherwise a branch
-               with six techniques under it looks identical to a leaf. -->
-          {#if !nodeOpen && folded}<span class="folded small dim">{folded}</span>{/if}
-          {#if s.level >= skillCap(gs, def.id)}
-            <!-- At the ceiling further XP is discarded; the ceiling itself
-                 only rises through quests, events or prestige. -->
-            <span class="lvl">Lv {s.level}</span>
-            <span class="xp maxed" title="At its ceiling — further experience is lost. Some rewards raise it.">
-              MAX
-              {#if talent > 0}
-                <span class="bar talent" style="height: 3px" title="Talent: +{talentPct(talent)}% gain">
-                  <span class="fill" style="width: {tbar.width}%; background: {ink(tbar.color)}"></span>
-                </span>
-              {/if}
-            </span>
-          {:else}
-            <span class="lvl">Lv {s.level}</span>
-            <span class="xp">
-              <span class="bar" style="height: 5px">
-                <span
-                  class="fill"
-                  style="width: {(s.xp / skillXpNeeded(def.id, s.level)) * 100}%; background: var(--skill)"
-                ></span>
+          <!-- `row-main` and `row-meter` are boxes only on a narrow screen (the
+               style at the foot): the name and its tags on the left, the level
+               over the bar on the right. -->
+          <span class="row-main">
+            <span class="name">{def.name}</span>
+            {#if tier}<span class="tier small">「{tier}」</span>{/if}
+            <!-- Passive is the default state of a skill; only Active is news. -->
+            {#if def.kind === 'active'}<span class="chip chip-active">Active</span>{/if}
+            <!-- Folded, the row still says what is inside — otherwise a branch
+                 with six techniques under it looks identical to a leaf. -->
+            {#if !nodeOpen && folded}<span class="folded small dim">{folded}</span>{/if}
+          </span>
+          <span class="row-meter">
+            {#if s.level >= skillCap(gs, def.id)}
+              <!-- At the ceiling further XP is discarded; the ceiling itself
+                   only rises through quests, events or prestige. The sentence is
+                   in the open detail as well: a title is no use to a finger. -->
+              <span class="lvl">Lv {s.level}</span>
+              <span class="xp maxed" title="At its ceiling — further experience is lost. Some rewards raise it.">
+                MAX
+                {#if talent > 0}
+                  <span class="bar talent" style="height: 3px" title="Talent: +{talentPct(talent)}% gain">
+                    <span class="fill" style="width: {tbar.width}%; background: {ink(tbar.color)}"></span>
+                  </span>
+                {/if}
               </span>
-              <!-- Talent under XP: one lap per 100% of bonus, a new colour
-                   each lap (yellow first). Absent until a past run carried
-                   the skill through a prestige. -->
-              {#if talent > 0}
-                <span class="bar talent" style="height: 3px" title="Talent: +{talentPct(talent)}% gain">
-                  <span class="fill" style="width: {tbar.width}%; background: {ink(tbar.color)}"></span>
+            {:else}
+              <span class="lvl">Lv {s.level}</span>
+              <span class="xp">
+                <span class="bar" style="height: 5px">
+                  <span
+                    class="fill"
+                    style="width: {(s.xp / skillXpNeeded(def.id, s.level)) * 100}%; background: var(--skill)"
+                  ></span>
                 </span>
-              {/if}
-            </span>
-          {/if}
+                <!-- Talent under XP: one lap per 100% of bonus, a new colour
+                     each lap (yellow first). Absent until a past run carried
+                     the skill through a prestige. -->
+                {#if talent > 0}
+                  <span class="bar talent" style="height: 3px" title="Talent: +{talentPct(talent)}% gain">
+                    <span class="fill" style="width: {tbar.width}%; background: {ink(tbar.color)}"></span>
+                  </span>
+                {/if}
+              </span>
+            {/if}
+          </span>
         </button>
         <!-- One gate over the lot: detail, the technique roster and the child
              branches all fold together, because a skill you have collapsed is
@@ -350,6 +358,9 @@
                 </span>
               {/if}
             </div>
+            {#if s.level >= skillCap(gs, def.id)}
+              <div class="dim">At its ceiling: further experience is lost. Some rewards raise it.</div>
+            {/if}
             {#if def.effects?.length}
               <div class="effects">
                 {#each def.effects as mod}
@@ -538,23 +549,27 @@
         <button class="row" onclick={() => toggle(`attr_${attr.id}`)}>
           <span class="chev dim">{attrOpen ? '▾' : '▸'}</span>
           <span class="s-icon">{attr.icon}</span>
-          <span class="name">{training.name}</span>
-          {#if tier}<span class="tier small">「{tier}」</span>{/if}
-          <span class="chip">Training</span>
-          <span class="lvl">Lv {a.level}</span>
-          <span class="xp">
-            <span class="bar" style="height: 5px">
-              <span
-                class="fill"
-                style="width: {(a.xp / attrXpNeeded(a.level)) * 100}%; background: var(--xp)"
-              ></span>
-            </span>
-            <!-- Endowment under XP, talent's twin: same laps, same colours. -->
-            {#if endowment > 0}
-              <span class="bar talent" style="height: 3px" title="Endowment: +{talentPct(endowment)}% gain">
-                <span class="fill" style="width: {ebar.width}%; background: {ink(ebar.color)}"></span>
+          <span class="row-main">
+            <span class="name">{training.name}</span>
+            {#if tier}<span class="tier small">「{tier}」</span>{/if}
+            <span class="chip">Training</span>
+          </span>
+          <span class="row-meter">
+            <span class="lvl">Lv {a.level}</span>
+            <span class="xp">
+              <span class="bar" style="height: 5px">
+                <span
+                  class="fill"
+                  style="width: {(a.xp / attrXpNeeded(a.level)) * 100}%; background: var(--xp)"
+                ></span>
               </span>
-            {/if}
+              <!-- Endowment under XP, talent's twin: same laps, same colours. -->
+              {#if endowment > 0}
+                <span class="bar talent" style="height: 3px" title="Endowment: +{talentPct(endowment)}% gain">
+                  <span class="fill" style="width: {ebar.width}%; background: {ink(ebar.color)}"></span>
+                </span>
+              {/if}
+            </span>
           </span>
         </button>
         {#if attrOpen}
@@ -1058,5 +1073,80 @@
 
   .detail {
     padding: 4px 8px 6px 24px;
+  }
+
+  /* The two boxes inside a row exist for the narrow layout below; on a wide one
+     the row's children sit in the row itself. */
+  .row-main,
+  .row-meter {
+    display: contents;
+  }
+
+  /* A narrow screen (the phone, a split window), asked of the tab body's width
+     and not the window's. A row is three columns: the arrow and icon, the name
+     with its tags and the rank title under it (the title ends in an ellipsis
+     only when it is longer than that line), and the level over the XP bar. The
+     category head and the detail lines wrap instead of running past the edge. */
+  @container tab (max-width: 560px) {
+    .category h3 {
+      flex-wrap: wrap;
+    }
+
+    .row-main {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1px 7px;
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .row-main .name {
+      white-space: normal;
+    }
+
+    .row-main .tier {
+      order: 2;
+      flex: 1 0 100%;
+      max-width: none;
+      white-space: normal;
+    }
+
+    .row-meter {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      flex: none;
+      margin-left: auto;
+    }
+
+    .row-meter .lvl {
+      margin-left: 0;
+    }
+
+    /* A technique: the name and its flow on one line, the reps and the bench
+       switch on the next. */
+    .tech-head {
+      flex-wrap: wrap;
+      row-gap: 2px;
+    }
+
+    .tech-toggle {
+      flex: 1 1 100%;
+    }
+
+    .tech-reps {
+      margin-right: auto;
+    }
+
+    .byline,
+    .rank {
+      flex-wrap: wrap;
+    }
+
+    .rank-bonus {
+      white-space: normal;
+    }
   }
 </style>

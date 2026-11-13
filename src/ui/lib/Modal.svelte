@@ -1,13 +1,17 @@
-<script module lang="ts">
-  /** Windows open now, oldest first. Escape closes only the newest, so a window opened from another (the Cook's Book from a bench) closes alone. */
-  const open: symbol[] = [];
-</script>
-
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
+  import { viewport } from './viewport.svelte';
+  import { LAYER, provideHostLayer, pushOverlay } from './overlays';
 
   // Small floating window for inspecting one thing. Clicking the backdrop —
-  // anywhere outside the window — or pressing Escape closes it.
+  // anywhere outside the window — or pressing Escape (or the Android back
+  // button) closes it. With several open only the topmost closes (lib/overlays.ts),
+  // so a window opened from another (the Cook's Book from a bench) closes alone.
+  // A picker or pick mode inside it joins the stack on the window layer after the
+  // window, so one press closes the picker and the next the window.
+  // Below 700px (the phone layout, docs/PHONE.md) it is a sheet over the whole
+  // screen: the header, with a 44px close button, stays at the top inside the
+  // safe area, and the body scrolls under it.
   let {
     title,
     onclose,
@@ -15,27 +19,21 @@
     /** A workbench needs room; an item tooltip does not. */
     wide = false,
     /**
-     * Most of the screen, at a fixed height, and the body does not scroll: the
-     * content lays itself out in columns that scroll on their own (the anvil).
-     * Below 900px it falls back to one scrolling body.
+     * Most of the screen, at a fixed height. The body is a container named
+     * `fill-body` and scrolls when its content is taller: the content asks the
+     * container for its own width (`@container fill-body (max-width: ...)`) and
+     * lays itself out either in columns that scroll on their own, at the body's
+     * height, or in one flow (the anvil). The window does not decide.
      */
     fill = false,
   }: { title: Snippet; onclose: () => void; children: Snippet; wide?: boolean; fill?: boolean } = $props();
 
-  const me = Symbol('modal');
-  onMount(() => {
-    open.push(me);
-    return () => {
-      const at = open.indexOf(me);
-      if (at >= 0) open.splice(at, 1);
-    };
-  });
+  provideHostLayer(LAYER.window);
+  onMount(() => pushOverlay(LAYER.window, () => onclose()));
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && open[open.length - 1] === me && onclose()} />
-
-<div class="overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
-  <div class="window panel" class:wide class:fill role="dialog" aria-modal="true">
+<div class="overlay" class:sheet={viewport.phone} role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
+  <div class="window panel" class:wide class:fill class:sheet={viewport.phone} role="dialog" aria-modal="true">
     <header>
       <div class="title">{@render title()}</div>
       <button class="close" aria-label="Close" onclick={onclose}>✕</button>
@@ -86,17 +84,7 @@
 
   .window.fill .body {
     flex: 1;
-    overflow: hidden;
-  }
-
-  @media (max-width: 900px) {
-    .window.fill {
-      height: auto;
-    }
-
-    .window.fill .body {
-      overflow-y: auto;
-    }
+    container: fill-body / inline-size;
   }
 
   header {
@@ -122,5 +110,41 @@
     padding: 10px 12px 12px;
     overflow-y: auto;
     min-height: 0;
+  }
+
+  /* The phone sheet: no margin, no frame, the whole window. The insets keep the
+     header out from under the status bar and the body above the gesture strip. */
+  .overlay.sheet {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .window.sheet,
+  .window.sheet.wide,
+  .window.sheet.fill {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-width: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .window.sheet header {
+    align-items: center;
+    padding: calc(8px + var(--safe-top)) calc(12px + var(--safe-right)) 8px calc(12px + var(--safe-left));
+  }
+
+  .window.sheet .close {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .window.sheet .body {
+    flex: 1;
+    padding: 10px calc(12px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(12px + var(--safe-left));
   }
 </style>

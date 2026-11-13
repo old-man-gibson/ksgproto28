@@ -1,7 +1,9 @@
 <script lang="ts">
   import { gs, game } from './state.svelte';
   import { TPS } from '../core/engine/loop';
+  import { onMount } from 'svelte';
   import { msToTime } from './lib/format';
+  import { LAYER, pushOverlay } from './lib/overlays';
   import type { EvolutionChoice } from '../core/facet/host';
   import type { FacetDoc } from '../core/facet/facet';
   import FactLines from './lib/FactLines.svelte';
@@ -13,6 +15,10 @@
    * until a branch is picked, and the held time is banked as bonus time.
    */
   let { from, choices }: { from: FacetDoc; choices: EvolutionChoice[] } = $props();
+
+  // Joins the overlay stack as a window that ignores Escape and the Android back
+  // button, and shields whatever is under it (lib/overlays.ts).
+  onMount(() => pushOverlay(LAYER.hold, null));
 
   const banked = $derived(msToTime((gs.bonusTime.banked / TPS) * 1000));
 </script>
@@ -43,7 +49,8 @@
     align-items: center;
     justify-content: center;
     z-index: 30;
-    padding: 16px;
+    /* 16px, or the notch's or the system bar's inset where that is more (docs/PHONE.md). */
+    padding: max(16px, var(--safe-top)) max(16px, var(--safe-right)) max(16px, var(--safe-bottom)) max(16px, var(--safe-left));
   }
   .modal {
     width: 560px;

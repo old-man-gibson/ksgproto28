@@ -11,6 +11,7 @@
     bandProgress,
     floorRange,
     ladderBands,
+    ladderEnd,
     regionOfTower,
     rideLabel,
     rungView,
@@ -42,6 +43,9 @@
   const standingBand = $derived(standingBandId(gs));
 
   const foot = $derived(tower ? towerHubView(gs, tower) : null);
+
+  /** The line past the top rung, once that rung is cleared (the same line the map's tower section prints). */
+  const end = $derived(tower ? ladderEnd(gs, tower) : null);
 
   /** The band header's second line: its floors, unless the name already says it, and its order. */
   function bandSub(band: BandDef): string {
@@ -199,9 +203,14 @@
       </p>
     {/if}
     <div class="ladder">
+      <!-- Past the top rung, once it is cleared: the floor there is not built. A plain
+           line, lined up with the band names; the section's copy is in the map's tower
+           section (TowerSection.svelte), and under 600 px in its fold's summary. -->
+      {#if end && tower.direction !== 'down'}<div class="ladder-end small dim">{end}</div>{/if}
       {#each bands as lb (lb.band.id)}
         {@render bandBlock(lb)}
       {/each}
+      {#if end && tower.direction === 'down'}<div class="ladder-end small dim">{end}</div>{/if}
 
       <!-- The hub is rung 0: the way back to the city, always open. -->
       {#if foot}
@@ -224,6 +233,11 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  /* A plain line, not a card: lined up with the band names after their fold marker. */
+  .ladder-end {
+    padding-left: calc(1em + 10px);
   }
 
   section.ladder-band {

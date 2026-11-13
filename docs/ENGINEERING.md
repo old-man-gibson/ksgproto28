@@ -204,6 +204,12 @@ not an optimization, and it belongs in a different conversation.
 
 ## 2. Phone compatibility
 
+**Status, 2026-11-12:** the shell is built: one column below 700 px, the dock, the
+bottom bar, tap cards, safe areas, 44 px hit height. It is in
+[PHONE.md](PHONE.md), with the three per-panel passes and the tap path for the
+three reordering panels (§2.3, §2.4 here); what is still open is PHONE.md §6. The
+numbers below are the 2026-09 measurements that led to it.
+
 Measured at 375×812 in the preview browser.
 
 ### 2.1 The current state
@@ -498,3 +504,14 @@ The dev server does not watch the three art folders (vite.config.ts): 30,536
 files whose startup scan held the first page for 43 s on a cold start
 (2026-11-01). The generated lists above are watched, so naming new art reloads
 as usual; replacing a pack file in place shows after a page reload.
+
+## 6. Tests that mount components
+
+Most tests run in plain node. A test that mounts a real Svelte component (to
+press a key and read what is left on the page) is named `tests/*.dom.test.ts`:
+vite.config.ts runs those in a second vitest project, `dom`, in jsdom, with the
+`browser` resolve condition so Svelte loads its client build. Everything else is
+the `node` project. A fixture component for such a test goes in `tests/fixtures/`
+(`OverlayHarness.svelte` mounts the real windows the way App.svelte does).
+jsdom has no `matchMedia`: `lib/viewport.svelte.ts` reads wide when there is none.
+Call `flushSync()` after changing state before reading the page.

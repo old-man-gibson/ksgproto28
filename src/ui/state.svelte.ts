@@ -9,6 +9,7 @@ import {
   loadFromStorage,
   saveToStorage,
   serialize,
+  storagePersists,
 } from '../core/save/save';
 import { OFFLINE_CAP_MS, catchUpTicks, runOfflineProgress, type OfflineSummary } from '../core/save/offline';
 import { dropFight, isKept, keepFight, NOTEBOOK_MAX } from '../core/systems/ledger';
@@ -18,6 +19,7 @@ import { forgetLayouts } from './lib/benchLayouts';
 import { bindFacets, dropFacetStatuses, installFacet } from '../core/facet/host';
 import { initialSeen, visibleNav, writeSeen, type MainTab } from './lib/nav';
 import { readLogChoice, writeLogChoice } from './lib/shell';
+import { sharesFiles, shareTextFile } from './lib/nativeExport';
 
 /**
  * Bridge between the pure core and Svelte. The game state is a deep-reactive
@@ -56,6 +58,17 @@ if (loaded.healed) {
     type: 'log',
     msg: '🩹 Restored your progress from a recovery copy after an earlier failed load.',
     kind: 'info',
+  });
+}
+
+// The browser refused its storage (site data blocked, a private or embedded view):
+// the game runs and "saves" to memory, which the page's closing ends. Said once at
+// boot, and in the Menu's Save row (SystemMenu.svelte).
+if (!storagePersists) {
+  game.bus.emit({
+    type: 'log',
+    msg: '⚠️ Storage: this browser refuses site data. Saves are kept in memory until the page closes. Export (Menu) writes the save to a file.',
+    kind: 'danger',
   });
 }
 
@@ -247,11 +260,22 @@ export function stepEvent(): number {
 }
 
 export function exportSave(): void {
+  const name = `frontier-idle-save-${new Date().toISOString().slice(0, 10)}.json`;
+  // The Android app's WebView drops a blob download: share a file instead
+  // (lib/nativeExport.ts). The browser path below is unchanged.
+  if (sharesFiles()) {
+    void shareTextFile(name, serialize(gs)).then((r) => {
+      if (!r.ok && !r.dismissed) {
+        game.bus.emit({ type: 'log', msg: `❌ Save export failed: ${r.reason}`, kind: 'danger' });
+      }
+    });
+    return;
+  }
   const blob = new Blob([serialize(gs)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `frontier-idle-save-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = name;
   a.click();
   URL.revokeObjectURL(url);
 }

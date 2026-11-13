@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { FightLedger } from '../core/types';
   import { TPS } from '../core/engine/loop';
+  import { onMount } from 'svelte';
   import { fmt } from './lib/format';
+  import { LAYER, pushOverlay } from './lib/overlays';
 
   let {
     ledger,
@@ -14,6 +16,10 @@
     onkeep?: () => void;
     kept?: boolean;
   } = $props();
+
+  // Escape and the Android back button close it (lib/overlays.ts), above the
+  // welcome-back report and level with a Modal.
+  onMount(() => pushOverlay(LAYER.window, () => onclose()));
 
   /** The play-by-play is opt-in: the numbers are the point, this is the detail. */
   let showTranscript = $state(false);
@@ -189,6 +195,8 @@
     align-items: center;
     justify-content: center;
     z-index: 20;
+    /* The window stays out of a notch and the system bars (docs/PHONE.md). */
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 
   /*

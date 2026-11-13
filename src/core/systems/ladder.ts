@@ -4,6 +4,7 @@ import { conditionsMet } from './conditions';
 import { boonRank } from './legacy';
 import { festivalLocked } from './festivalRules';
 import { WARD_WINDOWS } from '../data/wards.data';
+import { text } from '../text/log';
 
 /**
  * The ladder's reads: which rungs are cleared, open, gated or sealed, where
@@ -62,6 +63,33 @@ export function bandPassed(state: GameState, bandId: string): boolean {
 export function floorCleared(state: GameState, floor: FloorDef): boolean {
   if (floor.bandId !== undefined && bandPassed(state, floor.bandId)) return true;
   return clearMet(state, floor);
+}
+
+/** The tower's highest banded floor: the last rung a climb can reach. Undefined for a tower with none. */
+export function topRung(towerId: string): FloorDef | undefined {
+  const floors = ladderFloors(towerId);
+  return floors[floors.length - 1];
+}
+
+/**
+ * The tower's top rung is cleared, so there is nothing left to climb to. The
+ * floors the design puts above it (docs/FLOOR_IDEAS.md) are not built yet; the
+ * ladder reads this to say so. Derived from the clear counters like every
+ * other reading here, so it resets with the run and needs no save field, and
+ * it stops holding on its own once a floor is added above.
+ */
+export function ladderEnded(state: GameState, towerId: string): boolean {
+  const top = topRung(towerId);
+  return !!top && floorCleared(state, top);
+}
+
+/**
+ * The notice for a tower whose top rung is `top` and cleared: the floor past it
+ * is not built. The one place the line is made: the tower list, the log at the
+ * clear and the welcome-back report (save/offline.ts) all print this.
+ */
+export function endNotice(top: FloorDef): string {
+  return text('towers.end', { floor: top.index + 1 });
 }
 
 function bandIndexOf(floor: FloorDef): number {

@@ -75,12 +75,14 @@ seeding a save or fighting something that inflicts one (`young_wolf` at
 
 If you must seed by hand, the traps, in order of how much time they cost:
 
-- **The dying page saves over your seed.** `main.ts` registers
-  `beforeunload → save()`, which overwrites a freshly written payload during
-  the reload. To edit one field of the current save, don't fight it —
-  register your own `beforeunload` listener *after* the app's (listeners run
+- **The dying page saves over your seed.** `main.ts` saves on `beforeunload`,
+  `pagehide` and `visibilitychange` to hidden (`lib/saveTriggers.ts`), which
+  overwrites a freshly written payload during the reload, and `pagehide` is the
+  last of them. To edit one field of the current save, don't fight it —
+  register your own listener on `pagehide` *after* the app's (listeners run
   in registration order), rewrite the save inside it, and reload; the app
-  saves first, your rewrite wins.
+  saves first, your rewrite wins. (Before 2026-11-12 a `beforeunload` listener
+  was enough; now it runs before the `pagehide` save and loses.)
 - **A hand-written partial save with a stale `version` gets migrated**, and
   migration can backfill `inventory`/`stock` from initial-state defaults —
   symptom: gold loads but the inventory is the seven starting items.

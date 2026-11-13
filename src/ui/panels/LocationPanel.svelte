@@ -43,6 +43,7 @@
   import StationsRow from '../StationsRow.svelte';
   import SceneBackdrop from '../lib/SceneBackdrop.svelte';
   import RaidTrack from '../lib/RaidTrack.svelte';
+  import FoldedDesc from '../lib/FoldedDesc.svelte';
   import { sceneFor } from '../lib/scenes';
   import DestinationPreview from './DestinationPreview.svelte';
   import { visibleBenches } from '../lib/navigation';
@@ -317,8 +318,15 @@
     {#if (activeAct && actCost > 0) || spot.exploreTicks}
       <div class="act-meters">
         {#if activeAct && actCost > 0}
-          <div class="explore small" title="Fills at your Speed — rewards land when the bar completes">
-            <span class="dim">{activeAct.icon} Next:</span>
+          <div class="explore small">
+            <!-- The words behind the bar are a tap card (lib/Tip.svelte), not a title: a finger has no hover. -->
+            <Tip>
+              <span class="dim">{activeAct.icon} Next:</span>
+              {#snippet tip()}
+                <div class="tip-line">Fills at your Speed.</div>
+                <div class="tip-line">Rewards land when the bar completes.</div>
+              {/snippet}
+            </Tip>
             <div class="bar" style="flex: 1; height: 10px">
               <div
                 class="fill action-fill"
@@ -331,7 +339,13 @@
 
         {#if spot.exploreTicks}
           <div class="explore small">
-            <span class="dim">Exploration:</span>
+            <Tip>
+              <span class="dim">Exploration:</span>
+              {#snippet tip()}
+                <div class="tip-line">Fills as you explore this place.</div>
+                <div class="tip-line">A mark on the bar is something the place still owes you.</div>
+              {/snippet}
+            </Tip>
             <div class="bar" style="flex: 1; height: 10px">
               <div class="fill" style="width: {explorePct * 100}%; background: var(--buff-fill)"></div>
               <!--
@@ -340,7 +354,7 @@
                 bar's job is to say how much further, not to keep a trophy shelf.
               -->
               {#each unclaimedFinds as f (f.id)}
-                <div class="find-tick" style="left: {f.at * 100}%" title="Something to find here"></div>
+                <div class="find-tick" style="left: {f.at * 100}%"></div>
               {/each}
             </div>
             <span>{Math.floor(explorePct * 100)}%</span>
@@ -678,9 +692,11 @@
 {#if openBench === 'spelltable'}
     <Modal wide onclose={() => (openBench = null)}>
       {#snippet title()}
-        <div class="win-title">🔮 Spellcrafting Table</div>
-        <div class="small dim">
-          One table for every school of magic you have unlocked. Crafted spells are added to your grimoire.
+        <div class="win-head">
+          <div class="win-title">🔮 Spellcrafting Table</div>
+          <FoldedDesc
+            text="One table for every school of magic you have unlocked. Crafted spells are added to your grimoire."
+          />
         </div>
       {/snippet}
       <SpellcraftPanel large />
@@ -701,8 +717,8 @@
           {#if bench.skill === 'cooking'}
             <button class="small" onclick={() => (bookOpen = true)}>📒 Cook's Book</button>
           {/if}
+          <FoldedDesc text={bench.desc} />
         </div>
-        <div class="small dim">{bench.desc}</div>
       {/snippet}
       {#if bench.assembles}
         <AnvilPanel />
@@ -764,11 +780,13 @@
 {/if}
 
 <style>
-  /* A workbench's window header: its name, and the Cook's Book button on a kitchen bench. */
+  /* A workbench's window header: its name, the Cook's Book button on a kitchen
+     bench, and the description (FoldedDesc) on a row of its own, or beside the
+     name on a phone held sideways. */
   .win-head {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0 10px;
     flex-wrap: wrap;
   }
   .place {
