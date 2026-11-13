@@ -81,6 +81,7 @@ arrival is on top.
 
 | `LAYER` | z-index | Who |
 |---|---|---|
+| `page` | none (page flow) | a picker or pick mode drawn in the screen body: the chromosome's socket picker, a picked rotation card or plan row, the family roster, the music cursor, a wuxin pick or drag |
 | `drawer` | 9 | the log drawer, the map card, a tag picker's list |
 | `report` | 10 | the welcome-back report |
 | `window` | 20 | `lib/Modal.svelte` (the Menu, benches, the Cook's Book), the fight summary |
@@ -88,8 +89,9 @@ arrival is on top.
 | `tip` | 100 | a touch tip card (`lib/Tip.svelte`) |
 
 `tests/overlayLayers.test.ts` fails when a component's CSS z-index and its layer
-differ. A window opened from another (a bench, then its Cook's Book) sits on the
-same layer, later, so one press closes only the newer.
+differ (`page` has no z-index: it is below every drawn overlay, and the test checks
+that it is under `drawer`). A window opened from another (a bench, then its Cook's
+Book) sits on the same layer, later, so one press closes only the newer.
 
 **Joining.** A component that closes on Escape or back joins while it is open and
 leaves when it closes. `pushOverlay(layer, close)` returns the function that leaves:
@@ -109,11 +111,22 @@ stays and blocks everything under it. Pass `null` as `close` for a window that
 holds play: Escape and back do nothing while it is on top. A component must not
 also read Escape itself, or one press closes two things.
 
-**Not yet on the stack.** The pickers in `MartialPlanner.svelte`, `BenchPanel.svelte`
-and `ChromosomePanel.svelte` (under `src/ui/panels/`) still listen for Escape on
-their own. Until each joins, the Android back button ignores them: with one open
-and nothing else, back saves and minimizes the app. Joining is the second pattern
-above, in each picker's `open` state, and then deleting its own Escape handler.
+**Pickers and pick modes inside a panel.** The layer a picker joins on is the layer of
+whatever it is drawn in, and only the host knows it. `Modal` calls
+`provideHostLayer(LAYER.window)` at init; a panel (or `TagPicker`) calls
+`hostLayer(LAYER.page)` (`hostLayer(LAYER.drawer)` for the tag list) once at init,
+never inside an effect, and joins with the second pattern above on a `$derived`
+boolean for "is one open". Inside a `Modal` the picker is on the window layer, later
+than its window, so back closes the picker and a second press the window; in the
+screen body it is on the page layer, under every window, drawer and card, so a window
+or the welcome-back report that opens over a pick closes first. The boolean matters:
+an effect that reads the picked id itself rejoins when one pick replaces another and
+moves the entry above a window opened since. Members: the bench and chromosome slot
+pickers, the rotation card and plan row picks, the family roster, the spell tile
+pick, the music pitch cursor, a wuxin pick or drag, `TagPicker`'s list. No panel
+reads Escape itself (`tests/overlayLayers.test.ts` fails on one); the order is
+`tests/pickOverlays.dom.test.ts`. The rule for a new panel is also in
+[PHONE.md](PHONE.md) section 7.
 
 ## When the game saves
 

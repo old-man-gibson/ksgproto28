@@ -6,7 +6,7 @@
  *
  * Order is the LAYER an overlay is drawn on (its CSS z-index), then arrival: of
  * two on the same layer the later one is on top. So the stack top is what is on
- * top of the screen. `tests/overlays.dom.test.ts` holds each component's CSS
+ * top of the screen. `tests/overlayLayers.test.ts` holds each component's CSS
  * z-index to its LAYER.
  *
  * To join (the pattern in lib/Modal.svelte, lib/TagPicker.svelte):
