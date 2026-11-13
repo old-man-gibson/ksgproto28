@@ -1507,14 +1507,15 @@ time, each one coming with its own restrictions and goals"
    every realm's objectives are complete.
 3. **Floor 50 is a huge new step.** It opens once all six realms are
    complete; what makes it a step up is not yet written.
+4. **Progress is per realm.** Most realms keep progress when the player
+   leaves; each realm's entry states whether it keeps or resets.
+5. **Restrictions stay inside.** A realm's restrictions apply only while
+   the character is in that realm; leaving drops them.
+6. **Floors 31–43 come first.** They are unwritten; the band number and
+   the entry level of 44–49 follow from them.
 
-**Not yet decided.** The review (§3.5) runs when the user asks; these are
-the gaps it would fill.
-
-- Whether progress inside a realm is kept on exit or reset on re-entry.
-- Whether a restriction stays on the character after leaving its realm.
-- Floors 31–42 are unwritten, so the band number and the entry level are
-  open.
+**Not yet decided.** Each realm's restrictions, goals and keep/reset rule;
+what floor 50's step is. The review (§3.5) runs when the user asks.
 
 ---
 
