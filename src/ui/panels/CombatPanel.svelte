@@ -527,9 +527,9 @@
     disabled={!unlocked}
     onclick={() => game.setStyle(slot.stance.id)}
   >
-    <span class="stance-icon">{#if unlocked}{slot.active.icon}{:else}<GlyphText text="🔒" />{/if}</span>
+    <span class="stance-icon boxed">{#if unlocked}<Icon of={slot.active} size={32} />{:else}<GlyphText text="🔒" />{/if}</span>
     <span class="stance-name">{slot.active.name}</span>
-    {#if forced}<span class="forced-mark">{forcing?.def.icon}</span>{/if}
+    {#if forced && forcing}<span class="forced-mark"><Icon of={forcing.def} /></span>{/if}
   </button>
 {/snippet}
 
@@ -739,7 +739,7 @@
 
   {#if forcing}
     <div class="forced-note" style="--forced: {forcedColor}">
-      {forcing.def.icon} {forcing.def.name} — you are locked into
+      <Icon of={forcing.def} /> {forcing.def.name} — you are locked into
       {STYLES[forcedStance!]?.name ?? forcedStance}. Your stance returns when it does.
     </div>
   {/if}
@@ -1447,6 +1447,15 @@
 
   .stance-icon {
     font-size: 17px;
+  }
+
+  /* The grid's buttons: a 32px box whether it holds art, the emoji or the lock. */
+  .stance-icon.boxed {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
   }
 
   .stance-name {

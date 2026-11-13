@@ -275,7 +275,7 @@
     style="left:{PLAYER.x}%; bottom:{PLAYER.y}%; z-index:50"
   >
     <div class="hud">
-      <div class="name">You <span class="stance" title={style.name}>{style.icon}</span></div>
+      <div class="name">You <span class="stance" title={style.name}><Icon of={style} /></span></div>
       <div class="meter hp"><div style="width:{playerHp}%"></div></div>
       <div class="meter act"><div style="width:{playerBar}%"></div></div>
     </div>

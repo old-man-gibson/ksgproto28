@@ -1092,6 +1092,7 @@ plus a *style* entry:
 ```ts
 tiger_style: {
   id: 'tiger_style', name: 'Tiger Style', icon: '🐅',
+  art: 'stance_tiger_style',             // optional: a name in src/ui/lib/icons/manifest.json
   desc: 'Frenzy, but with intent.',
   mods: [ { stat: 'damage', op: 'mult', value: 0.3, perLevel: 0.004 }, ... ],
   unlock: [ { type: 'skill', id: 'school_tiger', level: 1 },
@@ -1101,6 +1102,13 @@ tiger_style: {
 },
 ```
 Unequipping the weapon falls back to the generic stance automatically.
+
+`art` is the style's pixel icon (docs/plans/pixel-icons.md §4.1); all 21 styles have
+one, named `stance_<id>`. The stance button, the "You" line on the battle stage and the
+tutorial's stance card draw it through `<Icon of={style}>`. A school's icon is a framed
+skill icon, so a school reads differently from the generic stance it replaces in the
+same button. A log line that carries a style's emoji (`game.school_engaged`,
+`tutorial.stance`) resolves it through the glyph table, not through `art`.
 
 **Exertion — the stamina a style burns.** Every style should declare one
 (`exertion`), because that is where its personality lives:

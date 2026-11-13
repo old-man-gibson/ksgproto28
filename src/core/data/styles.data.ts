@@ -26,6 +26,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'balanced',
     name: 'Neutral',
     icon: '⚖️',
+    art: 'stance_balanced',
     mods: [],
     exertion: {
       on: 'attack',
@@ -38,6 +39,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'aggressive',
     name: 'Frenzy',
     icon: '🐺',
+    art: 'stance_aggressive',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.1 },
       { stat: 'attackSpeed', op: 'mult', value: 0.15 },
@@ -60,6 +62,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'crush',
     name: 'Crush',
     icon: '🔨',
+    art: 'stance_crush',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.4 },
       { stat: 'penetration', op: 'add', value: 0.1 },
@@ -76,6 +79,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'cleave',
     name: 'Cleave',
     icon: '🪓',
+    art: 'stance_cleave',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.2 },
       { stat: 'splash', op: 'add', value: 0.1 },
@@ -92,6 +96,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'quick',
     name: 'Quick',
     icon: '💨',
+    art: 'stance_quick',
     mods: [
       { stat: 'attackSpeed', op: 'mult', value: 0.3 },
       { stat: 'damage', op: 'mult', value: -0.1 },
@@ -107,6 +112,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'evasive',
     name: 'Evasive',
     icon: '🌀',
+    art: 'stance_evasive',
     mods: [
       { stat: 'dodge', op: 'add', value: 0.12 },
       { stat: 'attackSpeed', op: 'mult', value: 0.1 },
@@ -123,6 +129,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'finesse',
     name: 'Finesse',
     icon: '🎯',
+    art: 'stance_finesse',
     mods: [
       { stat: 'crit', op: 'add', value: 0.12 },
       { stat: 'critDamage', op: 'mult', value: 0.4 },
@@ -142,6 +149,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'defensive',
     name: 'Brace',
     icon: '🐢',
+    art: 'stance_defensive',
     mods: [
       { stat: 'armor', op: 'mult', value: 0.5 },
       { stat: 'maxHp', op: 'mult', value: 0.15 },
@@ -158,6 +166,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'multi',
     name: 'Flurry',
     icon: '🌪️',
+    art: 'stance_multi',
     mods: [
       { stat: 'attackSpeed', op: 'mult', value: 0.45 },
       { stat: 'damage', op: 'mult', value: -0.3 },
@@ -175,6 +184,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'jigen_ryu',
     name: 'Jigen-ryu',
     icon: '⚡',
+    art: 'stance_jigen_ryu',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.5, perLevel: 0.004 },
       { stat: 'penetration', op: 'add', value: 0.2, perLevel: 0.002 },
@@ -200,6 +210,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'niten_ichi_ryu',
     name: 'Niten-Ichi-ryu',
     icon: '🗡️',
+    art: 'stance_niten_ichi_ryu',
     mods: [
       { stat: 'parry', op: 'add', value: 0.15, perLevel: 0.002 },
       // The second blade is already moving when the first turns a blow aside,
@@ -226,6 +237,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'eishin_ryu',
     name: 'Eishin-ryu',
     icon: '🌙',
+    art: 'stance_eishin_ryu',
     mods: [
       { stat: 'crit', op: 'add', value: 0.18, perLevel: 0.001 },
       { stat: 'critDamage', op: 'mult', value: 0.6, perLevel: 0.005 },
@@ -251,6 +263,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'ittou_ryu_style',
     name: 'Ittou-ryu',
     icon: '👁️',
+    art: 'stance_ittou_ryu_style',
     mods: [
       { stat: 'attackSpeed', op: 'mult', value: 0.35 },
       { stat: 'crit', op: 'add', value: 0.1, perLevel: 0.001 },
@@ -281,6 +294,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'destreza',
     name: 'Destreza',
     icon: '🤺',
+    art: 'stance_destreza',
     mods: [
       { stat: 'parry', op: 'add', value: 0.14, perLevel: 0.002 },
       { stat: 'riposte', op: 'add', value: 0.25, perLevel: 0.008 },
@@ -305,6 +319,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'bolognese',
     name: 'Bolognese',
     icon: '🔰',
+    art: 'stance_bolognese',
     mods: [
       { stat: 'parry', op: 'add', value: 0.1, perLevel: 0.0015 },
       { stat: 'riposte', op: 'add', value: 0.15, perLevel: 0.005 },
@@ -331,6 +346,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'boxing',
     name: 'Boxing',
     icon: '🥊',
+    art: 'stance_boxing',
     mods: [
       { stat: 'dodge', op: 'add', value: 0.15, perLevel: 0.001 },
       { stat: 'attackSpeed', op: 'mult', value: 0.15 },
@@ -353,6 +369,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'taekwondo',
     name: 'Taekwondo',
     icon: '🦵',
+    art: 'stance_taekwondo',
     mods: [
       { stat: 'attackSpeed', op: 'mult', value: 0.5, perLevel: 0.003 },
       { stat: 'dodge', op: 'add', value: 0.05 },
@@ -375,6 +392,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'muay_thai',
     name: 'Muay Thai',
     icon: '🐘',
+    art: 'stance_muay_thai',
     mods: [
       { stat: 'damage', op: 'mult', value: 0.45, perLevel: 0.004 },
       { stat: 'critDamage', op: 'mult', value: 0.4 },
@@ -398,6 +416,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'wrestling',
     name: 'Wrestling',
     icon: '🤼',
+    art: 'stance_wrestling',
     mods: [
       { stat: 'armor', op: 'mult', value: 0.6, perLevel: 0.004 },
       { stat: 'maxHp', op: 'mult', value: 0.25, perLevel: 0.002 },
@@ -422,6 +441,7 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
     id: 'magic_combat',
     name: 'Magic Combat',
     icon: '🔮',
+    art: 'stance_magic_combat',
     mods: [
       { stat: 'crit', op: 'add', value: 0.08, perLevel: 0.001 },
       { stat: 'spellPower', op: 'mult', value: 0.1, perLevel: 0.002 },
@@ -440,7 +460,8 @@ export const STYLES = prose<CombatStyleDef>('STYLES', STYLES_TEXT, {
   capoeira: {
     id: 'capoeira',
     name: 'Capoeira',
-    icon: '📦',
+    icon: '🤸',
+    art: 'stance_capoeira',
     mods: [
       { stat: 'dodge', op: 'mult', value: 0.08, perLevel: 0.01 },
     ],

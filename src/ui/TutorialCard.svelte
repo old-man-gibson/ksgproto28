@@ -16,6 +16,7 @@
   import { describeMod, exertionLines, ticksToTime } from './lib/format';
   import Tip from './lib/Tip.svelte';
   import ArtPackControl from './ArtPackControl.svelte';
+  import Icon from './lib/icons/Icon.svelte';
 
   /**
    * The tutorial's one panel: the first step the world says is not done, its
@@ -133,7 +134,7 @@
           {#each slots as slot (slot.stance.id)}
             <Tip>
               <button class:selected={gs.style === slot.stance.id} onclick={() => game.chooseTutorialStance(slot.stance.id)}>
-                {slot.stance.icon} {slot.stance.name}
+                <Icon of={slot.stance} /> {slot.stance.name}
               </button>
               {#snippet tip()}
                 <div class="tip-line tip-base">{slot.stance.desc}</div>
@@ -149,7 +150,7 @@
         <ul class="facts small">
           {#each slots as slot (slot.stance.id)}
             <li>
-              <b>{slot.stance.icon} {slot.stance.name}:</b>
+              <b><Icon of={slot.stance} /> {slot.stance.name}:</b>
               {slot.stance.mods.length ? slot.stance.mods.map((m) => describeMod(m)).join(', ') : 'no modifiers'}
             </li>
           {/each}

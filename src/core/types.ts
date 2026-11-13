@@ -1831,6 +1831,8 @@ export interface CombatStyleDef {
   id: string;
   name: string;
   icon: string;
+  /** Pixel icon: a name in `ui/lib/icons/manifest.json`. Without it the emoji is drawn. */
+  art?: string;
   desc: string;
   mods: Modifier[];
   /** Stamina burned to fight in this style, and what that buys. */

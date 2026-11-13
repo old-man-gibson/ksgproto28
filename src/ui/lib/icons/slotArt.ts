@@ -20,3 +20,9 @@ export const SLOT_ART: Record<SlotId, string> = {
   back: 'slot_back',
   accessory: 'slot_accessory',
 };
+
+/**
+ * The mark on an empty weapon slot that floats (telekinesis). Its own name, not a
+ * glyph-table entry: 🌀 stands for other things in text.
+ */
+export const FLOATING_SLOT_ART = 'slot_floating';

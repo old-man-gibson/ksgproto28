@@ -391,7 +391,7 @@ matching block (§3.2) but nobody has chosen icons from it.
 | 1 | Titles | 9 | Not picked yet | 9 |
 | 2 | Spots, activities | 141 | Activities: mine, fish, harvest, rest, combat. Place icons 61–160 cover many spots; not picked yet | Epic RPG World props for the rest (gitignored folder) |
 | 2 | Monsters | 59 | 39 Ækashics portraits (local only); monster heads 145–158 and monster parts for small icons | 20 without a portrait |
-| 2 | Stances | 21 | **9 generic picked**; 12 schools not picked yet | — |
+| 2 | Stances | 21 | **21 picked** (9 generic, 12 schools); built in story 6 | — |
 | 2 | Techniques, positions, fork archetypes | 40 | Not picked yet; skill icons 2721–2840, 3041–3360 | 40 to check |
 | 2 | Items | 39 | **39 picked** | — |
 | 2 | Materials | 177 | Not picked yet; ores, ingots, monster parts, herbs, food (481–1480, 2001–2440) | Gene family for the 🧬 materials |
@@ -507,8 +507,29 @@ Each step is one story and one PR.
    bestiary drop labels, the tutorial card labels, log loot lines and
    `format.ts` `grantLine`, which resolve only through the glyph table
    (⚔️ crossed swords, 🛡️ shield, 🥾 boots).
-6. **Stances.** The nine generic stances from picks.md; pick the 12 schools from the
-   skill blocks (2721–2840, 3601–4440).
+6. **Stances. Done 2026-11-13** (branch `pixel-icons-2-6`). 21 of 21 styles, each
+   with its own manifest name `stance_<id>` (22 new names with `slot_floating`; 205 in
+   all, 198 files). `art?: string` on `CombatStyleDef`. The nine generic stances are
+   the picks in picks.md (Brace shares the shield's file and Flurry the crossed
+   swords', Crush the crush word's). The 12 schools are framed skill icons from
+   3601–4440, one colour per family so the replaced stance and its school read
+   apart: katana (orange: Jigen-ryu c3830 lightning, Niten-Ichi-ryu c3808 two blades,
+   Eishin-ryu c3836 crescent, Ittou-ryu c3835 eye), rapier and buckler (blue:
+   Destreza c3760 blade, Bolognese c3732 shield), unarmed (red: Boxing c3895 fist,
+   Taekwondo c3908 kick, Muay Thai c3877 hammer fist, Wrestling c3854 grip,
+   Capoeira c3911 figure), Magic Combat (purple, c3675 wand). Sites: the stance
+   button (a 32px box, art, emoji or the lock), the "You" line of the battle stage,
+   the tutorial stance card (buttons and facts), and the forced-stance mark and note
+   (status art from story 4). Capoeira's emoji changed from 📦 to 🤸: 📦 is in the
+   glyph table as a chest, which a log line would draw. The floating weapon slot's
+   mark is `slot_floating` (the Evasive swirl's file), named in `FLOATING_SLOT_ART`
+   because 🌀 means other things in text and cannot enter the glyph table. Left as
+   emoji: the trigger-condition labels (`<option>` text and `describeCondition`
+   summaries) and the Weakest Weapon Master choice buttons, whose icons come from the
+   Facet bank. Two log lines carry a style's emoji and resolve it through the glyph
+   table: `game.school_engaged` and `tutorial.stance`, so 💨 Quick shows the gust
+   drawing, 🌪️ Flurry the sandstorm, ⚡ Jigen-ryu the spark and 🔮 Magic Combat the
+   arcane one.
 7. **Spots and activities.** Map pins become SVG images; Epic RPG World props go in
    `packs/epic-rpg-world/`.
 8. **The rest, by tier.**

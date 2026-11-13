@@ -71,7 +71,7 @@
   import Modal from '../lib/Modal.svelte';
   import GlyphText from '../lib/icons/GlyphText.svelte';
   import Icon from '../lib/icons/Icon.svelte';
-  import { SLOT_ART } from '../lib/icons/slotArt';
+  import { FLOATING_SLOT_ART, SLOT_ART } from '../lib/icons/slotArt';
   import CollectionSection, {
     type CollEntry,
     type TierChip,
@@ -1001,13 +1001,14 @@
             aria-label="{SLOT_NAMES[slot]} — empty"
             onclick={() => (selected = { kind: 'slotPicker', slot })}
           >
-            <!-- The blocked and floating marks are glyphs, not slots: they take the glyph table's drawing. -->
+            <!-- The blocked mark is a glyph and takes the glyph table's drawing; the floating mark is its own
+                 name, because 🌀 means other things in text and so is not in the table. -->
             <span class="icon">
               <Icon
                 of={twoHander
                   ? { icon: '🚫' }
                   : floats
-                    ? { icon: '🌀' }
+                    ? { icon: '🌀', art: FLOATING_SLOT_ART }
                     : { icon: SLOT_ICONS[slot], art: SLOT_ART[slot] }}
                 size={32}
               />

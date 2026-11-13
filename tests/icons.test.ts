@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCE_LIST } from '../src/core/data/resources.data';
-import { ITEMS, REAGENTS, RUNES, SKILLS, STATUSES, SUPERATTRS } from '../src/core/registry';
+import { ITEMS, REAGENTS, RUNES, SKILLS, STATUSES, STYLES, SUPERATTRS } from '../src/core/registry';
 import { ITEM_CLASSES } from '../src/core/data/itemclasses.data';
 import { SLOT_NAMES } from '../src/core/types';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
@@ -12,7 +12,7 @@ import manifest from '../src/ui/lib/icons/manifest.json';
 import { NAV } from '../src/ui/lib/nav';
 import { artName, artUrl, iconUrl } from '../src/ui/lib/icons/iconArt';
 import { GLYPH_ART, bareGlyph, glyphName, splitGlyphs } from '../src/ui/lib/icons/glyphs';
-import { SLOT_ART } from '../src/ui/lib/icons/slotArt';
+import { FLOATING_SLOT_ART, SLOT_ART } from '../src/ui/lib/icons/slotArt';
 // @ts-expect-error — a plain .mjs script with no type declarations
 import { ART_GEN_PATH, renderArtGen } from '../scripts/icons.mjs';
 
@@ -57,6 +57,8 @@ const GROUPS: Record<string, { defs: readonly IconDef[]; pending?: readonly stri
   // Authored, festival and forged-class stubs: every one draws its own art (a forged item copies its class's).
   items: { defs: Object.values(ITEMS) },
   itemClasses: { defs: Object.values(ITEM_CLASSES) },
+  // The nine generic stances and the twelve schools that replace them in the same grid cell.
+  styles: { defs: Object.values(STYLES) },
   // No plain cloud, thermometer or hole on the sheet; the sky chip shows one kind at a time.
   weather: { defs: Object.entries(WEATHER_ICONS).map(([id, icon]) => ({ id, icon })), pending: ['still', 'overcast', 'heatwave'] },
 };
@@ -94,6 +96,7 @@ describe('pixel icons: manifest and defs', () => {
       expect(name, `${slot}: no entry in SLOT_ART`).toBeTruthy();
       expect(MANIFEST[name!], `${slot}: '${name}' is not in manifest.json`).toBeDefined();
     }
+    expect(MANIFEST[FLOATING_SLOT_ART], `'${FLOATING_SLOT_ART}' is not in manifest.json`).toBeDefined();
   });
 
   it('every def keeps its emoji: it is the fallback without the packs', () => {
