@@ -365,6 +365,9 @@ that stays.
 | 2 | 2026-10-29 | The warring states band | floors 21–30 (moved from 11–20, §1.5) | Bank |
 | 3 | 2026-10-29 | The harbor band | band 4, floors 11–14 | Bank |
 | 4 | 2026-10-29 | The desert band | band 5, floors 18–20 | Bank |
+| 5 | 2026-11-12 | The six realms | floors 44–49, a hub; floor 50 behind it | Note, unreviewed |
+| 6 | 2026-11-12 | The crossing | floors 31–36: voyage, split, steppe | Note, unreviewed |
+| 7 | 2026-11-12 | The high-tech city | floors 37–40, a hub of four districts | Note, unreviewed |
 
 ### Entry template
 
@@ -1508,6 +1511,105 @@ scumming.
    it may be low. The first dial to read when John reaches floor 19.
 
 **Open questions.** None.
+
+### 5. The six realms (posted 2026-11-12)
+
+Band: unassigned · Floors: 44–49 (moved from 43–48, see the rulings) ·
+Verdict: note, unreviewed (posted as "notes for later")
+
+**As posted.** "floors 43-48 will be a hub floor like the castle in 7-10,
+with the six floors in 43-48 being the six buddhist realms, but instead of
+being free to choose order, the player is free to enter any of them at any
+time, each one coming with its own restrictions and goals"
+
+**The shape, as read.**
+
+- A hub, like the castle (7–10), with six spokes: the six realms of
+  rebirth (gods, demigods, humans, animals, hungry ghosts, hells).
+- Difference from the castle: the castle's wards are entered in any
+  *order*, one at a time to completion. Here every realm stays enterable
+  at any time; the player moves between them freely.
+- Each realm carries its own restrictions (rules on the character while
+  inside) and its own goals.
+
+**Rulings** (user, 2026-11-12).
+
+1. **Floors 44–49**, moved up one from the posted 43–48.
+2. **The gate needs all six.** The hub opens the way onward only when
+   every realm's objectives are complete.
+3. **Floor 50 is a huge new step.** It opens once all six realms are
+   complete; what makes it a step up is not yet written.
+4. **Progress is per realm.** Most realms keep progress when the player
+   leaves; each realm's entry states whether it keeps or resets.
+5. **Restrictions stay inside.** A realm's restrictions apply only while
+   the character is in that realm; leaving drops them.
+6. **Floors 31–43 come first.** They are unwritten; the band number and
+   the entry level of 44–49 follow from them.
+
+**Not yet decided.** Each realm's restrictions, goals and keep/reset rule;
+what floor 50's step is. The review (§3.5) runs when the user asks.
+
+### 6. The crossing (posted 2026-11-12)
+
+Band: unassigned · Floors: 31–36 · Verdict: note, unreviewed. The name
+is a placeholder.
+
+**As posted.** "floor 31 is a long seafaring mission with two diverging
+endings. the player has to protect the ship and defeat monsters. at one
+point, the ship either crashes and capsizes, or survives until the end of
+the floor. regardless, the player advances to floor 32. if the ship
+capsizes, floors 32-33 is a deep sea cave full of weird fish monsters and
+the likes, if the ship makes it across, the player ends up in a
+tundra-like area for floors 32-33. both paths return to a steppe-like
+area in floors 34-36. I still have to pick a theme for that"
+
+**The shape, as read.**
+
+| Floor | Place | Note |
+|---|---|---|
+| 31 | the voyage | long; protect the ship, defeat monsters; ends in one of two outcomes |
+| 32–33 | deep sea cave | if the ship capsized; weird fish monsters |
+| 32–33 | tundra | if the ship made it across |
+| 34–36 | steppe-like | both paths rejoin; theme not picked |
+
+- Both outcomes advance to floor 32: capsizing is a branch, not a
+  failure. This fits the completability law (no terminal states).
+
+**Not yet decided.**
+
+- What decides the outcome: ship health at a checkpoint, a count of
+  failed defenses, or something else. Default: ship health at the
+  crash point.
+- Whether the outcome is fixed per run or can be replayed for the other
+  branch (and whether a later run can choose). Default: per run, decided
+  by play.
+- The theme of 34–36.
+- Floors 37–43 are still unwritten. (37–40: idea 7.)
+
+### 7. The high-tech city (posted 2026-11-12)
+
+Band: unassigned · Floors: 37–40 · Verdict: note, unreviewed.
+
+**As posted.** "floor 37-40 is a high-tech city that the player has to
+traverse, again a similar function like floors 7-10 where the player has
+four different objectives in the slums, the high-rises, the industrial
+park and the commercial central plaza"
+
+**The shape, as read.** A hub like the castle (7–10): four districts, one
+objective each, done in any order.
+
+| District | Objective |
+|---|---|
+| the slums | unwritten |
+| the high-rises | unwritten |
+| the industrial park | unwritten |
+| the commercial central plaza | unwritten |
+
+**Not yet decided.**
+
+- Each district's objective.
+- Whether all four are needed to leave, as at the castle. Default: yes.
+- Floors 41–43 are still unwritten.
 
 ---
 
