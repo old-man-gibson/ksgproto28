@@ -746,8 +746,9 @@ Stations row. `tests/stations.test.ts` holds the phrases. The panels' behaviour
 did not change.
 
 `GoButton.svelte` is the shared button: its tooltip carries the route time
-and warnings, and it is disabled while travelling, knocked out, in a forced
-fight, or with no open route.
+and warnings (the `title` for a mouse, a long-press tap card for a finger,
+PHONE.md section 3), and it is disabled while travelling, knocked out, in a
+forced fight, or with no open route.
 
 ## 6. Open
 
