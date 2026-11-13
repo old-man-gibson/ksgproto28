@@ -7,6 +7,7 @@
   import { tokenChoiceOpen, tokenTechniques } from '../../core/systems/stash';
   import { itemDefOf } from '../../core/systems/assembly';
   import { describeMod } from '../lib/format';
+  import Icon from '../lib/icons/Icon.svelte';
 
   /**
    * The stronghold stash (systems/stash.ts): festival tokens and keep-marked
@@ -67,7 +68,7 @@
         {#if regalia}
           <div class="choice">
             <button class="small" onclick={() => game.spendFestivalToken(i, { kind: 'regalia' })}>
-              {regalia.icon} {regalia.name}
+              <Icon of={regalia} /> {regalia.name}
             </button>
             <span class="small">{regalia.mods.map((m) => describeMod(m)).join(', ')}. Kept in this stash.</span>
           </div>
@@ -81,7 +82,7 @@
     {#each stash?.items ?? [] as item, i (i)}
       {@const def = itemDefOf(item)}
       <div class="kept">
-        <span><b>{def?.icon} {def?.name ?? item.defId}</b> <span class="dim small">{def?.desc ?? ''}</span></span>
+        <span><b>{#if def}<Icon of={def} />{/if} {def?.name ?? item.defId}</b> <span class="dim small">{def?.desc ?? ''}</span></span>
         <button class="small" disabled={inFestival} onclick={() => game.takeFromStash(i)}>Take out</button>
       </div>
     {/each}

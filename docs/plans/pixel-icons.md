@@ -491,8 +491,22 @@ Each step is one story and one PR.
    rune lists with carved or named runes, and format.ts tooltip strings (`grantLine`),
    which resolve only through the table; the 📌 iron, 🕳️ zero and the arcane verbs
    stay per-def `art` because their emoji mean other things elsewhere.
-5. **Inventory.** All 39 items from picks.md; per-item `art` splits the four 🗡️
-   blades. Empty slots use the slot silhouettes in `packs/clockwork-raven/legacy/`.
+5. **Inventory. Done 2026-11-13** (branch `pixel-icons-2-6`). 91 of 91 items: the 39
+   from picks.md, 8 festival and token items, and the 44 forged classes (`ITEM_CLASSES`);
+   72 new `item_*` manifest names and 9 `slot_*` (183 names in all). `art?: string` on
+   `ItemDef` and `ItemClassDef`; a forged def copies the class's `art` in
+   `systems/assembly.ts`. Per-item `art` splits the four 🗡️ blades and the other shared
+   emoji, so the glyph table is not used for items. Forged-only classes have no pick in
+   picks.md: their drawings are the nearest pack icon (a chain coif, a sickle, a
+   halberd); a paperweight reuses `stone` and a signpost uses c105. Empty slots draw the
+   silhouettes in `packs/clockwork-raven/legacy/equipment_slot_placeholders` through
+   `ui/lib/icons/slotArt.ts` (`SLOT_ART`; hands 3 to 6 share the off hand's, the cloak
+   slot shares the shoulders'). Sites: the equipment grid, picker (title and rows), item
+   window, stash and inventory grid (`<Icon of={def} size={32}>`, a fixed 59px cell).
+   Left as emoji: shop wares (the list mixes items with kinds that have no art), the
+   bestiary drop labels, the tutorial card labels, log loot lines and
+   `format.ts` `grantLine`, which resolve only through the glyph table
+   (⚔️ crossed swords, 🛡️ shield, 🥾 boots).
 6. **Stances.** The nine generic stances from picks.md; pick the 12 schools from the
    skill blocks (2721–2840, 3601–4440).
 7. **Spots and activities.** Map pins become SVG images; Epic RPG World props go in

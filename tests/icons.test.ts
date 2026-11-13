@@ -3,13 +3,16 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCE_LIST } from '../src/core/data/resources.data';
-import { REAGENTS, RUNES, SKILLS, STATUSES, SUPERATTRS } from '../src/core/registry';
+import { ITEMS, REAGENTS, RUNES, SKILLS, STATUSES, SUPERATTRS } from '../src/core/registry';
+import { ITEM_CLASSES } from '../src/core/data/itemclasses.data';
+import { SLOT_NAMES } from '../src/core/types';
 import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
 import { WEATHER_ICONS } from '../src/core/systems/weather';
 import manifest from '../src/ui/lib/icons/manifest.json';
 import { NAV } from '../src/ui/lib/nav';
 import { artName, artUrl, iconUrl } from '../src/ui/lib/icons/iconArt';
 import { GLYPH_ART, bareGlyph, glyphName, splitGlyphs } from '../src/ui/lib/icons/glyphs';
+import { SLOT_ART } from '../src/ui/lib/icons/slotArt';
 // @ts-expect-error — a plain .mjs script with no type declarations
 import { ART_GEN_PATH, renderArtGen } from '../scripts/icons.mjs';
 
@@ -51,6 +54,9 @@ const GROUPS: Record<string, { defs: readonly IconDef[]; pending?: readonly stri
   // Drawn in no list yet: runes and reagents show through the generic item and material rows.
   runes: { defs: Object.values(RUNES) },
   reagents: { defs: Object.values(REAGENTS) },
+  // Authored, festival and forged-class stubs: every one draws its own art (a forged item copies its class's).
+  items: { defs: Object.values(ITEMS) },
+  itemClasses: { defs: Object.values(ITEM_CLASSES) },
   // No plain cloud, thermometer or hole on the sheet; the sky chip shows one kind at a time.
   weather: { defs: Object.entries(WEATHER_ICONS).map(([id, icon]) => ({ id, icon })), pending: ['still', 'overcast', 'heatwave'] },
 };
@@ -74,6 +80,19 @@ describe('pixel icons: manifest and defs', () => {
       const defs = covered(group);
       const missing = defs.filter((d) => !artName(d)).map((d) => d.id);
       expect(missing, `${group}: no art for ${missing.join(', ')}`).toEqual([]);
+    }
+  });
+
+  it('an item and a forged class name their own art: one emoji stands for several of them, so the glyph table cannot choose', () => {
+    const bare = [...Object.values(ITEMS), ...Object.values(ITEM_CLASSES)].filter((d) => !d.art).map((d) => d.id);
+    expect(bare, `no art on ${bare.join(', ')}`).toEqual([]);
+  });
+
+  it('every equipment slot has an empty-slot ghost in the manifest', () => {
+    for (const slot of Object.keys(SLOT_NAMES)) {
+      const name = (SLOT_ART as Record<string, string | undefined>)[slot];
+      expect(name, `${slot}: no entry in SLOT_ART`).toBeTruthy();
+      expect(MANIFEST[name!], `${slot}: '${name}' is not in manifest.json`).toBeDefined();
     }
   });
 

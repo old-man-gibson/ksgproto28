@@ -3299,6 +3299,12 @@ export interface ItemDef {
   id: string;
   name: string;
   icon: string;
+  /**
+   * Pixel icon: a name in src/ui/lib/icons/manifest.json; `icon` is the fallback.
+   * Every item names its own: one emoji stands for several items (four blades
+   * share 🗡️), so the glyph table cannot choose between them.
+   */
+  art?: string;
   slot: SlotId;
   /** Hand items only. Defaults to one-handed in the weapon slot, off-hand in the other. */
   wield?: WieldClass;
@@ -3476,6 +3482,8 @@ export interface ItemClassDef {
   id: string;
   name: string;
   icon: string;
+  /** Pixel icon of every item forged into this class: a name in src/ui/lib/icons/manifest.json. */
+  art?: string;
   slot: SlotId;
   wield?: WieldClass;
   /** Family tag FIRST (it picks the combat skill and the martial family), then sub-families. */

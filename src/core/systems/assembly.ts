@@ -540,6 +540,7 @@ export function forgedDef(spec: ForgedSpec): ItemDef {
     id: forgedIdOf(cls.id),
     name: nameOf(rig, cls),
     icon: cls.icon,
+    ...(cls.art ? { art: cls.art } : {}),
     slot: cls.slot,
     ...(cls.wield ? { wield: cls.wield } : {}),
     tags,

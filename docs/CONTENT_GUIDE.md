@@ -239,6 +239,7 @@ frost_brand: {
   id: 'frost_brand',                    // = the key. snake_case. Forever.
   name: 'Frost Brand',
   icon: '❄️',
+  art: 'item_frost_brand',              // optional: a name in src/ui/lib/icons/manifest.json
   slot: 'weapon',   // weapon|offhand|head|chest|hands|legs|feet|back|accessory
   wield: 'one_handed',  // hand gear only: light|one_handed|two_handed|offhand
   tags: ['sword', 'katana', 'metal'],   // supergroup first, then subgroup (§5)
@@ -255,6 +256,14 @@ frost_brand: {
 ```
 - Weapon `tags` decide the damage type (§5) and which mastery skill levels.
 - To make it obtainable: add it to a monster drop table, a recipe, or a quest reward.
+- `art` is the item's pixel icon (docs/plans/pixel-icons.md §4.1). The inventory, the
+  equipment grid, the slot picker, the item window and the stash draw it; without it
+  they draw `icon` through the glyph table, which gives every item sharing an emoji the
+  same drawing. All 47 authored items have one. A forged item copies `art` from its
+  `ITEM_CLASSES` entry, which has the same optional field (all 44 classes have one).
+  An empty slot draws a silhouette chosen per slot in `ui/lib/icons/slotArt.ts`. A new
+  item takes a name in `manifest.json` (`npm run icons` rebuilds `art.gen.ts`); the
+  test in `tests/icons.test.ts` fails when an item has none.
 
 **Wielding.** `wield` says which hands a piece can fill, and what it costs to
 hold it somewhere it wasn't made for. Everything the piece contributes (mods,

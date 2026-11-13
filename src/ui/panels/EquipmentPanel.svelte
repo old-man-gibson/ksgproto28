@@ -70,6 +70,8 @@
   import Tip from '../lib/Tip.svelte';
   import Modal from '../lib/Modal.svelte';
   import GlyphText from '../lib/icons/GlyphText.svelte';
+  import Icon from '../lib/icons/Icon.svelte';
+  import { SLOT_ART } from '../lib/icons/slotArt';
   import CollectionSection, {
     type CollEntry,
     type TierChip,
@@ -96,7 +98,7 @@
    */
   const goldGain = $derived(view.stats.goldGain);
 
-  /** Ghost glyphs for empty equipment slots. */
+  /** Ghost glyphs for empty equipment slots: what shows without the packs (SLOT_ART is the pixel art). */
   const SLOT_ICONS: Record<SlotId, string> = {
     weapon: '⚔️',
     offhand: '🛡️',
@@ -692,7 +694,7 @@
   {@const context = runeContextFor(def.slot)}
   {@const empty = (item.slots ?? 0) - (item.runes?.length ?? 0)}
   <div class="tip-line tip-base">
-    {def.icon}
+    <Icon of={def} />
     {itemName(item)}{count > 1 ? ` ×${count}` : ''} — {SLOT_NAMES[def.slot]}
     {#if HAND_SLOTS.includes(def.slot)}· {WIELD_NAMES[wieldOf(def)]}{/if}
   </div>
@@ -768,7 +770,7 @@
       onclick={() => (mark === null ? cellClick(onopen) : onopen())}
       ondblclick={() => mark === null && cellDblClick(ontoggle)}
     >
-      <span class="icon">{def.icon}</span>
+      <span class="icon"><Icon of={def} size={32} /></span>
       <!-- A solid star marks gear that cannot roll better — the sale it guards. -->
       {#if item.affix}<span class="star">{peak ? '★' : '✦'}</span>{/if}
       <!-- The tick takes over the lock's corner; requirements don't matter to a bulk sale. -->
@@ -878,7 +880,7 @@
 {#snippet itemTitle(item: ItemInstance, count: number)}
   {@const def = itemDefOf(item)}
   <div class="win-title" style="color: {ink(rarityColor(item))}">
-    {def.icon}
+    <Icon of={def} />
     {itemName(item)}{count > 1 ? ` ×${count}` : ''}
   </div>
   <div class="small dim">
@@ -923,7 +925,7 @@
   {@const ok = canEquip(gs, s.item)}
   {@const cmp = compareToWorn(gs, s.item, slot, runesOpen)}
   <button class="pick" class:spare disabled={!ok} onclick={() => equipInto(s.item, slot)}>
-    <span class="icon-sm" style="color: {ink(rarityColor(s.item))}">{d.icon}</span>
+    <span class="icon-sm" style="color: {ink(rarityColor(s.item))}"><Icon of={d} /></span>
     <span class="pick-name">{pickLabel(s, slot)}</span>
     {#if !cmp}
       <span class="pick-mods small dim">
@@ -999,7 +1001,17 @@
             aria-label="{SLOT_NAMES[slot]} — empty"
             onclick={() => (selected = { kind: 'slotPicker', slot })}
           >
-            <span class="icon">{twoHander ? '🚫' : floats ? '🌀' : SLOT_ICONS[slot]}</span>
+            <!-- The blocked and floating marks are glyphs, not slots: they take the glyph table's drawing. -->
+            <span class="icon">
+              <Icon
+                of={twoHander
+                  ? { icon: '🚫' }
+                  : floats
+                    ? { icon: '🌀' }
+                    : { icon: SLOT_ICONS[slot], art: SLOT_ART[slot] }}
+                size={32}
+              />
+            </span>
             {#if fits > 0}<span class="count">{fits}</span>{/if}
           </button>
           {#snippet tip()}
@@ -1501,7 +1513,7 @@
   {@const wornHere = gs.equipment[slot]}
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}
-      <div class="win-title">{SLOT_ICONS[slot]} Equip — {SLOT_NAMES[slot]}</div>
+      <div class="win-title"><Icon of={{ icon: SLOT_ICONS[slot], art: SLOT_ART[slot] }} /> Equip — {SLOT_NAMES[slot]}</div>
       <div class="small dim">
         {candidates.length === 0 ? 'Nothing in the pack fits here' : `${candidates.length} piece${candidates.length > 1 ? 's' : ''} fit`}
       </div>
