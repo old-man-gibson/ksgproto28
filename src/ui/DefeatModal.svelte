@@ -57,6 +57,10 @@
   }
 </script>
 
+<!-- Escape (and the Android back button) closes it. Not while a window with aria-modal is open
+     (a Modal, or one that holds play): that one takes the key. -->
+<svelte:window onkeydown={(e) => e.key === 'Escape' && !document.querySelector('[aria-modal="true"]') && onclose()} />
+
 <div class="overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div class="modal panel" role="dialog" aria-label="Fight summary">
     <header>

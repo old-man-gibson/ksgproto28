@@ -2,18 +2,20 @@
 
 *Set up 2026-11-04. The user picked APK releases over a hosted build.*
 
-Every push to `main` builds a signed APK on GitHub Actions and publishes it as
-a GitHub Release. The Obtainium app on the phone watches the repo's releases
-and installs each new APK. Nothing is uploaded to a store.
+Every push to `main` builds an APK on GitHub Actions. With the three signing
+secrets set (below) it is a signed release APK, published as a GitHub Release:
+the Obtainium app on the phone watches the repo's releases and installs each
+new one. Without them it is a debug APK, kept as a run artifact (see "The debug
+build"). Nothing is uploaded to a store.
 
 ## How it fits together
 
 | Piece | Where | What |
 |---|---|---|
-| The wrapper | `capacitor.config.json`, `android/` | Capacitor 8.5.3 (pinned; `@capacitor/core`, `@capacitor/android`, `@capacitor/cli`). The app is one Android WebView that loads the built game from `dist/`. `android/` is the Gradle project `npx cap add android` made. |
+| The wrapper | `capacitor.config.json`, `android/` | Capacitor 8.5.3 (pinned; `@capacitor/core`, `@capacitor/android`, `@capacitor/cli`), plus `@capacitor/app` 8.1.2 for the back button (the plugin has its own version line; its newest 8.x is 8.1.2). The app is one Android WebView that loads the built game from `dist/`. `android/` is the Gradle project `npx cap add android` made; `capacitor.build.gradle` and `capacitor.settings.gradle` in it are written by `npx cap sync android`, so rerun it after adding a plugin and commit the two files. |
 | The copied game | `android/app/src/main/assets/public` | Written by `npx cap sync android`. Gitignored by Capacitor, so a built game never enters git through `android/`. |
 | Version and signing | `android/app/build.gradle` | `versionCode` is the env `APP_VERSION_CODE` (the workflow run number, which only grows: Android refuses an update with a lower one). The release build is signed from `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`; without them it is unsigned. |
-| The build | `.github/workflows/android.yml` | `npm ci`, `vite build`, `cap sync android`, `gradlew assembleRelease` on `ubuntu-latest` with JDK 21. On `main`: a release tagged `build-<run>` holding `frontier-idle-<run>.apk`, and releases past the newest 10 are deleted. On any other listed branch: the APK as a run artifact, no release. Run by hand from the Actions tab (`workflow_dispatch`). |
+| The build | `.github/workflows/android.yml` | `npm ci`, `vite build`, `cap sync android`, then Gradle on `ubuntu-latest` with JDK 21 (the Capacitor modules compile at Java 21; JDK 17 fails). Triggers: a push to `main`, `apk-releases` or `mobile-apk`, and `workflow_dispatch` (Actions tab, any branch). **Three secrets set:** `assembleRelease`; on `main` a release tagged `build-<run>` holding `frontier-idle-<run>.apk`, releases past the newest 10 deleted; on another branch the signed APK as a run artifact. **Any of the three missing:** `assembleDebug`, uploaded as the run artifact `ksg-debug-apk`, no release. |
 
 The app id is `io.github.oldmangibson.frontieridle`. Changing it makes a
 different app: the phone keeps the old one and its save.
@@ -33,6 +35,68 @@ different app: the phone keeps the old one and its save.
 - **Its own save.** The save lives in the app's WebView storage, apart from
   any browser's. The header's Export and Import move a save between the two.
 - **The desktop layout.** The phone layout (UI proposal A3) is not built.
+- **Both orientations, keyboard resize.** The manifest sets no orientation lock
+  (the phone's rotation setting decides) and `windowSoftInputMode=adjustResize`,
+  so the page shrinks above the on-screen keyboard.
+- **The back button** (`src/ui/lib/androidBack.ts`, started from `main.ts`).
+  It sends the same Escape that closes every window, drawer and picker on the
+  desktop, so the newest one closes. The welcome-back and fight-summary windows
+  close on Escape too (they only closed on a tap outside before). The dare,
+  evolve and prestige windows hold play until answered and ignore it, as they
+  ignore Escape. With nothing open
+  it moves the app to the background, like Home. It never exits the app: the
+  idle loop would stop. Outside the Android app it does nothing.
+- **Storage that survives launches.** Capacitor turns DOM storage on, so
+  `localStorage` (the save) and IndexedDB (the art pack) persist across
+  launches and across updates signed with the same key. The WebView's origin is
+  `https://localhost`. Changing `server.androidScheme` or `server.hostname` in
+  `capacitor.config.json` changes the origin and the save would look lost.
+- **The end of the ladder.** Floors stop at 20. Once floor 20 is cleared the
+  tower list on the map shows "Floor 21: not in this build." above floor 20, and
+  the log says it once when the clear pays. It is read from the clear counters:
+  no save field.
+
+## The debug build
+
+With no signing secrets in the repo (a fresh fork, or the keystore not set yet)
+the workflow builds `assembleDebug` instead of failing. The APK is debug-signed
+and installs like any other.
+
+Getting it, on github.com:
+
+1. Actions → the run of "Android APK" for the branch. A push to `main`,
+   `apk-releases` or `mobile-apk` starts one; Run workflow starts one on any
+   branch once the workflow file is on `main`.
+2. Artifacts → `ksg-debug-apk` downloads a zip. Unzip it: it holds
+   `frontier-idle-debug-<run>.apk`. GitHub keeps run artifacts for the
+   repository's retention period (90 days unless changed).
+3. Copy the APK to the phone (USB, a cloud drive, or download the zip on the
+   phone and unzip it there).
+4. Open the APK from a file manager. Android asks to allow "Install unknown
+   apps" for that app: allow it once. Then Install.
+
+Limits of the debug build:
+
+- **A new debug APK cannot be installed over an older one.** Each run's
+  runner generates its own debug key, so the signatures differ and Android
+  refuses the update ("App not installed"). To move to a newer one: Menu →
+  Export (saves the game as a file), uninstall the app, install the new APK,
+  Import the file. The uninstall also deletes the art pack: import it again.
+- **It cannot replace a release install, or the other way round.** Same app id,
+  different key. Pick one path per phone.
+- **No licensed art.** The enemy battlers, tile packs and icon packs are
+  gitignored and the Actions checkout has none of them, so enemies show no
+  picture, maps draw the node diagram and icons are emoji. Import the art pack
+  as for the release build (`npm run art-pack` on the PC, copy
+  `art-pack/frontier-idle-art.zip` to the phone, Import art pack on the floor 0
+  card or in the Menu).
+- **Version.** `versionCode` is the run number and `versionName` is
+  `debug-<run>`.
+
+Not checked (2026-11-12): this PC has JDK 17 and no Android SDK, so Gradle has
+not run here. The debug path, the manifest change and the back button on a
+device have been read and unit-tested only; the first Actions run is the first
+build of them.
 
 ## The signing key
 
@@ -94,13 +158,16 @@ cd android && ./gradlew assembleRelease
 
 Unsigned without the three env variables, so a phone will not install it;
 `assembleDebug` makes a debug-signed one that installs but cannot update a
-release install, and the other way round.
+release install, and the other way round. A local debug build is signed with
+this PC's own `~/.android/debug.keystore`, so it can be updated by later local
+builds but not by an Actions one.
 
 ## Costs and upkeep
 
 - Each run spends GitHub Actions minutes (a private repo on the free plan has
   2,000 a month). One run's length is in the Actions tab.
 - Updating Capacitor: `npm i -E @capacitor/core@<v> @capacitor/android@<v>`,
-  `npm i -E -D @capacitor/cli@<v>`, then `npx cap sync android`. A major
-  version can change `android/`; read its migration notes.
+  `npm i -E -D @capacitor/cli@<v>`, `npm i -E @capacitor/app@<newest 8.x>`, then
+  `npx cap sync android`. A major version can change `android/`; read its
+  migration notes. The CLI needs Node 22 or newer.
 - The action versions in the workflow are pinned to exact tags.

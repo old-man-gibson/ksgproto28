@@ -48,6 +48,7 @@ import './themes/castle.css';
 import './themes/survey.css';
 import './themes/sandstone.css';
 import App from './ui/App.svelte';
+import { installAndroidBack } from './ui/lib/androidBack';
 import { applyTheme, loadTheme } from './ui/lib/theme';
 import { boot, catchUp, game, save, timeAway, ui } from './ui/state.svelte';
 import { TickAccumulator } from './core/engine/loop';
@@ -129,6 +130,8 @@ if (away >= OFFLINE_MIN_MS && !game.state.paused) ui.catchingUp = away;
 // pick, else Gothic. Applying stores nothing (ui/lib/theme.ts).
 applyTheme(loadTheme());
 mount(App, { target: document.getElementById('app')! });
+// The Android app's back button closes the open window or drawer (no-op elsewhere).
+installAndroidBack();
 if (ui.catchingUp !== null) {
   requestAnimationFrame(() =>
     setTimeout(() => {
