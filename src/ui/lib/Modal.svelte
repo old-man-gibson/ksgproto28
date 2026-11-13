@@ -19,9 +19,11 @@
     /** A workbench needs room; an item tooltip does not. */
     wide = false,
     /**
-     * Most of the screen, at a fixed height, and the body does not scroll: the
-     * content lays itself out in columns that scroll on their own (the anvil).
-     * Below 900px it falls back to one scrolling body.
+     * Most of the screen, at a fixed height. The body is a container named
+     * `fill-body` and scrolls when its content is taller: the content asks the
+     * container for its own width (`@container fill-body (max-width: ...)`) and
+     * lays itself out either in columns that scroll on their own, at the body's
+     * height, or in one flow (the anvil). The window does not decide.
      */
     fill = false,
   }: { title: Snippet; onclose: () => void; children: Snippet; wide?: boolean; fill?: boolean } = $props();
@@ -82,17 +84,7 @@
 
   .window.fill .body {
     flex: 1;
-    overflow: hidden;
-  }
-
-  @media (max-width: 900px) {
-    .window.fill {
-      height: auto;
-    }
-
-    .window.fill .body {
-      overflow-y: auto;
-    }
+    container: fill-body / inline-size;
   }
 
   header {

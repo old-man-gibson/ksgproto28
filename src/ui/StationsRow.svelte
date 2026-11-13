@@ -158,6 +158,26 @@
     line-height: 26px;
   }
 
+  /* GoButton wraps its button in a tap-card target (lib/Tip.svelte): that span is
+     the row's item, and it never shrinks for the others. */
+  .st-scroll > :global(.tip-target) {
+    flex: none;
+  }
+
+  /* A finger's button is 44px (app.css): the row holds it whole, with the same 6px
+     above and 8px under it for the scrollbar, and the captions centre on it. */
+  @media (pointer: coarse) {
+    .st-scroll {
+      height: 58px;
+    }
+
+    .st-cap,
+    .st-line,
+    .st-note {
+      line-height: 44px;
+    }
+  }
+
   /* GoButton's own button: the extra classes come in through its `class` prop. */
   .st-scroll :global(.station) {
     flex: none;

@@ -10,8 +10,14 @@
 
   // `block` targets wrap non-text content (e.g. resource bars): full-width,
   // no dotted underline. Default targets are inline text (attributes, stats).
-  let { children, tip, block = false }: { children: Snippet; tip: Snippet; block?: boolean } =
-    $props();
+  // `touchOnly` wraps a control that keeps its own `title` for a mouse: no hover
+  // card, no dotted underline, no help cursor; only a touch gets the card.
+  let {
+    children,
+    tip,
+    block = false,
+    touchOnly = false,
+  }: { children: Snippet; tip: Snippet; block?: boolean; touchOnly?: boolean } = $props();
 
   let show = $state(false);
   let x = $state(0);
@@ -22,7 +28,7 @@
   let card = $state<HTMLElement>();
 
   function enter(e: PointerEvent) {
-    if (e.pointerType === 'touch') return;
+    if (e.pointerType === 'touch' || touchOnly) return;
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     wide = false;
     x = Math.max(8, Math.min(rect.right + 10, window.innerWidth - 320));
@@ -139,6 +145,7 @@
 <span
   class="tip-target"
   class:block
+  class:touch-only={touchOnly}
   role="note"
   bind:this={target}
   onpointerenter={enter}
@@ -165,6 +172,11 @@
 
   .tip-target.block {
     display: block;
+    border-bottom: none;
+  }
+
+  .tip-target.touch-only {
+    cursor: inherit;
     border-bottom: none;
   }
 

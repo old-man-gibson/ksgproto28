@@ -4,6 +4,7 @@
   import { getSpot } from '../../core/registry';
   import { ticksToTime } from './format';
   import { routeInfo, type RouteInfo } from './navigation';
+  import Tip from './Tip.svelte';
 
   /**
    * A go link outside the map (the Wayfinding boon, the Stations row): walk to
@@ -46,23 +47,40 @@
   }
 </script>
 
-<button
-  class="small go {extra}"
-  class:selected={running}
-  {title}
-  disabled={running || (here && !activity) || (!here && (stuck || !route?.path))}
-  onclick={go}
->
-  {#if children}
-    {@render children({ route, here })}
-  {:else}
-    {here ? (activity ? '▶ Start' : '📍 Here') : activity ? '🥾 Go & start' : '🥾 Go'}{route?.noExit ? ' ⚔️' : ''}
-  {/if}
-</button>
+<!--
+  The title is for a mouse. A touch screen has no hover, so the same text is a tap
+  card (lib/Tip.svelte, `touchOnly`): a long press on the button opens it without
+  walking, and a tap on a disabled button opens it too, which says why it is shut.
+-->
+<Tip touchOnly>
+  <button
+    class="small go {extra}"
+    class:selected={running}
+    {title}
+    disabled={running || (here && !activity) || (!here && (stuck || !route?.path))}
+    onclick={go}
+  >
+    {#if children}
+      {@render children({ route, here })}
+    {:else}
+      {here ? (activity ? '▶ Start' : '📍 Here') : activity ? '🥾 Go & start' : '🥾 Go'}{route?.noExit ? ' ⚔️' : ''}
+    {/if}
+  </button>
+  {#snippet tip()}<div class="tip-line">{title}</div>{/snippet}
+</Tip>
 
 <style>
   .go {
     flex: none;
     white-space: nowrap;
+  }
+
+  /* On a touch screen a disabled button gets no events of its own, so the card's
+     target never hears the press. Let the press fall through to it. A mouse keeps
+     the button, and its title tooltip. */
+  @media (hover: none) {
+    .go:disabled {
+      pointer-events: none;
+    }
   }
 </style>

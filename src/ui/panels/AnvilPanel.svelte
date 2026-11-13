@@ -568,6 +568,7 @@
     overflow: auto;
   }
 
+  /* Three columns: 170 + 250 + 300 and two 18px gaps, 756px at least. */
   .work {
     display: grid;
     grid-template-areas: 'piece info parts';
@@ -599,8 +600,10 @@
     grid-area: parts;
   }
 
-  /* Phone: one column, and the window body scrolls instead (Modal `fill`). */
-  @media (max-width: 900px) {
+  /* Narrower than the three columns need: one column, and the window body
+     scrolls instead. Asks the window's body (Modal `fill`), not the screen: a
+     phone held sideways is 844px wide and fits three. */
+  @container fill-body (max-width: 755px) {
     .anvil {
       height: auto;
     }

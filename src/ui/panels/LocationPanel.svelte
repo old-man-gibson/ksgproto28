@@ -43,6 +43,7 @@
   import StationsRow from '../StationsRow.svelte';
   import SceneBackdrop from '../lib/SceneBackdrop.svelte';
   import RaidTrack from '../lib/RaidTrack.svelte';
+  import FoldedDesc from '../lib/FoldedDesc.svelte';
   import { sceneFor } from '../lib/scenes';
   import DestinationPreview from './DestinationPreview.svelte';
   import { visibleBenches } from '../lib/navigation';
@@ -691,9 +692,11 @@
 {#if openBench === 'spelltable'}
     <Modal wide onclose={() => (openBench = null)}>
       {#snippet title()}
-        <div class="win-title">🔮 Spellcrafting Table</div>
-        <div class="small dim">
-          One table for every school of magic you have unlocked. Crafted spells are added to your grimoire.
+        <div class="win-head">
+          <div class="win-title">🔮 Spellcrafting Table</div>
+          <FoldedDesc
+            text="One table for every school of magic you have unlocked. Crafted spells are added to your grimoire."
+          />
         </div>
       {/snippet}
       <SpellcraftPanel large />
@@ -714,8 +717,8 @@
           {#if bench.skill === 'cooking'}
             <button class="small" onclick={() => (bookOpen = true)}>📒 Cook's Book</button>
           {/if}
+          <FoldedDesc text={bench.desc} />
         </div>
-        <div class="small dim">{bench.desc}</div>
       {/snippet}
       {#if bench.assembles}
         <AnvilPanel />
@@ -777,11 +780,13 @@
 {/if}
 
 <style>
-  /* A workbench's window header: its name, and the Cook's Book button on a kitchen bench. */
+  /* A workbench's window header: its name, the Cook's Book button on a kitchen
+     bench, and the description (FoldedDesc) on a row of its own, or beside the
+     name on a phone held sideways. */
   .win-head {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0 10px;
     flex-wrap: wrap;
   }
   .place {
