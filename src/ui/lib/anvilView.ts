@@ -434,7 +434,7 @@ export interface KindRow {
   placement: Placement;
   /** This is the kind the slot holds now. */
   current: boolean;
-  /** The form the placement resolves to has been forged or recipe-made on this save. */
+  /** The form the placement resolves to has been forged on this save. */
   known: boolean;
   /** Its name, or "?" while unknown (the rule "one change away" follows). */
   form: string;

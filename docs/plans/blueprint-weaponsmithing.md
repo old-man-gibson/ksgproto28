@@ -75,9 +75,21 @@ order (sequence), mutagens read a graph (topology), music reads a composition
    - Smith's Pattern: Bronze now adds the copper, tin and bronze ingot recipes
      only. A piece with a bronze head carries the metal's `smith.mods` (+15%
      Acuity, +10% Coherence) once per distinct head material.
-   - Old saves: an `activity` or `resumeActivity` entry naming a removed recipe
-     is dropped on load (`save.ts` `deserialize`). No version bump. The items
-     stay: shops and held pieces still use them.
+   - Old saves: `activity`, `resumeActivity`, `travelIntent` and `pendingReturn`
+     (target or fallback) naming an activity its spot no longer offers are
+     dropped on load (`save.ts` `deserialize`). No version bump. A knockout
+     return dropped this way leaves the character where the retreat put it,
+     with no work queued.
+   - The eight items stay in `ITEMS`, and held pieces keep working. Sources
+     after the removal: `iron_dagger`, `iron_sword`, `iron_breastplate` and
+     `rapier` are on the Rack (breastplate and rapier after
+     `boss:f1_toll_hall`); `iron_sword` and `iron_breastplate` also drop from
+     monsters; `iron_dagger` is a tutorial pick. `katana`, `uchigatana`,
+     `bronze_dagger` and `parrying_dagger` have no player source: survivor
+     loadouts name all four, and the festival caches lend the katana and the
+     parrying dagger for one attempt. Open: how the player gets those four. The
+     parrying dagger's texts (`items.text.ts`, `skills.text.ts`) are untouched
+     until that is ruled.
    - `tests/john.ts` crafts only `iron_ingot` (the_forges, `craft_iron_ingot`),
      so the removal does not change John's path.
 

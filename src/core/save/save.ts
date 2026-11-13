@@ -2,7 +2,7 @@ import type { GameState } from '../types';
 import { createInitialState, SAVE_VERSION } from '../state';
 import { migrate } from './migrations';
 import { SPOTS, STARTING_SPOT } from '../registry';
-import { spotActivities } from '../systems/actions';
+import { ARRIVE_IDLE, spotActivities } from '../systems/actions';
 import { normalizeComposition } from '../systems/music';
 import { reclaimedForSave } from '../systems/martial';
 import { woundsForSave } from '../systems/combat';
@@ -85,19 +85,44 @@ export function deserialize(json: string): GameState {
     const remapped = LEGACY_ACTIVITY_RENAMES[state.activity] ?? state.activity;
     state.activity = spotActivities(spot).some((a) => a.id === remapped) ? remapped : null;
   }
-  // The work each spot remembers is healed the same way: an id the spot no
-  // longer has (a recipe removed since the save was written) is forgotten, or
-  // the Stations row and the destination preview would print the raw id.
+  // Every other place the save names an activity of a spot is healed the same
+  // way: an id the spot no longer has (a recipe removed since the save was
+  // written) is forgotten. Left in, the Stations row and the destination
+  // preview print the raw id, a queued intent idles on arrival, and a knockout
+  // return retries the dead work (a fallback loop, or a hold of 20/40/80 min).
+  // A spot the registry does not know is not judged here.
+  const liveActivity = (spotId: string, activityId: string): string | null => {
+    const at = SPOTS[spotId];
+    if (!at) return activityId;
+    const remapped = LEGACY_ACTIVITY_RENAMES[activityId] ?? activityId;
+    return spotActivities(at).some((a) => a.id === remapped) ? remapped : null;
+  };
   // Entries stay in their order: it is the recency the Stations row reads.
   const resume = state.resumeActivity;
   if (resume && typeof resume === 'object') {
     for (const [spotId, activityId] of Object.entries(resume)) {
-      const at = SPOTS[spotId];
-      if (!at) continue;
-      const remapped = LEGACY_ACTIVITY_RENAMES[activityId] ?? activityId;
-      if (spotActivities(at).some((a) => a.id === remapped)) resume[spotId] = remapped;
-      else delete resume[spotId];
+      const live = liveActivity(spotId, activityId);
+      if (live === null) delete resume[spotId];
+      else resume[spotId] = live;
     }
+  }
+  // A journey's queued work. An empty activity is ARRIVE_IDLE ("Stay here"):
+  // it names no work and is kept.
+  const intent = state.travelIntent;
+  if (intent && intent.activity !== ARRIVE_IDLE) {
+    const live = liveActivity(intent.spot, intent.activity);
+    if (live === null) state.travelIntent = null;
+    else intent.activity = live;
+  }
+  // A knockout return that would resume (target) or hunt (fallback) work the
+  // spot no longer offers is dropped whole, as migration 65 does for a spot
+  // the save cannot stand at.
+  const pending = state.pendingReturn;
+  if (pending) {
+    const dead = [pending.target, pending.fallback].some(
+      (r) => !!r && liveActivity(r.spot, r.activity) === null,
+    );
+    if (dead) state.pendingReturn = null;
   }
   // Sheets are healed, not trusted: a save written mid-hot-reload (or by a
   // future retuned notation) may hold notes that resolve to nothing, and one

@@ -318,8 +318,11 @@ plus parts in `docs/plans/blueprint-weaponsmithing.md`, not a `RecipeDef`. The
 smithies' own recipe lines are ingots only (`iron_ingot`, `copper_ingot`,
 `tin_ingot`, `bronze_ingot`); the anvil takes ingots as head material. The
 removed recipes (iron dagger, iron sword, bronze dagger, rapier, parrying
-dagger, katana, uchigatana, iron breastplate) are gone; the items stay, for
-shop lines and for pieces a save already holds. A recipe id removed from a spot is dropped from
+dagger, katana, uchigatana, iron breastplate) are gone; the items stay in
+`ITEMS`. Four keep a source (iron dagger, iron sword, iron breastplate and
+rapier are on the Rack; the sword and breastplate also drop). Katana,
+uchigatana, bronze dagger and parrying dagger have no player source now
+(survivor loadouts and festival caches only). A recipe id removed from a spot is dropped from
 `activity` and `resumeActivity` on load (`save.ts` `deserialize`).
 
 **Several routes to one product (`alts`).** `cost` is an AND-list — every line

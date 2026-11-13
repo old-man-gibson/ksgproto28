@@ -234,26 +234,65 @@ describe('load safety', () => {
     expect(storage.getItem(`${SAVE_KEY}:backup-v1`)).toContain('"version":1');
   });
 
-  it('work a spot no longer offers is forgotten on load: the activity and the resume entry', () => {
+  it('work a spot no longer offers is forgotten on load: activity, resume, journey intent, knockout return', () => {
     // The weapon and armour recipes were removed 2026-11-13; a save written
-    // before that can name one as the current activity or as a spot's resume.
+    // before that can name one in any of these four places.
     const old = createInitialState(7);
     old.spot = 'the_forges';
-    old.activity = 'craft_katana';
-    old.resumeActivity = {
-      the_forges: 'craft_iron_sword',
-      f17_hamlet_forge: 'craft_iron_ingot',
-      not_a_spot: 'craft_rapier',
+    old.activity = 'craft_rapier';
+    old.resumeActivity = { the_forges: 'craft_iron_sword', the_sand: 'train_dex_sand' };
+    old.travelIntent = { spot: 'the_forges', activity: 'craft_iron_dagger' };
+    old.pendingReturn = {
+      target: { spot: 'f17_hamlet_forge', activity: 'craft_katana' },
+      phase: 'return',
+      wins: 0,
+      probes: 0,
     };
-    const loaded = deserialize(serialize(old));
-    expect(loaded.activity).toBeNull();
-    // The stale entry is gone, the live one stays, the unknown spot is left alone,
-    // and the order (the recency the Stations row reads) is kept.
-    expect(loaded.resumeActivity).toEqual({
+    const back = deserialize(serialize(old));
+    expect(back.activity).toBeNull();
+    // The stale entry is gone and the live one stays.
+    expect(back.resumeActivity).toEqual({ the_sand: 'train_dex_sand' });
+    expect(back.travelIntent).toBeNull();
+    expect(back.pendingReturn).toBeNull();
+  });
+
+  it('the heal leaves live work alone: resume order, "Stay here", a return with live work, an unknown spot', () => {
+    const live = createInitialState(8);
+    live.spot = 'the_forges';
+    live.resumeActivity = {
       f17_hamlet_forge: 'craft_iron_ingot',
       not_a_spot: 'craft_rapier',
-    });
-    expect(Object.keys(loaded.resumeActivity)).toEqual(['f17_hamlet_forge', 'not_a_spot']);
+      the_sand: 'train_dex_sand',
+    };
+    live.travelIntent = { spot: 'the_forges', activity: '' };
+    live.pendingReturn = {
+      target: { spot: 'the_forges', activity: 'craft_iron_ingot' },
+      fallback: { spot: 'the_sand', activity: 'train_dex_sand' },
+      phase: 'fallback',
+      wins: 3,
+      probes: 1,
+    };
+    const back = deserialize(serialize(live));
+    expect(Object.keys(back.resumeActivity)).toEqual(['f17_hamlet_forge', 'not_a_spot', 'the_sand']);
+    expect(back.resumeActivity.not_a_spot).toBe('craft_rapier');
+    expect(back.travelIntent).toEqual({ spot: 'the_forges', activity: '' });
+    expect(back.pendingReturn).toEqual(live.pendingReturn);
+
+    // A queued intent for live work is kept too.
+    live.travelIntent = { spot: 'the_forges', activity: 'craft_iron_ingot' };
+    expect(deserialize(serialize(live)).travelIntent).toEqual(live.travelIntent);
+  });
+
+  it('a stale fallback drops the whole knockout return, even when the target is live', () => {
+    const s = createInitialState(9);
+    s.pendingReturn = {
+      target: { spot: 'the_forges', activity: 'craft_iron_ingot' },
+      fallback: { spot: 'f17_hamlet_forge', activity: 'craft_parrying_dagger' },
+      phase: 'fallback',
+      wins: 0,
+      probes: 0,
+    };
+    expect(deserialize(serialize(s)).pendingReturn).toBeNull();
   });
 
   it('missing save is not treated as corruption', () => {
