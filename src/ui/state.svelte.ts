@@ -18,6 +18,7 @@ import { forgetLayouts } from './lib/benchLayouts';
 import { bindFacets, dropFacetStatuses, installFacet } from '../core/facet/host';
 import { initialSeen, visibleNav, writeSeen, type MainTab } from './lib/nav';
 import { readLogChoice, writeLogChoice } from './lib/shell';
+import { sharesFiles, shareTextFile } from './lib/nativeExport';
 
 /**
  * Bridge between the pure core and Svelte. The game state is a deep-reactive
@@ -247,11 +248,22 @@ export function stepEvent(): number {
 }
 
 export function exportSave(): void {
+  const name = `frontier-idle-save-${new Date().toISOString().slice(0, 10)}.json`;
+  // The Android app's WebView drops a blob download: share a file instead
+  // (lib/nativeExport.ts). The browser path below is unchanged.
+  if (sharesFiles()) {
+    void shareTextFile(name, serialize(gs)).then((r) => {
+      if (!r.ok && !r.dismissed) {
+        game.bus.emit({ type: 'log', msg: `❌ Save export failed: ${r.reason}`, kind: 'danger' });
+      }
+    });
+    return;
+  }
   const blob = new Blob([serialize(gs)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `frontier-idle-save-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = name;
   a.click();
   URL.revokeObjectURL(url);
 }

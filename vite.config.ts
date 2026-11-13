@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { searchForWorkspaceRoot } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { forge } from './forge/server/plugin';
 import { board } from './board/server/plugin';
@@ -65,7 +65,24 @@ export default defineConfig({
     fs: { allow: [searchForWorkspaceRoot(ROOT), ...linkedReal] },
   },
   test: {
-    include: ['tests/**/*.test.ts'],
-    environment: 'node',
+    projects: [
+      // The game and its pure view code, in plain node.
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          include: ['tests/**/*.test.ts'],
+          exclude: [...configDefaults.exclude, 'tests/**/*.dom.test.ts'],
+          environment: 'node',
+        },
+      },
+      // Components mounted for real, in jsdom (`*.dom.test.ts`). The `browser`
+      // condition makes Svelte resolve its client build, which has `mount`.
+      {
+        extends: true,
+        resolve: { conditions: ['browser'] },
+        test: { name: 'dom', include: ['tests/**/*.dom.test.ts'], environment: 'jsdom' },
+      },
+    ],
   },
 });

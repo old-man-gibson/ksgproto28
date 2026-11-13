@@ -3,6 +3,7 @@
   import { TPS } from '../core/engine/loop';
   import { chooseTheme, loadTheme, THEMES, THEME_NAMES, type Theme } from './lib/theme';
   import { viewport } from './lib/viewport.svelte';
+  import { sharesFiles } from './lib/nativeExport';
   import Modal from './lib/Modal.svelte';
   import ArtPackControl from './ArtPackControl.svelte';
 
@@ -91,7 +92,7 @@
       <button onclick={onSave}>Save</button>
     </div>
     <div class="sysmenu-row">
-      <span>Export: downloads the save as a JSON file.</span>
+      <span>Export: {sharesFiles() ? 'opens the share sheet, to keep the save as a JSON file in Files or Drive' : 'downloads the save as a JSON file'}.</span>
       <button onclick={exportSave}>Export</button>
     </div>
     <div class="sysmenu-row">
