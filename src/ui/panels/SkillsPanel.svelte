@@ -43,6 +43,7 @@
   import { activityName } from '../lib/navigation';
   import GoButton from '../lib/GoButton.svelte';
   import { talentBar } from '../lib/talentBar';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   function talentPct(bonus: number): string {
     const pct = bonus * 100;
@@ -233,7 +234,7 @@
 </script>
 
 <div class="panel">
-  <h2>📜 Skills</h2>
+  <h2><GlyphText text="📜" /> Skills</h2>
   {#if sections.length === 0}
     <p class="dim">
       No skills yet — they manifest through action. Try sparring at the training grounds, or hunt
@@ -435,7 +436,7 @@
                     : 'Put it in a technique slot.'}
                 onclick={() => game.setSkillEnabled(techId(t), !on)}
               >
-                {on ? '⚔️ In rotation' : 'Benched'}
+                <GlyphText text={on ? '⚔️ In rotation' : 'Benched'} />
               </button>
             </div>
             {#if tOpen}
@@ -466,7 +467,7 @@
               {:else if forkAvailable(gs, t)}
                 <!-- The Honed choice: practice earned a form. Permanent. -->
                 <div class="fork-choice">
-                  <span class="fork-head">✨ Honed — choose its form (permanent):</span>
+                  <span class="fork-head"><GlyphText text="✨" /> Honed — choose its form (permanent):</span>
                   {#each forkOptions(gs, t) as arch (arch.id)}
                     <button
                       class="small fork-opt"
@@ -516,7 +517,7 @@
       <div class="skill-block">
         <div class="row hinted">
           <span class="chev"></span>
-          <span class="s-icon">❓</span>
+          <span class="s-icon"><GlyphText text="❓" /></span>
           <span class="name dim">???</span>
           <span class="reqs small dim">
             might manifest: {def.unlock.map(condText).join(', ')}{#if manifestsByXp(def)}; or by use, {Math.floor(latentXp(gs, def.id))}/{skillXpNeeded(def.id, 1)} XP{/if}

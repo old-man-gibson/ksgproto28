@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { fmt } from './lib/format';
   import { LAYER, pushOverlay } from './lib/overlays';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   let {
     ledger,
@@ -66,7 +67,7 @@
 <div class="overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div class="modal panel" role="dialog" aria-label="Fight summary">
     <header>
-      <h2>{title}</h2>
+      <h2><GlyphText text={title} /></h2>
       <p class="dim">
         {#each ledger.foes as f, i}{i > 0 ? ', ' : ''}{f.icon}
           {f.name}{f.count > 1 ? ` ×${f.count}` : ''} (Lv {f.level}){/each}{#if ledger.foes.length === 0}No
@@ -89,7 +90,7 @@
         <h4>Damage you turned away — {fmt(Math.round(prevented))}</h4>
         <ul class="stats">
           <li>
-            <span>🛡️ Absorbed <em>armour, bracing, resistance</em></span>
+            <span><GlyphText text="🛡️" /> Absorbed <em>armour, bracing, resistance</em></span>
             <b>{fmt(Math.round(stopped.absorbed))}</b>
           </li>
           <li>
@@ -97,7 +98,7 @@
             <b>{fmt(Math.round(stopped.parried))}</b>
           </li>
           <li>
-            <span>💨 Dodged <em>{stopped.dodges} never arrived</em></span>
+            <span><GlyphText text="💨" /> Dodged <em>{stopped.dodges} never arrived</em></span>
             <b>{fmt(Math.round(stopped.dodged))}</b>
           </li>
           {#if stopped.riposted > 0}
@@ -116,7 +117,7 @@
           {#if ledger.healRefused > 0}
             <!-- The reason a salve did nothing is worth as much as the salve. -->
             <li class="bad">
-              <span>🚫 Refused by a condition</span>
+              <span><GlyphText text="🚫" /> Refused by a condition</span>
               <b>{fmt(Math.round(ledger.healRefused))}</b>
             </li>
           {/if}

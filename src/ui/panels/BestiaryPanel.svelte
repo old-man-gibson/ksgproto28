@@ -33,6 +33,7 @@
   import TagPicker from '../lib/TagPicker.svelte';
   import Tip from '../lib/Tip.svelte';
   import { fmt, pct } from '../lib/format';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   let search = $state('');
   let selectedTags = $state<string[]>([]);
@@ -199,13 +200,13 @@
 
 {#snippet locked(f: BestiaryFactDef)}
   <p class="dim small hint">{f.hint}</p>
-  <p class="dim small">🔒 {lockText(f)}</p>
+  <p class="dim small"><GlyphText text="🔒" /> {lockText(f)}</p>
 {/snippet}
 
 <div class="bestiary">
   <div class="panel head">
     <div class="titlerow">
-      <h2>📖 Bestiary</h2>
+      <h2><GlyphText text="📖" /> Bestiary</h2>
       <span class="dim small">{progress.known} / {progress.total} recorded</span>
       <!-- A tap card on a touch screen, a hover card with a mouse (lib/Tip.svelte). -->
       <Tip>
@@ -324,7 +325,7 @@
           </div>
 
           <div class="panel cell" class:locked={!knows('rewards')}>
-            <h4>🪙 Worth</h4>
+            <h4><GlyphText text="🪙" /> Worth</h4>
             {#if knows('rewards')}
               <div class="stats col">
                 <span>Experience <b>{range(profile.xp[0], profile.xp[1])}</b></span>
@@ -336,7 +337,7 @@
           </div>
 
           <div class="panel cell">
-            <h4>🗺️ Haunts</h4>
+            <h4><GlyphText text="🗺️" /> Haunts</h4>
             {#if entry && Object.keys(entry.seen).length > 0}
               <div class="res">
                 {#each Object.entries(entry.seen).sort((a, b) => b[1] - a[1]) as [spotId, count]}
@@ -379,7 +380,7 @@
           </div>
 
           <div class="panel cell" class:locked={!knows('defenses')}>
-            <h4>🛡️ Defences</h4>
+            <h4><GlyphText text="🛡️" /> Defences</h4>
             {#if knows('defenses')}
               {@const rows = resistanceRows(def)}
               {#if rows.length === 0}
@@ -407,7 +408,7 @@
           </div>
 
           <div class="panel cell" class:locked={!knows('offense')}>
-            <h4>⚔️ Offence</h4>
+            <h4><GlyphText text="⚔️" /> Offence</h4>
             {#if knows('offense')}
               <div class="stats">
                 <span>Damage <b>{range(profile.damage[0], profile.damage[1], 1)}</b></span>
@@ -428,7 +429,7 @@
           </div>
 
           <div class="panel cell" class:locked={!knows('behavior')}>
-            <h4>🧠 Behaviour</h4>
+            <h4><GlyphText text="🧠" /> Behaviour</h4>
             {#if knows('behavior')}
               <ul class="notes">
                 <li>

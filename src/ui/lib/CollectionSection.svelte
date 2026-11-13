@@ -28,6 +28,7 @@
   import type { Snippet } from 'svelte';
   import Tip from './Tip.svelte';
   import { fmt } from './format';
+  import GlyphText from './icons/GlyphText.svelte';
 
   let {
     title,
@@ -182,7 +183,7 @@
     {#if selectMode}
       <div class="toolbar select-bar small">
         <span class:dim={picked.size === 0}>
-          {fmt(pickedUnits)} selected{canSell ? ` · ${fmt(pickedValue)} 🪙` : ''}
+          {fmt(pickedUnits)} selected<GlyphText text={canSell ? ` · ${fmt(pickedValue)} 🪙` : ''} />
         </span>
         <button class="small" onclick={selectAll}>All</button>
         <button class="small" disabled={picked.size === 0} onclick={setSelectClean}>Clear</button>

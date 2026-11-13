@@ -7,6 +7,7 @@
   import { forgetLayouts } from '../lib/benchLayouts';
   import PrestigeBoons from '../lib/PrestigeBoons.svelte';
   import StashPanel from './StashPanel.svelte';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   // The PRE-prestige view: what a prestige pays right now (the same function
   // that will pay it), how far each source is from its next point, the
@@ -63,7 +64,7 @@
       </button>
       {#if arming}<button class="small" onclick={() => (arming = false)}>Cancel</button>{/if}
     {:else}
-      <span class="dim small">🔒 Opens when you: {termsText(PRESTIGE_UNLOCK, gs)}.</span>
+      <span class="dim small"><GlyphText text="🔒" /> Opens when you: {termsText(PRESTIGE_UNLOCK, gs)}.</span>
     {/if}
   </div>
 </div>

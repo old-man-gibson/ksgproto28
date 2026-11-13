@@ -3,6 +3,7 @@
   import GoButton from './lib/GoButton.svelte';
   import { legTime, returnLine, stayLabel, stations } from './lib/navigation';
   import { tutorialScreen } from './lib/tutorialFocus';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * The Stations row (docs/NAVIGATION.md §3.6): above the map, the places the
@@ -61,7 +62,7 @@
           <GoButton spot={st.spot} activity={st.activity} class={i === 0 && !line ? 'station back' : 'station'}>
             {#snippet children()}
               <span class="st-what">{st.what} · {st.place}</span>
-              <span class="st-time">{legTime(st.ticks)}{st.noExit ? ' ⚔️' : ''}{st.oneWay ? ' ⤵' : ''}</span>
+              <span class="st-time">{legTime(st.ticks)}{#if st.noExit}<GlyphText text=" ⚔️" />{/if}{st.oneWay ? ' ⤵' : ''}</span>
             {/snippet}
           </GoButton>
         {/each}

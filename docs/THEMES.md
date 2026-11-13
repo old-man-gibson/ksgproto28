@@ -325,7 +325,7 @@ text, and a line is as tall with art as without.
 
 - Pixel icons replace the emoji one group at a time, in both themes ([plans/pixel-icons.md](plans/pixel-icons.md)). Story 1
   (2026-10-22) did the sidebar: attributes, superattributes and the resource bars. Story 2 (2026-11-13) did the screen list
-  and the log. Everything else still shows its emoji.
+  and the log. Story 3 (2026-11-13) did the chrome glyphs and the weather chip. Everything else still shows its emoji.
 - Ledger (T8 in [plans/display-themes.md](plans/display-themes.md) §4: cream paper, iron-gall ink, bars as a rule plus a thin
   rail) is not built: the user left it unmarked on 2026-11-04. The other nine candidates are built (§11).
 - Tip.svelte opens on hover. The click-not-hover rule applies to it; the change is not made here.

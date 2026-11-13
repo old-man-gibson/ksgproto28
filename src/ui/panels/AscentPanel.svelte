@@ -24,6 +24,7 @@
   import { armedKey, disarmRide, pressRide, rideBlocked } from '../lib/rideArm.svelte';
   import { viewport } from '../lib/viewport.svelte';
   import { mapRequest } from '../lib/mapRequest.svelte';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   const tower = $derived(towerAt(gs));
   const rungs = $derived(tower ? ladderFloors(tower.id) : []);
@@ -118,7 +119,7 @@
     {/if}
     <!-- The terms are the teaching: a shut door always says what opens it. -->
     {#each stop.terms as t}
-      <div class="term small" class:dim={t.dim}>{t.icon ? `${t.icon} ` : ''}{t.text}</div>
+      <div class="term small" class:dim={t.dim}><GlyphText text={t.icon ? `${t.icon} ` : ''} />{t.text}</div>
     {/each}
     {@render rideButton(stop)}
   </div>
@@ -136,7 +137,7 @@
       {#if stop.current}<span class="here-label">you are here</span>{/if}
     </div>
     {#each stop.terms as t}
-      <div class="term small" class:dim={t.dim}>{t.icon ? `${t.icon} ` : ''}{t.text}</div>
+      <div class="term small" class:dim={t.dim}><GlyphText text={t.icon ? `${t.icon} ` : ''} />{t.text}</div>
     {/each}
     {@render rideButton(stop)}
   </div>

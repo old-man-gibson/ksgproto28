@@ -25,6 +25,7 @@
   import { slotTarget } from '../lib/reorder';
   import { stepTarget } from '../lib/rotationView';
   import { tick } from 'svelte';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   /**
    * The position-graph planner: the loadout arranged ON the graph instead of
@@ -477,7 +478,7 @@
                 >
                   <span class="drop-name">{t.icon} {techniqueDisplayName(gs, t)}</span>
                   {#if st === 'locked'}
-                    <span class="dim small">🔒 {condsText(t.unlock) || 'not yet known'}</span>
+                    <span class="dim small"><GlyphText text="🔒" /> {condsText(t.unlock) || 'not yet known'}</span>
                   {:else if st === 'planned'}
                     <span class="small in-plan">in plan</span>
                   {:else}
@@ -498,7 +499,7 @@
           {/if}
         </span>
       {/each}
-      <button class="tiny held" onclick={selectHeld}>⚔ What I'm holding</button>
+      <button class="tiny held" onclick={selectHeld}><GlyphText text="⚔" /> What I'm holding</button>
       {#if ui.plannerFamilies.length > 0}
         <button class="tiny" onclick={() => (ui.plannerFamilies = [])}>Clear</button>
       {/if}

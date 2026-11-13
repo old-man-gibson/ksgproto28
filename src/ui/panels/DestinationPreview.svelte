@@ -6,6 +6,7 @@
   import { ARRIVE_IDLE, exploreProgress, spotActivities } from '../../core/systems/actions';
   import { npcsAt } from '../../core/systems/quests';
   import { activityName, spotFeatures } from '../lib/navigation';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   /**
    * The place the journey in progress ends, read ahead of arrival. Walking is
@@ -54,7 +55,7 @@
       <h3>Journey ends at {spot.icon} {spot.name}</h3>
       <p class="dim small">{spot.desc}</p>
     {:else}
-      <h3>Journey ends at ❓ an unknown place</h3>
+      <h3>Journey ends at <GlyphText text="❓" /> an unknown place</h3>
       <p class="dim small">Not visited. Its contents show on arrival.</p>
     {/if}
 

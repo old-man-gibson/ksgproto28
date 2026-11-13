@@ -11,6 +11,7 @@
   import SystemMenu from './SystemMenu.svelte';
   import ResourceBars from './panels/ResourceBars.svelte';
   import Tip from './lib/Tip.svelte';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * The phone layout's top block (below 700px; docs/PHONE.md), sticky to the top
@@ -99,7 +100,7 @@
           <!-- The slot is as wide as "🪙 88.8M", the widest `fmt` writes below 1e15
                (five characters), in whatever face the theme uses: the hidden sizer and
                the figure share one grid cell, so the rate after it never moves. -->
-          {#if parts.gold}<span class="gold"><span class="gold-sizer" aria-hidden="true">🪙 88.8M</span><span>🪙 {fmt(gs.gold)}</span></span>{/if}
+          {#if parts.gold}<span class="gold"><span class="gold-sizer" aria-hidden="true"><GlyphText text="🪙 88.8M" /></span><span><GlyphText text="🪙 {fmt(gs.gold)}" /></span></span>{/if}
         {/snippet}
       </JobStrip>
     </div>

@@ -46,6 +46,7 @@
   import { expectsNoSheets } from './lib/tilemaps/tileArt';
   import { tutorialScreen } from './lib/tutorialFocus';
   import { LAYER, pushOverlay } from './lib/overlays';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * Floor 0 (lib/tutorialFocus.ts): the map stays open, shows only the
@@ -466,10 +467,10 @@
 
 <div class="panel">
   {#if tutorial}
-    <div class="map-toggle">🗺️ Map — {REGIONS[shownRegion].name}</div>
+    <div class="map-toggle"><GlyphText text="🗺️" /> Map — {REGIONS[shownRegion].name}</div>
   {:else}
     <button class="map-toggle" onclick={() => (ui.mapOpen = !ui.mapOpen)}>
-      {ui.mapOpen ? '▾' : '▸'} 🗺️ Map — {REGIONS[shownRegion].name}{areaTitle &&
+      {ui.mapOpen ? '▾' : '▸'} <GlyphText text="🗺️" /> Map — {REGIONS[shownRegion].name}{areaTitle &&
       areaTitle !== REGIONS[shownRegion].name
         ? `: ${areaTitle}`
         : ''}
@@ -560,9 +561,9 @@
           title={r.shut ? `Shut: ${r.shut}` : r.noExit ? 'Arriving starts a fight with no way out' : ''}
           onclick={() => walkTo(edge.to)}
         >
-          {known ? `${dest.icon} ${dest.name}` : '❓ Unknown place'} · {ticksToTime(r.ticks)}{r.oneWay
+          {#if known}{dest.icon} {dest.name}{:else}<GlyphText text="❓" /> Unknown place{/if} · {ticksToTime(r.ticks)}{r.oneWay
             ? ' ⤵'
-            : ''}{r.noExit ? ' ⚔️' : ''}{r.shut ? ' 🔒' : ''}
+            : ''}{#if r.noExit}<GlyphText text=" ⚔️" />{/if}{#if r.shut}<GlyphText text=" 🔒" />{/if}
         </button>
         <!-- The reason a road is shut or has no retreat is on the line, not in the button's title. -->
         {#if r.shut || r.noExit}
@@ -576,7 +577,7 @@
        ending does not move what is below the map. -->
   <div class="journey small">
     {#if gs.travel}
-      <span class="j-now">🥾 En route to {gs.discovered.includes(gs.travel.to) ? getSpot(gs.travel.to).name : 'an unknown place'} — {ticksToTime(gs.travel.ticksLeft)}</span>
+      <span class="j-now"><GlyphText text="🥾" /> En route to {gs.discovered.includes(gs.travel.to) ? getSpot(gs.travel.to).name : 'an unknown place'} — {ticksToTime(gs.travel.ticksLeft)}</span>
       {#if gs.travelPlan.length > 0}
         <span class="j-then dim">
           then {gs.travelPlan.length} more leg{gs.travelPlan.length > 1 ? 's' : ''} to
@@ -604,7 +605,7 @@
     bind:this={cardEl}
   >
     <div class="card-head">
-      <b>{c.known ? `${c.spot.icon} ${c.spot.name}` : '❓ Unknown place'}</b>
+      <b>{#if c.known}{c.spot.icon} {c.spot.name}{:else}<GlyphText text="❓" /> Unknown place{/if}</b>
       {#if !c.known}
         <span class="dim small">{REGIONS[AREAS[c.spot.areaId].regionId].name}</span>
       {/if}
@@ -622,12 +623,12 @@
       </div>
       {#if r.oneWay}<div class="warn small">⤵ One-way: no coming back this way</div>{/if}
       {#if r.noExit}
-        <div class="warn danger-line small">⚔️ No retreat: arriving starts a fight you win or are carried off from</div>
+        <div class="warn danger-line small"><GlyphText text="⚔️" /> No retreat: arriving starts a fight you win or are carried off from</div>
       {/if}
-      {#if r.shut}<div class="shut small">🔒 Shut: {r.shut}</div>{/if}
+      {#if r.shut}<div class="shut small"><GlyphText text="🔒" /> Shut: {r.shut}</div>{/if}
       {#if !c.journeyEnds}
         <button class="small walk" disabled={stuck || !r.path} onclick={() => cardWalk(c.spot.id)}>
-          🥾 Walk here
+          <GlyphText text="🥾" /> Walk here
         </button>
       {:else}
         <div class="dim small">Your journey ends here.</div>

@@ -69,6 +69,7 @@
   } from '../lib/gearCompare';
   import Tip from '../lib/Tip.svelte';
   import Modal from '../lib/Modal.svelte';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
   import CollectionSection, {
     type CollEntry,
     type TierChip,
@@ -734,7 +735,7 @@
   {#if def.requirements?.length}
     <div class="tip-line tip-sub">Requires {condsText(def.requirements)}</div>
   {/if}
-  <div class="tip-line tip-total">Sells for {fmt(sellPrice(gs, item, goldGain))} 🪙</div>
+  <div class="tip-line tip-total">Sells for {fmt(sellPrice(gs, item, goldGain))} <GlyphText text="🪙" /></div>
 {/snippet}
 
 <!--
@@ -771,7 +772,7 @@
       <!-- A solid star marks gear that cannot roll better — the sale it guards. -->
       {#if item.affix}<span class="star">{peak ? '★' : '✦'}</span>{/if}
       <!-- The tick takes over the lock's corner; requirements don't matter to a bulk sale. -->
-      {#if mark}<span class="tick">✓</span>{:else if locked}<span class="lock">🔒</span>{/if}
+      {#if mark}<span class="tick">✓</span>{:else if locked}<span class="lock"><GlyphText text="🔒" /></span>{/if}
       {#if count > 1}<span class="count">{count}</span>{/if}
       <!-- Some of the stack is spare and some is kept: say how many. -->
       {#if spareN > 0 && spareN < count}<span class="spare-part">{spareN}/{count} spare</span>{/if}
@@ -868,7 +869,7 @@
   </div>
   {#if def.requirements?.length}
     <div class="small reqs" class:met={canEquip(gs, item)}>
-      {canEquip(gs, item) ? '✔' : '🔒'} Requires {condsText(def.requirements)}
+      {#if canEquip(gs, item)}✔{:else}<GlyphText text="🔒" />{/if} Requires {condsText(def.requirements)}
     </div>
   {/if}
   {@render sockets(item)}
@@ -881,7 +882,7 @@
     {itemName(item)}{count > 1 ? ` ×${count}` : ''}
   </div>
   <div class="small dim">
-    {RARITIES[itemRarity(item)]?.name || 'Common'} · {SLOT_NAMES[def.slot]} · {fmt(sellPrice(gs, item, goldGain))} 🪙{isMaxRarity(
+    {RARITIES[itemRarity(item)]?.name || 'Common'} · {SLOT_NAMES[def.slot]} · {fmt(sellPrice(gs, item, goldGain))} <GlyphText text="🪙" />{isMaxRarity(
       item,
     )
       ? ' · ★ maxed'
@@ -930,7 +931,7 @@
         {#if s.item.affix}<span class="affix">✦{s.item.affix.name}</span>{/if}
       </span>
     {/if}
-    {#if !ok}<span class="small reqs">🔒</span>{/if}
+    {#if !ok}<span class="small reqs"><GlyphText text="🔒" /></span>{/if}
     {#if cmp}
       <span class="pick-delta small">
         {#each cmp.lines as line}
@@ -951,10 +952,10 @@
   <div class="tip-line tip-base">{rune.icon} {rune.name}{e.qty > 1 ? ` ×${fmt(e.qty)}` : ''}</div>
   {#if carved}<div class="tip-line tip-sub">Carved by you</div>{/if}
   {#if rune.desc}<div class="tip-line tip-sub">{rune.desc}</div>{/if}
-  <div class="tip-line">⚔️ {describeRuneEffect(rune.effects.weapon)}</div>
-  <div class="tip-line">🛡️ {describeRuneEffect(rune.effects.armor)}</div>
+  <div class="tip-line"><GlyphText text="⚔️" /> {describeRuneEffect(rune.effects.weapon)}</div>
+  <div class="tip-line"><GlyphText text="🛡️" /> {describeRuneEffect(rune.effects.armor)}</div>
   <div class="tip-line">💍 {describeRuneEffect(rune.effects.accessory)}</div>
-  <div class="tip-line tip-total">Sells for {fmt(e.value)} 🪙</div>
+  <div class="tip-line tip-total">Sells for {fmt(e.value)} <GlyphText text="🪙" /></div>
 {/snippet}
 
 {#snippet provisionEntryTip(e: CollEntry)}
@@ -969,7 +970,7 @@
   {@const def = MATERIALS[e.key]}
   <div class="tip-line tip-base">{def?.icon ?? '📦'} {def?.name ?? e.key} ×{fmt(e.qty)}</div>
   {#if def?.desc}<div class="tip-line tip-sub">{def.desc}</div>{/if}
-  <div class="tip-line tip-total">Stack sells for {fmt(e.value)} 🪙</div>
+  <div class="tip-line tip-total">Stack sells for {fmt(e.value)} <GlyphText text="🪙" /></div>
 {/snippet}
 
 <div class="panel">
@@ -1074,7 +1075,7 @@
         {#if !selectMode}
           <Tip block>
             <button class="small danger" onclick={sellSpares}>
-              Sell spares ({fmt(spareValue)} 🪙)
+              Sell spares ({fmt(spareValue)} <GlyphText text="🪙" />)
             </button>
             {#snippet tip()}
               <div class="tip-line">
@@ -1088,7 +1089,7 @@
     {#if selectMode}
       <div class="toolbar select-bar small">
         <span class:dim={pickedItems.length === 0}>
-          {pickedItems.length} selected · {fmt(pickedValue)} 🪙
+          {pickedItems.length} selected · {fmt(pickedValue)} <GlyphText text="🪙" />
         </span>
         <button class="small" onclick={pickAll}>All</button>
         <button
@@ -1099,7 +1100,7 @@
           Clear
         </button>
         <button class="small danger" disabled={pickedItems.length === 0} onclick={sellPicked}>
-          Sell {pickedItems.length} ({fmt(pickedValue)} 🪙)
+          Sell {pickedItems.length} ({fmt(pickedValue)} <GlyphText text="🪙" />)
         </button>
         <button class="small done" onclick={() => setSelectMode(false)}>Done</button>
       </div>
@@ -1236,14 +1237,14 @@
             {/each}
             {#each g.spec.grants as gr}
               <div class="tip-line">
-                ✨ {STATUSES[gr.id]?.name ?? gr.id} for {((gr.duration as number) / 10).toFixed(0)}s
+                <GlyphText text="✨" /> {STATUSES[gr.id]?.name ?? gr.id} for {((gr.duration as number) / 10).toFixed(0)}s
               </div>
             {/each}
             {#each g.spec.inflicts as inf}
-              <div class="tip-line">☠️ inflicts {STATUSES[inf.id]?.name ?? inf.id}</div>
+              <div class="tip-line"><GlyphText text="☠️" /> inflicts {STATUSES[inf.id]?.name ?? inf.id}</div>
             {/each}
             {#each g.spec.cures as c}<div class="tip-line">🩹 clears {c}</div>{/each}
-            {#if !can.ok}<div class="tip-line tip-sub">🔒 {can.reason}</div>{/if}
+            {#if !can.ok}<div class="tip-line tip-sub"><GlyphText text="🔒" /> {can.reason}</div>{/if}
           {/snippet}
         </Tip>
       {/each}
@@ -1316,7 +1317,7 @@
         </button>
       {/each}
       <button onclick={() => sellStack(stack, false)}>
-        Sell ({fmt(sellPrice(gs, stack.item, goldGain))} 🪙)
+        Sell ({fmt(sellPrice(gs, stack.item, goldGain))} <GlyphText text="🪙" />)
       </button>
       {#if stack.items.length > 1}
         <button onclick={() => sellStack(stack, true)}>
@@ -1338,13 +1339,13 @@
     {/snippet}
     {#if rune.desc}<p class="small dim desc">{rune.desc}</p>{/if}
     <div class="win-section">
-      <div class="mod">⚔️ In a weapon: {describeRuneEffect(rune.effects.weapon)}</div>
-      <div class="mod">🛡️ In armor: {describeRuneEffect(rune.effects.armor)}</div>
+      <div class="mod"><GlyphText text="⚔️" /> In a weapon: {describeRuneEffect(rune.effects.weapon)}</div>
+      <div class="mod"><GlyphText text="🛡️" /> In armor: {describeRuneEffect(rune.effects.armor)}</div>
       <div class="mod">💍 In an accessory: {describeRuneEffect(rune.effects.accessory)}</div>
     </div>
     <p class="small dim">Open a piece of gear with empty rune slots to socket this.</p>
     <div class="win-buttons">
-      <button onclick={() => game.sellRune(ref)}>Sell ({fmt(runeSellPrice(gs, ref, goldGain))} 🪙)</button>
+      <button onclick={() => game.sellRune(ref)}>Sell ({fmt(runeSellPrice(gs, ref, goldGain))} <GlyphText text="🪙" />)</button>
       <button class="ghost" onclick={() => confirmDump(rune.name) && game.discardRune(ref)}>
         Discard
       </button>
@@ -1357,12 +1358,12 @@
   <Modal onclose={() => (selected = null)}>
     {#snippet title()}
       <div class="win-title">{def?.icon ?? '📦'} {def?.name ?? id}</div>
-      <div class="small dim">×{fmt(qty)} · {fmt(materialSellPrice(gs, id, goldGain))} 🪙 each</div>
+      <div class="small dim">×{fmt(qty)} · {fmt(materialSellPrice(gs, id, goldGain))} <GlyphText text="🪙" /> each</div>
     {/snippet}
     {#if def?.desc}<p class="small dim desc">{def.desc}</p>{/if}
     <div class="win-buttons">
       <button onclick={() => { game.sellMaterial(id); selected = null; }}>
-        Sell all ({fmt(materialSellPrice(gs, id, goldGain) * qty)} 🪙)
+        Sell all ({fmt(materialSellPrice(gs, id, goldGain) * qty)} <GlyphText text="🪙" />)
       </button>
     </div>
   </Modal>
@@ -1376,7 +1377,7 @@
       <div class="win-title" style="color: {ink(QUALITY_TIERS[quality].color)}">
         {def?.icon ?? '🍽️'} {gradeWord(id, quality)}{def?.name ?? id}
       </div>
-      <div class="small dim">×{fmt(provisionQty)} held · {fmt(gradedUnitPrice(gs, id, quality, goldGain))} 🪙 each</div>
+      <div class="small dim">×{fmt(provisionQty)} held · {fmt(gradedUnitPrice(gs, id, quality, goldGain))} <GlyphText text="🪙" /> each</div>
     {/snippet}
     <div class="win-section">
       {#each provisionTip(id, quality).slice(1) as line}
@@ -1405,7 +1406,7 @@
         {@render eatPress()}
       {/if}
       <button onclick={() => game.sellStackable(id, quality, 1)}>
-        Sell ({fmt(gradedUnitPrice(gs, id, quality, goldGain))} 🪙)
+        Sell ({fmt(gradedUnitPrice(gs, id, quality, goldGain))} <GlyphText text="🪙" />)
       </button>
       {#if provisionQty > 1}
         <button onclick={() => game.sellStackable(id, quality, provisionQty)}>
@@ -1449,7 +1450,7 @@
         {/each}
         {#if keepGrade}
           <span class="hk-count">
-            {fmt(housekeepUnits)} · {fmt(housekeepValue)} 🪙
+            {fmt(housekeepUnits)} · {fmt(housekeepValue)} <GlyphText text="🪙" />
             {#if qualityRank(keepGrade) > qualityRank(HOUSEKEEP_WARN)}<span class="hk-warn">⚠ good stock</span>{/if}
           </span>
           <button class="small" disabled={housekeepUnits === 0} onclick={() => housekeep('sell')}>
@@ -1474,7 +1475,7 @@
                   <span class="dim">×{fmt(g.qty)}</span>
                   <span class="spacer"></span>
                   <button class="small" onclick={() => game.sellStackable(ing.def.id, g.quality, g.qty)}>
-                    Sell ({fmt(gradedUnitPrice(gs, ing.def.id, g.quality, goldGain) * g.qty)} 🪙)
+                    Sell ({fmt(gradedUnitPrice(gs, ing.def.id, g.quality, goldGain) * g.qty)} <GlyphText text="🪙" />)
                   </button>
                   <button
                     class="small ghost"

@@ -4,6 +4,7 @@
   import { SEA, SEA_CRATES_OFFLINE, SEA_CRATES_WON } from '../../core/data/sea.data';
   import { batteryOf, convoyView, dealPrice, heldCount, isWater, seaSide } from '../../core/systems/sea';
   import { ticksToTime } from '../lib/format';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   /**
    * The harbor band's readout (systems/sea.ts): the run's side, crates won,
@@ -64,7 +65,7 @@
     {/if}
 
     <div class="sea-line">
-      <span>📦 Crates won this run: <b>{won}</b></span>
+      <span><GlyphText text="📦" /> Crates won this run: <b>{won}</b></span>
       {#if offline > 0}<span class="dim small">(offline: {offline}, paid as cargo at 1 in {SEA.offlineShare})</span>{/if}
     </div>
 

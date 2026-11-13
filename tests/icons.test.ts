@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCE_LIST } from '../src/core/data/resources.data';
 import { SUPERATTRS } from '../src/core/registry';
+import { WEATHER_ICONS } from '../src/core/systems/weather';
 import manifest from '../src/ui/lib/icons/manifest.json';
 import { NAV } from '../src/ui/lib/nav';
 import { artName, artUrl, iconUrl } from '../src/ui/lib/icons/iconArt';
@@ -38,6 +39,8 @@ const GROUPS: Record<string, { defs: readonly IconDef[]; pending?: readonly stri
   superattributes: { defs: Object.values(SUPERATTRS) },
   // The sheet has no DNA and no yin-yang (docs/plans/pixel-icons.md §5.1).
   tabs: { defs: NAV, pending: ['chromosome', 'wuxin'] },
+  // No plain cloud, thermometer or hole on the sheet; the sky chip shows one kind at a time.
+  weather: { defs: Object.entries(WEATHER_ICONS).map(([id, icon]) => ({ id, icon })), pending: ['still', 'overcast', 'heatwave'] },
 };
 
 function covered(group: string): IconDef[] {
@@ -143,6 +146,8 @@ describe('pixel icons: the glyph table', () => {
     expect(parts.map((p) => ('glyph' in p ? p.name : null)).filter(Boolean)).toEqual(['chest', 'crossed_swords', 'unknown']);
     expect(parts.map((p) => ('glyph' in p ? p.glyph : p.text)).join('')).toBe(text);
     expect(splitGlyphs('plain')).toEqual([{ text: 'plain' }]);
+    // A joined sequence is one emoji: the winded face holds a gust and stays whole.
+    expect(splitGlyphs('😮‍💨 Winded 💨')).toEqual([{ text: '😮‍💨 Winded ' }, { glyph: '💨', name: 'gust' }]);
     expect(splitGlyphs('')).toEqual([]);
   });
 

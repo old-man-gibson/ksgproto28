@@ -9,6 +9,7 @@
   import { headerSky, shortClock } from './lib/shell';
   import { darkText } from './lib/sky';
   import Tip from './lib/Tip.svelte';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * The phone dock's sky line: the clock chip, the moons, the weather and the
@@ -40,7 +41,7 @@
   <div class="sky">
     {#if timeSense}
       <Tip block>
-        <span class="sky-clock">🕰️ {shortClock(timeSense)}</span>
+        <span class="sky-clock"><GlyphText text="🕰️ {shortClock(timeSense)}" /></span>
         {#snippet tip()}
           <div class="tip-line tip-base">{timeSense}</div>
           <div class="tip-line">{SKILLS[CHRONOSENSE_ID].name} {senseLevel}</div>
@@ -63,10 +64,10 @@
     {/if}
     {#if weather}
       <Tip block>
-        <span class="sky-weather">{WEATHER_ICONS[weather.kind]} {Math.round(weather.temp)}°</span>
+        <span class="sky-weather"><GlyphText text="{WEATHER_ICONS[weather.kind]} {Math.round(weather.temp)}°" /></span>
         {#snippet tip()}
           <div class="tip-line tip-base">
-            {WEATHER_ICONS[weather.kind]} {weather.kind} · feels {weather.band}
+            <GlyphText text="{WEATHER_ICONS[weather.kind]} {weather.kind} · feels {weather.band}" />
           </div>
           {#if wxLevel >= PROGNOSIS_TOOLTIP_AT && wxRegion}
             <div class="tip-line tip-sub">🌦 Prognosis — {wxRegion.name}</div>

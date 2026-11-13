@@ -19,6 +19,29 @@ export const GLYPH_ART: Record<string, string> = {
   '📖': 'book',
   '📜': 'scroll',
   '🏆': 'trophy',
+  // Chrome: what the UI hard-codes.
+  '🗺️': 'map',
+  '🔒': 'lock',
+  '🪙': 'coin',
+  '⏳': 'hourglass',
+  '🕰️': 'hourglass',
+  '✨': 'sparkle',
+  '🚫': 'blocked',
+  '☠️': 'skull',
+  '🥾': 'boots',
+  '🛡️': 'shield',
+  '🧠': 'brain',
+  // Weather (WEATHER_ICONS, systems/weather.ts). ☀️ and 🕊️ are also the arcane
+  // words light and fly/gently; ❄️ and 💨 are ice and gust.
+  '☀️': 'sun',
+  '🕊️': 'feather',
+  '🌫️': 'mist',
+  '🌧️': 'rain',
+  '⛈️': 'storm',
+  '🌨️': 'snow_cloud',
+  '❄️': 'ice',
+  '💨': 'gust',
+  '🌪️': 'sandstorm',
 };
 
 const VS16 = /️/g;
@@ -36,12 +59,14 @@ export function glyphName(emoji: string): string | undefined {
 }
 
 // Longest key first, so a sequence beats its own first character; the optional
-// selector is swallowed with the match.
+// selector is swallowed with the match. An emoji joined to another by a
+// zero-width joiner (the winded face holds a gust) is one picture: it never
+// matches.
 const GLYPH_PATTERN = new RegExp(
-  `(?:${[...BY_BARE.keys()]
+  `(?<!\\u200D)(?:${[...BY_BARE.keys()]
     .sort((a, b) => b.length - a.length)
     .map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('|')})\\uFE0F?`,
+    .join('|')})\\uFE0F?(?!\\u200D)`,
   'gu',
 );
 

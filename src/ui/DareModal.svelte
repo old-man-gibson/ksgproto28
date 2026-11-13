@@ -8,6 +8,7 @@
   import { onMount } from 'svelte';
   import { msToTime } from './lib/format';
   import { LAYER, pushOverlay } from './lib/overlays';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * The keeper's dare (systems/training.ts). Save state, not UI state: the
@@ -61,7 +62,7 @@
     </p>
 
     <div class="row">
-      <button class="fight" onclick={() => game.answerDare(true)}>⚔️ Fight the {def?.name}</button>
+      <button class="fight" onclick={() => game.answerDare(true)}><GlyphText text="⚔️ Fight the {def?.name}" /></button>
       <button onclick={() => game.answerDare(false)}>🏃 Flee: back to normal cages</button>
     </div>
   </div>

@@ -65,6 +65,7 @@
   } from '../../core/systems/music';
   import Tip from '../lib/Tip.svelte';
   import { LAYER, hostLayer, pushOverlay } from '../lib/overlays';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   /**
    * The sheet. Bars are real staves — five lines, ledger line for middle C,
@@ -654,7 +655,7 @@
               >
                 {#each Object.values(MUSIC_METERS) as m (m.id)}
                   <option value={m.id} disabled={m.unlockLevel > level} title={m.desc}>
-                    {m.unlockLevel > level ? `🔒${m.unlockLevel} ` : ''}{m.name}
+                    {#if m.unlockLevel > level}<GlyphText text="🔒" />{m.unlockLevel} {/if}{m.name}
                   </option>
                 {/each}
               </select>
@@ -795,7 +796,7 @@
                     {#if def.dot}<circle cx="17.5" cy="24" r="1.6" class="dotmark" />{/if}
                     {#if def.tuplet}<text x="2" y="10">{def.tuplet}</text>{/if}
                   </svg>
-                  <span>{locked ? `🔒${def.unlockLevel}` : def.name}</span>
+                  <span>{#if locked}<GlyphText text="🔒" />{def.unlockLevel}{:else}{def.name}{/if}</span>
                 </button>
                 {#snippet tip()}<div class="tip-line">{durTitle(id)}</div>{/snippet}
               </Tip>

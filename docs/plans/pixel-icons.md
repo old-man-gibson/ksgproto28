@@ -462,8 +462,20 @@ Each step is one story and one PR.
    in picks.md); Chromosome and Wuxin keep the emoji until drawn
    (`GROUPS.tabs.pending` in tests/icons.test.ts). Tab icons stay 16px: the label is
    printed beside them.
-3. **Chrome glyphs and weather.** 14 of 15 chrome glyphs and 7 of 10 weather kinds
-   from picks.md.
+3. **Chrome glyphs and weather. Done 2026-11-13** (branch `pixel-icons-2-6`). 14 of
+   15 chrome glyphs from picks.md (⚠️ has no icon; it stays an emoji) and 9 of the 12
+   weather kinds: the 7 picks plus clear ☀️ (c3133, a burst; no plain sun) and calm
+   🕊️ (c312, a feather). Still 🕳️, overcast ☁️ and heatwave 🌡️ keep the emoji
+   (`GROUPS.weather.pending`); the sky chip shows one kind at a time, so no row
+   mixes. 20 `GLYPH_ART` entries, 18 manifest names (⏳ and 🕰️ share one).
+   Every template site that writes one of these as text goes through
+   `<GlyphText>` (header gold and sky chip, dock gold sizer, job strip, map card,
+   panel headings, sell prices, lock lines, tooltip lines; `title=` attributes stay
+   emoji, an attribute cannot hold an image); a site with alternates
+   converts only when every alternate has art (🏹 beside ⚔ in the enemy tip,
+   ✔ beside 🔒 convert only the 🔒). The header weather chip is `min-height: 1.4em`:
+   art is 17px tall at 13px, an emoji 18px. A zero-width-joiner sequence
+   (😮‍💨) never matches the table.
 4. **Element set.** The 14 arcane nouns from picks.md → arcane words, resistance
    skills, statuses, runes, reagents, through `GLYPH_ART`. Pick the statuses here.
 5. **Inventory.** All 39 items from picks.md; per-item `art` splits the four 🗡️

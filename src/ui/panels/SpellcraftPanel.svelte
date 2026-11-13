@@ -69,6 +69,7 @@
   import { deityKnown, subsystemUnlocked, wordUnlocked } from '../../core/systems/unlocks';
   import Tip from '../lib/Tip.svelte';
   import { foldItem, insertItem, isTouchPointer, moveItem, stepSlot } from '../lib/reorder';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   /**
    * The spellcrafting table: one piece of furniture, three schools.
@@ -458,7 +459,7 @@
     <span>{targetLabel(spec)}</span>
     <!-- Each school spends its own pool, so only show what this one costs. -->
     {#if spec.manaCost > 0}<span>💧 {spec.manaCost} mana</span>{/if}
-    {#if spec.focusCost}<span>🧠 {spec.focusCost.toFixed(2)} focus</span>{/if}
+    {#if spec.focusCost}<span><GlyphText text="🧠" /> {spec.focusCost.toFixed(2)} focus</span>{/if}
     {#if spec.staminaCost}<span>🌬️ {spec.staminaCost} stamina</span>{/if}
     <span>⏱️ every {(spec.cooldown / TPS).toFixed(1)}s</span>
   </div>
@@ -479,7 +480,7 @@
          table shows two schools to a new player, not a spoiler of the third. -->
     {#if subsystemUnlocked(gs, 'psionics')}
       <button class:selected={tab === 'psionic'} onclick={() => (tab = 'psionic')}>
-        🧠 Psionic <span class="small dim">Lv {psionicsLevel(gs)}</span>
+        <GlyphText text="🧠" /> Psionic <span class="small dim">Lv {psionicsLevel(gs)}</span>
       </button>
     {/if}
   </div>
@@ -605,7 +606,7 @@
           {@render spellStats(check.spec)}
         </div>
       {:else if check}
-        <div class="small dim">🔒 {check.reason}</div>
+        <div class="small dim"><GlyphText text="🔒" /> {check.reason}</div>
       {:else}
         <div class="small dim">No words on the strip yet.</div>
       {/if}
@@ -775,7 +776,7 @@
                       {/each}
                     </div>
                     <div class="standing small">
-                      <span>🕊️ Favor <b>{favorWith(gs, deity.id)}</b></span>
+                      <span><GlyphText text="🕊️" /> Favor <b>{favorWith(gs, deity.id)}</b></span>
                       {#if floatingFavor(gs) > 0}
                         <button class="small" onclick={() => game.assignFloatingFavor(deity.id)}>+1 favor (unassigned)</button>
                       {/if}
@@ -786,7 +787,7 @@
                     {#if friends.length || foes.length}
                       <div class="small relations">
                         {#if friends.length}
-                          <span class="rel-good">✨ {friends.map((d) => d.name).join(', ')}</span>
+                          <span class="rel-good"><GlyphText text="✨" /> {friends.map((d) => d.name).join(', ')}</span>
                         {/if}
                         {#if foes.length}
                           <span class="rel-bad">⚡ {foes.map((d) => d.name).join(', ')}</span>
@@ -813,7 +814,7 @@
                         <div class="small owned-note">✅ In your grimoire</div>
                       {:else}
                         <button class="small" disabled={!c.ok} onclick={() => game.learnMiracle(miracle.id)}>
-                          {c.ok ? '🙏 Receive' : `🔒 ${c.reason}`}
+                          {#if c.ok}🙏 Receive{:else}<GlyphText text="🔒" /> {c.reason}{/if}
                         </button>
                       {/if}
                     </div>
@@ -833,7 +834,7 @@
                   <b>{deity.name}</b>
                   <span class="dim epithet small">{deity.epithet}</span>
                 </span>
-                <span class="god-favor small">🕊️ {favorWith(gs, deity.id)}</span>
+                <span class="god-favor small"><GlyphText text="🕊️" /> {favorWith(gs, deity.id)}</span>
               </button>
             {/if}
           {/each}
@@ -854,7 +855,7 @@
       teachers.
     </div>
     <div class="favor">
-      🧠 <b>{spent}</b> points · cap {psiCap}/axis · teacher tier {psiTier(gs) || 'none'}
+      <GlyphText text="🧠" /> <b>{spent}</b> points · cap {psiCap}/axis · teacher tier {psiTier(gs) || 'none'}
       {#if spent > 0}
         <!-- The aim. Every quantity has an outward face and an inward one;
              this is the split between them, and vitality is the dial. -->
@@ -915,7 +916,7 @@
             >
             <span class="legend-name">
               <span class="dot" style="background: {ink(axis.color)}"></span>
-              {axis.icon} {axis.name} <b>{open ? (shape[axis.id] ?? 0) : '🔒'}</b>
+              {axis.icon} {axis.name} <b>{#if open}{shape[axis.id] ?? 0}{:else}<GlyphText text="🔒" />{/if}</b>
             </span>
             <button
               class="dial"
@@ -964,17 +965,17 @@
           {@render spellStats(shapePreview)}
         </div>
       {:else}
-        <div class="small dim">🔒 {shapeCheck.reason}</div>
+        <div class="small dim"><GlyphText text="🔒" /> {shapeCheck.reason}</div>
       {/if}
       {#if outOfReach}
         <div class="small dim out-of-reach">
-          🔒 This shape matches <b>{outOfReach.icon} {outOfReach.name}</b>, which
+          <GlyphText text="🔒" /> This shape matches <b>{outOfReach.icon} {outOfReach.name}</b>, which
           needs a teacher to raise you to tier {outOfReach.tier} before you can use it.
         </div>
       {/if}
       {#if tooWide}
         <div class="small out-of-reach too-wide">
-          🧠 Costs <b>{tooWide.cost.toFixed(2)}</b> focus, and your maximum focus
+          <GlyphText text="🧠" /> Costs <b>{tooWide.cost.toFixed(2)}</b> focus, and your maximum focus
           is <b>{tooWide.ceiling}</b>. You can shape it, but it will not cast until
           Charisma raises your maximum focus.
         </div>
@@ -986,7 +987,7 @@
          re-dialling eight axes. -->
     <div class="memorized">
       <div class="small dim">
-        🧠 Held in mind <span class="dim">{memorized.length}/{MAX_PSI_MEMORIZED}</span>
+        <GlyphText text="🧠" /> Held in mind <span class="dim">{memorized.length}/{MAX_PSI_MEMORIZED}</span>
         {#if memorized.length === 0}
           — memorise an allocation to switch back to it in one click.
         {/if}
@@ -1026,7 +1027,7 @@
 
     <div class="bench-actions">
       <button disabled={!shapeCheck.ok || !!outOfReach} onclick={() => game.shapePsionic(shape)}>
-        🧠 Shape
+        <GlyphText text="🧠" /> Shape
       </button>
       <button
         disabled={!shapeCheck.ok || memorized.length >= MAX_PSI_MEMORIZED || alreadyHeld}
@@ -1043,7 +1044,7 @@
        spells join the combat rotation; the cap keeps that a choice. -->
   <div class="grimoire">
     <div class="grim-head">
-      <h4>📖 Grimoire</h4>
+      <h4><GlyphText text="📖" /> Grimoire</h4>
       <Tip>
         <span class="small dim">{prepared}/{preparedCap(gs)} prepared for combat</span>
         {#snippet tip()}
@@ -1082,7 +1083,7 @@
                   {#each specLines(spec) as line}<div class="tip-line">{line}</div>{/each}
                   <div class="tip-line tip-sub">
                     {targetLabel(spec)}
-                    {#if spec.focusCost}· 🧠 {spec.focusCost.toFixed(2)}{:else}· 💧 {spec.manaCost}{/if}
+                    {#if spec.focusCost}· <GlyphText text="🧠" /> {spec.focusCost.toFixed(2)}{:else}· 💧 {spec.manaCost}{/if}
                     · ⏱️ {(spec.cooldown / TPS).toFixed(1)}s
                   </div>
                   {#if isUtilityWorking(spec)}
@@ -1102,7 +1103,7 @@
             class:selected={spell.prepared}
             onclick={() => game.prepareSpell(spell.uid, !spell.prepared)}
           >
-            {spell.prepared ? '⚔️ prepared' : 'prepare'}
+            <GlyphText text={spell.prepared ? '⚔️ prepared' : 'prepare'} />
           </button>
           <!-- A working that lands on you needs no enemy: cast it between
                fights for the road and the workbench. -->
@@ -1115,7 +1116,7 @@
               title={check.ok ? `Cast ${spec.name} on yourself` : check.reason}
               onclick={() => game.castUtility(spell.uid)}
             >
-              {ready > 0 ? `⏳ ${(ready / TPS).toFixed(0)}s` : '✨ cast'}
+              <GlyphText text={ready > 0 ? `⏳ ${(ready / TPS).toFixed(0)}s` : '✨ cast'} />
             </button>
           {/if}
           <button class="tiny" onclick={() => startRename(spell)} title="Rename" aria-label="Rename {spec.name}">✏️</button>

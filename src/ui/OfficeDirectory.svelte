@@ -5,6 +5,7 @@
   import { visibleEdges } from '../core/systems/locations';
   import { conditionsMet } from '../core/systems/conditions';
   import { spotCleared } from '../core/systems/combat';
+  import GlyphText from './lib/icons/GlyphText.svelte';
   const rooms = ['f1_registry', 'f1_scribe', 'f1_auditor', 'f1_break_room', 'f1_dispatch', 'f1_records', 'f1_reception', 'f1_supplies', 'f1_toll_hall'];
   const edges = $derived(visibleEdges(gs, gs.spot));
   const busy = $derived(!!gs.travel || gs.recovering || !!gs.combat?.forced);
@@ -13,7 +14,7 @@
 <h3>Office section</h3>
 <p class="dim small">Follow the daybook’s sequence of named rooms. You can explore other rooms; only the collector’s doorway loops back to reception when the sequence is wrong.</p>
 {#if !hasKeyItem(gs, 'toll_office_key')}
-  <p>🔒 Explore reception to find the office key and open the doors.</p>
+  <p><GlyphText text="🔒" /> Explore reception to find the office key and open the doors.</p>
 {/if}
 <div class="office-directory">
   {#each rooms as id}
@@ -24,7 +25,7 @@
       onclick={() => game.travelTo(id)}>
       {room.icon} {room.name}
       {#if gs.spot === id}<small>You are here</small>{/if}
-      {#if room.forced && !spotCleared(gs, room)}<small>⚔️ No retreat once reached</small>{/if}
+      {#if room.forced && !spotCleared(gs, room)}<small><GlyphText text="⚔️" /> No retreat once reached</small>{/if}
     </button>
   {/each}
 </div>

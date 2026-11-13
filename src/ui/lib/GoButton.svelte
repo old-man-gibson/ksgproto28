@@ -5,6 +5,7 @@
   import { ticksToTime } from './format';
   import { routeInfo, type RouteInfo } from './navigation';
   import Tip from './Tip.svelte';
+  import GlyphText from './icons/GlyphText.svelte';
 
   /**
    * A go link outside the map (the Wayfinding boon, the Stations row): walk to
@@ -63,7 +64,7 @@
     {#if children}
       {@render children({ route, here })}
     {:else}
-      {here ? (activity ? '▶ Start' : '📍 Here') : activity ? '🥾 Go & start' : '🥾 Go'}{route?.noExit ? ' ⚔️' : ''}
+      <GlyphText text={`${here ? (activity ? '▶ Start' : '📍 Here') : activity ? '🥾 Go & start' : '🥾 Go'}${route?.noExit ? ' ⚔️' : ''}`} />
     {/if}
   </button>
   {#snippet tip()}<div class="tip-line">{title}</div>{/snippet}

@@ -5,6 +5,7 @@
   import type { CookCheck } from '../../core/systems/cooking';
   import type { Placement } from '../../core/systems/disciplines';
   import type { CraftDisciplineDef, CraftSlotDef, QualityTier } from '../../core/types';
+  import GlyphText from './icons/GlyphText.svelte';
   import {
     COOKED_WORDS,
     axisMax,
@@ -123,7 +124,7 @@
         {@render playhead()}
         <div class="ht-cell" style="left: {pct(row.entry)}">
           {#if row.locked}
-            <span class="ht-lock" aria-label="{row.slot.name}: locked">🔒</span>
+            <span class="ht-lock" aria-label="{row.slot.name}: locked"><GlyphText text="🔒" /></span>
           {:else}
             {@render cell(row.slot)}
           {/if}

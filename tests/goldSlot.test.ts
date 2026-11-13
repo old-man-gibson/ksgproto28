@@ -9,7 +9,7 @@ import { readText } from './themeCss';
 
 describe('the dock gold slot', () => {
   const dock = readText('src/ui/Dock.svelte');
-  const sizer = /class="gold-sizer" aria-hidden="true">🪙 ([^<]+)</.exec(dock)?.[1] ?? '';
+  const sizer = /class="gold-sizer" aria-hidden="true"><GlyphText text="🪙 ([^"]+)"/.exec(dock)?.[1] ?? '';
 
   it('has a sizer, hidden from a reader, as long as the longest figure below 1e15', () => {
     expect(sizer).not.toBe('');

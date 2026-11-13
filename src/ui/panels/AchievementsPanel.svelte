@@ -4,6 +4,7 @@
   import { tierNumeral } from '../../core/systems/achievements';
   import { hasTitle } from '../../core/systems/titles';
   import { describeMod, fmt } from '../lib/format';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   const defs = Object.values(ACHIEVEMENTS);
   // Secret titles stay invisible until earned; earned ones sort first.
@@ -25,7 +26,7 @@
       {@const worn = gs.title === title.id}
       <div class="ach title-card" class:done={earned} class:worn>
         <div class="head">
-          <span class="name">{earned ? title.icon : '❓'} {earned ? title.name : '???'}</span>
+          <span class="name">{#if earned}{title.icon}{:else}<GlyphText text="❓" />{/if} {earned ? title.name : '???'}</span>
           {#if earned}
             <button class="small" onclick={() => game.setTitle(worn ? null : title.id)}>
               {worn ? 'Remove' : 'Wear'}
@@ -51,7 +52,7 @@
 </div>
 
 <div class="panel" style="margin-top: 12px">
-  <h2>🏆 Achievements</h2>
+  <h2><GlyphText text="🏆" /> Achievements</h2>
   <div class="grid">
     {#each defs as def}
       {@const claimed = gs.achievements[def.id] ?? 0}

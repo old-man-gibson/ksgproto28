@@ -16,6 +16,7 @@
   import { enemyArt } from './enemyArt';
   import { sceneFor } from './scenes';
   import { fmt, ticksToTime } from './format';
+  import GlyphText from './icons/GlyphText.svelte';
 
   /**
    * The fight, drawn: the place behind it, you on the left, the formation on
@@ -260,7 +261,7 @@
     <!-- The feed announces a forced fight once; this stays up for its whole
          length, because "why is every travel button dead" deserves a
          standing answer rather than a scrolled-away line. -->
-    {#if gs.combat?.forced}<span class="forced-chip">⚔️ No retreat</span>{/if}
+    {#if gs.combat?.forced}<span class="forced-chip"><GlyphText text="⚔️" /> No retreat</span>{/if}
     <span class="grow"></span>
     {#if spot.fightLimit}<RaidTrack {spot} />{/if}
   </div>
@@ -387,7 +388,7 @@
   {/if}
 
   {#if banner}
-    <div class="banner">🏆 {banner}</div>
+    <div class="banner"><GlyphText text="🏆" /> {banner}</div>
   {/if}
 </div>
 

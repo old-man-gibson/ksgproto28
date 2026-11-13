@@ -70,6 +70,7 @@
     return p ? `${p.icon} ${p.name}` : id;
   }
   import { tutorialScreen } from '../lib/tutorialFocus';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   /** Which workbench is open, if any. */
   let openBench = $state<string | null>(null);
@@ -273,7 +274,7 @@
   {@const dest = getSpot(gs.travel.to)}
   <div class="panel act-strip" style:min-height="{Math.max(STRIP_MIN, standingH)}px">
     <b class="act-strip-title">
-      🥾 Traveling to {gs.discovered.includes(dest.id) ? `${dest.icon} ${dest.name}` : '❓ an unknown place'}
+      <GlyphText text="🥾" /> Traveling to {#if gs.discovered.includes(dest.id)}{dest.icon} {dest.name}{:else}<GlyphText text="❓" /> an unknown place{/if}
     </b>
     <div class="bar act-strip-travel" style="height: 18px">
       <div
@@ -422,7 +423,7 @@
           {#each availableQuests(gs, npc) as quest (quest.id)}
             <div class="quest-row">
               <div>
-                <b>📜 {quest.name}</b>
+                <b><GlyphText text="📜" /> {quest.name}</b>
                 <div class="dim small">{quest.desc}</div>
               </div>
               <button class="small" onclick={() => game.acceptQuest(quest.id)}>Accept</button>
@@ -431,7 +432,7 @@
           {#each activeFor(npc.quests) as quest (quest.id)}
             <div class="quest-row">
               <div>
-                <b>📜 {quest.name}</b>
+                <b><GlyphText text="📜" /> {quest.name}</b>
                 <div class="dim small">{canTurnIn(gs, quest) ? 'Ready to turn in!' : 'In progress — see the Quests tab.'}</div>
               </div>
               <button class="small" disabled={!canTurnIn(gs, quest)} onclick={() => game.turnInQuest(quest.id)}>
@@ -513,7 +514,7 @@
             {#if shelf.length}
               <div class="shop">
                 <div class="shop-head">
-                  <b>🪙 {npc.shop.name}</b>
+                  <b><GlyphText text="🪙" /> {npc.shop.name}</b>
                   <span class="dim small">
                     {hasMet(gs, npc.id) ? 'known customer' : 'stranger prices — say hello'} · {Math.floor(gs.gold)} gold on you
                   </span>
@@ -545,7 +546,7 @@
                         </div>
                       {/if}
                       <div class="ware-foot">
-                        <span class="ware-price">{price} 🪙</span>
+                        <span class="ware-price">{price} <GlyphText text="🪙" /></span>
                         <span class="ware-btns">
                           <button class="small" disabled={gs.gold < price} onclick={(e) => { e.stopPropagation(); game.buy(npc.id, i, 1); }}>Buy</button>
                           {#if line.kind === 'material' && !MATERIALS[line.id]?.consumable?.teaches}
@@ -643,7 +644,7 @@
           {#if def.offHand}<div class="mod">🤛 Off hand — {def.offHand.desc}</div>{/if}
           {#if def.requirements?.length}
             <div class="section">Requires</div>
-            <div class="mod">{conditionsMet(gs, def.requirements) ? "✔" : "🔒"} {condsText(def.requirements)}</div>
+            <div class="mod">{#if conditionsMet(gs, def.requirements)}✔{:else}<GlyphText text="🔒" />{/if} {condsText(def.requirements)}</div>
           {/if}
           {#if def.tags.length}
             <div class="section">Tags</div>
@@ -675,7 +676,7 @@
       {/if}
       <div class="ware-buy">
         <span>
-          <b>{price} 🪙</b>
+          <b>{price} <GlyphText text="🪙" /></b>
           <span class="dim small">· {Math.floor(gs.gold)} on you · have {heldOf(line)}</span>
         </span>
         <span class="ware-btns">
@@ -753,7 +754,7 @@
                 )}
             >
               <span>
-                {unlocked ? recipeResultIcon(recipe) : '🔒'}
+                {#if unlocked}{recipeResultIcon(recipe)}{:else}<GlyphText text="🔒" />{/if}
                 {recipeResultName(recipe)}
               </span>
               <span class="small cost" class:short={!affordable}>

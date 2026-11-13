@@ -8,6 +8,7 @@
   import type { QuestObjective } from '../../core/types';
   import GoButton from '../lib/GoButton.svelte';
   import { TUTORIAL_STEP_LIST } from '../../core/data/tutorial.data';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   /**
    * The tutorial's panels, re-openable for good (COMPLETABILITY.md §3: every
@@ -62,7 +63,7 @@
   {#each active as quest (quest.id)}
     <div class="quest" class:ready={questComplete(gs, quest)}>
       <div class="head">
-        <span class="name">📜 {quest.name}</span>
+        <span class="name"><GlyphText text="📜" /> {quest.name}</span>
         <span class="giver dim small">
           {giverHint(quest.id)}
           {#if linked(NPCS[quest.giver]?.spotId)}<GoButton spot={NPCS[quest.giver].spotId} />{/if}

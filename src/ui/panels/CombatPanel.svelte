@@ -77,6 +77,7 @@
   import { tutorialScreen } from '../lib/tutorialFocus';
   import { rankNote, stepTarget, visibleIds } from '../lib/rotationView';
   import { slotTarget } from '../lib/reorder';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
 
   /**
    * The rows of an affliction total worth drawing.
@@ -507,7 +508,7 @@
     </div>
   {/if}
   {#if !unlocked}
-    <div class="tip-line tip-total">🔒 Requires {condsText(slot.stance.unlock)}</div>
+    <div class="tip-line tip-total"><GlyphText text="🔒" /> Requires {condsText(slot.stance.unlock)}</div>
   {/if}
 {/snippet}
 
@@ -525,7 +526,7 @@
     disabled={!unlocked}
     onclick={() => game.setStyle(slot.stance.id)}
   >
-    <span class="stance-icon">{unlocked ? slot.active.icon : '🔒'}</span>
+    <span class="stance-icon">{#if unlocked}{slot.active.icon}{:else}<GlyphText text="🔒" />{/if}</span>
     <span class="stance-name">{slot.active.name}</span>
     {#if forced}<span class="forced-mark">{forcing?.def.icon}</span>{/if}
   </button>
@@ -1049,7 +1050,7 @@
                   {#if isUtilityWorking(spec)}
                     {@const check = canCastUtility(gs, spellOf(id)!.uid)}
                     <div class="tip-line tip-sub">
-                      Cast now: {check.ok ? 'ready, ✨ casts it on you.' : (check.reason ?? 'not available.')}
+                      Cast now: <GlyphText text={check.ok ? 'ready, ✨ casts it on you.' : (check.reason ?? 'not available.')} />
                     </div>
                   {/if}
                 {:else if id === GENE_ACTIVE}
@@ -1109,7 +1110,7 @@
                   title={check.ok
                     ? `Cast ${resolveSpell(spell).name} on yourself now`
                     : (check.reason ?? '')}
-                >{waiting > 0 ? '⏳' : '✨'}</button>
+                ><GlyphText text={waiting > 0 ? '⏳' : '✨'} /></button>
               {/if}
             {/if}
           </div>

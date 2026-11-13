@@ -60,6 +60,7 @@
   import { playBar, stopMusic } from './lib/musicAudio';
   import { msToTime } from './lib/format';
   import { OFFLINE_CAP_MS } from '../core/save/offline';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * Developer tools exist only in `npm run dev`. Vite replaces this with a
@@ -331,7 +332,7 @@
     <JobStrip showRate={!screen} />
     {#if timeSense}
       <div class="timesense" title="{timeSense} ({SKILLS[CHRONOSENSE_ID].name} {senseLevel})">
-        🕰️ <span class="clock-full">{timeSense}</span><span class="clock-short">{shortClock(timeSense)}</span>
+        <GlyphText text="🕰️" /> <span class="clock-full">{timeSense}</span><span class="clock-short">{shortClock(timeSense)}</span>
       </div>
     {/if}
     {#if moonLines.length && !screen}
@@ -354,10 +355,10 @@
            Weathersense: today only at first, the coming hours from level 1,
            the area's daily prognosis from 5. -->
       <Tip block>
-        <div class="weather">{WEATHER_ICONS[weather.kind]} {Math.round(weather.temp)}°</div>
+        <div class="weather"><GlyphText text="{WEATHER_ICONS[weather.kind]} {Math.round(weather.temp)}°" /></div>
         {#snippet tip()}
           <div class="tip-line tip-base">
-            {WEATHER_ICONS[weather.kind]} {weather.kind} · feels {weather.band}
+            <GlyphText text="{WEATHER_ICONS[weather.kind]} {weather.kind} · feels {weather.band}" />
           </div>
           {#if wxLevel >= PROGNOSIS_TOOLTIP_AT && wxRegion}
             <div class="tip-line tip-sub">🌦 Prognosis — {wxRegion.name}</div>
@@ -389,7 +390,7 @@
       {/if}
     </div>
     {#if !screen || screen.gold}
-      <div class="gold">🪙 {fmt(gs.gold)}</div>
+      <div class="gold"><GlyphText text="🪙 {fmt(gs.gold)}" /></div>
     {/if}
     <div class="actions small">
       <!-- Save, Export, Import, Reset, theme and the key list are in the Menu.
@@ -458,7 +459,7 @@
        blocked while it simulates, so this is static by design. -->
   <div class="catchup-overlay" role="status" aria-live="polite">
     <div class="catchup panel">
-      <h2>⏳ Catching up…</h2>
+      <h2><GlyphText text="⏳" /> Catching up…</h2>
       <p class="dim">
         You were away for {msToTime(ui.catchingUp)}. Simulating
         {ui.catchingUp > OFFLINE_CAP_MS ? `the first ${msToTime(OFFLINE_CAP_MS)}` : 'that time'}
@@ -707,6 +708,9 @@
      widest and leaves 1.6px at 13px. */
   .weather {
     width: 3.9em;
+    /* A kind drawn as art is 17px tall at 13px, a kind still on its emoji 18px:
+       the chip holds the taller, so a change of sky never moves the row. */
+    min-height: 1.4em;
     white-space: nowrap;
     color: var(--text-dim);
     font-size: 13px;

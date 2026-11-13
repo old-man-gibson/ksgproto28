@@ -5,6 +5,7 @@
   import { fmt } from './lib/format';
   import Tip from './lib/Tip.svelte';
   import type { Snippet } from 'svelte';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * The header's job strip and rate chip. The strip is the status text with a
@@ -51,7 +52,7 @@
   <Tip block>
     <div class="job-compact" class:job-paused={gs.paused}>
       <div class="job-line">
-        <span class="job-icon">{job.icon}</span>
+        <span class="job-icon"><GlyphText text={job.icon} /></span>
         <span class="job-name">{gs.paused ? 'Paused: ' : ''}{job.name}</span>
         <span class="job-detail">{job.detail ?? ' '}</span>
       </div>
@@ -77,7 +78,7 @@
   </Tip>
 {:else}
   <div class="job-strip" class:job-paused={gs.paused} title="{job.name}. {job.tip}">
-    <span class="job-icon">{job.icon}</span>
+    <span class="job-icon"><GlyphText text={job.icon} /></span>
     <span class="job-name">{gs.paused ? 'Paused: ' : ''}{job.name}</span>
     <!-- Drawn in every state: a job without a bar hides it and keeps its slot. -->
     <div class="bar job-track" class:job-none={job.pct === null}>
