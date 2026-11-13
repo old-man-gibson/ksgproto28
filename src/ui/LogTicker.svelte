@@ -2,6 +2,7 @@
   import { gs } from './state.svelte';
   import { logColor, logGlyph } from './lib/logKinds';
   import { viewport } from './lib/viewport.svelte';
+  import GlyphText from './lib/icons/GlyphText.svelte';
 
   /**
    * The folded log: the newest line on one row, cut with an ellipsis, and the
@@ -22,7 +23,7 @@
 {#if viewport.phone}
   <button class="log-ticker log-ticker-row" class:log-ticker-on={open} data-log-toggle aria-expanded={open} onclick={ontoggle}>
     <span class="log-ticker-glyph" aria-hidden="true" style="color: {ink}">{newest ? logGlyph(newest.kind) : ''}</span>
-    <span class="log-ticker-line" style="color: {ink}">{newest ? newest.msg : 'No log entries yet.'}</span>
+    <span class="log-ticker-line" style="color: {ink}">{#if newest}<GlyphText text={newest.msg} />{:else}No log entries yet.{/if}</span>
     <span class="log-ticker-label">Log {open ? '▾' : '▴'}</span>
   </button>
 {:else}
@@ -31,7 +32,7 @@
       {newest ? logGlyph(newest.kind) : ''}
     </span>
     <span class="log-ticker-line" style="color: {ink}" title={newest?.msg}>
-      {newest ? newest.msg : 'No log entries yet.'}
+      {#if newest}<GlyphText text={newest.msg} />{:else}No log entries yet.{/if}
     </span>
     <button
       class="log-ticker-button"

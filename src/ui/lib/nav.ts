@@ -37,8 +37,9 @@ export interface NavEntry {
   id: string;
   group: NavGroup;
   label: string;
-  /** Emoji. A pixel icon arrives as an `art` name beside it (docs/plans/pixel-icons.md). */
+  /** Emoji: the fallback, and what the screen shows while it has no drawing. */
   icon: string;
+  /** Pixel icon: a name in src/ui/lib/icons/manifest.json (docs/plans/pixel-icons.md). */
   art?: string;
   /** Absent = always shown. Shuttered systems and gated screens say so here. */
   shown?: (gs: GameState) => boolean;
@@ -47,33 +48,35 @@ export interface NavEntry {
 }
 
 export const NAV = [
-  { id: 'location', group: 'act', label: 'Location', icon: '🗺️' },
-  { id: 'combat', group: 'act', label: 'Combat', icon: '⚔️' },
-  { id: 'skills', group: 'build', label: 'Skills', icon: '📜' },
+  { id: 'location', group: 'act', label: 'Location', icon: '🗺️', art: 'map' },
+  { id: 'combat', group: 'act', label: 'Combat', icon: '⚔️', art: 'tab_combat' },
+  { id: 'skills', group: 'build', label: 'Skills', icon: '📜', art: 'tab_skills' },
   // The run's ability (docs/FACET.md), while it holds one.
-  { id: 'ability', group: 'build', label: 'Ability', icon: '✦', shown: (gs) => gs.facets.length > 0 },
-  { id: 'equipment', group: 'build', label: 'Equipment', icon: '🎒' },
+  { id: 'ability', group: 'build', label: 'Ability', icon: '✦', art: 'ability', shown: (gs) => gs.facets.length > 0 },
+  { id: 'equipment', group: 'build', label: 'Equipment', icon: '🎒', art: 'tab_equipment' },
   // Shuttered subsystems (systems/unlocks.ts) keep their screens off the list
   // until content lifts the flag: a row for a system you have never heard of
   // is a spoiler, the same rule the benches follow.
+  // Chromosome and Wuxin keep their emoji until an icon is drawn: the sheet has no DNA and no yin-yang.
   { id: 'chromosome', group: 'build', label: 'Chromosome', icon: '🧬', shown: (gs) => subsystemUnlocked(gs, 'genes') },
-  { id: 'music', group: 'build', label: 'Music', icon: '🎼', shown: (gs) => subsystemUnlocked(gs, 'music') },
+  { id: 'music', group: 'build', label: 'Music', icon: '🎼', art: 'music', shown: (gs) => subsystemUnlocked(gs, 'music') },
   { id: 'wuxin', group: 'build', label: 'Wuxin', icon: '☯️', shown: (gs) => subsystemUnlocked(gs, 'wuxin') },
-  { id: 'bestiary', group: 'records', label: 'Bestiary', icon: '📖' },
+  { id: 'bestiary', group: 'records', label: 'Bestiary', icon: '📖', art: 'book' },
   {
     id: 'quests',
     group: 'records',
     label: 'Quests',
     icon: '⭐',
+    art: 'star',
     mark: (gs) => {
       const ready = activeQuests(gs).filter((q) => questComplete(gs, q)).length;
       return ready > 0 ? `${ready} ready` : null;
     },
   },
-  { id: 'achievements', group: 'records', label: 'Achievements', icon: '🏆' },
+  { id: 'achievements', group: 'records', label: 'Achievements', icon: '🏆', art: 'trophy' },
   // Appears once the run could prestige (band 1 cleared), and stays once any
   // run has: the pre-prestige view lives here.
-  { id: 'prestige', group: 'records', label: 'Prestige', icon: '♻️', shown: (gs) => prestigeVisible(gs) },
+  { id: 'prestige', group: 'records', label: 'Prestige', icon: '♻️', art: 'ascension', shown: (gs) => prestigeVisible(gs) },
 ] as const satisfies readonly NavEntry[];
 
 export type MainTab = (typeof NAV)[number]['id'];

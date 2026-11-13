@@ -23,7 +23,7 @@ done:
 
 # Pixel icons
 
-Story 1 shipped 2026-10-22: the pipeline and the sidebar (§6). Story 2 is next.
+Story 1 shipped 2026-10-22: the pipeline and the sidebar. Stories 2 to 6 (tab row and log, chrome and weather, element set, inventory, stances) are on branch `pixel-icons-2-6`, 2026-11-13 (§6). Story 7, spots and activities, is next.
 
 - **What:** 1,142 `icon:` fields in `src/core/data` and about 750 emoji hard-coded
   in `src/ui` and `src/core` → pixel sprites.
@@ -454,8 +454,14 @@ Each step is one story and one PR.
       junction, art. Decide 16px vs 32px on the real sidebar.
    7. **Docs:** the junction command in docs/ENGINEERING.md beside the enemy
       portraits; AUTHORSHIP §9 points at the manifest.
-2. **Tab row + `GlyphText` in the log.** 9 tabs from picks.md; Chromosome and Wuxin
-   keep the emoji until drawn. Seed `GLYPH_ART` with 📦 ⚔️ ❓ 📖 📜 🏆.
+2. **Tab row + `GlyphText` in the log. Done 2026-11-13** (branch `pixel-icons-2-6`).
+   `glyphs.ts` (`GLYPH_ART`, `splitGlyphs`), `GlyphText.svelte`, the glyph layer in
+   `iconUrl` (`artName` is its text-only twin). The log (open, folded row, the
+   "also in this line" tooltip) draws 📦 ⚔️ ❓ 📖 📜 🏆 as art, old saved lines
+   included. NAV entries carry `art`: 9 picks from picks.md plus Ability (c3045, not
+   in picks.md); Chromosome and Wuxin keep the emoji until drawn
+   (`GROUPS.tabs.pending` in tests/icons.test.ts). Tab icons stay 16px: the label is
+   printed beside them.
 3. **Chrome glyphs and weather.** 14 of 15 chrome glyphs and 7 of 10 weather kinds
    from picks.md.
 4. **Element set.** The 14 arcane nouns from picks.md → arcane words, resistance

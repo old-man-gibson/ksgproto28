@@ -1,6 +1,7 @@
 <script lang="ts">
   import { gs } from './state.svelte';
   import Tip from './lib/Tip.svelte';
+  import GlyphText from './lib/icons/GlyphText.svelte';
   import { hiddenLabels } from '../core/systems/log';
   import { logColor, logGlyph } from './lib/logKinds';
 
@@ -36,16 +37,16 @@
         <span class="msg">
           {#if rest.length > 0}
             <Tip>
-              {entry.msg}
+              <GlyphText text={entry.msg} />
               {#snippet tip()}
                 <div class="rest-head">Also in this line:</div>
                 {#each rest as label}
-                  <div>{label}</div>
+                  <div><GlyphText text={label} /></div>
                 {/each}
               {/snippet}
             </Tip>
           {:else}
-            {entry.msg}
+            <GlyphText text={entry.msg} />
           {/if}
         </span>
       </div>

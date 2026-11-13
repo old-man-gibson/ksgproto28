@@ -5,7 +5,21 @@
 
 export const ART_FILES = import.meta.glob(
   [
+    "../../../assets/packs/clockwork-raven/64x64/c1685.png",
+    "../../../assets/packs/clockwork-raven/64x64/c1689.png",
+    "../../../assets/packs/clockwork-raven/64x64/c1730.png",
+    "../../../assets/packs/clockwork-raven/64x64/c20.png",
+    "../../../assets/packs/clockwork-raven/64x64/c21.png",
+    "../../../assets/packs/clockwork-raven/64x64/c22.png",
+    "../../../assets/packs/clockwork-raven/64x64/c24.png",
+    "../../../assets/packs/clockwork-raven/64x64/c25.png",
+    "../../../assets/packs/clockwork-raven/64x64/c2753.png",
+    "../../../assets/packs/clockwork-raven/64x64/c28.png",
     "../../../assets/packs/clockwork-raven/64x64/c2881.png",
+    "../../../assets/packs/clockwork-raven/64x64/c29.png",
+    "../../../assets/packs/clockwork-raven/64x64/c3045.png",
+    "../../../assets/packs/clockwork-raven/64x64/c31.png",
+    "../../../assets/packs/clockwork-raven/64x64/c3331.png",
     "../../../assets/packs/clockwork-raven/legacy/attributes/charisma.png",
     "../../../assets/packs/clockwork-raven/legacy/attributes/constitution.png",
     "../../../assets/packs/clockwork-raven/legacy/attributes/dexterity.png",
