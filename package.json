@@ -19,6 +19,7 @@
     "pacing": "vite-node scripts/pacing.ts"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tsconfig/svelte": "^5.0.4",
     "@types/node": "^26.1.1",
@@ -29,6 +30,9 @@
     "vitest": "^3.0.4"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.5.3",
     "@fontsource/alegreya-sans": "^5.3.0",
     "@fontsource/alfa-slab-one": "^5.3.0",
     "@fontsource/b612": "^5.3.0",

@@ -1,0 +1,77 @@
+# docs/ANDROID.md. Each push to main builds a signed APK and publishes it as a
+# GitHub Release (tag build-<run number>); Obtainium on the phone installs the
+# newest. A push to another listed branch builds the APK as a run artifact only.
+name: Android APK
+
+on:
+  push:
+    branches: [main, apk-releases]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      # The game, as `npm run build` makes it but without the type check. The
+      # licensed art is gitignored, so this build has none of it.
+      - run: npm ci
+      - run: npx vite build
+      - run: npx cap sync android
+
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+
+      - name: Build the APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/release.p12
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          APP_VERSION_CODE: ${{ github.run_number }}
+          APP_VERSION_NAME: build-${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/frontier-idle-${{ github.run_number }}.apk"
+
+      - name: Release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: build-${{ github.run_number }}
+        run: |
+          gh release create "$TAG" "frontier-idle-${{ github.run_number }}.apk" \
+            --target "$GITHUB_SHA" --title "Build ${{ github.run_number }}" \
+            --notes "$(git log -1 --format='%h %s')"
+          # Keep the newest 10 releases; Obtainium only needs the latest.
+          gh release list --limit 100 --json tagName --jq '.[10:][].tagName' |
+            while read -r old; do gh release delete "$old" --yes --cleanup-tag; done
+
+      - name: Artifact
+        if: github.ref != 'refs/heads/main'
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: frontier-idle-${{ github.run_number }}
+          path: frontier-idle-${{ github.run_number }}.apk
