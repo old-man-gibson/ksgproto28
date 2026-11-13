@@ -336,6 +336,7 @@ that stays.
 | 3 | 2026-10-29 | The harbor band | band 4, floors 11–14 | Bank |
 | 4 | 2026-10-29 | The desert band | band 5, floors 18–20 | Bank |
 | 5 | 2026-11-12 | The six realms | floors 44–49, a hub; floor 50 behind it | Note, unreviewed |
+| 6 | 2026-11-12 | The crossing | floors 31–36: voyage, split, steppe | Note, unreviewed |
 
 ### Entry template
 
@@ -1516,6 +1517,43 @@ time, each one coming with its own restrictions and goals"
 
 **Not yet decided.** Each realm's restrictions, goals and keep/reset rule;
 what floor 50's step is. The review (§3.5) runs when the user asks.
+
+### 6. The crossing (posted 2026-11-12)
+
+Band: unassigned · Floors: 31–36 · Verdict: note, unreviewed. The name
+is a placeholder.
+
+**As posted.** "floor 31 is a long seafaring mission with two diverging
+endings. the player has to protect the ship and defeat monsters. at one
+point, the ship either crashes and capsizes, or survives until the end of
+the floor. regardless, the player advances to floor 32. if the ship
+capsizes, floors 32-33 is a deep sea cave full of weird fish monsters and
+the likes, if the ship makes it across, the player ends up in a
+tundra-like area for floors 32-33. both paths return to a steppe-like
+area in floors 34-36. I still have to pick a theme for that"
+
+**The shape, as read.**
+
+| Floor | Place | Note |
+|---|---|---|
+| 31 | the voyage | long; protect the ship, defeat monsters; ends in one of two outcomes |
+| 32–33 | deep sea cave | if the ship capsized; weird fish monsters |
+| 32–33 | tundra | if the ship made it across |
+| 34–36 | steppe-like | both paths rejoin; theme not picked |
+
+- Both outcomes advance to floor 32: capsizing is a branch, not a
+  failure. This fits the completability law (no terminal states).
+
+**Not yet decided.**
+
+- What decides the outcome: ship health at a checkpoint, a count of
+  failed defenses, or something else. Default: ship health at the
+  crash point.
+- Whether the outcome is fixed per run or can be replayed for the other
+  branch (and whether a later run can choose). Default: per run, decided
+  by play.
+- The theme of 34–36.
+- Floors 37–43 are still unwritten.
 
 ---
 
