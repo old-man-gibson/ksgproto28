@@ -258,16 +258,19 @@ trigger stays meetable for a strong player (feedback rule, 2026-09).
    37–40 for now.
 4. Whether the defect is ever revealed to the player, and where. Default:
    not before floor 50.
-5. Which two gods. Default: Ik'Thel'the (in `deities.data.ts`) and the
-   parked god of arcane magic, yShicna' (NEXT.md "Parked: the aberrant god
-   of arcane magic").
-6. Replay rules: what a redo keeps and resets, what it costs, and whether
-   it counts as a prestige for prestige rewards. Default: the floor's own
-   state resets; character, items and prestige count are kept; it does not
-   pay prestige rewards, so it cannot be used to farm them.
-7. Rare items from limited encounters: whether replay farming breaks the
-   no-arbitrage law (shops) or the gold mint. Default: rare items are
-   unsellable, or sell for a fixed floor price.
+
+**Answered** (user, 2026-11-12).
+
+5. **The gods.** Ik'Thel'the (in `deities.data.ts`) and yShicna', the
+   parked god of arcane magic (NEXT.md "Parked: the aberrant god of arcane
+   magic"). More aberrant gods will join them.
+6. **Replay keeps and resets.** The floor's own state resets; character,
+   items and prestige count are kept. A replay pays no prestige rewards.
+7. **Replay farming needs no price cap.** Rare items from limited
+   encounters may be valuable and sellable. Replaying a floor costs time
+   that could go to the climb, even when the floor runs automated, so the
+   value per hour stays linear. Free gold only happens when the player can
+   generate exponential value; a replay loop does not.
 
 ## 2. Calibration: band 1 through the review
 
