@@ -437,8 +437,8 @@
       <i>pierce fire</i> with the verb — same words, different spells. Repeating a word
       deepens it: <i>fire fire</i> is <i>flame</i>, a third makes <i>blaze</i> — stronger than
       the sum, and costlier still. Drag a word onto the same word to merge them into one (a
-      numeral on a word tile says how deep you have mastered it); right-click a merged word to remove
-      one layer. Targets and conjunctions never deepen; a word counts at most three times.
+      numeral on a word tile says how deep you have mastered it); right-click or long-press a merged
+      word to remove one layer. Targets and conjunctions never deepen; a word counts at most three times.
     </div>
 
     <div
@@ -489,8 +489,8 @@
             unstack(i);
           }}
           title={tok.tier > 1
-            ? 'Right-click to remove one layer · click to remove the word · drag to reorder'
-            : 'Click to remove · drag to reorder, or onto the same word to deepen'}
+            ? 'Right-click or long-press to remove one layer · select to remove the word · drag to reorder'
+            : 'Select to remove · drag to reorder, or onto the same word to deepen'}
         >
           {w?.icon} {label}
           {#if tok.tier > 1}<span class="tier-mark">{TIER_MARK[tok.tier]}</span>{/if}

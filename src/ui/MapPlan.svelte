@@ -35,6 +35,28 @@
     return true;
   };
   const poly = (pts: { x: number; y: number }[]) => pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+  /**
+   * A finger's target for each pin (a coarse pointer only, see `.hit` below): up
+   * to 44 px across, and never reaching past halfway to the nearest other pin, so
+   * two close pins keep a target each. Never smaller than the pin itself.
+   */
+  const hitR = $derived.by(() => {
+    const out = new Map<string, number>();
+    for (const a of plan.nodes) {
+      let near = Infinity;
+      for (const b of plan.nodes) if (b !== a) near = Math.min(near, Math.hypot(a.x - b.x, a.y - b.y));
+      out.set(a.id, Math.max(f.pinR, Math.min(22, near / 2 - 1)));
+    }
+    return out;
+  });
+
+  /** The box behind an exit label that a finger can hit: the label's width, estimated, and 36 px of height. */
+  function exitHit(exit: { x: number; y: number; anchor: string; label: string }) {
+    const w = (exit.label.length + 2) * f.font * 0.62 + 16;
+    const x = exit.anchor === 'end' ? exit.x - w + 8 : exit.anchor === 'middle' ? exit.x - w / 2 : exit.x - 8;
+    return { x, y: exit.y - f.font - 8, w, h: 36 };
+  }
 </script>
 
 <svg
@@ -149,6 +171,21 @@
   {/if}
 
   {#each plan.exits as exit}
+    {@const hit = exitHit(exit)}
+    <!-- A finger's target behind the label; it takes the pointer only on a touch
+         screen. The label itself is the control for a keyboard and a screen reader. -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <rect
+      class="exit-hit"
+      class:clickable={!stuck}
+      role="presentation"
+      aria-hidden="true"
+      x={hit.x}
+      y={hit.y}
+      width={hit.w}
+      height={hit.h}
+      onclick={() => onexit(exit.to)}
+    />
     <text
       x={exit.x}
       y={exit.y}
@@ -186,6 +223,7 @@
       onclick={(ev) => onpick(node.id, ev.currentTarget)}
       onkeydown={(ev) => pressed(ev) && onpick(node.id, ev.currentTarget)}
     >
+      <circle cx={node.x} cy={node.y} r={hitR.get(node.id) ?? f.pinR} class="hit" />
       {#if node.here}
         <circle cx={node.x} cy={node.y} r={f.pinR + 6} class="ring" />
         <circle cx={node.x} cy={node.y} r={f.pinR + 10} class="ring ring-outer" />
@@ -373,6 +411,23 @@
 
   .exit.clickable {
     cursor: pointer;
+  }
+
+  /* A finger's targets: a pin's circle (up to 44 px) and a box behind an exit
+     label. Painted nothing; they take the pointer on a touch screen only, so a
+     mouse still lands on the pin and the text as before. */
+  .hit,
+  .exit-hit {
+    fill: transparent;
+    stroke: none;
+    pointer-events: none;
+  }
+
+  @media (pointer: coarse) {
+    .hit,
+    .exit-hit.clickable {
+      pointer-events: all;
+    }
   }
 
   .exit.clickable:hover {

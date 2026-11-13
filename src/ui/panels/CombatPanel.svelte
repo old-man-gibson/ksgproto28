@@ -824,7 +824,7 @@
         {#snippet tip()}
           <div class="tip-line">Order: drag a card, or use its up and down buttons.</div>
           <div class="tip-line">Conditions: click a card to set when it fires.</div>
-          <div class="tip-line">Details: hover a card name for its description.</div>
+          <div class="tip-line">Details: hover or tap a card name for its description.</div>
           <!-- Alpha shutter (systems/unlocks.ts, `martial`): no drilling or loadouts;
                the order and the triggers are editable all the same. -->
           {#if martialOpen}

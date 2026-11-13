@@ -114,6 +114,8 @@
             </Tip>
           {/each}
         </div>
+        <!-- The picked weapon's facts, as the long-press card has them. -->
+        <div class="small dim">{rackLabel(weapon)}: {rackFacts(weapon).join(', ')}</div>
         <div class="row">
           <label class="small" class:dim={!oneHanded}>
             <input type="checkbox" bind:checked={shield} disabled={!oneHanded} />
@@ -142,6 +144,16 @@
             </Tip>
           {/each}
         </div>
+        <!-- The modifiers a card holds are listed here too: a tap commits the
+             pick, so a touch screen could read them only by a long press. -->
+        <ul class="facts small">
+          {#each slots as slot (slot.stance.id)}
+            <li>
+              <b>{slot.stance.icon} {slot.stance.name}:</b>
+              {slot.stance.mods.length ? slot.stance.mods.map((m) => describeMod(m)).join(', ') : 'no modifiers'}
+            </li>
+          {/each}
+        </ul>
       </div>
     {:else if step.choice === 'spell'}
       <div class="choice" class:tutorial-target={pointed} class:tutorial-glow={pointed}>
@@ -202,6 +214,12 @@
     box-shadow: 0 4px 16px var(--lift);
   }
 
+  /* Held sideways the card is as tall as a third of the screen: it scrolls away
+     with the page instead of sticking over the screen it points at. */
+  :global(.layout.short) .tutorial {
+    position: static;
+  }
+
   .head {
     display: flex;
     align-items: center;
@@ -252,6 +270,15 @@
     gap: 8px;
     flex-wrap: wrap;
     align-items: center;
+  }
+
+  .facts {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 
   label {

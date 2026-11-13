@@ -188,9 +188,12 @@ instead (the button is not on screen there).
 **Two clicks to a pin, one to an exit** (2026-11-04, NAVIGATION.md §3.3). A
 click on a map pin opens its card; a second click on the same pin walks there.
 The beacon stays on the pin through the first click, so the second lands on it.
-The texts of `cellblock`, `field` and `gate` say so ("Click the marked ❓ pin in
-the corridor to open its card, then click the pin again to walk there"). The
-exit label of `leave` is not a spot: one click walks, and it has no card.
+The texts of `cellblock`, `field` and `gate` say so ("Select the marked ❓ pin in
+the corridor to open its card, then select the pin again to walk there"). The
+exit label of `leave` is not a spot: one click walks, and it has no card. The
+words are "select", not "click": a finger taps and a mouse clicks, and the text
+says neither (the same rule for "hover": the stance step lists each stance's
+modifiers under its buttons, so no pointer is needed to read them).
 
 **Following the target.** When the target changes, `App.svelte` opens the tab it
 is drawn on (`targetTab`) and scrolls `.tutorial-target` to the middle of the

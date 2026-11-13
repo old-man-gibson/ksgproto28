@@ -344,7 +344,7 @@
           <button
             class="fam"
             class:on
-            title="Click to filter · double-click to list {f.name} techniques"
+            title="Select to filter · double-click or the ▾ beside it lists {f.name} techniques"
             onclick={() => toggleFamily(f.id)}
             ondblclick={() => (openFamily = openFamily === f.id ? null : f.id)}
           >
@@ -539,11 +539,11 @@
         <h4>
           In the plan
           <span class="small" class:full={slotsFull}>{planned.length}/{slotCap} slots</span>
-          <span class="dim small">— drag to set priority · double-click to configure</span>
+          <span class="dim small">— drag to set priority · ⚙ (or a double-click) configures a move</span>
         </h4>
         {#if planned.length === 0}
           <p class="dim small">
-            Nothing in the rotation. Open a weapon group above (double-click it) and add what you
+            Nothing in the rotation. Open a weapon group above (the ▾ beside it) and add what you
             know.
           </p>
         {:else}

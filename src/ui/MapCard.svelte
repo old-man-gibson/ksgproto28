@@ -14,6 +14,7 @@
     DETAIL_GAP,
     DETAIL_H,
     defaultStackArea,
+    ladderEnd,
     regionOfTower,
     stackAreas,
     stopKeyOfArea,
@@ -203,6 +204,12 @@
   const foldTower = $derived(
     tutorial || viewport.wide ? null : (stackTower ?? towerAt(gs) ?? Object.values(TOWERS)[0] ?? null),
   );
+
+  /**
+   * The line past the top rung, once that rung is cleared. Under 600 px it is
+   * printed in the fold's summary, so it shows with the fold closed.
+   */
+  const foldEnd = $derived(foldTower ? ladderEnd(gs, foldTower) : null);
 
   const stuck = $derived(!!gs.travel || gs.recovering || !!gs.combat?.forced);
 
@@ -481,8 +488,11 @@
       <!-- Under 600 px the section is a fold with no ride button: the Ascent panel keeps its buttons.
            The fold is there in every region, so a ride that switches the map moves nothing. -->
       <details class="tower-fold" bind:open={foldOpen}>
-        <summary>🗼 {foldTower.name}{stackTower && areaTitle ? ` · ${areaTitle}` : ''}</summary>
-        <TowerSection tower={foldTower} height={PLAN_HEIGHT + 2} shownKey={shownStop} onpick={pickStop} />
+        <summary>
+          🗼 {foldTower.name}{stackTower && areaTitle ? ` · ${areaTitle}` : ''}
+          {#if foldEnd}<span class="tower-end small dim">{foldEnd}</span>{/if}
+        </summary>
+        <TowerSection tower={foldTower} height={PLAN_HEIGHT + 2} shownKey={shownStop} onpick={pickStop} showEnd={false} />
         <StopDetail tower={foldTower} stopKey={shownStop} />
       </details>
     {/if}
@@ -547,6 +557,10 @@
             ? ' ⤵'
             : ''}{r.noExit ? ' ⚔️' : ''}{r.shut ? ' 🔒' : ''}
         </button>
+        <!-- The reason a road is shut or has no retreat is on the line, not in the button's title. -->
+        {#if r.shut || r.noExit}
+          <span class="road-note dim small">{r.shut ? `Shut: ${r.shut}` : 'Arriving starts a fight with no way out'}</span>
+        {/if}
       {/each}
     </div>
   {/if}
@@ -715,6 +729,14 @@
     column-gap: 8px;
   }
 
+  /* A wide screen gives the column room for the floor names a 184 px column cuts
+     ("The Necropolis Ro…"): 240 px from a 680 px tab body, which leaves the plan 430. */
+  @container tab (min-width: 680px) {
+    .stackpane.with-section {
+      grid-template-columns: 240px minmax(0, 1fr);
+    }
+  }
+
   .stackpane.with-section > .route-line {
     grid-column: 1 / -1;
     grid-row: 1;
@@ -744,6 +766,11 @@
     font-size: 13px;
   }
 
+  /* The line past the top rung: its own row of the summary, so the closed fold says it. */
+  .tower-fold > summary .tower-end {
+    display: block;
+  }
+
   .map-empty {
     position: absolute;
     inset: 0;
@@ -771,6 +798,22 @@
 
   .route-head {
     color: var(--accent);
+  }
+
+  /* A narrow tab: two lines of the same fixed height rule (44 px, never 22 in one
+     state and 44 in another). The legs of a long route and a shut road's terms
+     are most of the line, and a finger has no tooltip to read the rest from. */
+  @container tab (max-width: 560px) {
+    .route-line {
+      height: 44px;
+      line-height: 20px;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
   }
 
   /*
@@ -811,6 +854,12 @@
     gap: 8px;
     flex-wrap: wrap;
     margin-top: 8px;
+  }
+
+  /* A road's note takes its own line under its button. */
+  .roads > .road-note {
+    flex: 1 1 100%;
+    margin: -4px 0 2px;
   }
 
   /*
