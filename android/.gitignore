@@ -52,11 +52,15 @@ captures/
 # Comment next line if keeping position of elements in Navigation Editor is relevant for you
 .idea/navEditor.xml
 
-# Keystore files. The signing key lives outside the repo and in the repo's
-# Actions secrets (docs/ANDROID.md); none is ever committed.
+# Keystore files. The release signing key lives outside the repo and in the
+# repo's Actions secrets (docs/ANDROID.md); it is never committed. The one
+# exception is app/debug.keystore: the standard public Android debug key
+# (alias androiddebugkey, passwords "android"), committed so every debug build
+# is signed with the same key and installs over the last one.
 *.jks
 *.keystore
 *.p12
+!app/debug.keystore
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild

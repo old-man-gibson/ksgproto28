@@ -88,9 +88,10 @@ jobs:
           name: frontier-idle-${{ github.run_number }}
           path: frontier-idle-${{ github.run_number }}.apk
 
-      # No signing secrets: a debug APK. Gradle signs it with the runner's own
-      # debug key, which is new every run, so a phone cannot install one debug
-      # build over another (docs/ANDROID.md, "The debug build").
+      # No signing secrets: a debug APK. It is signed with the committed
+      # android/app/debug.keystore (a public key, see android/app/build.gradle),
+      # the same on every run, so a phone installs one debug build over another
+      # (docs/ANDROID.md, "The debug build"). Nothing in this job writes that file.
       - name: Build the debug APK
         if: env.SIGNED != 'true'
         working-directory: android

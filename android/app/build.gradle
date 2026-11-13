@@ -3,7 +3,10 @@ apply plugin: 'com.android.application'
 // docs/ANDROID.md. The release workflow (.github/workflows/android.yml) passes the
 // version and the signing key in the environment. Every release must be signed
 // with the same key, or an installed copy refuses the update. Without the key
-// variables the release build is left unsigned (a local build).
+// variables the release build is left unsigned (a local build). The debug build
+// is signed with the committed debug.keystore, a public key: it exists so every
+// debug APK, from Actions or from a PC, installs over the last one. It is not a
+// secret and must never sign a release.
 def env = System.getenv()
 
 android {
@@ -24,6 +27,14 @@ android {
         }
     }
     signingConfigs {
+        debug {
+            // The standard Android debug key values, in a file kept in the repo.
+            storeFile file('debug.keystore')
+            storeType "pkcs12"
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
         release {
             if (env.ANDROID_KEYSTORE_FILE) {
                 // A PKCS12 file made with openssl: one password for the store and the key.

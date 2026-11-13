@@ -14,7 +14,7 @@ build"). Nothing is uploaded to a store.
 |---|---|---|
 | The wrapper | `capacitor.config.json`, `android/` | Capacitor 8.5.3 (pinned; `@capacitor/core`, `@capacitor/android`, `@capacitor/cli`), plus `@capacitor/app` 8.1.2 for the back button (the plugin has its own version line; its newest 8.x is 8.1.2). The app is one Android WebView that loads the built game from `dist/`. `android/` is the Gradle project `npx cap add android` made; `capacitor.build.gradle` and `capacitor.settings.gradle` in it are written by `npx cap sync android`, so rerun it after adding a plugin and commit the two files. |
 | The copied game | `android/app/src/main/assets/public` | Written by `npx cap sync android`. Gitignored by Capacitor, so a built game never enters git through `android/`. |
-| Version and signing | `android/app/build.gradle` | `versionCode` is the env `APP_VERSION_CODE` (the workflow run number, which only grows: Android refuses an update with a lower one). The release build is signed from `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`; without them it is unsigned. |
+| Version and signing | `android/app/build.gradle` | `versionCode` is the env `APP_VERSION_CODE` (the workflow run number, which only grows: Android refuses an update with a lower one). The release build is signed from `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`; without them it is unsigned. The debug build is signed with the committed `android/app/debug.keystore` (`signingConfigs.debug`). |
 | The build | `.github/workflows/android.yml` | `npm ci`, `vite build`, `cap sync android`, then Gradle on `ubuntu-latest` with JDK 21 (the Capacitor modules compile at Java 21; JDK 17 fails). Triggers: a push to `main`, `apk-releases` or `mobile-apk`, and `workflow_dispatch` (Actions tab, any branch). **Three secrets set:** `assembleRelease`; on `main` a release tagged `build-<run>` holding `frontier-idle-<run>.apk`, releases past the newest 10 deleted; on another branch the signed APK as a run artifact. **Any of the three missing:** `assembleDebug`, uploaded as the run artifact `ksg-debug-apk`, no release. |
 
 The app id is `io.github.oldmangibson.frontieridle`. Changing it makes a
@@ -75,15 +75,20 @@ Getting it, on github.com:
 4. Open the APK from a file manager. Android asks to allow "Install unknown
    apps" for that app: allow it once. Then Install.
 
+Updates install in place. Every debug APK, from Actions or from a PC, is
+signed with the same key, `android/app/debug.keystore`, so a newer one installs
+over an older one and keeps the save and the art pack. The key is the standard
+Android debug key (alias `androiddebugkey`, store and key password `android`).
+It is public, in the repo on purpose, and only for debug builds: anyone can sign
+an APK with it, so it must never sign a release. `versionCode` must still grow:
+Actions numbers it by run, and a local build is 1 unless `APP_VERSION_CODE` is
+set, so a local build does not install over an Actions one.
+
 Limits of the debug build:
 
-- **A new debug APK cannot be installed over an older one.** Each run's
-  runner generates its own debug key, so the signatures differ and Android
-  refuses the update ("App not installed"). To move to a newer one: Menu →
-  Export (saves the game as a file), uninstall the app, install the new APK,
-  Import the file. The uninstall also deletes the art pack: import it again.
 - **It cannot replace a release install, or the other way round.** Same app id,
-  different key. Pick one path per phone.
+  different key. Pick one path per phone. Moving from debug to release (or back)
+  means Menu → Export, uninstall, install, Import, and the art pack again.
 - **No licensed art.** The enemy battlers, tile packs and icon packs are
   gitignored and the Actions checkout has none of them, so enemies show no
   picture, maps draw the node diagram and icons are emoji. Import the art pack
@@ -94,9 +99,12 @@ Limits of the debug build:
   `debug-<run>`.
 
 Not checked (2026-11-12): this PC has JDK 17 and no Android SDK, so Gradle has
-not run here. The debug path, the manifest change and the back button on a
-device have been read and unit-tested only; the first Actions run is the first
-build of them.
+not run here. The debug path, the debug signing block, the manifest change and
+the back button on a device have been read and unit-tested only; the first
+Actions run is the first build of them. `debug.keystore` was made with
+`keytool -genkeypair -storetype PKCS12 -alias androiddebugkey -keyalg RSA
+-keysize 2048 -validity 12000 -startdate 2020/01/01` and its listing checked
+with `keytool -list`.
 
 ## The signing key
 
@@ -159,8 +167,8 @@ cd android && ./gradlew assembleRelease
 Unsigned without the three env variables, so a phone will not install it;
 `assembleDebug` makes a debug-signed one that installs but cannot update a
 release install, and the other way round. A local debug build is signed with
-this PC's own `~/.android/debug.keystore`, so it can be updated by later local
-builds but not by an Actions one.
+the same committed `debug.keystore` as an Actions one, so the two can update
+each other as long as the later one has the higher `versionCode`.
 
 ## Costs and upkeep
 
