@@ -63,6 +63,7 @@
     toggleTie,
     tuningUnlocked,
   } from '../../core/systems/music';
+  import Tip from '../lib/Tip.svelte';
 
   /**
    * The sheet. Bars are real staves — five lines, ledger line for middle C,
@@ -168,24 +169,75 @@
     game.startPerformance(comp.id);
   }
 
+  // ---------- Touch entry ----------
+
+  /**
+   * A staff row is 6 units tall, about 5 px on a phone, which a fingertip cannot
+   * pick out. A tap from a finger therefore does not write: it sets a pitch
+   * cursor on that row, the steppers move it a row at a time, and Place writes
+   * the note. A mouse click still writes at once. Which one it was comes from the
+   * pointerdown that precedes the click (`lastPointer`); the entry row is drawn
+   * on a coarse pointer from the start and, on any other, from the first touch.
+   */
+  let lastPointer = 'mouse';
+  let touchSeen = $state(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
+  let cursor = $state<{ bar: number; pitch: number } | null>(null);
+
+  function notePointer(ev: PointerEvent) {
+    lastPointer = ev.pointerType;
+    if (ev.pointerType === 'touch') touchSeen = true;
+  }
+
+  /** Move the cursor one row up (+1) or down (-1); the rows run highest first. */
+  function stepCursor(dir: 1 | -1) {
+    if (!cursor) return;
+    const next = rows[rows.indexOf(cursor.pitch) - dir];
+    if (next !== undefined) cursor = { ...cursor, pitch: next };
+  }
+
+  function placeCursor() {
+    if (!comp || !cursor) return;
+    lastRefusal = addEvent(gs, comp, cursor.bar, durId, resting ? null : cursor.pitch + accidental);
+  }
+
   function place(barIndex: number, pitch: number) {
     if (!comp) return;
     if (suppressClick) {
       suppressClick = false;
       return;
     }
+    if (lastPointer === 'touch') {
+      cursor = { bar: barIndex, pitch };
+      lastRefusal = null;
+      return;
+    }
     lastRefusal = addEvent(gs, comp, barIndex, durId, resting ? null : pitch + accidental);
   }
 
-  /** Click removes — unless it is Shift, which ties into the next note. */
+  /** What a tap or click on a written note does: the Tap note button's choice, and Shift always ties. */
+  type NoteTool = 'remove' | 'split' | 'tie';
+  let tool = $state<NoteTool>('remove');
+  const TOOL_NAMES: Record<NoteTool, string> = { remove: 'Remove', split: 'Split', tie: 'Tie' };
+  const TOOL_GLYPHS: Record<NoteTool, string> = { remove: '✕', split: '✂', tie: '⁀' };
+
+  function nextTool() {
+    const order: NoteTool[] = tiesUnlocked(level) ? ['remove', 'split', 'tie'] : ['remove', 'split'];
+    tool = order[(order.indexOf(tool) + 1) % order.length];
+  }
+
   function erase(barIndex: number, eventIndex: number, shift = false) {
     if (!comp) return;
     if (suppressClick) {
       suppressClick = false;
       return;
     }
-    if (shift) {
+    const use: NoteTool = shift ? 'tie' : tool;
+    if (use === 'tie') {
       lastRefusal = toggleTie(gs, comp, barIndex, eventIndex);
+      return;
+    }
+    if (use === 'split') {
+      lastRefusal = splitEvent(gs, comp, barIndex, eventIndex);
       return;
     }
     removeEvent(comp, barIndex, eventIndex);
@@ -298,8 +350,9 @@
       if (!el) continue;
       const r = el.getBoundingClientRect();
       if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) continue;
-      const localX = ev.clientX - r.left;
-      const localY = ev.clientY - r.top;
+      // The staff is drawn smaller than its own units when the column is narrow.
+      const localX = ((ev.clientX - r.left) * W) / r.width;
+      const localY = ((ev.clientY - r.top) * H) / r.height;
       hint.bar = bi;
       const spot = insertionAt(comp.bars[bi], localX);
       hint.index = spot.index;
@@ -323,6 +376,12 @@
       }
       break;
     }
+  }
+
+  /** A touch the browser took for a scroll: the press is not a drag, and none is left half-made. */
+  function onPointerCancel() {
+    pendingDrag = null;
+    drag.active = false;
   }
 
   function onPointerUp() {
@@ -421,6 +480,11 @@
 
   const noteX = (at: number) => PAD + at * UNIT_W + 6;
 
+  /** Hit areas of a written event, in staff units: a fingertip needs about 44 px of them. */
+  const noteHitW = $derived(touchSeen ? 46 : 20);
+  const noteHitH = $derived(touchSeen ? 52 : 28);
+  const restHitW = $derived(touchSeen ? 40 : 16);
+
   /** Rows the staff offers: the composition's scale over its tonic. Integer-
    *  filtered as a last line of defense — a NaN pitch would collide the lane
    *  keys and take the whole staff down (loads are already normalized). */
@@ -447,43 +511,63 @@
   const pct = (v: number) => `${Math.round(v * 100)}%`;
 </script>
 
-<svelte:window onpointermove={onPointerMove} onpointerup={onPointerUp} />
+<!-- The capture listener runs before any handler that stops the event. -->
+<svelte:window
+  onkeydowncapture={(e) => {
+    // Escape (and the Android back button, which sends it) drops the touch cursor.
+    if (e.key !== 'Escape' || cursor === null) return;
+    cursor = null;
+    e.stopPropagation();
+  }}
+  onpointerdowncapture={notePointer}
+  onpointermove={onPointerMove}
+  onpointerup={onPointerUp}
+  onpointercancel={onPointerCancel}
+/>
 
 <div class="music">
   <header class="bar-row">
     <div>
       <h2>🎼 Music</h2>
       {#if skill}
-        <span class="chip" title={SKILLS[MUSICIANSHIP_ID].desc}>
-          {SKILLS[MUSICIANSHIP_ID].icon} Musicianship {level}
-        </span>
+        <Tip block>
+          <span class="chip">{SKILLS[MUSICIANSHIP_ID].icon} Musicianship {level}</span>
+          {#snippet tip()}<div class="tip-line">{SKILLS[MUSICIANSHIP_ID].desc}</div>{/snippet}
+        </Tip>
       {:else}
-        <span class="chip dim" title="Perform a finished sheet to learn Musicianship.">
-          Musicianship not learned yet
-        </span>
+        <Tip block>
+          <span class="chip dim">Musicianship not learned yet</span>
+          {#snippet tip()}<div class="tip-line">Perform a finished sheet to learn Musicianship.</div>{/snippet}
+        </Tip>
       {/if}
       {#if reach}
         <span class="reach">next at Lv {reach.level}: {reach.what}</span>
       {/if}
     </div>
-    <label class="voice" title="The playback sound. A listening preference only; playable instruments come later.">
-      <select
-        value={voiceNow}
-        onchange={(ev) => {
-          voiceNow = (ev.target as HTMLSelectElement).value;
-          ensureAudio();
-          setVoice(voiceNow);
-        }}
-      >
-        {#each Object.values(VOICES) as v (v.id)}
-          <option value={v.id}>{v.icon} {v.name}</option>
-        {/each}
-      </select>
-    </label>
+    <Tip block>
+      <label class="voice">
+        <select
+          aria-label="Playback sound"
+          value={voiceNow}
+          onchange={(ev) => {
+            voiceNow = (ev.target as HTMLSelectElement).value;
+            ensureAudio();
+            setVoice(voiceNow);
+          }}
+        >
+          {#each Object.values(VOICES) as v (v.id)}
+            <option value={v.id}>{v.icon} {v.name}</option>
+          {/each}
+        </select>
+      </label>
+      {#snippet tip()}
+        <div class="tip-line">The playback sound. A listening preference only; playable instruments come later.</div>
+      {/snippet}
+    </Tip>
     <button
       class="mute"
       onclick={toggleMute}
-      title={mutedNow ? 'Unmute the music' : 'Mute the music'}
+      aria-label={mutedNow ? 'Unmute the music' : 'Mute the music'}
     >
       {mutedNow ? '🔇' : '🔊'}
     </button>
@@ -523,15 +607,23 @@
       {#if comp}
         <section class="editor">
           <div class="bar-row sheet-head">
-            <input
-              class="name"
-              bind:value={comp.name}
-              maxlength="40"
-              title="Name the piece — the log will announce it by this."
-            />
-            <label title={scalesUnlocked(level) ? 'Which notes the staff offers' : `Other scales need Musicianship ${MUSIC_UNLOCKS.scales}`}>
-              Scale
+            <input class="name" aria-label="Piece name" bind:value={comp.name} maxlength="40" />
+            <!-- Each field's name is the card target (a tap on a label would only
+                 focus its control), and the control carries its own aria-label. -->
+            <div class="field">
+              <Tip>
+                Scale
+                {#snippet tip()}
+                  <div class="tip-line">
+                    {scalesUnlocked(level)
+                      ? 'Which notes the staff offers.'
+                      : `Other scales need Musicianship ${MUSIC_UNLOCKS.scales}.`}
+                    {MUSIC_SCALES[comp.scale]?.desc ?? ''}
+                  </div>
+                {/snippet}
+              </Tip>
               <select
+                aria-label="Scale"
                 value={comp.scale}
                 disabled={!scalesUnlocked(level)}
                 onchange={(ev) => setScale(gs, comp, (ev.target as HTMLSelectElement).value)}
@@ -540,10 +632,19 @@
                   <option value={s.id} title={s.desc}>{s.name}</option>
                 {/each}
               </select>
-            </label>
-            <label title="The time signature: how long a bar is and where its beats fall. It does not change the tempo.">
-              Meter
+            </div>
+            <div class="field">
+              <Tip>
+                Meter
+                {#snippet tip()}
+                  <div class="tip-line">
+                    The time signature: how long a bar is and where its beats fall. It does not change the
+                    tempo. {MUSIC_METERS[comp.meter]?.desc ?? ''}
+                  </div>
+                {/snippet}
+              </Tip>
               <select
+                aria-label="Meter"
                 value={comp.meter}
                 onchange={(ev) => {
                   const el = ev.target as HTMLSelectElement;
@@ -556,10 +657,20 @@
                   </option>
                 {/each}
               </select>
-            </label>
-            <label title={tuningUnlocked(level) ? 'Where the tonic sits' : `Tuning needs Musicianship ${MUSIC_UNLOCKS.tuning}`}>
-              Tonic
+            </div>
+            <div class="field">
+              <Tip>
+                Tonic
+                {#snippet tip()}
+                  <div class="tip-line">
+                    {tuningUnlocked(level)
+                      ? 'Where the tonic sits.'
+                      : `Tuning needs Musicianship ${MUSIC_UNLOCKS.tuning}.`}
+                  </div>
+                {/snippet}
+              </Tip>
               <select
+                aria-label="Tonic"
                 value={comp.tonic}
                 disabled={!tuningUnlocked(level)}
                 onchange={(ev) => setTonic(gs, comp, Number((ev.target as HTMLSelectElement).value))}
@@ -568,15 +679,20 @@
                   <option value={i}>{n}</option>
                 {/each}
               </select>
-            </label>
-            <label
-              class="tempo"
-              title={tempoUnlocked(level)
-                ? 'Beats per minute, as a score writes it: ♩ = this. Meter-independent, and the reading hears it.'
-                : `Tempo needs Musicianship ${MUSIC_UNLOCKS.tempo}`}
-            >
-              ♩=
+            </div>
+            <div class="field tempo">
+              <Tip>
+                ♩=
+                {#snippet tip()}
+                  <div class="tip-line">
+                    {tempoUnlocked(level)
+                      ? 'Beats per minute, as a score writes it: ♩ = this. Meter-independent, and the reading hears it.'
+                      : `Tempo needs Musicianship ${MUSIC_UNLOCKS.tempo}.`}
+                  </div>
+                {/snippet}
+              </Tip>
               <input
+                aria-label="Tempo in beats per minute"
                 type="number"
                 min={MIN_BPM}
                 max={MAX_BPM}
@@ -589,15 +705,20 @@
                   el.value = String(tempoOf(comp));
                 }}
               />
-            </label>
-            <label
-              class="tempo"
-              title={pedalUnlocked(level)
-                ? 'A pedal tone: one pitch held under the whole piece. It pulls the key toward itself and is what the Harmony measure compares the melody against.'
-                : `A pedal tone needs Musicianship ${MUSIC_UNLOCKS.pedal}`}
-            >
-              Pedal
+            </div>
+            <div class="field tempo">
+              <Tip>
+                Pedal
+                {#snippet tip()}
+                  <div class="tip-line">
+                    {pedalUnlocked(level)
+                      ? 'A pedal tone: one pitch held under the whole piece. It pulls the key toward itself and is what the Harmony measure compares the melody against.'
+                      : `A pedal tone needs Musicianship ${MUSIC_UNLOCKS.pedal}.`}
+                  </div>
+                {/snippet}
+              </Tip>
               <select
+                aria-label="Pedal tone"
                 value={pedalOf(comp) === null ? '' : String(pedalOf(comp))}
                 disabled={!pedalUnlocked(level)}
                 onchange={(ev) => {
@@ -610,28 +731,35 @@
                   <option value={String(p)}>{rowLabel(p)}</option>
                 {/each}
               </select>
-            </label>
+            </div>
             <div class="bars-ctl">
-              Bars
+              <Tip>
+                Bars
+                {#snippet tip()}
+                  <div class="tip-line">
+                    − drops the last bar; its notes go with it. ＋ adds a coda bar, up to {maxBars(level)} at
+                    Musicianship {level}. A coda is read separately: it either reprises the theme (more
+                    power) or shifts the archetype toward another one.
+                  </div>
+                {/snippet}
+              </Tip>
               <button
+                aria-label="Drop the last bar"
                 disabled={comp.bars.length <= BASE_BARS}
-                onclick={() => setBarCount(gs, comp, comp.bars.length - 1)}
-                title="Drop the last bar (its notes go with it)">−</button>
+                onclick={() => setBarCount(gs, comp, comp.bars.length - 1)}>−</button>
               <b>{comp.bars.length}</b>
               <button
+                aria-label="Add a coda bar"
                 disabled={comp.bars.length >= maxBars(level)}
-                onclick={() => setBarCount(gs, comp, comp.bars.length + 1)}
-                title={comp.bars.length >= maxBars(level)
-                  ? `More bars come with Musicianship (${maxBars(level)} for now)`
-                  : 'Add a coda bar. It is read separately: it either reprises the theme (more power) or shifts the archetype toward another one'}>＋</button>
+                onclick={() => setBarCount(gs, comp, comp.bars.length + 1)}>＋</button>
             </div>
             <button
               class="danger"
+              aria-label="Delete this sheet"
               onclick={() => {
                 game.deleteComposition(comp.id);
                 selectedId = gs.compositions[0]?.id ?? null;
-              }}
-              title="Delete this sheet">🗑</button>
+              }}>🗑</button>
           </div>
 
           <div class="palette">
@@ -639,69 +767,111 @@
               {@const def = NOTE_DURATIONS[id]}
               {@const locked = def.unlockLevel > level}
               {@const oversized = !locked && def.units > capacity}
-              <button
-                class="dur"
-                class:selected={durId === id && !locked}
-                disabled={locked || oversized}
-                onclick={() => (durId = id)}
-                onpointerdown={(ev) => {
-                  durId = id;
-                  beginPress(ev, 'new');
-                }}
-                title={durTitle(id)}
-              >
-                <svg viewBox="0 0 20 34" width="20" height="34" aria-hidden="true">
-                  {#if def.stem}<line x1="14.5" y1="4" x2="14.5" y2="24" />{/if}
-                  {#each Array.from({ length: def.flags }) as _, f (f)}
-                    <path d={`M14.5 ${4 + f * 5} q6 3 4 9`} class="flag" />
-                  {/each}
-                  <ellipse
-                    cx="10"
-                    cy="26"
-                    rx="5.2"
-                    ry="3.8"
-                    class:open={def.head === 'open'}
-                    transform="rotate(-20 10 26)"
-                  />
-                  {#if def.dot}<circle cx="17.5" cy="24" r="1.6" class="dotmark" />{/if}
-                  {#if def.tuplet}<text x="2" y="10">{def.tuplet}</text>{/if}
-                </svg>
-                <span>{locked ? `🔒${def.unlockLevel}` : def.name}</span>
-              </button>
+              <Tip block>
+                <button
+                  class="dur"
+                  class:selected={durId === id && !locked}
+                  disabled={locked || oversized}
+                  onclick={() => (durId = id)}
+                  onpointerdown={(ev) => {
+                    durId = id;
+                    beginPress(ev, 'new');
+                  }}
+                >
+                  <svg viewBox="0 0 20 34" width="20" height="34" aria-hidden="true">
+                    {#if def.stem}<line x1="14.5" y1="4" x2="14.5" y2="24" />{/if}
+                    {#each Array.from({ length: def.flags }) as _, f (f)}
+                      <path d={`M14.5 ${4 + f * 5} q6 3 4 9`} class="flag" />
+                    {/each}
+                    <ellipse
+                      cx="10"
+                      cy="26"
+                      rx="5.2"
+                      ry="3.8"
+                      class:open={def.head === 'open'}
+                      transform="rotate(-20 10 26)"
+                    />
+                    {#if def.dot}<circle cx="17.5" cy="24" r="1.6" class="dotmark" />{/if}
+                    {#if def.tuplet}<text x="2" y="10">{def.tuplet}</text>{/if}
+                  </svg>
+                  <span>{locked ? `🔒${def.unlockLevel}` : def.name}</span>
+                </button>
+                {#snippet tip()}<div class="tip-line">{durTitle(id)}</div>{/snippet}
+              </Tip>
             {/each}
-            <button
-              class="dur rest-toggle"
-              class:selected={resting}
-              onclick={() => (resting = !resting)}
-              title="Place silence instead of sound — rests fill bars too"
-            >
-              <span class="rest-glyph">𝄽</span>
-              <span>Rest</span>
-            </button>
-            <button
-              class="dur acc"
-              class:selected={accidental !== 0}
-              onclick={() => (accidental = accidental === 0 ? 1 : accidental === 1 ? -1 : 0)}
-              title="Accidental for the next note: sharpen it, flatten it, or leave it in key. This is how you write pitches the scale does not name — a tritone, a blue note."
-            >
-              <span class="rest-glyph">{accidental === 1 ? '♯' : accidental === -1 ? '♭' : '♮'}</span>
-              <span>{accidental === 1 ? 'Sharp' : accidental === -1 ? 'Flat' : 'In key'}</span>
-            </button>
+            <Tip block>
+              <button class="dur rest-toggle" class:selected={resting} onclick={() => (resting = !resting)}>
+                <span class="rest-glyph">𝄽</span>
+                <span>Rest</span>
+              </button>
+              {#snippet tip()}
+                <div class="tip-line">Place silence instead of sound. Rests fill bars too.</div>
+              {/snippet}
+            </Tip>
+            <Tip block>
+              <button
+                class="dur acc"
+                class:selected={accidental !== 0}
+                onclick={() => (accidental = accidental === 0 ? 1 : accidental === 1 ? -1 : 0)}
+              >
+                <span class="rest-glyph">{accidental === 1 ? '♯' : accidental === -1 ? '♭' : '♮'}</span>
+                <span>{accidental === 1 ? 'Sharp' : accidental === -1 ? 'Flat' : 'In key'}</span>
+              </button>
+              {#snippet tip()}
+                <div class="tip-line">
+                  Accidental for the next note: sharpen it, flatten it, or leave it in key. This is how
+                  you write pitches the scale does not name: a tritone, a blue note.
+                </div>
+              {/snippet}
+            </Tip>
+            <Tip block>
+              <button class="dur tool" class:selected={tool !== 'remove'} onclick={nextTool}>
+                <span class="rest-glyph">{TOOL_GLYPHS[tool]}</span>
+                <span>Tap note: {TOOL_NAMES[tool]}</span>
+              </button>
+              {#snippet tip()}
+                <div class="tip-line">
+                  What a tap or click on a written note does: remove it, split it in half{tiesUnlocked(level)
+                    ? ', or tie it into the next note of the same pitch'
+                    : ''}. Right-click splits and Shift-click ties, whatever this says.
+                </div>
+              {/snippet}
+            </Tip>
           </div>
+
+          <!-- Touch entry (see "Touch entry" above). Drawn on a coarse pointer, with its
+               height reserved whether or not a cursor is set. -->
+          {#if touchSeen}
+            <div class="pitch-entry">
+              {#if cursor}
+                <span class="pitch-at">Bar {cursor.bar + 1} · <b>{resting ? 'rest' : rowLabel(cursor.pitch)}</b></span>
+                <button aria-label="Pitch down" disabled={resting} onclick={() => stepCursor(-1)}>▼</button>
+                <button aria-label="Pitch up" disabled={resting} onclick={() => stepCursor(1)}>▲</button>
+                <button class="perform" onclick={placeCursor}>Place {resting ? 'rest' : 'note'}</button>
+                <button onclick={() => (cursor = null)}>Cancel</button>
+              {:else}
+                <span class="dim small">Tap a staff line to choose a pitch, then Place.</span>
+              {/if}
+            </div>
+          {/if}
 
           {#if lastRefusal}
             <div class="refusal">⚠️ {lastRefusal}</div>
           {:else}
             <div class="howto">
-              Click a staff line to place the selected duration — or drag it in from the palette.
-              Drag placed notes to re-pitch, reorder, or move them between bars; drop one on its
-              neighbour to merge them; right-click splits a note (or rest) in half; click removes.
-              {#if tiesUnlocked(level)}
-                <b>Shift-click</b> ties a note into the next of the same pitch.
-              {/if}
+              Staff: click or tap a line to place the selected duration. A tap sets a pitch cursor;
+              ▲ ▼ move it and Place writes the note. Dragging a duration in from the palette also places it.
+              Notes: a tap or click does what Tap note says. Drag a placed note to re-pitch it, reorder it
+              or move it between bars; drop it on its neighbour to merge them.
+              ▶ hears a bar, ▶▶ hears from that bar to the end; Listen plays the whole sheet with no
+              stage and no XP.
               {#if repeatsUnlocked(level)}
-                ↻ marks a repeat: click the first bar, then the last.
+                ↻ marks a repeat: use it on the first bar, then on the last. Each replay pays less power
+                than the last.
+              {:else}
+                Repeat marks need Musicianship {MUSIC_UNLOCKS.repeats}.
               {/if}
+              The piece's name is what the log announces.
             </div>
           {/if}
 
@@ -723,24 +893,24 @@
                     class="hear"
                     disabled={!!performing || bar.length === 0}
                     onclick={() => startAudition([bar])}
-                    title="Hear this bar alone">▶</button>
+                    aria-label="Hear this bar alone">▶</button>
                   <button
                     class="hear"
                     disabled={!!performing}
                     onclick={() => listenFrom(bi)}
-                    title="Hear from this bar to the end">▶▶</button>
+                    aria-label="Hear from this bar to the end">▶▶</button>
                   <button
                     class="hear rep"
                     class:on={!!rspan}
                     class:anchored={repeatAnchor === bi}
                     disabled={!repeatsUnlocked(level)}
                     onclick={() => repeatClick(bi)}
-                    title={!repeatsUnlocked(level)
+                    aria-label={!repeatsUnlocked(level)
                       ? `Repeat marks need Musicianship ${MUSIC_UNLOCKS.repeats}`
                       : rspan
                         ? 'Remove this repeat'
                         : repeatAnchor === null
-                          ? 'Start a repeat here — then click the bar it ends on'
+                          ? 'Start a repeat here, then pick the bar it ends on'
                           : `Close the repeat from bar ${repeatAnchor + 1}`}>↻</button>
                   {#if rspan && rspan.span.from === bi}
                     <span class="times">
@@ -748,23 +918,26 @@
                         class="hear"
                         disabled={rspan.span.times <= 2}
                         onclick={() => setRepeatTimes(comp, rspan.index, rspan.span.times - 1)}
-                        title="One fewer pass">−</button>
+                        aria-label="One fewer pass">−</button>
                       ×{rspan.span.times}
                       <button
                         class="hear"
                         onclick={() => setRepeatTimes(comp, rspan.index, rspan.span.times + 1)}
-                        title="One more pass — each replay pays less power than the last">+</button>
+                        aria-label="One more pass">+</button>
                     </span>
                   {/if}
                   {#if bar.length > 0}
-                    <button class="clear" onclick={() => bar.splice(0)} title="Clear this bar">✕</button>
+                    <button class="clear" onclick={() => bar.splice(0)} aria-label="Clear this bar">✕</button>
                   {/if}
                 </div>
+                <!-- Drawn at its own size where there is room and scaled down to the
+                     column where there is not (`max-width`, `width: 100%`). -->
                 <svg
                   viewBox="0 0 {W} {H}"
                   width={W}
                   height={H}
                   class="staff"
+                  style="max-width: {W}px"
                   bind:this={staffEls[bi]}
                 >
                   <!-- The five lines, and middle C's ledger line. -->
@@ -827,7 +1000,7 @@
                         onclick={() => place(bi, pitch)}
                         onkeydown={(ev) => { if (ev.key === 'Enter') place(bi, pitch); }}
                       />
-                      <text class="lane-name" x="4" y={yOf(pitch) + 3}>{rowLabel(pitch)}</text>
+                      <text class="lane-name" class:on={cursor?.bar === bi && cursor.pitch === pitch} x="4" y={yOf(pitch) + 3}>{rowLabel(pitch)}</text>
                     </g>
                   {/each}
 
@@ -842,13 +1015,13 @@
                         class:mergetarget={drag.active && hint.bar === bi && hint.mergeWith === i}
                         role="button"
                         tabindex="-1"
-                        aria-label={`Remove the rest at position ${i + 1} of bar ${bi + 1}`}
+                        aria-label={`${TOOL_NAMES[tool]} the rest at position ${i + 1} of bar ${bi + 1}`}
                         onclick={(ev) => { ev.stopPropagation(); erase(bi, i); }}
                         onkeydown={(ev) => { if (ev.key === 'Enter') erase(bi, i); }}
                         onpointerdown={(ev) => { ev.stopPropagation(); beginPress(ev, 'move', bi, i); }}
-                        oncontextmenu={(ev) => { ev.preventDefault(); split(bi, i); }}
+                        oncontextmenu={(ev) => { ev.preventDefault(); if (lastPointer !== 'touch') split(bi, i); }}
                       >
-                        <rect class="hit" x={x - 7} y={Y0 - 9 * HALF} width="16" height={8 * HALF} />
+                        <rect class="hit" x={x + 1 - restHitW / 2} y={Y0 - 9 * HALF} width={restHitW} height={8 * HALF} />
                         {#if def.id === 'whole'}
                           <rect class="restblock" x={x - 5} y={Y0 - 8 * HALF} width="11" height="4" />
                         {:else if def.units >= 120}
@@ -873,13 +1046,13 @@
                         class:mergetarget={drag.active && hint.bar === bi && hint.mergeWith === i}
                         role="button"
                         tabindex="-1"
-                        aria-label={`Remove the note at position ${i + 1} of bar ${bi + 1}`}
+                        aria-label={`${TOOL_NAMES[tool]} the note at position ${i + 1} of bar ${bi + 1}`}
                         onclick={(ev) => { ev.stopPropagation(); erase(bi, i, ev.shiftKey); }}
                         onkeydown={(ev) => { if (ev.key === 'Enter') erase(bi, i); }}
                         onpointerdown={(ev) => { ev.stopPropagation(); beginPress(ev, 'move', bi, i); }}
-                        oncontextmenu={(ev) => { ev.preventDefault(); split(bi, i); }}
+                        oncontextmenu={(ev) => { ev.preventDefault(); if (lastPointer !== 'touch') split(bi, i); }}
                       >
-                        <rect class="hit" x={x - 9} y={y - 14} width="20" height="28" />
+                        <rect class="hit" x={x + 1 - noteHitW / 2} y={y - noteHitH / 2} width={noteHitW} height={noteHitH} />
                         {#if e.tie}
                           {@const endX = at + def.units < capacity ? noteX(at + def.units) : W - 8}
                           <path
@@ -916,6 +1089,18 @@
                     <line class="cursor" x1={noteX(used) - 8} y1={Y0 - 11 * HALF} x2={noteX(used) - 8} y2={Y0 + HALF} />
                   {/if}
 
+                  <!-- The touch cursor: the chosen row, and the note Place would write at the head. -->
+                  {#if cursor && cursor.bar === bi}
+                    <line class="cursorrow" x1="4" y1={yOf(cursor.pitch)} x2={W - 4} y2={yOf(cursor.pitch)} />
+                    <ellipse
+                      class="ghost"
+                      cx={noteX(used)}
+                      cy={resting ? Y0 - 6 * HALF : yOf(cursor.pitch)}
+                      rx="5.4"
+                      ry="4"
+                    />
+                  {/if}
+
                   <!-- The drag's shadow: where a drop would land, or whom it would merge into. -->
                   {#if drag.active && hint.bar === bi && hint.mergeWith === -1}
                     <line
@@ -941,27 +1126,10 @@
           <section class="reading">
             <div class="bar-row">
               <h3>The reading</h3>
-              <button
-                disabled={!!performing}
-                onclick={toggleListen}
-                title={performing
-                  ? 'The stage is already sounding'
-                  : listening
-                    ? 'Stop the audition'
-                    : 'Hear the sheet as written — no stage, no XP, just your ears'}
-              >
+              <button disabled={!!performing} onclick={toggleListen}>
                 {listening ? '⏹ Stop' : '🔉 Listen'}
               </button>
-              <button
-                class="perform"
-                disabled={problems.length > 0 || !!performing}
-                title={performing
-                  ? 'Already mid-set'
-                  : problems.length > 0
-                    ? problems[0]
-                    : `${performanceTicks(comp) / 10}s on the stage`}
-                onclick={perform}
-              >
+              <button class="perform" disabled={problems.length > 0 || !!performing} onclick={perform}>
                 ▶ Perform ({performanceTicks(comp) / 10}s)
               </button>
             </div>
@@ -1009,28 +1177,61 @@
                   {reading.themeAnalysis.density.toFixed(1)} notes/bar ·
                   {pct(reading.themeAnalysis.restRatio)} rest
                 </dd>
-                <dt>Motif</dt>
-                <dd title="Self-similarity: how much the melody restates its own figures.">
-                  {pct(reading.themeAnalysis.motif)}
-                </dd>
-                <dt>Harmony</dt>
-                <dd title="Vertical consonance: how the melody sits against the pedal tone. Shown as — when there is no pedal tone.">
+                <dt>
+                  <Tip>
+                    Motif
+                    {#snippet tip()}
+                      <div class="tip-line">Self-similarity: how much the melody restates its own figures.</div>
+                    {/snippet}
+                  </Tip>
+                </dt>
+                <dd>{pct(reading.themeAnalysis.motif)}</dd>
+                <dt>
+                  <Tip>
+                    Harmony
+                    {#snippet tip()}
+                      <div class="tip-line">
+                        Vertical consonance: how the melody sits against the pedal tone. Shown as — when
+                        there is no pedal tone.
+                      </div>
+                    {/snippet}
+                  </Tip>
+                </dt>
+                <dd>
                   {reading.themeAnalysis.pedal === null
                     ? '—'
                     : `${pct(reading.themeAnalysis.harmony)} over ${rowLabel(reading.themeAnalysis.pedal)}`}
                 </dd>
-                <dt>Pace</dt>
-                <dd title="The tempo as the reading measures it. The same notes can read as a dirge or as a reel depending only on this.">
-                  ♩={reading.themeAnalysis.bpm}
-                </dd>
-                <dt>Cadence</dt>
-                <dd title="How the last notes resolve against the key.">
-                  {reading.themeAnalysis.cadence} — {CADENCE_WORDS[reading.themeAnalysis.cadence]}
-                </dd>
-                <dt>Power</dt>
-                <dd title="The magnitude music effects will use. Effects are not active yet.">
-                  {reading.power}
-                </dd>
+                <dt>
+                  <Tip>
+                    Pace
+                    {#snippet tip()}
+                      <div class="tip-line">
+                        The tempo as the reading measures it. The same notes can read as a dirge or as a
+                        reel depending only on this.
+                      </div>
+                    {/snippet}
+                  </Tip>
+                </dt>
+                <dd>♩={reading.themeAnalysis.bpm}</dd>
+                <dt>
+                  <Tip>
+                    Cadence
+                    {#snippet tip()}
+                      <div class="tip-line">How the last notes resolve against the key.</div>
+                    {/snippet}
+                  </Tip>
+                </dt>
+                <dd>{reading.themeAnalysis.cadence} — {CADENCE_WORDS[reading.themeAnalysis.cadence]}</dd>
+                <dt>
+                  <Tip>
+                    Power
+                    {#snippet tip()}
+                      <div class="tip-line">The magnitude music effects will use. Effects are not active yet.</div>
+                    {/snippet}
+                  </Tip>
+                </dt>
+                <dd>{reading.power}</dd>
               </dl>
               {#if reading.ranked.length > 1}
                 <div class="alsoheard">
@@ -1069,7 +1270,7 @@
   }
 
   header > div {
-    flex: 1;
+    flex: 1 1 200px;
     display: flex;
     align-items: baseline;
     gap: 8px;
@@ -1082,6 +1283,11 @@
     border-radius: 999px;
     border: 1px solid var(--border);
     color: var(--accent);
+    white-space: nowrap;
+  }
+
+  header h2 {
+    white-space: nowrap;
   }
 
   .chip.dim {
@@ -1166,7 +1372,7 @@
     font-weight: 600;
   }
 
-  .sheet-head label {
+  .sheet-head .field {
     display: flex;
     align-items: center;
     gap: 5px;
@@ -1271,6 +1477,28 @@
     user-select: none;
   }
 
+  /* A measure is as wide as its staff, and no wider than the column: the staff scales down. */
+  .measure {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* The touch entry row: its height is reserved with or without a cursor. */
+  .pitch-entry {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-height: 56px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .pitch-at {
+    margin-right: auto;
+  }
+
   .bar-label {
     display: flex;
     align-items: baseline;
@@ -1357,10 +1585,17 @@
 
   .staff {
     display: block;
+    width: 100%;
+    height: auto;
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: 6px;
-    /* Pointer-dragging owns the gesture — no scroll hijack mid-drag on touch. */
+    /* The staff scrolls the page under a finger. Only a written note takes the
+       gesture (below), so a drag that starts on one moves it. */
+    touch-action: pan-x pan-y;
+  }
+
+  .event {
     touch-action: none;
   }
 
@@ -1426,8 +1661,17 @@
     pointer-events: none;
   }
 
-  .lane:hover .lane-name {
+  .lane:hover .lane-name,
+  .lane-name.on {
     opacity: 1;
+  }
+
+  /* The touch cursor's row. */
+  .cursorrow {
+    stroke: var(--accent);
+    stroke-width: 1.2;
+    opacity: 0.6;
+    pointer-events: none;
   }
 
   .event {
@@ -1616,8 +1860,87 @@
 
   .alsoheard {
     display: flex;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 2px 12px;
     font-size: 12px;
     color: var(--text-dim);
+  }
+
+  /* Narrow: the piece list is a row of chips above the editor instead of a column beside it. */
+  @container tab (max-width: 640px) {
+    .body {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .list {
+      width: auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .piece {
+      flex: 1 1 140px;
+    }
+
+    .measures {
+      grid-template-columns: auto 1fr;
+    }
+
+    /* Fifteen buttons in three even rows, not five ragged ones. */
+    .palette {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
+    }
+
+    .palette > :global(.tip-target) {
+      display: flex;
+    }
+
+    .dur {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: center;
+    }
+  }
+
+  /* A finger: the small bar buttons, the name and the tempo are 44px in both directions. */
+  @media (pointer: coarse) {
+    .hear,
+    .clear,
+    .dur,
+    .field select,
+    .bars-ctl button,
+    .pitch-entry button,
+    button.danger {
+      min-width: 44px;
+    }
+
+    .bar-label {
+      align-items: center;
+    }
+
+    .sheet-head .name,
+    .tempo input {
+      min-height: 44px;
+    }
+
+    /* The card targets among the plain text: field names, "Bars" and the reading's labels. */
+    .field :global(.tip-target),
+    .bars-ctl :global(.tip-target),
+    .measures dt :global(.tip-target) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      border-bottom: none;
+      text-decoration: underline dotted color-mix(in srgb, var(--text-dim) 60%, transparent);
+      text-underline-offset: 3px;
+    }
+
+    .measures dt :global(.tip-target) {
+      justify-content: flex-start;
+    }
   }
 </style>
