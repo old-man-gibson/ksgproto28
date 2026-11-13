@@ -4,6 +4,7 @@ import { conditionsMet } from './conditions';
 import { boonRank } from './legacy';
 import { festivalLocked } from './festivalRules';
 import { WARD_WINDOWS } from '../data/wards.data';
+import { text } from '../text/log';
 
 /**
  * The ladder's reads: which rungs are cleared, open, gated or sealed, where
@@ -80,6 +81,15 @@ export function topRung(towerId: string): FloorDef | undefined {
 export function ladderEnded(state: GameState, towerId: string): boolean {
   const top = topRung(towerId);
   return !!top && floorCleared(state, top);
+}
+
+/**
+ * The notice for a tower whose top rung is `top` and cleared: the floor past it
+ * is not built. The one place the line is made: the tower list, the log at the
+ * clear and the welcome-back report (save/offline.ts) all print this.
+ */
+export function endNotice(top: FloorDef): string {
+  return text('towers.end', { floor: top.index + 1 });
 }
 
 function bandIndexOf(floor: FloorDef): number {

@@ -1,11 +1,14 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import LogFeed from './LogFeed.svelte';
   import { viewport } from './lib/viewport.svelte';
+  import { LAYER, pushOverlay, windowOpen } from './lib/overlays';
 
   /**
    * The folded log's full view: a panel from the right edge, below the header,
    * over the main column. Not a modal: the game keeps running and keys keep
-   * working. Escape, the Log button (LogTicker.svelte) or a click outside
+   * working. Escape, the Android back button (through lib/overlays.ts, when no
+   * window is above it), the Log button (LogTicker.svelte) or a click outside
    * closes it. `ondock` puts the log back in its column for good.
    *
    * Its z-index stays under the windows (Modal 20, offline report 10; the map
@@ -34,31 +37,22 @@
 
   $effect(place);
 
-  /**
-   * A window is up: a Modal, or the defeat, offline, prestige, dare or evolve
-   * window. It owns Escape and the presses around it. The map card carries
-   * role="dialog" too but only hovers, so it does not count.
-   */
-  function windowUp(): boolean {
-    return document.querySelector('[role="dialog"]:not(.map-card)') !== null;
-  }
-
-  function onKeydown(ev: KeyboardEvent) {
-    if (ev.key !== 'Escape' || windowUp()) return;
-    onclose();
-  }
+  // Escape and back close the topmost overlay: this one only when no window
+  // (a Modal, the fight summary, the report, a hold-play window) is above it.
+  onMount(() => pushOverlay(LAYER.drawer, () => onclose()));
 
   function onPointerDown(ev: PointerEvent) {
     const target = ev.target as Element | null;
     if (!target || drawer.contains(target)) return;
     // The Log button toggles the drawer itself.
     if (target.closest('[data-log-toggle]')) return;
-    if (windowUp()) return;
+    // A window is up: it owns the presses around it.
+    if (windowOpen()) return;
     onclose();
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} onpointerdown={onPointerDown} onscroll={place} onresize={place} />
+<svelte:window onpointerdown={onPointerDown} onscroll={place} onresize={place} />
 
 <aside
   class="log-drawer"

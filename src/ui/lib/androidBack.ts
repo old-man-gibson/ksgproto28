@@ -1,36 +1,45 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { closeTopOverlay } from './overlays';
 
 /**
- * The Android back button (docs/ANDROID.md). Every window, drawer, menu and
- * picker already closes on Escape, each with its own listener on `window`
- * (lib/Modal.svelte, LogDrawer.svelte, MapCard.svelte, lib/TagPicker.svelte),
- * so one back press sends the same keydown and no overlay state is added here.
- * The newest window closes first (Modal keeps a stack). A window that ignores
- * Escape on purpose (the dare, evolve and prestige windows, which hold play
- * until answered) ignores back too.
+ * The Android app's hardware back button and its app lifecycle (docs/ANDROID.md).
  *
- * With nothing open the app goes to the background, as Home does. It never
- * exits: the idle loop would stop, and the time away is caught up on return.
+ * Back closes exactly one overlay, the topmost (lib/overlays.ts: the same stack
+ * Escape reads). With nothing open it writes the save and moves the app to the
+ * background, as Home does. It never exits: the idle loop would stop. A window
+ * that holds play until answered takes the press and does nothing.
+ *
+ * `blocked` is true while the boot catch-up has not run (ui.catchingUp): back
+ * is ignored then, and nothing is saved, since a save there would overwrite
+ * `lastSaved` and lose the time away that catch-up is about to credit.
+ *
+ * Android may kill a backgrounded app without a word, so the `pause` event also
+ * writes the save.
  */
-
-/**
- * Overlays the Escape listeners above close: any `role="dialog"` (windows and
- * the map card), the folded log's drawer, and a tag picker's open list. A new
- * overlay that listens for Escape belongs here too, or back also minimizes
- * while closing it.
- */
-const OVERLAY = '[role="dialog"], .log-drawer, .picker [aria-expanded="true"]';
-
-/** One back press. `minimize` runs only when nothing was open to close. */
-export function pressBack(doc: Document, win: Window, minimize: () => void): void {
-  const open = doc.querySelector(OVERLAY) !== null;
-  win.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
-  if (!open) minimize();
+export interface BackHooks {
+  /** True while a back press must do nothing at all. */
+  blocked: () => boolean;
+  /** Write the save now. Called before the app is minimized and on `pause`. */
+  save: () => void;
+  /** Move the app to the background. */
+  minimize: () => void;
 }
 
-/** Listen for the back button. Does nothing outside the Android app. */
-export function installAndroidBack(): void {
+/** One back press. */
+export function pressBack(hooks: BackHooks): void {
+  if (hooks.blocked()) return;
+  if (closeTopOverlay()) return;
+  hooks.save();
+  hooks.minimize();
+}
+
+/** Listen for the back button and `pause`. Does nothing outside the Android app. */
+export function installAndroidBack(hooks: Pick<BackHooks, 'blocked' | 'save'>): void {
   if (!Capacitor.isNativePlatform()) return;
-  void App.addListener('backButton', () => pressBack(document, window, () => void App.minimizeApp()));
+  const minimize = () => void App.minimizeApp();
+  void App.addListener('backButton', () => pressBack({ ...hooks, minimize }));
+  void App.addListener('pause', () => {
+    if (!hooks.blocked()) hooks.save();
+  });
 }

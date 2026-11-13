@@ -1,17 +1,15 @@
-<script module lang="ts">
-  /** Windows open now, oldest first. Escape closes only the newest, so a window opened from another (the Cook's Book from a bench) closes alone. */
-  const open: symbol[] = [];
-</script>
-
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
   import { viewport } from './viewport.svelte';
+  import { LAYER, pushOverlay } from './overlays';
 
   // Small floating window for inspecting one thing. Clicking the backdrop —
-  // anywhere outside the window — or pressing Escape closes it. Below 700px
-  // (the phone layout, docs/PHONE.md) it is a sheet over the whole screen: the
-  // header, with a 44px close button, stays at the top inside the safe area,
-  // and the body scrolls under it.
+  // anywhere outside the window — or pressing Escape (or the Android back
+  // button) closes it. With several open only the topmost closes (lib/overlays.ts),
+  // so a window opened from another (the Cook's Book from a bench) closes alone.
+  // Below 700px (the phone layout, docs/PHONE.md) it is a sheet over the whole
+  // screen: the header, with a 44px close button, stays at the top inside the
+  // safe area, and the body scrolls under it.
   let {
     title,
     onclose,
@@ -26,17 +24,8 @@
     fill = false,
   }: { title: Snippet; onclose: () => void; children: Snippet; wide?: boolean; fill?: boolean } = $props();
 
-  const me = Symbol('modal');
-  onMount(() => {
-    open.push(me);
-    return () => {
-      const at = open.indexOf(me);
-      if (at >= 0) open.splice(at, 1);
-    };
-  });
+  onMount(() => pushOverlay(LAYER.window, () => onclose()));
 </script>
-
-<svelte:window onkeydown={(e) => e.key === 'Escape' && open[open.length - 1] === me && onclose()} />
 
 <div class="overlay" class:sheet={viewport.phone} role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div class="window panel" class:wide class:fill class:sheet={viewport.phone} role="dialog" aria-modal="true">

@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { FightLedger } from '../core/types';
   import { TPS } from '../core/engine/loop';
+  import { onMount } from 'svelte';
   import { fmt } from './lib/format';
+  import { LAYER, pushOverlay } from './lib/overlays';
 
   let {
     ledger,
@@ -14,6 +16,10 @@
     onkeep?: () => void;
     kept?: boolean;
   } = $props();
+
+  // Escape and the Android back button close it (lib/overlays.ts), above the
+  // welcome-back report and level with a Modal.
+  onMount(() => pushOverlay(LAYER.window, () => onclose()));
 
   /** The play-by-play is opt-in: the numbers are the point, this is the detail. */
   let showTranscript = $state(false);
@@ -56,10 +62,6 @@
     return s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${s.toFixed(1)}s`;
   }
 </script>
-
-<!-- Escape (and the Android back button) closes it. Not while a window with aria-modal is open
-     (a Modal, or one that holds play): that one takes the key. -->
-<svelte:window onkeydown={(e) => e.key === 'Escape' && !document.querySelector('[aria-modal="true"]') && onclose()} />
 
 <div class="overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
   <div class="modal panel" role="dialog" aria-label="Fight summary">

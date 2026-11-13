@@ -49,6 +49,7 @@ import './themes/survey.css';
 import './themes/sandstone.css';
 import App from './ui/App.svelte';
 import { installAndroidBack } from './ui/lib/androidBack';
+import { installSaveTriggers } from './ui/lib/saveTriggers';
 import { applyTheme, loadTheme } from './ui/lib/theme';
 import { boot, catchUp, game, save, timeAway, ui } from './ui/state.svelte';
 import { TickAccumulator } from './core/engine/loop';
@@ -116,7 +117,16 @@ function startPump() {
   setInterval(pump, 1000);
 }
 
-window.addEventListener('beforeunload', () => save());
+// Saves on the events that may be a page's last (lib/saveTriggers.ts), and
+// before the Android back button minimizes the app. Not before the boot
+// catch-up has run: a save then would erase the time away it is about to credit.
+const saveNow = installSaveTriggers({
+  save,
+  blocked: () => ui.catchingUp !== null,
+  saved: () => {
+    lastSave = performance.now();
+  },
+});
 
 // Mount FIRST, catch up SECOND. The boot catch-up is synchronous and, on a
 // mature save, can block for minutes — running it before mount left the tab
@@ -130,8 +140,9 @@ if (away >= OFFLINE_MIN_MS && !game.state.paused) ui.catchingUp = away;
 // pick, else Gothic. Applying stores nothing (ui/lib/theme.ts).
 applyTheme(loadTheme());
 mount(App, { target: document.getElementById('app')! });
-// The Android app's back button closes the open window or drawer (no-op elsewhere).
-installAndroidBack();
+// The Android app's back button (closes the topmost window or drawer, else saves
+// and minimizes) and its pause event (saves). No-op outside the Android app.
+installAndroidBack({ blocked: () => ui.catchingUp !== null, save: saveNow });
 if (ui.catchingUp !== null) {
   requestAnimationFrame(() =>
     setTimeout(() => {

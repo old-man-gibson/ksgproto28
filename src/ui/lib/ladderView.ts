@@ -8,6 +8,7 @@ import {
   floorCleared,
   floorReached,
   hubStatus,
+  endNotice,
   ladderEnded,
   ladderFloors,
   rungStatus,
@@ -25,7 +26,6 @@ import {
 } from '../../core/systems/towers';
 import { festivalLadder, festivalLocked, lockoutLeft } from '../../core/systems/festivalRules';
 import { MS_PER_TICK } from '../../core/engine/loop';
-import { text } from '../../core/text/log';
 import { msToTime, termText, ticksToTime } from './format';
 
 /**
@@ -478,7 +478,7 @@ export interface TowerSection {
  */
 export function ladderEnd(state: GameState, tower: TowerDef): string | null {
   const top = topRung(tower.id);
-  return top && ladderEnded(state, tower.id) ? text('towers.end', { floor: top.index + 1 }) : null;
+  return top && ladderEnded(state, tower.id) ? endNotice(top) : null;
 }
 
 /**
