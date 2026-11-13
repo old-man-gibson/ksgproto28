@@ -215,6 +215,38 @@ data model, after the antagonist's review of idea 4:
   eight core systems; "narrow" is read as the narrowest legal pick, which is
   what John measures. A narrower John would contradict §6a.
 
+### 1.6 What the tower is (user, 2026-11-12)
+
+The frame every floor sits in.
+
+- **The tower is a tower.** Each floor is a part of one person's journey:
+  the tower's creator. The player runs through a simulation of that
+  journey that the tower provides. Floors 0–50 laid on one map read as a
+  single road (map: artifact "The Climb, Charted", VxdEmk2p68ekSg3HcYUg7g).
+- **Prestige is a defect.** Prestige, reincarnation and ascension are not
+  features of the tower. They are faults caused by the tower breaking down.
+  Neither the player nor anyone in the tower knows this.
+- **The floors are shuffled.** A glitch displaced floors from their place
+  in the creator's journey. Floors 37–40 (the high-tech city) come from a
+  much later point in that journey, which is why the technology jumps
+  there.
+- **The original 37–40 are hidden floors.** The floors the city displaced
+  still exist, hidden.
+
+**Laws it touches.** Hidden floors are secret content: nothing shows them
+(no tracker, log line or hint) until their trigger is fully met, and the
+trigger stays meetable for a strong player (feedback rule, 2026-09).
+
+**Open questions.**
+1. What the original 37–40 are (place, theme). Default: the steppe road
+   continuing, the stretch of the journey that sits between the steppe and
+   the realms in the creator's real order.
+2. How the player finds them: trigger and entry point. Default: unset.
+3. Whether other floors are displaced too, and how many. Default: only
+   37–40 for now.
+4. Whether the defect is ever revealed to the player, and where. Default:
+   not before floor 50.
+
 ## 2. Calibration: band 1 through the review
 
 | Check | Band 1 | Result |
