@@ -96,7 +96,10 @@
     <div class="dock-job">
       <JobStrip compact showRate={parts.controls}>
         {#snippet lead()}
-          {#if parts.gold}<span class="gold">🪙 {fmt(gs.gold)}</span>{/if}
+          <!-- The slot is as wide as "🪙 88.8M", the widest `fmt` writes below 1e15
+               (five characters), in whatever face the theme uses: the hidden sizer and
+               the figure share one grid cell, so the rate after it never moves. -->
+          {#if parts.gold}<span class="gold"><span class="gold-sizer" aria-hidden="true">🪙 88.8M</span><span>🪙 {fmt(gs.gold)}</span></span>{/if}
         {/snippet}
       </JobStrip>
     </div>
@@ -210,11 +213,19 @@
 
   .gold {
     flex: none;
-    display: inline-block;
-    min-width: 6.5ch;
+    display: inline-grid;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
     color: var(--accent);
     white-space: nowrap;
+  }
+
+  .gold > * {
+    grid-area: 1 / 1;
+  }
+
+  .gold-sizer {
+    visibility: hidden;
   }
 
   .actions {

@@ -9,8 +9,9 @@
 ## 1. Two layouts, one flag
 
 `viewport.phone` (`src/ui/lib/viewport.svelte.ts`) is true below 700 px
-(`PHONE_BELOW`) and in a window under 500 px tall and under 960 px wide
-(`SHORT_BELOW`, `SHORT_MAX_WIDTH`: a phone held sideways, 844 x 390 or 740 x 360).
+(`PHONE_BELOW`) and in a window under 500 px tall and 640 to 959 px wide
+(`SHORT_BELOW`, `SHORT_MIN_WIDTH`, `SHORT_MAX_WIDTH`: a phone held sideways,
+844 x 390 or 740 x 360).
 `App.svelte` reads it once and everything else follows: the `.layout.phone`
 class, the components it renders, `Modal`, `LogTicker`, `LogDrawer`,
 `SystemMenu`. No shell stylesheet repeats the numbers, so there is one place to
@@ -22,6 +23,17 @@ pointer is, and the preview browser reports `pointer: coarse` only under 768 px,
 so a pointer test could not be checked at 844 x 390. A desktop window that small
 and narrow gets the one-column shell too, which serves it better than the grid.
 `viewport.short` (true in the same window) selects the compact form in section 8.
+
+`short` has a minimum width. A window under 640 px wide is a phone held upright,
+whatever its height: a split screen (about 410 x 420), a 380 x 450 window, or a
+portrait phone with the soft keyboard up (Android resizes the page above it,
+`adjustResize`). Below 640 px the two-column dock gave the job block 0 to 102 px, so
+those windows keep the portrait dock and bottom row (at 380 x 450: a dock of 126 px,
+the job block 127 px, 227 px of screen). The keyboard does not change the shell. Where
+it could (a window 640 to 959 px wide, which the keyboard makes under 500 px tall),
+`viewport.svelte.ts` ignores a height change while a text field has focus and the width is
+the same, and follows the real window when the field loses focus; a width change (a
+rotation) is always followed. `tests/viewport.dom.test.ts` holds both.
 
 Above 700 px, and 500 px tall, the desktop layout is unchanged except where
 section 4 says.
@@ -56,12 +68,34 @@ placed with `order`, so the markup keeps the desktop's order.
    tap cards.
 4. The sky line (`SkyStrip.svelte`): the clock chip, the moons, the weather and
    the dark. Absent while none of them has anything to say; the dark's slot is
-   reserved whenever the line is drawn.
+   reserved whenever the line is drawn, and the clock chip's is too: 7.1em, as
+   wide as "🕰️ about 23:00", the widest text the sense writes
+   (`tests/skySlots.test.ts`), so a daypart name or an hour turning moves nothing.
 
-The dock is `z-index: 6` and the bottom row 5. The Menu's sheet is drawn inside
-the dock, so it is in the dock's stacking context: at an equal level the bottom
-row, later in the page, painted over the sheet's foot (found 2026-11-12 at
-375 x 812 and 844 x 390).
+The gold on the job block's third line is a slot sized by a hidden copy of
+"🪙 88.8M", the widest `fmt` writes below 1e15, in the theme's own face (a grid cell
+the figure shares), so the rate chip after it does not move when the figure gains a
+character. Measured at 360 px in all eleven themes with figures from "0" to "888T":
+the slot's width and the chip's left edge did not change. The chip gives way first
+and ends in an ellipsis: with the developer button showing it is clipped at 360 px
+in most themes, in a release build (no 44 px control in the first row) it is not.
+
+The dock is `z-index: 6` and the bottom row 5. The Menu's window is moved to
+`<body>` (`lib/portal.ts`) and is not inside the dock: a window drawn inside it is
+in the dock's stacking context, below the welcome-back report (10) whatever its own
+z-index, while the overlay stack counts it above the report, so back closed a window
+that was drawn under another; and at an equal level the bottom row painted over a
+sheet's foot (found 2026-11-12 at 375 x 812 and 844 x 390). On `<body>` the screen
+order is the stack order. The dock is sticky in all eleven themes
+(`tests/phone.test.ts` fails on a theme rule that sets `position` on
+`.layout > header` without leaving `.dock` out; signage's `relative` once won over
+the dock's `sticky`).
+
+The bottom row scrolls itself to the open screen (`lib/rowScroll.ts`), not the
+page: `scrollIntoView` also scrolls ancestors, and with `scroll-padding-bottom`
+(the bar's height) the page moved about 100 px at boot and on every tab change.
+Checked at 375 x 812: the page's `scrollY` stays where it was at boot, after each
+tap, and from a page scrolled to 300 px.
 
 The dock publishes its height as `--dock-h` on `<html>`; `BottomBar` publishes
 `--bottombar-h`. They are read by the tutorial card (`top: calc(var(--dock-h) +
@@ -103,7 +137,11 @@ is 107 to 122 px wide in a development build, so the detail is in the tap card.
 - **A title kept for the mouse.** A control that holds a fact in `title=` and also
   works on a touch screen is wrapped in `<Tip touchOnly>` (`lib/Tip.svelte`): no
   hover card, no dotted underline, a long press shows the card without pressing the
-  control. `GoButton.svelte` does (the route time, a one-way road, a road with no
+  control. A plain `<Tip>` round a titled control shows two tooltips on a desktop:
+  `tests/tipTitles.test.ts` fails on one (the form chart's entries and the memorised
+  psionic shapes were). The click a long press leaves behind is swallowed once; the
+  swallow is cleared by any later press, key or the card closing, so a press with
+  no click does not eat the next mouse click or Enter. `GoButton.svelte` does (the route time, a one-way road, a road with no
   retreat, a shut road). A disabled button gets no events of its own on touch, so
   under `(hover: none)` it is `pointer-events: none`, the press lands on the card's
   target, and a tap on a shut button says why. A mouse keeps the button and the
@@ -156,8 +194,13 @@ is 107 to 122 px wide in a development build, so the detail is in the tap card.
   portrait (768 px, 712) one. Both the Modal and the Anvil switched at a window
   width of 900 px until 2026-11-12, which gave a 844 px window one column.
 - Storage. `browserStorage` (`save.ts`) falls back to memory where the browser
-  refuses `localStorage`, so the game boots and does not save. `musicAudio.ts`
-  reads its two preferences through it.
+  refuses `localStorage`, so the game boots and does not save. `storagePersists`
+  (same file) is false then: the boot logs one danger line ("Storage: this browser
+  refuses site data. Saves are kept in memory until the page closes. Export (Menu)
+  writes the save to a file.") and the Menu's Save row says a save does not persist
+  and reads "Kept in memory at ..." after a press, not "Saved at".
+  `tests/storageRefused.dom.test.ts` holds both. `musicAudio.ts` reads its two
+  preferences through the storage.
 
 ## 5. Checking it
 
@@ -234,7 +277,10 @@ double-click wording (section 7).
 - **Not run on a device.** Every figure here is the Browser pane's mobile emulation
   (375 x 812, 414 x 896, 844 x 390, 740 x 360, 768 x 1024), dispatched touch pointer
   events, and jsdom. No phone has run the APK ([ANDROID.md](ANDROID.md) "The debug
-  build", "Not checked").
+  build", "Not checked"). The soft-keyboard guard (section 1) is checked against a fake
+  `matchMedia` and a focused input, and the sleep credit ([ANDROID.md](ANDROID.md)
+  "Time away while the app is alive") against fake clocks and, in the Browser pane, a
+  `Date.now` moved three hours ahead of `performance.now`; neither on a device.
 
 ## 7. The panels
 
@@ -257,12 +303,17 @@ path that ends in the same placement rules as the drag (`lib/reorder.ts`:
 functions):
 
 - A grip button (⠿) picks a rotation card or a plan row up. A tap on the row it goes
-  before, on "Put it last", or the ▲ and ▼ buttons places it. The picked card carries
-  its own bar with the arrows when it is under 420 px wide (a card is a size container
-  named `card`).
+  before, on "Put it last", or the ▲ and ▼ buttons places it. The ▲ and ▼ are in the
+  card's gutter for a mouse (`pointer: fine`) at every card width: on a desktop the
+  rotation is two to four columns and a card there is under 420 px. For a finger
+  they are in the gutter on a card 420 px wide or more, and else in the picked card's
+  own bar (a card is a size container named `card`).
 - A finger taps a sentence tile to pick it up (a mouse click still removes it) and taps
   the tile it goes before, the same word to deepen it (the fold), End, or the picked
   bar's arrows. This is the tap path for deepening.
+- The planner's roster and a picked row are on the overlay stack only while the planner
+  is unfolded (`ui.plannerOpen`): folded, they would take a back press and close
+  nothing on screen.
 - The planner holds a tapped move, edge, chip or position with a one-line caption (the
   hover text, for a finger); its graph and plan stack by the panel's width (`planner`
   and `graph` containers).
@@ -338,6 +389,13 @@ Rules the passes follow, and a new panel should too:
   route and a shut road's terms are most of the line. The folded map's roads print
   a shut road's terms and a no-retreat warning under the button, not in its title.
   The Location strip's two bar labels ("Next:", "Exploration:") are tap cards.
+- **The journey line** under the map (`.journey`, `MapCard.svelte`) is 44 px on a
+  tab under 560 px in every state: standing, one leg, many legs with the Cancel
+  button. Two text lines of 22 px each cut with an ellipsis, and the button beside
+  them across both rows, so neither a long place name nor the button's 44 px adds
+  to the height. It was 31 px standing and 56 to 92 px with a plan under it, which
+  moved the page when a walk of several legs began. Measured at 375 px through an
+  11-leg walk: 44, 44, 44.
 - **Pins and exits.** Under `(pointer: coarse)` each map pin has a transparent
   circle up to 44 px across, never reaching past halfway to the nearest pin, and
   each exit label has a 36 px box behind it (`MapPlan.svelte`, `.hit`, `.exit-hit`).

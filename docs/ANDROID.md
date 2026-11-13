@@ -149,6 +149,36 @@ autosave would then have lost up to 30 s of play.
   `beforeunload`) write the save up to three times. Not deduplicated: each is a few
   ms and the last one wins.
 
+## Time away while the app is alive
+
+A phone asleep with the app's process alive is not the boot catch-up (that is a
+process that ended, read back from `gs.lastSaved`). The frame pump
+(`src/ui/lib/pump.ts`, wired in `main.ts`) measured the gap between frames with
+`performance.now()`, a monotonic clock that stops while the device sleeps, so a night
+asleep was credited as the few seconds the clock saw. It now reads `Date.now()` as
+well on every call. When the wall clock gained more than 5 s on the monotonic one,
+the surplus is sleep and the wall gap is credited instead, as a long gap: the same
+capped detached catch-up the boot runs (`catchUp` in `state.svelte.ts`, 8 h cap) and
+its "Welcome back" report. A wall clock that went backwards, or drift under 5 s,
+credits the monotonic gap. A paused world drops the gap, as before.
+
+- **When.** On the next frame or tick, and at once on the App plugin's `resume` and
+  on the page turning visible (`pump.settle()`; `installAndroidBack`'s `resume` hook
+  and `installSaveTriggers`' `visible` hook), so the report is there when the screen
+  comes back.
+- **No double count.** Every call reads both clocks and moves both marks to now, so a
+  gap is credited by exactly one call; `resume`, `visibilitychange` and the next frame
+  are the same gap once. The pump's wall mark is never earlier than `gs.lastSaved`
+  (the `pause` and hidden saves write it when pumping stops), so a hidden page that
+  kept pumping (a throttled tab, both clocks running) is credited by its own clock and
+  not again from `lastSaved`. A wall clock set forward credits up to the cap, as it
+  already did for the boot catch-up.
+- **Checked.** `tests/pump.test.ts` moves fake clocks (an 8 h sleep, resume plus
+  visible plus a frame, a throttled tab, a short sleep, drift, a backwards clock, a
+  paused world, the autosave); `tests/androidResume.test.ts` the plugin's events. In
+  the Browser pane a `Date.now` moved 3 h ahead showed one "Welcome back ... 3h 0m"
+  report and no second one when it was restored. Not on a device.
+
 ## The debug build
 
 With no signing secrets in the repo (a fresh fork, or the keystore not set yet)
