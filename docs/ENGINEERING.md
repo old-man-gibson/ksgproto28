@@ -204,6 +204,12 @@ not an optimization, and it belongs in a different conversation.
 
 ## 2. Phone compatibility
 
+**Status, 2026-11-12:** the shell is built: one column below 700 px, the dock, the
+bottom bar, tap cards, safe areas, 44 px hit height. It is in
+[PHONE.md](PHONE.md). Still open from this section: the per-panel pass (§2.3) and
+touch reordering in three panels (§2.3, §2.4). The numbers below are the
+2026-09 measurements that led to it.
+
 Measured at 375×812 in the preview browser.
 
 ### 2.1 The current state

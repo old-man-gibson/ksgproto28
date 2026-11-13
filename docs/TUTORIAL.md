@@ -159,6 +159,12 @@ waits.
 | other map regions, the map fold | the Foot |
 | the Stations row (above the map) | the Foot |
 
+On a phone (under 700 px) the same rows apply to the dock and the bottom row: the
+dock's bars arrive with the sidebar (step 4), its gold at step 5, and its Pause,
+bonus, Menu and rate after the tutorial (`dockParts` in `src/ui/lib/shell.ts`,
+tested in `tests/phone.test.ts`; [PHONE.md](PHONE.md)). The tutorial card sticks
+below the dock.
+
 A screen arrives with the step whose text first names it. The screen list
 (`NAV`, `src/ui/lib/nav.ts`) lists a screen when its own gate is open and
 `tutorialScreen(state).tabs` holds its id. With one screen the list is not drawn.

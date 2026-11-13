@@ -5,9 +5,13 @@
 
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
+  import { viewport } from './viewport.svelte';
 
   // Small floating window for inspecting one thing. Clicking the backdrop —
-  // anywhere outside the window — or pressing Escape closes it.
+  // anywhere outside the window — or pressing Escape closes it. Below 700px
+  // (the phone layout, docs/PHONE.md) it is a sheet over the whole screen: the
+  // header, with a 44px close button, stays at the top inside the safe area,
+  // and the body scrolls under it.
   let {
     title,
     onclose,
@@ -34,8 +38,8 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && open[open.length - 1] === me && onclose()} />
 
-<div class="overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
-  <div class="window panel" class:wide class:fill role="dialog" aria-modal="true">
+<div class="overlay" class:sheet={viewport.phone} role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
+  <div class="window panel" class:wide class:fill class:sheet={viewport.phone} role="dialog" aria-modal="true">
     <header>
       <div class="title">{@render title()}</div>
       <button class="close" aria-label="Close" onclick={onclose}>✕</button>
@@ -122,5 +126,41 @@
     padding: 10px 12px 12px;
     overflow-y: auto;
     min-height: 0;
+  }
+
+  /* The phone sheet: no margin, no frame, the whole window. The insets keep the
+     header out from under the status bar and the body above the gesture strip. */
+  .overlay.sheet {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .window.sheet,
+  .window.sheet.wide,
+  .window.sheet.fill {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-width: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .window.sheet header {
+    align-items: center;
+    padding: calc(8px + var(--safe-top)) calc(12px + var(--safe-right)) 8px calc(12px + var(--safe-left));
+  }
+
+  .window.sheet .close {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .window.sheet .body {
+    flex: 1;
+    padding: 10px calc(12px + var(--safe-right)) calc(16px + var(--safe-bottom)) calc(12px + var(--safe-left));
   }
 </style>

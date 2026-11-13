@@ -1,5 +1,6 @@
 <script lang="ts">
   import LogFeed from './LogFeed.svelte';
+  import { viewport } from './lib/viewport.svelte';
 
   /**
    * The folded log's full view: a panel from the right edge, below the header,
@@ -13,12 +14,16 @@
    * `anchor` is the header. The panel starts 12px below the header's live
    * bottom edge, or 12px from the top of the window once the page has scrolled
    * the header away (the narrow layout scrolls the page).
+   *
+   * On the phone layout (docs/PHONE.md) it is a sheet between the dock and the
+   * bottom bar, across the width, and has no Dock button: the log has no column
+   * to return to.
    */
   let {
     onclose,
     ondock,
     anchor,
-  }: { onclose: () => void; ondock: () => void; anchor?: HTMLElement } = $props();
+  }: { onclose: () => void; ondock?: () => void; anchor?: HTMLElement } = $props();
 
   let drawer: HTMLElement;
   let top = $state(12);
@@ -55,10 +60,18 @@
 
 <svelte:window onkeydown={onKeydown} onpointerdown={onPointerDown} onscroll={place} onresize={place} />
 
-<aside class="log-drawer" bind:this={drawer} aria-label="Log" style="top: {top}px">
+<aside
+  class="log-drawer"
+  class:log-sheet={viewport.phone}
+  bind:this={drawer}
+  aria-label="Log"
+  style={viewport.phone ? undefined : `top: ${top}px`}
+>
   <LogFeed
     actions={[
-      { label: 'Dock', title: 'Keep the log open as a column on the right', run: ondock },
+      ...(ondock && !viewport.phone
+        ? [{ label: 'Dock', title: 'Keep the log open as a column on the right', run: ondock }]
+        : []),
       { label: 'Close', title: 'Close the log (Escape)', run: onclose },
     ]}
   />
@@ -72,5 +85,15 @@
     width: min(360px, calc(100vw - 24px));
     z-index: 9;
     box-shadow: -8px 0 24px var(--lift);
+  }
+
+  /* The phone: from under the dock to over the bottom bar, edge to edge. Both
+     heights are published by the blocks themselves (Dock.svelte, BottomBar.svelte). */
+  .log-drawer.log-sheet {
+    top: calc(var(--dock-h, 0px) + 8px);
+    right: calc(8px + var(--safe-right));
+    bottom: calc(var(--bottombar-h, 0px) + 8px);
+    left: calc(8px + var(--safe-left));
+    width: auto;
   }
 </style>

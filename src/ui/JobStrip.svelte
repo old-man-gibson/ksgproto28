@@ -3,6 +3,8 @@
   import { currentJob } from './lib/job';
   import { RateMeter } from './lib/rates.svelte';
   import { fmt } from './lib/format';
+  import Tip from './lib/Tip.svelte';
+  import type { Snippet } from 'svelte';
 
   /**
    * The header's job strip and rate chip. The strip is the status text with a
@@ -15,8 +17,16 @@
    * takes the room the other chips leave (basis 0), the bar and the detail keep
    * their slots when the job has none, and the chip's figures have fixed-width
    * slots. A fight starting or ending moves nothing on screen.
+   *
+   * `compact` is the phone dock's block (Dock.svelte, docs/PHONE.md): the job
+   * and its detail on one line, the bar under it, and a third line that holds
+   * `lead` (the gold) and the rate chip. The hover text is a tap card.
    */
-  let { showRate = true }: { showRate?: boolean } = $props();
+  let {
+    showRate = true,
+    compact = false,
+    lead,
+  }: { showRate?: boolean; compact?: boolean; lead?: Snippet } = $props();
 
   const job = $derived(currentJob(gs, view.stats));
 
@@ -24,33 +34,65 @@
   $effect(() => {
     meter.sample(gs.totalTicks, gs.stats['gold:earned'] ?? 0, gs.stats.kills ?? 0, gs.prestige.count, gs.paused);
   });
+  const rateTitle = $derived(
+    meter.gold !== null && meter.kills !== null
+      ? `Rate: ${fmt(meter.gold)} gold and ${fmt(meter.kills)} kills per minute over the last 60 s of game time. Not saved.`
+      : 'Rate: shown after 30 s of unpaused game time since load or prestige.',
+  );
 </script>
 
-<div class="job-strip" class:job-paused={gs.paused} title="{job.name}. {job.tip}">
-  <span class="job-icon">{job.icon}</span>
-  <span class="job-name">{gs.paused ? 'Paused: ' : ''}{job.name}</span>
-  <!-- Drawn in every state: a job without a bar hides it and keeps its slot. -->
-  <div class="bar job-track" class:job-none={job.pct === null}>
-    <div class="fill" style="width: {(job.pct ?? 0) * 100}%; background: var(--action)"></div>
-  </div>
-  <!-- A no-break space when empty: an empty span has no line box and sits 7px
-       lower, which would move it between a fight and the next. -->
-  <span class="job-detail">{job.detail ?? ' '}</span>
-</div>
-
-{#if showRate}
-  <!-- Drawn before the first full window too ("–"), so the chip never appears
-       or vanishes under the cursor. -->
-  <div
-    class="rate-chip"
-    title={meter.gold !== null && meter.kills !== null
-      ? `Rate: ${fmt(meter.gold)} gold and ${fmt(meter.kills)} kills per minute over the last 60 s of game time. Not saved.`
-      : 'Rate: shown after 30 s of unpaused game time since load or prestige.'}
+{#snippet rateText()}
+  <span class="rate-n">{meter.gold === null ? '–' : fmt(meter.gold)}</span> gold/min<span class="rate-kills">
+    · <span class="rate-n">{meter.kills === null ? '–' : fmt(meter.kills)}</span> kills/min</span
   >
-    <span class="rate-n">{meter.gold === null ? '–' : fmt(meter.gold)}</span> gold/min<span class="rate-kills">
-      · <span class="rate-n">{meter.kills === null ? '–' : fmt(meter.kills)}</span> kills/min</span
-    >
+{/snippet}
+
+{#if compact}
+  <Tip block>
+    <div class="job-compact" class:job-paused={gs.paused}>
+      <div class="job-line">
+        <span class="job-icon">{job.icon}</span>
+        <span class="job-name">{gs.paused ? 'Paused: ' : ''}{job.name}</span>
+        <span class="job-detail">{job.detail ?? ' '}</span>
+      </div>
+      <!-- Drawn in every state: a job without a bar hides it and keeps its slot. -->
+      <div class="bar job-track job-track-wide" class:job-none={job.pct === null}>
+        <div class="fill" style="width: {(job.pct ?? 0) * 100}%; background: var(--action)"></div>
+      </div>
+      <div class="job-sub">
+        {@render lead?.()}
+        <!-- Drawn before the first full window too ("–"), so the chip never appears or vanishes.
+             Gold per minute only, as "120/min" beside the gold: the words and the kills
+             figure are in the tap card. -->
+        {#if showRate}
+          <span class="rate-chip"><span class="rate-n">{meter.gold === null ? '–' : fmt(meter.gold)}</span>/min</span>
+        {/if}
+      </div>
+    </div>
+    {#snippet tip()}
+      <div class="tip-line tip-base">{job.name}</div>
+      <div class="tip-line">{job.tip}</div>
+      {#if showRate}<div class="tip-line">{rateTitle}</div>{/if}
+    {/snippet}
+  </Tip>
+{:else}
+  <div class="job-strip" class:job-paused={gs.paused} title="{job.name}. {job.tip}">
+    <span class="job-icon">{job.icon}</span>
+    <span class="job-name">{gs.paused ? 'Paused: ' : ''}{job.name}</span>
+    <!-- Drawn in every state: a job without a bar hides it and keeps its slot. -->
+    <div class="bar job-track" class:job-none={job.pct === null}>
+      <div class="fill" style="width: {(job.pct ?? 0) * 100}%; background: var(--action)"></div>
+    </div>
+    <!-- A no-break space when empty: an empty span has no line box and sits 7px
+         lower, which would move it between a fight and the next. -->
+    <span class="job-detail">{job.detail ?? ' '}</span>
   </div>
+
+  {#if showRate}
+    <!-- Drawn before the first full window too ("–"), so the chip never appears
+         or vanishes under the cursor. -->
+    <div class="rate-chip" title={rateTitle}>{@render rateText()}</div>
+  {/if}
 {/if}
 
 <style>
@@ -121,13 +163,13 @@
   /* A narrow strip drops the detail first, then the bar, so the name keeps
      about 100px. The strip's title still says what runs. */
   @container (max-width: 329px) {
-    .job-detail {
+    .job-strip .job-detail {
       display: none;
     }
   }
 
   @container (max-width: 209px) {
-    .job-track {
+    .job-strip .job-track {
       display: none;
     }
   }
@@ -157,10 +199,10 @@
     }
   }
 
-  /* Under 1024px the header wraps by design (App.svelte). The strip and the
+  /* Under 1180px the header wraps by design (App.svelte). The strip and the
      chip start the second row, so which row they sit on never depends on the
      job. */
-  @media (max-width: 1023px) {
+  @media (max-width: 1179px) {
     .job-strip {
       order: 1;
       flex-basis: calc(100% - 20ch);
@@ -169,5 +211,73 @@
     .rate-chip {
       order: 2;
     }
+  }
+
+  /* The dock's block: three lines of fixed height, so no job changes its size.
+     A container, so the detail drops by the room there is (rule below). */
+  .job-compact {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    color: var(--text-dim);
+  }
+
+  .job-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 18px;
+    font-size: 14px;
+  }
+
+  .job-compact .job-name {
+    flex: 1 1 0;
+    max-width: none;
+  }
+
+  .job-compact .job-detail {
+    width: 5.5em;
+    text-align: right;
+    font-size: 12.5px;
+  }
+
+  /* The bar is the cycle's progress; the detail ("Foe HP 60%") has the room it needs from about 170px. */
+  @container (max-width: 169px) {
+    .job-compact .job-detail {
+      display: none;
+    }
+  }
+
+  .job-track-wide {
+    flex: none;
+    height: 5px;
+  }
+
+  .job-sub {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    height: 16px;
+    line-height: 16px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* The gold keeps its slot; the rate gives way first and ends in an ellipsis. */
+  .job-sub .rate-chip {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 12px;
+  }
+
+  /* The last item on its line: nothing sits after the figure, so it needs no fixed slot. */
+  .job-sub .rate-n {
+    min-width: 0;
+    text-align: left;
   }
 </style>

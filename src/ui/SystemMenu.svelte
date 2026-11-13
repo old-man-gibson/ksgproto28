@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { save, exportSave, importSave, hardReset } from './state.svelte';
+  import { save, exportSave, importSave, hardReset, stepTicks, stepEvent } from './state.svelte';
+  import { TPS } from '../core/engine/loop';
   import { chooseTheme, loadTheme, THEMES, THEME_NAMES, type Theme } from './lib/theme';
+  import { viewport } from './lib/viewport.svelte';
   import Modal from './lib/Modal.svelte';
   import ArtPackControl from './ArtPackControl.svelte';
 
@@ -8,7 +10,9 @@
    * The Menu button and its window: the file actions, the art pack, the display
    * theme and the keyboard keys, one fact line each. App.svelte hides the button
    * on floor 0 (a new save offers Import and Import art pack on the tutorial
-   * card instead).
+   * card instead). Below 700px (the phone layout, docs/PHONE.md) the window also
+   * holds the three step buttons the header carries on a wider screen, and no
+   * key list: a phone has no keys.
    */
   let open = $state(false);
   let savedAt = $state<string | null>(null);
@@ -51,7 +55,7 @@
   ];
 </script>
 
-<button onclick={() => (open = true)} title="Save, export, import, reset, art pack, theme and keys">Menu</button>
+<button class="sysmenu-open" onclick={() => (open = true)} title="Save, export, import, reset, art pack, theme and keys">Menu</button>
 
 <input
   type="file"
@@ -65,6 +69,20 @@
   <Modal onclose={() => (open = false)}>
     {#snippet title()}<h3 class="sysmenu-title">Menu</h3>{/snippet}
 
+    {#if viewport.phone}
+      <div class="sysmenu-row">
+        <span>+1: advances 1 tick (100 ms). Pauses the game.</span>
+        <button onclick={() => stepTicks(1)}>+1</button>
+      </div>
+      <div class="sysmenu-row">
+        <span>+1s: advances 1 second. Pauses the game.</span>
+        <button onclick={() => stepTicks(TPS)}>+1s</button>
+      </div>
+      <div class="sysmenu-row">
+        <span>Next: advances to the next fight event. Pauses the game.</span>
+        <button onclick={() => stepEvent()}>⏭ Next</button>
+      </div>
+    {/if}
     <div class="sysmenu-row">
       <span>
         Save: writes the game to this browser. Autosave runs every 30 s.
@@ -94,10 +112,12 @@
       </select>
     </div>
 
-    <h4 class="sysmenu-keys">Keys</h4>
-    {#each KEYS as line (line)}
-      <div class="sysmenu-key">{line}</div>
-    {/each}
+    {#if !viewport.phone}
+      <h4 class="sysmenu-keys">Keys</h4>
+      {#each KEYS as line (line)}
+        <div class="sysmenu-key">{line}</div>
+      {/each}
+    {/if}
   </Modal>
 {/if}
 

@@ -3,148 +3,33 @@
   import {
     DAMAGE_TYPE_NAMES,
     RES_STAT_BY_TYPE,
-    STAT_NAMES,
-    type AttributeId,
     type DamageType,
-    type ResourceId,
     type StatKey,
     type SuperAttributeDef,
   } from '../../core/types';
   import { ATTRIBUTE_LIST } from '../../core/data/attributes.data';
   import { SUPERATTRS } from '../../core/registry';
   import { attrValue, effectiveAttrs } from '../../core/systems/attributes';
-  import { equippedTitle } from '../../core/systems/titles';
-  import { combatRegenMult, currentActivity } from '../../core/systems/actions';
-  import {
-    attackFillRate,
-    actionTicks,
-    BASE_ACTION_BAR,
-    STAMINA_EFF_FLOOR,
-  } from '../../core/systems/derived';
-  import {
-    EXHAUSTED_REGEN_MULT,
-    EXHAUSTED_SLOW_UNTIL,
-    EXHAUSTED_SPEED_PENALTY,
-    STAMINA_RESERVE,
-  } from '../../core/systems/stamina';
-  import { availableMax, resourceLock, resourceValue, trueMax } from '../../core/systems/resources';
-  import { attrCeiling, escalationPrimed, visibleStatuses } from '../../core/systems/statuses';
-  import { facetReadouts } from '../../core/facet/host';
-  import { STATUSES } from '../../core/registry';
-  import { statusTipLines } from '../lib/format';
-  import { RECOVERY_MULT, RESOURCES } from '../../core/data/resources.data';
-  import { abilityValue, fmt, pct, poolText, statTipLines, attrTipLines } from '../lib/format';
+  import { attackFillRate, actionTicks, BASE_ACTION_BAR } from '../../core/systems/derived';
+  import { attrCeiling } from '../../core/systems/statuses';
+  import { fmt, pct, statTipLines, attrTipLines } from '../lib/format';
   import type { Snippet } from 'svelte';
   import Tip from '../lib/Tip.svelte';
-  import DishSlots from '../lib/DishSlots.svelte';
   import Icon from '../lib/icons/Icon.svelte';
-
-  /** Pool icons sit outside their bars (user, 2026-10-22); 16 and 32 are the art's clean sizes. */
-  const RES_ICON: 16 | 32 = 32;
+  import ResourceBars from './ResourceBars.svelte';
   import { REFERENCE_BLOW, expectedHitTaken, roughDps } from '../lib/statSummary';
-  import { levelAttrBonus, xpToNext } from '../../core/systems/levels';
-  import { startingLevel } from '../../core/systems/legacy';
-  import { LEVEL_ATTR_BONUS } from '../../core/data/levels.data';
 
   /**
    * `combatStats` is off on floor 0: the tutorial shows the bars, not the stat
    * sheet (App.svelte). `nav` is the screen list, drawn between the resource
-   * panel and the attributes.
+   * panel and the attributes. `phone` is the one-column layout (docs/PHONE.md):
+   * the pools are in the dock (Dock.svelte), so this column draws the rest of
+   * the resource panel (conditions, dishes, the level bar) with no pools, and
+   * App.svelte passes no `nav` (the screen list is the bottom row).
    */
-  let { combatStats = true, nav }: { combatStats?: boolean; nav?: Snippet } = $props();
+  let { combatStats = true, nav, phone = false }: { combatStats?: boolean; nav?: Snippet; phone?: boolean } = $props();
 
   const stats = $derived(view.stats);
-
-  const barPct = (cur: number, max: number) => (max > 0 ? Math.max(0, Math.min(100, (cur / max) * 100)) : 0);
-  // Every bar reads its pool through the registry: the current value, and the
-  // ceiling actually in force (which a wound may have lowered below the stat).
-  const cur = (id: ResourceId) => resourceValue(gs, id);
-  const cap = (id: ResourceId) => availableMax(gs, stats, id);
-  const pool = (id: ResourceId) => poolText(cur(id), cap(id));
-
-  const hpPct = $derived(barPct(cur('hp'), cap('hp')));
-  // Character level (systems/levels.ts).
-  const nextLevelXp = $derived(xpToNext(gs.level));
-  const levelPct = $derived(barPct(gs.levelXp, nextLevelXp));
-  // Health's trickle is graded by what you are doing — and halved mid-fight
-  // while stamina is off its ceiling — so the tooltip quotes the rate actually
-  // running rather than the bare stat, and names whichever of the two is the
-  // interesting part right now.
-  const restingNow = $derived(gs.recovering || currentActivity(gs)?.kind === 'rest');
-  const strained = $derived(combatRegenMult(gs, stats) < 1);
-  const recoveryMult = $derived(
-    RECOVERY_MULT[restingNow ? 'rest' : (currentActivity(gs)?.kind ?? 'none')] *
-      combatRegenMult(gs, stats),
-  );
-  const hpNotes = $derived([
-    `Recovering ${fmt(stats.hpRegen * recoveryMult)}/s — ×${recoveryMult} right now`,
-    ...(strained
-      ? ['Halved: a fight is on and your stamina is off full']
-      : restingNow
-        ? []
-        : [`Resting recovers ×${RECOVERY_MULT.rest} as fast`]),
-  ]);
-  const staminaPct = $derived(barPct(cur('stamina'), cap('stamina')));
-  // Stamina reads its lockout: dulled while winded, sickly green while
-  // exhausted (and dragging every action bar with it). Both the colours and
-  // the names come from the pool's own definition.
-  const staminaReserve = RESOURCES.stamina.reserve!;
-  const staminaLock = $derived(resourceLock(gs, 'stamina'));
-  const staminaColor = $derived(
-    staminaLock === 'empty'
-      ? `var(${staminaReserve.emptyCssVar})`
-      : staminaLock === 'low'
-        ? `var(${staminaReserve.lowCssVar})`
-        : `var(${RESOURCES.stamina.cssVar})`,
-  );
-  const staminaMark = $derived(
-    staminaLock === 'empty'
-      ? `${staminaReserve.emptyIcon} `
-      : staminaLock === 'low'
-        ? `${staminaReserve.lowIcon} `
-        : '',
-  );
-  const staminaNotes = $derived(
-    staminaLock === 'empty'
-      ? [
-          '🥵 Exhausted — you ran the bar to nothing.',
-          `Every action bar fills ${pct(EXHAUSTED_SPEED_PENALTY)} slower`,
-          `Regen at ×${EXHAUSTED_REGEN_MULT} until the pool passes ${pct(EXHAUSTED_SLOW_UNTIL, 0)}`,
-          'Nothing may be spent until the bar is full again',
-        ]
-      : staminaLock === 'low'
-        ? [
-            `😮‍💨 Winded — spending stopped at the ${pct(STAMINA_RESERVE, 0)} reserve.`,
-            'Your stance keeps its base stats, but buys no exertion bonuses',
-            'Spending resumes once the bar is full again',
-          ]
-        : [
-            'Swinging costs a trickle — less than you recover, so plain fighting keeps pace',
-            gs.exerting
-              ? '🔥 Exerting: your stance is spending real reserves for its bonuses'
-              : '🍃 Holding back: switch on Exert in the Combat tab to spend for bonuses',
-            `Spending stops at a ${pct(STAMINA_RESERVE, 0)} reserve until the bar refills`,
-          ],
-  );
-  // Mana can be burned PAST zero (see manaburn). In debt the bar reads as the
-  // size of the overdraft rather than what is left, and turns magenta — there
-  // is no blue to show, because there is nothing there.
-  const manaDebt = $derived(Math.max(0, -cur('mana')));
-  const manaPct = $derived(
-    manaDebt > 0
-      ? Math.min(100, (manaDebt / Math.max(1, trueMax(stats, 'mana'))) * 100)
-      : barPct(cur('mana'), cap('mana')),
-  );
-  const manaColor = $derived(manaDebt > 0 ? 'var(--manaburn)' : `var(${RESOURCES.mana.cssVar})`);
-  const spiritPct = $derived(barPct(cur('spirit'), cap('spirit')));
-  const focusPct = $derived(barPct(cur('focus'), cap('focus')));
-  // Player action bar — fills toward the next attack during combat, empty otherwise.
-  const actionPct = $derived(
-    gs.combat ? Math.min(100, (gs.combat.playerBar / stats.actionBar) * 100) : 0,
-  );
-  const attackSeconds = $derived(
-    (actionTicks(stats.actionBar, attackFillRate(stats)) / 10).toFixed(1),
-  );
 
   const fusedDefs = $derived(Object.values(SUPERATTRS).filter((d) => gs.fused.includes(d.id)));
   const fusedComponents = $derived(new Set(fusedDefs.flatMap((d) => d.components)));
@@ -154,55 +39,9 @@
     return ATTRIBUTE_LIST.find((a) => a.id === id)!;
   }
 
-  // Efficiency stats compound multiplicatively per attribute point (each point
-  // multiplies the cost by 1 − per). These configs mirror the formulas in
-  // derived.ts and drive the tooltip breakdown so players see the sources.
-  type EffFactor = { id: AttributeId; per: number };
-  // Stamina's saving is bounded: the decay applies to the half of the cost
-  // above the floor, so training makes exertion cheaper but never free.
-  const STAMINA_EFF_FACTORS: EffFactor[] = [
-    { id: 'str', per: 0.001 },
-    { id: 'dex', per: 0.0015 },
-  ];
-  const MANA_EFF_FACTORS: EffFactor[] = [
-    { id: 'int', per: 0.00033 },
-    { id: 'wis', per: 0.0001 },
-  ];
-
-  /**
-   * Per-attribute contribution lines for an efficiency (cost-multiplier) stat.
-   * `floor` is the share of the cost the decay can never touch.
-   */
-  function effBreakdown(factors: EffFactor[], effValue: number, floor = 0): string[] {
-    const lines = factors.map((f) => {
-      const v = attrValue(gs, f.id);
-      const saved = (1 - floor) * (1 - Math.pow(1 - f.per, v)); // this attribute's share
-      const rate = +(f.per * 100).toFixed(3); // trim trailing zeros (0.15, 0.1, 0.033…)
-      return `${attrInfo(f.id).icon} ${attrInfo(f.id).name} ${Math.round(v)}: ${rate}%/pt → saves up to ${pct(saved, 2)}`;
-    });
-    if (floor > 0) lines.push(`Floor: cost never falls below ${pct(floor, 0)}`);
-    lines.push(`Combined: ${pct(1 - effValue, 2)} cheaper to spend`);
-    return lines;
-  }
-
   const eff = $derived(effectiveAttrs(gs));
   /** Weakest Weapon Master's ceiling: formulas read an attribute above it at the ceiling. */
   const ceiling = $derived(attrCeiling(gs));
-
-  const wornTitle = $derived(equippedTitle(gs));
-  /**
-   * The run's unique ability (docs/FACET.md). The sidebar shows only the cells
-   * acting on you now: a cell whose carrier modifies your numbers, while it is
-   * not zero. Counters, banks and inputs are in the Ability tab and in these
-   * lines' tooltips.
-   */
-  const abilities = $derived(facetReadouts(gs));
-  const acting = $derived(
-    abilities.map((ab) => ({ ab, cells: ab.cells.filter((c) => c.acts && c.value !== 0) })).filter((a) => a.cells.length),
-  );
-  /** Those cells ride on statuses; the ability readouts show them, so the status chips leave them all out. */
-  const abilityStatusIds = $derived(new Set(abilities.flatMap((a) => a.cells.map((c) => c.statusId))));
-  const afflictions = $derived(visibleStatuses(gs).filter((s) => !abilityStatusIds.has(s.id)));
 
   /** Which stat groups are open (per viewer, this session). Closed by default. */
   type StatGroup = 'offense' | 'defense' | 'growth' | 'fortune';
@@ -229,59 +68,6 @@
   </tr>
 {/snippet}
 
-<!--
-  Simple resource tooltip (HP, Spirit): header, notes, the max-pool breakdown,
-  and — for a pool with no efficiency stat to speak of — its regen on the end.
--->
-{#snippet resTip(header: string, maxKey: StatKey, extra: string[], regenKey?: StatKey)}
-  <div class="tip-line tip-base">{header}</div>
-  {#each extra as line}
-    <div class="tip-line">{line}</div>
-  {/each}
-  <div class="tip-line tip-sub">{STAT_NAMES[maxKey]}:</div>
-  {@render statTip(maxKey)}
-  {#if regenKey}
-    <div class="tip-line tip-sub">Regen (per second):</div>
-    {@render statTip(regenKey)}
-  {/if}
-{/snippet}
-
-<!-- Full pool tooltip (Stamina, Mana): max, regen, and efficiency all broken down by source. -->
-{#snippet poolTip(
-  header: string,
-  maxKey: StatKey,
-  regenKey: StatKey,
-  effKey: StatKey,
-  factors: EffFactor[],
-  notes: string[] = [],
-  floor = 0,
-)}
-  <div class="tip-line tip-base">{header}</div>
-  {#each notes as note}
-    <div class="tip-line">{note}</div>
-  {/each}
-  <div class="tip-line tip-sub">Max pool:</div>
-  {@render statTip(maxKey)}
-  <div class="tip-line tip-sub">Regen (per second):</div>
-  {@render statTip(regenKey)}
-  <div class="tip-line tip-sub">Efficiency (cost ×{stats[effKey].toFixed(3)}):</div>
-  {#each effBreakdown(factors, stats[effKey], floor) as line}
-    <div class="tip-line">{line}</div>
-  {/each}
-  {#if effKey === 'staminaEff'}
-    <div class="tip-line tip-sub">Power (payoff ×{stats.staminaPower.toFixed(3)}):</div>
-    <div class="tip-line">Every point of cost you no longer pay comes back as payoff</div>
-    {@render statTip('staminaPower')}
-  {/if}
-{/snippet}
-
-{#snippet actionBarTip()}
-  <div class="tip-line tip-base">Action Bar — fills toward your next attack</div>
-  <div class="tip-line">Fills at Speed × Attack Speed each tick</div>
-  <div class="tip-line tip-total">{fmt(stats.actionBar)} units ≈ {attackSeconds}s per attack</div>
-  {#if !gs.combat}<div class="tip-line tip-sub">Only advances during combat.</div>{/if}
-{/snippet}
-
 {#snippet superTip(sup: SuperAttributeDef)}
   <div class="tip-line tip-base">{sup.desc}</div>
   {#each sup.components as compId}
@@ -291,200 +77,8 @@
   <div class="tip-line tip-total">{sup.name}: {fmt(attrValue(gs, sup.components[0]))}</div>
 {/snippet}
 
-<div class="panel">
-  {#if wornTitle}
-    <div class="worn-title" title={wornTitle.desc}>{wornTitle.icon} {wornTitle.name}</div>
-  {/if}
-
-  <div class="resources">
-    <!-- One pool per row, its icon left of the bar on the panel (user,
-         2026-10-22): drawn on the bar's fill colour it was hard to read. -->
-    <Tip block>
-      <div class="res">
-        <Icon of={RESOURCES.hp} size={RES_ICON} />
-        <div class="bar res-bar">
-          <div class="fill" style="width: {hpPct}%; background: var(--hp)"></div>
-          <div class="label">HP {pool('hp')}</div>
-        </div>
-      </div>
-      {#snippet tip()}
-        {@render resTip(`HP ${pool('hp')}`, 'maxHp', hpNotes, 'hpRegen')}
-      {/snippet}
-    </Tip>
-
-    <Tip block>
-      <div class="res">
-        <Icon of={RESOURCES.stamina} size={RES_ICON} />
-        <div class="bar res-bar" class:exhausted={staminaLock === 'empty'}>
-          <div class="fill" style="width: {staminaPct}%; background: {staminaColor}"></div>
-          <div class="reserve" style="left: {STAMINA_RESERVE * 100}%"></div>
-          <!-- Named, like every other pool. An unlabelled bar is read by its
-               colour alone, which is how a full mana bar gets mistaken for a
-               resource that was only just added. -->
-          <div class="label">{staminaMark}Stamina {pool('stamina')}</div>
-        </div>
-      </div>
-      {#snippet tip()}
-        {@render poolTip(
-          `Stamina ${pool('stamina')}`,
-          'maxStamina',
-          'staminaRegen',
-          'staminaEff',
-          STAMINA_EFF_FACTORS,
-          staminaNotes,
-          STAMINA_EFF_FLOOR,
-        )}
-      {/snippet}
-    </Tip>
-    <Tip block>
-      <div class="res">
-        <Icon of={RESOURCES.mana} size={RES_ICON} />
-        <div class="bar res-bar" class:burning={manaDebt > 0}>
-          <div class="fill" style="width: {manaPct}%; background: {manaColor}"></div>
-          <div class="label">
-            {manaDebt > 0 ? `−${fmt(manaDebt)} burned` : `Mana ${pool('mana')}`}
-          </div>
-        </div>
-      </div>
-      {#snippet tip()}
-        {@render poolTip(
-          `Mana ${pool('mana')}`,
-          'maxMana',
-          'manaRegen',
-          'manaEff',
-          MANA_EFF_FACTORS,
-          [`Resting recovers it ×${RESOURCES.mana.restRegenMult} as fast`],
-        )}
-      {/snippet}
-    </Tip>
-
-    <!-- Spirit and Focus: the two standing pools, one divine, one psionic -->
-    <Tip block>
-      <div class="res">
-        <Icon of={RESOURCES.spirit} size={RES_ICON} />
-        <div class="bar res-bar">
-          <div class="fill" style="width: {spiritPct}%; background: var(--spirit)"></div>
-          <div class="label">Spirit {pool('spirit')}</div>
-        </div>
-      </div>
-      {#snippet tip()}
-        {@render resTip(`Spirit ${pool('spirit')}`, 'maxSpirit', [
-          'Reserved for continuous spells & rituals (coming soon)',
-        ])}
-      {/snippet}
-    </Tip>
-    <Tip block>
-      <div class="res">
-        <Icon of={RESOURCES.focus} size={RES_ICON} />
-        <div class="bar res-bar">
-          <div class="fill" style="width: {focusPct}%; background: var(--focus)"></div>
-          <div class="label">Focus {pool('focus')}</div>
-        </div>
-      </div>
-      {#snippet tip()}
-        {@render resTip(`Focus ${pool('focus')}`, 'maxFocus', [
-          'The psionic pool. Overload will lower its maximum while a sustained psionic spell is active (coming soon)',
-        ])}
-      {/snippet}
-    </Tip>
-
-    <!-- Action bar: time until your next attack. No icon; the spacer lines it up with the bars. -->
-    <Tip block>
-      <div class="res">
-        <span class="res-spacer" style="width: {RES_ICON}px"></span>
-        <div class="bar res-bar action-bar">
-          <div class="fill" style="width: {actionPct}%; background: var(--action)"></div>
-        </div>
-      </div>
-      {#snippet tip()}{@render actionBarTip()}{/snippet}
-    </Tip>
-
-    <!-- The run's ability, while it acts on you. A 'bar' cell draws like a pool; the rest are one line. -->
-    {#each acting as { ab, cells } (ab.name)}
-      {#each cells as cell (cell.key)}
-        <Tip block>
-          <div class="res">
-            <span class="res-spacer ability-icon" style="width: {RES_ICON}px">{cell.icon}</span>
-            {#if cell.show === 'bar'}
-              <div class="bar res-bar">
-                <div class="fill" style="width: {cell.cap > 0 ? (100 * cell.value) / cell.cap : 0}%; background: var(--accent-fill)"></div>
-                <div class="label">{cell.label} {Math.floor(cell.value)} / {Math.floor(cell.cap)}</div>
-              </div>
-            {:else if cell.line}
-              <!-- A line says what the number does ("parries every blow up to 14"). -->
-              <span class="ability-line">{cell.label}: {cell.line}</span>
-            {:else}
-              <span class="ability-line" class:ability-low={(cell.show === 'signedPct' && cell.value < 0) || (cell.show === 'minusPct' && cell.value > 0)}>{cell.label} {abilityValue(cell)}</span>
-            {/if}
-          </div>
-          {#snippet tip()}
-            <div class="tip-line tip-base">{ab.icon} {cell.label === ab.name ? ab.name : `${ab.name}: ${cell.label}`}</div>
-            <div class="tip-line">{cell.desc}</div>
-            {#if cell.line}
-              <!-- Only the number the line was made from: the rest is not about this cell. -->
-              {#if cell.base}<div class="tip-line">{cell.base}: {Math.round(cell.value)}</div>{/if}
-            {:else}
-              {#each ab.cells.filter((c) => c.key !== cell.key) as other (other.key)}
-                <div class="tip-line">{other.icon} {other.label}: {abilityValue(other)}</div>
-              {/each}
-              {#each ab.inputs as input (input.label)}
-                <div class="tip-line">{input.label}: {input.show === 'pct' ? pct(input.value, 0) : input.value}</div>
-              {/each}
-            {/if}
-            <div class="tip-line dim">More: ✦ Ability tab.</div>
-          {/snippet}
-        </Tip>
-      {/each}
-    {/each}
-
-    <!-- Whatever is currently wrong with you. Absent when nothing is. -->
-    {#if afflictions.length}
-      <div class="afflictions">
-        {#each afflictions as held (held.id)}
-          {@const def = STATUSES[held.id]}
-          <Tip>
-            <!-- Primed: sitting at its ceiling, one dose from turning into
-                 something worse. It looks unchanged, so it pulses. -->
-            <span class="affliction" class:primed={escalationPrimed(gs, held)}>
-              <span class="affliction-icon">{def.icon}</span>
-              {def.name}{#if held.stacks > 1}<span class="stacks">×{held.stacks}</span>{/if}
-            </span>
-            {#snippet tip()}
-              {@const lines = statusTipLines(gs, held)}
-              {#each lines as line, i}
-                <div
-                  class="tip-line"
-                  class:tip-base={i === 0}
-                  class:tip-sub={line.startsWith('—')}
-                >{line}</div>
-              {/each}
-            {/snippet}
-          </Tip>
-        {/each}
-      </div>
-    {/if}
-
-    <!-- The dishes holding a slot, and the one waiting for the fight to end. -->
-    <DishSlots />
-  </div>
-
-  <Tip block>
-    <div class="bar res-bar level-bar">
-      <div class="fill" style="width: {levelPct}%; background: var(--xp)"></div>
-      <div class="label">Level {gs.level} · {Math.floor(gs.levelXp)}/{nextLevelXp} XP</div>
-    </div>
-    {#snippet tip()}
-      <div class="tip-line tip-base">Level {gs.level}: +{levelAttrBonus(gs)} to every attribute</div>
-      <div class="tip-line">Next level: {Math.ceil(nextLevelXp - gs.levelXp)} XP, then +{LEVEL_ATTR_BONUS} more to every attribute</div>
-      <div class="tip-line">XP from: kills (the monster's XP), quest turn-ins, a floor's first clear in the run</div>
-      {#if startingLevel(gs) > 1}
-        <div class="tip-line">Resets with the run. This run started at level {startingLevel(gs)} (Head Start).</div>
-      {:else}
-        <div class="tip-line">Resets with the run. The Head Start prestige boon raises the level a run starts at.</div>
-      {/if}
-    {/snippet}
-  </Tip>
-</div>
+<!-- The resource panel: the pools, conditions, dishes and level (ResourceBars.svelte). -->
+<ResourceBars mode={phone ? 'extras' : 'panel'} />
 
 {@render nav?.()}
 
@@ -728,140 +322,6 @@
     color: var(--text-dim);
     padding-left: 14px;
   }
-  .worn-title {
-    color: var(--accent);
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-
-  .level-bar {
-    margin-top: 8px;
-  }
-  .resources {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-bottom: 12px;
-  }
-
-  .res-bar.burning {
-    border-color: var(--manaburn);
-  }
-
-  .afflictions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .affliction {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 1px 7px 2px;
-    border: 1px solid var(--danger);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--danger) 14%, transparent);
-    font-size: 0.78rem;
-    line-height: 1.5;
-    white-space: nowrap;
-  }
-  /* At its ceiling: the numbers have stopped moving, so the pill does the
-     talking. One more dose and it becomes something worse. */
-  .affliction.primed {
-    animation: primed-pulse 1.15s ease-in-out infinite;
-  }
-  @keyframes primed-pulse {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 transparent;
-      border-color: var(--danger);
-    }
-    50% {
-      box-shadow: 0 0 6px 1px color-mix(in srgb, var(--danger) 55%, transparent);
-      border-color: color-mix(in srgb, var(--text) 45%, var(--danger));
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .affliction.primed {
-      animation: none;
-      border-color: color-mix(in srgb, var(--text) 45%, var(--danger));
-      box-shadow: 0 0 5px 1px color-mix(in srgb, var(--danger) 45%, transparent);
-    }
-  }
-  .affliction-icon {
-    font-size: 0.85rem;
-  }
-  .affliction .stacks {
-    opacity: 0.75;
-    font-variant-numeric: tabular-nums;
-  }
-  .afflictions :global(.tip-target) {
-    border-bottom: none;
-  }
-
-  .res-bar {
-    height: 16px;
-  }
-
-  /* Each pool's icon sits left of its bar, on the panel, not on the fill
-     colour where it was hard to read; the bar takes the rest of the width. */
-  .res {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .res > .res-bar {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  .res-spacer {
-    flex: none;
-  }
-
-  .ability-icon {
-    text-align: center;
-    font-size: 1.1rem;
-    line-height: 1;
-  }
-  .ability-line {
-    font-size: 0.8rem;
-    color: var(--xp-ink);
-  }
-  .ability-line.ability-low {
-    color: var(--danger);
-  }
-
-  .res-bar.action-bar {
-    height: 8px;
-  }
-
-  /* The reserve floor: stances stop spending once the fill reaches this mark. */
-  .res-bar .reserve {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: color-mix(in srgb, var(--bar-ink) 25%, transparent);
-    pointer-events: none;
-  }
-
-  /* Bottomed out — the sickly bar breathes to show your limbs are dragging. */
-  .res-bar.exhausted {
-    animation: sickly 1.8s ease-in-out infinite;
-  }
-
-  @keyframes sickly {
-    50% {
-      opacity: 0.55;
-    }
-  }
-
-  .res-bar.action-bar .fill {
-    transition: none; /* fills every tick; easing would lag behind the reset */
-  }
-
   .hint {
     margin-top: 6px;
   }
@@ -925,27 +385,5 @@
 
   td:last-child {
     text-align: right;
-  }
-
-  :global(.tip-line) {
-    color: var(--xp-ink);
-  }
-
-  :global(.tip-line.tip-base) {
-    color: var(--text-dim);
-    margin-bottom: 2px;
-  }
-
-  :global(.tip-line.tip-total) {
-    color: var(--accent);
-    font-weight: 600;
-    border-top: 1px solid var(--border);
-    margin-top: 3px;
-    padding-top: 3px;
-  }
-
-  :global(.tip-line.tip-sub) {
-    color: var(--text-dim);
-    margin-top: 4px;
   }
 </style>

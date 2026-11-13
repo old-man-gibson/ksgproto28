@@ -83,8 +83,11 @@
     color: var(--text);
   }
 
-  .nav-list .nav-entry:hover:not(:disabled) {
-    background: var(--bg-hover);
+  /* Hover paints only where a pointer can hover, as the global button rule does (app.css). */
+  @media (hover: hover) {
+    .nav-list .nav-entry:hover:not(:disabled) {
+      background: var(--bg-hover);
+    }
   }
 
   .nav-list .nav-entry.nav-on {
