@@ -335,6 +335,7 @@ that stays.
 | 2 | 2026-10-29 | The warring states band | floors 21–30 (moved from 11–20, §1.5) | Bank |
 | 3 | 2026-10-29 | The harbor band | band 4, floors 11–14 | Bank |
 | 4 | 2026-10-29 | The desert band | band 5, floors 18–20 | Bank |
+| 5 | 2026-11-12 | The six realms | floors 43–48, a hub | Note, unreviewed |
 
 ### Entry template
 
@@ -1478,6 +1479,36 @@ scumming.
    it may be low. The first dial to read when John reaches floor 19.
 
 **Open questions.** None.
+
+### 5. The six realms (posted 2026-11-12)
+
+Band: unassigned · Floors: 43–48 · Verdict: note, unreviewed (posted as
+"notes for later")
+
+**As posted.** "floors 43-48 will be a hub floor like the castle in 7-10,
+with the six floors in 43-48 being the six buddhist realms, but instead of
+being free to choose order, the player is free to enter any of them at any
+time, each one coming with its own restrictions and goals"
+
+**The shape, as read.**
+
+- A hub, like the castle (7–10), with six spokes: the six realms of
+  rebirth (gods, demigods, humans, animals, hungry ghosts, hells).
+- Difference from the castle: the castle's wards are entered in any
+  *order*, one at a time to completion. Here every realm stays enterable
+  at any time; the player moves between them freely.
+- Each realm carries its own restrictions (rules on the character while
+  inside) and its own goals.
+
+**Not yet decided.** The review (§3.5) runs when the user asks; these are
+the gaps it would fill.
+
+- What leaving the hub needs: all six goals, some count of them, or one
+  hub-level goal.
+- Whether progress inside a realm is kept on exit or reset on re-entry.
+- Whether a restriction stays on the character after leaving its realm.
+- Floors 31–42 are unwritten, so the band number and the entry level are
+  open.
 
 ---
 
