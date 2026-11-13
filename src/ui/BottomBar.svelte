@@ -3,6 +3,7 @@
   import { isNewEntry, navMark, type NavRow } from './lib/nav';
   import Icon from './lib/icons/Icon.svelte';
   import { viewport } from './lib/viewport.svelte';
+  import { centerInRow } from './lib/rowScroll';
   import LogTicker from './LogTicker.svelte';
 
   /**
@@ -43,10 +44,13 @@
     };
   });
 
-  // The open screen stays in view in the row, whichever way it was opened (a map card's link, the tutorial's pointer).
+  // The open screen stays in view in the row, whichever way it was opened (a map
+  // card's link, the tutorial's pointer). The row scrolls and nothing above it:
+  // `scrollIntoView` scrolled the page too, by the bar's own height.
   $effect(() => {
     void ui.tab;
-    row?.querySelector('[aria-current="page"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    const open = row?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (row && open) centerInRow(row, open);
   });
 </script>
 

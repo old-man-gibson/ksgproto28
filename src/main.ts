@@ -53,68 +53,47 @@ import { installSaveTriggers } from './ui/lib/saveTriggers';
 import { applyTheme, loadTheme } from './ui/lib/theme';
 import { boot, catchUp, game, save, timeAway, ui } from './ui/state.svelte';
 import { TickAccumulator } from './core/engine/loop';
+import { createPump } from './ui/lib/pump';
 import { OFFLINE_MIN_MS } from './core/save/offline';
 
 const acc = new TickAccumulator();
-let last = performance.now();
-let lastSave = performance.now();
-
-// A long stall (laptop sleep, heavily-throttled background tab) is handled
-// like offline time: big gaps get a capped silent catch-up + summary modal.
-const GAP_THRESHOLD_MS = 10_000;
 
 /**
- * Advance the simulation by however much wall-clock time has passed. Driven by
+ * Advance the simulation by however much time has passed. Driven by
  * requestAnimationFrame while visible (smooth) and by setInterval while the
- * tab is hidden (rAF stops firing there — fatal for an idle game).
+ * tab is hidden (rAF stops firing there — fatal for an idle game). A long stall
+ * (laptop sleep, a throttled background tab, a phone asleep with the app alive)
+ * is handled like offline time: big gaps get a capped silent catch-up + summary
+ * modal (lib/pump.ts says how the gap is measured and why nothing counts twice).
  */
-function pump() {
-  const now = performance.now();
-  const elapsed = now - last;
-  last = now;
-
-  // Paused: the elapsed time is DROPPED, never accumulated, so no amount of
-  // staring at a fight turns into progress. The autosave keeps running, which
-  // is what stops a long pause from being cashed in as offline time later —
-  // `lastSaved` must not sit still while the player watches.
-  if (game.state.paused) {
-    if (now - lastSave > 30_000) {
-      save();
-      lastSave = now;
-    }
-    return;
-  }
-
-  if (elapsed > GAP_THRESHOLD_MS) {
-    // Detached catch-up (see state.svelte.ts): big gaps get the capped silent
-    // run + summary modal, 10-60s gaps run their ticks quietly — both off the
-    // reactive proxy, so a long stall never freezes the frame it returns on.
-    const summary = catchUp(elapsed);
-    if (summary) ui.offline = summary;
-  } else {
-    const ticks = acc.advance(elapsed);
+const frames = createPump({
+  perf: () => performance.now(),
+  wall: () => Date.now(),
+  paused: () => game.state.paused,
+  advance: (elapsedMs) => {
+    const ticks = acc.advance(elapsedMs);
     for (let i = 0; i < ticks; i++) game.tick();
-  }
-
-  if (now - lastSave > 30_000) {
-    save();
-    lastSave = now;
-  }
-}
+  },
+  // Detached catch-up (see state.svelte.ts): big gaps get the capped silent
+  // run + summary modal, 10-60s gaps run their ticks quietly — both off the
+  // reactive proxy, so a long stall never freezes the frame it returns on.
+  catchUp,
+  report: (summary) => {
+    ui.offline = summary;
+  },
+  save,
+});
 
 function frame() {
-  pump();
+  frames.pump();
   requestAnimationFrame(frame);
 }
 
 /** Start the clock. Nothing ticks until the boot catch-up has finished. */
 function startPump() {
-  // Reset the reference point AFTER the catch-up, or its own duration would
-  // read as a stall on the first frame and be caught up a second time.
-  last = performance.now();
-  lastSave = last;
+  frames.start();
   requestAnimationFrame(frame);
-  setInterval(pump, 1000);
+  setInterval(frames.pump, 1000);
 }
 
 // Saves on the events that may be a page's last (lib/saveTriggers.ts), and
@@ -123,9 +102,9 @@ function startPump() {
 const saveNow = installSaveTriggers({
   save,
   blocked: () => ui.catchingUp !== null,
-  saved: () => {
-    lastSave = performance.now();
-  },
+  saved: () => frames.saved(),
+  // The page turns visible again: credit what passed while it was away now.
+  visible: () => frames.settle(),
 });
 
 // Mount FIRST, catch up SECOND. The boot catch-up is synchronous and, on a
@@ -141,8 +120,9 @@ if (away >= OFFLINE_MIN_MS && !game.state.paused) ui.catchingUp = away;
 applyTheme(loadTheme());
 mount(App, { target: document.getElementById('app')! });
 // The Android app's back button (closes the topmost window or drawer, else saves
-// and minimizes) and its pause event (saves). No-op outside the Android app.
-installAndroidBack({ blocked: () => ui.catchingUp !== null, save: saveNow });
+// and minimizes), its pause event (saves) and its resume event (credits the time
+// the app was away). No-op outside the Android app.
+installAndroidBack({ blocked: () => ui.catchingUp !== null, save: saveNow, resume: () => frames.settle() });
 if (ui.catchingUp !== null) {
   requestAnimationFrame(() =>
     setTimeout(() => {

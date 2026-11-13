@@ -15,7 +15,9 @@ import { closeTopOverlay } from './overlays';
  * `lastSaved` and lose the time away that catch-up is about to credit.
  *
  * Android may kill a backgrounded app without a word, so the `pause` event also
- * writes the save.
+ * writes the save. The `resume` event credits the time the app was away
+ * (lib/pump.ts `settle`): a device asleep with the app alive stops the clock the
+ * frame pump reads, and only the wall clock knows how long it slept.
  */
 export interface BackHooks {
   /** True while a back press must do nothing at all. */
@@ -35,11 +37,12 @@ export function pressBack(hooks: BackHooks): void {
 }
 
 /** Listen for the back button and `pause`. Does nothing outside the Android app. */
-export function installAndroidBack(hooks: Pick<BackHooks, 'blocked' | 'save'>): void {
+export function installAndroidBack(hooks: Pick<BackHooks, 'blocked' | 'save'> & { resume?: () => void }): void {
   if (!Capacitor.isNativePlatform()) return;
   const minimize = () => void App.minimizeApp();
   void App.addListener('backButton', () => pressBack({ ...hooks, minimize }));
   void App.addListener('pause', () => {
     if (!hooks.blocked()) hooks.save();
   });
+  void App.addListener('resume', () => hooks.resume?.());
 }

@@ -48,4 +48,13 @@ describe('the save triggers', () => {
     saveNow();
     expect(save).toHaveBeenCalledTimes(1);
   });
+
+  it('runs the visible hook when the page turns visible, and not when it hides', () => {
+    const visible = vi.fn();
+    installSaveTriggers({ save: () => {}, blocked: () => false, saved: () => {}, visible });
+    hide('hidden');
+    expect(visible).not.toHaveBeenCalled();
+    hide('visible');
+    expect(visible).toHaveBeenCalledTimes(1);
+  });
 });

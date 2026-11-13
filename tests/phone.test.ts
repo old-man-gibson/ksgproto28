@@ -3,7 +3,7 @@ import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
 import { dockParts } from '../src/ui/lib/shell';
 import { tutorialScreen } from '../src/ui/lib/tutorialFocus';
-import { PHONE_BELOW, SHORT_BELOW, SHORT_MAX_WIDTH } from '../src/ui/lib/viewport.svelte';
+import { PHONE_BELOW, SHORT_BELOW, SHORT_MAX_WIDTH, SHORT_MIN_WIDTH } from '../src/ui/lib/viewport.svelte';
 import { TUTORIAL_TEXT } from '../src/core/text/tutorial.text';
 import { CARD_GAP, CARD_MARGIN, cardTop } from '../src/ui/lib/tipPlace';
 import { readText } from './themeCss';
@@ -119,16 +119,18 @@ describe('the layouts do not draw one thing twice', () => {
     }
   });
 
-  it('turns a window under 500px tall and under 960px wide into the phone shell, from the same flag', () => {
+  it('turns a window under 500px tall and 640 to 959px wide into the phone shell, from the same flag', () => {
     expect(SHORT_BELOW).toBe(500);
+    expect(SHORT_MIN_WIDTH).toBe(640);
     expect(SHORT_MAX_WIDTH).toBe(960);
     const viewport = readText('src/ui/lib/viewport.svelte.ts');
     expect(viewport).toContain('SHORT_BELOW - 1');
+    expect(viewport).toContain('min-width: ${SHORT_MIN_WIDTH}px');
     expect(viewport).toContain('SHORT_MAX_WIDTH - 1');
     // phone is the narrow rule or the short one: one flag, so the shell never sees one without the other.
     expect(viewport).toMatch(/viewport\.phone = narrow\.matches \|\| short\.matches/);
     for (const [name, css] of [['App', app], ['Dock', dock], ['BottomBar', bottom]] as const) {
-      expect(css.match(/(max|min)-(height|width):\s*(499|500|959|960)px/g) ?? [], name).toEqual([]);
+      expect(css.match(/(max|min)-(height|width):\s*(499|500|639|640|959|960)px/g) ?? [], name).toEqual([]);
     }
     // The compact form is a class set from `viewport.short`, in the two blocks that change.
     expect(dock).toContain('class:short={viewport.short}');

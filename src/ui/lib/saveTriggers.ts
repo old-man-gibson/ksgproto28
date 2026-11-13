@@ -11,15 +11,19 @@
  * it. `blocked` is true before the boot catch-up has run (`ui.catchingUp`): the
  * state is still the saved one, and a write then would reset `lastSaved` and
  * lose the time away that catch-up is about to credit.
+ *
+ * `visible` runs when the page turns visible again, which is when the time it was
+ * hidden for is credited (lib/pump.ts `settle`).
  */
 export interface SaveTriggers {
   save: () => void;
   blocked: () => boolean;
   saved: () => void;
+  visible?: () => void;
 }
 
 /** Listen for the events above. Returns the function that writes the save now (nothing while blocked). */
-export function installSaveTriggers({ save, blocked, saved }: SaveTriggers): () => void {
+export function installSaveTriggers({ save, blocked, saved, visible }: SaveTriggers): () => void {
   const saveNow = () => {
     if (blocked()) return;
     save();
@@ -29,6 +33,7 @@ export function installSaveTriggers({ save, blocked, saved }: SaveTriggers): () 
   window.addEventListener('pagehide', saveNow);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveNow();
+    else visible?.();
   });
   return saveNow;
 }
