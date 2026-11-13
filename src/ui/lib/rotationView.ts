@@ -9,6 +9,8 @@
  * full order and carries the hidden entries along.
  */
 
+import { slotTarget, stepSlot } from './reorder';
+
 /** What the panel reads of a skill's trigger overlay (`GameState.skillTriggers`). */
 type TriggerOverlays = Record<string, { enabled?: boolean } | undefined>;
 
@@ -44,9 +46,5 @@ export function stepTarget(
   id: string,
   dir: -1 | 1,
 ): string | null | undefined {
-  const at = visible.indexOf(id);
-  if (at === -1) return undefined;
-  if (dir === -1) return at === 0 ? undefined : visible[at - 1];
-  if (at === visible.length - 1) return undefined;
-  return at + 2 < visible.length ? visible[at + 2] : null;
+  return slotTarget(visible, id, stepSlot(visible.indexOf(id), dir));
 }

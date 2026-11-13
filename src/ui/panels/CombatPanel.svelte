@@ -75,6 +75,7 @@
   import MartialPlanner from './MartialPlanner.svelte';
   import { tutorialScreen } from '../lib/tutorialFocus';
   import { rankNote, stepTarget, visibleIds } from '../lib/rotationView';
+  import { slotTarget } from '../lib/reorder';
 
   /**
    * The rows of an affliction total worth drawing.
@@ -240,6 +241,14 @@
     return ink(POSITIONS[techniqueExit(gs, t)]?.color ?? ANY_POSITION_COLOR);
   }
 
+  /** The pills' words, for the card's tap card (a title is hover-only): "Coiled or Guarded to Extended". */
+  function flowText(t: TechniqueDef): string {
+    const from = entryPositions(gs, t);
+    const names =
+      from === 'any' ? 'Anywhere' : from.map((p) => POSITIONS[p]?.name ?? p).join(' or ');
+    return `${names} to ${POSITIONS[techniqueExit(gs, t)]?.name ?? techniqueExit(gs, t)}`;
+  }
+
   /** The card's left→right tint: enters on its entry color, leaves on its exit color. */
   function flowGradient(t: TechniqueDef): string {
     const from = `color-mix(in srgb, ${entryColor(t)} 15%, transparent)`;
@@ -339,15 +348,47 @@
     loadoutName = '';
   }
 
-  // ---- Drag and drop ----
+  // ---- Drag and drop, and the tap path ----
+  // A mouse drags a card; a finger cannot, so it picks a card up (the grip
+  // button) and taps the card it goes before, or the end slot. Both end in
+  // `onDrop`, so one set of placement rules writes the order (lib/reorder.ts).
   let dragging = $state<string | null>(null);
   let dropTarget = $state<string | null>(null);
+  /** The card picked up by tap, or null. */
+  let picked = $state<string | null>(null);
 
+  /** Put the carried card before `beforeId`, or last when null. */
   function onDrop(beforeId: string | null) {
-    if (dragging) game.moveSkillTo(dragging, beforeId);
+    const moving = dragging ?? picked;
+    if (moving) {
+      const slot = beforeId === null ? cardIds.length : cardIds.indexOf(beforeId);
+      const target = slotTarget(cardIds, moving, slot);
+      if (target !== undefined) game.moveSkillTo(moving, target);
+    }
     dragging = null;
     dropTarget = null;
+    picked = null;
   }
+
+  // A card that leaves the list (benched, a spell unprepared) cannot stay picked.
+  $effect(() => {
+    if (picked !== null && !cardIds.includes(picked)) picked = null;
+  });
+
+  // Escape puts a picked card down, and nothing else sees the key (the Android
+  // back button sends Escape, and it must not also close the window under it).
+  // Capture phase, so it runs before a window's own listener.
+  $effect(() => {
+    if (picked === null) return;
+    const cancel = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      picked = null;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', cancel, true);
+    return () => window.removeEventListener('keydown', cancel, true);
+  });
 
   // ---- Move buttons ----
   /** The card list, to find a card's buttons again after it has moved. */
@@ -363,8 +404,10 @@
     // on the top or bottom card the pressed button is now disabled, so the
     // other one takes focus.
     await tick();
+    // A card has two sets of arrows, one in the gutter and one in its pick bar;
+    // only the set the card's width shows can take focus.
     const own = [...(listEl?.querySelectorAll<HTMLButtonElement>('button.step') ?? [])].filter(
-      (b) => b.dataset.id === id,
+      (b) => b.dataset.id === id && b.offsetParent !== null,
     );
     (own.find((b) => b.dataset.dir === String(dir) && !b.disabled) ?? own.find((b) => !b.disabled))?.focus();
   }
@@ -573,6 +616,29 @@
   {/each}
 {/snippet}
 
+<!-- One place up or down among the drawn cards. A card has two copies: in its
+     gutter (a card wide enough for them) and in its pick bar (a narrow one). -->
+{#snippet stepButtons(id: string, name: string)}
+  <button
+    class="tiny step"
+    data-id={id}
+    data-dir="-1"
+    disabled={stepTarget(cardIds, id, -1) === undefined}
+    onclick={() => stepCard(id, -1)}
+    aria-label="Move {name} up"
+    title="Move up">▲</button
+  >
+  <button
+    class="tiny step"
+    data-id={id}
+    data-dir="1"
+    disabled={stepTarget(cardIds, id, 1) === undefined}
+    onclick={() => stepCard(id, 1)}
+    aria-label="Move {name} down"
+    title="Move down">▼</button
+  >
+{/snippet}
+
 <!-- The technique-slot facts, for the Active Skills hint and the slot count. -->
 {#snippet slotLines()}
   {@const extra = slotCap - MAX_DRILLED - BASE_TECHNIQUE_SLOTS}
@@ -584,7 +650,7 @@
 
 <!-- The fight, drawn — first on the tab, because it is what the tab is for.
      Between fights it stays up, showing the place and what it is waiting on. -->
-<div style="margin-bottom: 12px" class:tutorial-target={stageTarget}>
+<div class="stage-box" style="margin-bottom: 12px" class:tutorial-target={stageTarget}>
   <BattleStage {spot} foeTip={enemyTip} startBelow={soleHunt} />
   <!-- The player's own rule between fights (systems/huntrest.ts). Applies to
        hunts only: forced fights and the keeper's dare start regardless. -->
@@ -820,11 +886,12 @@
     <h3>Active Skills</h3>
     {#if rotation.length > 0}
       <Tip>
-        <span class="small dim">Fires: top to bottom. Click a card for conditions.</span>
+        <span class="small dim">Fires: top to bottom. Tap a card for conditions.</span>
         {#snippet tip()}
-          <div class="tip-line">Order: drag a card, or use its up and down buttons.</div>
-          <div class="tip-line">Conditions: click a card to set when it fires.</div>
-          <div class="tip-line">Details: hover a card name for its description.</div>
+          <div class="tip-line">Order: drag a card with a mouse. With a finger, tap ⠿ on a card, then tap the card it goes before.</div>
+          <div class="tip-line">Steps: the ▲ and ▼ buttons move a card one place.</div>
+          <div class="tip-line">Conditions: tap a card to set when it fires.</div>
+          <div class="tip-line">Details: long press a card name, or hover it with a mouse.</div>
           <!-- Alpha shutter (systems/unlocks.ts, `martial`): no drilling or loadouts;
                the order and the triggers are editable all the same. -->
           {#if martialOpen}
@@ -898,6 +965,8 @@
           class:ready={status ? status.kind === 'primed' || status.kind === 'ready' : cd <= 0 && !off}
           class:disabled={off}
           class:dragging={dragging === id}
+          class:picked={picked === id}
+          class:landing={picked !== null && picked !== id}
           class:drop-before={dropTarget === id && dragging !== id}
           style={tech ? flowGradient(tech) : undefined}
           role="listitem"
@@ -908,8 +977,9 @@
           ondragleave={() => { if (dropTarget === id) dropTarget = null; }}
           ondrop={(e) => { e.stopPropagation(); onDrop(id); }}
         >
-          <!-- The gutter: where the card fires from, and the keyboard path to
-               change it (drag has none). Both buttons share the drag gate. -->
+          <!-- The gutter: where the card fires from, the grip that picks the
+               card up for a finger (drag has no touch path), and the arrows.
+               All of it shares the drag gate. -->
           <div class="gutter">
             <!-- A rank that is not a turn (a counter, or a card switched off)
                  keeps its place in the order but is drawn dimmed. -->
@@ -923,25 +993,24 @@
             {/if}
             {#if rotationEditable}
               <button
-                class="tiny step"
-                data-id={id}
-                data-dir="-1"
-                disabled={stepTarget(cardIds, id, -1) === undefined}
-                onclick={() => stepCard(id, -1)}
-                aria-label="Move {entry.name} up"
-                title="Move up">▲</button
+                class="tiny grip"
+                class:on={picked === id}
+                aria-pressed={picked === id}
+                aria-label={picked === id ? `Put ${entry.name} down` : `Pick up ${entry.name} to move it`}
+                onclick={() => (picked = picked === id ? null : id)}>⠿</button
               >
-              <button
-                class="tiny step"
-                data-id={id}
-                data-dir="1"
-                disabled={stepTarget(cardIds, id, 1) === undefined}
-                onclick={() => stepCard(id, 1)}
-                aria-label="Move {entry.name} down"
-                title="Move down">▼</button
-              >
+              {@render stepButtons(id, entry.name)}
             {/if}
           </div>
+          <!-- A card in the way of nothing: while another is picked up, a tap
+               anywhere on this one puts the picked card before it. -->
+          {#if picked !== null && picked !== id}
+            <button
+              class="place"
+              aria-label="Move {cards.find((c) => c.id === picked)?.entry.name ?? 'the picked card'} before {entry.name}"
+              onclick={() => onDrop(id)}
+            ><span class="place-hint">Put it before this</span></button>
+          {/if}
           <!-- Line 1: what it is. Line 2: what it costs and when it comes
                round again. Techniques carry their footwork and drill switch
                on the right of line 1 — nothing else has either. -->
@@ -967,6 +1036,12 @@
                       ? ` · next in ${toNext}`
                       : ''}
                   </div>
+                  <div class="tip-line tip-sub">Flow: {flowText(tech)}.</div>
+                  {#if martialOpen}
+                    <div class="tip-line tip-sub">
+                      Drill: {isDrilled(gs, tech.id) ? 'on. Reps bank toward mastery.' : 'off. Reps do not count.'}
+                    </div>
+                  {/if}
                 {:else if spellOf(id)}
                   <!-- A spell says what it DOES, same words as the grimoire. -->
                   {@const spec = resolveSpell(spellOf(id)!)}
@@ -977,6 +1052,12 @@
                   <div class="tip-line tip-sub">
                     {targetLabel(spec)} · {entry.cost} · ⟳ every {ticksToTime(spec.cooldown)}
                   </div>
+                  {#if isUtilityWorking(spec)}
+                    {@const check = canCastUtility(gs, spellOf(id)!.uid)}
+                    <div class="tip-line tip-sub">
+                      Cast now: {check.ok ? 'ready, ✨ casts it on you.' : (check.reason ?? 'not available.')}
+                    </div>
+                  {/if}
                 {:else if id === GENE_ACTIVE}
                   <!-- A body's tool says what it reads off, because that is the
                        whole of what makes it different from a skill. -->
@@ -1002,7 +1083,7 @@
                   </div>
                 {/if}
                 {#if rotationEditable}
-                  <div class="tip-line tip-sub">Click to set when it fires · drag to reorder.</div>
+                  <div class="tip-line tip-sub">Tap: set when it fires. ⠿: pick up to reorder.</div>
                 {/if}
               {/snippet}
             </Tip>
@@ -1044,8 +1125,20 @@
               {entry.blocked && !off ? entry.blocked : whenText(status, cd, off, entry.cooldown, entry.speaking)}
             </span>
           </div>
+          {#if picked === id}
+            <!-- The picked card: where to put it, and the arrows for a card too
+                 narrow to carry them in its gutter. -->
+            <div class="pick-bar small">
+              {@render stepButtons(id, entry.name)}
+              <span class="dim pick-note">Tap the card it goes before.</span>
+              <button class="tiny" onclick={() => (picked = null)}>Done</button>
+            </div>
+          {/if}
         </div>
       {/each}
+      {#if picked !== null && cardIds[cardIds.length - 1] !== picked}
+        <button class="place-end" onclick={() => onDrop(null)}>▸ Put it last</button>
+      {/if}
     </div>
   {/if}
 
@@ -1211,6 +1304,16 @@
   /* A condition one dose from turning (see escalationPrimed). */
   .tip-line.primed {
     color: var(--danger);
+  }
+
+  /* A phone on its side is about 390px tall, and the header and the log row take
+     a third of that: the 250px stage that BattleStage uses from 700px down would
+     leave the foe under the log row. The stage keeps its width-driven sizes and
+     gives up height. */
+  @media (max-height: 480px) {
+    .stage-box :global(.stage) {
+      height: 210px;
+    }
   }
 
   /* The player's rest rule, a slim row under the stage it governs. */
@@ -1678,6 +1781,104 @@
   button.step {
     padding: 0 5px;
     font-size: 10px;
+  }
+
+  button.grip {
+    padding: 0 5px;
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  button.grip.on {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 22%, var(--bg-raised));
+  }
+
+  /* A card is a size container: it carries its arrows in the gutter only when it
+     is wide enough for them beside the name. A narrower one shows them in the
+     bar under it while it is picked up (card width, not window width: a tablet
+     column and a phone screen are told apart by what the card has). */
+  .active-skill {
+    position: relative;
+    container: card / inline-size;
+  }
+
+  .gutter .step {
+    display: none;
+  }
+
+  @container card (min-width: 420px) {
+    .gutter .step {
+      display: inline-block;
+    }
+    .pick-bar .step {
+      display: none;
+    }
+  }
+
+  /* The picked card: lit, with its own bar. */
+  .active-skill.picked {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .pick-bar {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0 3px;
+  }
+
+  .pick-note {
+    flex: 1 1 8em;
+    min-width: 0;
+  }
+
+  /* Every other card while one is picked: the landing mark the drag draws, and a
+     tap target over the whole card. */
+  .active-skill.landing {
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  button.place {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    min-height: 0;
+    background: color-mix(in srgb, var(--bg-panel) 78%, transparent);
+    border: 1px dashed var(--accent);
+    border-radius: 7px;
+  }
+
+  .place-hint {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  button.place-end {
+    grid-column: 1 / -1;
+    border-style: dashed;
+    border-color: var(--accent);
+  }
+
+  /* A finger: the controls on a card are 44px wide as well as 44px tall. */
+  @media (pointer: coarse) {
+    button.tiny,
+    select {
+      min-width: 44px;
+    }
+
+    /* app.css raises buttons and selects to 44px; a text field is not one. */
+    .loadout-name {
+      min-height: 44px;
+    }
   }
 
   .active-skill:not(.ready) .skill-name {

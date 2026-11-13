@@ -5,6 +5,7 @@
   import type { PartKindDef } from '../../core/types';
   import { formKnown } from '../../core/systems/forging';
   import { anvil, loadOnAnvil } from '../lib/anvil.svelte';
+  import Tip from '../lib/Tip.svelte';
   import {
     adaptMaterials,
     chartEntries,
@@ -66,7 +67,12 @@
       {/each}
     </div>
     <div class="group">
-      <span class="small dim" title="Applies to rings and bent pieces, up to the most one slot takes">Head count</span>
+      <Tip>
+        <span class="small dim">Head count</span>
+        {#snippet tip()}
+          <div class="tip-line">Applies to: rings and bent pieces, up to the most one slot takes.</div>
+        {/snippet}
+      </Tip>
       {#each COUNTS as n (n)}
         <button class="small" class:selected={anvil.chart.count === n} onclick={() => (anvil.chart.count = n)}>×{n}</button>
       {/each}
@@ -99,18 +105,32 @@
               <td>
                 {#each entries as entry (entry.cls.id)}
                   {@const known = formKnown(gs, entry.cls.id)}
-                  <button
-                    class:unknown={!known}
-                    class:degenerate={known && entry.cls.degenerate}
-                    class:current={sameShape(entry.placement, anvil.placement)}
-                    disabled={!known}
-                    title={known
-                      ? `${SLOT_NAMES[entry.cls.slot]}${entry.cls.degenerate ? ', degenerate form' : ''}. Load on the anvil.`
-                      : 'Not forged on this save'}
-                    onclick={() => load(entry)}
-                  >
-                    {known ? entry.cls.name : '?'}
-                  </button>
+                  <!-- A title is hover-only: the same words are the card of a long press. -->
+                  <Tip>
+                    <button
+                      class:unknown={!known}
+                      class:degenerate={known && entry.cls.degenerate}
+                      class:current={sameShape(entry.placement, anvil.placement)}
+                      disabled={!known}
+                      title={known
+                        ? `${SLOT_NAMES[entry.cls.slot]}${entry.cls.degenerate ? ', degenerate form' : ''}. Load on the anvil.`
+                        : 'Not forged on this save'}
+                      onclick={() => load(entry)}
+                    >
+                      {known ? entry.cls.name : '?'}
+                    </button>
+                    {#snippet tip()}
+                      {#if known}
+                        <div class="tip-line tip-base">{entry.cls.name}</div>
+                        <div class="tip-line">
+                          Slot: {SLOT_NAMES[entry.cls.slot]}{entry.cls.degenerate ? '. Degenerate form' : ''}.
+                        </div>
+                        <div class="tip-line tip-sub">Tap: loads it on the anvil.</div>
+                      {:else}
+                        <div class="tip-line">Not forged on this save.</div>
+                      {/if}
+                    {/snippet}
+                  </Tip>
                 {:else}
                   <span class="dim">–</span>
                 {/each}
@@ -131,9 +151,16 @@
     </div>
     <div class="form-list">
       {#each knownClasses as c (c.id)}
-        <button class="small" title={placementText(c.exemplar)} onclick={() => loadOnAnvil(gs, adaptMaterials(c.exemplar, anvil.placement))}>
-          {c.icon} {c.name}
-        </button>
+        <Tip>
+          <button class="small" title={placementText(c.exemplar)} onclick={() => loadOnAnvil(gs, adaptMaterials(c.exemplar, anvil.placement))}>
+            {c.icon} {c.name}
+          </button>
+          {#snippet tip()}
+            <div class="tip-line tip-base">{c.icon} {c.name}</div>
+            <div class="tip-line">Exemplar: {placementText(c.exemplar)}.</div>
+            <div class="tip-line tip-sub">Tap: loads it on the anvil.</div>
+          {/snippet}
+        </Tip>
       {:else}
         <span class="small dim">None yet. Forge a piece, or craft a recipe line, to record its form.</span>
       {/each}
@@ -173,8 +200,35 @@
     padding: 2px 7px;
   }
 
+  /* The grid is wider than a phone: it scrolls inside its own box, with the row
+     names held at the left edge. */
   .scroll {
     overflow-x: auto;
+    max-width: 100%;
+  }
+
+  th.rowhead {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+  }
+
+  /* A finger: 44px wide as well as tall (app.css gives the height). */
+  @media (pointer: coarse) {
+    button.small,
+    td button {
+      min-width: 44px;
+    }
+  }
+
+  /* A Tip wraps each button and each cell's button: no underline, full width. */
+  td > :global(.tip-target) {
+    display: block;
+    border-bottom: none;
+  }
+
+  .form-list > :global(.tip-target) {
+    border-bottom: none;
   }
 
   table {

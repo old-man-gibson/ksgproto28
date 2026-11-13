@@ -67,6 +67,7 @@
   import { specLines, targetLabel } from '../lib/format';
   import { deityKnown, subsystemUnlocked, wordUnlocked } from '../../core/systems/unlocks';
   import Tip from '../lib/Tip.svelte';
+  import { foldItem, insertItem, isTouchPointer, moveItem, stepSlot } from '../lib/reorder';
 
   /**
    * The spellcrafting table: one piece of furniture, three schools.
@@ -144,6 +145,15 @@
   let dragIndex = $state<number | null>(null);
   let dragWord = $state<string | null>(null);
   let overIndex = $state<number | null>(null);
+  // A finger cannot drag. It taps a tile to pick it up (`pickIndex`), then taps
+  // where it goes: the tile it goes before (the same word merges, as a drop on
+  // its twin does), the end slot, or the arrows. Every one of those ends in
+  // `dropAt` or `merge`, the functions a drop calls (lib/reorder.ts).
+  let pickIndex = $state<number | null>(null);
+  /** The tile being moved, by either path. */
+  const carriedIndex = $derived(dragIndex ?? pickIndex);
+  /** The kind of the last pointer press on the strip: what a click on a tile means. */
+  let lastPointer = '';
 
   function speak(id: string) {
     if (sentence.length >= cap) return;
@@ -152,6 +162,7 @@
 
   function unspeak(index: number) {
     sentence = sentence.filter((_, i) => i !== index);
+    pickIndex = null;
   }
 
   /**
@@ -183,8 +194,8 @@
   function mergeInto(index: number): { id: string; tier: number } | null {
     const target = sentence[index];
     if (!target) return null;
-    const dragged = dragIndex !== null ? sentence[dragIndex] : dragWord;
-    if (!dragged || dragIndex === index) return null;
+    const dragged = carriedIndex !== null ? sentence[carriedIndex] : dragWord;
+    if (!dragged || carriedIndex === index) return null;
     const a = splitWordId(target);
     const b = splitWordId(dragged);
     if (a.id !== b.id) return null;
@@ -197,37 +208,79 @@
     return { id: a.id, tier };
   }
 
-  /** Fold the dragged word into the tile at `index`, deepening it. */
+  /** Fold the carried word into the tile at `index`, deepening it. */
   function merge(index: number, into: { id: string; tier: number }) {
-    const next = [...sentence];
-    next[index] = `${into.id}:${into.tier}`;
-    // Take the source tile out AFTER writing, so indices stay honest.
-    if (dragIndex !== null) next.splice(dragIndex, 1);
-    sentence = next;
+    sentence = foldItem(sentence, index, `${into.id}:${into.tier}`, carriedIndex);
     dragIndex = null;
     dragWord = null;
     overIndex = null;
+    pickIndex = null;
   }
 
   /** Drop at `index` (sentence.length = append): move a tile or place a word. */
   function dropAt(index: number) {
-    if (dragIndex !== null) {
-      const moved = [...sentence];
-      const [tile] = moved.splice(dragIndex, 1);
-      moved.splice(index > dragIndex ? index - 1 : index, 0, tile);
-      sentence = moved;
-    } else if (dragWord && sentence.length < cap) {
-      const placed = [...sentence];
-      placed.splice(index, 0, dragWord);
-      sentence = placed;
-    }
+    if (carriedIndex !== null) sentence = moveItem(sentence, carriedIndex, index);
+    else if (dragWord) sentence = insertItem(sentence, index, dragWord, cap);
     dragIndex = null;
     dragWord = null;
     overIndex = null;
+    pickIndex = null;
   }
 
+  /** A tap on tile `i`: with a tile picked it is the place to put it; otherwise a finger picks it up and a mouse removes it. */
+  function tapTile(i: number) {
+    if (pickIndex !== null) {
+      if (pickIndex === i) {
+        pickIndex = null;
+        return;
+      }
+      const fold = mergeInto(i);
+      if (fold) merge(i, fold);
+      else dropAt(i);
+    } else if (isTouchPointer(lastPointer)) {
+      pickIndex = i;
+    } else {
+      unspeak(i);
+    }
+  }
+
+  /** One place earlier or later for the picked tile; it stays picked, so it can step again. */
+  function stepPicked(dir: -1 | 1) {
+    if (pickIndex === null) return;
+    const at = pickIndex;
+    const to = at + dir;
+    if (to < 0 || to >= sentence.length) return;
+    sentence = moveItem(sentence, at, stepSlot(at, dir));
+    pickIndex = to;
+  }
+
+  function clearSentence() {
+    sentence = [];
+    pickIndex = null;
+  }
+
+  // The strip is the arcane bench's: leaving it puts a picked tile down.
+  $effect(() => {
+    if (tab !== 'arcane') pickIndex = null;
+  });
+
+  // Escape puts a picked tile down, and nothing else sees the key: the Android
+  // back button sends Escape, and it must not also close the table's window.
+  // Capture phase, so it runs before the window's own listener.
+  $effect(() => {
+    if (pickIndex === null) return;
+    const cancel = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      pickIndex = null;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', cancel, true);
+    return () => window.removeEventListener('keydown', cancel, true);
+  });
+
   function inscribe() {
-    if (game.inscribeArcane(sentence)) sentence = [];
+    if (game.inscribeArcane(sentence)) clearSentence();
   }
 
   // ---------- Divine: the shelf of powers ----------
@@ -314,6 +367,17 @@
   /** Click ring r of an axis: inject r points; clicking the held ring clears. */
   function setAxis(axis: (typeof PSI_AXIS_LIST)[number]['id'], ring: number) {
     shape = { ...shape, [axis]: (shape[axis] ?? 0) === ring ? 0 : ring };
+  }
+
+  /**
+   * One point more or fewer on an axis, from the dial's own buttons. The rings
+   * are a few pixels thick on a phone, so the wheel is not the only way to set
+   * a value: this reaches the same shape.
+   */
+  function stepAxis(axis: (typeof PSI_AXIS_LIST)[number]['id'], delta: -1 | 1) {
+    const held = shape[axis] ?? 0;
+    const next = Math.max(0, Math.min(psiCap, held + delta));
+    if (next !== held) shape = { ...shape, [axis]: next };
   }
 
   // Shapes held in mind — recalling one only fills the wheel; nothing is cast
@@ -436,9 +500,14 @@
       A spell is a sentence. Word order matters: <i>fire pierce</i> starts with the noun,
       <i>pierce fire</i> with the verb — same words, different spells. Repeating a word
       deepens it: <i>fire fire</i> is <i>flame</i>, a third makes <i>blaze</i> — stronger than
-      the sum, and costlier still. Drag a word onto the same word to merge them into one (a
-      numeral on a word tile says how deep you have mastered it); right-click a merged word to remove
-      one layer. Targets and conjunctions never deepen; a word counts at most three times.
+      the sum, and costlier still. A numeral on a word tile says how deep you have mastered it.
+      Targets and conjunctions never deepen; a word counts at most three times.
+    </div>
+    <div class="small dim arrange">
+      <div>Add: tap a word below to put it last.</div>
+      <div>Move: a mouse drags a tile. A finger taps a tile to pick it up, then taps the tile it goes before, End, or an arrow.</div>
+      <div>Merge: put a tile onto the same word (a mouse drops it, a finger taps it) once your mastery is deep enough.</div>
+      <div>Remove: a mouse clicks a tile, or right-clicks a merged one to peel one layer. A finger uses the bar under the strip.</div>
     </div>
 
     <div
@@ -459,11 +528,18 @@
         {@const w = ARCANE_WORDS[tok.id]}
         {@const label = tok.tier > 1 ? (w?.stacked?.[tok.tier - 2] ?? w?.word) : w?.word}
         {@const fuses = overIndex === i ? mergeInto(i) : null}
+        {@const fusable = pickIndex !== null && pickIndex !== i ? mergeInto(i) : null}
         <button
           class="tile kind-{w?.kind}"
           class:drop-before={overIndex === i && !fuses}
           class:fusing={!!fuses}
+          class:fusable={!!fusable}
+          class:picked={pickIndex === i}
+          class:landing={pickIndex !== null && pickIndex !== i && !fusable}
           class:dragging={dragIndex === i}
+          aria-pressed={pickIndex === i}
+          onpointerdown={(e) => (lastPointer = e.pointerType)}
+          onkeydown={() => (lastPointer = 'key')}
           draggable="true"
           ondragstart={() => (dragIndex = i)}
           ondragend={() => {
@@ -483,8 +559,10 @@
             if (fold) merge(i, fold);
             else dropAt(i);
           }}
-          onclick={() => unspeak(i)}
+          onclick={() => tapTile(i)}
           oncontextmenu={(e) => {
+            // A long press fires this on a touch screen: it picks nothing and removes nothing.
+            if (isTouchPointer(lastPointer)) return;
             e.preventDefault();
             unstack(i);
           }}
@@ -497,10 +575,33 @@
         </button>
       {/each}
       {#if sentence.length === 0}
-        <span class="small dim strip-hint">drag words here, or click them below</span>
+        <span class="small dim strip-hint">tap a word below to add it</span>
+      {/if}
+      {#if pickIndex !== null && pickIndex !== sentence.length - 1}
+        <button class="slot-end" onclick={() => dropAt(sentence.length)}>▸ End</button>
       {/if}
       <span class="cap-note small dim">{sentence.length}/{cap} words</span>
     </div>
+
+    {#if pickIndex !== null && sentence[pickIndex]}
+      {@const held = splitWordId(sentence[pickIndex])}
+      {@const heldWord = ARCANE_WORDS[held.id]}
+      <!-- The picked tile: the arrows, the layer and the way out. Everything a
+           mouse does by dragging, clicking or right-clicking a tile. -->
+      <div class="pick-bar small">
+        <span class="pick-note">
+          <b>{heldWord?.icon} {held.tier > 1 ? (heldWord?.stacked?.[held.tier - 2] ?? heldWord?.word) : heldWord?.word}</b>
+          picked: tap the tile it goes before.
+        </span>
+        <button disabled={pickIndex === 0} onclick={() => stepPicked(-1)} aria-label="Move the picked word earlier">◀ Earlier</button>
+        <button disabled={pickIndex === sentence.length - 1} onclick={() => stepPicked(1)} aria-label="Move the picked word later">Later ▶</button>
+        {#if held.tier > 1}
+          <button onclick={() => unstack(pickIndex!)}>Peel layer</button>
+        {/if}
+        <button onclick={() => unspeak(pickIndex!)}>Remove</button>
+        <button onclick={() => (pickIndex = null)}>Done</button>
+      </div>
+    {/if}
 
     <div class="result">
       {#if check?.ok && check.spec}
@@ -523,7 +624,7 @@
 
     <div class="bench-actions">
       <button disabled={!check?.ok} onclick={inscribe}>🪄 Inscribe</button>
-      <button class="small" onclick={() => (sentence = [])}>Clear</button>
+      <button class="small" onclick={clearSentence}>Clear</button>
     </div>
 
     <div class="palette">
@@ -811,8 +912,22 @@
         {@const open = openAxes.includes(axis.id)}
         <Tip>
           <span class="legend-item" class:dim={!open}>
-            <span class="dot" style="background: {ink(axis.color)}"></span>
-            {axis.icon} {axis.name} <b>{open ? (shape[axis.id] ?? 0) : '🔒'}</b>
+            <button
+              class="dial"
+              disabled={!open || (shape[axis.id] ?? 0) <= 0}
+              aria-label="Remove a point from {axis.name}"
+              onclick={() => stepAxis(axis.id, -1)}>−</button
+            >
+            <span class="legend-name">
+              <span class="dot" style="background: {ink(axis.color)}"></span>
+              {axis.icon} {axis.name} <b>{open ? (shape[axis.id] ?? 0) : '🔒'}</b>
+            </span>
+            <button
+              class="dial"
+              disabled={!open || (shape[axis.id] ?? 0) >= psiCap}
+              aria-label="Add a point to {axis.name}"
+              onclick={() => stepAxis(axis.id, 1)}>+</button
+            >
           </span>
           {#snippet tip()}
             <div class="tip-line tip-base">{axis.icon} {axis.name}</div>
@@ -884,18 +999,31 @@
       <div class="mem-row">
         {#each memorized as mem, i (mem.name + i)}
           {@const active = shapeKey(mem.shape) === shapeKey(shape)}
-          <span class="mem-chip" class:active>
-            <button
-              class="mem-load"
-              title={psiShapeSummary(mem.shape)}
-              onclick={() => (shape = { ...mem.shape })}
-            >
-              {mem.name}
-            </button>
-            <button class="mem-drop" title="Forget this shape" onclick={() => game.forgetPsiShape(i)}>
-              ×
-            </button>
-          </span>
+          <!-- A title is hover-only: the allocation is the card of a long press. -->
+          <Tip>
+            <span class="mem-chip" class:active>
+              <button
+                class="mem-load"
+                title={psiShapeSummary(mem.shape)}
+                onclick={() => (shape = { ...mem.shape })}
+              >
+                {mem.name}
+              </button>
+              <button
+                class="mem-drop"
+                title="Forget this shape"
+                aria-label="Forget {mem.name}"
+                onclick={() => game.forgetPsiShape(i)}
+              >
+                ×
+              </button>
+            </span>
+            {#snippet tip()}
+              <div class="tip-line tip-base">{mem.name}</div>
+              <div class="tip-line">Shape: {psiShapeSummary(mem.shape)}.</div>
+              <div class="tip-line tip-sub">Tap: fills the wheel with it. ×: forgets it.</div>
+            {/snippet}
+          </Tip>
         {/each}
       </div>
     </div>
@@ -961,11 +1089,18 @@
                     {#if spec.focusCost}· 🧠 {spec.focusCost.toFixed(2)}{:else}· 💧 {spec.manaCost}{/if}
                     · ⏱️ {(spec.cooldown / TPS).toFixed(1)}s
                   </div>
+                  {#if isUtilityWorking(spec)}
+                    {@const cast = canCastUtility(gs, spell.uid)}
+                    <div class="tip-line tip-sub">
+                      Cast now: {cast.ok ? 'ready.' : (cast.reason ?? 'not available.')}
+                    </div>
+                  {/if}
                 {/snippet}
               </Tip>
               <span class="small dim src">{sourceLine(spell)}</span>
             {/if}
           </div>
+          <div class="spell-actions">
           <button
             class="tiny"
             class:selected={spell.prepared}
@@ -987,8 +1122,9 @@
               {ready > 0 ? `⏳ ${(ready / TPS).toFixed(0)}s` : '✨ cast'}
             </button>
           {/if}
-          <button class="tiny" onclick={() => startRename(spell)} title="Rename">✏️</button>
-          <button class="tiny" onclick={() => game.forgetSpell(spell.uid)} title="Forget">🗑️</button>
+          <button class="tiny" onclick={() => startRename(spell)} title="Rename" aria-label="Rename {spec.name}">✏️</button>
+          <button class="tiny" onclick={() => game.forgetSpell(spell.uid)} title="Forget" aria-label="Forget {spec.name}">🗑️</button>
+          </div>
         </div>
       {/each}
     {/if}
@@ -1004,16 +1140,38 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    /* The table sits in a sheet or a window of its own: it lays out on its own
+       width, not the screen's. */
+    container: spell / inline-size;
   }
 
+  /* No minimum width: a 560px floor made a 360px sheet scroll sideways. */
   .spellcraft.large {
     max-width: none;
-    min-width: 560px;
   }
 
   .tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
+  }
+
+  .arrange {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* Three school tabs on one row: the level sits under the name. */
+  @container spell (max-width: 479px) {
+    .tabs button {
+      flex: 1 1 0;
+      min-width: 0;
+      padding: 4px;
+    }
+    .tabs button .small {
+      display: block;
+    }
   }
 
   .tabs button {
@@ -1059,6 +1217,44 @@
 
   .tile.drop-before {
     box-shadow: -3px 0 0 0 var(--accent);
+  }
+
+  /* A tile picked up by tap: lit; every other tile marks where it would land
+     (the mark a drag draws), and a twin it would merge with is outlined. */
+  .tile.picked {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+
+  .tile.landing {
+    box-shadow: -3px 0 0 0 var(--accent);
+  }
+
+  .tile.fusable {
+    outline: 2px dashed var(--accent);
+    outline-offset: 1px;
+  }
+
+  button.slot-end {
+    border-style: dashed;
+    border-color: var(--accent);
+    border-radius: 14px;
+    padding: 4px 10px;
+  }
+
+  .pick-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--accent) 8%, var(--bg-panel));
+  }
+
+  .pick-note {
+    flex: 1 1 100%;
   }
 
   /* About to fold into its twin: the tile swells rather than making room. */
@@ -1472,11 +1668,44 @@
     fill: var(--axis);
   }
 
+  /* One cell per axis: its name and value between a minus and a plus. The wheel
+     is the other way in; its rings are too thin for a finger on a phone. */
   .legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 14px;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 4px 10px;
+  }
+
+  .legend > :global(.tip-target) {
+    display: block;
+    border-bottom: none;
+  }
+
+  /* On a phone a cell has room for a name between its two buttons only when each
+     axis gets a row. */
+  @container spell (max-width: 479px) {
+    .legend {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .legend-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  button.dial {
+    flex: 0 0 auto;
+    padding: 0 10px;
+    min-width: 32px;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .mem-row > :global(.tip-target) {
+    border-bottom: none;
   }
 
   /* ----- psionic: shapes held in mind ----- */
@@ -1535,8 +1764,9 @@
   }
 
   .legend-item {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 5px;
     font-size: 12.5px;
   }
@@ -1604,6 +1834,23 @@
     font-size: 12px;
   }
 
+  /* A finger: 44px wide as well as tall (app.css gives the height). */
+  @media (pointer: coarse) {
+    button.dial,
+    button.tiny,
+    .mem-load,
+    .mem-drop {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* app.css raises buttons and selects to 44px; a text field is not one. */
+    .god-search,
+    .rename {
+      min-height: 44px;
+    }
+  }
+
   /* ----- grimoire ----- */
 
   .grimoire {
@@ -1626,10 +1873,18 @@
 
   .spell-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 6px 8px;
     padding: 4px 6px;
     border-radius: 6px;
+  }
+
+  /* The row's buttons travel together: under the name when the row is narrow. */
+  .spell-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
   }
 
   .spell-row.prep {
@@ -1637,7 +1892,7 @@
   }
 
   .spell-main {
-    flex: 1;
+    flex: 1 1 10em;
     min-width: 0;
     display: flex;
     align-items: baseline;

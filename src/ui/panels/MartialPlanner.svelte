@@ -21,6 +21,9 @@
   import { condsText } from '../lib/format';
   import { describeCondition } from '../../core/systems/triggers';
   import EntryConfigModal from '../lib/EntryConfigModal.svelte';
+  import { slotTarget } from '../lib/reorder';
+  import { stepTarget } from '../lib/rotationView';
+  import { tick } from 'svelte';
 
   /**
    * The position-graph planner: the loadout arranged ON the graph instead of
@@ -69,6 +72,8 @@
   /** Radius the 'any'-entry reflexes orbit at — outside the graph, by nature. */
   const REFLEX_RING = 186;
   const CHIP_R = 13;
+  /** The tap target round a reflex chip: wider than the chip, so a fingertip finds it. */
+  const CHIP_HIT = 20;
   /** Angular spread between reflexes that share an exit. */
   const REFLEX_FAN = 0.22;
   /** How far an arrow stops short of its target node, so the head stays clear. */
@@ -250,12 +255,53 @@
     return out;
   });
 
-  // ---------- Hover: what does this technique touch? ----------
+  // ---------- Hover or tap: what does this technique touch? ----------
   // Hovering a move pulses its entry position(s) inward and its exit outward —
-  // the two halves of "where must I be" and "where does this leave me".
+  // the two halves of "where must I be" and "where does this leave me". A
+  // finger cannot hover, so a tap on a move (its edge, its chip or its row)
+  // holds the same view until the next tap, and the caption under the graph
+  // says what the hover's title text does for a mouse.
 
-  let hot = $state<string | null>(null);
+  let hovered = $state<string | null>(null);
+  let pinned = $state<string | null>(null);
+  const hot = $derived(hovered ?? pinned);
   const hotDef = $derived(hot ? (TECHNIQUES[hot] ?? null) : null);
+
+  function pin(id: string): void {
+    pinned = pinned === id ? null : id;
+    pinnedNode = null;
+  }
+
+  /** A position held by tap, for the caption (the node's title is hover-only). */
+  let pinnedNode = $state<string | null>(null);
+  let hoveredNode = $state<string | null>(null);
+  const shownNode = $derived(hotDef ? null : (hoveredNode ?? pinnedNode));
+
+  function pinNode(id: string): void {
+    pinnedNode = pinnedNode === id ? null : id;
+    pinned = null;
+  }
+
+  /** Where a move stands, in words, for the caption. */
+  function stateWords(t: TechniqueDef): string {
+    const st = planStateOf(t);
+    return st === 'planned' ? 'in your plan' : st === 'benched' ? 'known, benched' : 'not yet learned';
+  }
+
+  /** The caption's one line: the held move or position, or how to get one. */
+  const caption = $derived.by(() => {
+    if (hotDef) {
+      const from = entryPositions(gs, hotDef);
+      const names = from === 'any' ? 'anywhere' : from.map((p) => POSITIONS[p]?.name ?? p).join(' or ');
+      const conditions = overlayOf(hotDef);
+      return `${hotDef.icon} ${techniqueDisplayName(gs, hotDef)}: ${names} to ${POSITIONS[techniqueExit(gs, hotDef)]?.name ?? techniqueExit(gs, hotDef)}. ${stateWords(hotDef)}.${conditions ? ` Conditions: ${conditions}.` : ''}`;
+    }
+    if (shownNode) {
+      const p = POSITIONS[shownNode];
+      return p ? `${p.icon} ${p.name}: ${p.desc}` : '';
+    }
+    return 'Tap a move or a position on the graph, or a move in the plan, to read it.';
+  });
   const hotEntry = $derived.by(() => {
     if (!hotDef) return new Set<string>();
     const from = entryPositions(gs, hotDef);
@@ -299,14 +345,71 @@
   // list uses: one order, one door into it. Order is priority — first eligible
   // entry wins the swing — and never a sequence.
 
+  //
+  // A mouse drags a row; a finger picks it up (the grip) and taps the row it
+  // goes before, or the end slot, or steps it with the arrows. All of it ends in
+  // `moveSkillTo` through `onDrop`/`stepRow` (lib/reorder.ts).
+
   let dragging = $state<string | null>(null);
   let dropTarget = $state<string | null>(null);
+  /** The plan row picked up by tap, or null. */
+  let picked = $state<string | null>(null);
 
+  /** The plan as the list draws it, by rotation id. */
+  const plannedIds = $derived(planned.map((t) => `${PREFIX}${t.id}`));
+  const pickedName = $derived(planned.find((t) => `${PREFIX}${t.id}` === picked)?.name ?? 'the row');
+
+  /** Put the carried row before `beforeId`, or last when null. */
   function onDrop(beforeId: string | null): void {
-    if (dragging) game.moveSkillTo(dragging, beforeId);
+    const moving = dragging ?? picked;
+    if (moving) {
+      const slot = beforeId === null ? plannedIds.length : plannedIds.indexOf(beforeId);
+      const target = slotTarget(plannedIds, moving, slot);
+      if (target !== undefined) game.moveSkillTo(moving, target);
+    }
     dragging = null;
     dropTarget = null;
+    picked = null;
   }
+
+  /** The list, to find a row's arrows again after it has moved. */
+  let listEl = $state<HTMLElement>();
+
+  /** Move a row one place among the drawn rows. */
+  async function stepRow(id: string, dir: -1 | 1): Promise<void> {
+    const target = stepTarget(plannedIds, id, dir);
+    if (target === undefined) return;
+    game.moveSkillTo(id, target);
+    // The keyed list moves the row's element and the browser drops its focus:
+    // put it back on the arrow that was pressed, or the other one at an end.
+    await tick();
+    const own = [...(listEl?.querySelectorAll<HTMLButtonElement>('button.step') ?? [])].filter(
+      (b) => b.dataset.id === id,
+    );
+    (own.find((b) => b.dataset.dir === String(dir) && !b.disabled) ?? own.find((b) => !b.disabled))?.focus();
+  }
+
+  // A row that leaves the plan (benched, discarded) cannot stay picked.
+  $effect(() => {
+    if (picked !== null && !plannedIds.includes(picked)) picked = null;
+  });
+
+  // Escape closes the family roster, or else puts a picked row down, and nothing
+  // else sees the key: the Android back button sends Escape, and it must not
+  // also close the window under it. Capture phase, so it runs before a window's
+  // own listener. Only attached while one of the two is open.
+  $effect(() => {
+    if (picked === null && openFamily === null) return;
+    const cancel = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (openFamily !== null) openFamily = null;
+      else picked = null;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', cancel, true);
+    return () => window.removeEventListener('keydown', cancel, true);
+  });
 
   // ---------- Configuring one move ----------
   // The graph is where the detail lives: double-click a move (or hit ⚙) and
@@ -368,8 +471,8 @@
                 <div
                   class="drop-row"
                   class:locked={st === 'locked'}
-                  onmouseenter={() => (hot = t.id)}
-                  onmouseleave={() => (hot = null)}
+                  onmouseenter={() => (hovered = t.id)}
+                  onmouseleave={() => (hovered = null)}
                   role="presentation"
                 >
                   <span class="drop-name">{t.icon} {techniqueDisplayName(gs, t)}</span>
@@ -459,8 +562,9 @@
               d={e.d}
               stroke={e.stroke}
               marker-end="url(#pg-arrow-{e.edge.to})"
-              onmouseenter={() => (hot = e.edge.def.id)}
-              onmouseleave={() => (hot = null)}
+              onmouseenter={() => (hovered = e.edge.def.id)}
+              onmouseleave={() => (hovered = null)}
+              onclick={() => pin(e.edge.def.id)}
               role="presentation"
             >
               <title
@@ -469,6 +573,16 @@
                 ]?.name}</title
               >
             </path>
+            <!-- The same stroke, wide and unpainted: a fingertip finds an edge
+                 2px thick no better than a pixel. -->
+            <path
+              class="edge-hit"
+              d={e.d}
+              onmouseenter={() => (hovered = e.edge.def.id)}
+              onmouseleave={() => (hovered = null)}
+              onclick={() => pin(e.edge.def.id)}
+              role="presentation"
+            />
           {/each}
 
           {#each reflexChips as c (c.edge.def.id)}
@@ -477,8 +591,9 @@
             <g
               class="reflex {st}"
               class:hot={on}
-              onmouseenter={() => (hot = c.edge.def.id)}
-              onmouseleave={() => (hot = null)}
+              onmouseenter={() => (hovered = c.edge.def.id)}
+              onmouseleave={() => (hovered = null)}
+              onclick={() => pin(c.edge.def.id)}
               role="presentation"
             >
               <path
@@ -488,6 +603,8 @@
                 stroke="url(#pg-any-{c.edge.def.id})"
                 marker-end="url(#pg-arrow-{c.edge.to})"
               />
+              <!-- A tap target wider than the chip. -->
+              <circle cx={c.x} cy={c.y} r={CHIP_HIT} class="chip-hit" />
               <circle cx={c.x} cy={c.y} r={CHIP_R} class="chip" />
               <text x={c.x} y={c.y + 4} text-anchor="middle" class="chip-icon">{c.edge.def.icon}</text
               >
@@ -503,7 +620,16 @@
             {@const n = NODE_AT[id]}
             {@const isEntry = hotEntry.has(id)}
             {@const isExit = hotExit === id}
-            <g class="node" class:entry={isEntry} class:exit={isExit} style="--pc: {ink(p.color)}">
+            <g
+              class="node"
+              class:entry={isEntry}
+              class:exit={isExit}
+              style="--pc: {ink(p.color)}"
+              onmouseenter={() => (hoveredNode = id)}
+              onmouseleave={() => (hoveredNode = null)}
+              onclick={() => pinNode(id)}
+              role="presentation"
+            >
               {#if isEntry}
                 <!-- Pulses INWARD: this is where the move has to find you. -->
                 <circle cx={n.x} cy={n.y} r={NODE_R} class="pulse in" />
@@ -522,6 +648,9 @@
           {/each}
         </svg>
 
+        <!-- One line, always drawn, so the board does not change height as a
+             move is held. A mouse gets the same text from a hover. -->
+        <p class="small caption">{caption}</p>
         <p class="dim small legend">
           <b class="k planned">━</b> in your plan · <b class="k benched">╌</b> known, benched ·
           <b class="k locked">╌</b> not yet learned · the outer ring answers from anywhere.
@@ -532,23 +661,25 @@
         </p>
       </div>
 
-      <!-- The plan itself. Order is priority (first eligible wins the swing),
-           and dragging writes through the same moveSkillTo the Active Skills
-           list uses — one order, one door into it. -->
+      <!-- The plan itself. Order is priority (first eligible wins the swing).
+           A mouse drags a row; a finger picks one up (the grip) and taps the row
+           it goes before. Both write through the same moveSkillTo the Active
+           Skills list uses: one order, one door into it. -->
       <div class="plan">
         <h4>
           In the plan
           <span class="small" class:full={slotsFull}>{planned.length}/{slotCap} slots</span>
-          <span class="dim small">— drag to set priority · double-click to configure</span>
+          <span class="dim small">— priority: top first · ⚙ configures</span>
         </h4>
         {#if planned.length === 0}
           <p class="dim small">
-            Nothing in the rotation. Open a weapon group above (double-click it) and add what you
+            Nothing in the rotation. Open a weapon group above (▾ beside its name) and add what you
             know.
           </p>
         {:else}
           <div
             class="plan-list"
+            bind:this={listEl}
             ondragover={(e) => e.preventDefault()}
             ondrop={() => onDrop(null)}
             role="list"
@@ -560,6 +691,8 @@
               <div
                 class="plan-row"
                 class:dragging={dragging === id}
+                class:picked={picked === id}
+                class:landing={picked !== null && picked !== id}
                 class:drop-before={dropTarget === id && dragging !== id}
                 class:hot={hot === t.id}
                 role="listitem"
@@ -580,33 +713,42 @@
                   e.stopPropagation();
                   onDrop(id);
                 }}
-                onmouseenter={() => (hot = t.id)}
-                onmouseleave={() => (hot = null)}
+                onmouseenter={() => (hovered = t.id)}
+                onmouseleave={() => (hovered = null)}
                 ondblclick={() => (configId = id)}
               >
-                <span class="grip dim" title="Drag to reorder">⠿</span>
-                <span class="plan-name">
-                  {t.icon}
-                  {techniqueDisplayName(gs, t)}
-                  {#if overlayOf(t)}
-                    <span class="tuned" title="Your conditions: {overlayOf(t)}">⚡</span>
-                  {/if}
-                </span>
-                <span class="flow small">
-                  {#if from === 'any'}
-                    <span class="pos-pill" style="--pc: {ink(ANY_POSITION_COLOR)}">any</span>
-                  {:else}
-                    {#each from as p (p)}
-                      <span class="pos-pill" style="--pc: {ink(POSITIONS[p]?.color ?? ANY_POSITION_COLOR)}"
-                        >{POSITIONS[p]?.icon}</span
-                      >
-                    {/each}
-                  {/if}
-                  <span class="dim">→</span>
-                  <span class="pos-pill" style="--pc: {ink(exit?.color ?? ANY_POSITION_COLOR)}"
-                    >{exit?.icon}</span
-                  >
-                </span>
+                <button
+                  class="grip"
+                  class:on={picked === id}
+                  aria-pressed={picked === id}
+                  aria-label={picked === id ? `Put ${t.name} down` : `Pick up ${t.name} to move it`}
+                  onclick={() => (picked = picked === id ? null : id)}>⠿</button
+                >
+                <!-- Tapping the move holds it on the graph, as a hover does. -->
+                <button class="plan-main" aria-pressed={pinned === t.id} onclick={() => pin(t.id)}>
+                  <span class="plan-name">
+                    {t.icon}
+                    {techniqueDisplayName(gs, t)}
+                    {#if overlayOf(t)}
+                      <span class="tuned" title="Your conditions: {overlayOf(t)}">⚡</span>
+                    {/if}
+                  </span>
+                  <span class="flow small">
+                    {#if from === 'any'}
+                      <span class="pos-pill" style="--pc: {ink(ANY_POSITION_COLOR)}">any</span>
+                    {:else}
+                      {#each from as p (p)}
+                        <span class="pos-pill" style="--pc: {ink(POSITIONS[p]?.color ?? ANY_POSITION_COLOR)}"
+                          >{POSITIONS[p]?.icon}</span
+                        >
+                      {/each}
+                    {/if}
+                    <span class="dim">→</span>
+                    <span class="pos-pill" style="--pc: {ink(exit?.color ?? ANY_POSITION_COLOR)}"
+                      >{exit?.icon}</span
+                    >
+                  </span>
+                </button>
                 <button
                   class="tiny cog"
                   onclick={() => (configId = id)}
@@ -619,8 +761,43 @@
                   aria-label="Discard {t.name} from the plan"
                   title="Bench it — keeps its reps, leaves the rotation">✕</button
                 >
+                {#if picked === id}
+                  <!-- The picked row: arrows, and where the rest of the move goes. -->
+                  <div class="pick-bar small">
+                    <button
+                      class="tiny step"
+                      data-id={id}
+                      data-dir="-1"
+                      disabled={stepTarget(plannedIds, id, -1) === undefined}
+                      onclick={() => stepRow(id, -1)}
+                      aria-label="Move {t.name} up">▲</button
+                    >
+                    <button
+                      class="tiny step"
+                      data-id={id}
+                      data-dir="1"
+                      disabled={stepTarget(plannedIds, id, 1) === undefined}
+                      onclick={() => stepRow(id, 1)}
+                      aria-label="Move {t.name} down">▼</button
+                    >
+                    <span class="dim pick-note">Tap the row it goes before.</span>
+                    <button class="tiny" onclick={() => (picked = null)}>Done</button>
+                  </div>
+                {/if}
+                <!-- Another row is picked: a tap anywhere on this one puts the
+                     picked row before it. -->
+                {#if picked !== null && picked !== id}
+                  <button
+                    class="place"
+                    aria-label="Move {pickedName} before {t.name}"
+                    onclick={() => onDrop(id)}
+                  ><span class="place-hint">Put it before this</span></button>
+                {/if}
               </div>
             {/each}
+            {#if picked !== null && plannedIds[plannedIds.length - 1] !== picked}
+              <button class="place-end" onclick={() => onDrop(null)}>▸ Put it last</button>
+            {/if}
           </div>
         {/if}
       </div>
@@ -638,6 +815,9 @@
   }
   .planner {
     margin-top: 12px;
+    /* The graph and the plan stack on this panel's width, not the window's: with
+       a sidebar and a log beside it a 1024px window leaves the panel ~570px. */
+    container: planner / inline-size;
   }
 
   .planner-toggle {
@@ -727,17 +907,43 @@
     color: var(--xp-ink);
   }
 
-  /* Graph left, plan right; they stack on a narrow screen, graph first. */
+  /* Graph left, plan right; they stack on a narrow panel, graph first. Below
+     640px the plan column would be under 230px; the stacked graph is capped, so a
+     600px panel does not draw a 600px graph. */
   .board {
     display: grid;
-    grid-template-columns: minmax(280px, 480px) 1fr;
+    grid-template-columns: minmax(260px, 400px) minmax(0, 1fr);
     gap: 12px;
     align-items: start;
   }
 
-  @media (max-width: 860px) {
+  @container planner (max-width: 639px) {
     .board {
-      grid-template-columns: 1fr;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .graph-wrap {
+      width: 100%;
+      max-width: 520px;
+      margin-inline: auto;
+    }
+  }
+
+  /* A family's roster opens under its chip; on a narrow panel the chip may sit
+     at the right edge, so the menu takes the whole row instead. */
+  @container planner (max-width: 559px) {
+    .fam-wrap {
+      position: static;
+    }
+    .families {
+      position: relative;
+    }
+    .drop {
+      left: 0;
+      right: 0;
+      min-width: 0;
+    }
+    .drop-row {
+      white-space: normal;
     }
   }
 
@@ -756,6 +962,25 @@
     stroke-width: 1;
     stroke-dasharray: 2 6;
     opacity: 0.7;
+  }
+
+  /* A move's stroke, wide and unpainted, over the visible one: the tap target. */
+  .edge-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 22;
+    stroke-linecap: round;
+    pointer-events: stroke;
+    cursor: pointer;
+  }
+
+  .chip-hit {
+    fill: transparent;
+    cursor: pointer;
+  }
+
+  .node {
+    cursor: pointer;
   }
 
   .edge {
@@ -911,6 +1136,36 @@
     margin: 4px 0 0;
   }
 
+  /* What a hover's title text says, for a finger. Three lines are always
+     reserved, so holding a move does not move the plan beside or below it. */
+  .caption {
+    margin: 4px 0 0;
+    min-height: 4.2em;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+
+  /* The graph is drawn in a 480-wide box and scaled to its column: on a phone
+     that is 0.7, and 11px labels come out at 8px. */
+  .graph-wrap {
+    container: graph / inline-size;
+  }
+
+  @container graph (max-width: 439px) {
+    .node-name {
+      font-size: 16px;
+    }
+    .node-icon {
+      font-size: 24px;
+    }
+    .chip-icon {
+      font-size: 16px;
+    }
+    .edge-hit {
+      stroke-width: 40;
+    }
+  }
+
   .legend .k {
     font-size: 13px;
   }
@@ -932,6 +1187,12 @@
     opacity: 0.75;
   }
 
+  /* The plan is a container of its own: its rows stack by the column they have,
+     whether that is a whole phone screen or the right half of a tablet. */
+  .plan {
+    container: plan / inline-size;
+  }
+
   .plan h4 {
     margin: 0 0 6px;
     font-size: 13px;
@@ -944,7 +1205,9 @@
   }
 
   .plan-row {
+    position: relative;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 6px;
     padding: 3px 7px;
@@ -953,6 +1216,97 @@
     background: var(--bg-raised);
     font-size: 12px;
     min-width: 0;
+  }
+
+  /* The move's name and its footwork: side by side, or stacked on a narrow panel
+     where the row also carries a 44px grip and two 44px buttons. */
+  .plan-main {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+
+  @container plan (max-width: 419px) {
+    .plan-main {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    .plan-main .plan-name {
+      max-width: 100%;
+    }
+  }
+
+  .plan-row.picked {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  /* Every other row while one is picked: the landing mark the drag draws, and a
+     tap target over the whole row. */
+  .plan-row.landing {
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  .pick-bar {
+    flex: 1 1 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+  }
+
+  .pick-note {
+    flex: 1 1 8em;
+    min-width: 0;
+  }
+
+  button.place {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px;
+    min-height: 0;
+    background: color-mix(in srgb, var(--bg-panel) 78%, transparent);
+    border: 1px dashed var(--accent);
+    border-radius: 6px;
+  }
+
+  .place-hint {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  button.place-end {
+    border-style: dashed;
+    border-color: var(--accent);
+  }
+
+  .tiny.step {
+    padding: 0 6px;
+    font-size: 11px;
+  }
+
+  /* A finger: the controls on a row are 44px wide as well as 44px tall. */
+  @media (pointer: coarse) {
+    button.grip,
+    button.fam-more,
+    .tiny {
+      min-width: 44px;
+    }
   }
 
   .plan-row.hot {
@@ -987,11 +1341,20 @@
     background: none;
   }
 
-  .grip {
+  button.grip {
     cursor: grab;
-    font-size: 13px;
+    font-size: 14px;
     line-height: 1;
-    user-select: none;
+    padding: 2px 5px;
+    color: var(--text-dim);
+    background: none;
+    border-color: transparent;
+  }
+
+  button.grip.on {
+    color: var(--text);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 22%, var(--bg-raised));
   }
 
   .flow {
