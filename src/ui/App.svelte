@@ -134,9 +134,9 @@
   // default; floor 0 keeps the column, as it always had.
   let viewportWidth = $state(typeof window === 'undefined' ? 1440 : window.innerWidth);
   let headerEl = $state<HTMLElement>();
-  // Below 700px the layout is one column (docs/PHONE.md): the dock replaces the
-  // header, the screen list is the bottom row, and the log is always the folded
-  // row above it.
+  // Below 700px, or in a window under 500px tall (a phone held sideways), the
+  // layout is one column (docs/PHONE.md): the dock replaces the header, the screen
+  // list is the bottom row, and the log is always the folded row above it.
   const phone = $derived(viewport.phone);
   const logOpen = $derived(!phone && (screen ? true : logIsOpen(ui.logChoice, viewportWidth)));
   $effect(() => {
@@ -275,6 +275,7 @@
   class:no-sidebar={screen && !screen.sidebar}
   class:log-folded={!logOpen}
   class:phone
+  class:short={phone && viewport.short}
 >
   {#if phone}
     <Dock {screen} ondebug={DEV ? () => (showDebug = !showDebug) : undefined} />

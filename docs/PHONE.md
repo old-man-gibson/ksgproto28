@@ -1,21 +1,31 @@
 # Phone and tablet shell
 
-> The shell (header, left column, log, windows) on a 360 to 430 px phone and a
-> 700 to 1280 px tablet. Built 2026-11-12 from
+> The shell (header, left column, log, windows) on a 360 to 430 px phone, a phone
+> held sideways and a 700 to 1280 px tablet. Built 2026-11-12 from
 > [plans/ui-proposals.md](plans/ui-proposals.md) A3. The panels inside the tab
-> body are not covered here: they get their own pass.
+> body are in section 7.
 
 ## 1. Two layouts, one flag
 
 `viewport.phone` (`src/ui/lib/viewport.svelte.ts`) is true below 700 px
-(`PHONE_BELOW`). `App.svelte` reads it once and everything else follows: the
-`.layout.phone` class, the components it renders, `Modal`, `LogTicker`,
-`LogDrawer`, `SystemMenu`. No shell stylesheet repeats the number, so there is
-one place to change it (`tests/phone.test.ts` fails if one does).
+(`PHONE_BELOW`) and in a window under 500 px tall and under 960 px wide
+(`SHORT_BELOW`, `SHORT_MAX_WIDTH`: a phone held sideways, 844 x 390 or 740 x 360).
+`App.svelte` reads it once and everything else follows: the `.layout.phone`
+class, the components it renders, `Modal`, `LogTicker`, `LogDrawer`,
+`SystemMenu`. No shell stylesheet repeats the numbers, so there is one place to
+change them (`tests/phone.test.ts` fails if one does).
 
-Above 700 px the desktop layout is unchanged except where section 4 says.
+The short rule is geometry only, with no pointer test. The desktop header and the
+left column leave a window under 500 px tall about 250 px of screen whatever the
+pointer is, and the preview browser reports `pointer: coarse` only under 768 px,
+so a pointer test could not be checked at 844 x 390. A desktop window that small
+and narrow gets the one-column shell too, which serves it better than the grid.
+`viewport.short` (true in the same window) selects the compact form in section 8.
 
-| | phone (under 700 px) | 700 px and wider |
+Above 700 px, and 500 px tall, the desktop layout is unchanged except where
+section 4 says.
+
+| | phone (under 700 px, or short) | 700 px and wider |
 |---|---|---|
 | top | `Dock.svelte`, sticky | `<header>` in `App.svelte` |
 | screen list | `BottomBar.svelte`, sticky, scrolls sideways | `NavIndex.svelte` in the left column |
@@ -46,6 +56,11 @@ placed with `order`, so the markup keeps the desktop's order.
 4. The sky line (`SkyStrip.svelte`): the clock chip, the moons, the weather and
    the dark. Absent while none of them has anything to say; the dark's slot is
    reserved whenever the line is drawn.
+
+The dock is `z-index: 6` and the bottom row 5. The Menu's sheet is drawn inside
+the dock, so it is in the dock's stacking context: at an equal level the bottom
+row, later in the page, painted over the sheet's foot (found 2026-11-12 at
+375 x 812 and 844 x 390).
 
 The dock publishes its height as `--dock-h` on `<html>`; `BottomBar` publishes
 `--bottombar-h`. They are read by the tutorial card (`top: calc(var(--dock-h) +
@@ -125,6 +140,9 @@ By hand, with `npm run dev` on a port other than 5173 and a throwaway save:
    through a scroll; the open screen is in view in the bottom row.
 2. 768 x 1024, 1024 x 768, 800 x 1280, 1280 x 800: no horizontal scroll, the job's
    name visible in the header, the tab body at least 464 px.
+2a. 844 x 390 and 740 x 360 (a phone held sideways): the compact shell (section 8),
+   no horizontal scroll, the tab body at least 230 px tall between the dock and the
+   bottom row.
 3. Tap a pool bar, the job block and a long press on Pause: a card each, one at a
    time.
 4. Floor 0: the dock follows the step; the tutorial card sticks under it.
@@ -136,13 +154,69 @@ checked at 740 px. Its clicks are mouse clicks: to test the touch path, dispatch
 
 ## 6. Not done
 
-- The panels. Measured at 375, 414 and 360 px on 2026-11-12, every screen leaves
-  the page exactly as wide as the window. The tab body scrolls sideways by 7 px on
-  Skills at 375 px (22 px at 360): the skill rows' 64 px XP bar (`span.xp`,
-  `span.bar`) and the "Collapse all" button. The Location ladder and the Combat
-  stage clip inside their own boxes, by design. Touch drag-reorder in
-  `CombatPanel`, `MartialPlanner` and `SpellcraftPanel` is still HTML5 drag
-  ([ENGINEERING §2.3](ENGINEERING.md)). Tutorial and panel text that says
-  "hover" is unchanged.
+- Touch drag-reorder in `CombatPanel`, `MartialPlanner` and `SpellcraftPanel` is
+  still HTML5 drag ([ENGINEERING §2.3](ENGINEERING.md)). Deepening a word in the
+  spell strip (drag a word onto its twin) has no tap path. The Combat stage and
+  the other panels not listed in section 7 have had no pass.
+- Equipment's and Wuxin's hover and double-click wording (another pass).
 - A tablet header in portrait is three rows (113 to 149 px). The step buttons are
   in the header there, not in the Menu.
+
+## 7. The panels (2026-11-12)
+
+Measured at 360 x 740, 375 x 812, 414 x 896, 844 x 390, 740 x 360, 768 x 1024 and
+1024 x 768 with a save that has climbed to floor 20, and with the Threshold hub,
+a harbor water, a festival hall and a walk in progress. No screen leaves the page
+wider than the window; the tab body does not scroll sideways except in boxes made
+to (the stations row, the map's tower list).
+
+Rules the passes follow, and a new panel should too:
+
+- **Container queries on `tab`, not window media queries.** The tab body is a
+  container (section 4): `@container tab (max-width: 560px)` is the width the
+  panel was given. Skills, Prestige and Sea use it. `BestiaryPanel` asks its own
+  container (`.bestiary`) the same way, at 640 px.
+- **Rows wrap in pairs, not by accident.** A Skills row is three boxes on a narrow
+  tab (`.row-main`, `.row-meter`): the name and tags with the rank title under it,
+  and the level over the XP bar. Prestige's harvest table is two lines a source.
+  The Quests objective wraps its bar to its own line with 80 px at least.
+- **A figure that changes sits on a line of its own.** A count gaining a digit
+  must not re-wrap a paragraph: the Sea panel's threat and kills are two lines, the
+  festival's day, clock and the royale's countdown are `Label: fact` lines.
+- **No hover-only information.** What a `title=` held on a plain element is a `Tip`
+  (tap card): the Bestiary's insight, tag descriptions and haunt areas, the stance
+  and weapon facts on floor 0's card (also printed under its buttons, because a
+  tap on a choice commits it).
+- **The route line** above the map is two lines of 20 px (44 px reserved, in every
+  state) on a tab under 560 px, and one of 22 px above that. The legs of a long
+  route and a shut road's terms are most of the line. The folded map's roads print
+  a shut road's terms and a no-retreat warning under the button, not in its title.
+  The Location strip's two bar labels ("Next:", "Exploration:") are tap cards.
+- **Pins and exits.** Under `(pointer: coarse)` each map pin has a transparent
+  circle up to 44 px across, never reaching past halfway to the nearest pin, and
+  each exit label has a 36 px box behind it (`MapPlan.svelte`, `.hit`, `.exit-hit`).
+  In the city, where pins sit 24 px apart, a pin keeps its own radius.
+- **The tower list.** From a 680 px tab body its column is 240 px (it was 184); a
+  band's name wraps, a floor's row ends in an ellipsis and its full name is in the
+  detail under the plan. Under 600 px the list is a fold, and the line past the top
+  rung ("Floor 21: not in this build.") is printed in the fold's summary, so the
+  closed fold says it; the Ascent panel prints it above its top band.
+
+## 8. Held sideways
+
+`viewport.short` (section 1) turns the shell into a compact form. The rows of the
+dock become two columns and the bottom block's two rows become one:
+
+- `Dock.svelte`: the pause, bonus, job block and Menu on the left; the bars over the
+  sky line on the right (300 to 360 px, the width the sky line's four chips need).
+  77 px tall in place of 125 to 132; the sky line is 23 of it.
+- `BottomBar.svelte`: the log line is a third of the width (180 to 300 px) and the
+  screen list takes the rest, 46 px entries. 47 to 53 px tall in place of about 90.
+  With no screen list (floor 0) the log line has the whole row.
+- Left at 844 x 390 and 740 x 360, the screen has 260 and 236 px between the dock
+  and the bottom row (it was about 250 on the 844 x 390 desktop shell, with the
+  sidebar's column beside it and a page 1900 px tall).
+- Floor 0's card scrolls with the page here instead of sticking under the dock
+  (`TutorialCard.svelte`): it is 220 px tall, most of the screen.
+- The map's plan is still 340 px (`PLAN_HEIGHT`), taller than the screen between
+  the blocks: the page scrolls past it.

@@ -21,7 +21,19 @@ export const SECTION_MIN_WIDTH = 600;
  */
 export const PHONE_BELOW = 700;
 
-export const viewport = $state({ wide: true, phone: false });
+/**
+ * A phone held sideways: shorter than `SHORT_BELOW` and narrower than
+ * `SHORT_MAX_WIDTH`. The desktop header and left column leave such a window
+ * about 250 px of screen, so it gets the phone shell (`viewport.phone` is true)
+ * in its compact form (`viewport.short`: the dock in one row, the log line
+ * beside the screen list). Phones in landscape are 360 to 430 px tall and up to
+ * about 930 px wide. Geometry only, no pointer test: a desktop window that small
+ * is better served by the one-column shell too (docs/PHONE.md section 1).
+ */
+export const SHORT_BELOW = 500;
+export const SHORT_MAX_WIDTH = 960;
+
+export const viewport = $state({ wide: true, phone: false, short: false });
 
 if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
   const query = window.matchMedia(`(min-width: ${SECTION_MIN_WIDTH}px)`);
@@ -30,9 +42,13 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     viewport.wide = ev.matches;
   });
 
-  const phone = window.matchMedia(`(max-width: ${PHONE_BELOW - 1}px)`);
-  viewport.phone = phone.matches;
-  phone.addEventListener('change', (ev) => {
-    viewport.phone = ev.matches;
-  });
+  const narrow = window.matchMedia(`(max-width: ${PHONE_BELOW - 1}px)`);
+  const short = window.matchMedia(`(max-height: ${SHORT_BELOW - 1}px) and (max-width: ${SHORT_MAX_WIDTH - 1}px)`);
+  const sync = () => {
+    viewport.short = short.matches;
+    viewport.phone = narrow.matches || short.matches;
+  };
+  sync();
+  narrow.addEventListener('change', sync);
+  short.addEventListener('change', sync);
 }

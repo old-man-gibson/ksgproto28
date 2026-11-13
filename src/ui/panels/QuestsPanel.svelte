@@ -73,7 +73,7 @@
         {@const p = objectiveProgress(gs, quest, i)}
         <div class="objective">
           <span class="small">{objective.desc}</span>
-          <div class="bar" style="flex: 1; height: 8px">
+          <div class="bar" style="flex: 1 1 80px; height: 8px">
             <div
               class="fill"
               style="width: {(p.current / p.target) * 100}%; background: {p.current >= p.target
@@ -146,10 +146,13 @@
     font-weight: 600;
   }
 
+  /* The description, the bar, the count and the Go button wrap onto a second line
+     on a narrow screen; the bar keeps 80 px at least, so it never shrinks to nothing. */
   .objective {
     display: flex;
     align-items: center;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 4px 10px;
     margin-top: 6px;
   }
 

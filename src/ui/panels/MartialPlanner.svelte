@@ -447,7 +447,7 @@
           <button
             class="fam"
             class:on
-            title="Click to filter · double-click to list {f.name} techniques"
+            title="Select to filter · double-click or the ▾ beside it lists {f.name} techniques"
             onclick={() => toggleFamily(f.id)}
             ondblclick={() => (openFamily = openFamily === f.id ? null : f.id)}
           >

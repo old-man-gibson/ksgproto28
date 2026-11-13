@@ -74,6 +74,8 @@
         <div class="sea-line">
           Leg {view.clock.leg! + 1} of {SEA.legs}, ends in {ticksToTime(view.ticksToNext)}
         </div>
+        <!-- Two lines, each short: a kill count turning two-digit must not wrap a
+             line on a narrow screen and move what is below it. -->
         <div class="sea-line small">
           {#if view.side.flow === 'convoy'}
             Threat {view.roll.raiders + view.roll.monsters} (raiders {view.roll.raiders}, monsters {view.roll.monsters})
@@ -84,8 +86,8 @@
           {:else}
             Pirate crew {view.roll.raiders}
           {/if}
-          · your kills this leg {view.kills}
         </div>
+        <div class="sea-line small">Your kills this leg: {view.kills}</div>
       {:else}
         <div class="sea-line">In port. The next convoy sails in {ticksToTime(view.ticksToNext)}.</div>
       {/if}
@@ -150,6 +152,13 @@
     list-style: none;
     margin: 2px 0;
     padding: 0;
+  }
+  /* A narrow screen: the item and its count, then its note on its own line. A
+     count growing a digit then moves nothing. */
+  @container tab (max-width: 520px) {
+    .sea-hold li > .dim {
+      display: block;
+    }
   }
   h4 {
     margin: 10px 0 2px;

@@ -567,8 +567,8 @@
             unstack(i);
           }}
           title={tok.tier > 1
-            ? 'Right-click to remove one layer · click to remove the word · drag to reorder'
-            : 'Click to remove · drag to reorder, or onto the same word to deepen'}
+            ? 'Right-click or long-press to remove one layer · select to remove the word · drag to reorder'
+            : 'Select to remove · drag to reorder, or onto the same word to deepen'}
         >
           {w?.icon} {label}
           {#if tok.tier > 1}<span class="tier-mark">{TIER_MARK[tok.tier]}</span>{/if}

@@ -19,12 +19,16 @@
    *
    * The column is exactly `height` px tall (the map's) and scrolls inside
    * itself, so opening a fold or a ride starting moves nothing outside it.
+   *
+   * `showEnd` is false where the line past the top rung is printed outside the
+   * column (the fold under 600 px, MapCard.svelte), so it is not said twice.
    */
   let {
     tower,
     height,
     shownKey,
     onpick,
+    showEnd = true,
   }: {
     tower: TowerDef;
     /** The map's height, px. */
@@ -32,6 +36,7 @@
     /** The stop whose plan and terms are on show. */
     shownKey: string | null;
     onpick: (row: StopView) => void;
+    showEnd?: boolean;
   } = $props();
 
   const section = $derived(towerSection(gs, tower, bandIsOpen));
@@ -96,7 +101,7 @@
 {/snippet}
 
 <nav class="tower-section" style:height="{height}px" aria-label="{tower.name} floors" bind:this={scroller}>
-  {#if section.end && tower.direction !== 'down'}{@render end(section.end)}{/if}
+  {#if showEnd && section.end && tower.direction !== 'down'}{@render end(section.end)}{/if}
   {#each section.groups as g (g.band.id)}
     {#if g.titleOnly}
       <!-- The next band, not reached: a name and nothing to fold. -->
@@ -123,7 +128,7 @@
       </details>
     {/if}
   {/each}
-  {#if section.end && tower.direction === 'down'}{@render end(section.end)}{/if}
+  {#if showEnd && section.end && tower.direction === 'down'}{@render end(section.end)}{/if}
   <div class="ts-foot">{@render stop(section.foot)}</div>
 </nav>
 
@@ -154,12 +159,13 @@
     border-bottom: 1px solid var(--border);
   }
 
+  /* A band's name wraps: it is static text, and a band header that is cut tells the
+     player nothing about the band. (A floor's row keeps one line and an ellipsis;
+     its full name is in the detail under the plan once it is picked.) */
   .ts-band-name {
     flex: 1 1 auto;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
   .ts-count {

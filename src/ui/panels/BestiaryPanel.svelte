@@ -31,6 +31,7 @@
   } from '../../core/systems/bestiary';
   import { enemyArt } from '../lib/enemyArt';
   import TagPicker from '../lib/TagPicker.svelte';
+  import Tip from '../lib/Tip.svelte';
   import { fmt, pct } from '../lib/format';
 
   let search = $state('');
@@ -206,9 +207,16 @@
     <div class="titlerow">
       <h2>📖 Bestiary</h2>
       <span class="dim small">{progress.known} / {progress.total} recorded</span>
-      <span class="dim small insight" title="Chance per kill of learning a fact of average difficulty. Raised by the Hunting skill, Intelligence and Wisdom.">
-        🔎 Insight {pct(insight)} per kill · habitats need {habitatNeeded(gs)} sightings
-      </span>
+      <!-- A tap card on a touch screen, a hover card with a mouse (lib/Tip.svelte). -->
+      <Tip>
+        <span class="dim small insight">
+          🔎 Insight {pct(insight)} per kill · habitats need {habitatNeeded(gs)} sightings
+        </span>
+        {#snippet tip()}
+          <div class="tip-line">Insight: chance per kill of learning a fact of average difficulty.</div>
+          <div class="tip-line">Raised by: the Hunting skill, Intelligence and Wisdom.</div>
+        {/snippet}
+      </Tip>
     </div>
 
     <div class="filterbar">
@@ -303,9 +311,14 @@
             </div>
             <div class="tags">
               {#each monsterTags(def) as tag}
-                <span class="chip small static" title={MONSTER_TAGS[tag]?.desc ?? ''}>
-                  {MONSTER_TAGS[tag]?.icon ?? ''} {MONSTER_TAGS[tag]?.name ?? tag}
-                </span>
+                <Tip block>
+                  <span class="chip small static">
+                    {MONSTER_TAGS[tag]?.icon ?? ''} {MONSTER_TAGS[tag]?.name ?? tag}
+                  </span>
+                  {#snippet tip()}
+                    <div class="tip-line">{MONSTER_TAGS[tag]?.desc ?? MONSTER_TAGS[tag]?.name ?? tag}</div>
+                  {/snippet}
+                </Tip>
               {/each}
             </div>
           </div>
@@ -330,14 +343,19 @@
                   {@const confirmed = entry.spots.includes(spotId)}
                   <!-- You know you saw one here; what you have not established
                        is whether it lives here. That is what confirming buys. -->
-                  <span class="resrow" class:unconfirmed={!confirmed} title={areaName(spotId)}>
-                    {spotName(spotId)}
-                    <b>
-                      {confirmed
-                        ? `den · ${fmt(count)} seen`
-                        : `${count}/${habitatNeeded(gs)} seen`}
-                    </b>
-                  </span>
+                  <Tip block>
+                    <span class="resrow" class:unconfirmed={!confirmed}>
+                      {spotName(spotId)}
+                      <b>
+                        {confirmed
+                          ? `den · ${fmt(count)} seen`
+                          : `${count}/${habitatNeeded(gs)} seen`}
+                      </b>
+                    </span>
+                    {#snippet tip()}
+                      <div class="tip-line">{areaName(spotId)}</div>
+                    {/snippet}
+                  </Tip>
                 {/each}
               </div>
             {:else}
@@ -845,7 +863,9 @@
     }
   }
 
-  @media (max-width: 900px) {
+  /* One column when the tab itself is narrow (it was the window's width, 900 px,
+     which a left column and a log column make a poor guide to the tab's). */
+  @container (max-width: 640px) {
     .split {
       grid-template-columns: 1fr;
     }

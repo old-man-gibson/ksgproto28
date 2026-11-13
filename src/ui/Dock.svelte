@@ -4,6 +4,7 @@
   import { BONUS_CAP_TICKS } from '../core/systems/bonustime';
   import { fmt, msToTime } from './lib/format';
   import { dockParts } from './lib/shell';
+  import { viewport } from './lib/viewport.svelte';
   import type { TutorialScreen } from './lib/tutorialFocus';
   import JobStrip from './JobStrip.svelte';
   import SkyStrip from './SkyStrip.svelte';
@@ -21,6 +22,10 @@
    *   the step buttons a phone has no keys for.
    * - HP, then stamina, mana, spirit and focus as thin bars (ResourceBars.svelte).
    * - The sky line, while there is a sky to show (SkyStrip.svelte).
+   *
+   * Held sideways (`viewport.short`, a window under 500 px tall) the rows become
+   * two columns: the buttons and the job block on the left, the bars over the sky
+   * line on the right. The block is then about 70 px tall instead of 130.
    *
    * Floor 0 follows the tutorial's screen like the header does (`dockParts`):
    * the bars from the first fight, the gold from the first kill, and the buttons
@@ -60,7 +65,7 @@
   }
 </script>
 
-<header class="dock" bind:this={el}>
+<header class="dock" class:short={viewport.short} bind:this={el}>
   <div class="dock-main">
     {#if parts.controls}
       <!-- Pause freezes the whole world, not just the fight. The class names are
@@ -102,8 +107,13 @@
     </div>
   </div>
 
-  {#if parts.bars}<ResourceBars mode="dock" />{/if}
-  {#if parts.controls}<SkyStrip />{/if}
+  {#if parts.bars || parts.controls}
+    <!-- No box of its own in portrait; the right-hand column when held sideways. -->
+    <div class="dock-side">
+      {#if parts.bars}<ResourceBars mode="dock" />{/if}
+      {#if parts.controls}<SkyStrip />{/if}
+    </div>
+  {/if}
 </header>
 
 <style>
@@ -132,6 +142,35 @@
     align-items: center;
     gap: 6px;
     min-width: 0;
+  }
+
+  .dock-side {
+    display: contents;
+  }
+
+  /* Held sideways: the buttons and the job block beside the bars and the sky
+     line. The side column is 300 to 360 px: the sky line (clock, moons, weather,
+     the dark's slot) is about 310 px wide and clips below that. */
+  .dock.short {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dock.short .dock-main {
+    flex: 1 1 0;
+  }
+
+  .dock.short .dock-side {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 0 0 clamp(300px, 44%, 360px);
+    min-width: 0;
+  }
+
+  .dock.short .dock-side :global(.sky) {
+    gap: 4px 8px;
   }
 
   .clock {

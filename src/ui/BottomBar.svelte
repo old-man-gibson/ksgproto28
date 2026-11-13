@@ -2,6 +2,7 @@
   import { gs, ui } from './state.svelte';
   import { isNewEntry, navMark, type NavRow } from './lib/nav';
   import Icon from './lib/icons/Icon.svelte';
+  import { viewport } from './lib/viewport.svelte';
   import LogTicker from './LogTicker.svelte';
 
   /**
@@ -12,7 +13,9 @@
    * the two cannot disagree; one entry is no choice and draws no row, as there.
    *
    * It carries the page's bottom safe-area inset. Its height is published as
-   * `--bottombar-h` on the page, which the log drawer reads.
+   * `--bottombar-h` on the page, which the log drawer reads. Held sideways
+   * (`viewport.short`, a window under 500 px tall) the two rows share one: the
+   * log line takes a third of the width and the screen list the rest.
    *
    * The entry classes are the left column's (`nav-list`, `nav-entry`, `nav-on`):
    * the display themes colour the open screen by them. The shape is this file's.
@@ -47,7 +50,7 @@
   });
 </script>
 
-<div class="bottombar" bind:this={el}>
+<div class="bottombar" class:short={viewport.short} bind:this={el}>
   <LogTicker open={logOpen} ontoggle={ontogglelog} />
   {#if showNav}
     <nav class="nav-list tabs-row" aria-label="Screens" bind:this={row}>
@@ -78,7 +81,10 @@
   .bottombar {
     position: sticky;
     bottom: 0;
-    z-index: 6;
+    /* One under the dock (Dock.svelte, 6): the Menu's sheet is drawn inside the
+       dock's stacking context, and at an equal level this block, later in the
+       page, painted over the sheet's foot (checked at 375 x 812 and 844 x 390). */
+    z-index: 5;
     order: 3;
     margin-top: auto;
     display: flex;
@@ -92,6 +98,43 @@
   .bottombar :global(.log-ticker) {
     position: static;
     border-width: 0 0 1px;
+  }
+
+  /* Held sideways: one row. The log line is a block a third of the width (its
+     tap still opens the log), the screen list scrolls in the rest. Safe-area
+     padding stays on the block, so the notch's side inset is kept. */
+  .bottombar.short {
+    flex-direction: row;
+    align-items: stretch;
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+  }
+
+  .bottombar.short :global(.log-ticker) {
+    flex: 0 0 clamp(180px, 32%, 300px);
+    width: auto;
+    min-width: 0;
+    border-width: 0 1px 0 0;
+    padding-left: 10px;
+    padding-right: 8px;
+  }
+
+  /* No screen list yet (floor 0): the log line has the whole row. */
+  .bottombar.short :global(.log-ticker:only-child) {
+    flex: 1 1 auto;
+    border-width: 0;
+  }
+
+  .bottombar.short .tabs-row {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0;
+  }
+
+  .bottombar.short .tabs-row .nav-entry {
+    min-height: 46px;
+    padding-top: 2px;
+    padding-bottom: 2px;
   }
 
   /* A row of fixed-height entries: the icon over the name. It scrolls sideways
