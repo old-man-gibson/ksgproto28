@@ -337,6 +337,7 @@ that stays.
 | 4 | 2026-10-29 | The desert band | band 5, floors 18–20 | Bank |
 | 5 | 2026-11-12 | The six realms | floors 44–49, a hub; floor 50 behind it | Note, unreviewed |
 | 6 | 2026-11-12 | The crossing | floors 31–36: voyage, split, steppe | Note, unreviewed |
+| 7 | 2026-11-12 | The high-tech city | floors 37–40, a hub of four districts | Note, unreviewed |
 
 ### Entry template
 
@@ -1553,7 +1554,32 @@ area in floors 34-36. I still have to pick a theme for that"
   branch (and whether a later run can choose). Default: per run, decided
   by play.
 - The theme of 34–36.
-- Floors 37–43 are still unwritten.
+- Floors 37–43 are still unwritten. (37–40: idea 7.)
+
+### 7. The high-tech city (posted 2026-11-12)
+
+Band: unassigned · Floors: 37–40 · Verdict: note, unreviewed.
+
+**As posted.** "floor 37-40 is a high-tech city that the player has to
+traverse, again a similar function like floors 7-10 where the player has
+four different objectives in the slums, the high-rises, the industrial
+park and the commercial central plaza"
+
+**The shape, as read.** A hub like the castle (7–10): four districts, one
+objective each, done in any order.
+
+| District | Objective |
+|---|---|
+| the slums | unwritten |
+| the high-rises | unwritten |
+| the industrial park | unwritten |
+| the commercial central plaza | unwritten |
+
+**Not yet decided.**
+
+- Each district's objective.
+- Whether all four are needed to leave, as at the castle. Default: yes.
+- Floors 41–43 are still unwritten.
 
 ---
 
