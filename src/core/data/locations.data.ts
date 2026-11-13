@@ -874,12 +874,13 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
         drops: [{ material: 'smiths_pattern_bronze', chance: 0.0104 }] },
       { id: 'train_str_forges', kind: 'train', attr: 'str', name: 'Swing the Sledge', icon: '🔨', tags: ['blunt'] },
     ],
-    // The city's smithing counter: the same starter recipes the hamlet forge
-    // teaches, because the Warden's iron has to become something somewhere.
+    // The city's smelting counter: ingots only. Weapons and armour are made at
+    // the anvil below, which takes the ingots (the recipe lines for them were
+    // removed 2026-11-13). The ingot line stays because the anvil takes ingots
+    // and a floor 0 quest smelts one.
     // The bronze line is SECRET (RecipeDef.secret): listed only once the
     // Smith's Pattern found working the bellows has been studied.
-    // The last five had a recipe and no counter to craft it at.
-    recipes: ['iron_ingot', 'iron_dagger', 'iron_sword', 'copper_ingot', 'tin_ingot', 'bronze_ingot', 'bronze_dagger', 'rapier', 'parrying_dagger', 'katana', 'uchigatana', 'iron_breastplate'],
+    recipes: ['iron_ingot', 'copper_ingot', 'tin_ingot', 'bronze_ingot'],
     // The anvil. This was `assembling`, which is cooking's Cold Counter and had
     // stood in the smithy since the prototype import.
     benches: ['forging'],
@@ -3963,13 +3964,11 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       { id: 'job_bellows_f17', kind: 'job', gold: 30, ticksPer: 250, name: 'Work the Bellows', icon: '🔥' },
       { id: 'train_str_hammers_f17', kind: 'train', attr: 'str', name: 'Swing Practice Hammers', icon: '🔨', tags: ['blunt'] },
     ],
+    // Ingots, leather and the leatherwork lines. The iron weapons and the
+    // breastplate that were listed here are forged at the anvil below
+    // (recipe lines removed 2026-11-13).
     recipes: [
       'iron_ingot',
-      'iron_dagger',
-      'iron_sword',
-      'rapier',
-      'parrying_dagger',
-      'iron_breastplate',
       'leather',
       'leather_cap',
       'leather_vest',
@@ -3977,9 +3976,8 @@ export const SPOTS = prose<SpotDef>('SPOTS', SPOTS_TEXT, {
       'hunting_bow',
       'herbal_charm',
       'wolf_cloak',
-      'uchigatana',
-      'katana',
     ],
+    benches: ['forging'],
     connections: [],
   },
   // The hamlet's gates: the slime regent and its legionaries. A boss row with

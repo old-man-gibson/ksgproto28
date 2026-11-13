@@ -93,4 +93,5 @@ the wing's approach.
   `band2-floors`). The bosses always bring four escorts.
 - No ship scene (`SceneId`); the waters use the default backdrop.
 - The port sale is a readout, not a dialogue. Privateers pay no fifth.
-- Every monster is a `ph_` placeholder with no art.
+- Every monster is a `ph_` placeholder. Their portraits are stand-ins too
+  ([MONSTER_ART.md](MONSTER_ART.md)).

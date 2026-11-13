@@ -116,7 +116,7 @@ export const SPOTS_TEXT: ProseTable = {
 
   'wrights_gate.desc': 'Gate of Wrights’ Ward. Pell Marrow sells armour and weapons here; four more lines open once the Toll Hall keeper is defeated. Connects to the Foot, the Forges, the Long Bench, the Assize Gate and the Granary Gate.',
 
-  'the_forges.desc': 'Heat-tagged. Smithing counter with recipes for iron ingot, iron dagger and iron sword. Work the Bellows is a job: 14 gold per 25 s. Swing the Sledge trains Strength and pays blunt skill XP. Ferra Ostwind sells ore, scrap, wood and leather here.',
+  'the_forges.desc': 'Heat-tagged. Smelting counter with the iron ingot recipe, and an anvil that forges ingots, hardwood and leather into pieces. Work the Bellows is a job: 14 gold per 25 s. Swing the Sledge trains Strength and pays blunt skill XP. Ferra Ostwind sells ore, scrap, wood and leather here.',
 
   'the_long_bench.desc': 'Indoor. Holds a Rune Table for runecarving.',
 
@@ -326,7 +326,7 @@ export const SPOTS_TEXT: ProseTable = {
   'f17_path.desc': 'The path down the west slope. Open sky. Endless hunt: scree slimes, ridge goblins and goblin chiefs, level 42. Sky lines, level 42: rime slimes under snow, cinder slimes in a heatwave, squall slimes in a gale, storm slimes in a storm, downpour slimes in rain.',
   'f17_old_path.desc': 'The old road to the hamlet. Open sky. Endless hunt: scree slimes, ridge goblins and goblin chiefs, level 42. Sky lines, level 42: rime slimes under snow, cinder slimes in a heatwave, squall slimes in a gale, storm slimes in a storm, downpour slimes in rain. The hamlet is next.',
   'f17_hamlet_square.desc': 'The square of the hamlet at the foot of the range, roofed and a haven. Rest at the Well is a rest activity. Stand Guard pays 30 gold every 20 s, Participate in Debates trains Charisma and Turn the Handmill gathers rough flour (14 s each). Captain Bren stands here. The forge is off the square, and the gates lead on to floor 18.',
-  'f17_hamlet_forge.desc': 'The hamlet forge, roofed and hot: standing here trains Heat Resistance. Thora Ironbrand works it. Work the Bellows pays 30 gold every 25 s and Swing Practice Hammers trains Strength. Recipes: iron ingot, iron dagger, iron sword, rapier, parrying dagger, iron breastplate, leather, leather cap, leather vest, leather boots, hunting bow, herbal charm, wolf cloak, uchigatana and katana.',
+  'f17_hamlet_forge.desc': 'The hamlet forge, roofed and hot: standing here trains Heat Resistance. Thora Ironbrand works it. Work the Bellows pays 30 gold every 25 s and Swing Practice Hammers trains Strength. Recipes: iron ingot, leather, leather cap, leather vest, leather boots, hunting bow, herbal charm and wolf cloak. An anvil forges ingots, hardwood and leather into pieces.',
   'f17_keeper.desc': 'The hamlet’s gates, under the open sky. The Slime Regent holds them with two Regent’s Legionaries: the regent at level 45, the legionaries at levels 42 to 43. It fights whenever you hunt here, cleared or not. Its first kill clears floor 17. A hunt here sometimes meets legionaries without the regent; that fight clears nothing.',
 
   // ==== DESERT: spot text (skeleton 2026-10-30; the desert builder's section) ====

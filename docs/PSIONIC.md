@@ -481,7 +481,10 @@ mind cannot hold until tier 8") instead of refusing silently at the button.
   The same logic runs the other way for conductive gear, and the Bronze Dagger
   already does it: `damage +1` where Iron Dagger gives `+2`. It is a slightly
   worse knife, bought back with acuity and coherence — dead weight to anyone
-  who does not shape.
+  who does not shape. (Since 2026-11-13 the dagger has no recipe: the player
+  route is a dagger forged at the anvil with a bronze head, which carries the
+  same +15% Acuity and +10% Coherence. The `bronze_dagger` item stays for
+  survivor loadouts.)
 
   **Ward.** A `psiWard` stat scaling what a psionic working does to its target:
   afflictions land weaker and fall off sooner, and a high enough ward should be

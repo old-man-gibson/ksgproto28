@@ -254,7 +254,7 @@ levels; these were scaled to a climber of about 800 HP and 640 damage a blow.
 | Peak Guardian | ancient | peak, L44 | alone; resists slashing and piercing 80%; arcane 60% weak |
 | Slime Regent | legendary | gates, L45 | `group` 3 to 3, no `escorts`: the spot's own lines fill the slots, so the legionaries sit at L42 to 43 |
 | Regent's Legionary | veteran | gates, L42-43 | |
-| Ridge Wolf / Cairn Brute / Hollow Seer | elite | calm lines, L46-48 | veiled; emoji icons, no art |
+| Ridge Wolf / Cairn Brute / Hollow Seer | elite | calm lines, L46-48 | veiled; stand-in portraits ([MONSTER_ART.md](MONSTER_ART.md)) |
 
 Level ranges by zone: caves 40 to 41; east slope, ridge and west peak 41 to 42;
 the descent 42. Reused art (`art` in monsters.data.ts):

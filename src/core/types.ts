@@ -3225,12 +3225,6 @@ export interface RecipeDef {
   /** Smithing XP granted per completed craft. */
   xp: number;
   unlock?: UnlockCondition[];
-  /**
-   * The parts this recipe is made of. When present, `cost` must equal the cost
-   * the cells derive (tests/content.test.ts), and each craft also counts
-   * `forged:<class>` for the form chart. The result stays the declared item.
-   */
-  forge?: Placement;
 }
 
 // ---------- Items & equipment ----------

@@ -80,10 +80,9 @@ export interface ForgePreview {
 }
 
 /**
- * Whether this class has been made on this save, by the anvil or by a recipe
- * line whose parts resolve to it. The form chart shows a class's name once it
- * has ("?" otherwise) — discovery in place of an unlock. Read from the
- * `forged:<classId>` counter, which `forgeOnce` and the recipe craft bump.
+ * Whether this class has been forged on this save. The form chart shows a
+ * class's name once it has ("?" otherwise) — discovery in place of an unlock.
+ * Read from the `forged:<classId>` counter, which `forgeOnce` bumps.
  */
 export function formKnown(state: GameState, classId: string): boolean {
   return (state.stats[`forged:${classId}`] ?? 0) >= 1;
@@ -179,7 +178,7 @@ export function forgeOnce(state: GameState, bus: EventBus, placement: Placement)
   state.inventory.push(item);
 
   // The form chart fills in from this counter: a class shows its name once it
-  // has been forged (a recipe craft counts too, actions.ts).
+  // has been forged.
   bumpStat(state, bus, `forged:${check.class.id}`);
   bumpStat(state, bus, 'crafts');
   checkDiscovery(state, bus, [FORGING.tag]);

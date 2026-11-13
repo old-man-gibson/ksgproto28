@@ -144,14 +144,13 @@ describe('what each find does', () => {
 
   it('Wrights: the bronze line is not listed until the pattern is studied', () => {
     const g = fresh();
-    for (const id of ['copper_ingot', 'tin_ingot', 'bronze_ingot', 'bronze_dagger']) {
+    for (const id of ['copper_ingot', 'tin_ingot', 'bronze_ingot']) {
       expect(recipeHidden(g.state, RECIPES[id]), id).toBe(true);
     }
     use(g, 'smiths_pattern_bronze');
-    for (const id of ['copper_ingot', 'tin_ingot', 'bronze_ingot', 'bronze_dagger']) {
+    for (const id of ['copper_ingot', 'tin_ingot', 'bronze_ingot']) {
       expect(recipeHidden(g.state, RECIPES[id]), id).toBe(false);
     }
-    expect(RECIPES.bronze_dagger.result.id).toBe('bronze_dagger');
     expect(SPOTS.the_forges.recipes).toContain('bronze_ingot');
   });
 

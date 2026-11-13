@@ -23,10 +23,11 @@ export const SHELVED_QUESTS: Record<string, QuestDef> = {
   temper_steel: {
     id: 'temper_steel',
     name: 'Temper Steel',
-    desc: 'Prove your craft: forge a proper iron sword.',
+    desc: 'Prove your craft: forge a piece at her anvil.',
     giver: 'thora_ironbrand',
     requirements: [{ type: 'quest', id: 'hammer_and_anvil' }],
-    objectives: [{ type: 'craft', recipeId: 'iron_sword', count: 1, desc: 'Forge an Iron Sword' }],
+    // Was the iron sword recipe, removed 2026-11-13; any anvil piece counts.
+    objectives: [{ type: 'craft', discipline: 'forging', count: 1, desc: 'Forge a piece at the anvil' }],
     rewards: { gold: 150, items: ['iron_gauntlets'] },
   },
 

@@ -17,7 +17,7 @@ import { festivalContentIssues } from '../../src/core/systems/festivalValidation
 import { wardContentIssues } from '../../src/core/systems/wardValidation';
 import { WARD_WINDOWS } from '../../src/core/data/wards.data';
 import type { ConvoyDef, SeaSideDef } from '../../src/core/data/sea.data';
-import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RecipeDef, RoyaleStrategyDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef, UnlockCondition } from '../../src/core/types';
+import type { ActivityDrop, Connection, CraftDisciplineDef, ItemClassDef, MaterialDef, MonsterDef, MusicArchetypeDef, MusicMeterDef, MusicScaleDef, NpcDef, PartKindDef, QuestDef, RoyaleStrategyDef, SkillDef, SpotDef, SpotFind, StatusDef, TierDef, TitleDef, UnlockCondition } from '../../src/core/types';
 import { DAMAGE_TYPE_NAMES } from '../../src/core/types';
 import { ELEMENT_TAGS, PLACE_TAGS } from '../../src/core/systems/exposure';
 import { TAG_RESISTANCES, penetrationProblems } from '../../src/core/systems/monsterStats';
@@ -1199,8 +1199,8 @@ export function validate(store: S): Issue[] {
   //
   // Mirrors the 'modular smithing content' block of tests/content.test.ts by
   // calling the SAME rules (systems/assemblyValidation.ts) on the staged
-  // copies, so a part, class, smith profile or forge recipe edited here is
-  // checked as it stands. The enumeration is the lighter 'tags' one — one
+  // copies, so a part, class or smith profile edited here is checked as it
+  // stands. The enumeration is the lighter 'tags' one — one
   // material per accepted tag, every distinct classification — because this
   // runs on every keystroke; the test runs the exhaustive one.
   for (const issue of smithingContentIssues(
@@ -1208,7 +1208,6 @@ export function validate(store: S): Issue[] {
       parts: store.all<PartKindDef>('part'),
       classes: store.all<ItemClassDef>('itemClass'),
       materials: store.all<MaterialDef>('material'),
-      recipes: store.all<RecipeDef>('recipe'),
     },
     { materials: 'tags' },
   )) {

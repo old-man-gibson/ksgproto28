@@ -27,7 +27,7 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'iron_scrap.desc': 'Three smelt into one Iron Ingot at a forge.',
 
-  'iron_ingot.desc': 'Smithing stock. Smelted from 3 Iron Scrap; weapons and armor cost 1 to 4 each.',
+  'iron_ingot.desc': 'Smithing stock. Smelted from 3 Iron Scrap. The anvil spends it at 6 cells of metal per ingot.',
 
   'boss_token.desc': 'Dropped by bosses. No use yet. Sells for 100 gold.',
 
@@ -104,7 +104,7 @@ export const MATERIALS_TEXT: ProseTable = {
   'drill_manual_riposte.desc': 'Study to learn Riposte in canonical form, or to perfect a rough one. Consumed when studied.',
   'chancery_price_seal.desc': 'Register for a standing 10% discount at every counter in Threshold, never below what an item resells for. Consumed when registered.',
   'unclaimed_case_file.desc': 'An Assize case file nobody collected. Read it. Consumed when read.',
-  "smiths_pattern_bronze.desc": "Study to add the copper, tin and bronze ingots and the bronze dagger to the Forges' recipes. Consumed when studied.",
+  "smiths_pattern_bronze.desc": "Study to add the copper, tin and bronze ingot recipes to the Forges. A piece forged at the anvil with a bronze head carries +15% Acuity and +10% Coherence. Consumed when studied.",
   'travelers_ration.desc': 'Eat: Well Fed ×0.5. Signature, after 100 cooks: also Steady Hand ×0.5.',
 
   'feast_platter.desc': 'Eat: restores 25% of max HP at once, plus Well Fed ×2 and Steady Hand ×1.5. Signature, after 100 cooks: also Stoked ×0.5.',
@@ -153,9 +153,9 @@ export const MATERIALS_TEXT: ProseTable = {
 
   'tin_ore.desc': 'Three smelt into one Tin Ingot at a forge.',
 
-  'bronze_ingot.desc': 'Smithing stock. Made from 4 Copper Ingots and 1 Tin Ingot. One plus one Leather makes a Bronze Dagger.',
+  'bronze_ingot.desc': 'Smithing stock. Made from 4 Copper Ingots and 1 Tin Ingot. A piece forged at the anvil with a bronze head carries +15% Acuity and +10% Coherence.',
 
-  'leather.desc': 'Leatherworking stock, tanned from fur (4 ruined furs per piece; better fur yields more). Spent with Bronze Ingots at the forge.',
+  'leather.desc': 'Leatherworking stock, tanned from fur (4 ruined furs per piece; better fur yields more). The anvil spends it as straps and cords: 3 cells per leather.',
 
   // ==== HARBOR: material text (2026-10-30; the harbor builder's section) ====
   'ship_cannon.desc': 'Fitted in the hold while carried: on the harbor band’s waters each one adds a volley to your battery on every leg a cannonball loads them. Up to 4 count. Never spent. Made at the quay on floor 11 from 6 iron ingots.',

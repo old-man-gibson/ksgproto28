@@ -37,7 +37,7 @@ the game hands over. Buying or looting a system's output does not count.
 | Martial | ◐ about neutral | ✖ | ✖ | ✖ | from floor 2 (the tutor) |
 | Psionics | ✖ (would fill if opened) | ✖ | ✖ | ✖ | **shut** |
 | Cooking | ✖ | ✔ Hearty Stew, Herb-Rubbed Meat | ◐ bleeding only | ✖ | yes |
-| Smithing | ✔ iron sword | ✖ no armour recipe listed | ✖ | ✖ | yes |
+| Smithing | ✔ forged sword | unmeasured: the anvil forges a breastplate | ✖ | ✖ | yes |
 | Mutagens | ◐ +8.4% | ◐ +13.5% max HP | ✖ | ✖ | **shut** (drops still accrue) |
 | Alchemy | ✖ | ◐ weak salve and elixir | ◐ bleeding only | ✖ | brews yes; the skill cannot manifest |
 
@@ -131,15 +131,19 @@ role until its row reaches the cover.
 
 ### Smithing
 
-- **Damage.** The iron sword (smithing 3) is +7 damage and +2% crit against
-  the rusty sword's +3: about 6.2 → 10.2 per swing at STR 1, +65% (*model*).
-  Two iron ingots take smithing to 3 and then go into the sword; the Warden's
-  crate holds the 6 scrap, hardwood is bought. About 54 s of crafting.
-- **Sustain.** The Forges list seven recipes and none is armour
-  (`locations.data.ts:817`). `iron_breastplate` exists as a recipe but was
-  listed only at the shelved hamlet forge; `soldier_greaves` (armour 10,
-  +10 max HP) and `iron_gauntlets` (armour 4) exist as items with no recipe
-  at a spot.
+- **Damage.** The anvil's iron sword (long blade + haft, 2 ingots + 1
+  hardwood, 100 ticks + 15 per cell, no Smithing level needed) is +7 damage and
+  +2% crit, drawn at Fair quality, against the rusty sword's +3: about 6.2 →
+  10.2 per swing at STR 1, +65% (*model*, from the numbers of the pre-anvil
+  `iron_sword` item; the grade is rolled from Smithing, so a piece can land
+  lower). The Warden's crate holds the 6 scrap, hardwood is bought. Since
+  2026-11-13 there is no `iron_sword` recipe and no Smithing gate on this
+  sword. The earlier 54 s recipe time is not re-measured for the anvil.
+- **Sustain.** The Forges list four ingot recipes and no armour recipe. The
+  anvil forges a breastplate (plate_w + strap); its strap slot opens at
+  Smithing 3. Not measured as band-1 sustain.
+  `soldier_greaves` (armour 10, +10 max HP) and `iron_gauntlets` (armour 4)
+  exist as items with no recipe at a spot.
 - No smithable item carries a resistance.
 
 ### Mutagens

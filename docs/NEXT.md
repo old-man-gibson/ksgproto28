@@ -430,6 +430,11 @@ last.
 
 In execution. The design, the user's rulings and the old parked sketch live in
 [plans/blueprint-weaponsmithing.md](plans/blueprint-weaponsmithing.md).
+2026-11-13: the smithies' weapon and armour recipes (iron dagger, iron sword,
+bronze dagger, rapier, parrying dagger, katana, uchigatana, iron breastplate)
+are removed; the anvil replaces them (ruling 8) and Kystel's Anvil on floor 17
+gains one. The ingot recipes stay. The Smith's Pattern now adds ingot recipes
+only.
 
 ---
 

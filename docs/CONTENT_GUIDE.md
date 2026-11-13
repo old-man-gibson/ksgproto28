@@ -316,9 +316,23 @@ frost_brand: {
 },
 ```
 Then list it where it's craftable: add `'frost_brand'` to that spot's
-`recipes: [...]` array in `locations.data.ts` (currently Kystel's Anvil).
-**Your katana is the worked example:** item + recipe + forge listing, three edits,
-all tests green on the first run.
+`recipes: [...]` array in `locations.data.ts` (Kystel's Anvil lists leather,
+bow, charm and cloak recipes). `wolf_cloak` is a worked example: item + recipe +
+listing, three edits.
+
+**Plain weapons and armour are not recipes.** Metal weapons and armour are
+assembled at the anvil (`benches: ['forging']` on the spot; the Forges on floor
+0 and Kystel's Anvil on floor 17 have one). A new weapon shape is an `ItemClass`
+plus parts in `docs/plans/blueprint-weaponsmithing.md`, not a `RecipeDef`. The
+smithies' own recipe lines are ingots only (`iron_ingot`, `copper_ingot`,
+`tin_ingot`, `bronze_ingot`); the anvil takes ingots as head material. The
+removed recipes (iron dagger, iron sword, bronze dagger, rapier, parrying
+dagger, katana, uchigatana, iron breastplate) are gone; the items stay in
+`ITEMS`. Four keep a source (iron dagger, iron sword, iron breastplate and
+rapier are on the Rack; the sword and breastplate also drop). Katana,
+uchigatana, bronze dagger and parrying dagger have no player source now
+(survivor loadouts and festival caches only). A recipe id removed from a spot is dropped from
+`activity` and `resumeActivity` on load (`save.ts` `deserialize`).
 
 **Several routes to one product (`alts`).** `cost` is an AND-list — every line
 is consumed. When the same product can be made *different ways*, add `alts`
@@ -858,7 +872,7 @@ read them directly.
 | Alembic Row | Wash Out the Retorts (the Alembics, job) | Emberbloom ×3 | a reagent the shelf does not sell |
 | The Chancery | Copy Out Writs (the Rolls) | Chancery Price Seal | `flag:chancery_seal`: 10% off at every counter, above the no-arbitrage floor (shops.ts) |
 | The Assize | Stand the Night Watch (the Holding) | Unclaimed Case File | `flag:assize_case_file`: hidden title Friend of the Court |
-| Wrights' Ward | Work the Bellows (the Forges) | Smith's Pattern: Bronze | `flag:pattern_bronze`: the secret copper/tin/bronze ingot and bronze dagger recipes appear at the Forges |
+| Wrights' Ward | Work the Bellows (the Forges) | Smith's Pattern: Bronze | `flag:pattern_bronze`: the secret copper/tin/bronze ingot recipes appear at the Forges |
 | The Granaries | Scrub the Pans (Granary Kitchens) | Iron Pot (grade B, `unique`) | cookware for the stove's tool slot |
 
 **Card effects** (`ConsumableSpec`; ungraded; refused once spent): `teaches`

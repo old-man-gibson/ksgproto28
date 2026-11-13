@@ -452,8 +452,7 @@ function cellsByMaterial(placement: Placement, reg: SmithRegistries): Map<string
 
 /**
  * What a placement costs: each material's cells, rounded UP to whole units
- * (an ingot is 6 cells, a hardwood 4, a leather 3). Same shape as
- * `RecipeDef.cost`, so a recipe line can be checked against it.
+ * (an ingot is 6 cells, a hardwood 4, a leather 3).
  */
 export function placementCost(placement: Placement, reg: SmithRegistries = {}): { id: string; qty: number }[] {
   return [...cellsByMaterial(placement, reg)].map(([id, cells]) => ({

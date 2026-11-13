@@ -77,8 +77,8 @@ export function syncAnvil(state: Pick<GameState, 'createdAt' | 'prestige'>): voi
 }
 
 /**
- * Replace the whole layout (a copy: the caller's object, often a recipe's, is
- * never edited). The hand-picked families belonged to the old layout, so they
+ * Replace the whole layout (a copy: the caller's object, often a class
+ * exemplar, is never edited). The hand-picked families belonged to the old layout, so they
  * go with it; editing one slot sets `anvil.placement` directly and keeps them.
  */
 export function setLayout(placement: Placement): void {
