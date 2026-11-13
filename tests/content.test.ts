@@ -1655,7 +1655,7 @@ describe('modular smithing content', () => {
   const issuesOf = () => {
     if (!cached) {
       cached = smithingContentIssues(
-        { parts: PART_KINDS, classes: ITEM_CLASSES, materials: MATERIALS, recipes: RECIPES },
+        { parts: PART_KINDS, classes: ITEM_CLASSES, materials: MATERIALS },
         { materials: 'all' },
       );
     }
@@ -1690,15 +1690,6 @@ describe('modular smithing content', () => {
     expect(report('total')).toEqual([]);
   });
 
-  it("a recipe's listed cost equals the cost its parts derive", () => {
-    expect(report('recipes')).toEqual([]);
-    // And the lint has something to chew on: the recipe lines of slice 1.
-    const placed = Object.values(RECIPES).filter((r) => r.forge).map((r) => r.id);
-    expect(placed.sort()).toEqual(
-      ['iron_breastplate', 'iron_dagger', 'iron_sword', 'katana', 'parrying_dagger', 'rapier'].sort(),
-    );
-  });
-
   it('every class has a generated item stub, and the stub carries no numbers', () => {
     for (const cls of Object.values(ITEM_CLASSES)) {
       const stub = ITEMS[`forged:${cls.id}`];
@@ -1709,17 +1700,12 @@ describe('modular smithing content', () => {
     }
   });
 
-  it('forging is the Forges bench; the Cold Counter stays in the kitchen', () => {
+  it('forging is the Forges bench and Kystel’s Anvil; the Cold Counter stays in the kitchen', () => {
     expect(SPOTS.the_forges.benches).toEqual(['forging']);
+    expect(SPOTS.f17_hamlet_forge.benches).toEqual(['forging']);
     expect(DISCIPLINES.forging.assembles).toBe(true);
     expect(DISCIPLINES.forging.skill).toBe('smithing');
     expect(DISCIPLINES.assembling.assembles).toBeUndefined();
-  });
-
-  it('the Forges list the five smithing recipes that had no counter', () => {
-    for (const id of ['rapier', 'parrying_dagger', 'katana', 'uchigatana', 'iron_breastplate']) {
-      expect(SPOTS.the_forges.recipes, id).toContain(id);
-    }
   });
 });
 

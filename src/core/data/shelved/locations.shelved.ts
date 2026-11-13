@@ -405,13 +405,10 @@ export const SHELVED_SPOTS: Record<string, SpotDef> = {
       { id: 'job_bellows', kind: 'job', gold: 14, ticksPer: 250, name: 'Work the Bellows', icon: '🔥' },
       { id: 'train_str_hammers', kind: 'train', attr: 'str', name: 'Swing Practice Hammers', icon: '🔨', tags: ['blunt'] },
     ],
+    // The weapon and breastplate lines were removed with the live forges'
+    // (2026-11-13): the anvil makes them.
     recipes: [
       'iron_ingot',
-      'iron_dagger',
-      'iron_sword',
-      'rapier',
-      'parrying_dagger',
-      'iron_breastplate',
       'leather',
       'leather_cap',
       'leather_vest',
@@ -419,9 +416,8 @@ export const SHELVED_SPOTS: Record<string, SpotDef> = {
       'hunting_bow',
       'herbal_charm',
       'wolf_cloak',
-      'uchigatana',
-	  'katana'
     ],
+    benches: ['forging'],
     connections: [],
   },
   town_gates: {

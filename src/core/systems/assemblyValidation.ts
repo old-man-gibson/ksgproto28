@@ -1,9 +1,8 @@
-import type { ClassMatch, ItemClassDef, MaterialDef, PartKindDef, PartShape, RecipeDef } from '../types';
+import type { ClassMatch, ItemClassDef, MaterialDef, PartKindDef, PartShape } from '../types';
 import { RES_STAT_BY_TYPE, SLOT_NAMES } from '../types';
 import {
   enumeratePlacements,
   matchingClass,
-  placementCost,
   placementKey,
   placementProblem,
   type SmithRegistries,
@@ -26,13 +25,12 @@ export type SmithingRule =
   | 'exemplars'
   | 'total'
   | 'reachable'
-  | 'last-class'
-  | 'recipes';
+  | 'last-class';
 
 export interface SmithingIssue {
   rule: SmithingRule;
   /** The registry kind the offender lives in, as the forge names it. */
-  kind: 'part' | 'material' | 'itemClass' | 'recipe';
+  kind: 'part' | 'material' | 'itemClass';
   id: string;
   message: string;
 }
@@ -41,7 +39,6 @@ export interface SmithingContent {
   parts: Record<string, PartKindDef>;
   classes: Record<string, ItemClassDef>;
   materials: Record<string, MaterialDef>;
-  recipes: Record<string, RecipeDef>;
 }
 
 export interface SmithingLintOptions {
@@ -233,41 +230,13 @@ function tableIssues(c: SmithingContent, opts: SmithingLintOptions, out: Smithin
   }
 }
 
-/** Rule 8: a recipe made of parts costs what its cells cost. */
-function recipeIssues(c: SmithingContent, out: SmithingIssue[]): void {
-  const reg: SmithRegistries = { classes: c.classes, parts: c.parts, materials: c.materials };
-  const bill = (cost: { id: string; qty: number }[]) =>
-    cost
-      .map((l) => `${l.qty} ${l.id}`)
-      .sort()
-      .join(', ');
-  for (const r of Object.values(c.recipes)) {
-    if (!r.forge) continue;
-    const problem = placementProblem(r.forge, reg);
-    if (problem) {
-      out.push({ rule: 'recipes', kind: 'recipe', id: r.id, message: `forge placement cannot be placed: ${problem}` });
-      continue;
-    }
-    const derived = bill(placementCost(r.forge, reg));
-    const listed = bill(r.cost);
-    if (derived !== listed) {
-      out.push({
-        rule: 'recipes',
-        kind: 'recipe',
-        id: r.id,
-        message: `lists a cost of ${listed}, but its parts derive ${derived}`,
-      });
-    }
-  }
-}
-
 let memo: { key: string; issues: SmithingIssue[] } | null = null;
 
 /**
  * Every smithing content rule over the given registries. Memoised on the
  * content it actually reads, so the forge can call it on every keystroke and
- * pay for the enumeration only when a part, class, forgeable material or
- * forge recipe changed.
+ * pay for the enumeration only when a part, class or forgeable material
+ * changed.
  */
 export function smithingContentIssues(content: SmithingContent, opts: SmithingLintOptions = {}): SmithingIssue[] {
   const key = JSON.stringify([
@@ -276,9 +245,6 @@ export function smithingContentIssues(content: SmithingContent, opts: SmithingLi
     Object.values(content.materials)
       .filter((m) => m.smith)
       .map((m) => [m.id, m.craftTags, m.graded, m.smith]),
-    Object.values(content.recipes)
-      .filter((r) => r.forge)
-      .map((r) => [r.id, r.cost, r.forge]),
     opts.materials ?? 'all',
   ]);
   if (memo?.key === key) return memo.issues;
@@ -288,7 +254,6 @@ export function smithingContentIssues(content: SmithingContent, opts: SmithingLi
   // useful); skip them while the data itself is broken so the message is the root cause.
   if (!issues.length) {
     tableIssues(content, opts, issues);
-    recipeIssues(content, issues);
   }
   memo = { key, issues };
   return issues;

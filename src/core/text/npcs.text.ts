@@ -13,10 +13,10 @@ export const NPCS_TEXT: ProseTable = {
     'The tower door is open now. Floor 1 has no gate; floor 2 needs 150 gold earned in total.',
   ],
 
-  'master_smith.desc': 'Smith at the Forges. Sells iron scrap, copper ore, tin ore, hardwood, leather and iron ingots at the Scrap Bin. The Forges hold the iron ingot, iron dagger and iron sword recipes.',
+  'master_smith.desc': 'Smith at the Forges. Sells iron scrap, copper ore, tin ore, hardwood, leather and iron ingots at the Scrap Bin. The Forges hold the iron ingot recipe and an anvil.',
   'master_smith.dialogue': [
     'I sell scrap, copper ore, tin ore, hardwood, leather and finished iron ingots.',
-    'The forge here makes iron ingots, iron daggers and iron swords. One ingot smelted counts for A Taste of Everything.',
+    'The forge here smelts iron ingots, and the anvil forges them into weapons and armour. One ingot smelted counts for A Taste of Everything.',
     'I sell no weapons. Pell Marrow at the Wrights’ Gate has the rack.',
   ],
 
@@ -150,7 +150,7 @@ export const NPCS_TEXT: ProseTable = {
   // ==== ABERRANT: NPC text ====
   // The hamlet's two (docs/MALGERI.md). The captain's lore entry is the only
   // NPC line that names the calm, and it waits on flag:malgeri_calm_seen.
-  'f17_thora.desc': 'Smith at the hamlet forge on floor 17, in Kystel’s Anvil. Sells nothing and gives no quests; the forge she works smelts and forges (its recipes are listed on the forge).',
+  'f17_thora.desc': 'Smith at the hamlet forge on floor 17, in Kystel’s Anvil. Sells nothing and gives no quests; the forge she works smelts, tans and forges (its recipes are listed on the forge, and it has an anvil).',
   'f17_thora.dialogue': [
     'Keep your edge keen and your work honest.',
     'The anvil’s song rewards patience.',

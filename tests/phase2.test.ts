@@ -147,23 +147,23 @@ describe('crafting', () => {
 
   it('crafted items land in the inventory', () => {
     const g = smith(42);
-    g.state.materials['iron_ingot'] = 1;
-    g.state.materials['hardwood'] = 1;
-    g.selectActivity('craft_iron_dagger');
-    for (let i = 0; i < 230; i++) g.tick();
-    expect(g.state.inventory.some((i) => i.defId === 'iron_dagger')).toBe(true);
+    g.state.materials['ruined_fur'] = 4;
+    g.selectActivity('craft_leather_cap');
+    for (let i = 0; i < 160; i++) g.tick();
+    expect(g.state.inventory.some((i) => i.defId === 'leather_cap')).toBe(true);
   });
 
   it('gated recipes refuse selection until the skill threshold', () => {
     const g = smith(43);
-    g.state.materials['iron_ingot'] = 99;
-    expect(recipeUnlocked(g.state, RECIPES.iron_breastplate)).toBe(false);
-    g.selectActivity('craft_iron_breastplate');
+    g.state.materials['pristine_fur'] = 99;
+    g.state.materials['torn_fur'] = 99;
+    expect(recipeUnlocked(g.state, RECIPES.wolf_cloak)).toBe(false);
+    g.selectActivity('craft_wolf_cloak');
     expect(g.state.activity).toBeNull();
 
-    g.state.skills['smithing'] = { level: 8, xp: 0 };
-    g.selectActivity('craft_iron_breastplate');
-    expect(g.state.activity).toBe('craft_iron_breastplate');
+    g.state.skills['leathercrafting'] = { level: 5, xp: 0 };
+    g.selectActivity('craft_wolf_cloak');
+    expect(g.state.activity).toBe('craft_wolf_cloak');
   });
 
   it('craftSpeed shortens the craft cycle', () => {

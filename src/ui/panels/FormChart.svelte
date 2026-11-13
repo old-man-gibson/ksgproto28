@@ -163,7 +163,7 @@
           {/snippet}
         </Tip>
       {:else}
-        <span class="small dim">None yet. Forge a piece, or craft a recipe line, to record its form.</span>
+        <span class="small dim">None yet. Forge a piece to record its form.</span>
       {/each}
     </div>
     <div class="small dim">

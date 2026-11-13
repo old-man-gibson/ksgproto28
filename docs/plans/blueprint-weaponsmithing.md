@@ -6,7 +6,7 @@ status: execution
 system: crafting
 parent:
 save:
-updated: 2026-10-23
+updated: 2026-11-13
 invariants:
   - completability
   - modFingerprint
@@ -17,8 +17,8 @@ invariants:
 done:
   - The resolution function is TOTAL — every placement resolves to a class, degenerate ones included, and a lint enumerates it
   - Discovery replaces unlocks; the form chart fills in from forged:<class> counters
-  - Recipe lines carry placements and derive their cost; John never opens the anvil
-  - The anvil always forges an instance that keeps its quality roll; only recipe lines mint the static items
+  - The weapon and armour recipe lines were removed 2026-11-13 (ruling 8); the anvil makes those pieces; John never opens the anvil
+  - The anvil always forges an instance that keeps its quality roll; no recipe mints a static twin
   - A forged item's value reads its parts only; sockets, finishes and souls add nothing
   - Finishing is counted, order-insensitive, antagonistic and paid from temper
   - Monsters carry finish counts (slice 2) and weapons (slice 3) through the same pure functions
@@ -62,6 +62,36 @@ order (sequence), mutagens read a graph (topology), music reads a composition
    edits — but must stay distinct from runecarving. Runecarving itself needs
    a major overhaul (user); do not build on its current shape. Design for
    this is open: §Layer 2, Magic.
+8. **The smithies' weapon and armour recipe lines are replaced by the anvil
+   (2026-11-13).** Removed: `iron_dagger`, `iron_sword`, `bronze_dagger`,
+   `rapier`, `parrying_dagger`, `katana`, `uchigatana`, `iron_breastplate`
+   (`RecipeDefs`, spot listings and `RecipeDef.forge`). Kept: the four ingot
+   recipes at the Forges (the anvil takes ingots, and a floor 0 quest smelts
+   one). Kystel's Anvil (floor 17, `f17_hamlet_forge`) gains `benches:
+   ['forging']`; its leather, bow, charm and cloak recipes stay.
+   - Smithing stays trainable from the start: the anvil needs only a head and
+     a haft, and forging pays Smithing XP of 8 + 0.2 × base ticks per piece.
+     The binding, guard and second head open at Smithing 3, 5 and 15.
+   - Smith's Pattern: Bronze now adds the copper, tin and bronze ingot recipes
+     only. A piece with a bronze head carries the metal's `smith.mods` (+15%
+     Acuity, +10% Coherence) once per distinct head material.
+   - Old saves: `activity`, `resumeActivity`, `travelIntent` and `pendingReturn`
+     (target or fallback) naming an activity its spot no longer offers are
+     dropped on load (`save.ts` `deserialize`). No version bump. A knockout
+     return dropped this way leaves the character where the retreat put it,
+     with no work queued.
+   - The eight items stay in `ITEMS`, and held pieces keep working. Sources
+     after the removal: `iron_dagger`, `iron_sword`, `iron_breastplate` and
+     `rapier` are on the Rack (breastplate and rapier after
+     `boss:f1_toll_hall`); `iron_sword` and `iron_breastplate` also drop from
+     monsters; `iron_dagger` is a tutorial pick. `katana`, `uchigatana`,
+     `bronze_dagger` and `parrying_dagger` have no player source: survivor
+     loadouts name all four, and the festival caches lend the katana and the
+     parrying dagger for one attempt. Open: how the player gets those four. The
+     parrying dagger's texts (`items.text.ts`, `skills.text.ts`) are untouched
+     until that is ruled.
+   - `tests/john.ts` crafts only `iron_ingot` (the_forges, `craft_iron_ingot`),
+     so the removal does not change John's path.
 
 ## Layer 1 — Assembly
 
@@ -285,19 +315,22 @@ Calibration (measured headless on the mockup's kernel):
   start with 0 rune slots (a socket finish later; it must not raise value).
 - Size: all forged items are medium in slice 1.
 
-### Recipe lines (John's path)
+### Recipe lines (removed 2026-11-13)
 
-- `RecipeDef.forge?: Placement`. A recipe with a placement derives its cost
-  from the cells and **mints its declared static result** (twins). A lint
-  asserts derived cost = the recipe's listed cost wherever both exist.
-- Slice 1 placements: iron_dagger (short + h3), iron_sword (long + h3),
-  katana (curved + h3), rapier (thin + swept guard + h3), parrying_dagger
-  (short + cross + h3), iron_breastplate (plate_w + strap: becomes 3 ingots +
-  1 leather, from 4 ingots). Others keep authored costs for now.
-- The rapier, parrying dagger, katana, uchigatana and iron breastplate
-  recipes are placed at **no spot** today; slice 1 lists them at the Forges.
+Slice 1 gave eight weapon and armour recipes a placement (`RecipeDef.forge`)
+and minted their static items from the Forges' recipe list. Ruling 8 removed
+them: `RecipeDef.forge`, its cost lint (`recipeIssues`), the form-chart counter
+bump in `craft`, the "Open on anvil" button and the placed-recipe rename
+references are gone. Weapons and armour of those shapes are forged at the
+anvil as instances with a quality roll. What stays:
+
+- The ingot recipes at the Forges and `f17_hamlet_forge` (`iron_ingot`), the
+  secret copper/tin/bronze ingots, and the leather, bow, charm and cloak
+  recipes at Kystel's Anvil. These are not assemblies.
 - Patterns (later): cards that `stamps` `flag:pattern_<id>` add a recipe line,
-  the same mechanism as the Smith's Pattern for bronze.
+  the same mechanism as the Smith's Pattern for bronze. Open: what a pattern
+  adds now that no weapon recipe exists to list. Only the bronze pattern is
+  built, and it adds ingot recipes.
 
 ### The anvil (bench job)
 
@@ -307,9 +340,9 @@ Calibration (measured headless on the mockup's kernel):
   slice 1 (no smithing tool exists).
 - Result: a forged instance with `q`; counter `forged:<classId>` +1; novelty
   key per class for discovery XP; smithing XP.
-- Discovery: the form chart shows a class's name once `forged:<classId>` ≥ 1
-  (recipe crafts count too), "?" otherwise. It is the durable reference
-  (Invariant B).
+- Discovery: the form chart shows a class's name once `forged:<classId>` ≥ 1,
+  "?" otherwise. Only the anvil bumps the counter (recipe crafts did until
+  2026-11-13). It is the durable reference (Invariant B).
 
 ### The anvil screen (built, slice 1)
 
@@ -406,8 +439,8 @@ which covers a hard reset, an import and a prestige without hooking any of them.
   (a test pins that nothing else is missing from the grid). Clicking a known
   cell, or a found form, loads it on the anvil in the anvil's own materials
   where that does not change the form.
-- **Recipe lines.** A recipe with `forge` shows its parts under its button,
-  with "Open on anvil" where an assembling bench stands.
+- **Recipe lines.** Removed 2026-11-13 (ruling 8): a recipe button no longer
+  shows parts or "Open on anvil".
 - Material colours are `--mat-*` tokens in `app.css`, picked by craft tag.
 
 ### Slice 1 as built (2026-10-23)
@@ -438,14 +471,15 @@ authority; this list says where to look.
 - **Damage type.** `ItemDef.damageType` is new and read first by
   `playerDamageType`. Axe, halberd and sickle slash.
 - **Quality and XP.** `rollQuality(state, 1 + smithing / 20)`, as cooking's
-  prep. XP = 8 + 0.2 × base ticks (an iron sword ≈ 73, the recipe line 72).
+  prep. XP = 8 + 0.2 × base ticks (an iron sword ≈ 73).
   Novelty key `forging:<classId>`. The anvil also counts `crafts`.
 - **Corrupt specs read as an empty anvil.** `placementOf` keeps only entries
   with a known slot and string kind and mat; a save holding a mangled spec
   still boots (test: `tests/assembly.test.ts`).
 - **Forge renames move placements.** `forge/lib/refs.ts` treats `mat` and
-  `kind` under an exemplar or a recipe's `forge` as material and part
-  references. Recipe `cost[].id` is still not a reference (pre-existing).
+  `kind` under an exemplar as material and part references (under a recipe's
+  `forge` too, until 2026-11-13). Recipe `cost[].id` is still not a reference
+  (pre-existing).
 - **Debug.** `createItem('forged:<class>')` mints the class exemplar at grade C,
   so the debug "one of every item" still gives numbers.
 - **Generic class names in SVG.** The first drawing's cells used `piece-cell`,
@@ -453,8 +487,8 @@ authority; this list says where to look.
   and several panels style a `.cell` of their own. The pattern drawing keeps
   the rule (`ink`, `measure`, `caption`).
 - **Recipe cost changes.** Rapier 3 → 2 iron ingots + 1 hardwood; iron
-  breastplate 4 iron ingots → 3 + 1 leather. Uchigatana keeps its authored
-  cost (no placement).
+  breastplate 4 iron ingots → 3 + 1 leather. Uchigatana kept its authored
+  cost (no placement). Moot since 2026-11-13: all eight recipes are removed.
 - **Not built yet.** No real-grade preview (the anvil draws at Fair), no tool
   that caps quality, no steel.
 
@@ -645,7 +679,7 @@ that reach. A cell test should pin this row.
 
 | # | slice | ships | save |
 |---|---|---|---|
-| 1 | Assembly | PART_KINDS, ITEM_CLASSES, smith profiles, systems/assembly.ts, `itemDefOf` seam, the `forging` bench at the Forges (Cold Counter removed), recipe placements, unplaced recipes placed, anvil panel, form chart, lints and tests | none |
+| 1 | Assembly | PART_KINDS, ITEM_CLASSES, smith profiles, systems/assembly.ts, `itemDefOf` seam, the `forging` bench at the Forges (Cold Counter removed), anvil panel, form chart, lints and tests (recipe placements shipped here and were removed 2026-11-13, ruling 8) | none |
 | 2 | Finishing | ledger, verbs, temper, anneal, night-anneal, cold-set, three lens rites, the sky wait and the idle fix, tooltip with sources and birth line, `MonsterDef.finish` | none |
 | 3 | Monster arms | `MonsterDef.kit`, bestiary arms fact, exact-item drops, pacing rerun | none |
 | 4 | Melt and souls | melting, soul materials, soul slot | none |
@@ -661,7 +695,7 @@ All accepted; the spec above includes each.
    of inputs → 156 sale) → forged value reads parts only.
 3. Minting the static twin at the anvil made an S-grade Iron Sword pattern
    worse (damage 7) than one cell off it (11) → only recipe lines mint
-   statics.
+   statics. (The recipe lines are gone since 2026-11-13; nothing mints one.)
 4. Parrying Dagger's soul was farmable from scrap; Ember Knife and Warden
    Buckler have no source → souls only from unforgeable items; slice 4 waits.
 5. Scope vs freeze → user lifted the freeze for smithing; bench id `forging`.
@@ -708,6 +742,7 @@ Rules agreed when parking it:
 - **Economy (partly settled).** Weapons today come from drops and from basic
   forge recipes. The basic recipes get absorbed: a basic recipe is just a
   blueprint with fixed proportions, i.e. the tutorial tier of this system.
+  (Done 2026-11-13 by removal, ruling 8: the anvil is the only route.)
 - **Materials carry tactical tags, not just stats.** Iron haft instead of wood
   → quarterstaff good against armored/inorganic targets. Not a new system —
   an affinity field on the material definition, same lane as stats.
