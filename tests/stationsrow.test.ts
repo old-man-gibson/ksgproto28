@@ -95,7 +95,10 @@ describe('the Stations row', () => {
     const body = html();
     expect(count(body, '<button')).toBe(2);
     expect(body).not.toMatch(/<a\s/);
-    expect(body).not.toContain('tip-target');
+    // The button's title is a tap card on a touch screen (GoButton wraps it in a
+    // touch-only Tip): no card opens for a mouse, which has the title.
+    expect(count(body, 'tip-target')).toBe(2);
+    expect(count(body, 'touch-only')).toBe(2);
   });
 
   it('with a knockout return in flight, prints it with "Stay here", has no "Back", and omits the target', () => {

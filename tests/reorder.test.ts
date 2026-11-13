@@ -165,7 +165,8 @@ describe('isTouchPointer', () => {
 
 // The panels are Svelte files, which these tests do not mount. What they can pin
 // is that the tap path and the drag path share one set of rules, and that every
-// picker leaves on Escape (the Android back button sends it).
+// pick is on the overlay stack, which Escape and the Android back button read
+// (lib/overlays.ts; the order is tests/pickOverlays.dom.test.ts).
 describe('the panels wire the tap path to the shared rules', () => {
   const combat = readText('src/ui/panels/CombatPanel.svelte');
   const planner = readText('src/ui/panels/MartialPlanner.svelte');
@@ -185,11 +186,15 @@ describe('the panels wire the tap path to the shared rules', () => {
     expect(spell).not.toMatch(/\.splice\(/);
   });
 
-  it('a pick or an open roster is closed by Escape, in the capture phase, and the key goes no further', () => {
+  it('a pick or an open roster is on the overlay stack, so Escape and the Android back button put it down, and no panel reads Escape itself', () => {
     for (const [name, src] of [['CombatPanel', combat], ['MartialPlanner', planner], ['SpellcraftPanel', spell]] as const) {
-      expect(src, name).toMatch(/addEventListener\('keydown', cancel, true\)/);
-      expect(src, name).toContain('e.stopPropagation()');
+      expect(src, name).toContain('hostLayer(LAYER.page)');
+      expect(src, name).toContain('pushOverlay(');
+      expect(src, name).not.toMatch(/addEventListener\('keydown'/);
     }
-    expect(planner).toMatch(/if \(openFamily !== null\) openFamily = null;/);
+    expect(combat).toContain('() => (picked = null)');
+    expect(planner).toContain('() => (picked = null)');
+    expect(planner).toContain('() => (openFamily = null)');
+    expect(spell).toContain('() => (pickIndex = null)');
   });
 });
