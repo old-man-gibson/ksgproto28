@@ -807,16 +807,15 @@
         <select
           class="socket-select"
           disabled={socketable.length === 0}
-          title={socketable.length === 0
-            ? 'No runes owned — monsters drop them, and you can carve your own'
-            : 'Socket a rune'}
           onchange={(e) => {
             const picked = e.currentTarget.value;
             e.currentTarget.value = '';
             if (picked) game.socketRune(item.uid, picked);
           }}
         >
-          <option value="">◇ empty rune slot</option>
+          <option value="">
+            {socketable.length === 0 ? '◇ empty rune slot: no runes held' : '◇ empty rune slot'}
+          </option>
           {#each socketable as opt (opt.ref)}
             <option value={opt.ref}>
               {opt.rune.icon} {opt.rune.name}{opt.qty > 1 ? ` ×${opt.qty}` : ''} → {describeRuneEffect(
@@ -963,7 +962,7 @@
   {#each provisionTip(p.id, p.quality) as line, i}
     <div class="tip-line" class:tip-base={i === 0} class:tip-sub={line.startsWith('·')}>{line}</div>
   {/each}
-  <div class="tip-line tip-sub">Click to inspect · double-click to use</div>
+  <div class="tip-line tip-sub">Open to inspect or use it</div>
 {/snippet}
 
 {#snippet materialEntryTip(e: CollEntry)}
@@ -976,8 +975,8 @@
 <div class="panel">
   <h2>🎒 Equipment</h2>
   <p class="small dim hint">
-    Hover for details, click to open, double-click to equip or unequip. Use ☑ Select below to act
-    on several at once.
+    Hover or press and hold for details. Open an item to equip, swap or sell it. ☑ Select below
+    acts on several at once.
   </p>
   <div class="grid">
     {#each slots as slot (slot)}
@@ -1017,7 +1016,7 @@
                 Taken by {itemDefOf(twoHander)?.name} — it needs both hands.
               </div>
             {:else if fits > 0}
-              <div class="tip-line tip-sub">Empty — {fits} piece{fits > 1 ? 's' : ''} fit. Click to equip.</div>
+              <div class="tip-line tip-sub">Empty — {fits} piece{fits > 1 ? 's' : ''} fit. Open to equip.</div>
             {:else}
               <div class="tip-line tip-sub">Empty — nothing in the pack fits.</div>
             {/if}
@@ -1058,26 +1057,31 @@
     <!-- Drawn only while something is spare, so a small pack shows no extra line. -->
     {#if spareTally.items > 0}
       <div class="toolbar spare-bar small">
-        <span
-          title="Spare: an item of the same base and size has every stat and rune slot at least as high."
-        >
+        <Tip>
           {spareLine}
-        </span>
+          {#snippet tip()}
+            <div class="tip-line">
+              Spare: an item of the same base and size has every stat and rune slot at least as high.
+            </div>
+          {/snippet}
+        </Tip>
         <button
           class="small spare-view"
-          title="Spares: dim them in the grid, or hide them."
           onclick={() => setSpareView(spareView === 'dim' ? 'hide' : 'dim')}
         >
           Spares: {spareView === 'dim' ? 'dimmed' : 'hidden'}
         </button>
         {#if !selectMode}
-          <button
-            class="small danger"
-            title="Sell spares: every spare item, at its normal price. Socketed runes return to the pack."
-            onclick={sellSpares}
-          >
-            Sell spares ({fmt(spareValue)} 🪙)
-          </button>
+          <Tip block>
+            <button class="small danger" onclick={sellSpares}>
+              Sell spares ({fmt(spareValue)} 🪙)
+            </button>
+            {#snippet tip()}
+              <div class="tip-line">
+                Sell spares: every spare item, at its normal price. Socketed runes return to the pack.
+              </div>
+            {/snippet}
+          </Tip>
         {/if}
       </div>
     {/if}
@@ -1169,7 +1173,7 @@
   entries={provisionEntries}
   noun="provision"
   empty="Food, potions and salves live here. Cook at a bench, or find them out in the world."
-  hint="Click to inspect, double-click to use."
+  hint="Open one to inspect or use it."
   tiers={QUALITY_CHIPS}
   warnRank={QUALITY_WARN}
   entryTip={provisionEntryTip}
@@ -1266,13 +1270,19 @@
     {@render itemDetail(item, slot)}
     <div class="win-buttons">
       <button onclick={() => game.unequip(slot)}>Unequip</button>
-      <button
-        disabled={slotCandidates(slot).length === 0}
-        title="Swap: pick another piece from the pack, listed with its difference from this one."
-        onclick={() => (selected = { kind: 'slotPicker', slot })}
-      >
-        Swap
-      </button>
+      <Tip block>
+        <button
+          disabled={slotCandidates(slot).length === 0}
+          onclick={() => (selected = { kind: 'slotPicker', slot })}
+        >
+          Swap
+        </button>
+        {#snippet tip()}
+          <div class="tip-line">
+            Swap: pick another piece from the pack, listed with its difference from this one.
+          </div>
+        {/snippet}
+      </Tip>
       {#each otherHands(item, slot) as hand}
         <button onclick={() => swapHand(item, hand)}>
           Move to {hand === 'weapon' ? 'main hand' : 'off hand'}{fitNote(item, hand)}
@@ -1794,8 +1804,9 @@
 
   .socket {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 4px 8px;
     justify-content: space-between;
     border: 1px solid var(--accent);
     border-radius: 6px;
@@ -1848,6 +1859,14 @@
     background: color-mix(in srgb, var(--rar) 22%, var(--bg-raised));
   }
 
+  /* A finger: the grade and category chips are 44px wide as well as tall. */
+  @media (pointer: coarse) {
+    .chip,
+    .toolbar button {
+      min-width: 44px;
+    }
+  }
+
   .chip-sep {
     width: 1px;
     align-self: stretch;
@@ -1889,7 +1908,7 @@
 
   .pouch-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
     gap: 10px;
     align-content: start;
   }
@@ -1924,8 +1943,9 @@
 
   .grade-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: 4px 8px;
     border-left: 3px solid var(--tint);
     padding: 2px 0 2px 8px;
   }

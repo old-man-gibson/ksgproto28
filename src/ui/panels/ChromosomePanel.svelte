@@ -76,6 +76,15 @@
 
   /** What is open for picking: a socket, the centromere, or nothing. */
   let picking = $state<string | null>(null);
+  /**
+   * Where the picker is drawn: in the side column, which sits under the diagram
+   * when the panel is narrow. Opening a socket brings it into view there; where it
+   * is already in view (beside the diagram) nothing moves.
+   */
+  let pickerEl = $state<HTMLElement>();
+  $effect(() => {
+    if (picking && pickerEl) pickerEl.scrollIntoView({ block: 'nearest' });
+  });
   /** The route currently under the cursor, drawn lit on the diagram. */
   let lit = $state<RoutedContribution | null>(null);
 
@@ -395,7 +404,22 @@
    * ◉" with its arrows spaced two different ways down the same card.
    */
   const pathOf = (c: RoutedContribution) => [c.from, ...c.through, '◉'];
+  /** The same route, whichever resolution object carries it (the list is rebuilt when the graph changes). */
+  const sameRoute = (a: RoutedContribution, b: RoutedContribution) =>
+    a.from === b.from && a.arm === b.arm && a.through.join('') === b.through.join('');
+
+  /**
+   * Escape (and the Android back button, which sends it) closes an open socket
+   * picker. Capture phase on the window, so it runs first and stops the event.
+   */
+  function closePickerOnEscape(e: KeyboardEvent) {
+    if (e.key !== 'Escape' || picking === null) return;
+    picking = null;
+    e.stopPropagation();
+  }
 </script>
+
+<svelte:window onkeydowncapture={closePickerOnEscape} />
 
 <div class="chromo">
   <!-- Two bands rather than two columns. The identity line and the capacity
@@ -440,9 +464,12 @@
         {#if mainDef.size || capabilities.length > 0}
         <div class="traits">
           {#if mainDef.size}
-            <span class="trait" title="Size decides what counts as smaller than you">
-              📏 {mainDef.size}
-            </span>
+            <Tip block>
+              <span class="trait">📏 {mainDef.size}</span>
+              {#snippet tip()}
+                <div class="tip-line">Size decides what counts as smaller than you.</div>
+              {/snippet}
+            </Tip>
           {/if}
           {#each capabilities as cap (cap.text)}
             <span class="trait" class:cap-trait={cap.live} class:inert-trait={!cap.live}>
@@ -519,17 +546,24 @@
           {@const p = at(e.a)}
           {@const q = at(e.b)}
           {@const key = edgeKey(e.a, e.b)}
-          <line
-            class="edge {s}"
-            class:lit={routeLit.has(key)}
-            x1={p.x} y1={p.y} x2={q.x} y2={q.y}
-            stroke-width={1 + e.length / 6}
+          <!-- The wide invisible line is the finger's target (a coarse pointer
+               widens it); the drawn line keeps its own width. -->
+          <g
+            class="edge-btn"
             role="button"
             tabindex="0"
             aria-label="connection {e.a} to {e.b}, {s}"
             onclick={() => toggleEdge(e.a, e.b)}
             onkeydown={(ev) => ev.key === 'Enter' && toggleEdge(e.a, e.b)}
-          />
+          >
+            <line class="edge-hit" x1={p.x} y1={p.y} x2={q.x} y2={q.y} />
+            <line
+              class="edge {s}"
+              class:lit={routeLit.has(key)}
+              x1={p.x} y1={p.y} x2={q.x} y2={q.y}
+              stroke-width={1 + e.length / 6}
+            />
+          </g>
         {/each}
 
         <!-- WHICH ARM EACH DOOR IS. The centromere has four of them and the
@@ -562,6 +596,8 @@
             onclick={() => (picking = picking === s.id ? null : s.id)}
             onkeydown={(ev) => ev.key === 'Enter' && (picking = picking === s.id ? null : s.id)}
           >
+            <!-- An ellipse, not a circle, so the socket's circle rules do not paint it. -->
+            <ellipse class="socket-hit" cx={s.x} cy={s.y} rx="5.4" ry="5.4" />
             <circle cx={s.x} cy={s.y} r="5.4" />
             {#if def}
               <text x={s.x} y={s.y + 2} text-anchor="middle" font-size="5.5">{def.icon}</text>
@@ -601,7 +637,7 @@
 
       <div class="legend small dim">
         <div>
-          Click a socket to fill it, the centromere for a gene, a connection to establish · cut ·
+          Select a socket to fill it, the centromere for a gene, a connection to establish · cut ·
           restore. Thicker lines are longer: a longer path carries more magnitude, and each socket passed through can change the effect.
         </div>
         <div>
@@ -626,7 +662,7 @@
 
     <div class="side">
       {#if picking}
-        <div class="panel picker">
+        <div class="panel picker" bind:this={pickerEl}>
           <div class="row-head">
             <b>{picking === CENTRE ? 'Main gene' : `Socket ${picking}`}</b>
             <!-- Emptying sits in the HEADER, not under the list: taking a
@@ -809,6 +845,10 @@
                 role="note"
                 onmouseenter={() => (lit = c)}
                 onmouseleave={() => (lit = null)}
+                onpointerdown={(e) => {
+                  // No hover on a finger: a tap lights the route on the diagram, a second tap puts it out.
+                  if (e.pointerType === 'touch') lit = lit && sameRoute(lit, c) ? null : c;
+                }}
               >
               <div class="route">
                 <span class="path">
@@ -913,16 +953,29 @@
   .over-text { color: var(--danger); }
 
   .body { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
-  .diagram { flex: 1 1 340px; min-width: 300px; }
+  .diagram { flex: 1 1 340px; min-width: min(300px, 100%); }
   .diagram svg { width: 100%; height: auto; display: block; }
-  .side { flex: 1 1 320px; min-width: 280px; display: flex; flex-direction: column; gap: 8px; }
+  .side { flex: 1 1 320px; min-width: min(280px, 100%); display: flex; flex-direction: column; gap: 8px; }
 
-  .edge { stroke: var(--text-dim); cursor: pointer; }
+  .edge-btn { cursor: pointer; }
+  .edge-hit { stroke: transparent; stroke-width: 0; pointer-events: stroke; }
+  .socket-hit { fill: transparent; stroke: none; }
+  /* A finger: a connection is 14 units wide to hit (about 44px at phone width) and a socket 15 across. */
+  @media (pointer: coarse) {
+    .edge-hit { stroke-width: 14; }
+    .socket-hit { rx: 7.6px; ry: 7.6px; }
+    .row-head :global(.tip-target) {
+      display: inline-flex; align-items: center; min-height: 44px; border-bottom: none;
+      text-decoration: underline dotted color-mix(in srgb, var(--text-dim) 60%, transparent);
+      text-underline-offset: 3px;
+    }
+  }
+  .edge { stroke: var(--text-dim); }
   .edge.open { stroke-dasharray: 2 2; opacity: 0.28; }
   .edge.live { opacity: 0.85; }
   .edge.cut { stroke: var(--danger); stroke-dasharray: 3 2; opacity: 0.7; }
   .edge.lit { stroke: var(--accent); opacity: 1; }
-  .edge:hover { stroke: var(--accent); }
+  .edge-btn:hover .edge { stroke: var(--accent); }
 
   .socket circle { fill: var(--bg-panel); stroke: var(--text-dim); stroke-width: 0.7; cursor: pointer; }
   .socket.filled circle { stroke: var(--accent); stroke-width: 1.1; }
@@ -1028,8 +1081,9 @@
 
   /* One row per kind with its grades as chips. Flattened to a row per
      (kind × grade), nine mutations became sixty-three rows. */
-  .opt-row { display: flex; align-items: center; gap: 8px; padding: 2px 5px; }
-  .opt-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .opt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; padding: 2px 5px; }
+  /* The name keeps at least its own line's worth; the grades wrap under it when there is no room beside it. */
+  .opt-name { flex: 1 1 8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .grades { display: flex; flex-wrap: wrap; gap: 3px; margin-left: auto; }
   .grade {
     padding: 0 5px; font-size: 11px; line-height: 18px;

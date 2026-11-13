@@ -244,11 +244,13 @@
     margin-top: 12px;
   }
 
+  /* The title and its buttons share a row while there is room and wrap when there is not (360px). */
   .head-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px 8px;
     margin-bottom: 8px;
   }
 
@@ -258,8 +260,9 @@
 
   .head-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    flex-shrink: 0;
+    margin-left: auto;
   }
 
   .hint {
@@ -375,5 +378,13 @@
   .chip.selected {
     border-color: var(--rar);
     background: color-mix(in srgb, var(--rar) 22%, var(--bg-raised));
+  }
+
+  /* A finger: the grade chips are 44px wide as well as tall. */
+  @media (pointer: coarse) {
+    .chip,
+    .toolbar button {
+      min-width: 44px;
+    }
   }
 </style>

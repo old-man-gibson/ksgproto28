@@ -429,7 +429,20 @@
     const need = open.filter((s) => slotConsumes(s) && bench[s.id]?.id === held.id && bench[s.id]?.quality === held.quality).length;
     return { held: have, short: have < Math.max(1, need) };
   }
+
+  /**
+   * Escape (and the Android back button, which sends it) closes an open picker
+   * before it closes the window around it. Capture phase on the window, so this
+   * runs ahead of Modal's own Escape handler and stops the event there.
+   */
+  function closePickerOnEscape(e: KeyboardEvent) {
+    if (e.key !== 'Escape' || picking === null) return;
+    picking = null;
+    e.stopPropagation();
+  }
 </script>
+
+<svelte:window onkeydowncapture={closePickerOnEscape} />
 
 {#snippet cell(slot: CraftSlotDef | undefined, big = false, track = false)}
   {#if slot}
@@ -459,7 +472,7 @@
         {:else}
           <div class="tip-line tip-base">{slot.name}</div>
           <div class="tip-line tip-sub">
-            {slot.optional ? 'Optional' : 'Required'} · click to fill
+            {slot.optional ? 'Optional' : 'Required'} · select to fill
           </div>
           {#if disc.timeline && slot.at != null && duration}
             <div class="tip-line">
@@ -664,7 +677,7 @@
       </ol>
         {:else if !bare}
       <div class="picker-idle small dim">
-        {ordered ? 'Click a step to add a reagent. Steps are read left to right.' : 'Click a slot to fill it.'}
+        {ordered ? 'Select a step to add a reagent. Steps are read left to right.' : 'Select a slot to fill it.'}
       </div>
     {/if}
   </div>
@@ -832,12 +845,16 @@
       {/if}
       <!-- Shadow Clone (systems/clones.ts): a clone keeps working this layout from your stock. -->
       {#if !carving && cloneRules(gs)}
-        <button
-          class="small"
-          disabled={!ok || !!cloneBlocked(gs)}
-          title="A clone makes this layout from your stock, at 40% of your speed"
-          onclick={() => game.sendCloneToBench(disc.id, bench, { duration })}>👥 Send a clone</button
-        >
+        <Tip block>
+          <button
+            class="small"
+            disabled={!ok || !!cloneBlocked(gs)}
+            onclick={() => game.sendCloneToBench(disc.id, bench, { duration })}>👥 Send a clone</button
+          >
+          {#snippet tip()}
+            <div class="tip-line">A clone makes this layout from your stock, at 40% of your speed.</div>
+          {/snippet}
+        </Tip>
       {/if}
       <button class="small" onclick={clear}>Clear</button>
     {/if}
@@ -924,6 +941,8 @@
      gets room: bigger cells, more air, and the picker laid out beside it. */
   .bench-panel {
     max-width: 460px;
+    /* The panel's own width, not the window's or the screen's, decides how tight the slab is laid out. */
+    container: bench / inline-size;
   }
 
   .bench-panel.large {
@@ -1422,5 +1441,37 @@
 
   .carved .opts {
     margin-top: 4px;
+  }
+
+  /* The slab and its trays side by side need about 300px; a phone's window gives 336. */
+  @container bench (max-width: 420px) {
+    .large .bench {
+      gap: 8px 10px;
+      padding: 10px;
+    }
+
+    .large .slab {
+      padding: 12px;
+    }
+  }
+
+  /* A finger: every square is 44px both ways (the large bench's centre slot stays
+     at 56) and the small buttons are 44px wide as well as tall. */
+  @media (pointer: coarse) {
+    .cell,
+    .cell.big,
+    .large .cell,
+    .cell.track,
+    .large .cell.track {
+      width: 44px;
+      height: 44px;
+    }
+
+    .tiny,
+    .ctx-btn,
+    .bench-actions button,
+    .ctx-row button {
+      min-width: 44px;
+    }
   }
 </style>

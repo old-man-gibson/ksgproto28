@@ -33,6 +33,7 @@
     type PartFamilyId,
   } from '../lib/anvilView';
   import ForgeSilhouette from '../lib/ForgeSilhouette.svelte';
+  import Tip from '../lib/Tip.svelte';
   import FormChart from './FormChart.svelte';
 
   /**
@@ -254,12 +255,16 @@
             {/if}
             <!-- Shadow Clone (systems/clones.ts): a clone forges this from your stock, at 40% of your speed. -->
             {#if cloneRules(gs)}
-              <button
-                class="small"
-                disabled={!preview.ok || !!cloneBlocked(gs)}
-                title="A clone forges this from your stock, at 40% of your speed"
-                onclick={() => game.sendCloneToBench('forging', {}, { forge: placement })}>👥 Send a clone</button
-              >
+              <Tip block>
+                <button
+                  class="small"
+                  disabled={!preview.ok || !!cloneBlocked(gs)}
+                  onclick={() => game.sendCloneToBench('forging', {}, { forge: placement })}>👥 Send a clone</button
+                >
+                {#snippet tip()}
+                  <div class="tip-line">A clone forges this from your stock, at 40% of your speed.</div>
+                {/snippet}
+              </Tip>
             {/if}
             <button class="small" onclick={clear}>Clear</button>
           {/if}
@@ -284,7 +289,7 @@
           {#if previewing && hover}
             <div class="note small">
               Preview, not applied: {kindLabel(PART_KINDS[hover.kind])} in the {slotName(hover.slot).toLowerCase()} slot.
-              A changed line reads current → preview. Click the row to apply it.
+              A changed line reads current → preview. Select the row to apply it.
             </div>
           {/if}
           <!-- A previewed form still masked as "?" shows nothing that names it: no slot, hands,
@@ -297,9 +302,7 @@
                 {#if familyClaimed}
                   <span class="chip">family: {family}</span>
                 {:else}
-                  <span class="chip warn" title="It equips and fights, but no combat skill trains on it.">
-                    family: {family}, no combat skill claims it
-                  </span>
+                  <span class="chip warn">family: {family}, no combat skill claims it</span>
                 {/if}
               {/if}
               {#if cls.degenerate}<span class="chip deg">degenerate form</span>{/if}
@@ -430,7 +433,6 @@
                               class="small"
                               class:selected={active === fam.id}
                               aria-pressed={active === fam.id}
-                              title="{fam.name}: {kindsOfFamily(fam.id).length} kinds"
                               onclick={() => pickFamily(slot, fam.id)}
                             >
                               {fam.name} <span class="dim">{kindsOfFamily(fam.id).length}</span>
@@ -452,7 +454,12 @@
                             <span>Kind</span>
                             <span>Makes</span>
                             {#each COMPARE_COLUMNS as col (col.key)}
-                              <span class="kind-num-head" title={col.hint}>{col.label}</span>
+                              <span class="kind-num-head">
+                                <Tip>
+                                  {col.label}
+                                  {#snippet tip()}<div class="tip-line">{col.hint}</div>{/snippet}
+                                </Tip>
+                              </span>
                             {/each}
                           </div>
                           {#each rows as row (row.kind.id)}
@@ -461,7 +468,6 @@
                               class:selected={row.current}
                               aria-pressed={row.current}
                               aria-label={kindRowLabel(row)}
-                              title="{row.kind.w}×{row.kind.l} = {row.kind.w * row.kind.l} cells"
                               onclick={() => setPart(slot, row.kind.id)}
                               onpointerenter={(e) => e.pointerType !== 'touch' && previewKind(slot, row.kind.id)}
                               onpointerleave={() => endPreview(slot, row.kind.id)}
@@ -973,5 +979,12 @@
     align-items: center;
     gap: 5px;
     margin-left: 8px;
+  }
+
+  /* A finger: the small buttons (the count steppers, "none") are 44px wide as well as tall. */
+  @media (pointer: coarse) {
+    button.small {
+      min-width: 44px;
+    }
   }
 </style>

@@ -277,13 +277,30 @@
 {#snippet groupHead(id: StatGroup, name: string, summary: string, explain: string[])}
   <tr class="stat-group-row">
     <td colspan="2">
-      <button
-        class="stat-group-btn"
+      <!--
+        The summary is a sibling of the button, not inside it: a tap on a control
+        inside a Tip presses the control (Tip.svelte), so a summary inside the
+        button could only show its card on a long press. Outside, a tap on the
+        summary opens the card and a tap on the name opens the rows. Where there
+        is a hover (no card on tap), a click on the summary opens the rows too, as
+        the whole header did before.
+      -->
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+      <div
+        class="stat-group"
         class:open={openGroups[id]}
-        aria-expanded={openGroups[id]}
-        onclick={() => (openGroups[id] = !openGroups[id])}
+        onclick={(e) => {
+          if ((e.target as Element).closest('button') || matchMedia('(hover: none)').matches) return;
+          openGroups[id] = !openGroups[id];
+        }}
       >
-        <span class="stat-group-name">{openGroups[id] ? '▾' : '▸'} {name}</span>
+        <button
+          class="stat-group-btn"
+          aria-expanded={openGroups[id]}
+          onclick={() => (openGroups[id] = !openGroups[id])}
+        >
+          <span class="stat-group-name">{openGroups[id] ? '▾' : '▸'} {name}</span>
+        </button>
         <Tip>
           <span class="stat-group-sum">{summary}</span>
           {#snippet tip()}
@@ -292,27 +309,41 @@
             {/each}
           {/snippet}
         </Tip>
-      </button>
+      </div>
     </td>
   </tr>
 {/snippet}
 
 <style>
-  .stat-group-btn {
-    width: 100%;
+  /* The header box: the name (a button) on the left and the summary (a card
+     target) on the right, in one frame. The height is fixed: the summary wraps
+     inside its own column (two lines fit), so a changing figure never moves the
+     rows under it. */
+  .stat-group {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1px;
-    padding: 4px 6px;
+    align-items: center;
+    column-gap: 8px;
+    box-sizing: border-box;
+    min-height: 50px;
+    padding: 2px 6px;
     margin-top: 4px;
-    background: none;
     border: 1px solid var(--border);
     border-radius: 4px;
-    text-align: left;
   }
-  .stat-group-btn.open {
+  .stat-group :global(.tip-target) {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: right;
+  }
+  .stat-group.open {
     border-color: var(--accent);
+  }
+  .stat-group-btn {
+    flex: none;
+    padding: 2px 0;
+    background: none;
+    border: none;
+    text-align: left;
   }
   .stat-group-name {
     font-weight: 600;
@@ -320,7 +351,27 @@
   }
   .stat-group-sum {
     color: var(--text-dim);
-    padding-left: 14px;
+    text-align: right;
+  }
+
+  /* A finger: the summary and each stat label are 44px-high card targets, and the
+     chips are 44px tall. The dotted underline moves from the box edge to the text. */
+  @media (pointer: coarse) {
+    .stat-group :global(.tip-target),
+    td.dim :global(.tip-target) {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      border-bottom: none;
+      text-decoration: underline dotted color-mix(in srgb, var(--text-dim) 60%, transparent);
+      text-underline-offset: 3px;
+    }
+    .stat-group :global(.tip-target) {
+      justify-content: flex-end;
+    }
+    .attr-chip {
+      min-height: 44px;
+    }
   }
   .hint {
     margin-top: 6px;

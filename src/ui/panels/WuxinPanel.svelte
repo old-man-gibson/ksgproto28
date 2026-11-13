@@ -262,18 +262,42 @@
   // ---------- Drawing arrows by hand ----------
 
   /**
-   * Drag a node onto another to make it nourish it; hold shift to make it
-   * hinder it instead. The modifier is read live, so it can be pressed or
-   * released mid-drag and the rubber band changes colour under the cursor.
+   * Two ways to draw an arrow, both ending in `connect`.
    *
-   * Dropping on empty space — or back on the element you started from — severs
-   * that arrow, which makes every legal configuration reachable with the mouse
-   * alone. The dropdowns remain the keyboard path and stay authoritative; this
+   * Pick and target: tap an element (it is picked), then tap the element it
+   * should act on. The Nourishes / Hinders switch says which arrow; Sever cuts
+   * the picked element's arrow of that kind; tapping the picked element again,
+   * or open ground, drops the pick. This is the path for a finger, where there
+   * is no Shift and a drag collides with scrolling.
+   *
+   * Drag: drag a node onto another to make it nourish it; hold shift (or set
+   * the switch to Hinders) to make it hinder it instead. The modifier is read
+   * live, so it can be pressed or released mid-drag and the rubber band changes
+   * colour under the cursor. Dropping on empty space, or back on the element
+   * you started from after travelling, severs that arrow. A press that never
+   * travelled is a tap, not a drag.
+   *
+   * The dropdowns remain the keyboard path and stay authoritative; the graph
    * is an enhancement over them, not a replacement, since a graph you can only
-   * edit by dragging is a graph some people cannot edit at all.
+   * edit by pointing is a graph some people cannot edit at all.
    */
   let svgEl = $state<SVGSVGElement | null>(null);
-  let drag = $state<{ from: number; x: number; y: number; hinders: boolean } | null>(null);
+  let drag = $state<{
+    from: number;
+    x: number;
+    y: number;
+    hinders: boolean;
+    /** Where the press began, in client pixels, to tell a tap from a drag. */
+    startX: number;
+    startY: number;
+    moved: boolean;
+  } | null>(null);
+  /** The element a tap picked, waiting for its target. */
+  let picked = $state<number | null>(null);
+  /** Which arrow a tap or a drag draws; Shift on a drag overrides it for that drag. */
+  let aim = $state<'nourishes' | 'hinders'>('nourishes');
+  /** Travel under this many client pixels is a tap. */
+  const TAP_SLOP = 8;
 
   function toSvg(e: PointerEvent): { x: number; y: number } {
     const ctm = svgEl?.getScreenCTM();
@@ -293,21 +317,61 @@
   function startDrag(e: PointerEvent, from: number): void {
     e.preventDefault();
     const at = toSvg(e);
-    drag = { from, x: at.x, y: at.y, hinders: e.shiftKey };
+    drag = {
+      from,
+      x: at.x,
+      y: at.y,
+      hinders: e.shiftKey || aim === 'hinders',
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false,
+    };
   }
 
   function moveDrag(e: PointerEvent): void {
     if (!drag) return;
     const at = toSvg(e);
-    drag = { ...drag, x: at.x, y: at.y, hinders: e.shiftKey };
+    const moved = drag.moved || Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) >= TAP_SLOP;
+    drag = { ...drag, x: at.x, y: at.y, hinders: e.shiftKey || aim === 'hinders', moved };
   }
 
   function endDrag(e: PointerEvent): void {
     if (!drag) return;
-    const { from, hinders } = drag;
+    const { from, hinders, moved } = drag;
     const onto = seatUnder(toSvg(e));
     drag = null;
+    if (!moved && onto === from) {
+      tapSeat(from);
+      return;
+    }
+    picked = null;
     connect(from, onto, hinders);
+  }
+
+  /** A tap on a seat: pick it, drop the pick, or draw the picked element's arrow onto it. */
+  function tapSeat(seat: number): void {
+    if (picked === null) {
+      picked = seat;
+    } else if (picked === seat) {
+      picked = null;
+    } else {
+      const from = picked;
+      picked = null;
+      connect(from, seat, aim === 'hinders');
+    }
+  }
+
+  /** Cut the picked element's arrow of the chosen kind. */
+  function severPicked(): void {
+    if (picked === null) return;
+    const from = picked;
+    picked = null;
+    connect(from, null, aim === 'hinders');
+  }
+
+  /** A tap on open ground, not on a seat, drops the pick. */
+  function groundTap(e: MouseEvent): void {
+    if (picked !== null && !(e.target as Element).closest('.node')) picked = null;
   }
 
   function connect(from: number, onto: number | null, hinders: boolean): void {
@@ -338,6 +402,8 @@
   // ---------- Reading it back ----------
 
   let hot = $state<number | null>(null);
+  /** What the readout describes: the element under the pointer, else the picked one. */
+  const focus = $derived(hot ?? picked);
 
   const KIND_NOTE: Record<WuxinKind, string> = {
     harmonious:
@@ -384,7 +450,21 @@
   the graph then means what it should (drop on open ground — sever), and the
   gesture cannot be stranded by the cursor leaving the picture mid-drag.
 -->
-<svelte:window onpointermove={moveDrag} onpointerup={endDrag} onpointercancel={() => (drag = null)} />
+<!--
+  Escape (and the Android back button, which sends it) cancels a drag or drops the
+  pick. Capture phase, so it runs first and stops the event.
+-->
+<svelte:window
+  onpointermove={moveDrag}
+  onpointerup={endDrag}
+  onpointercancel={() => (drag = null)}
+  onkeydowncapture={(e) => {
+    if (e.key !== 'Escape' || (picked === null && drag === null)) return;
+    picked = null;
+    drag = null;
+    e.stopPropagation();
+  }}
+/>
 
 <div class="wuxin">
   <header>
@@ -402,12 +482,14 @@
 
   <div class="board">
     <div class="graph-wrap">
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <svg
         bind:this={svgEl}
         viewBox="0 0 {VIEW} {VIEW}"
         class="graph"
         class:dragging={drag !== null}
         aria-label="Wuxin cycle"
+        onclick={groundTap}
       >
         <defs>
           <marker
@@ -437,7 +519,7 @@
         {#each desEdges as e (e.key)}
           <path
             class="edge des"
-            class:hot={hot === e.from}
+            class:hot={focus === e.from}
             d={e.d}
             marker-end="url(#wx-des)"
           />
@@ -445,7 +527,7 @@
         {#each genEdges as e (e.key)}
           <path
             class="edge gen"
-            class:hot={hot === e.from}
+            class:hot={focus === e.from}
             d={e.d}
             marker-end="url(#wx-gen)"
           />
@@ -463,8 +545,9 @@
         {#each cfg.slots as slot, i (i)}
           <g
             class="node"
-            class:hot={hot === i}
+            class:hot={focus === i}
             class:source={drag?.from === i}
+            class:picked={picked === i}
             role="presentation"
             onmouseenter={() => (hot = i)}
             onmouseleave={() => (hot = null)}
@@ -524,27 +607,58 @@
         <span class="key des">{HINDERS} hinders</span>
         <span class="dim">generation rides the outside; destruction crosses the middle</span>
       </p>
+
+      <!--
+        The tap path's controls. Always drawn, with Sever and Drop disabled while
+        nothing is picked and a status line of a fixed height, so a pick moves
+        nothing on the page.
+      -->
+      <div class="draw">
+        <div class="aim" role="group" aria-label="Arrow to draw">
+          <button class="gen" class:selected={aim === 'nourishes'} aria-pressed={aim === 'nourishes'} onclick={() => (aim = 'nourishes')}>
+            {NOURISHES} Nourishes
+          </button>
+          <button class="des" class:selected={aim === 'hinders'} aria-pressed={aim === 'hinders'} onclick={() => (aim = 'hinders')}>
+            {HINDERS} Hinders
+          </button>
+        </div>
+        <div class="aim">
+          <button disabled={picked === null} onclick={severPicked}>Sever</button>
+          <button disabled={picked === null} onclick={() => (picked = null)}>Drop pick</button>
+        </div>
+        <p class="pick-status small" class:dim={picked === null} aria-live="polite">
+          {#if picked === null}
+            Pick an element, then the element it should {aim === 'hinders' ? 'hinder' : 'nourish'}.
+          {:else}
+            {word(cfg.slots[picked].element)?.icon} {name(cfg.slots[picked].element)} is picked: pick the
+            element it should {aim === 'hinders' ? 'hinder' : 'nourish'}, or Sever its {aim === 'hinders'
+              ? 'hinders'
+              : 'nourishes'} arrow.
+          {/if}
+        </p>
+      </div>
       <p class="legend dim">
-        Drag one element onto another to nourish it · <kbd>Shift</kbd>-drag to hinder ·
-        drop on open ground to sever
+        With a mouse: drag one element onto another, <kbd>Shift</kbd>-drag to hinder, drop on open
+        ground to sever.
       </p>
 
       <!--
-        The hover readout. Deliberately not a floating tooltip: it needs no
-        positioning code, it cannot be clipped by the graph's edge, and it can
-        hold two sentences without becoming a wall of text under the cursor.
+        The readout: the element under the pointer, else the picked one. Deliberately
+        not a floating tooltip: it needs no positioning code, it cannot be clipped
+        by the graph's edge, and it can hold two sentences without becoming a wall
+        of text under the cursor.
       -->
-      <div class="detail" class:idle={hot === null}>
-        {#if hot === null}
-          <span class="dim">Hover an element for what it is holding.</span>
+      <div class="detail" class:idle={focus === null}>
+        {#if focus === null}
+          <span class="dim">Hover or pick an element for what it is holding.</span>
         {:else}
-          {@const slot = cfg.slots[hot]}
+          {@const slot = cfg.slots[focus]}
           <div class="detail-head">
             <b>{word(slot.element)?.icon} {name(slot.element)}</b>
-            <span class="chip" class:warn={isStrained(hot)}>charge {pct(charge[hot])}</span>
-            <span class="chip" class:warn={isJaded(hot)}>habituation {pct(habit[hot])}</span>
+            <span class="chip" class:warn={isStrained(focus)}>charge {pct(charge[focus])}</span>
+            <span class="chip" class:warn={isJaded(focus)}>habituation {pct(habit[focus])}</span>
           </div>
-          {#each readout(hot) as line, n (n)}
+          {#each readout(focus) as line, n (n)}
             <p>{line}</p>
           {/each}
         {/if}
@@ -763,7 +877,7 @@
   }
   .graph-wrap {
     flex: 1 1 380px;
-    min-width: 320px;
+    min-width: min(320px, 100%);
   }
   .graph {
     width: 100%;
@@ -774,7 +888,7 @@
   }
   .side {
     flex: 1 1 320px;
-    min-width: 300px;
+    min-width: min(300px, 100%);
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
@@ -821,9 +935,43 @@
   .node.hot circle {
     stroke: var(--accent);
   }
-  .node.source circle {
+  .node.source circle,
+  .node.picked circle {
     stroke: var(--accent);
     stroke-width: 3;
+  }
+
+  /* The tap path: the arrow switch, Sever and Drop pick, and the status line. */
+  .draw {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .aim {
+    display: flex;
+    gap: 0.35rem;
+  }
+  .aim button {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 0.25rem 0.6rem;
+  }
+  .aim button.gen.selected {
+    border-color: var(--xp);
+    color: var(--xp-ink);
+  }
+  .aim button.des.selected {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .pick-status {
+    flex: 1 1 100%;
+    margin: 0;
+    min-height: 4.4em;
   }
 
   /* Charge on the rim, habituation just inside it. */
@@ -887,7 +1035,8 @@
     border-radius: 6px;
     padding: 0.5rem 0.65rem;
     font-size: 0.8rem;
-    min-height: 4.2rem;
+    /* Reserved for a head and four lines, so picking an element moves nothing below it. */
+    min-height: 7.6rem;
   }
   .detail.idle {
     font-style: italic;
@@ -943,6 +1092,20 @@
   }
   .sliders input.jaded-slider {
     accent-color: var(--text-dim);
+  }
+  /* A finger: the checkbox row and each slider are 44px high. */
+  @media (pointer: coarse) {
+    .relaxed {
+      min-height: 44px;
+    }
+    .relaxed input {
+      width: 22px;
+      height: 22px;
+      flex: none;
+    }
+    .sliders input {
+      min-height: 44px;
+    }
   }
   kbd {
     background: var(--bg-raised);
