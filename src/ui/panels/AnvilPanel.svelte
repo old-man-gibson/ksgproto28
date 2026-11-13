@@ -1,13 +1,12 @@
 <script lang="ts">
   import { gs, game, view } from '../state.svelte';
   import { cloneBlocked, cloneRules } from '../../core/systems/clones';
-  import { MATERIALS, PART_KINDS, RECIPES, ITEM_CLASSES } from '../../core/registry';
+  import { MATERIALS, PART_KINDS, ITEM_CLASSES } from '../../core/registry';
   import { SLOT_NAMES } from '../../core/types';
   import type { ForgeSlot, PartKindDef } from '../../core/types';
   import { clonePlacement, forgeTicks, neighbours, placementKey } from '../../core/systems/assembly';
   import { FORGING, formKnown, previewForge } from '../../core/systems/forging';
   import { benchPace } from '../../core/systems/benchwork';
-  import { recipeHidden, recipeResultName } from '../../core/systems/crafting';
   import { WIELD_NAMES, familySkillFor } from '../../core/systems/wield';
   import { conditionsMet } from '../../core/systems/conditions';
   import { ticksToTime } from '../lib/format';
@@ -98,13 +97,6 @@
   const family = $derived(cls.slot === 'weapon' || cls.slot === 'offhand' ? cls.tags[0] : undefined);
   const familyClaimed = $derived(family ? familySkillFor(family) !== undefined : true);
   const meetsRequirement = $derived(conditionsMet(gs, shown.def.requirements ?? []));
-
-  /** The recipe line that makes the same piece, if one is listed to this player. */
-  const twin = $derived(
-    Object.values(RECIPES).find(
-      (r) => r.forge && !recipeHidden(gs, r) && placementKey(r.forge) === placementKey(shownPlacement),
-    ),
-  );
 
   // ---- One change away ----
   /** One-change buttons shown before "show all". */
@@ -339,13 +331,6 @@
               {ticksToTime(pace.ticksPer)}{#if pace.batch > 1}<span class="dim"> · ×{pace.batch} per pass</span>{/if}
             </div>
           </div>
-
-          {#if twin}
-            <div class="note small">
-              Same parts as the <b>{recipeResultName(twin)}</b> recipe. The recipe makes the standard
-              {recipeResultName(twin)}; the anvil makes a forged one that keeps its quality roll.
-            </div>
-          {/if}
 
           <details class="near" bind:open={nearOpen}>
             <summary class="small dim">Other forms one change away ({near.length})</summary>

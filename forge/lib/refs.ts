@@ -67,12 +67,10 @@ export const REF_KIND_BY_OWNER: Record<string, Record<string, string>> = {
   // only the six styles something already replaces — you could not supersede
   // anything else, which is precisely what a new style usually wants to do.
   style: { replaces: 'style' },
-  // A placed part (`itemClass.exemplar.head`, `recipe.forge.guard`): which part
-  // kind, in which material. Only under the owner's placement subtree, see
-  // REF_ONLY_UNDER — `recipe.result.kind` is 'item' | 'material' | 'rune', and
+  // A placed part (`itemClass.exemplar.head`): which part kind, in which
+  // material. Only under the owner's placement subtree, see REF_ONLY_UNDER —
   // `itemClass.match.head.mat` names material TAGS, not materials.
   itemClass: { mat: 'material', kind: 'part' },
-  recipe: { mat: 'material', kind: 'part' },
 };
 
 /**
@@ -83,7 +81,6 @@ export const REF_KIND_BY_OWNER: Record<string, Record<string, string>> = {
  */
 export const REF_ONLY_UNDER: Record<string, string> = {
   itemClass: 'exemplar',
-  recipe: 'forge',
 };
 
 /**

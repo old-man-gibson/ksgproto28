@@ -134,12 +134,14 @@ role until its row reaches the cover.
 - **Damage.** The iron sword (smithing 3) is +7 damage and +2% crit against
   the rusty sword's +3: about 6.2 → 10.2 per swing at STR 1, +65% (*model*).
   Two iron ingots take smithing to 3 and then go into the sword; the Warden's
-  crate holds the 6 scrap, hardwood is bought. About 54 s of crafting.
-- **Sustain.** The Forges list seven recipes and none is armour
-  (`locations.data.ts:817`). `iron_breastplate` exists as a recipe but was
-  listed only at the shelved hamlet forge; `soldier_greaves` (armour 10,
-  +10 max HP) and `iron_gauntlets` (armour 4) exist as items with no recipe
-  at a spot.
+  crate holds the 6 scrap, hardwood is bought. Since 2026-11-13 the sword is
+  forged at the anvil (long blade + haft, 2 ingots + 1 hardwood, 100 ticks
+  + 15 per cell); the `iron_sword` recipe no longer exists. The earlier
+  54 s recipe time is not re-measured for the anvil.
+- **Sustain.** The Forges list four ingot recipes and no armour. The anvil
+  forges a breastplate (plate_w + strap; the strap slot opens at Smithing 3).
+  `soldier_greaves` (armour 10, +10 max HP) and `iron_gauntlets` (armour 4)
+  exist as items with no recipe at a spot.
 - No smithable item carries a resistance.
 
 ### Mutagens

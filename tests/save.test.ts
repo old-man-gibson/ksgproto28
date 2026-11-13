@@ -234,6 +234,28 @@ describe('load safety', () => {
     expect(storage.getItem(`${SAVE_KEY}:backup-v1`)).toContain('"version":1');
   });
 
+  it('work a spot no longer offers is forgotten on load: the activity and the resume entry', () => {
+    // The weapon and armour recipes were removed 2026-11-13; a save written
+    // before that can name one as the current activity or as a spot's resume.
+    const old = createInitialState(7);
+    old.spot = 'the_forges';
+    old.activity = 'craft_katana';
+    old.resumeActivity = {
+      the_forges: 'craft_iron_sword',
+      f17_hamlet_forge: 'craft_iron_ingot',
+      not_a_spot: 'craft_rapier',
+    };
+    const loaded = deserialize(serialize(old));
+    expect(loaded.activity).toBeNull();
+    // The stale entry is gone, the live one stays, the unknown spot is left alone,
+    // and the order (the recency the Stations row reads) is kept.
+    expect(loaded.resumeActivity).toEqual({
+      f17_hamlet_forge: 'craft_iron_ingot',
+      not_a_spot: 'craft_rapier',
+    });
+    expect(Object.keys(loaded.resumeActivity)).toEqual(['f17_hamlet_forge', 'not_a_spot']);
+  });
+
   it('missing save is not treated as corruption', () => {
     const result = loadFromStorage(fakeStorage());
     expect(result.state).toBeNull();

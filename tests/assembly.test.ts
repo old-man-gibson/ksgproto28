@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { createInitialState } from '../src/core/state';
 import { Game } from '../src/core/game';
-import { ITEMS, ITEM_CLASSES, MATERIALS, NPCS, PART_KINDS, RECIPES } from '../src/core/registry';
+import { ITEMS, ITEM_CLASSES, MATERIALS, NPCS, PART_KINDS, RECIPES, SPOTS } from '../src/core/registry';
 import {
   classifyPlacement,
   enumeratePlacements,
@@ -631,28 +631,17 @@ describe('the anvil', () => {
     expect(previewForge(g.state, {}).ok).toBe(false);
   });
 
-  it('a recipe line still mints its static item and also fills in the form chart', () => {
-    const g = smithy(7);
-    g.state.skills.smithing = { level: 3, xp: 0 };
-    g.state.materials = { [IRON]: 2, [WOOD]: 1 };
-    g.selectActivity('craft_iron_sword');
-    for (let i = 0; i < 2000 && !g.state.inventory.some((it) => it.defId === 'iron_sword'); i++) g.tick();
-    const made = g.state.inventory.find((it) => it.defId === 'iron_sword')!;
-    expect(made).toBeDefined();
-    expect(made.forged).toBeUndefined(); // the static twin, not a forged piece
-    expect(g.state.stats['forged:sword']).toBe(1);
-    expect(g.state.materials[IRON]).toBeUndefined();
-  });
-
-  it('the listed costs of the placed recipes follow their parts', () => {
-    const cost = (id: string) => Object.fromEntries(RECIPES[id].cost.map((c) => [c.id, c.qty]));
-    expect(cost('iron_dagger')).toEqual({ [IRON]: 1, [WOOD]: 1 });
-    expect(cost('iron_sword')).toEqual({ [IRON]: 2, [WOOD]: 1 });
-    expect(cost('katana')).toEqual({ [IRON]: 2, [WOOD]: 1 });
-    expect(cost('parrying_dagger')).toEqual({ [IRON]: 2, [WOOD]: 1 });
-    // The two that moved.
-    expect(cost('rapier')).toEqual({ [IRON]: 2, [WOOD]: 1 });
-    expect(cost('iron_breastplate')).toEqual({ [IRON]: 3, [LEATHER]: 1 });
+  it('weapons and armour have no recipe line: the smithies list ingots and the anvil makes the rest', () => {
+    // Ruling 2026-11-13: the weapon and armour recipes (iron dagger/sword/breastplate,
+    // bronze dagger, rapier, parrying dagger, katana, uchigatana) were removed.
+    for (const id of [
+      'iron_dagger', 'iron_sword', 'bronze_dagger', 'rapier',
+      'parrying_dagger', 'katana', 'uchigatana', 'iron_breastplate',
+    ]) {
+      expect(RECIPES[id], id).toBeUndefined();
+    }
+    expect(SPOTS.the_forges.recipes).toEqual(['iron_ingot', 'copper_ingot', 'tin_ingot', 'bronze_ingot']);
+    expect(SPOTS.f17_hamlet_forge.recipes).toContain('iron_ingot');
   });
 });
 

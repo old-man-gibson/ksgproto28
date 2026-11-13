@@ -85,6 +85,20 @@ export function deserialize(json: string): GameState {
     const remapped = LEGACY_ACTIVITY_RENAMES[state.activity] ?? state.activity;
     state.activity = spotActivities(spot).some((a) => a.id === remapped) ? remapped : null;
   }
+  // The work each spot remembers is healed the same way: an id the spot no
+  // longer has (a recipe removed since the save was written) is forgotten, or
+  // the Stations row and the destination preview would print the raw id.
+  // Entries stay in their order: it is the recency the Stations row reads.
+  const resume = state.resumeActivity;
+  if (resume && typeof resume === 'object') {
+    for (const [spotId, activityId] of Object.entries(resume)) {
+      const at = SPOTS[spotId];
+      if (!at) continue;
+      const remapped = LEGACY_ACTIVITY_RENAMES[activityId] ?? activityId;
+      if (spotActivities(at).some((a) => a.id === remapped)) resume[spotId] = remapped;
+      else delete resume[spotId];
+    }
+  }
   // Sheets are healed, not trusted: a save written mid-hot-reload (or by a
   // future retuned notation) may hold notes that resolve to nothing, and one
   // NaN pitch is enough to take the whole staff down (see normalizeComposition).

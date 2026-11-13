@@ -122,7 +122,7 @@ export function partText(part: PlacedPart): string {
   return `${kind ? kindLabel(kind) : part.kind}${qty} (${materialLabel(part.mat)})`;
 }
 
-/** The parts of a placement in slot order, joined: what a recipe line shows under its name. */
+/** The parts of a placement in slot order, joined: "Long blade 2×6 (Iron) + Short handle 1×3 (Hardwood)". */
 export function placementText(placement: Placement): string {
   const bits: string[] = [];
   for (const slot of FORGE_SLOTS) {
