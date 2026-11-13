@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ATTRIBUTE_LIST } from '../src/core/data/attributes.data';
 import { RESOURCE_LIST } from '../src/core/data/resources.data';
-import { SUPERATTRS } from '../src/core/registry';
+import { REAGENTS, RUNES, SKILLS, STATUSES, SUPERATTRS } from '../src/core/registry';
+import { ARCANE_WORDS } from '../src/core/data/spellcraft.data';
 import { WEATHER_ICONS } from '../src/core/systems/weather';
 import manifest from '../src/ui/lib/icons/manifest.json';
 import { NAV } from '../src/ui/lib/nav';
@@ -28,6 +29,9 @@ interface IconDef {
   art?: string;
 }
 
+// The eight abstract words (grammar, not substances) have no icon on the sheet.
+const ABSTRACT_WORDS = ['undo', 'twice', 'then', 'and', 'but', 'one', 'others', 'me'];
+
 /**
  * Every registry converted so far, by group: a group switches only when every
  * entry has art, its own or the glyph table's. `pending` names the entries
@@ -39,6 +43,14 @@ const GROUPS: Record<string, { defs: readonly IconDef[]; pending?: readonly stri
   superattributes: { defs: Object.values(SUPERATTRS) },
   // The sheet has no DNA and no yin-yang (docs/plans/pixel-icons.md §5.1).
   tabs: { defs: NAV, pending: ['chromosome', 'wuxin'] },
+  statuses: { defs: Object.values(STATUSES) },
+  arcaneWords: { defs: Object.values(ARCANE_WORDS), pending: ABSTRACT_WORDS },
+  // Skills convert by category (SkillsPanel): resistance is whole, magic holds the abstract words.
+  resistanceSkills: { defs: Object.values(SKILLS).filter((s) => s.category === 'resistance') },
+  wordSkills: { defs: Object.values(SKILLS).filter((s) => s.id.startsWith('word_')), pending: ABSTRACT_WORDS.map((w) => `word_${w}`) },
+  // Drawn in no list yet: runes and reagents show through the generic item and material rows.
+  runes: { defs: Object.values(RUNES) },
+  reagents: { defs: Object.values(REAGENTS) },
   // No plain cloud, thermometer or hole on the sheet; the sky chip shows one kind at a time.
   weather: { defs: Object.entries(WEATHER_ICONS).map(([id, icon]) => ({ id, icon })), pending: ['still', 'overcast', 'heatwave'] },
 };

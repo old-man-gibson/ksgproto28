@@ -248,7 +248,7 @@
     <div class="tip-line">⏱️ Fixed duration — your speed doesn't change it</div>
   {:else if info.speed.length}
     <div class="tip-line">
-      ⚡ Speed ×{activitySpeedMult(gs, stats, act).toFixed(2)} — {info.speed.map(factorLabel).join(', ')}
+      <GlyphText text="⚡" /> Speed ×{activitySpeedMult(gs, stats, act).toFixed(2)} — {info.speed.map(factorLabel).join(', ')}
     </div>
   {/if}
   {#if info.output.length}
@@ -579,7 +579,7 @@
           {#if benchId === 'spelltable'}
             <!-- Not a discipline: one table, three schools (see SpellcraftPanel). -->
             <button class="bench-open" onclick={() => (openBench = benchId)}>
-              <span class="bench-icon">🔮</span>
+              <span class="bench-icon"><GlyphText text="🔮" /></span>
               <span class="bench-label">
                 <b>Spellcrafting Table</b>
                 <span class="small dim"
@@ -694,7 +694,7 @@
     <Modal wide onclose={() => (openBench = null)}>
       {#snippet title()}
         <div class="win-head">
-          <div class="win-title">🔮 Spellcrafting Table</div>
+          <div class="win-title"><GlyphText text="🔮" /> Spellcrafting Table</div>
           <FoldedDesc
             text="One table for every school of magic you have unlocked. Crafted spells are added to your grimoire."
           />

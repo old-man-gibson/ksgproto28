@@ -973,6 +973,8 @@ export interface SkillDef {
   id: string;
   name: string;
   icon: string;
+  /** Pixel icon: a name in src/ui/lib/icons/manifest.json; `icon` is the fallback. */
+  art?: string;
   desc: string;
   kind: 'passive' | 'active';
   category: SkillCategory;
@@ -1325,6 +1327,8 @@ export interface StatusDef {
   id: string;
   name: string;
   icon: string;
+  /** Pixel icon: a name in src/ui/lib/icons/manifest.json; `icon` is the fallback. */
+  art?: string;
   desc: string;
   /**
    * The damage type that most commonly inflicts it. Conditions are the
@@ -3014,6 +3018,8 @@ export interface ReagentDef {
   id: string;
   name: string;
   icon: string;
+  /** Pixel icon: a name in src/ui/lib/icons/manifest.json; `icon` is the fallback. */
+  art?: string;
   desc?: string;
   /** Alchemy level before the alembic will take it. */
   minLevel?: number;
@@ -3618,6 +3624,8 @@ export interface RuneDef {
   id: string;
   name: string;
   icon: string;
+  /** Pixel icon: a name in src/ui/lib/icons/manifest.json; `icon` is the fallback. */
+  art?: string;
   desc?: string;
   /** Sell value per rune. */
   value: number;
@@ -3968,6 +3976,8 @@ export interface ArcaneWordDef {
   stacked?: [string, string];
   kind: ArcaneWordKind;
   icon: string;
+  /** Pixel icon: a name in src/ui/lib/icons/manifest.json; `icon` is the fallback. */
+  art?: string;
   desc?: string;
   /** Arcana level before the word can be used. */
   minLevel?: number;

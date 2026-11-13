@@ -476,8 +476,21 @@ Each step is one story and one PR.
    ✔ beside 🔒 convert only the 🔒). The header weather chip is `min-height: 1.4em`:
    art is 17px tall at 13px, an emoji 18px. A zero-width-joiner sequence
    (😮‍💨) never matches the table.
-4. **Element set.** The 14 arcane nouns from picks.md → arcane words, resistance
-   skills, statuses, runes, reagents, through `GLYPH_ART`. Pick the statuses here.
+4. **Element set. Done 2026-11-13** (branch `pixel-icons-2-6`). 14 arcane nouns from
+   picks.md plus 56 new manifest names (102 in all). `art?: string` on `ArcaneWordDef`,
+   `StatusDef`, `ReagentDef`, `RuneDef` and `SkillDef`; `GLYPH_ART` holds the element
+   emoji (🔥 ⚡ 💧 🪨 🌱 🐍 🤢 🧪 🌑 🔮 🩸 🧊 🌩️), 39 entries in all. Converted: 80 of 80
+   statuses (HP-bar marks and tooltip, condition list, monster chips, status tooltip,
+   fight summary), 32 of 40 arcane words (the eight abstract ones, undo twice then and
+   but one others me, have no icon and stay emoji: `GROUPS.arcaneWords.pending`),
+   their skills (a skill row converts by category, so the 40 `word_*` skills and the 10
+   resistance skills are two groups), 11 of 11 runes (picked from `legacy/runes`), 15
+   of 15 reagents. Status picks outside the elements are approximate: a status with
+   no drawing of its own borrows the nearest (stone for the three petrified forms,
+   dizzy for rattled, concussed and dazed). Left as emoji: the Bench reagent lists,
+   rune lists with carved or named runes, and format.ts tooltip strings (`grantLine`),
+   which resolve only through the table; the 📌 iron, 🕳️ zero and the arcane verbs
+   stay per-def `art` because their emoji mean other things elsewhere.
 5. **Inventory.** All 39 items from picks.md; per-item `art` splits the four 🗡️
    blades. Empty slots use the slot silhouettes in `packs/clockwork-raven/legacy/`.
 6. **Stances.** The nine generic stances from picks.md; pick the 12 schools from the

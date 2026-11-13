@@ -21,6 +21,7 @@
   import { DAMAGE_TYPE_NAMES, STAT_NAMES } from '../../core/types';
   import { MAIN_GENES, MUTATIONS } from '../../core/data/mutagens.data';
   import type { RoutedContribution } from '../../core/systems/mutagens';
+  import GlyphText from '../lib/icons/GlyphText.svelte';
   import {
     abilityCarries,
     armDelivery,
@@ -714,7 +715,7 @@
                       {/each}
                       <div class="tip-line tip-sub">{fmt(g.qty)} held</div>
                       {#if cost}
-                        <div class="tip-line tip-sub">🩸 {fmt(cost)} biomatter to write</div>
+                        <div class="tip-line tip-sub"><GlyphText text="🩸" /> {fmt(cost)} biomatter to write</div>
                       {/if}
                     {/snippet}
                   </Tip>

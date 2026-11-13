@@ -84,10 +84,10 @@
     <!-- The slot is as wide as the widest label, with or without the chip: the
          hidden sizer and the chip share one grid cell. -->
     <div class="sky-dark-slot">
-      <span class="sky-dark sizer" aria-hidden="true">🌑 Blind dark</span>
+      <span class="sky-dark sizer" aria-hidden="true"><GlyphText text="🌑" /> Blind dark</span>
       {#if dark > 0}
         <Tip block>
-          <span class="sky-dark">🌑 {dark >= 0.85 ? 'Blind dark' : dark >= 0.4 ? 'Dark' : 'Gloom'}</span>
+          <span class="sky-dark"><GlyphText text="🌑" /> {dark >= 0.85 ? 'Blind dark' : dark >= 0.4 ? 'Dark' : 'Gloom'}</span>
           {#snippet tip()}
             {#each darkText(gs, dark).split('\n') as line, i (i)}
               <div class="tip-line" class:tip-base={i === 0}>{line}</div>

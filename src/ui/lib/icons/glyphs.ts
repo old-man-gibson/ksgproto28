@@ -42,6 +42,24 @@ export const GLYPH_ART: Record<string, string> = {
   '❄️': 'ice',
   '💨': 'gust',
   '🌪️': 'sandstorm',
+  // The element set: the arcane nouns (ARCANE_WORDS), also the emoji of
+  // resistance skills, statuses, runes and reagents. 📌 (iron) and 🕳️ and the
+  // arcane verbs stay with their defs' own `art`: those emoji mean other things
+  // elsewhere (a nail, a memorise button, a dagger, a hammer).
+  '🔥': 'fire',
+  '⚡': 'spark',
+  '💧': 'water',
+  '🪨': 'stone',
+  '🌱': 'seed',
+  '🐍': 'venom',
+  // The Poisoned status (its pip, its log lines and its damage row carry this emoji).
+  '🤢': 'venom',
+  '🧪': 'acid',
+  '🌑': 'gloom',
+  '🔮': 'arcane',
+  '🩸': 'blood',
+  '🧊': 'ice',
+  '🌩️': 'storm',
 };
 
 const VS16 = /️/g;

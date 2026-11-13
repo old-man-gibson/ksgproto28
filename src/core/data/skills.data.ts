@@ -539,6 +539,7 @@ const HAND_WRITTEN = prose<SkillDef>('HAND_WRITTEN', HAND_WRITTEN_TEXT, {
     id: 'heat_resistance',
     name: 'Heat Resistance',
     icon: '🌡️',
+    art: 'fire',
     kind: 'passive',
     category: 'resistance',
     progression: PROGRESSIONS.foundational,

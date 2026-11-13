@@ -17,6 +17,7 @@
   import { sceneFor } from './scenes';
   import { fmt, ticksToTime } from './format';
   import GlyphText from './icons/GlyphText.svelte';
+  import Icon from './icons/Icon.svelte';
 
   /**
    * The fight, drawn: the place behind it, you on the left, the formation on
@@ -328,7 +329,7 @@
               <div class="meter act"><div style="width:{barPct(m)}%"></div></div>
               <div class="chips">
                 {#if m.range === 'ranged'}<span title="Ranged">🏹</span>{/if}
-                {#each visibleStatuses(m) as held (held.id)}<span title={STATUSES[held.id].name}>{STATUSES[held.id].icon}</span>{/each}
+                {#each visibleStatuses(m) as held (held.id)}<span title={STATUSES[held.id].name}><Icon of={STATUSES[held.id]} /></span>{/each}
               </div>
             </div>
             <div class="body">
@@ -507,7 +508,8 @@
     justify-content: center;
     gap: 3px;
     font-size: 11px;
-    min-height: 14px;
+    /* A status drawn as art is a 16px box; the row holds that height with or without one. */
+    min-height: 16px;
     margin-top: 1px;
   }
   .stance {

@@ -32,6 +32,7 @@
   import Modal from './Modal.svelte';
   import FactLines from './FactLines.svelte';
   import { FACET_ACTION, facetActions } from '../../core/facet/host';
+  import GlyphText from './icons/GlyphText.svelte';
 
   /**
    * Where one rotation entry is configured — the detail that used to live
@@ -128,7 +129,7 @@
     </p>
     {#if tech.trigger?.event || tech.trigger?.conditions.length}
       <p class="small ctx baked">
-        ⚡ Built-in reflex: {[
+        <GlyphText text="⚡" /> Built-in reflex: {[
           ...(tech.trigger.event ? [eventName(tech.trigger.event)] : []),
           ...tech.trigger.conditions.map((c) => describeCondition(c, gs)),
         ].join(' · ')} — yours can only narrow it.

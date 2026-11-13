@@ -190,7 +190,7 @@
   const afflictions = $derived(visibleStatuses(gs).filter((s) => !abilityStatusIds.has(s.id)));
   /** The dock's marks on the HP bar: the conditions, at most `PIPS` of them and a count of the rest. */
   const PIPS = 4;
-  const pipIcons = $derived(afflictions.map((s) => STATUSES[s.id].icon));
+  const pipDefs = $derived(afflictions.map((s) => STATUSES[s.id]));
 </script>
 
 {#snippet statTip(key: StatKey)}
@@ -299,10 +299,10 @@
       <div class="bar dock-hp">
         <div class="fill" style="width: {hpPct}%; background: var(--hp)"></div>
         <div class="label">HP {pool('hp')}</div>
-        {#if pipIcons.length > 0}
+        {#if pipDefs.length > 0}
           <div class="dock-marks" aria-hidden="true">
-            {#each pipIcons.slice(0, PIPS) as icon, i (i)}<span>{icon}</span>{/each}
-            {#if pipIcons.length > PIPS}<span class="dock-more">+{pipIcons.length - PIPS}</span>{/if}
+            {#each pipDefs.slice(0, PIPS) as def, i (i)}<span><Icon of={def} size={16} /></span>{/each}
+            {#if pipDefs.length > PIPS}<span class="dock-more">+{pipDefs.length - PIPS}</span>{/if}
           </div>
         {/if}
       </div>
@@ -310,7 +310,7 @@
         {@render hpTip()}
         {#each afflictions as held (held.id)}
           {#each statusTipLines(gs, held) as line, i}
-            <div class="tip-line" class:tip-sub={i === 0}>{i === 0 ? `${STATUSES[held.id].icon} ${line}` : line}</div>
+            <div class="tip-line" class:tip-sub={i === 0}>{#if i === 0}<Icon of={STATUSES[held.id]} /> {STATUSES[held.id].name}{:else}{line}{/if}</div>
           {/each}
         {/each}
       {/snippet}
@@ -488,7 +488,7 @@
               <!-- Primed: sitting at its ceiling, one dose from turning into
                    something worse. It looks unchanged, so it pulses. -->
               <span class="affliction" class:primed={escalationPrimed(gs, held)}>
-                <span class="affliction-icon">{def.icon}</span>
+                <span class="affliction-icon"><Icon of={def} /></span>
                 {def.name}{#if held.stacks > 1}<span class="stacks">×{held.stacks}</span>{/if}
               </span>
               {#snippet tip()}
@@ -498,7 +498,7 @@
                     class="tip-line"
                     class:tip-base={i === 0}
                     class:tip-sub={line.startsWith('—')}
-                  >{line}</div>
+                  >{#if i === 0}<Icon of={def} /> {def.name}{:else}{line}{/if}</div>
                 {/each}
               {/snippet}
             </Tip>

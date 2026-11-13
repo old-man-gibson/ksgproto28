@@ -5,6 +5,8 @@
   import { fmt } from './lib/format';
   import { LAYER, pushOverlay } from './lib/overlays';
   import GlyphText from './lib/icons/GlyphText.svelte';
+  import Icon from './lib/icons/Icon.svelte';
+  import { STATUSES } from '../core/registry';
 
   let {
     ledger,
@@ -129,7 +131,7 @@
         <h3>Damage taken</h3>
         {#if worst}
           <p class="lead">
-            Most of it was <b>{worst.icon} {worst.label}</b> — {fmt(Math.round(worst.amount))} of
+            Most of it was <b><GlyphText text={worst.icon} /> {worst.label}</b> — {fmt(Math.round(worst.amount))} of
             {fmt(Math.round(took))} ({Math.round(share(worst.amount))}%).
           </p>
         {/if}
@@ -137,7 +139,7 @@
           {#each ledger.incoming as s}
             <li>
               <div class="bar" style="width: {share(s.amount)}%"></div>
-              <span class="who">{s.icon} {s.label}</span>
+              <span class="who"><GlyphText text={s.icon} /> {s.label}</span>
               <span class="amt">{fmt(Math.round(s.amount))}</span>
               <span class="hits dim">×{fmt(s.hits)}</span>
             </li>
@@ -151,7 +153,7 @@
         <div class="afflictions">
           {#each ledger.afflictions as a}
             <span class="pill" title="Intensity {a.intensity.toFixed(2)}">
-              {a.icon} {a.name}
+              {#if STATUSES[a.id]}<Icon of={STATUSES[a.id]} />{:else}{a.icon}{/if} {a.name}
             </span>
           {/each}
           {#if ledger.afflictions.length === 0}

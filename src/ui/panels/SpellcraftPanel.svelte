@@ -70,6 +70,7 @@
   import Tip from '../lib/Tip.svelte';
   import { foldItem, insertItem, isTouchPointer, moveItem, stepSlot } from '../lib/reorder';
   import GlyphText from '../lib/icons/GlyphText.svelte';
+  import Icon from '../lib/icons/Icon.svelte';
 
   /**
    * The spellcrafting table: one piece of furniture, three schools.
@@ -458,7 +459,7 @@
   <div class="stat-row small">
     <span>{targetLabel(spec)}</span>
     <!-- Each school spends its own pool, so only show what this one costs. -->
-    {#if spec.manaCost > 0}<span>💧 {spec.manaCost} mana</span>{/if}
+    {#if spec.manaCost > 0}<span><GlyphText text="💧" /> {spec.manaCost} mana</span>{/if}
     {#if spec.focusCost}<span><GlyphText text="🧠" /> {spec.focusCost.toFixed(2)} focus</span>{/if}
     {#if spec.staminaCost}<span>🌬️ {spec.staminaCost} stamina</span>{/if}
     <span>⏱️ every {(spec.cooldown / TPS).toFixed(1)}s</span>
@@ -566,7 +567,7 @@
             ? 'Right-click or long-press to remove one layer · select to remove the word · drag to reorder'
             : 'Select to remove · drag to reorder, or onto the same word to deepen'}
         >
-          {w?.icon} {label}
+          {#if w}<Icon of={w} />{/if} {label}
           {#if tok.tier > 1}<span class="tier-mark">{TIER_MARK[tok.tier]}</span>{/if}
         </button>
       {/each}
@@ -586,7 +587,7 @@
            mouse does by dragging, clicking or right-clicking a tile. -->
       <div class="pick-bar small">
         <span class="pick-note">
-          <b>{heldWord?.icon} {held.tier > 1 ? (heldWord?.stacked?.[held.tier - 2] ?? heldWord?.word) : heldWord?.word}</b>
+          <b>{#if heldWord}<Icon of={heldWord} />{/if} {held.tier > 1 ? (heldWord?.stacked?.[held.tier - 2] ?? heldWord?.word) : heldWord?.word}</b>
           picked: tap the tile it goes before.
         </span>
         <button disabled={pickIndex === 0} onclick={() => stepPicked(-1)} aria-label="Move the picked word earlier">◀ Earlier</button>
@@ -612,7 +613,7 @@
       {/if}
       {#if overPool}
         <div class="small out-of-reach too-wide">
-          💧 Costs <b>{overPool.cost}</b> mana and your pool holds <b>{overPool.pool}</b>. It can be
+          <GlyphText text="💧" /> Costs <b>{overPool.cost}</b> mana and your pool holds <b>{overPool.pool}</b>. It can be
           inscribed, but it will not cast until Intelligence raises the pool.
         </div>
       {/if}
@@ -642,7 +643,7 @@
                   }}
                   onclick={() => speak(w.id)}
                 >
-                  {w.icon} {known(w) ? w.word : `Lv ${w.minLevel}`}
+                  <Icon of={w} /> {known(w) ? w.word : `Lv ${w.minLevel}`}
                   <!-- One pill per word. The numeral is how deep this word is
                        MASTERED — how far it may be folded in the strip. -->
                   {#if known(w) && masteredTier(gs, w.id) > 1}
@@ -656,7 +657,7 @@
                   {/if}
                 </button>
                 {#snippet tip()}
-                  <div class="tip-line tip-base">{w.icon} {w.word}</div>
+                  <div class="tip-line tip-base"><Icon of={w} /> {w.word}</div>
                   <div class="tip-line tip-sub">
                     {w.kind}{w.mana ? ` · ${w.mana} mana` : ''}{!known(w) ? ` · needs Arcana ${w.minLevel}` : ''}
                   </div>
@@ -790,7 +791,7 @@
                           <span class="rel-good"><GlyphText text="✨" /> {friends.map((d) => d.name).join(', ')}</span>
                         {/if}
                         {#if foes.length}
-                          <span class="rel-bad">⚡ {foes.map((d) => d.name).join(', ')}</span>
+                          <span class="rel-bad"><GlyphText text="⚡" /> {foes.map((d) => d.name).join(', ')}</span>
                         {/if}
                       </div>
                     {/if}
@@ -1083,7 +1084,7 @@
                   {#each specLines(spec) as line}<div class="tip-line">{line}</div>{/each}
                   <div class="tip-line tip-sub">
                     {targetLabel(spec)}
-                    {#if spec.focusCost}· <GlyphText text="🧠" /> {spec.focusCost.toFixed(2)}{:else}· 💧 {spec.manaCost}{/if}
+                    {#if spec.focusCost}· <GlyphText text="🧠" /> {spec.focusCost.toFixed(2)}{:else}· <GlyphText text="💧" /> {spec.manaCost}{/if}
                     · ⏱️ {(spec.cooldown / TPS).toFixed(1)}s
                   </div>
                   {#if isUtilityWorking(spec)}

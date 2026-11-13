@@ -700,7 +700,7 @@
             </span>
             <span class="odds small">
               <span class:risky={heldCopies < REFINE_COPIES}>🧬 {heldCopies}/{REFINE_COPIES}</span>
-              <span class:risky={(gs.materials.biomatter ?? 0) < cost}>🩸 {fmt(cost)}</span>
+              <span class:risky={(gs.materials.biomatter ?? 0) < cost}><GlyphText text="🩸" /> {fmt(cost)}</span>
             </span>
           </div>
           {#snippet tip()}
@@ -712,7 +712,7 @@
               🧬 spends {REFINE_COPIES} × {QUALITY_TIERS[subject.quality].name} — you hold {heldCopies}
             </div>
             <div class="tip-line">
-              🩸 burns {fmt(cost)} biomatter — you have {fmt(gs.materials.biomatter ?? 0)}
+              <GlyphText text="🩸" /> burns {fmt(cost)} biomatter — you have {fmt(gs.materials.biomatter ?? 0)}
             </div>
             <div class="tip-line tip-sub">
               Tier never changes; refining raises the grade only.

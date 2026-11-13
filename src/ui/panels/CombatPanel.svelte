@@ -78,6 +78,7 @@
   import { rankNote, stepTarget, visibleIds } from '../lib/rotationView';
   import { slotTarget } from '../lib/reorder';
   import GlyphText from '../lib/icons/GlyphText.svelte';
+  import Icon from '../lib/icons/Icon.svelte';
 
   /**
    * The rows of an affliction total worth drawing.
@@ -559,7 +560,7 @@
   <!-- What it is carrying, in full — the stage shows only the icons. -->
   {#each visibleStatuses(m) as held (held.id)}
     <div class="tip-line tip-base" class:primed={escalationPrimed(m, held)} style="margin-top: 6px">
-      {STATUSES[held.id].icon} {STATUSES[held.id].name}{held.stacks > 1 ? ` ×${held.stacks}` : ''}
+      <Icon of={STATUSES[held.id]} /> {STATUSES[held.id].name}{held.stacks > 1 ? ` ×${held.stacks}` : ''}
     </div>
     {#each statusTipLines(m, held).slice(1) as line}
       <div class="tip-line" class:tip-sub={line.startsWith('—')}>{line}</div>
@@ -859,7 +860,7 @@
          reminder that walking out of the seat loses it. -->
     {#if readied}
       <p class="small readied">
-        🔮 Holding <b>{readied.name}</b> — a plain swing loses it; the mana is already spent.
+        <GlyphText text="🔮" /> Holding <b>{readied.name}</b> — a plain swing loses it; the mana is already spent.
       </p>
     {/if}
     {#if gs.combat?.impaled}
@@ -1013,7 +1014,7 @@
             <Tip>
               <button class="skill-name" onclick={() => { if (rotationEditable) configId = id; }}>
                 <span class="nm">{entry.icon} {entry.name}</span>
-                {#if tuned}<span class="tuned" title="You have set conditions on this">⚡</span>{/if}
+                {#if tuned}<span class="tuned" title="You have set conditions on this"><GlyphText text="⚡" /></span>{/if}
               </button>
               {#snippet tip()}
                 {#if tech}
@@ -1069,7 +1070,7 @@
                 {/if}
                 {#if tuned}
                   <div class="tip-line tip-total">
-                    ⚡ {[
+                    <GlyphText text="⚡" /> {[
                       ...(trigger.event
                         ? [TRIGGER_EVENTS.find((e) => e.id === trigger.event)?.name ?? trigger.event]
                         : []),

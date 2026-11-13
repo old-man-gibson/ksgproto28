@@ -44,6 +44,7 @@
   import GoButton from '../lib/GoButton.svelte';
   import { talentBar } from '../lib/talentBar';
   import GlyphText from '../lib/icons/GlyphText.svelte';
+  import Icon from '../lib/icons/Icon.svelte';
 
   function talentPct(bonus: number): string {
     const pct = bonus * 100;
@@ -298,7 +299,8 @@
           onclick={() => toggle(def.id)}
         >
           <span class="chev dim">{nodeOpen ? '▾' : '▸'}</span>
-          <span class="s-icon">{def.icon}</span>
+          <!-- Art by category: a section draws pixel icons only when every skill in it has one (resistance does; magic holds eight words without). -->
+          <span class="s-icon">{#if def.category === 'resistance'}<Icon of={def} />{:else}{def.icon}{/if}</span>
           <!-- `row-main` and `row-meter` are boxes only on a narrow screen (the
                style at the foot): the name and its tags on the left, the level
                over the bar on the right. -->
@@ -375,7 +377,7 @@
               {@render milestoneLine(def.milestones, s.level)}
             {/if}
             {#if def.active}
-              <div class="active-info">⚡ {activeSummary(def.active)} — fired automatically in rotation order (Combat tab).</div>
+              <div class="active-info"><GlyphText text="⚡" /> {activeSummary(def.active)} — fired automatically in rotation order (Combat tab).</div>
             {/if}
             {@render trainsAt({ skill: def.id })}
           </div>
@@ -458,7 +460,7 @@
                     {exit?.icon} {exit?.name ?? techniqueExit(gs, t)}
                   </span>
                 </span>
-                {#if trig}<span>⚡ {trig}</span>{/if}
+                {#if trig}<span><GlyphText text="⚡" /> {trig}</span>{/if}
                 <span class="tech-move">{techniqueMoveText(gs, t)}</span>
               </div>
               {#if chosenFork(gs, t)}

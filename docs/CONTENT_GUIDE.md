@@ -1253,6 +1253,10 @@ minor_rune_might: {
 },
 ```
 
+`art: 'rune_tiwaz'` (optional) names a pixel icon in `src/ui/lib/icons/manifest.json`
+(docs/plans/pixel-icons.md §4.1). The 11 runes all have one; a rune without `art`
+shows its `icon` emoji, and so does every rune when the icon packs are absent.
+
 Weapon-context effects can also carry typed on-hit damage:
 `bonusDamage: { type: 'lightning', value: 3 }` (flat per hit) or
 `bonusDamagePct: { type: 'lightning', value: 0.12 }` (12% of each hit dealt
@@ -1688,6 +1692,13 @@ my_condition: {
 }
 ```
 
+`art: 'venom'` (optional) names the condition's pixel icon in
+`src/ui/lib/icons/manifest.json` (docs/plans/pixel-icons.md §4.1): the HP-bar marks,
+the condition list, monster chips and the fight summary draw it. Without `art` a
+status takes the drawing the glyph table holds for its `icon`, and without that the
+emoji shows. All 80 statuses have one; a new status needs one, or an entry in
+`GROUPS.statuses.pending` of `tests/icons.test.ts`.
+
 **`element` is what the condition is resisted BY, and it is also the flag that
 says this is an affliction.** Two different resistances are in play and they are
 not the same field:
@@ -2089,6 +2100,11 @@ frost_example: {
 },
 ```
 
+* `art` (optional, a name in `manifest.json`) is the word's pixel icon, here and on
+  its `word_<id>` skill. Without it the word takes the drawing the glyph table
+  (`src/ui/lib/icons/glyphs.ts`) holds for its `icon` emoji, and without that the
+  emoji shows. `tests/icons.test.ts` lists the words that have none (the eight
+  abstract ones) in `GROUPS.arcaneWords.pending`.
 * **Verbs** carry `verb: ArcaneVerbSpec` — all declarative: `powerMult`,
   `barePower` (cast with no noun), `penetration`, `gripMult` (status intensity),
   `cooldownMult`, `splash`, `restore` (heals the caster), `ward` (resistance

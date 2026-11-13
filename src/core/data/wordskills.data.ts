@@ -114,6 +114,7 @@ export function buildWordSkills(): Record<string, SkillDef> {
       id,
       name: w.word.charAt(0).toUpperCase() + w.word.slice(1),
       icon: w.icon,
+      ...(w.art ? { art: w.art } : {}),
       desc: `Trained by casting or inscribing a sentence that contains "${w.word}". Each level makes the word ${+(WORD_POWER_PER_LEVEL * 100).toFixed(1)}% stronger. At levels ${WORD_MILESTONE_LEVELS.join(', ')} it also grants a bonus.`,
       kind: 'passive',
       category: 'magic',

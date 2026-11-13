@@ -379,13 +379,13 @@
          widest label; it has no hit target and no place in the accessibility
          tree. -->
     <div class="dark-slot">
-      <span class="dark sizer" aria-hidden="true">🌑 Blind dark</span>
+      <span class="dark sizer" aria-hidden="true"><GlyphText text="🌑" /> Blind dark</span>
       {#if dark > 0}
         <!-- Bands, not thresholds on the nose: Darkvision's ceiling is 50, so a
              single level would otherwise demote "blind dark" the moment the
              skill manifests, which reads as the label being broken. -->
         <div class="dark" title={darkTitle}>
-          🌑 {dark >= 0.85 ? 'Blind dark' : dark >= 0.4 ? 'Dark' : 'Gloom'}
+          <GlyphText text="🌑" /> {dark >= 0.85 ? 'Blind dark' : dark >= 0.4 ? 'Dark' : 'Gloom'}
         </div>
       {/if}
     </div>

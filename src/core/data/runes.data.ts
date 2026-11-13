@@ -14,6 +14,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'minor_rune_might',
     name: 'Minor Rune of Might',
     icon: '🔺',
+    art: 'rune_tiwaz',
     value: 25,
     effects: {
       weapon: { mods: [{ stat: 'damage', op: 'add', value: 4 }] },
@@ -25,6 +26,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'greater_rune_might',
     name: 'Greater Rune of Might',
     icon: '🔻',
+    art: 'rune_uruz',
     value: 90,
     effects: {
       weapon: {
@@ -41,6 +43,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'minor_rune_vitality',
     name: 'Minor Rune of Vitality',
     icon: '🟢',
+    art: 'rune_wunjo',
     value: 25,
     effects: {
       weapon: { mods: [{ stat: 'maxHp', op: 'add', value: 10 }] },
@@ -52,6 +55,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'greater_rune_vitality',
     name: 'Greater Rune of Vitality',
     icon: '💚',
+    art: 'rune_algiz',
     value: 90,
     effects: {
       weapon: { mods: [{ stat: 'maxHp', op: 'add', value: 25 }] },
@@ -78,6 +82,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'gale_rune',
     name: 'Gale Rune',
     icon: '🌬️',
+    art: 'rune_ansuz',
     value: 120,
     effects: {
       // Tempo surgery: Sidestep answers again far sooner, wearing a new name.
@@ -92,6 +97,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'earthbind_rune',
     name: 'Earthbind Rune',
     icon: '⛰️',
+    art: 'rune_othila',
     value: 130,
     effects: {
       // Exit surgery: the thrust recovers into a load-bearing crouch instead
@@ -107,6 +113,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'umbral_rune',
     name: 'Umbral Rune',
     icon: '🌑',
+    art: 'rune_broken',
     value: 140,
     effects: {
       // Choice surgery: the riposte hits harder AND its Honed fork offers
@@ -123,6 +130,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'minor_rune_thunder',
     name: 'Minor Rune of Thunder',
     icon: '⚡',
+    art: 'rune_sowilo',
     value: 40,
     effects: {
       weapon: { bonusDamage: { type: 'lightning', value: 3 } },
@@ -134,6 +142,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'greater_rune_thunder',
     name: 'Greater Rune of Thunder',
     icon: '🌩️',
+    art: 'rune_plain',
     value: 140,
     effects: {
       weapon: { bonusDamagePct: { type: 'lightning', value: 0.12 } },
@@ -145,6 +154,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'minor_rune_frost',
     name: 'Minor Rune of Frost',
     icon: '❄️',
+    art: 'rune_ingwaz',
     value: 40,
     effects: {
       weapon: { bonusDamage: { type: 'cold', value: 3 } },
@@ -156,6 +166,7 @@ export const RUNES = prose<RuneDef>('RUNES', RUNES_TEXT, {
     id: 'rune_swiftness',
     name: 'Rune of Swiftness',
     icon: '🌀',
+    art: 'rune_laguz',
     value: 60,
     effects: {
       weapon: { mods: [{ stat: 'attackSpeed', op: 'mult', value: 0.04 }] },

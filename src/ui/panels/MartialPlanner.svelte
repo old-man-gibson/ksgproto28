@@ -731,7 +731,7 @@
                     {t.icon}
                     {techniqueDisplayName(gs, t)}
                     {#if overlayOf(t)}
-                      <span class="tuned" title="Your conditions: {overlayOf(t)}">⚡</span>
+                      <span class="tuned" title="Your conditions: {overlayOf(t)}"><GlyphText text="⚡" /></span>
                     {/if}
                   </span>
                   <span class="flow small">

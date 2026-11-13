@@ -38,12 +38,14 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
     id: 'pressed_oil',
     name: 'Pressed Oil',
     icon: '🫙',
+    art: 'jar',
     menstruum: { medium: 'oil', body: 6 },
   },
   grain_spirit: {
     id: 'grain_spirit',
     name: 'Grain Spirit',
     icon: '🍶',
+    art: 'bottle',
     minLevel: 4,
     menstruum: { medium: 'spirit', body: 5 },
     // Spirits are already halfway to going off — raising a brew in them starts
@@ -57,6 +59,7 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
     id: 'emberbloom',
     name: 'Emberbloom',
     icon: '🌺',
+    art: 'fire',
     essence: {
       id: 'ember',
       name: 'Ember',
@@ -82,6 +85,7 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
     id: 'nightcap',
     name: 'Nightcap',
     icon: '🍄',
+    art: 'mushroom',
     minLevel: 3,
     essence: {
       id: 'venom',
@@ -95,6 +99,7 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
     id: 'gloomcap',
     name: 'Gloomcap',
     icon: '🌚',
+    art: 'gloom',
     minLevel: 6,
     essence: {
       id: 'gloom',
@@ -124,6 +129,7 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
     id: 'bloodwort',
     name: 'Bloodwort',
     icon: '🌡️',
+    art: 'blood',
     minLevel: 5,
     essence: {
       id: 'vigor',
@@ -166,12 +172,14 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
     id: 'fixing_salt',
     name: 'Fixing Salt',
     icon: '🧂',
+    art: 'salt',
     act: { kind: 'fix' },
   },
   brimstone: {
     id: 'brimstone',
     name: 'Brimstone',
     icon: '🟡',
+    art: 'gem_yellow',
     minLevel: 7,
     act: { kind: 'ignite', needs: 1.2, mult: 1.55 },
   },
@@ -179,6 +187,7 @@ export const REAGENTS = prose<ReagentDef>('REAGENTS', REAGENTS_TEXT, {
     id: 'bone_ash',
     name: 'Bone Ash',
     icon: '🦴',
+    art: 'bone',
     minLevel: 4,
     act: { kind: 'clarify', mult: 1.5 },
   },
