@@ -15,7 +15,7 @@ build"). Nothing is uploaded to a store.
 | The wrapper | `capacitor.config.json`, `android/` | Capacitor 8.5.3 (pinned; `@capacitor/core`, `@capacitor/android`, `@capacitor/cli`), plus `@capacitor/app` 8.1.2 (back button, `pause`), `@capacitor/filesystem` 8.1.5 and `@capacitor/share` 8.0.3 (Export). The plugins have their own version lines; each was the newest stable 8.x on 2026-11-12, and each needs `@capacitor/core` 8.0 or newer. The app is one Android WebView that loads the built game from `dist/`. `android/` is the Gradle project `npx cap add android` made; `capacitor.build.gradle` and `capacitor.settings.gradle` in it are written by `npx cap sync android`, so rerun it after adding a plugin and commit the two files. |
 | The copied game | `android/app/src/main/assets/public` | Written by `npx cap sync android`. Gitignored by Capacitor, so a built game never enters git through `android/`. |
 | Version and signing | `android/app/build.gradle` | `versionCode` is the env `APP_VERSION_CODE` (the workflow run number, which only grows: Android refuses an update with a lower one). The release build is signed from `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`; without them it is unsigned. The debug build is signed with the committed `android/app/debug.keystore` (`signingConfigs.debug`). |
-| The build | `.github/workflows/android.yml` | `npm ci`, `vite build`, `cap sync android`, then Gradle on `ubuntu-latest` with JDK 21 (the Capacitor modules compile at Java 21; JDK 17 fails). Triggers: a push to `main`, `apk-releases` or `mobile-apk`, and `workflow_dispatch` (Actions tab, any branch). **Three secrets set:** `assembleRelease`; on `main` a release tagged `build-<run>` holding `frontier-idle-<run>.apk`, releases past the newest 10 deleted; on another branch the signed APK as a run artifact. **Any of the three missing:** `assembleDebug`, uploaded as the run artifact `ksg-debug-apk`, no release. |
+| The build | `.github/workflows/android.yml` | `npm ci`, `vite build`, `cap sync android`, then Gradle on `ubuntu-latest` with JDK 21 (the Capacitor modules compile at Java 21; JDK 17 fails). Triggers: a push to `main`, and `workflow_dispatch` (Actions tab, any branch). **Three secrets set:** `assembleRelease`; on `main` a release tagged `build-<run>` holding `frontier-idle-<run>.apk`, releases past the newest 10 deleted; on another branch the signed APK as a run artifact. **Any of the three missing:** `assembleDebug`, uploaded as the run artifact `ksg-debug-apk`, no release. |
 
 The app id is `io.github.oldmangibson.frontieridle`. Changing it makes a
 different app: the phone keeps the old one and its save.
@@ -228,9 +228,8 @@ and installs like any other.
 
 Getting it, on github.com:
 
-1. Actions → the run of "Android APK" for the branch. A push to `main`,
-   `apk-releases` or `mobile-apk` starts one; Run workflow starts one on any
-   branch once the workflow file is on `main`.
+1. Actions → the run of "Android APK" for the branch. A push to `main` starts
+   one; Run workflow starts one on any branch.
 2. Artifacts → `ksg-debug-apk` downloads a zip. Unzip it: it holds
    `frontier-idle-debug-<run>.apk`. GitHub keeps run artifacts for the
    repository's retention period (90 days unless changed).

@@ -3,13 +3,13 @@
 # signed APK and publishes it as a GitHub Release (tag build-<run number>);
 # Obtainium on the phone installs the newest. Without them the build is the
 # debug APK, uploaded as the run artifact `ksg-debug-apk`, and nothing is
-# released. A push to another listed branch builds the same way and never
-# releases.
+# released. Other branches build only through workflow_dispatch and never
+# release.
 name: Android APK
 
 on:
   push:
-    branches: [main, apk-releases, mobile-apk]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
