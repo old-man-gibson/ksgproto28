@@ -78,28 +78,54 @@ describe('the soft keyboard', () => {
     input.focus();
     return input;
   }
+  /** The field loses focus (the keyboard has not closed yet). */
+  function blurField(input: HTMLInputElement) {
+    input.blur();
+    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+  }
+  const resize = () => window.dispatchEvent(new Event('resize'));
 
   it('does not turn the shell compact while a text field has focus and the width is the same', async () => {
     const { viewport } = await load();
-    const input = focusField();
+    focusField();
     flip('max-height', true); // the window lost the keyboard's height
     expect(viewport.short).toBe(false);
     expect(viewport.phone).toBe(false);
-    input.blur();
-    input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
-    flip('max-height', false); // keyboard closed
-    expect(viewport.short).toBe(false);
   });
 
-  it('settles on the real shape once the field loses focus', async () => {
+  it('does not flip at blur: the field loses focus before the keyboard has gone, and the window is still its size', async () => {
     vi.useFakeTimers();
     try {
       const { viewport } = await load();
       const input = focusField();
+      flip('max-height', true); // keyboard up
+      blurField(input);
+      vi.advanceTimersByTime(0);
+      expect(viewport.short).toBe(false);
+      vi.advanceTimersByTime(250);
+      expect(viewport.short).toBe(false);
+      // The keyboard closes: the window grows back and a resize says so.
+      flip('max-height', false);
+      resize();
+      expect(viewport.short).toBe(false);
+      // Nothing left to fire later and flip it.
+      vi.advanceTimersByTime(1000);
+      expect(viewport.short).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('settles on the real shape after the hold when no resize comes (the window really is short)', async () => {
+    vi.useFakeTimers();
+    try {
+      const { viewport, KEYBOARD_HOLD_MS } = await load();
+      const input = focusField();
       flip('max-height', true);
       expect(viewport.short).toBe(false);
-      // The window really is short (the keyboard stayed): after the field blurs, the shell follows.
-      input.blur();
+      blurField(input);
+      vi.advanceTimersByTime(KEYBOARD_HOLD_MS - 1);
+      expect(viewport.short).toBe(false);
       vi.advanceTimersByTime(1);
       expect(viewport.short).toBe(true);
     } finally {
@@ -107,11 +133,47 @@ describe('the soft keyboard', () => {
     }
   });
 
+  it('a resize after the blur ends the hold: the shell follows the real window at once', async () => {
+    vi.useFakeTimers();
+    try {
+      const { viewport } = await load();
+      const input = focusField();
+      flip('max-height', true);
+      blurField(input);
+      resize(); // the window is resized and is short: no keyboard to excuse it
+      expect(viewport.short).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a rotation that crosses no breakpoint still counts: the keyboard that follows does not flip the shell', async () => {
+    const { viewport } = await load();
+    // 1024 -> 900 wide: no query changes, only a resize event.
+    width = 900;
+    resize();
+    focusField();
+    flip('max-height', true); // the keyboard opens at the new width
+    expect(viewport.short).toBe(false);
+    expect(viewport.phone).toBe(false);
+  });
+
   it('a width change is a rotation, not the keyboard: the shell follows it while a field has focus', async () => {
     const { viewport } = await load();
     focusField();
     width = 844;
     flip('max-height', true);
+    expect(viewport.short).toBe(true);
+  });
+
+  it('the rotation comes first, then the keyboard: each is read for what it is', async () => {
+    const { viewport } = await load();
+    focusField();
+    width = 844; // landscape: short by the query once it is
+    flip('max-height', true);
+    expect(viewport.short).toBe(true);
+    // The keyboard changes the height only: the shell stays.
+    flip('max-height', false);
     expect(viewport.short).toBe(true);
   });
 

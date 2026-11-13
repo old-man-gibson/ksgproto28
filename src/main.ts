@@ -48,89 +48,20 @@ import './themes/castle.css';
 import './themes/survey.css';
 import './themes/sandstone.css';
 import App from './ui/App.svelte';
-import { installAndroidBack } from './ui/lib/androidBack';
-import { installSaveTriggers } from './ui/lib/saveTriggers';
+import { startRuntime } from './ui/lib/runtime';
 import { applyTheme, loadTheme } from './ui/lib/theme';
 import { boot, catchUp, game, save, timeAway, ui } from './ui/state.svelte';
-import { TickAccumulator } from './core/engine/loop';
-import { createPump } from './ui/lib/pump';
 import { OFFLINE_MIN_MS } from './core/save/offline';
 
-const acc = new TickAccumulator();
-
-/**
- * Advance the simulation by however much time has passed. Driven by
- * requestAnimationFrame while visible (smooth) and by setInterval while the
- * tab is hidden (rAF stops firing there — fatal for an idle game). A long stall
- * (laptop sleep, a throttled background tab, a phone asleep with the app alive)
- * is handled like offline time: big gaps get a capped silent catch-up + summary
- * modal (lib/pump.ts says how the gap is measured and why nothing counts twice).
- */
-const frames = createPump({
-  perf: () => performance.now(),
-  wall: () => Date.now(),
-  paused: () => game.state.paused,
-  advance: (elapsedMs) => {
-    const ticks = acc.advance(elapsedMs);
-    for (let i = 0; i < ticks; i++) game.tick();
-  },
-  // Detached catch-up (see state.svelte.ts): big gaps get the capped silent
-  // run + summary modal, 10-60s gaps run their ticks quietly — both off the
-  // reactive proxy, so a long stall never freezes the frame it returns on.
-  catchUp,
-  report: (summary) => {
-    ui.offline = summary;
-  },
-  save,
-});
-
-function frame() {
-  frames.pump();
-  requestAnimationFrame(frame);
-}
-
-/** Start the clock. Nothing ticks until the boot catch-up has finished. */
-function startPump() {
-  frames.start();
-  requestAnimationFrame(frame);
-  setInterval(frames.pump, 1000);
-}
-
-// Saves on the events that may be a page's last (lib/saveTriggers.ts), and
-// before the Android back button minimizes the app. Not before the boot
-// catch-up has run: a save then would erase the time away it is about to credit.
-const saveNow = installSaveTriggers({
-  save,
-  blocked: () => ui.catchingUp !== null,
-  saved: () => frames.saved(),
-  // The page turns visible again: credit what passed while it was away now.
-  visible: () => frames.settle(),
-});
-
-// Mount FIRST, catch up SECOND. The boot catch-up is synchronous and, on a
-// mature save, can block for minutes — running it before mount left the tab
-// blank with a spinner for the whole wait (and a throw meant no app at all).
-// Now the app paints with a "catching up" overlay, then the catch-up runs.
-// rAF → setTimeout guarantees a real paint in between: the rAF callback runs
-// before the frame is painted, the timeout fires after it.
+// The boot's catch-up, if there is one, is announced before the first paint: the
+// overlay is in the first frame, and the catch-up itself runs after it
+// (lib/runtime.ts). A paused world owes none.
 const away = timeAway();
 if (away >= OFFLINE_MIN_MS && !game.state.paused) ui.catchingUp = away;
 // Before mount, so the first paint is already in the player's theme: the stored
 // pick, else Gothic. Applying stores nothing (ui/lib/theme.ts).
 applyTheme(loadTheme());
 mount(App, { target: document.getElementById('app')! });
-// The Android app's back button (closes the topmost window or drawer, else saves
-// and minimizes), its pause event (saves) and its resume event (credits the time
-// the app was away). No-op outside the Android app.
-installAndroidBack({ blocked: () => ui.catchingUp !== null, save: saveNow, resume: () => frames.settle() });
-if (ui.catchingUp !== null) {
-  requestAnimationFrame(() =>
-    setTimeout(() => {
-      boot();
-      startPump();
-    }, 0),
-  );
-} else {
-  boot();
-  startPump();
-}
+// The frame pump, the save triggers, the Android back button, pause and resume
+// (lib/runtime.ts). The Android listeners are a no-op outside the Android app.
+startRuntime({ game, ui, boot, catchUp, save });

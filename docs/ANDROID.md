@@ -153,31 +153,64 @@ autosave would then have lost up to 30 s of play.
 
 A phone asleep with the app's process alive is not the boot catch-up (that is a
 process that ended, read back from `gs.lastSaved`). The frame pump
-(`src/ui/lib/pump.ts`, wired in `main.ts`) measured the gap between frames with
-`performance.now()`, a monotonic clock that stops while the device sleeps, so a night
-asleep was credited as the few seconds the clock saw. It now reads `Date.now()` as
-well on every call. When the wall clock gained more than 5 s on the monotonic one,
-the surplus is sleep and the wall gap is credited instead, as a long gap: the same
-capped detached catch-up the boot runs (`catchUp` in `state.svelte.ts`, 8 h cap) and
-its "Welcome back" report. A wall clock that went backwards, or drift under 5 s,
-credits the monotonic gap. A paused world drops the gap, as before.
+(`src/ui/lib/pump.ts`, started from `lib/runtime.ts`, which `main.ts` calls once the
+app has mounted) measured the gap between frames with `performance.now()`, a
+monotonic clock that stops while the device sleeps, so a night asleep was credited as
+the few seconds the clock saw. It reads `Date.now()` as well on every call. When the
+wall clock gained more than 5 s on the monotonic one, the surplus is sleep. A wall
+clock that went backwards, or drift under 5 s, is not.
 
-- **When.** On the next frame or tick, and at once on the App plugin's `resume` and
-  on the page turning visible (`pump.settle()`; `installAndroidBack`'s `resume` hook
-  and `installSaveTriggers`' `visible` hook), so the report is there when the screen
-  comes back.
-- **No double count.** Every call reads both clocks and moves both marks to now, so a
-  gap is credited by exactly one call; `resume`, `visibilitychange` and the next frame
-  are the same gap once. The pump's wall mark is never earlier than `gs.lastSaved`
-  (the `pause` and hidden saves write it when pumping stops), so a hidden page that
-  kept pumping (a throttled tab, both clocks running) is credited by its own clock and
-  not again from `lastSaved`. A wall clock set forward credits up to the cap, as it
-  already did for the boot catch-up.
-- **Checked.** `tests/pump.test.ts` moves fake clocks (an 8 h sleep, resume plus
-  visible plus a frame, a throttled tab, a short sleep, drift, a backwards clock, a
-  paused world, the autosave); `tests/androidResume.test.ts` the plugin's events. In
-  the Browser pane a `Date.now` moved 3 h ahead showed one "Welcome back ... 3h 0m"
-  report and no second one when it was restored. Not on a device.
+**One absence, one credit.** The 8 h cap and the report belong to one catch-up, so an
+absence is cashed in one:
+
+- **Page visible** (the screen is on, or a laptop woke): the gap is credited whole, the
+  monotonic gap plus the sleep, through the catch-up whatever its size (the same capped
+  detached run the boot makes, `catchUp` in `state.svelte.ts`, with its "Welcome back"
+  report). A gap under a minute runs quietly with no report. It goes through the
+  catch-up and not the tick loop because the loop's 30-tick valve drops most of a 5 to
+  10 s gap (a 7 s sleep credited 3 s). From a minute the "Catching up" overlay is shown
+  first (`ui.catchingUp`, as the boot does), a frame is painted, and then the run
+  starts, so the WebView is not frozen with no word. Saves and the back button are
+  blocked while it shows, as at boot.
+- **Page hidden** (Android wakes a sleeping WebView for short windows in which the
+  1 s interval fires): the sleep is **carried**, not credited, and what the monotonic
+  clock saw is credited as usual. Crediting each window as it came gave three 7 h
+  pieces 21 h, not the 8 h one gap gets, and a report of the last piece. A carried
+  sleep also stops the pump's autosave: a save writes `gs.lastSaved`, and a process
+  that ended before the credit would lose that time at the next boot. The save the
+  hidden page made before the sleep left it where the boot credits from.
+- **Back** (`resume` from the App plugin, the page turning visible): `pump.settle()`
+  cashes everything carried plus the gap since the last call, as one absence, capped
+  once, reported once. `settle()` counts the page as visible even when
+  `document.visibilityState` still says hidden (the plugin's event can come first).
+
+Nothing is counted twice. A call reads both clocks and moves both marks to now, and a
+catch-up moves them again when it returns, so a gap is credited by one call and the
+catch-up's own duration (17 to 29 s per 8 h on a developed save, more on a phone) is
+never a second gap with a second report. While the overlay waits to paint the pump
+does nothing (`busy`). The gap is measured from the pump's own wall mark, never earlier
+than `gs.lastSaved`, so a hidden page that kept pumping (a throttled desktop tab, both
+clocks running) is credited by its own clock and not again from `lastSaved`. A paused
+world drops the gap and what was carried. A wall clock set forward credits up to the
+cap, as it already did for the boot catch-up. An ordinary hidden gap the monotonic
+clock saw over 10 s is still its own catch-up with its own report; a throttled tab
+reports its last minute, not the whole time hidden.
+
+`lib/runtime.ts` is the wiring: the pump starts after `boot()`, never before; the
+`visibilitychange` and `resume` events settle it; the save triggers are blocked while a
+catch-up is pending.
+
+- **Checked.** `tests/pump.test.ts` moves fake clocks: the 8 h night through `settle`
+  with a catch-up that itself takes 70 s (one report of the whole night, no second gap),
+  three 7 h hidden pieces then `settle` (one catch-up of 21 h handed to the cap: 8 h
+  credited, one report), 5.1, 7, 9.9 and 11 s asleep credited in full, resume plus
+  visible plus a frame, a throttled tab, drift, a backwards clock, a paused world, the
+  autosave, a catch-up that throws. `tests/runtime.dom.test.ts` runs the wiring on a
+  fake frame loop and the App plugin's events. In the Browser pane (a `Date.now` offset
+  and an overridden `visibilityState`): a 3 h jump showed the overlay, a painted frame
+  about 220 ms later, then one "Welcome back ... 3h 0m" report; three 7 h jumps while
+  hidden showed nothing, and returning showed one report, "8h 0m (capped at 8h)". Not on
+  a device.
 
 ## The debug build
 

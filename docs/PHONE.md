@@ -31,9 +31,14 @@ portrait phone with the soft keyboard up (Android resizes the page above it,
 those windows keep the portrait dock and bottom row (at 380 x 450: a dock of 126 px,
 the job block 127 px, 227 px of screen). The keyboard does not change the shell. Where
 it could (a window 640 to 959 px wide, which the keyboard makes under 500 px tall),
-`viewport.svelte.ts` ignores a height change while a text field has focus and the width is
-the same, and follows the real window when the field loses focus; a width change (a
-rotation) is always followed. `tests/viewport.dom.test.ts` holds both.
+`viewport.svelte.ts` ignores a height change while a text field has focus and the width
+is the same; a width change (a rotation) is always followed. A field loses focus before
+the keyboard has gone, so the window is still the keyboard's size at the blur: after a
+field's `focusout` the shell holds until the next resize (the keyboard closing) or
+`KEYBOARD_HOLD_MS` (300 ms), then reads the window. Every `resize` is read and updates
+the width the rotation test compares with, so a rotation that crosses no breakpoint
+(no query changes, only a resize) does not leave a stale width that turns the keyboard
+after it into a "rotation". `tests/viewport.dom.test.ts` holds each ordering.
 
 Above 700 px, and 500 px tall, the desktop layout is unchanged except where
 section 4 says.

@@ -40,6 +40,9 @@ export const SHORT_BELOW = 500;
 export const SHORT_MIN_WIDTH = 640;
 export const SHORT_MAX_WIDTH = 960;
 
+/** How long after a text field loses focus the shell waits for the keyboard's resize before it reads the window. */
+export const KEYBOARD_HOLD_MS = 300;
+
 /**
  * A text field has focus: the soft keyboard is up or about to be. On Android the
  * app resizes above it (`adjustResize`), so the window's height drops by the
@@ -68,11 +71,17 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
     `(max-height: ${SHORT_BELOW - 1}px) and (min-width: ${SHORT_MIN_WIDTH}px) and (max-width: ${SHORT_MAX_WIDTH - 1}px)`,
   );
   let lastWidth = window.innerWidth;
+  // A text field has just lost focus: the keyboard is closing, and the window is
+  // still the keyboard's size until it has.
+  let holding = false;
+  let holdTimer: ReturnType<typeof setTimeout> | undefined;
   const sync = () => {
-    // A height change with a text field focused and the width unchanged is the
-    // soft keyboard: the shell stays as it was until the field loses focus.
+    // A height change with a text field focused (or just left) and the width
+    // unchanged is the soft keyboard: the shell stays as it was. A width change
+    // is a rotation, followed at once.
     const width = window.innerWidth;
-    if (typingInField(document.activeElement) && width === lastWidth) return;
+    const rotated = width !== lastWidth;
+    if (!rotated && (holding || typingInField(document.activeElement))) return;
     lastWidth = width;
     viewport.short = short.matches;
     viewport.phone = narrow.matches || short.matches;
@@ -80,6 +89,25 @@ if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
   sync();
   narrow.addEventListener('change', sync);
   short.addEventListener('change', sync);
-  // The keyboard closing: the window grows back, and the focus has left by then.
-  document.addEventListener('focusout', () => setTimeout(sync, 0));
+  // Every resize is read, so the width is current when the next one comes: a
+  // rotation that crosses no breakpoint fires no query, and a stale width would
+  // make the keyboard that follows look like one. A resize also ends the hold: the
+  // keyboard has closed.
+  window.addEventListener('resize', () => {
+    holding = false;
+    clearTimeout(holdTimer);
+    sync();
+  });
+  // The field loses focus before the keyboard has gone, so reading the window now
+  // would see the keyboard's height with no field to excuse it. Hold until the
+  // window resizes, or `KEYBOARD_HOLD_MS` when it never does.
+  document.addEventListener('focusout', (ev) => {
+    if (!typingInField(ev.target as Element | null)) return;
+    holding = true;
+    clearTimeout(holdTimer);
+    holdTimer = setTimeout(() => {
+      holding = false;
+      sync();
+    }, KEYBOARD_HOLD_MS);
+  });
 }
