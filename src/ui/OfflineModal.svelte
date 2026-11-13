@@ -59,6 +59,8 @@
     align-items: center;
     justify-content: center;
     z-index: 10;
+    /* The window stays out of a notch and the system bars (docs/PHONE.md). */
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 
   .modal {

@@ -65,7 +65,7 @@ export const BAR_LITERALS: Allow[] = [
     reason: 'Background of a finished quest progress bar.',
   },
   {
-    file: 'src/ui/panels/Sidebar.svelte',
+    file: 'src/ui/panels/ResourceBars.svelte',
     line: "const manaColor = $derived(manaDebt > 0 ? 'var(--manaburn)' : `var(${RESOURCES.mana.cssVar})`);",
     reason: 'Fill of the mana bar.',
   },

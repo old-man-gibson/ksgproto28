@@ -17,6 +17,13 @@ lexicon and pantheon; see plans/alpha-scope-locks.md).
 
 ## Shipped recently (context, not TODO)
 
+- **Phone and tablet shell (2026-11-12, branch `phone-shell`, no save change).**
+  One column below 700 px with a dock and a bottom row, tap cards, safe areas,
+  44 px hit height, a two-row header from 700 to 1179 px. PHONE.md. Open, and
+  not part of this: the per-panel pass at 375 px (PHONE.md §6 lists what was
+  seen), touch reordering in `CombatPanel`, `MartialPlanner` and
+  `SpellcraftPanel`, and text in panels and the tutorial that says "hover".
+
 - **Open sky on the tower (2026-11-11, branch `open-sky-floors`, no save
   change).** Floors 7 to 14 and 18 to 20 are open sky, inside spots carry
   `indoor`; table, calls and findings in WEATHER.md "Open sky in the tower".

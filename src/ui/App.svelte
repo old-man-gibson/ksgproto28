@@ -18,6 +18,9 @@
   import WuxinPanel from './panels/WuxinPanel.svelte';
   import NavIndex from './NavIndex.svelte';
   import JobStrip from './JobStrip.svelte';
+  import Dock from './Dock.svelte';
+  import BottomBar from './BottomBar.svelte';
+  import { viewport } from './lib/viewport.svelte';
   import SystemMenu from './SystemMenu.svelte';
   import LogFeed from './LogFeed.svelte';
   import LogTicker from './LogTicker.svelte';
@@ -43,14 +46,8 @@
   import { WEATHER_ICONS, worldSeedOf } from '../core/systems/weather';
   import { forecastFor, PROGNOSIS_TOOLTIP_AT, WEATHERSENSE_ID } from '../core/systems/weathersense';
   import Tip from './lib/Tip.svelte';
-  import {
-    DARK_DODGE_PENALTY,
-    DARK_MISS_CHANCE,
-    darknessFactor,
-    MOONLIGHT_MAX,
-    MOONLIGHT_THROUGH,
-    moonlightOn,
-  } from '../core/systems/exposure';
+  import { darknessFactor } from '../core/systems/exposure';
+  import { darkText } from './lib/sky';
   import { SKILLS } from '../core/registry';
   import {
     barCapacity,
@@ -90,23 +87,7 @@
    * at all is itself information.
    */
   const dark = $derived(darknessFactor(gs));
-  const darkTitle = $derived.by(() => {
-    const dodge = Math.round(DARK_DODGE_PENALTY * dark * 100);
-    const miss = Math.round(DARK_MISS_CHANCE * dark * 100);
-    const level = gs.skills.darkvision?.level ?? 0;
-    const seen = level > 0 ? ` · ${SKILLS.darkvision.name} ${level} is buying it back` : '';
-    const moon = moonLine(moonlightOn(gs));
-    return `You are fighting in the dark: −${dodge}% dodge, +${miss}% chance of your attacks missing${seen}${moon}`;
-  });
-
-  /** The dark chip's moonlight line; empty where the dark is not the open sky's. */
-  function moonLine(moon: ReturnType<typeof moonlightOn>): string {
-    if (!moon) return '';
-    const cut = Math.round(MOONLIGHT_MAX * moon.lit * 100);
-    if (cut > 0) return `\nMoonlight: −${cut}% darkness`;
-    if (moon.kind && MOONLIGHT_THROUGH[moon.kind] === 0) return `\nMoonlight: none (${moon.kind})`;
-    return '\nMoonlight: none';
-  }
+  const darkTitle = $derived(darkText(gs, dark));
 
   // A roofed spot (an `indoor` spot in an open area) shows what floors 1 to 3 show.
   const sky = $derived(headerSky(gs));
@@ -153,7 +134,11 @@
   // default; floor 0 keeps the column, as it always had.
   let viewportWidth = $state(typeof window === 'undefined' ? 1440 : window.innerWidth);
   let headerEl = $state<HTMLElement>();
-  const logOpen = $derived(screen ? true : logIsOpen(ui.logChoice, viewportWidth));
+  // Below 700px the layout is one column (docs/PHONE.md): the dock replaces the
+  // header, the screen list is the bottom row, and the log is always the folded
+  // row above it.
+  const phone = $derived(viewport.phone);
+  const logOpen = $derived(!phone && (screen ? true : logIsOpen(ui.logChoice, viewportWidth)));
   $effect(() => {
     if (logOpen && ui.logDrawer) ui.logDrawer = false;
   });
@@ -289,7 +274,12 @@
   class:paused={gs.paused}
   class:no-sidebar={screen && !screen.sidebar}
   class:log-folded={!logOpen}
+  class:phone
 >
+  {#if phone}
+    <Dock {screen} ondebug={DEV ? () => (showDebug = !showDebug) : undefined} />
+  {/if}
+  {#if !phone}
   <header bind:this={headerEl}>
     <h1 class:title-yields={!screen}>Frontier Idle</h1>
 
@@ -412,13 +402,15 @@
       {/if}
     </div>
   </header>
+  {/if}
 
   {#if !screen || screen.sidebar}
     <aside class="sidebar">
-      <Sidebar combatStats={!screen}>
+      <Sidebar combatStats={!screen} {phone}>
         {#snippet nav()}
-          <!-- One screen is no choice: the list appears with the second. -->
-          {#if showNav}<NavIndex {entries} />{/if}
+          <!-- One screen is no choice: the list appears with the second. The
+               phone's list is the bottom row (BottomBar.svelte). -->
+          {#if showNav && !phone}<NavIndex {entries} />{/if}
         {/snippet}
       </Sidebar>
     </aside>
@@ -434,7 +426,7 @@
     <div class="tab-body">
       {#if Screen}<Screen />{/if}
     </div>
-    {#if !logOpen}
+    {#if !logOpen && !phone}
       <LogTicker open={ui.logDrawer} ontoggle={() => (ui.logDrawer = !ui.logDrawer)} />
     {/if}
   </main>
@@ -449,6 +441,10 @@
     </aside>
   {:else if ui.logDrawer}
     <LogDrawer anchor={headerEl} onclose={() => (ui.logDrawer = false)} ondock={() => setLogChoice(true)} />
+  {/if}
+
+  {#if phone}
+    <BottomBar {entries} {showNav} logOpen={ui.logDrawer} ontogglelog={() => (ui.logDrawer = !ui.logDrawer)} />
   {/if}
 </div>
 
@@ -512,6 +508,7 @@
     align-items: center;
     justify-content: center;
     z-index: 11;
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 
   .catchup {
@@ -527,16 +524,18 @@
       'header header header'
       'sidebar main log';
     gap: 12px;
-    padding: 12px;
+    /* 12px, or the system bar's or the notch's inset where that is more
+       (app.css --safe-*; zero in a desktop browser). */
+    padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left));
     height: 100vh;
   }
 
   header {
     grid-area: header;
     display: flex;
-    /* One row from 1024px up, never two: the job strip takes the room left
+    /* One row from 1180px up, never two: the job strip takes the room left
        (JobStrip.svelte), so a fight starting or ending cannot change the
-       header's height. Under 1024px it wraps by design (rule below). */
+       header's height. Under 1180px it wraps by design (rule below). */
     flex-wrap: nowrap;
     align-items: center;
     gap: 8px 12px;
@@ -648,18 +647,20 @@
     }
   }
 
-  /* Under 1024px: two rows. The job strip and the rate chip start the second
-     (JobStrip.svelte), so the row count depends on the window, not the job. */
-  @media (max-width: 1023px) {
+  /* Under 1180px: two rows. The job strip and the rate chip start the second
+     (JobStrip.svelte), so the row count depends on the window, not the job.
+     This was 1024px. At 1024px, with the clock, the moons, the weather, the
+     dark slot, the gold and the Menu all showing, the first row left the strip
+     16px and the job's name was gone (measured 2026-11-12, Gothic). */
+  @media (max-width: 1179px) {
     header {
       flex-wrap: wrap;
     }
   }
 
-  /* Under 1180px the header keeps one row down to 1024px by dropping detail:
-     the clock chip shows the hour only (the title holds the whole text) and
-     takes its own width. A job name longer than the strip's room ends in an
-     ellipsis. */
+  /* Under 1180px the clock chip shows the hour only (the title holds the whole
+     text) and takes its own width, so the first row holds. A job name longer
+     than the strip's room ends in an ellipsis. */
   @media (max-width: 1179px) {
     .clock-full {
       display: none;
@@ -788,10 +789,15 @@
     overflow: hidden;
   }
 
+  /* The screen. It is a size container named "tab": a panel asks for the width
+     it was given (`@container tab (max-width: ...)`) and not the window's, which
+     the left column and the log column make a poor guide to it. Its width is the
+     column's, whatever the panel holds (docs/PHONE.md). */
   .tab-body {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
+    container: tab / inline-size;
   }
 
   .logside {
@@ -852,5 +858,43 @@
     main {
       overflow: clip visible;
     }
+  }
+
+  /* The phone layout, below 700px (docs/PHONE.md). One column that the page
+     scrolls: the dock on top and the bottom bar at the foot, both sticky
+     (Dock.svelte, BottomBar.svelte), the screen between them, and under the
+     screen what the left column holds on a wider one (the conditions and
+     level, attributes, Combat Stats). Flex, not grid: a sticky child of a grid
+     cell cannot leave its cell. Placed by `order`, so the markup keeps the
+     desktop's order. */
+  .layout.phone {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .layout.phone > main {
+    order: 1;
+    flex: 1 0 auto;
+    gap: 8px;
+    padding: 8px calc(8px + var(--safe-right)) 8px calc(8px + var(--safe-left));
+    overflow: visible;
+  }
+
+  /* A panel wider than the screen scrolls inside its own box. The page never scrolls sideways. */
+  .layout.phone .tab-body {
+    flex: none;
+    overflow-x: auto;
+  }
+
+  .layout.phone > .sidebar {
+    order: 2;
+    gap: 8px;
+    overflow: visible;
+    padding: 0 calc(8px + var(--safe-right)) 8px calc(8px + var(--safe-left));
   }
 </style>

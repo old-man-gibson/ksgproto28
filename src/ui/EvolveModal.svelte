@@ -43,7 +43,8 @@
     align-items: center;
     justify-content: center;
     z-index: 30;
-    padding: 16px;
+    /* 16px, or the notch's or the system bar's inset where that is more (docs/PHONE.md). */
+    padding: max(16px, var(--safe-top)) max(16px, var(--safe-right)) max(16px, var(--safe-bottom)) max(16px, var(--safe-left));
   }
   .modal {
     width: 560px;

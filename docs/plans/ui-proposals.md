@@ -116,6 +116,20 @@ keeps 240px | 1fr, so the tab body gets about 99 px and the tab names clip.
   MartialPlanner and SpellcraftPanel (docs/ENGINEERING.md §2.4 estimates 2–4 days).
 - Lock: screenshots at 375 and 800 px for every screen. `scrollWidth <= 375`.
 
+Built 2026-11-12 (branch `phone-shell`): [PHONE.md](../PHONE.md) is the reference. Where
+the build differs from the text above:
+
+- `Tip.svelte` is not unchanged: main's file differs from that commit's parent by the
+  `--lift` token, and the touch card is fitted to the window (`lib/tipPlace.ts`).
+- `ResourceBars` has three modes: `panel` (the left column), `dock`, and `extras` (the
+  panel without the five pools, under the screen on a phone: conditions, dishes, level).
+- The dock also holds the sky line (clock, moons, weather, dark), which the header shows
+  and A3 did not place. The rate line reads `120/min` beside the gold; the words and the
+  kills figure are in the tap card.
+- `browserStorage` is applied in `save.ts` and in `musicAudio.ts`, which read
+  `localStorage` at import.
+- The desktop header wraps to two rows under 1180 px (it was 1024).
+
 ## 3. B. What needs the player
 
 ### B1. Return report: Earned, Stopped, Waiting

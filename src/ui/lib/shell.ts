@@ -3,6 +3,7 @@ import { skyRegionOf } from '../../core/registry';
 import { skyKindAt } from '../../core/systems/exposure';
 import { weatherAt, worldSeedOf, type WeatherSample } from '../../core/systems/weather';
 import { browserStore, patchShell, readShell, type ShellStore } from './nav';
+import type { TutorialScreen } from './tutorialFocus';
 
 /**
  * The log column's two states. Open is the right grid column; folded removes
@@ -33,6 +34,24 @@ export function logOpenDefault(width: number): boolean {
 /** Whether the log column is open: the stored choice if there is one, else the width default. */
 export function logIsOpen(choice: boolean | null, width: number): boolean {
   return choice ?? logOpenDefault(width);
+}
+
+/**
+ * What the phone dock draws. On floor 0 it follows the tutorial's screen
+ * (`tutorialScreen`, docs/TUTORIAL.md §5), as the desktop header does: the
+ * pool bars from the step the sidebar arrives (the first fight), gold from the
+ * first kill, and the Menu, Pause, bonus toggle and rate line after the tutorial.
+ * The job strip is always there. Null `screen` is the tutorial over.
+ */
+export interface DockParts {
+  bars: boolean;
+  gold: boolean;
+  /** Menu, Pause, the bonus toggle and the rate line. */
+  controls: boolean;
+}
+
+export function dockParts(screen: Pick<TutorialScreen, 'sidebar' | 'gold'> | null): DockParts {
+  return { bars: !screen || screen.sidebar, gold: !screen || screen.gold, controls: !screen };
 }
 
 /**

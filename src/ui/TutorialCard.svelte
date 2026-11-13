@@ -187,11 +187,13 @@
   /* Not a panel: a heavier frame, a tinted ground and the step number in a
      solid badge, so it does not read as one more block of the page. Sticky
      for the narrow layout, where the page scrolls (App.svelte); inert in
-     the wide one, where only the tab body scrolls. Colours are app.css
-     tokens so the display themes restyle it. */
+     the wide one, where only the tab body scrolls. On the phone layout the
+     dock is sticky above it: Dock.svelte publishes its height as --dock-h and
+     the card sticks below it (docs/PHONE.md). Colours are app.css tokens so
+     the display themes restyle it. */
   .tutorial {
     position: sticky;
-    top: 4px;
+    top: calc(var(--dock-h, 0px) + 4px);
     z-index: 4;
     background: color-mix(in srgb, var(--accent) 16%, var(--bg-panel));
     border: 2px solid var(--accent);

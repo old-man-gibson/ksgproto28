@@ -71,7 +71,7 @@ const SEMANTIC = [
 ];
 
 /**
- * The bars drawn together in the left column (Sidebar.svelte): the pool bars
+ * The bars drawn together in the left column (ResourceBars.svelte, which the phone dock also draws): the pool bars
  * (HP, stamina, mana, spirit, focus), the action bar and the XP bar under them.
  */
 const SIDE_BY_SIDE = ['--hp', '--stamina', '--mana', '--spirit', '--focus', '--action', '--xp'];

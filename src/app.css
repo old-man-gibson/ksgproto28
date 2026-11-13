@@ -153,6 +153,15 @@
   --buff-fill: var(--buff);
   --warn-fill: var(--warn);
 
+  /* The part of the window a notch, the system bars or a gesture strip covers
+     (index.html sets viewport-fit=cover). env() is the browser's figure; a host
+     that cannot supply it (an Android WebView) sets --safe-area-inset-* on the
+     page instead, and the larger of the two wins. Zero where neither exists. */
+  --safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --safe-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+
   font-family: 'Segoe UI', system-ui, sans-serif;
   font-size: 15px;
   color-scheme: dark;
@@ -179,8 +188,12 @@ button {
   transition: background 0.15s;
 }
 
-button:hover:not(:disabled) {
-  background: var(--bg-hover);
+/* Hover paints only where a pointer can hover: on a touch screen it would stay
+   on the last button tapped. */
+@media (hover: hover) {
+  button:hover:not(:disabled) {
+    background: var(--bg-hover);
+  }
 }
 
 /* Selected: a fill and an accent border. The colour of authored children is
@@ -259,6 +272,45 @@ h1, h2, h3, h4 {
 @keyframes tutorial-glow {
   0% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 70%, transparent); }
   100% { box-shadow: 0 0 0 12px transparent; }
+}
+
+/*
+ * Touch (docs/PHONE.md). Rules that hold at every width, for the page's own
+ * controls: a tap is not delayed waiting for a second one, and a press does not
+ * flash the browser's highlight.
+ */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* No pull-to-refresh: a reload from a drag on the dock is never wanted. */
+  overscroll-behavior-y: none;
+  /* The phone's sticky dock and bottom bar publish their heights (Dock.svelte,
+     BottomBar.svelte); scrolling something into view stops short of them. */
+  scroll-padding-top: var(--dock-h, 0px);
+  scroll-padding-bottom: var(--bottombar-h, 0px);
+}
+
+:where(button, select, summary, label, a, [role='button'], [role='tab'], .tip-target) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * A finger gets 44px of hit height on a control (spacing, not type size) and
+ * does not select the control's text on a long press. :where() keeps the
+ * specificity at zero, so a component that must stay short (a bar, a tile) sets
+ * its own height. Text outside the controls stays selectable.
+ */
+@media (pointer: coarse) {
+  :where(button, select, summary, [role='tab']) {
+    min-height: 44px;
+  }
+
+  :where(button, summary, [role='button'], [role='tab'], .tip-target) {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
 }
 
 /* The -ink tokens: each bar fill through the ink() remap (lightness between
