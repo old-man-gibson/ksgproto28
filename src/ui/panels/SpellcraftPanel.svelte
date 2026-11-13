@@ -10,6 +10,7 @@
   } from '../../core/data/deities.data';
   import { deityArt } from '../lib/deityArt';
   import TagPicker from '../lib/TagPicker.svelte';
+  import { LAYER, hostLayer, pushOverlay } from '../lib/overlays';
   import type { DeityTagDef } from '../../core/types';
   import {
     MAX_STACK,
@@ -264,19 +265,13 @@
     if (tab !== 'arcane') pickIndex = null;
   });
 
-  // Escape puts a picked tile down, and nothing else sees the key: the Android
-  // back button sends Escape, and it must not also close the table's window.
-  // Capture phase, so it runs before the window's own listener.
+  // A picked tile is on the overlay stack (lib/overlays.ts) above the table's
+  // window: Escape and the Android back button put it down, the window closes on
+  // the next press.
+  const pickLayer = hostLayer(LAYER.page);
+  const holdingTile = $derived(pickIndex !== null);
   $effect(() => {
-    if (pickIndex === null) return;
-    const cancel = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      pickIndex = null;
-      e.stopPropagation();
-      e.preventDefault();
-    };
-    window.addEventListener('keydown', cancel, true);
-    return () => window.removeEventListener('keydown', cancel, true);
+    if (holdingTile) return pushOverlay(pickLayer, () => (pickIndex = null));
   });
 
   function inscribe() {

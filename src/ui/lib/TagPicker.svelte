@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LAYER, pushOverlay } from './overlays';
+  import { LAYER, hostLayer, pushOverlay } from './overlays';
 
   /**
    * One category's worth of tag filtering, folded into a dropdown. Single-pick
@@ -35,9 +35,12 @@
   let root = $state<HTMLElement>();
 
   // The open list closes on Escape and the Android back button through the
-  // overlay stack (lib/overlays.ts), while it is open.
+  // overlay stack (lib/overlays.ts), while it is open. In a window (the divine
+  // shelf in the spellcrafting table) it joins on the window's layer, so it
+  // closes before the window does.
+  const layer = hostLayer(LAYER.drawer);
   $effect(() => {
-    if (open) return pushOverlay(LAYER.drawer, () => (open = false));
+    if (open) return pushOverlay(layer, () => (open = false));
   });
 
   function choose(id: string) {

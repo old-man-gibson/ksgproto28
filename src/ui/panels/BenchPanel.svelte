@@ -35,6 +35,7 @@
   import GradeLedger from '../lib/GradeLedger.svelte';
   import HeatTrack from '../lib/HeatTrack.svelte';
   import PlateCard from '../lib/PlateCard.svelte';
+  import { LAYER, hostLayer, pushOverlay } from '../lib/overlays';
 
   /**
    * The carving bench: a slab in the middle with its cuts around it, and four
@@ -431,18 +432,16 @@
   }
 
   /**
-   * Escape (and the Android back button, which sends it) closes an open picker
-   * before it closes the window around it. Capture phase on the window, so this
-   * runs ahead of Modal's own Escape handler and stops the event there.
+   * An open picker is on the overlay stack (lib/overlays.ts), above the bench's
+   * window: Escape and the Android back button close it first, the window on the
+   * next press.
    */
-  function closePickerOnEscape(e: KeyboardEvent) {
-    if (e.key !== 'Escape' || picking === null) return;
-    picking = null;
-    e.stopPropagation();
-  }
+  const pickerLayer = hostLayer(LAYER.page);
+  const pickerOpen = $derived(picking !== null);
+  $effect(() => {
+    if (pickerOpen) return pushOverlay(pickerLayer, () => (picking = null));
+  });
 </script>
-
-<svelte:window onkeydowncapture={closePickerOnEscape} />
 
 {#snippet cell(slot: CraftSlotDef | undefined, big = false, track = false)}
   {#if slot}

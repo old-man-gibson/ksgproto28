@@ -72,6 +72,7 @@
   import { TPS } from '../../core/engine/loop';
   import Tip from '../lib/Tip.svelte';
   import EntryConfigModal from '../lib/EntryConfigModal.svelte';
+  import { LAYER, hostLayer, pushOverlay } from '../lib/overlays';
   import MartialPlanner from './MartialPlanner.svelte';
   import { tutorialScreen } from '../lib/tutorialFocus';
   import { rankNote, stepTarget, visibleIds } from '../lib/rotationView';
@@ -375,19 +376,12 @@
     if (picked !== null && !cardIds.includes(picked)) picked = null;
   });
 
-  // Escape puts a picked card down, and nothing else sees the key (the Android
-  // back button sends Escape, and it must not also close the window under it).
-  // Capture phase, so it runs before a window's own listener.
+  // A picked card is on the overlay stack (lib/overlays.ts): Escape and the
+  // Android back button put it down, and nothing else closes on that press.
+  const pickLayer = hostLayer(LAYER.page);
+  const holdingCard = $derived(picked !== null);
   $effect(() => {
-    if (picked === null) return;
-    const cancel = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      picked = null;
-      e.stopPropagation();
-      e.preventDefault();
-    };
-    window.addEventListener('keydown', cancel, true);
-    return () => window.removeEventListener('keydown', cancel, true);
+    if (holdingCard) return pushOverlay(pickLayer, () => (picked = null));
   });
 
   // ---- Move buttons ----

@@ -1,12 +1,14 @@
 <script lang="ts">
   import { onMount, type Snippet } from 'svelte';
   import { viewport } from './viewport.svelte';
-  import { LAYER, pushOverlay } from './overlays';
+  import { LAYER, provideHostLayer, pushOverlay } from './overlays';
 
   // Small floating window for inspecting one thing. Clicking the backdrop —
   // anywhere outside the window — or pressing Escape (or the Android back
   // button) closes it. With several open only the topmost closes (lib/overlays.ts),
   // so a window opened from another (the Cook's Book from a bench) closes alone.
+  // A picker or pick mode inside it joins the stack on the window layer after the
+  // window, so one press closes the picker and the next the window.
   // Below 700px (the phone layout, docs/PHONE.md) it is a sheet over the whole
   // screen: the header, with a 44px close button, stays at the top inside the
   // safe area, and the body scrolls under it.
@@ -24,6 +26,7 @@
     fill = false,
   }: { title: Snippet; onclose: () => void; children: Snippet; wide?: boolean; fill?: boolean } = $props();
 
+  provideHostLayer(LAYER.window);
   onMount(() => pushOverlay(LAYER.window, () => onclose()));
 </script>
 

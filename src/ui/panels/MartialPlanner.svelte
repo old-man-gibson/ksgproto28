@@ -21,6 +21,7 @@
   import { condsText } from '../lib/format';
   import { describeCondition } from '../../core/systems/triggers';
   import EntryConfigModal from '../lib/EntryConfigModal.svelte';
+  import { LAYER, hostLayer, pushOverlay } from '../lib/overlays';
   import { slotTarget } from '../lib/reorder';
   import { stepTarget } from '../lib/rotationView';
   import { tick } from 'svelte';
@@ -394,21 +395,17 @@
     if (picked !== null && !plannedIds.includes(picked)) picked = null;
   });
 
-  // Escape closes the family roster, or else puts a picked row down, and nothing
-  // else sees the key: the Android back button sends Escape, and it must not
-  // also close the window under it. Capture phase, so it runs before a window's
-  // own listener. Only attached while one of the two is open.
+  // The family roster and a picked row are each on the overlay stack
+  // (lib/overlays.ts), so Escape and the Android back button close whichever was
+  // opened last and nothing else on that press.
+  const pickLayer = hostLayer(LAYER.page);
+  const rosterOpen = $derived(openFamily !== null);
+  const holdingRow = $derived(picked !== null);
   $effect(() => {
-    if (picked === null && openFamily === null) return;
-    const cancel = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (openFamily !== null) openFamily = null;
-      else picked = null;
-      e.stopPropagation();
-      e.preventDefault();
-    };
-    window.addEventListener('keydown', cancel, true);
-    return () => window.removeEventListener('keydown', cancel, true);
+    if (rosterOpen) return pushOverlay(pickLayer, () => (openFamily = null));
+  });
+  $effect(() => {
+    if (holdingRow) return pushOverlay(pickLayer, () => (picked = null));
   });
 
   // ---------- Configuring one move ----------

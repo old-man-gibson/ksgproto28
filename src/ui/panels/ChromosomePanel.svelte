@@ -5,6 +5,7 @@
   import { gradesHeld } from '../../core/systems/disciplines';
   import { attrName } from '../../core/systems/attributes';
   import Tip from '../lib/Tip.svelte';
+  import { LAYER, hostLayer, pushOverlay } from '../lib/overlays';
   import {
     describeGrant,
     describeMod,
@@ -408,18 +409,13 @@
   const sameRoute = (a: RoutedContribution, b: RoutedContribution) =>
     a.from === b.from && a.arm === b.arm && a.through.join('') === b.through.join('');
 
-  /**
-   * Escape (and the Android back button, which sends it) closes an open socket
-   * picker. Capture phase on the window, so it runs first and stops the event.
-   */
-  function closePickerOnEscape(e: KeyboardEvent) {
-    if (e.key !== 'Escape' || picking === null) return;
-    picking = null;
-    e.stopPropagation();
-  }
+  /** An open socket picker is on the overlay stack (lib/overlays.ts): Escape and the Android back button close it. */
+  const pickerLayer = hostLayer(LAYER.page);
+  const pickerOpen = $derived(picking !== null);
+  $effect(() => {
+    if (pickerOpen) return pushOverlay(pickerLayer, () => (picking = null));
+  });
 </script>
-
-<svelte:window onkeydowncapture={closePickerOnEscape} />
 
 <div class="chromo">
   <!-- Two bands rather than two columns. The identity line and the capacity

@@ -64,6 +64,7 @@
     tuningUnlocked,
   } from '../../core/systems/music';
   import Tip from '../lib/Tip.svelte';
+  import { LAYER, hostLayer, pushOverlay } from '../lib/overlays';
 
   /**
    * The sheet. Bars are real staves — five lines, ledger line for middle C,
@@ -182,6 +183,13 @@
   let lastPointer = 'mouse';
   let touchSeen = $state(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches);
   let cursor = $state<{ bar: number; pitch: number } | null>(null);
+  // The touch cursor is on the overlay stack (lib/overlays.ts) while it is
+  // placed: Escape and the Android back button drop it.
+  const cursorLayer = hostLayer(LAYER.page);
+  const cursorPlaced = $derived(cursor !== null);
+  $effect(() => {
+    if (cursorPlaced) return pushOverlay(cursorLayer, () => (cursor = null));
+  });
 
   function notePointer(ev: PointerEvent) {
     lastPointer = ev.pointerType;
@@ -511,14 +519,7 @@
   const pct = (v: number) => `${Math.round(v * 100)}%`;
 </script>
 
-<!-- The capture listener runs before any handler that stops the event. -->
 <svelte:window
-  onkeydowncapture={(e) => {
-    // Escape (and the Android back button, which sends it) drops the touch cursor.
-    if (e.key !== 'Escape' || cursor === null) return;
-    cursor = null;
-    e.stopPropagation();
-  }}
   onpointerdowncapture={notePointer}
   onpointermove={onPointerMove}
   onpointerup={onPointerUp}

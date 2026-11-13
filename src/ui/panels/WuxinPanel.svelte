@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ARCANE_WORDS } from '../../core/data/spellcraft.data';
   import type { WuxinConfig } from '../../core/types';
+  import { LAYER, hostLayer, pushOverlay } from '../lib/overlays';
   import {
     HINDERS,
     NOURISHES,
@@ -294,6 +295,17 @@
   } | null>(null);
   /** The element a tap picked, waiting for its target. */
   let picked = $state<number | null>(null);
+  // A drag in progress or a picked element is on the overlay stack
+  // (lib/overlays.ts): Escape and the Android back button cancel it.
+  const holdLayer = hostLayer(LAYER.page);
+  const holding = $derived(picked !== null || drag !== null);
+  $effect(() => {
+    if (holding)
+      return pushOverlay(holdLayer, () => {
+        picked = null;
+        drag = null;
+      });
+  });
   /** Which arrow a tap or a drag draws; Shift on a drag overrides it for that drag. */
   let aim = $state<'nourishes' | 'hinders'>('nourishes');
   /** Travel under this many client pixels is a tap. */
@@ -450,21 +462,7 @@
   the graph then means what it should (drop on open ground — sever), and the
   gesture cannot be stranded by the cursor leaving the picture mid-drag.
 -->
-<!--
-  Escape (and the Android back button, which sends it) cancels a drag or drops the
-  pick. Capture phase, so it runs first and stops the event.
--->
-<svelte:window
-  onpointermove={moveDrag}
-  onpointerup={endDrag}
-  onpointercancel={() => (drag = null)}
-  onkeydowncapture={(e) => {
-    if (e.key !== 'Escape' || (picked === null && drag === null)) return;
-    picked = null;
-    drag = null;
-    e.stopPropagation();
-  }}
-/>
+<svelte:window onpointermove={moveDrag} onpointerup={endDrag} onpointercancel={() => (drag = null)} />
 
 <div class="wuxin">
   <header>

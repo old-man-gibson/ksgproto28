@@ -55,4 +55,42 @@ describe('overlay layers', () => {
       expect(source, file).not.toContain("querySelector('[role=\"dialog\"]");
     }
   });
+
+  /** Every .svelte and .ts file under src/ui, as paths relative to it. */
+  function uiFiles(dir = ''): string[] {
+    return fs.readdirSync(path.join(UI, dir), { withFileTypes: true }).flatMap((e) => {
+      const rel = path.posix.join(dir, e.name);
+      if (e.isDirectory()) return e.name === 'assets' ? [] : uiFiles(rel);
+      return /\.(svelte|ts)$/.test(e.name) ? [rel] : [];
+    });
+  }
+
+  it('nothing in the UI reads Escape but the stack itself: a panel-local handler would be skipped by the Android back button', () => {
+    for (const file of uiFiles()) {
+      if (file === 'lib/overlays.ts') continue;
+      expect(read(file), file).not.toMatch(/key\s*[!=]==?\s*['"](Escape|Esc)['"]/);
+    }
+  });
+
+  it('the pickers and pick modes of the panels join the stack at the layer of the window they are drawn in', () => {
+    for (const file of [
+      'panels/BenchPanel.svelte',
+      'panels/ChromosomePanel.svelte',
+      'panels/CombatPanel.svelte',
+      'panels/MartialPlanner.svelte',
+      'panels/MusicPanel.svelte',
+      'panels/SpellcraftPanel.svelte',
+      'panels/WuxinPanel.svelte',
+      'lib/TagPicker.svelte',
+    ]) {
+      const source = read(file);
+      expect(source, file).toContain('hostLayer(LAYER.');
+      expect(source, file).toContain('pushOverlay(');
+    }
+    expect(read('lib/Modal.svelte')).toContain('provideHostLayer(LAYER.window)');
+  });
+
+  it('the page layer is below every drawn overlay', () => {
+    expect(LAYER.page).toBeLessThan(LAYER.drawer);
+  });
 });

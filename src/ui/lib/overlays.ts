@@ -14,6 +14,18 @@
  *   onMount(() => pushOverlay(LAYER.window, () => onclose()));    // a window: join for its life
  *   $effect(() => { if (open) return pushOverlay(LAYER.drawer, () => (open = false)); });   // a popup: join while open
  *
+ * A picker or a pick mode inside a panel (a slot picker, a picked-up row) joins
+ * on the layer of whatever it is drawn in, which only the host knows: a Modal
+ * provides LAYER.window to everything inside it, and `hostLayer(LAYER.page)` reads
+ * it, so one panel closes before its window in a Modal and joins at the page
+ * layer in the screen body. Read it once, at component init, never in an effect.
+ * The effect depends on a boolean, so swapping one pick for another does not
+ * rejoin (a rejoin would move the entry above a window opened since).
+ *
+ *   const layer = hostLayer(LAYER.page);
+ *   const picking = $derived(pickedId !== null);
+ *   $effect(() => { if (picking) return pushOverlay(layer, () => (pickedId = null)); });
+ *
  * `pushOverlay` returns the function that leaves. A component whose `close`
  * does not unmount it (or clear what shows it) leaves its entry on the stack
  * and blocks everything under it: `close` must make the overlay go away. Pass
@@ -21,7 +33,11 @@
  * then do nothing while it is on top, and close nothing under it.
  */
 
+import { getContext, setContext } from 'svelte';
+
 export const LAYER = {
+  /** A pick mode or picker drawn in the screen body (the rotation pick, a socket picker): in the page flow, below every window, drawer and card. */
+  page: 1,
   /** The log drawer, the map card, a tag picker's list. Not windows: play goes on behind them. */
   drawer: 9,
   /** The welcome-back report. */
@@ -63,6 +79,18 @@ function listenForEscape(): void {
 import.meta.hot?.dispose(() => {
   if (keyed) window.removeEventListener('keydown', onKeydown);
 });
+
+const HOST = Symbol('overlay host layer');
+
+/** For a window component, at its init: pickers drawn inside it join on `layer` (see the top of this file). */
+export function provideHostLayer(layer: number): void {
+  setContext(HOST, layer);
+}
+
+/** For a picker's component, at its init: the layer of the window it is drawn in, or `fallback` outside one. */
+export function hostLayer(fallback: number): number {
+  return getContext<number | undefined>(HOST) ?? fallback;
+}
 
 /** Join the stack. Returns the function that leaves it, safe to call twice. */
 export function pushOverlay(layer: number, close: (() => void) | null): () => void {
