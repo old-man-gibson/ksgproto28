@@ -176,9 +176,17 @@ absence is cashed in one:
   1 s interval fires): the sleep is **carried**, not credited, and what the monotonic
   clock saw is credited as usual. Crediting each window as it came gave three 7 h
   pieces 21 h, not the 8 h one gap gets, and a report of the last piece. A carried
-  sleep also stops the pump's autosave: a save writes `gs.lastSaved`, and a process
-  that ended before the credit would lose that time at the next boot. The save the
-  hidden page made before the sleep left it where the boot credits from.
+  sleep also stops every save, the pump's autosave and the triggers (`pagehide`,
+  `beforeunload`, a second hidden event, the App plugin's `pause`): a save writes
+  `gs.lastSaved = now` and the boot credits `now - lastSaved`, so a save made in the
+  morning, when the app is swiped away from recents without being opened, would move
+  `lastSaved` past the night and the next boot would lose it. The save the page made
+  when it hid is what the next boot reads; it credits everything since, and the few
+  ticks the wake windows ran are simulated again from that state, not counted twice.
+  The back button still minimizes (the save it asks for is a no-op).
+  `tests/sleepSave.dom.test.ts` carries 7 h, sends `pagehide`, `beforeunload`, a second
+  hidden event and `pause`, reads the save back, and boots from it with the real
+  catch-up: 7 h credited, uncapped; three 7 h windows: 8 h, capped.
 - **Back** (`resume` from the App plugin, the page turning visible): `pump.settle()`
   cashes everything carried plus the gap since the last call, as one absence, capped
   once, reported once. `settle()` counts the page as visible even when

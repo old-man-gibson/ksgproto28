@@ -79,9 +79,18 @@ export function startRuntime(deps: RuntimeDeps): Runtime {
     nextPaint: () => new Promise<void>((resolve) => frame(() => later(resolve))),
   });
 
+  // A save writes `gs.lastSaved = now`, and the boot credits `now - lastSaved`. No
+  // trigger save while sleep is carried (the page is hidden and the pump has seen
+  // time the monotonic clock did not): a pagehide or a second pause after a night
+  // asleep (the app swiped away from recents without being opened) would move
+  // `lastSaved` past the night, and the next boot would lose it. The save made when
+  // the page hid is still there, and the boot credits from it everything since,
+  // including the few ticks the wake windows ran (it simulates them again). The
+  // Android back button is not blocked by this: `saveNow` does nothing, and it
+  // minimizes.
   const saveNow = installSaveTriggers({
     save: deps.save,
-    blocked: () => ui.catchingUp !== null,
+    blocked: () => ui.catchingUp !== null || pump.carried() > 0,
     saved: () => pump.saved(),
     visible: () => pump.settle(),
   });
