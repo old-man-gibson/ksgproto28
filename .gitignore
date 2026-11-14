@@ -36,3 +36,6 @@ src/assets/packs/
 # it goes only to the user's own devices and is never committed, uploaded to a
 # release or shared. See docs/ART_PACK.md.
 art-pack/
+
+# Screenshots made of bought icon pixels: local only (2026-11-14).
+docs/plans/pixel-icons/*.png

@@ -3,7 +3,7 @@
 Generated list for [../pixel-icons.md](../pixel-icons.md) §8. Numbers are files
 `src/assets/64x64/c<number>.png` in the main checkout (the full sheet; not in git).
 First number = recommended; the rest are alternates. "—" = nothing in the sheet fits.
-Visual version: [picks.png](picks.png), from [picks.html](picks.html).
+Visual version: [picks.html](picks.html) (needs the packs). Its screenshot `picks.png` is local only, not in git.
 
 111 of 125 concepts have a pick.
 

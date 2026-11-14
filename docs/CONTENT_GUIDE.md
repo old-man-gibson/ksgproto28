@@ -328,9 +328,9 @@ smithies' own recipe lines are ingots only (`iron_ingot`, `copper_ingot`,
 `tin_ingot`, `bronze_ingot`); the anvil takes ingots as head material. The
 removed recipes (iron dagger, iron sword, bronze dagger, rapier, parrying
 dagger, katana, uchigatana, iron breastplate) are gone; the items stay in
-`ITEMS`. Four keep a source (iron dagger, iron sword, iron breastplate and
-rapier are on the Rack; the sword and breastplate also drop). Katana,
-uchigatana, bronze dagger and parrying dagger have no player source now
+`ITEMS`. Five keep a source (iron dagger, iron sword, iron breastplate,
+rapier and parrying dagger are on the Rack; the sword and breastplate also
+drop). Katana, uchigatana and bronze dagger have no player source now
 (survivor loadouts and festival caches only). A recipe id removed from a spot is dropped from
 `activity` and `resumeActivity` on load (`save.ts` `deserialize`).
 

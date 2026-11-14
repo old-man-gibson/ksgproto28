@@ -81,15 +81,14 @@ order (sequence), mutagens read a graph (topology), music reads a composition
      return dropped this way leaves the character where the retreat put it,
      with no work queued.
    - The eight items stay in `ITEMS`, and held pieces keep working. Sources
-     after the removal: `iron_dagger`, `iron_sword`, `iron_breastplate` and
-     `rapier` are on the Rack (breastplate and rapier after
-     `boss:f1_toll_hall`); `iron_sword` and `iron_breastplate` also drop from
-     monsters; `iron_dagger` is a tutorial pick. `katana`, `uchigatana`,
-     `bronze_dagger` and `parrying_dagger` have no player source: survivor
-     loadouts name all four, and the festival caches lend the katana and the
-     parrying dagger for one attempt. Open: how the player gets those four. The
-     parrying dagger's texts (`items.text.ts`, `skills.text.ts`) are untouched
-     until that is ruled.
+     after the removal: `iron_dagger`, `iron_sword`, `iron_breastplate`,
+     `rapier` and `parrying_dagger` are on the Rack (the last three after
+     `boss:f1_toll_hall`; the parrying dagger by user ruling 2026-11-14);
+     `iron_sword` and `iron_breastplate` also drop from monsters; `iron_dagger`
+     is a tutorial pick. `katana`, `uchigatana` and `bronze_dagger` have no
+     player source: survivor loadouts name them and the festival caches lend
+     the katana for one attempt. The anvil forges a katana and a bronze-headed
+     dagger. Open: whether the uchigatana needs a source.
    - `tests/john.ts` crafts only `iron_ingot` (the_forges, `craft_iron_ingot`),
      so the removal does not change John's path.
 

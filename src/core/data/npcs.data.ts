@@ -159,6 +159,7 @@ export const NPCS = prose<NpcDef>('NPCS', NPCS_TEXT, {
         { kind: 'item', id: 'iron_breastplate', requires: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }] },
         { kind: 'item', id: 'soldier_greaves', requires: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }] },
         { kind: 'item', id: 'rapier', requires: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }] },
+        { kind: 'item', id: 'parrying_dagger', requires: [{ type: 'stat', key: 'boss:f1_toll_hall', value: 1 }] },
       ],
     },
   },

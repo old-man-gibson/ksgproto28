@@ -43,7 +43,9 @@ Story 1 shipped 2026-10-22: the pipeline and the sidebar. Stories 2 to 6 (tab ro
   14 entries, all with art, on screen all the time. Story 1 also sets up the packs
   folder and takes the committed icon folders out of git (§6).
 
-![Before and after: inventory row, spell words, stance buttons, sidebar attributes, tab row, log line](pixel-icons/before-after.png)
+`pixel-icons/before-after.png` (inventory row, spell words, stance buttons,
+sidebar attributes, tab row, log line) is local only: it is made of bought
+pixels, which never go in git (2026-11-14).
 
 The image is a screenshot of [pixel-icons/mockup.html](pixel-icons/mockup.html):
 hand-placed sprites from the Clockwork Raven sheet on the gothic tokens. Dashed =
@@ -574,7 +576,7 @@ docs/THEMES.md §4 points here instead of saying the emoji stay.
    those paths, or a yes from each author. Outside this plan's code; not needed
    while the repo is private.
 2. **Buy or draw the 14 the sheet lacks** (§5.1)?
-3. **The picks themselves** ([picks.png](pixel-icons/picks.png)): swap any that read
+3. **The picks themselves** ([picks.html](pixel-icons/picks.html)): swap any that read
    wrong. Each has alternates listed.
 
 Answered:
@@ -600,10 +602,9 @@ Answered:
 [pixel-icons/picks.md](pixel-icons/picks.md) lists a recommended icon and alternates
 for 125 concepts: the tab row, Force, the chrome glyphs, weather, the nine generic
 stances, all 39 items and all 40 arcane words. 111 have a pick.
-[pixel-icons/picks.png](pixel-icons/picks.png) shows each emoji beside its picks,
-generated from [pixel-icons/picks.html](pixel-icons/picks.html).
-
-![Picks: each emoji, the recommended icon at 64px, alternates at 32px](pixel-icons/picks.png)
+[pixel-icons/picks.html](pixel-icons/picks.html) shows each emoji beside its picks
+(open it in a checkout that has the packs). Its screenshot `picks.png` is local
+only: bought pixels never go in git (2026-11-14).
 
 The remaining registries (statuses, spots, materials, skills, techniques, mutagens,
 pantheons) get picked in the story that converts them, using the index in §3.2.
