@@ -34,6 +34,11 @@ done:
 
 # What it is
 
+**Superseded as the runtime, 2026-10-29.** The user wants one ability system
+for both games; FACET replaces this chassis
+([universal-abilities](universal-abilities.md) maps each part below onto
+FACET). The rulings recorded here still hold as KSG policy.
+
 The thin layer the [parent](unique-abilities.md) describes. It owns one
 ledger per ability and turns that ledger into projected conditions. It owns
 no combat rule — those are [ability-combat-primitives](ability-combat-primitives.md).
