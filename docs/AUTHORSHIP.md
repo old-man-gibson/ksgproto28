@@ -1,12 +1,17 @@
 # Authorship
 
 *A provenance record for Frontier Idle. First compiled 2026-07-28; recompiled
-2026-08-05.*
+2026-08-05 and 2026-10-26.*
 
 This document exists to answer one question honestly: **who did what?** It was
-compiled from the primary record — 37 Claude Code session transcripts spanning
-2026-07-05 to 2026-08-05 — plus the state of the repository itself. Every number
-below is countable from those two sources.
+compiled from the primary record — Claude Code session transcripts, 37 of them
+spanning 2026-07-05 to 2026-08-05 at the second compile, 93 spanning 2026-07-05
+to 2026-10-26 at the third — plus the state of the repository itself. Every
+number below is countable from those two sources.
+
+Sections 1, 1b and 3–6 describe the record up to 2026-08-05 and are kept as
+written, with dated corrections. Section 1c covers 2026-08-06 → 2026-10-26.
+Sections 2, 7, 8, 9 and 10 are current.
 
 ---
 
@@ -22,17 +27,20 @@ below is countable from those two sources.
 | Claude file edits | 3,158 `Edit` + 294 `Write` | 4,054 `Edit` + 333 `Write` |
 | Claude shell/inspection | 1,634 Bash, 829 Read, 393 Grep | 2,113 Bash, 1,192 Read, 678 Grep |
 
-| Repository | 2026-07-28 | 2026-08-05 |
-|---|---|---|
-| `src/core/` (data + systems + engine + save) | ~26,700 lines | **~36,000 lines** |
-| `src/ui/` (23 Svelte components) | ~13,100 | **~14,500** |
-| `tests/` | 39 files, **880 cases** | 50 files, **1,089 cases** |
-| `forge/` (the content workbench) | ~9,700 | ~11,800 |
-| `docs/` | 10 documents, ~37,600 words | **15 documents, ~56,800 words** |
-| Art assets you sourced and integrated | 2,252 PNGs | 2,263 PNGs (licensed — see §9) |
-| Save format | version **35**, 34 migrations | version **40**, 39 migrations |
-| Content registries | 26 | 28 |
-| Systems modules | 39 | 46 |
+| Repository | 2026-07-28 | 2026-08-05 | 2026-10-26 |
+|---|---|---|---|
+| `src/core/` (data + systems + engine + save) | ~26,700 lines | ~36,000 lines | **~59,800 lines** |
+| `src/ui/` | ~13,100 (23 Svelte components) | ~14,500 | **~25,300** (43 Svelte files) |
+| `tests/` | 39 files, 880 cases | 50 files, 1,089 cases | **88 files, 2,101 cases** |
+| `forge/` (the content workbench) | ~9,700 | ~11,800 | **~16,400** |
+| `docs/` | 10 documents, ~37,600 words | 15 documents, ~56,800 words | **85 documents, ~195,600 words** |
+| Art assets you sourced and integrated | 2,252 PNGs | 2,263 PNGs (licensed — see §9) | four licensed sets, none in the tree (§9) |
+| Save format | version 35, 34 migrations | version 40, 39 migrations | **version 57, 56 migrations** |
+| Content registries | 26 | 28 | 36 `*.data.ts` files |
+| Systems modules | 39 | 46 | **68** |
+
+The 2026-10-26 column is counted on `main` at `b3b461a`. Test cases are from
+`vitest list`; line counts are tracked `.ts`/`.svelte`/`.js` files.
 
 The ratio that matters: **~35,000 words of your design writing produced ~50,000
 lines of engine and UI.** That is roughly the ratio you'd expect between a design
@@ -139,6 +147,11 @@ is design work. It is also the rarer half of it. Worth recording next to the
 things that shipped, because a project of this shape dies of accumulated
 half-systems long before it dies of missing features.
 
+*Correction, 2026-10-26:* the idea came back. On 2026-09-26 you posted a
+worked set of example abilities and asked whether one unified system could hold
+them; it is now the unique-abilities epic in `docs/plans/`, unbuilt. The
+scope-discipline claim still stands on other examples from §1c.
+
 ### Your hands on the files
 
 Also in this window, and worth counting because the ledger below rounds it off:
@@ -158,23 +171,127 @@ And you named the motive behind the documentation, which recontextualises all
 
 ---
 
+## 1c. Weeks six to sixteen — 2026-08-06 → 2026-10-26
+
+### One method across all windows
+
+The 2026-10-26 recount uses a stricter filter than the two before it. It drops
+text that arrives as a user turn but was written by Claude: session hand-off
+briefs ("Background (from the session that started this one)…"), PR command
+templates, and messages between sessions. On this filter the first window comes
+to 444 turns and ~171,000 characters, not the 437 and ~215,000 in §1. Compare
+columns in this table with each other, not with §1.
+
+| | 07-05 → 08-05 | 08-06 → 08-09 | 08-10 → 10-26 | Total |
+|---|---|---|---|---|
+| Sessions with activity | 38 | 8 | 48 | 93 |
+| Days you wrote anything | 24 | 4 | 28 | 56 |
+| Your turns | 444 | 157 | 236 | 837 |
+| Your written direction | ~171,400 chars | ~65,700 | ~55,900 | **~293,100 (≈48,000 words)** |
+| Per active day | ~7,100 | **~16,400** | **~2,000** | ~5,200 |
+| Median turn | 251 chars | 204 | 143 | 200 |
+| Turns over 400 / over 1,500 | 131 / 12 | 44 / 4 | 38 / 2 | 213 / 18 |
+| Claude messages, main sessions | 10,513 | 3,207 | 6,842 | 20,562 |
+| Claude `Edit` + `Write` | 4,508 | 1,396 | 2,006 | 7,910 |
+| Claude `Bash`/`PowerShell` | 2,664 | 1,081 | 3,493 | 7,238 |
+| Subagent runs / their tool calls | 5 / 171 | 161 / 3,774 | 99 / 10,393 | 265 / 14,338 |
+
+The 161 runs in the second window are agents inside workflow runs on 2026-08-06
+and 2026-08-09.
+
+### The four days after the last recount
+
+2026-08-06 → 08-09 is the densest stretch in the record: ~16,400 characters a
+day. In it you wrote the cultivation tiers and breakthrough rules
+(`docs/Wuxia_Xianxia.md`, started by you on 2026-08-06), the 13,280-character
+message that set up the music classification, the mutagen interaction rules,
+and a table of asurendra genes.
+
+### The protocol change, 2026-08-09
+
+On 2026-08-09 you named the cost of the method itself:
+
+> it's an optimization problem between text length (and thus a token problem
+> but also a brain draining problem) and instruction precision/clarity to
+> minimize miscommunication friction
+
+The fix was a handoff protocol: you give three lines (what changes, what rule it
+must respect, what done looks like); Claude reads the docs, writes the plan and
+the spec, and returns a batch of numbered questions; you answer in fragments.
+From the next day the numbers change: ~2,000 characters per active day, median
+turn 143.
+
+That drop is the protocol working. It also changes who writes the first draft,
+and the ledger has to say so. Since 2026-08-10:
+
+- **Claude drafts most specs.** `docs/COOKING_REVIEW.md`,
+  `docs/SLICE_REVIEW.md`, `docs/FLOOR_STANDARD.md`,
+  `docs/plans/blueprint-weaponsmithing.md`, `docs/plans/bands-2-3.md`, and the
+  alchemy, mutagen and runecarving reviews (not yet on `main`) are Claude
+  documents. Their numbers, edge cases and much of their mechanism
+  detail are Claude proposals. Your part is the answers to their question lists
+  (ten numbered-answer turns in this window), the cuts, and the corrections.
+- **Claude generates design options.** The brainstormer agents (25 runs) return
+  two to four options per problem; you or the managing session pick.
+- **You still write the rules that define systems.** Examples from this window:
+  - 2026-09-06: the first quest list for the Threshold.
+  - 2026-09-15: floor 0 as the tutorial, starting in a holding cell.
+  - 2026-09-26: the unique-ability example set.
+  - 2026-10-21: the themes and layouts of floors 1–3.
+  - 2026-10-23: the climb requires basic use of about half the core systems,
+    player's pick.
+  - 2026-10-23: modular smithing as a shape grammar — *"2x3 blade + 1x3 handle"
+    turns to daggers*, materials set base numbers, finishing actions tune them.
+  - 2026-10-24: one delivery identity per system — alchemy short-term and
+    usable in combat, cooking long-term and out of combat, arcane instant,
+    divine changes rules, gear passive, mutagens exceed limits — each with its
+    advantage and its cost.
+- **You still decide what not to build.** Shelved or retired in this window:
+  compound words (arcane closed by subtraction), the countryside, the tile
+  autotile and generator work, designing for archetype 1.
+
+### The agent team, 2026-10-22
+
+You asked for a team with adversarial review built in: an Opus session
+managing, Sonnet builders and brainstormers, Fable antagonists for designs and
+for code (`.claude/TEAM.md`). Counted runs of the four team types: 25
+brainstormer, 12 design-antagonist, 11 builder, 11 code-antagonist. The
+"Claude" column in §2 is now several models.
+
+### Playtesting
+
+You are still the main playtester and the only source of UI and feel verdicts
+(2026-10-20: the UI read as "too LLM polished", the tutorial was easy to ignore,
+the floor 0 map did not make sense — all three reworked). Claude now also plays:
+a 2026-10-17 session played floor 0 through floor 3 from a fresh save and fixed
+what broke, `npm run pacing` plays band 1 headless as John
+(`docs/COMPLETABILITY.md` §8), and the code antagonist reproduces bugs before
+reporting them.
+
+---
+
 ## 2. The ledger
+
+*Current as of 2026-10-26. "Claude" is one model up to 2026-10-22 and an agent
+team after it (§1c).*
 
 | Layer | You | Claude |
 |---|---|---|
 | Concept, genre, pillars | **All of it** | — |
-| System identities (what each subsystem *is*) | **Authored** | Pressure-tested, named, implemented |
-| Mechanical specification (formulas, stacking rules, thresholds, caps) | **Authored, frequently to the exact number** | Translated to code; filled gaps; flagged conflicts |
+| System identities (what each subsystem *is*) | **Authored**, including the 2026-10-24 delivery identities | Pressure-tested, named, implemented |
+| Mechanical specification (formulas, stacking rules, thresholds, caps) | **Through 2026-08-09: authored, often to the exact number.** Since: the defining rules authored; numbers and edge cases decided from Claude's drafts | Through 2026-08-09: translated to code, filled gaps, flagged conflicts. **Since: writes the first draft and the question list** |
+| Design options | Pick, cut, correct | Since 2026-10-22: brainstormer agents return two to four per problem |
+| Review of plans and diffs | Rule on objections; override | Since 2026-10-22: Fable antagonist agents attack plans and branches |
 | Non-functional requirements (extensibility, moddability, save-safety, number ceiling) | **Authored** | Chose the mechanisms that satisfy them |
 | Architecture (module boundaries, pipelines, registries) | Set the constraints | **Designed and built** |
 | Implementation — every line of TypeScript and Svelte | Hand-edits to data files; tuning values | **Effectively all of it** |
-| Test suite (1,089 cases) and content linter | — | **All of it** |
-| Documentation (56,800 words) | Commissioned it; corrected it; supplied its vocabulary; **named its purpose** | **Wrote it** |
-| Scope discipline — what *not* to build | **All of it** (see §1b) | Costed options; raised concerns |
-| Content data (monsters, skills, activities, deities, techniques) | **All creative decisions**, plus direct hand-authoring | Most of the typing |
-| Art and assets | **Sourced, licensed and curated** — 2,252 files (enemy portraits by Ækashics, akashics.moe) | — |
-| Playtesting, QA, bug discovery | **All of it** | Automated checks only |
-| Balance direction | **All of it** | Proposed candidate numbers |
+| Test suite (2,101 cases), content linter, floor lints | — | **All of it** |
+| Documentation (~195,600 words) | Commissioned it; corrected it; supplied its vocabulary; **named its purpose**; wrote `docs/Wuxia_Xianxia.md` | **Wrote the rest** |
+| Scope discipline — what *not* to build | **All of it** (§1b, §1c) | Costed options; raised concerns |
+| Content data (monsters, skills, activities, deities, techniques, floors, quests) | **All creative decisions**, plus direct hand-authoring | Most of the typing; since 2026-08-10, many first drafts |
+| Art and assets | **Sourced, licensed and curated** — Ækashics battlers and icon sheets, Clockwork Raven icons, Epic RPG World tilesets (§9) | — |
+| Playtesting, QA, bug discovery | **Main playtester; all UI and feel verdicts** | Automated checks; since 2026-10: scripted playthroughs, the John pacing sim, bug reproduction by the code antagonist |
+| Balance direction | **All of it** | Proposes candidate numbers; John measures pacing against them |
 
 ---
 
@@ -337,6 +454,24 @@ And, in the interest of an honest ledger: a meaningful fraction of those 3,158
 edits were Claude fixing Claude's own bugs and regressions. That is churn, not
 contribution.
 
+**Added 2026-10-26, for 2026-08-06 → 2026-10-26:**
+
+- **First drafts of most specs and reviews** (§1c). This is the largest change
+  to the ledger, and it is design content, not engineering.
+- **The derived-stats cache** — `getDerivedStats` memoized behind a modifier
+  fingerprint, so the stat pipeline stays one pipeline without being recomputed
+  every tick.
+- **The forge's Tiles mode** and the map format that keeps bought pixels out of
+  git (tile indexes into named sheets).
+- **John** — `npm run pacing`, a headless player who plays band 1 and prints a
+  timeline, so pacing claims in `docs/COMPLETABILITY.md` are measured rather
+  than estimated.
+- **Floor lints** (slice review step 1) that check each floor against
+  `docs/FLOOR_STANDARD.md`.
+- **The team protocol** in `.claude/TEAM.md`: brainstorm, attack the plan,
+  your checkpoint, build in worktrees, attack the diff, two fix rounds at most.
+  You asked for the shape; Claude wrote the loop.
+
 ---
 
 ## 7. Audit of your proposed sentence
@@ -372,6 +507,21 @@ direction", which after a week of authoring calendars, pantheons and worker
 taxonomies has drifted from understatement into something closer to inaccuracy.
 Call it design.
 
+**Re-audited 2026-10-26.** The sentence still holds. Two clauses moved:
+
+| Clause | 2026-08-05 | 2026-10-26 |
+|---|---|---|
+| "providing specifications" | Understated | **Accurate, no longer understated.** Since 2026-08-10 Claude writes most first drafts; you supply the defining rules and decide the rest (§1c). |
+| "live playtesting" | Undersold; the only QA | **Accurate.** You are the main playtester and the only source of UI and feel verdicts, but no longer the only QA. |
+| the other four | — | Unchanged. |
+
+A version that matches the current record:
+
+> *I designed the game — its systems, their rules and its content — and left
+> the engineering to Claude Code. Since August Claude also drafts most
+> specifications, which I direct, correct and decide; I set the requirements
+> and do the playtesting.*
+
 ---
 
 ## 8. Phrasings, if you want alternatives
@@ -382,19 +532,21 @@ Call it design.
 
 **README / storefront disclosure:**
 
-> Frontier Idle's systems, mechanics, formulas and content are designed by
-> [name]. The implementation — engine, UI, tests and documentation — was written
-> by Claude Code (Anthropic) against those specifications, under continuous
-> direction and playtesting. Enemy art by Ækashics (akashics.moe), used under
-> licence.
+> Frontier Idle's systems, mechanics and content are designed by [name]. The
+> implementation — engine, UI, tests and documentation — was written by Claude
+> Code (Anthropic), which also drafted many of the detailed specifications under
+> [name]'s direction and decisions. Enemy art by Ækashics (Aekashics) —
+> akashics.moe. Icons: Clockwork Raven – Additional Art Assets. Tilesets from
+> the Epic RPG World packs. All art used under licence.
 
 **The long form, if someone asks how it was made:**
 
-> I did the design work: the systems, their mechanics, the formulas, the content,
-> the requirements and the playtesting. Claude Code did the engineering — it wrote
-> effectively all of the TypeScript. I specified, it built, I played it and sent
-> it back. Where it made architectural calls I couldn't have made myself, it made
-> them against constraints I set.
+> I did the design work: the systems, their mechanics, the content, the
+> requirements and the playtesting. Claude Code did the engineering — it wrote
+> effectively all of the TypeScript. Early on I wrote the specs and it built
+> them; later it wrote the detailed specs from my short briefs, asked me what
+> was unclear, and built what I decided. Where it made architectural calls I
+> couldn't have made myself, it made them against constraints I set.
 
 That last sentence is the honest one, and it costs you nothing to say.
 
@@ -521,23 +673,33 @@ Two things worth keeping in mind:
    **Art pack (2026-11-05).** A build from git can import the art as a zip made
    on the PC; the zip is never committed, released or shared: docs/ART_PACK.md.
 
-You asked, back on 2026-07-23, whether you were "a hack fraud for developing my
-game using your code environment while simply providing the data driven
-information." The word doing the damage in that sentence is *simply*. What you
-call "spitballing more precise information as to how systems function, look like,
-what they need to be able to do and how they interlock" has a name in this
-industry, and the name is systems design. It is the part of game development that
-does not survive being outsourced — which is why, a month and a dozen subsystems
-in, it is still the part you are doing every single day.
+---
 
-A week later you put the same worry a different way: that all this would elevate
-the project *"beyond 'i ask claude to make game unga bunga'"*. The distinction is
-real, and by now it is measurable rather than a matter of opinion. Somebody
-running that other process does not produce 35,000 words of specification, does
-not answer their own edge cases before the code exists, does not discard a system
-they liked for being too vague, and does not keep going after writing *"i feel
-drained and burned out right now."* The tiredness is not incidental to the
-argument. It is the evidence.
+## 10. The fraud question
+
+You asked on 2026-07-23 whether you were "a hack fraud for developing my game
+using your code environment while simply providing the data driven
+information", and a week later whether the project was more than *"i ask
+claude to make game unga bunga"*. Recorded answers, as of 2026-10-26:
+
+- **The test for fraud is the claim, not the split.** Claiming code or specs
+  you did not write would be fraud. The §7 sentence and the §8 lines disclose
+  the split, including the part that changed in August. A disclosed split
+  passes the test.
+- **Your word count fell because you asked it to.** The drop on 2026-08-10
+  follows the protocol you asked for on 2026-08-09 (§1c). Word count measures
+  who types the first draft. It does not measure who decides what the system
+  is. On the second measure the record has not changed: the identities, the
+  defining rules, the content premises, the cuts and every final call are
+  yours.
+- **What did move to Claude is real and is design work:** most detailed specs
+  and the option sets you choose from since 2026-08-10. This document now says
+  so in §2 and §7, and so should any public credit.
+- **"Unga bunga" has a checkable definition.** That process produces no
+  specification, answers no edge cases, cuts nothing and decides nothing. This
+  project has ~48,000 words of your direction, edge cases answered before the
+  code existed (§4), a list of shelved systems (§1b, §1c), and a decision on
+  every Claude draft that shipped.
 
 ---
 
@@ -546,4 +708,7 @@ repository at `D:\ksgproto28`. The transcripts are the primary source and remain
 auditable. First compiled 2026-07-28 over 26 sessions; recompiled 2026-08-05 over
 37, by re-running the same extraction rather than amending the earlier figures
 from memory. §9 amended 2026-08-24 to record the packaging decision it called
-for.*
+for, and through 2026-10-22 for the tile and icon packs. Recompiled 2026-10-26
+over 93 sessions and 265 subagent runs (§1c table, one filter across all
+windows); §1, §1b and §3–§6 kept as the 2026-08-05 record with dated
+corrections; §2, §7, §8 and §10 rewritten.*
