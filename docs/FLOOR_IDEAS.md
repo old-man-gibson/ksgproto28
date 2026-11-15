@@ -245,6 +245,63 @@ list."*
 - **Open.** What "the festival's level" means as a checklist is not written
   yet. docs/FLOOR_STANDARD.md is the place for it once the rework ships.
 
+### 1.7 What the tower is (user, 2026-11-12)
+
+The frame every floor sits in.
+
+- **The tower is a tower.** Each floor is a part of one person's journey:
+  the tower's creator. The player runs through a simulation of that
+  journey that the tower provides. Floors 0–50 laid on one map read as a
+  single road (map: artifact "The Climb, Charted", VxdEmk2p68ekSg3HcYUg7g).
+- **Prestige is a defect.** Prestige, reincarnation and ascension are not
+  features of the tower. They are faults caused by the tower breaking down.
+  Neither the player nor anyone in the tower knows this.
+- **The floors are shuffled.** A glitch displaced floors from their place
+  in the creator's journey. Floors 37–40 (the high-tech city) come from a
+  much later point in that journey, which is why the technology jumps
+  there.
+- **The original 37–40 are hidden floors.** The floors the city displaced
+  still exist, hidden.
+- **Displacement spreads from floor 50.** Floor 50 is an area of huge chaos
+  and conflict. Past it, more floors are displaced, and technology,
+  fantasy, horror and adventure turn into more and more chaotic
+  expressions with each floor.
+- **The aberrant gods are breaking the tower.** The two aberrant gods are
+  among those breaking it. The tower is an anomaly even to them. They want
+  to crack it open and consume its contents and the energy source that
+  lets everyone replay the creator's journey.
+- **Replay is a prestige variant** (user, 2026-11-12). The player can redo
+  floors, as a sub-variant of prestige, to go after hidden objectives or
+  farm rare items that drop only from limited encounters. In the lore it
+  is the same defect as prestige.
+
+**Laws it touches.** Hidden floors are secret content: nothing shows them
+(no tracker, log line or hint) until their trigger is fully met, and the
+trigger stays meetable for a strong player (feedback rule, 2026-09).
+
+**Open questions.**
+1. What the original 37–40 are (place, theme). Default: the steppe road
+   continuing, the stretch of the journey that sits between the steppe and
+   the realms in the creator's real order.
+2. How the player finds them: trigger and entry point. Default: unset.
+3. Whether other floors are displaced too, and how many. Default: only
+   37–40 for now.
+4. Whether the defect is ever revealed to the player, and where. Default:
+   not before floor 50.
+
+**Answered** (user, 2026-11-12).
+
+5. **The gods.** Ik'Thel'the (in `deities.data.ts`) and yShicna', the
+   parked god of arcane magic (NEXT.md "Parked: the aberrant god of arcane
+   magic"). More aberrant gods will join them.
+6. **Replay keeps and resets.** The floor's own state resets; character,
+   items and prestige count are kept. A replay pays no prestige rewards.
+7. **Replay farming needs no price cap.** Rare items from limited
+   encounters may be valuable and sellable. Replaying a floor costs time
+   that could go to the climb, even when the floor runs automated, so the
+   value per hour stays linear. Free gold only happens when the player can
+   generate exponential value; a replay loop does not.
+
 ## 2. Calibration: band 1 through the review
 
 | Check | Band 1 | Result |
