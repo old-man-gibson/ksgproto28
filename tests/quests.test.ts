@@ -10,6 +10,7 @@ import {
   questComplete,
 } from '../src/core/systems/quests';
 import { NPCS, QUESTS } from '../src/core/registry';
+import { grantGraded, stockOf } from '../src/core/systems/disciplines';
 import type { MonsterInstance } from '../src/core/types';
 
 function killEvent(g: Game, defId: string): void {
@@ -97,15 +98,32 @@ describe('objective types', () => {
     expect(g.state.quests.word_from_the_west.status).toBe('done');
 
     // Chain unlocks; collect objective is possession-based and consumed.
+    // common_herb is GRADED: the player's herbs live in `state.stock` quality
+    // buckets (every source pays through grantMaterial), never in
+    // `state.materials` — the objective must count and consume them there.
     const maren = NPCS.elder_maren;
     expect(availableQuests(g.state, maren).map((q) => q.id)).toContain('eight_legs_too_many');
     g.acceptQuest('eight_legs_too_many');
     for (let i = 0; i < 15; i++) killEvent(g, 'cave_spider');
     expect(questComplete(g.state, QUESTS.eight_legs_too_many)).toBe(false); // no herbs yet
-    g.state.materials['common_herb'] = 10;
+    grantGraded(g.state, 'common_herb', 'f', 3);
+    grantGraded(g.state, 'common_herb', 'c', 2);
+    const herbObjective = QUESTS.eight_legs_too_many.objectives.findIndex(
+      (o) => o.type === 'collect',
+    );
+    // Grades sum: 3 refuse + 2 decent herbs are 5 herbs toward the 8.
+    expect(objectiveProgress(g.state, QUESTS.eight_legs_too_many, herbObjective)).toEqual({
+      current: 5,
+      target: 8,
+    });
+    grantGraded(g.state, 'common_herb', 'a', 5); // now 10 held across three grades
     expect(questComplete(g.state, QUESTS.eight_legs_too_many)).toBe(true);
     g.turnInQuest('eight_legs_too_many');
-    expect(g.state.materials['common_herb']).toBe(2); // 8 handed over
+    // 8 handed over, worst first: all f, all c, and 3 of the a-grade.
+    expect(stockOf(g.state, 'common_herb', 'f')).toBe(0);
+    expect(stockOf(g.state, 'common_herb', 'c')).toBe(0);
+    expect(stockOf(g.state, 'common_herb', 'a')).toBe(2);
+    expect(g.state.materials['common_herb']).toBeUndefined();
     expect(g.state.inventory.some((i) => i.defId === 'herbal_charm')).toBe(true);
   });
 });

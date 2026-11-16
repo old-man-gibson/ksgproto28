@@ -6,6 +6,7 @@ import { checkDiscovery, grantDiscoveryXp, grantSkillXp, grantSkillXpDirect } fr
 import { createItem } from './runes';
 import { bumpStat } from './achievements';
 import { grantFavorAll } from './divine';
+import { gradesHeld, isGraded, takeGraded } from './disciplines';
 
 /** Tags an exchange with an NPC trains (see the `speechcraft` skill). */
 const SOCIAL_TAGS = ['social'];
@@ -72,11 +73,15 @@ export function objectiveProgress(
       return { current: Math.min(stored, objective.count), target: objective.count };
     case 'reach':
       return { current: Math.min(stored, 1), target: 1 };
-    case 'collect':
-      return {
-        current: Math.min(state.materials[objective.materialId] ?? 0, objective.qty),
-        target: objective.qty,
-      };
+    case 'collect': {
+      // Graded materials never touch `state.materials` — every source pays
+      // them into quality-bucketed `state.stock` (see grantMaterial). An
+      // errand doesn't care about grade, so any grade counts.
+      const held = isGraded(objective.materialId)
+        ? gradesHeld(state, objective.materialId).reduce((n, g) => n + g.qty, 0)
+        : (state.materials[objective.materialId] ?? 0);
+      return { current: Math.min(held, objective.qty), target: objective.qty };
+    }
   }
 }
 
@@ -100,9 +105,20 @@ export function turnInQuest(state: GameState, bus: EventBus, questId: string): b
   // Collect objectives hand the goods over.
   for (const o of quest.objectives) {
     if (o.type !== 'collect') continue;
-    const left = (state.materials[o.materialId] ?? 0) - o.qty;
-    if (left > 0) state.materials[o.materialId] = left;
-    else delete state.materials[o.materialId];
+    if (isGraded(o.materialId)) {
+      // Worst grades go first — the S-tier herb stays in your satchel.
+      let need = o.qty;
+      for (const g of gradesHeld(state, o.materialId).reverse()) {
+        const take = Math.min(need, g.qty);
+        takeGraded(state, o.materialId, g.quality, take);
+        need -= take;
+        if (need === 0) break;
+      }
+    } else {
+      const left = (state.materials[o.materialId] ?? 0) - o.qty;
+      if (left > 0) state.materials[o.materialId] = left;
+      else delete state.materials[o.materialId];
+    }
   }
 
   const r = quest.rewards;
