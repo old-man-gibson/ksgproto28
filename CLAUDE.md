@@ -24,7 +24,7 @@ This section is for the main session (the manager); agents can skip it.
 Measured over six sessions, 2026-10-27 to 11-05: re-reading the main
 session's own context was most of the cost. Three quarters of its calls
 carried more than 200k tokens. These rules keep that context small, and
-`.claude/settings.json` compacts at 300k tokens instead of near 1M.
+`.claude/settings.json` compacts at 500k tokens instead of near 1M.
 
 - **One task per session.** When a task has landed and the next request is
   unrelated, say so and suggest a fresh session. The longest session ran six
