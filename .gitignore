@@ -39,3 +39,6 @@ art-pack/
 
 # Screenshots made of bought icon pixels: local only (2026-11-14).
 docs/plans/pixel-icons/*.png
+
+# Throwaway sims and experiments
+.scratch-*/
